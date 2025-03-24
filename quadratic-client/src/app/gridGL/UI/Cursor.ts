@@ -8,7 +8,6 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
 export const CURSOR_THICKNESS = 2;
@@ -265,7 +264,7 @@ export class Cursor extends Container {
     let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
-    const color = formula ? getCSSVariableTint('primary') : colors.cursorCell;
+    const color = formula ? getCSSVariableTint('primary') : pixiApp.accentColor;
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
     const corners = [

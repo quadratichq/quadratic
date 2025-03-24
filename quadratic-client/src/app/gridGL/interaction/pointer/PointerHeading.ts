@@ -22,7 +22,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import type { InteractionEvent, Point } from 'pixi.js';
+import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -85,12 +85,10 @@ export class PointerHeading {
     return true;
   }
 
-  pointerDown(world: Point, e: InteractionEvent): boolean {
-    const event = e.data.originalEvent as PointerEvent;
+  pointerDown(world: Point, e: FederatedPointerEvent): boolean {
     clearTimeout(this.fitToColumnTimeout);
 
-    const isRightClick =
-      (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
+    const isRightClick = e.button === 2 || (isMac && e.button === 0 && e.ctrlKey);
 
     const { headings, viewport } = pixiApp;
     const intersects = headings.intersectsHeadings(world);
@@ -105,11 +103,11 @@ export class PointerHeading {
     if (headingResize) {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== null) {
-        event.preventDefault();
+        e.preventDefault();
         this.autoResizeColumn(headingResize.column);
         return true;
       } else if (this.clicked && headingResize.row !== null) {
-        event.preventDefault();
+        e.preventDefault();
         this.autoResizeRow(headingResize.row);
         return true;
       }
@@ -147,7 +145,7 @@ export class PointerHeading {
         start,
         place: isColumn ? intersects.column! : intersects.row!,
         offset: (isColumn ? intersects.column! : intersects.row!) - start,
-        lastMouse: e.data.global.clone(),
+        lastMouse: e.global.clone(),
       };
       pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
       pixiApp.cellMoving.dirty = true;
@@ -158,7 +156,7 @@ export class PointerHeading {
           this.downTimeout = undefined;
           zoomToFit();
         } else {
-          cursor.selectAll(event.shiftKey);
+          cursor.selectAll(e.shiftKey);
           this.downTimeout = window.setTimeout(() => {
             if (this.downTimeout) {
               this.downTimeout = undefined;
@@ -175,10 +173,10 @@ export class PointerHeading {
       const headingSize = pixiApp.headings.headingSize;
       if (intersects.column !== null) {
         const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
-        cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
+        cursor.selectColumn(intersects.column, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, top);
       } else if (intersects.row !== null) {
         const left = sheets.sheet.getColumnFromScreen(bounds.left);
-        cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
+        cursor.selectRow(intersects.row, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, left);
       }
       if (isRightClick) {
         events.emit('contextMenu', {
@@ -193,7 +191,7 @@ export class PointerHeading {
     return true;
   }
 
-  private pointerMoveColRows(world: Point, e?: InteractionEvent): boolean {
+  private pointerMoveColRows(world: Point, e?: FederatedPointerEvent): boolean {
     if (!this.movingColRows) {
       throw new Error('Expected movingColRows to be defined in pointerMoveColRows');
     }
@@ -207,12 +205,12 @@ export class PointerHeading {
     this.movingColRows.place = isColumn ? current.column : current.row;
     pixiApp.cellMoving.dirty = true;
     if (e) {
-      this.movingColRows.lastMouse = e.data.global.clone();
+      this.movingColRows.lastMouse = e.global.clone();
     }
     return true;
   }
 
-  pointerMove(world: Point, e: InteractionEvent): boolean {
+  pointerMove(world: Point, e: FederatedPointerEvent): boolean {
     if (this.downTimeout) {
       window.clearTimeout(this.downTimeout);
       this.downTimeout = undefined;

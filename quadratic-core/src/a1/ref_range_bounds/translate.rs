@@ -1,37 +1,41 @@
-use crate::RefError;
+use crate::{RefAdjust, RefError};
 
 use super::*;
 
 impl RefRangeBounds {
-    /// Translates the range in place by the given delta.
-    pub fn translate_in_place(&mut self, x: i64, y: i64) -> Result<(), RefError> {
-        if self.is_all() {
-            return Ok(());
-        }
-        self.start.translate_in_place(x, y)?;
-        self.end.translate_in_place(x, y)?;
-        Ok(())
+    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
+    /// of bounds.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+        Ok(Self {
+            start: self.start.adjust(adjust)?,
+            end: self.end.adjust(adjust)?,
+        })
     }
-
-    /// Returns a new range translated by the given delta.
-    pub fn translate(mut self, x: i64, y: i64) -> Result<Self, RefError> {
-        self.translate_in_place(x, y)?;
-        Ok(self)
-    }
-
-    pub fn saturating_translate(self, x: i64, y: i64) -> Option<Self> {
-        if self.is_all() {
-            return Some(self);
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns `None` if the result is empty.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+        // If both X coordinates or both Y coordinates end up out of range then
+        // the whole range becomes empty.
+        let (x1, y1) = self.start.try_adjust_xy(adjust);
+        let (x2, y2) = self.end.try_adjust_xy(adjust);
+        if x1.is_err() && x2.is_err() || y1.is_err() && y2.is_err() {
+            return None;
         }
+
         Some(Self {
-            // clamp start to A1
-            start: self.start.saturating_translate(x, y),
-            // if end goes past A1, then the new range is empty so return nothing
-            end: self.end.translate(x, y).ok()?,
+            start: self.start.saturating_adjust(adjust),
+            end: self.end.saturating_adjust(adjust),
         })
     }
 
     // TODO: remove this function when switching to u64
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate_unchecked(self, x: i64, y: i64) -> Self {
         if self.is_all() {
             return self;
@@ -41,143 +45,91 @@ impl RefRangeBounds {
             end: self.end.translate_unchecked(x, y),
         }
     }
-
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        self.start.adjust_column_row_in_place(column, row, delta);
-        self.end.adjust_column_row_in_place(column, row, delta);
-    }
-
-    #[must_use]
-    pub fn adjust_column_row(mut self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        self.adjust_column_row_in_place(column, row, delta);
-        self
-    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::grid::SheetId;
+
     use super::*;
 
     #[test]
-    fn test_translate_in_place() {
-        // Test single cell translation
-        let mut range = RefRangeBounds::test_a1("A1");
-        range.translate_in_place(1, 1).unwrap();
-        assert_eq!(range.to_string(), "B2");
-
-        // Test range translation
-        let mut range = RefRangeBounds::test_a1("A1:C3");
-        range.translate_in_place(1, 1).unwrap();
-        assert_eq!(range.to_string(), "B2:D4");
-
-        // Test column range translation
-        let mut range = RefRangeBounds::test_a1("A:C");
-        range.translate_in_place(1, 0).unwrap();
-        assert_eq!(range.to_string(), "B:D");
-
-        // Test row range translation
-        let mut range = RefRangeBounds::test_a1("1:3");
-        range.translate_in_place(0, 1).unwrap();
-        assert_eq!(range.to_string(), "2:4");
-
-        // Test negative translation
-        let mut range = RefRangeBounds::test_a1("B2:D4");
-        range.translate_in_place(-1, -1).unwrap();
-        assert_eq!(range.to_string(), "A1:C3");
-
-        // Test zero translation
-        let mut range = RefRangeBounds::test_a1("A1:C3");
-        range.translate_in_place(0, 0).unwrap();
-        assert_eq!(range.to_string(), "A1:C3");
-
-        // Test that * remains unchanged
-        let mut range = RefRangeBounds::test_a1("*");
-        range.translate_in_place(1, 1).unwrap();
-        assert_eq!(range.to_string(), "*");
-
-        // Test negative translation capping
-        let mut range = RefRangeBounds::test_a1("A1");
-        range.translate_in_place(-10, -10).unwrap_err();
-    }
-
-    #[test]
-    fn test_translate() {
+    fn test_adjust() {
         // Test single cell translation
         let range = RefRangeBounds::test_a1("A1");
-        let translated = range.translate(1, 1).unwrap();
-        assert_eq!(translated.to_string(), "B2");
-        assert_eq!(range.to_string(), "A1");
+        let adj = RefAdjust::new_translate(1, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2");
 
         // Test range translation
         let range = RefRangeBounds::test_a1("A1:C3");
-        let translated = range.translate(1, 1).unwrap();
-        assert_eq!(translated.to_string(), "B2:D4");
-        assert_eq!(range.to_string(), "A1:C3");
+        let adj = RefAdjust::new_translate(1, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:D4");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:D4");
 
         // Test column range translation
         let range = RefRangeBounds::test_a1("A:C");
-        let translated = range.translate(1, 0).unwrap();
-        assert_eq!(translated.to_string(), "B:D");
-        assert_eq!(range.to_string(), "A:C");
+        let adj = RefAdjust::new_translate(1, 0);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B:D");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B:D");
 
         // Test row range translation
         let range = RefRangeBounds::test_a1("1:3");
-        let translated = range.translate(0, 1).unwrap();
-        assert_eq!(translated.to_string(), "2:4");
-        assert_eq!(range.to_string(), "1:3");
+        let adj = RefAdjust::new_translate(0, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "2:4");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "2:4");
 
         // Test negative translation
         let range = RefRangeBounds::test_a1("B2:D4");
-        let translated = range.translate(-1, -1).unwrap();
-        assert_eq!(translated.to_string(), "A1:C3");
-        assert_eq!(range.to_string(), "B2:D4");
+        let adj = RefAdjust::new_translate(-1, -1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
         // Test zero translation
         let range = RefRangeBounds::test_a1("A1:C3");
-        let translated = range.translate(0, 0).unwrap();
-        assert_eq!(translated.to_string(), "A1:C3");
-        assert_eq!(range.to_string(), "A1:C3");
+        let adj = RefAdjust::new_translate(0, 0);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
-        // Test that * remains unchanged
+        // Ideally * remains unchanged, but that's impossible
         let range = RefRangeBounds::test_a1("*");
-        let translated = range.translate(1, 1).unwrap();
-        assert_eq!(translated.to_string(), "*");
-        assert_eq!(range.to_string(), "*");
+        let adj = RefAdjust::new_translate(1, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:");
 
         // Test negative translation capping
-        let range = RefRangeBounds::test_a1("A1");
-        range.translate(-10, -10).unwrap_err();
+        let range = RefRangeBounds::test_a1("A12:Z12");
+        let adj = RefAdjust::new_translate(-10, -10);
+        range.adjust(adj).unwrap_err();
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A2:P2");
     }
 
     #[test]
     fn test_adjust_column_row() {
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(Some(2), None, 1);
-        assert_eq!(range.to_string(), "C3");
+        let sheet_id = SheetId::TEST;
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(2), 1);
-        assert_eq!(range.to_string(), "B4");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_column(sheet_id, 2);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "C3");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(Some(3), None, 1);
-        assert_eq!(range.to_string(), "B3");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_row(sheet_id, 2);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B4");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(4), 1);
-        assert_eq!(range.to_string(), "B3");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_column(sheet_id, 3);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B3");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(Some(1), None, -1);
-        assert_eq!(range.to_string(), "A3");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_row(sheet_id, 4);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B3");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(1), -1);
-        assert_eq!(range.to_string(), "B2");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_delete_column(sheet_id, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "A3");
+
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_delete_row(sheet_id, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2");
     }
 }
