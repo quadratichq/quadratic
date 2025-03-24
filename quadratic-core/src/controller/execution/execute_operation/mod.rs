@@ -46,8 +46,7 @@ impl GridController {
         }
     }
 
-    /// Executes the given operation.
-    ///
+    /// Removes the first operation from a transaction and executes it.
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
         if let Some(op) = transaction.operations.pop_front() {
             #[cfg(feature = "show-operations")]

@@ -6,7 +6,7 @@ use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefCoord, UNBOUNDED};
-use crate::{a1::column_name, Pos, RefError};
+use crate::{a1::column_name, Pos, RefAdjust, RefError};
 
 /// The maximum value for a column or row number.
 const OUT_OF_BOUNDS: i64 = 1_000_000_000;
@@ -53,27 +53,62 @@ impl CellRefRangeEnd {
         Self::new_relative_xy(UNBOUNDED, y)
     }
 
-    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) -> Result<(), RefError> {
-        self.col.translate_in_place(delta_x)?;
-        self.row.translate_in_place(delta_y)?;
-        Ok(())
+    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
+    /// of bounds.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+        if self.affected_by_adjustment(adjust) {
+            Ok(Self {
+                col: self.col.adjust(adjust.relative_only, adjust.dx)?,
+                row: self.row.adjust(adjust.relative_only, adjust.dy)?,
+            })
+        } else {
+            Ok(self)
+        }
     }
-
-    pub fn translate(self, delta_x: i64, delta_y: i64) -> Result<Self, RefError> {
-        Ok(CellRefRangeEnd {
-            col: self.col.translate(delta_x)?,
-            row: self.row.translate(delta_y)?,
-        })
-    }
-
-    pub fn saturating_translate(self, delta_x: i64, delta_y: i64) -> Self {
-        CellRefRangeEnd {
-            col: self.col.saturating_translate(delta_x),
-            row: self.row.saturating_translate(delta_y),
+    /// Adjusts coordinates by `adjust`. If the cell reference ends up out of
+    /// range, it is clamped to A1.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
+        if self.affected_by_adjustment(adjust) {
+            Self {
+                col: self.col.saturating_adjust(adjust.relative_only, adjust.dx),
+                row: self.row.saturating_adjust(adjust.relative_only, adjust.dy),
+            }
+        } else {
+            self
         }
     }
 
+    /// Adjusts X and Y coordinates independently, and returns them as separate
+    /// [`Result`]s.
+    pub fn try_adjust_xy(
+        self,
+        adjust: RefAdjust,
+    ) -> (
+        Result<CellRefCoord, RefError>,
+        Result<CellRefCoord, RefError>,
+    ) {
+        if self.affected_by_adjustment(adjust) {
+            let col = self.col.adjust(adjust.relative_only, adjust.dx);
+            let row = self.row.adjust(adjust.relative_only, adjust.dy);
+            (col, row)
+        } else {
+            (Ok(self.col), Ok(self.row))
+        }
+    }
+
+    /// Returns whether an adjustment should affect this position.
+    fn affected_by_adjustment(self, adjust: RefAdjust) -> bool {
+        self.col.coord >= adjust.x_start && self.row.coord >= adjust.y_start
+    }
+
     // TODO: remove this function when switching to u64
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate_unchecked(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
             col: self.col.translate_unchecked(delta_x),
@@ -298,30 +333,6 @@ impl CellRefRangeEnd {
         self.col.coord == UNBOUNDED || self.row.coord == UNBOUNDED
     }
 
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        if let Some(column) = column {
-            if self.col() >= column {
-                self.col = self.col.saturating_translate(delta);
-            }
-        }
-        if let Some(row) = row {
-            if self.row() >= row {
-                self.row = self.row.saturating_translate(delta);
-            }
-        }
-    }
-
-    #[must_use]
-    pub fn adjust_column_row(mut self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        self.adjust_column_row_in_place(column, row, delta);
-        self
-    }
-
     /// Returns whether the range end is missing a row or column number.
     pub fn is_multi_range(self) -> bool {
         self.col.is_unbounded() || self.row.is_unbounded()
@@ -330,6 +341,8 @@ impl CellRefRangeEnd {
 
 #[cfg(test)]
 mod tests {
+    use crate::grid::SheetId;
+
     use super::*;
 
     #[test]
@@ -522,28 +535,35 @@ mod tests {
     }
 
     #[test]
-    fn test_translate_in_place() {
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
-        ref_end.translate_in_place(1, 2).unwrap();
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+    fn test_adjust() {
+        let rel_only = RefAdjust {
+            sheet_id: None,
+            relative_only: true,
+            dx: 1,
+            dy: 2,
+            x_start: 0,
+            y_start: 0,
+        };
+        let all = RefAdjust {
+            relative_only: false,
+            ..rel_only
+        };
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.translate_in_place(-1, -1).unwrap();
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 2));
-    }
+        let init_rel = CellRefRangeEnd::new_relative_xy(1, 1);
+        let init_abs = CellRefRangeEnd {
+            col: CellRefCoord::new_abs(1),
+            row: CellRefCoord::new_abs(1),
+        };
+        let expected_rel = CellRefRangeEnd::new_relative_xy(2, 3);
+        let expected_abs = CellRefRangeEnd {
+            col: CellRefCoord::new_abs(2),
+            row: CellRefCoord::new_abs(3),
+        };
 
-    #[test]
-    fn test_translate() {
-        let ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
-        assert_eq!(
-            ref_end.translate(1, 2),
-            Ok(CellRefRangeEnd::new_relative_xy(2, 3))
-        );
-        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        assert_eq!(
-            ref_end.translate(-1, -1),
-            Ok(CellRefRangeEnd::new_relative_xy(1, 2))
-        );
+        assert_eq!(Ok(expected_rel), init_rel.adjust(rel_only));
+        assert_eq!(Ok(init_abs), init_abs.adjust(rel_only));
+        assert_eq!(Ok(expected_rel), init_rel.adjust(all));
+        assert_eq!(Ok(expected_abs), init_abs.adjust(all));
     }
 
     #[test]
@@ -567,28 +587,32 @@ mod tests {
 
     #[test]
     fn test_adjust_column_row() {
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(Some(2), None, 1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(3, 3));
+        let sheet_id = SheetId::TEST;
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(None, Some(2), 1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 4));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_column(sheet_id, 2));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(3, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(Some(3), None, 1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_row(sheet_id, 2));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(2, 4));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(None, Some(4), 1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_column(sheet_id, 3));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(2, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 3);
-        ref_end.adjust_column_row_in_place(Some(1), None, -1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_row(sheet_id, 4));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(2, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3);
-        ref_end.adjust_column_row_in_place(Some(1), None, 1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(1, 3);
+        let res = ref_end.adjust(RefAdjust::new_delete_column(sheet_id, 1));
+        res.unwrap_err();
+        let res = ref_end.saturating_adjust(RefAdjust::new_delete_column(sheet_id, 1));
+        assert_eq!(res, CellRefRangeEnd::new_relative_xy(1, 3));
+
+        let ref_end = CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_row(sheet_id, 1));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(UNBOUNDED, 4));
     }
 }
