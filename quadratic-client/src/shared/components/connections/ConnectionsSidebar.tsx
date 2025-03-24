@@ -50,7 +50,7 @@ function SidebarItem({ title, description, linkText, linkHref, children }: any) 
         {linkText && linkHref && (
           <p className="inline hover:text-primary">
             {' '}
-            <a href={linkHref} target="_blank" rel="noreferrer" className="underline ">
+            <a href={linkHref} target="_blank" rel="noreferrer" className="underline">
               {linkText}
             </a>{' '}
             <ExternalLinkIcon className="inline" />
