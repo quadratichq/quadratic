@@ -95,7 +95,7 @@ impl GridController {
     }
 
     #[allow(clippy::result_unit_err)]
-    pub fn handle_delete_row(
+    pub fn handle_delete_rows(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
