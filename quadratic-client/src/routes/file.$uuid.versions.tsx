@@ -29,17 +29,13 @@ import {
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'];
 
 export const loader = async ({ params }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
-  const { uuid } = params as { uuid: string };
-  let data;
-  try {
-    data = await apiClient.files.checkpoints.list(uuid);
-  } catch (error: any) {
-    const isLoggedIn = await authClient.isAuthenticated();
-    if (error.status === 401 && !isLoggedIn) {
-      return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
-    }
-    throw error;
+  const isLoggedIn = await authClient.isAuthenticated();
+  if (!isLoggedIn) {
+    return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
   }
+
+  const { uuid } = params as { uuid: string };
+  const data = await apiClient.files.checkpoints.list(uuid);
   return data;
 };
 
