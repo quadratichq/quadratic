@@ -32,7 +32,7 @@ import type { SetterOrUpdater } from 'recoil';
 import { useRecoilValue } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
   messageIndex?: number;
@@ -113,7 +113,7 @@ export const AIUserMessageForm = memo(
       }
     }, []);
 
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
 
     // Focus the input when relevant & the tab comes into focus

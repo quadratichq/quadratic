@@ -14,14 +14,14 @@ function useEventListener<K extends keyof HTMLElementEventMap, T extends HTMLEle
 function useEventListener<
   KW extends keyof WindowEventMap,
   KH extends keyof HTMLElementEventMap,
-  T extends HTMLElement | void = void
+  T extends HTMLElement | void = void,
 >(
   eventName: KW | KH,
   handler: (event: WindowEventMap[KW] | HTMLElementEventMap[KH] | Event) => void,
   element?: RefObject<T>
 ) {
   // Create a ref that stores handler
-  const savedHandler = useRef<typeof handler>();
+  const savedHandler = useRef<typeof handler>(handler);
 
   useEffect(() => {
     // Define the listening target

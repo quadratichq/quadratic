@@ -36,7 +36,7 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
                 mixpanel.track('[Connections].schemaViewer.newFileFromTable');
               }}
             >
-              {children}
+              <>{children}</>
             </Link>
           )}
         >

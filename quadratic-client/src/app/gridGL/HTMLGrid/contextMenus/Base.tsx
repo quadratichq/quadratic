@@ -93,7 +93,7 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
         avoidCollisions={true}
         updatePositionStrategy="always"
       >
-        {children}
+        <>{children}</>
       </DropdownMenuContent>
     </DropdownMenu>
   );

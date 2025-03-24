@@ -20,13 +20,12 @@ const Command = React.forwardRef<
 ));
 Command.displayName = CommandPrimitive.displayName;
 
-interface CommandDialogProps {
-  children: React.ReactNode;
+type CommandDialogProps = {
+  children?: React.ReactNode;
   dialogProps: DialogProps;
   commandProps: React.ComponentPropsWithoutRef<typeof Command>;
   overlayProps?: React.ComponentPropsWithoutRef<typeof DialogOverlay>;
-}
-interface CommandDialogProps extends DialogProps {}
+} & DialogProps;
 
 const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: CommandDialogProps) => {
   return (
@@ -47,7 +46,7 @@ const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: Co
 };
 
 const CommandInput = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Input>,
+  HTMLInputElement,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & { omitIcon?: boolean }
 >(({ className, omitIcon, ...props }, ref) => (
   <div className="flex items-center border-b px-3" cmdk-input-wrapper="">

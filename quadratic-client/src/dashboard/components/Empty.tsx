@@ -4,10 +4,9 @@ import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import type { StopwatchIcon } from '@radix-ui/react-icons';
+import type { IconProps } from '@radix-ui/react-icons/dist/types';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { useSubmit } from 'react-router-dom';
 
@@ -22,9 +21,9 @@ export function Empty({
   error,
 }: {
   title: string;
-  description: ReactNode;
-  actions?: ReactNode;
-  Icon: typeof StopwatchIcon;
+  description: React.ReactNode;
+  actions?: React.ReactNode;
+  Icon: React.ForwardRefExoticComponent<IconProps>;
   severity?: 'error';
   className?: string;
   showLoggedInUser?: boolean;

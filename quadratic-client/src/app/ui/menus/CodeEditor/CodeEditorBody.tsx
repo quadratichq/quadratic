@@ -111,7 +111,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     };
   }, [editorInst]);
 
-  const lastLocation = useRef<CodeCell | undefined>();
+  const lastLocation = useRef<CodeCell | undefined>(undefined);
   // This is to clear monaco editor's undo/redo stack when the cell location
   // changes useEffect gets triggered when the cell location changes, but the
   // editor content is not loaded in the editor new editor content for the next

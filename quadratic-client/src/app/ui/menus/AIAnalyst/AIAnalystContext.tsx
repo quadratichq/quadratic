@@ -23,7 +23,7 @@ type AIAnalystContextProps = {
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
   editing: boolean;
   disabled: boolean;
-  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+  textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIAnalystContext = memo(
