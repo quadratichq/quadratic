@@ -50,14 +50,14 @@ class JavascriptCore {
     console.warn("[javascriptCore] didn't handle message", e.data);
   };
 
-  sendJavascriptResults(transactionId: string, jsCodeResultBuffer: ArrayBuffer, transfer?: Transferable[]) {
+  sendJavascriptResults(transactionId: string, jsCodeResultBuffer: ArrayBuffer) {
     this.send(
       {
         type: 'javascriptCoreResults',
         transactionId,
         jsCodeResultBuffer,
       },
-      transfer
+      [jsCodeResultBuffer]
     );
   }
 
