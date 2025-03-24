@@ -141,7 +141,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -173,7 +173,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
         let validation1 = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -290,7 +290,7 @@ mod tests {
 
         let list = ValidationList {
             source: ValidationListSource::Selection(A1Selection::test_a1_sheet_id(
-                "A1:A4", &sheet_id,
+                "A1:A4", sheet_id,
             )),
             ignore_blank: true,
             drop_down: true,

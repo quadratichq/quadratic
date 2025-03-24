@@ -7,6 +7,7 @@ import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
+import getActiveTeam from '@/shared/utils/getActiveTeam';
 import type { ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirect } from 'react-router-dom';
 
@@ -84,6 +85,16 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
             <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
+
+            {/* Shortcut route to get to a route for whatever the 'active' team is */}
+            <Route
+              path="team/*"
+              loader={async ({ params }) => {
+                const { teams } = await apiClient.teams.list();
+                const { teamUuid } = await getActiveTeam(teams, undefined);
+                return redirect(ROUTES.TEAM(teamUuid) + '/' + params['*']);
+              }}
+            />
 
             <Route path="teams">
               <Route path="create" lazy={() => import('./routes/teams.create')} />
