@@ -3,6 +3,7 @@ import '@/index.css';
 import '@/shared/shadcn/styles.css';
 
 import { router } from '@/router';
+import { RootLoadingIndicator } from '@/shared/components/RootLoadingIndicator';
 import * as Sentry from '@sentry/react';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
@@ -20,7 +21,7 @@ if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none
     tracesSampleRate: 0.1,
   });
 
-Sentry.addTracingExtensions();
+//
 
 // This increases the size of the stack traces that are shown from Rust -> console.error
 Error.stackTraceLimit = 100;
@@ -29,10 +30,6 @@ const container = document.getElementById('root');
 const root = createRoot(container as HTMLElement);
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} future={{ v7_startTransition: true }} />
+    <RouterProvider router={router} future={{ v7_startTransition: true }} fallbackElement={<RootLoadingIndicator />} />
   </React.StrictMode>
 );
-
-// Hide the loading screen
-const loaderElement = document.getElementById('loading');
-if (loaderElement) loaderElement.style.display = 'none';
