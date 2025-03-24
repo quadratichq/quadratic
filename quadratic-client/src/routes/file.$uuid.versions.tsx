@@ -103,7 +103,7 @@ export const Component = () => {
               onClick={() => {
                 if (!activeCheckpoint) return;
 
-                mixpanel.track('[FileVersions].duplicateVersion', {
+                mixpanel.track('[FileVersionHistory].duplicateVersion', {
                   uuid,
                   checkpointId: activeCheckpoint.id,
                 });
@@ -124,7 +124,7 @@ export const Component = () => {
               onClick={() => {
                 if (!activeCheckpoint) return;
 
-                mixpanel.track('[FileVersions].downloadVersion', {
+                mixpanel.track('[FileVersionHistory].downloadVersion', {
                   uuid,
                   checkpointId: activeCheckpoint.id,
                 });
@@ -141,7 +141,7 @@ export const Component = () => {
               target="_blank"
               className="group mt-2 flex w-full items-center gap-1 overflow-hidden !px-1 hover:text-primary"
               onClick={() => {
-                mixpanel.track('[FileVersions].openCurrentVersion', {
+                mixpanel.track('[FileVersionHistory].openCurrentVersion', {
                   uuid,
                 });
               }}
