@@ -163,14 +163,6 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
 
-        // After execution, adjust viewport to show full output if it exists
-        const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
-        if (table) {
-          const width = table.codeCell.w;
-          const height = table.codeCell.h;
-          ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
-        }
-
         const result = await setCodeCellResult(sheetId, x, y);
         return result;
       } else {
