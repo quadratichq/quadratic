@@ -85,7 +85,7 @@ class Thumbnail {
     pixiApp.cleanUpAfterCopying(true);
     pixiApp.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
-      this.renderer!.view.toBlob((blob) => resolve(blob));
+      this.renderer!.view.toBlob?.((blob) => resolve(blob));
     });
   }
 }

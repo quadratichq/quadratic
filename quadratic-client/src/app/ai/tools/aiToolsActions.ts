@@ -193,7 +193,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = targetSelection.getCursor();
 
-      await quadraticCore.moveCells(sheetRect, x, y, sheets.current);
+      await quadraticCore.moveCells(sheetRect, x, y, sheets.current, false, false);
 
       return `Executed move cells tool successfully.`;
     } catch (e) {

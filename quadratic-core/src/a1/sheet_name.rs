@@ -30,15 +30,16 @@ pub(crate) fn parse_optional_sheet_name(a1: &str) -> Result<(Option<String>, &st
 
 pub(crate) fn parse_optional_sheet_name_to_id<'a>(
     a1: &'a str,
-    default_sheet_id: &SheetId,
     context: &A1Context,
-) -> Result<(SheetId, &'a str), A1Error> {
+) -> Result<(Option<SheetId>, &'a str), A1Error> {
     let (sheet_name, rest) = parse_optional_sheet_name(a1)?;
     let sheet_id = match sheet_name {
-        Some(sheet_name) => context
-            .try_sheet_name(&sheet_name)
-            .ok_or(A1Error::InvalidSheetName(sheet_name))?,
-        None => default_sheet_id.to_owned(),
+        Some(sheet_name) => Some(
+            context
+                .try_sheet_name(&sheet_name)
+                .ok_or(A1Error::InvalidSheetName(sheet_name))?,
+        ),
+        None => None,
     };
     Ok((sheet_id, rest))
 }
@@ -113,34 +114,34 @@ mod tests {
         let sheet_2 = SheetId::new();
         let map = A1Context::test(&[("Sheet1", sheet_1), ("Sheet 2", sheet_2)], &[]);
         assert_eq!(
-            parse_optional_sheet_name_to_id("SHEET1!A1", &sheet_1, &map),
-            Ok((sheet_1, "A1"))
+            parse_optional_sheet_name_to_id("SHEET1!A1", &map),
+            Ok((Some(sheet_1), "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("'Sheet 2'!A1", &sheet_1, &map),
-            Ok((sheet_2, "A1"))
+            parse_optional_sheet_name_to_id("'Sheet 2'!A1", &map),
+            Ok((Some(sheet_2), "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("A1", &sheet_1, &map),
-            Ok((sheet_1, "A1"))
+            parse_optional_sheet_name_to_id("A1", &map),
+            Ok((None, "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("'Sheet1'!A1:B2", &sheet_1, &map),
-            Ok((sheet_1, "A1:B2"))
+            parse_optional_sheet_name_to_id("'Sheet1'!A1:B2", &map),
+            Ok((Some(sheet_1), "A1:B2"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet1!Sheet2A1", &sheet_1, &map),
-            Ok((sheet_1, "Sheet2A1"))
+            parse_optional_sheet_name_to_id("Sheet1!Sheet2A1", &map),
+            Ok((Some(sheet_1), "Sheet2A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet 1!A1", &sheet_1, &map),
+            parse_optional_sheet_name_to_id("Sheet 1!A1", &map),
             Err(A1Error::InvalidSheetNameMissingQuotes(
                 "Sheet 1".to_string()
             ))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("'sheet1'!A1", &sheet_1, &map),
-            Ok((sheet_1, "A1"))
+            parse_optional_sheet_name_to_id("'sheet1'!A1", &map),
+            Ok((Some(sheet_1), "A1"))
         );
     }
 
@@ -150,12 +151,8 @@ mod tests {
         sheet.name = "Types: sequences, mapping, sets".to_string();
         let map = A1Context::test(&[("Types: sequences, mapping, sets", sheet.id)], &[]);
         assert_eq!(
-            parse_optional_sheet_name_to_id(
-                "'Types: sequences, mapping, sets'!A1:B2",
-                &sheet.id,
-                &map
-            ),
-            Ok((sheet.id, "A1:B2"))
+            parse_optional_sheet_name_to_id("'Types: sequences, mapping, sets'!A1:B2", &map),
+            Ok((Some(sheet.id), "A1:B2")),
         );
     }
 }

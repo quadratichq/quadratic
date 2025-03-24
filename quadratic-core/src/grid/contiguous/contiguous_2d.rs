@@ -1,10 +1,10 @@
-use std::fmt::Debug;
+use std::fmt;
 
 use crate::{
-    a1::{A1Selection, CellRefRange, UNBOUNDED},
+    CopyFormats, Pos, Rect,
+    a1::{A1Selection, CellRefRange, RefRangeBounds, UNBOUNDED},
     grid::GridBounds,
     util::sort_bounds,
-    CopyFormats, Pos, Rect,
 };
 
 use serde::{Deserialize, Serialize};
@@ -16,11 +16,54 @@ use super::{block::Block, contiguous_blocks::ContiguousBlocks};
 /// many) values are initialized to default.
 ///
 /// Supports infinite blocks down, right, and down-right.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Contiguous2D<T>(
     #[serde(bound = "T: Serialize + for<'a> Deserialize<'a>")] // shouldn't serde infer this?
     ContiguousBlocks<ContiguousBlocks<T>>,
 );
+impl<T: fmt::Debug> fmt::Debug for Contiguous2D<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for xy_block in &self.0 {
+            let x1 = xy_block.start as i64;
+            let x2 = match xy_block.end {
+                u64::MAX => None,
+                finite => Some(finite as i64 - 1),
+            };
+
+            let x1_name = crate::a1::column_name(x1);
+            let x2_name = x2.map(crate::a1::column_name).unwrap_or_default();
+
+            if xy_block.len() == Some(1) {
+                writeln!(f, "column {x1_name} ({})", xy_block.start)?;
+            } else {
+                write!(f, "columns {x1_name}:{x2_name} ")?;
+                match x2 {
+                    Some(x2) => write!(f, "({x1}..={x2})")?,
+                    None => write!(f, "({x1}..)")?,
+                }
+                writeln!(f)?;
+            }
+
+            for y_block in &xy_block.value {
+                let y1 = y_block.start as i64;
+                let y2 = match y_block.end {
+                    u64::MAX => None,
+                    finite => Some(finite as i64 - 1),
+                };
+                let ref_range_bounds = RefRangeBounds::new_relative(
+                    x1,
+                    y1,
+                    x2.unwrap_or(i64::MAX),
+                    y2.unwrap_or(i64::MAX),
+                )
+                .to_string(); // required for padding
+                writeln!(f, "    {ref_range_bounds:<10}  {:?}", y_block.value)?;
+            }
+        }
+
+        Ok(())
+    }
+}
 impl<T: Default> Default for Contiguous2D<T> {
     fn default() -> Self {
         Self(ContiguousBlocks::default())
@@ -46,7 +89,7 @@ impl<T: Default + Clone + PartialEq> From<Contiguous2D<T>>
         value.0.map(|col| (!col.is_all_default()).then_some(col))
     }
 }
-impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
+impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// Constructs a [`Contiguous2D`] containing `value` inside a (possibly
     /// infinite) rectangle and `T::default()` everywhere else.
     ///
@@ -480,7 +523,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
     }
 }
 
-impl<T: Clone + PartialEq + Debug> Contiguous2D<Option<T>> {
+impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     /// Constructs an update Contiguous2D from a selection and a value set
     /// across the selection, or returns `None` if the value is `None`.
     ///

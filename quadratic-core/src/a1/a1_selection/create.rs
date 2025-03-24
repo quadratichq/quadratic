@@ -156,21 +156,72 @@ impl A1Selection {
         Self::from_single_cell(pos![A1].to_sheet_pos(sheet))
     }
 
+    /// Constructs a selection for a range of columns.
+    pub fn cols(sheet: SheetId, col_start: i64, col_end: i64) -> Self {
+        Self {
+            sheet_id: sheet,
+            cursor: Pos { x: col_start, y: 1 },
+            ranges: vec![CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_column_range(col_start, col_end),
+            }],
+        }
+    }
+
+    /// Constructs a selection for a range of rows.
+    pub fn rows(sheet: SheetId, row_start: i64, row_end: i64) -> Self {
+        Self {
+            sheet_id: sheet,
+            cursor: Pos { x: 0, y: row_start },
+            ranges: vec![CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_row_range(row_start, row_end),
+            }],
+        }
+    }
+
     /// Returns a test selection from the A1-string with SheetId::TEST.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::parse(a1, &SheetId::TEST, &A1Context::default(), None).unwrap()
+        Self::parse(a1, SheetId::TEST, &A1Context::default(), None).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
     #[cfg(test)]
-    pub fn test_a1_sheet_id(a1: &str, sheet_id: &SheetId) -> Self {
+    pub fn test_a1_sheet_id(a1: &str, sheet_id: SheetId) -> Self {
         Self::parse(a1, sheet_id, &A1Context::default(), None).unwrap()
     }
 
     #[cfg(test)]
     #[track_caller]
     pub fn test_a1_context(a1: &str, context: &A1Context) -> Self {
-        Self::parse(a1, &SheetId::TEST, context, None).unwrap()
+        Self::parse(a1, SheetId::TEST, context, None).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cols() {
+        let selection = A1Selection::cols(SheetId::TEST, 1, 3);
+        assert_eq!(selection.ranges.len(), 1);
+        assert_eq!(
+            selection.ranges[0],
+            CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_column_range(1, 3)
+            }
+        );
+    }
+
+    #[test]
+    fn test_rows() {
+        let selection = A1Selection::rows(SheetId::TEST, 1, 3);
+        assert_eq!(selection.ranges.len(), 1);
+        assert_eq!(
+            selection.ranges[0],
+            CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_row_range(1, 3)
+            }
+        );
     }
 }

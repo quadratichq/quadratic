@@ -858,6 +858,8 @@ class Core {
       this.gridController.moveCells(
         JSON.stringify(message.source, bigIntReplacer),
         JSON.stringify(dest, bigIntReplacer),
+        message.columns,
+        message.rows,
         message.cursor
       );
       resolve(undefined);
@@ -980,7 +982,7 @@ class Core {
 
   deleteColumns(sheetId: string, columns: number[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.deleteColumn(sheetId, JSON.stringify(columns), cursor);
+    this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
   }
 
   insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
@@ -1105,6 +1107,16 @@ class Core {
           Number(rect.max.y - rect.min.y) + 1
         )
       : undefined;
+  }
+
+  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.moveColumns(sheetId, colStart, colEnd, to, cursor);
+  }
+
+  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
   }
 }
 

@@ -3,7 +3,7 @@ import { generatedTextures } from '@/app/gridGL/generateTextures';
 import type { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import type { Point } from 'pixi.js';
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Assets, Container, Rectangle, Sprite } from 'pixi.js';
 
 // const INDICATOR_SIZE = 4;
 export const TRIANGLE_SCALE = 0.1;
@@ -20,37 +20,37 @@ interface Marker {
 export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean): Sprite | undefined => {
   const symbol = new Sprite();
   if (language === 'Python') {
-    symbol.texture = Texture.from('icon-python');
+    symbol.texture = Assets.get('icon-python');
     symbol.tint = 0xffffff;
     return symbol;
   } else if (language === 'Formula') {
-    symbol.texture = Texture.from('icon-formula');
+    symbol.texture = Assets.get('icon-formula');
     symbol.tint = 0xffffff;
     return symbol;
   } else if (language === 'Javascript') {
-    symbol.texture = Texture.from('icon-javascript');
+    symbol.texture = Assets.get('icon-javascript');
     symbol.tint = 0xffffff;
     return symbol;
   } else if (typeof language === 'object') {
     switch (language.Connection?.kind) {
       case 'MSSQL':
-        symbol.texture = Texture.from('icon-mssql');
+        symbol.texture = Assets.get('icon-mssql');
         symbol.tint = isError ? colors.cellColorError : 0xffffff;
         return symbol;
 
       case 'POSTGRES':
         symbol.tint = isError ? colors.cellColorError : 0xffffff;
-        symbol.texture = Texture.from('icon-postgres');
+        symbol.texture = Assets.get('icon-postgres');
         return symbol;
 
       case 'MYSQL':
         symbol.tint = isError ? colors.cellColorError : 0xffffff;
-        symbol.texture = Texture.from('icon-mysql');
+        symbol.texture = Assets.get('icon-mysql');
         return symbol;
 
       case 'SNOWFLAKE':
         symbol.tint = isError ? colors.cellColorError : 0xffffff;
-        symbol.texture = Texture.from('icon-snowflake');
+        symbol.texture = Assets.get('icon-snowflake');
         return symbol;
 
       default:
