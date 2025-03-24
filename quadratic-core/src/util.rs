@@ -6,8 +6,8 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::a1::UNBOUNDED;
 use crate::RefError;
+use crate::a1::UNBOUNDED;
 
 lazy_static! {
     pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
@@ -142,11 +142,7 @@ macro_rules! impl_display {
 
 /// Returns the minimum and maximum of two values, in that order.
 pub fn minmax<T: PartialOrd>(a: T, b: T) -> (T, T) {
-    if a > b {
-        (b, a)
-    } else {
-        (a, b)
-    }
+    if a > b { (b, a) } else { (a, b) }
 }
 /// Returns the minimum and maximum extent of two values, in that order. `None`
 /// is considered the largest possible possible.
@@ -284,6 +280,11 @@ pub fn round(number: f64, precision: i64) -> f64 {
 /// Returns a string suitable for case-insensitive comparison.
 pub fn case_fold(s: &str) -> String {
     s.to_uppercase() // TODO: want proper Unicode case folding
+}
+
+/// Uppercase ascii-only string suitable for case-insensitive comparison.
+pub fn case_fold_ascii_in_place(s: &mut str) {
+    s.make_ascii_uppercase();
 }
 
 pub fn set_panic_hook() {

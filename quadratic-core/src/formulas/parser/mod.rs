@@ -13,12 +13,13 @@ use rules::SyntaxRule;
 
 use super::*;
 use crate::{
+    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
     a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
     grid::{Grid, SheetId},
-    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
 };
 
 /// Parses a formula.
+#[function_timer::function_timer]
 pub fn parse_formula(source: &str, ctx: &A1Context, pos: SheetPos) -> CodeResult<ast::Formula> {
     Ok(Formula {
         ast: parse_exactly_one(source, ctx, pos, rules::Expression)?,
@@ -33,6 +34,7 @@ pub fn simple_parse_formula(source: &str) -> CodeResult<ast::Formula> {
     parse_formula(source, &g.a1_context(), pos)
 }
 
+#[function_timer::function_timer]
 fn parse_exactly_one<R: SyntaxRule>(
     source: &str,
     ctx: &A1Context,
@@ -315,6 +317,7 @@ impl<'a> Parser<'a> {
     /// error if it fails. This should only be used when this syntax rule
     /// represents the only valid parse; if there are other options,
     /// `try_parse()` is preferred.
+    #[function_timer::function_timer]
     pub fn parse<R: SyntaxRule>(&mut self, rule: R) -> CodeResult<R::Output> {
         self.try_parse(&rule).unwrap_or_else(|| self.expected(rule))
     }

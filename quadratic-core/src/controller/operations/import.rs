@@ -237,6 +237,7 @@ impl GridController {
     }
 
     /// Imports an Excel file into the grid.
+    #[function_timer::function_timer]
     pub fn import_excel_operations(
         &mut self,
         file: Vec<u8>,
@@ -393,12 +394,14 @@ impl GridController {
                 }
                 current_y_formula += 1;
             }
+
             // add new sheets
             ops.push(Operation::AddSheetSchema {
                 schema: Box::new(export_sheet(sheet)),
             });
             ops.extend(formula_compute_ops);
         }
+
         Ok(ops)
     }
 
