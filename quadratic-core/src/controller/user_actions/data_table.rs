@@ -1,7 +1,7 @@
 use crate::{
-    controller::{active_transactions::transaction_name::TransactionName, GridController},
+    CopyFormats, Pos, SheetPos, SheetRect,
+    controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
-    Pos, SheetPos, SheetRect,
 };
 
 use anyhow::Result;
@@ -86,6 +86,44 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
     }
 
+    pub fn data_table_insert_columns(
+        &mut self,
+        sheet_pos: SheetPos,
+        columns: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.data_table_insert_columns_operations(
+            sheet_pos,
+            columns,
+            swallow,
+            copy_formats_from,
+            copy_formats,
+        );
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+    }
+
+    pub fn data_table_insert_rows(
+        &mut self,
+        sheet_pos: SheetPos,
+        rows: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.data_table_insert_rows_operations(
+            sheet_pos,
+            rows,
+            swallow,
+            copy_formats_from,
+            copy_formats,
+        );
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+    }
+
     pub fn sort_data_table(
         &mut self,
         sheet_pos: SheetPos,
@@ -122,16 +160,16 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        Array, CellValue, Pos, Rect, SheetPos, Value,
         a1::A1Selection,
         cellvalue::Import,
         controller::{
-            transaction_types::JsCodeResult, user_actions::import::tests::simple_csv,
-            GridController,
+            GridController, transaction_types::JsCodeResult,
+            user_actions::import::tests::simple_csv,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::{assert_cell_value, assert_cell_value_row, print_table_in_rect},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
-        Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
     #[test]

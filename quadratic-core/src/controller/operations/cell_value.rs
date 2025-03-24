@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use super::operation::Operation;
+use crate::Pos;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::CodeCellLanguage;
-use crate::Pos;
-use crate::{a1::A1Selection, CellValue, SheetPos};
-use anyhow::{bail, Result};
+use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::{CellValue, SheetPos, a1::A1Selection};
+use anyhow::{Result, bail};
 
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
@@ -199,6 +199,8 @@ impl GridController {
                         columns: columns.into_iter().map(|c| (c, None, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -210,6 +212,8 @@ impl GridController {
                         rows: rows.into_iter().map(|r| (r, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -332,13 +336,13 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
+    use crate::Rect;
     use crate::cell_values::CellValues;
-    use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
+    use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
     use crate::test_util::print_table_in_rect;
-    use crate::Rect;
-    use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
+    use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
     #[test]
     fn test() {

@@ -4,12 +4,12 @@ use std::iter::StepBy;
 use std::num::NonZeroU32;
 use std::slice::Iter;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::cell_values::CellValues;
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
@@ -419,26 +419,28 @@ impl Array {
 
         Ok(())
     }
+
     /// Delete a row at the given index.
-    pub fn delete_row(&mut self, remove_at_index: usize) -> Result<()> {
+    pub fn delete_row(&mut self, remove_at_index: usize) -> Result<Vec<CellValue>> {
         let values_len = self.values.len();
         let width = (self.width() as usize).min(values_len);
         let height = NonZeroU32::new(self.height() - 1);
 
+        let mut values: Vec<CellValue> = Vec::new();
         match height {
             Some(h) => {
                 let start = remove_at_index * width;
                 let end = std::cmp::min(start + width, values_len);
 
                 if start <= end {
-                    self.values.drain(start..end);
+                    values = self.values.drain(start..end).collect();
                     self.size.h = h;
                 }
             }
             None => bail!("Cannot remove a row from a single row array"),
         }
 
-        Ok(())
+        Ok(values)
     }
 
     /// Returns the only cell value in a 1x1 array, or an error if this is not a
@@ -531,7 +533,7 @@ impl Array {
                         expected: common_len,
                         got: new_array_len,
                     }
-                    .with_span(array.span))
+                    .with_span(array.span));
                 }
             }
         }

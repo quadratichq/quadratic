@@ -111,6 +111,33 @@ impl Sheet {
                     .iter()
                     .map(|row| {
                         let row = (*row - pos.y) as u32;
+                        let actual_index = dt.get_row_index_from_display_index(row as u64);
+
+                        // add reverse ops for formats and borders, if necessary
+                        // (note, formats and borders are 1-indexed)
+                        if let Some(reverse_formats) = dt.formats.copy_row(actual_index as i64 + 1)
+                        {
+                            if !reverse_formats.is_default() {
+                                transaction.add_fill_cells(self.id);
+                            }
+                            transaction
+                                .reverse_operations
+                                .push(Operation::DataTableFormats {
+                                    sheet_pos: pos.to_sheet_pos(self.id),
+                                    formats: reverse_formats,
+                                });
+                        }
+                        if let Some(reverse_borders) = dt.borders.copy_row(actual_index as i64 + 1)
+                        {
+                            transaction.add_borders(self.id);
+                            transaction
+                                .reverse_operations
+                                .push(Operation::DataTableBorders {
+                                    sheet_pos: pos.to_sheet_pos(self.id),
+                                    borders: reverse_borders,
+                                });
+                        }
+
                         let Ok((_actual_index, reverse_row)) = dt.delete_row_sorted(row as usize)
                         else {
                             // there was an error deleting the row, so we skip it
@@ -134,6 +161,8 @@ impl Sheet {
                         rows,
                         swallow: false,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
             }
         }

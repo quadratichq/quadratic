@@ -1,7 +1,10 @@
 use anyhow::Result;
 
 use super::DataTable;
-use crate::{CellValue, CopyFormats};
+use crate::{
+    CellValue, CopyFormats,
+    grid::{formats::SheetFormatUpdates, sheet::borders::BordersUpdates},
+};
 
 impl DataTable {
     /// Get the values of a row (does not include the header)
@@ -56,17 +59,20 @@ impl DataTable {
     }
 
     /// Remove a row at the given index.
-    pub fn delete_row(&mut self, row_index: usize) -> Result<()> {
+    pub fn delete_row(
+        &mut self,
+        row_index: usize,
+    ) -> Result<(Vec<CellValue>, SheetFormatUpdates, BordersUpdates)> {
         let row_index = row_index as i64 - self.y_adjustment(true);
 
         let array = self.mut_value_as_array()?;
-        array.delete_row(usize::try_from(row_index)?)?;
+        let values = array.delete_row(usize::try_from(row_index)?)?;
 
         // formats and borders are 1 indexed
-        self.formats.remove_row(row_index + 1);
-        self.borders.remove_row(row_index + 1);
+        let formats = self.formats.remove_row(row_index + 1);
+        let borders = self.borders.remove_row(row_index + 1);
 
-        Ok(())
+        Ok((values, formats, borders))
     }
 
     /// Remove a row at the given index, for table having sorted columns.
@@ -105,7 +111,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        grid::test::new_data_table, test_util::pretty_print_data_table, ArraySize, CellValue,
+        ArraySize, CellValue, grid::test::new_data_table, test_util::pretty_print_data_table,
     };
 
     #[test]

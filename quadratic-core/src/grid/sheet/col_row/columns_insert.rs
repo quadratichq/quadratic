@@ -1,5 +1,5 @@
 use crate::{
-    CopyFormats, Pos,
+    CopyFormats,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -8,44 +8,6 @@ use crate::{
 };
 
 impl Sheet {
-    /// Insert columns in data tables that overlap the inserted column.
-    fn check_insert_tables_columns(&mut self, transaction: &mut PendingTransaction, column: i64) {
-        self.data_tables.iter_mut().for_each(|(pos, dt)| {
-            if (!dt.readonly || dt.is_html_or_image())
-                && column >= pos.x
-                && column <= pos.x + dt.width() as i64
-            {
-                if dt.is_html_or_image() {
-                    // if html or image, then we need to change the width
-                    if let Some((width, height)) = dt.chart_output {
-                        dt.chart_output = Some((width + 1, height));
-                        transaction
-                            .reverse_operations
-                            .push(Operation::SetChartCellSize {
-                                sheet_pos: pos.to_sheet_pos(self.id),
-                                w: width,
-                                h: height,
-                            });
-                    }
-                } else {
-                    // the table overlaps the inserted column
-                    let display_index = dt.get_column_index_from_display_index(column as u32, true);
-                    if dt.insert_column(display_index as usize, None, None).is_ok() {
-                        transaction.add_code_cell(self.id, *pos);
-                        transaction
-                            .reverse_operations
-                            .push(Operation::DeleteDataTableColumns {
-                                sheet_pos: pos.to_sheet_pos(self.id),
-                                columns: vec![column as u32],
-                                flatten: false,
-                                select_table: false,
-                            });
-                    }
-                }
-            }
-        });
-    }
-
     pub(crate) fn insert_column(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -73,38 +35,8 @@ impl Sheet {
             }
         }
 
-        // update the indices of all code_runs impacted by the insertion
-        let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.x >= column {
-                code_runs_to_move.push(*pos);
-            }
-        }
-        code_runs_to_move.sort_by(|a, b| b.x.cmp(&a.x));
-        for old_pos in code_runs_to_move {
-            let new_pos = Pos {
-                x: old_pos.x + 1,
-                y: old_pos.y,
-            };
-            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
-                // signal html and image cells to update
-                if send_client {
-                    if code_run.is_html() {
-                        transaction.add_html_cell(self.id, old_pos);
-                        transaction.add_html_cell(self.id, new_pos);
-                    } else if code_run.is_image() {
-                        transaction.add_image_cell(self.id, old_pos);
-                        transaction.add_image_cell(self.id, new_pos);
-                    }
-                }
-
-                self.data_tables.insert_sorted(new_pos, code_run);
-
-                // signal the client to updates to the code cells (to draw the code arrays)
-                transaction.add_code_cell(self.id, old_pos);
-                transaction.add_code_cell(self.id, new_pos);
-            }
-        }
+        self.check_insert_tables_columns(transaction, column);
+        self.adjust_insert_tables_columns(transaction, column, send_client);
 
         // update formatting
         self.formats.insert_column(column, copy_formats);
@@ -157,7 +89,7 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, DEFAULT_COLUMN_WIDTH,
+        CellValue, DEFAULT_COLUMN_WIDTH, Pos,
         grid::sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
     };
 

@@ -65,6 +65,29 @@ impl Sheet {
                     if new_dt.is_column_sorted(column_index as usize) {
                         new_dt.sort_dirty = true;
                     }
+
+                    // add reverse ops for formats and borders, if necessary
+                    // (note, formats and borders are 1-indexed)
+                    if let Some(reverse_format_updates) =
+                        new_dt.formats.copy_column(column_index as i64 + 1)
+                    {
+                        if reverse_format_updates.has_fills() {
+                            transaction.add_fill_cells(self.id);
+                        }
+                        reverse_operations.push(Operation::DataTableFormats {
+                            sheet_pos: pos.to_sheet_pos(self.id),
+                            formats: reverse_format_updates,
+                        });
+                    }
+                    if let Some(reverse_borders_updates) =
+                        new_dt.borders.copy_column(column_index as i64 + 1)
+                    {
+                        reverse_operations.push(Operation::DataTableBorders {
+                            sheet_pos: pos.to_sheet_pos(self.id),
+                            borders: reverse_borders_updates,
+                        });
+                    }
+
                     if let Err(e) = new_dt.delete_column_sorted(column_index as usize) {
                         dbgjs!(format!(
                             "Error in check_delete_tables_columns: cannot delete column\n{:?}",

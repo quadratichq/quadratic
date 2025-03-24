@@ -1,20 +1,20 @@
 use crate::{
+    ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     cellvalue::Import,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::{
+        DataTable, DataTableKind, SheetId,
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
-        DataTable, DataTableKind, SheetId,
     },
-    ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 impl GridController {
     /// Selects the entire data table, including the header
@@ -869,11 +869,14 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
+        #[allow(unused_variables)]
         if let Operation::InsertDataTableColumns {
             sheet_pos,
             mut columns,
             swallow,
             select_table,
+            copy_formats_from: None,
+            copy_formats: None,
         } = op.to_owned()
         {
             if columns.is_empty() {
@@ -1207,6 +1210,8 @@ impl GridController {
                 columns: reverse_columns,
                 swallow: false,
                 select_table,
+                copy_formats_from: None,
+                copy_formats: None,
             });
 
             if flatten {
@@ -1255,11 +1260,16 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
+        #[allow(unused_variables)]
         if let Operation::InsertDataTableRows {
             sheet_pos,
             mut rows,
             swallow,
             select_table,
+
+            // todo
+            copy_formats_from,
+            copy_formats,
         } = op.to_owned()
         {
             if rows.is_empty() {
@@ -1519,6 +1529,10 @@ impl GridController {
                 rows: reverse_rows,
                 swallow: false,
                 select_table,
+
+                // todo
+                copy_formats_from: None,
+                copy_formats: None,
             });
 
             if flatten {
@@ -1615,7 +1629,9 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::DataTableFirstRowAsHeader in execute_data_table_first_row_as_header");
+        bail!(
+            "Expected Operation::DataTableFirstRowAsHeader in execute_data_table_first_row_as_header"
+        );
     }
 
     pub(super) fn execute_data_table_format(
@@ -1690,6 +1706,7 @@ impl GridController {
 mod tests {
 
     use crate::{
+        Array, SheetPos, Value,
         controller::{
             active_transactions::transaction_name::TransactionName,
             execution::execute_operation::{
@@ -1698,13 +1715,12 @@ mod tests {
             user_actions::import::tests::{assert_simple_csv, simple_csv, simple_csv_at},
         },
         grid::{
+            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
             column_header::DataTableColumnHeader,
             data_table::sort::{DataTableSort, SortDirection},
-            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
         },
         test_util::{assert_cell_value_row, assert_display_cell_value, print_table_in_rect},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
-        Array, SheetPos, Value,
     };
 
     use super::*;
@@ -2111,6 +2127,9 @@ mod tests {
             columns: vec![(index, None, None)],
             swallow: false,
             select_table: true,
+
+            copy_formats_from: None,
+            copy_formats: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_insert_data_table_column(&mut transaction, op)
@@ -2199,6 +2218,9 @@ mod tests {
             rows: vec![(index, None)],
             swallow: false,
             select_table: true,
+
+            copy_formats_from: None,
+            copy_formats: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_insert_data_table_row(&mut transaction, op)
@@ -2317,6 +2339,8 @@ mod tests {
             columns: vec![(4, None, None)],
             swallow: true,
             select_table: true,
+            copy_formats_from: None,
+            copy_formats: None,
         };
         let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
         assert!(column_result.is_err());
@@ -2336,6 +2360,8 @@ mod tests {
             rows: vec![(12, None)],
             swallow: true,
             select_table: true,
+            copy_formats_from: None,
+            copy_formats: None,
         };
         let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
         assert!(row_result.is_err());
@@ -2377,6 +2403,8 @@ mod tests {
             columns: vec![(4, None, None)],
             swallow: true,
             select_table: true,
+            copy_formats_from: None,
+            copy_formats: None,
         };
         let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
         assert!(column_result.is_err());
@@ -2396,6 +2424,8 @@ mod tests {
             rows: vec![(12, None)],
             swallow: true,
             select_table: true,
+            copy_formats_from: None,
+            copy_formats: None,
         };
         let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
         assert!(row_result.is_err());

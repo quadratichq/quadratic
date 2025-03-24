@@ -60,38 +60,8 @@ impl Sheet {
             transaction.sheet_borders.insert(self.id);
         }
 
-        // update the indices of all code_runs impacted by the insertion
-        let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.y >= row {
-                code_runs_to_move.push(*pos);
-            }
-        }
-        code_runs_to_move.sort_by(|a, b| b.y.cmp(&a.y));
-        for old_pos in code_runs_to_move {
-            let new_pos = Pos {
-                x: old_pos.x,
-                y: old_pos.y + 1,
-            };
-            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
-                // signal html and image cells to update
-                if send_client {
-                    if code_run.is_html() {
-                        transaction.add_html_cell(self.id, old_pos);
-                        transaction.add_html_cell(self.id, new_pos);
-                    } else if code_run.is_image() {
-                        transaction.add_image_cell(self.id, old_pos);
-                        transaction.add_image_cell(self.id, new_pos);
-                    }
-                }
-
-                self.data_tables.insert_sorted(new_pos, code_run);
-
-                // signal the client to updates to the code cells (to draw the code arrays)
-                transaction.add_code_cell(self.id, old_pos);
-                transaction.add_code_cell(self.id, new_pos);
-            }
-        }
+        self.check_insert_tables_rows(transaction, row);
+        self.adjust_insert_tables_rows(transaction, row, send_client);
 
         // mark hashes of new rows dirty
         if send_client {

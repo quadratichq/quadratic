@@ -1,13 +1,14 @@
 use super::operation::Operation;
 use crate::{
+    Array, ArraySize, CellValue, CopyFormats, Pos, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
+        DataTable, DataTableKind,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
-        unique_data_table_name, DataTable, DataTableKind,
+        unique_data_table_name,
     },
-    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
 
 use anyhow::Result;
@@ -59,6 +60,51 @@ impl GridController {
         }]
     }
 
+    /// Inserts a column in the table. If swallow is true, then the column is inserted
+    /// using the data that already exists on the sheet. Otherwise, copy_formats
+    /// is checked and any formats and borders are taken from the source column.
+    pub(crate) fn data_table_insert_columns_operations(
+        &self,
+        sheet_pos: SheetPos,
+        columns: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+    ) -> Vec<Operation> {
+        vec![Operation::InsertDataTableColumns {
+            sheet_pos,
+            columns: columns
+                .into_iter()
+                .map(|index| (index, None, None))
+                .collect(),
+            swallow,
+            select_table: false,
+            copy_formats_from,
+            copy_formats,
+        }]
+    }
+
+    /// Inserts a row in the table. If swallow is true, then the row is inserted
+    /// using the data that already exists on the sheet. Otherwise, copy_formats
+    /// is checked and any formats and borders are taken from the source row.
+    pub(crate) fn data_table_insert_rows_operations(
+        &self,
+        sheet_pos: SheetPos,
+        rows: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+    ) -> Vec<Operation> {
+        vec![Operation::InsertDataTableRows {
+            sheet_pos,
+            rows: rows.into_iter().map(|index| (index, None)).collect(),
+            swallow,
+            select_table: false,
+            copy_formats_from,
+            copy_formats,
+        }]
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn data_table_mutations_operations(
         &self,
@@ -83,6 +129,8 @@ impl GridController {
                         .collect(),
                     swallow: swallow_on_insert.unwrap_or(false),
                     select_table,
+                    copy_formats_from: None,
+                    copy_formats: None,
                 });
             }
         }
@@ -105,6 +153,8 @@ impl GridController {
                     rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
                     swallow: swallow_on_insert.unwrap_or(false),
                     select_table,
+                    copy_formats_from: None,
+                    copy_formats: None,
                 });
             }
         }
@@ -237,11 +287,11 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, SheetPos,
         cellvalue::Import,
-        controller::{operations::operation::Operation, GridController},
+        controller::{GridController, operations::operation::Operation},
         grid::{NumericFormat, NumericFormatKind},
         test_util::assert_display_cell_value,
-        CellValue, SheetPos,
     };
 
     #[test]
