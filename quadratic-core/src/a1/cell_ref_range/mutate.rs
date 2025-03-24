@@ -1,57 +1,35 @@
-use crate::RefError;
+use crate::{RefAdjust, RefError};
 
 use super::*;
 
 impl CellRefRange {
-    pub fn translate_in_place(&mut self, x: i64, y: i64) -> Result<(), RefError> {
+    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
+    /// of bounds.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         match self {
-            Self::Sheet { range } => range.translate_in_place(x, y),
-            Self::Table { .. } => Ok(()),
+            Self::Sheet { range } => Ok(Self::Sheet {
+                range: range.adjust(adjust)?,
+            }),
+            other => Ok(other),
+        }
+    }
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns `None` if the result is empty.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+        match self {
+            CellRefRange::Sheet { range } => Some(Self::Sheet {
+                range: range.saturating_adjust(adjust)?,
+            }),
+            other => Some(other),
         }
     }
 
-    pub fn translate(&self, x: i64, y: i64) -> Result<Self, RefError> {
-        if let Self::Sheet { range } = self {
-            Ok(Self::Sheet {
-                range: range.translate(x, y)?,
-            })
-        } else {
-            Ok(self.clone())
-        }
-    }
-
-    pub fn saturating_translate(&self, x: i64, y: i64) -> Option<Self> {
-        if let Self::Sheet { range } = self {
-            Some(Self::Sheet {
-                range: range.saturating_translate(x, y)?,
-            })
-        } else {
-            Some(self.clone())
-        }
-    }
-
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        if let Self::Sheet { range } = self {
-            range.adjust_column_row_in_place(column, row, delta);
-        }
-    }
-
-    #[must_use]
-    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        if let Self::Sheet { range } = self {
-            Self::Sheet {
-                range: range.adjust_column_row(column, row, delta),
-            }
-        } else {
-            self.clone()
-        }
-    }
-
+    /// Replaces a table name in the range.
     pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         match self {
             Self::Sheet { .. } => {}
@@ -61,6 +39,7 @@ impl CellRefRange {
         }
     }
 
+    /// Replaces a table column name in the range.
     pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         match self {
             Self::Sheet { .. } => {}
@@ -73,90 +52,67 @@ impl CellRefRange {
 
 #[cfg(test)]
 mod tests {
+    use crate::grid::SheetId;
+
     use super::*;
 
     #[test]
-    fn test_translate_in_place() {
-        // Test single cell translation
-        let mut cell = CellRefRange::test_a1("A1");
-        cell.translate_in_place(1, 2).unwrap();
-        assert_eq!(cell.to_string(), "B3");
-
-        // Test range translation
-        let mut range = CellRefRange::test_a1("A1:B2");
-        range.translate_in_place(2, 1).unwrap();
-        assert_eq!(range.to_string(), "C2:D3");
-
-        // Test column range translation
-        let mut col_range = CellRefRange::test_a1("A:B");
-        col_range.translate_in_place(1, 0).unwrap();
-        assert_eq!(col_range.to_string(), "B:C");
-
-        // Test row range translation
-        let mut row_range = CellRefRange::test_a1("1:2");
-        row_range.translate_in_place(0, 2).unwrap();
-        assert_eq!(row_range.to_string(), "3:4");
-
-        // Test negative translation capping
-        let mut cell = CellRefRange::test_a1("A1");
-        cell.translate_in_place(-10, -10).unwrap_err();
-    }
-
-    #[test]
-    fn test_translate() {
+    fn test_adjust_translate() {
         // Test single cell translation
         let cell = CellRefRange::test_a1("A1");
-        let translated = cell.translate(1, 2).unwrap();
+        let translated = cell.adjust(RefAdjust::new_translate(1, 2)).unwrap();
         assert_eq!(translated.to_string(), "B3");
-        assert_eq!(cell, CellRefRange::test_a1("A1"));
+        assert_eq!(translated, CellRefRange::test_a1("B3"));
 
         // Test range translation
         let range = CellRefRange::test_a1("A1:B2");
-        let translated = range.translate(2, 1).unwrap();
+        let translated = range.adjust(RefAdjust::new_translate(2, 1)).unwrap();
         assert_eq!(translated.to_string(), "C2:D3");
-        assert_eq!(range, CellRefRange::test_a1("A1:B2"));
+        assert_eq!(translated, CellRefRange::test_a1("C2:D3"));
 
         // Test column range translation
         let col_range = CellRefRange::test_a1("A:B");
-        let translated = col_range.translate(1, 0).unwrap();
+        let translated = col_range.adjust(RefAdjust::new_translate(1, 0)).unwrap();
         assert_eq!(translated.to_string(), "B:C");
-        assert_eq!(col_range, CellRefRange::test_a1("A:B"));
+        assert_eq!(translated, CellRefRange::test_a1("B:C"));
 
         // Test row range translation
         let row_range = CellRefRange::test_a1("1:2");
-        let translated = row_range.translate(0, 2).unwrap();
+        let translated = row_range.adjust(RefAdjust::new_translate(0, 2)).unwrap();
         assert_eq!(translated.to_string(), "3:4");
-        assert_eq!(row_range, CellRefRange::test_a1("1:2"));
+        assert_eq!(translated, CellRefRange::test_a1("3:4"));
 
         // Test negative translation capping
         let cell = CellRefRange::test_a1("A1");
-        cell.translate(-10, -10).unwrap_err();
+        cell.adjust(RefAdjust::new_translate(-10, -10)).unwrap_err();
     }
 
     #[test]
     fn test_adjust_column_row() {
-        let mut range = CellRefRange::test_a1("B3");
-        range.adjust_column_row_in_place(Some(2), None, 1);
-        assert_eq!(range.to_string(), "C3");
+        let sheet_id = SheetId::TEST;
 
-        let mut range = CellRefRange::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(2), 1);
-        assert_eq!(range.to_string(), "B4");
+        let range = CellRefRange::test_a1("B3");
+        let res = range.adjust(RefAdjust::new_insert_column(sheet_id, 2));
+        assert_eq!(res.unwrap().to_string(), "C3");
 
-        let mut range = CellRefRange::test_a1("B3");
-        range.adjust_column_row_in_place(Some(3), None, 1);
-        assert_eq!(range.to_string(), "B3");
+        let range = CellRefRange::test_a1("B3");
+        let res = range.adjust(RefAdjust::new_insert_row(sheet_id, 2));
+        assert_eq!(res.unwrap().to_string(), "B4");
 
-        let mut range = CellRefRange::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(4), 1);
-        assert_eq!(range.to_string(), "B3");
+        let range = CellRefRange::test_a1("B3");
+        let res = range.adjust(RefAdjust::new_insert_column(sheet_id, 3));
+        assert_eq!(res.unwrap().to_string(), "B3");
 
-        let mut range = CellRefRange::test_a1("B3");
-        range.adjust_column_row_in_place(Some(1), None, -1);
-        assert_eq!(range.to_string(), "A3");
+        let range = CellRefRange::test_a1("B3");
+        let res = range.adjust(RefAdjust::new_insert_row(sheet_id, 4));
+        assert_eq!(res.unwrap().to_string(), "B3");
 
-        let mut range = CellRefRange::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(1), -1);
-        assert_eq!(range.to_string(), "B2");
+        let range = CellRefRange::test_a1("B3");
+        let res = range.adjust(RefAdjust::new_delete_column(sheet_id, 1));
+        assert_eq!(res.unwrap().to_string(), "A3");
+
+        let range = CellRefRange::test_a1("B3");
+        let res = range.adjust(RefAdjust::new_delete_row(sheet_id, 1));
+        assert_eq!(res.unwrap().to_string(), "B2");
     }
 }

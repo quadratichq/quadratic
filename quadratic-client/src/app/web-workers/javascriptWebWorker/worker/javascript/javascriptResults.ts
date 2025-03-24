@@ -1,6 +1,7 @@
 // Converts
 
 import type { JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import {
   javascriptConvertOutputArray,
   javascriptConvertOutputType,
@@ -22,10 +23,9 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     chart_pixel_output: null,
     has_headers: false,
   };
-  const encoder = new TextEncoder();
-  const encoded = encoder.encode(JSON.stringify(codeResult));
-  const jsCodeResultBuffer = encoded.buffer as ArrayBuffer;
-  javascriptCore.sendJavascriptResults(transactionId, jsCodeResultBuffer, [jsCodeResultBuffer]);
+
+  const uint8Array = toUint8Array(codeResult);
+  javascriptCore.sendJavascriptResults(transactionId, uint8Array.buffer as ArrayBuffer);
   javascriptClient.sendState('ready');
 }
 
@@ -59,9 +59,7 @@ export function javascriptResults(
 
     has_headers: false,
   };
-  const encoder = new TextEncoder();
-  const encoded = encoder.encode(JSON.stringify(codeResult));
-  const jsCodeResultBuffer = encoded.buffer as ArrayBuffer;
-  javascriptCore.sendJavascriptResults(transactionId, jsCodeResultBuffer, [jsCodeResultBuffer]);
+  const uint8Array = toUint8Array(codeResult);
+  javascriptCore.sendJavascriptResults(transactionId, uint8Array.buffer as ArrayBuffer);
   javascriptClient.sendState('ready', { current: undefined });
 }

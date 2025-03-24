@@ -1,3 +1,4 @@
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
@@ -85,10 +86,9 @@ describe('Python/Pyodide', () => {
         value_type: 'BinOp',
         formatted_code: '\n      5 + 3\n',
       };
-      const encoder = new TextEncoder();
-      const encoded = encoder.encode(JSON.stringify(expected));
 
-      expect(results).toEqual(encoded.buffer);
+      const uint8Array = toUint8Array(expected);
+      expect(results).toEqual(uint8Array.buffer);
     },
     30 * 1000
   );

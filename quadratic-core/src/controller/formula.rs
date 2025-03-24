@@ -70,7 +70,8 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 ///               }
 ///             }
 ///           }
-///         }
+///         },
+///         explicit_sheet_name: false
 ///       }
 ///     },
 ///     {
@@ -105,7 +106,8 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 ///               }
 ///             }
 ///           }
-///         }
+///         },
+///         explicit_sheet_name: false
 ///       }
 ///     }
 ///   ]
@@ -163,6 +165,7 @@ mod tests {
                             CellRefCoord::new_rel(1),
                             CellRefCoord::new_abs(2),
                         ),
+                        explicit_sheet_name: false,
                     },
                 },
                 CellRefSpan {
@@ -175,6 +178,7 @@ mod tests {
                             CellRefCoord::new_abs(3),
                             CellRefCoord::new_rel(2),
                         ),
+                        explicit_sheet_name: false,
                     },
                 },
             ],
@@ -223,6 +227,7 @@ mod tests {
                         CellRefCoord::new_rel(1),
                         CellRefCoord::UNBOUNDED,
                     ),
+                    explicit_sheet_name: false,
                 },
             }]
         );
@@ -245,7 +250,8 @@ mod tests {
                         CellRefCoord::new_rel(2),
                         CellRefCoord::UNBOUNDED,
                         CellRefCoord::new_rel(3),
-                    )
+                    ),
+                    explicit_sheet_name: false,
                 }
             }]
         );

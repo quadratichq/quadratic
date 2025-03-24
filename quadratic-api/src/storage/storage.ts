@@ -1,6 +1,6 @@
 import type multer from 'multer';
 import { STORAGE_TYPE } from '../env-vars';
-import { getPresignedStorageUrl, getStorageUrl, multerFileSystemStorage, upload } from './fileSystem';
+import { getPresignedStorageUrl, multerFileSystemStorage, upload } from './fileSystem';
 import { generatePresignedUrl, multerS3Storage, S3Bucket, uploadStringAsFileS3 } from './s3';
 
 export type UploadFileResponse = {
@@ -14,7 +14,7 @@ export const getFileUrl = async (key: string) => {
     case 's3':
       return await generatePresignedUrl(key, S3Bucket.FILES);
     case 'file-system':
-      return getStorageUrl(key);
+      return getPresignedStorageUrl(key);
     default:
       throw new Error(`Unsupported storage type in getFileUrl(): ${STORAGE_TYPE}`);
   }

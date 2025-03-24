@@ -1,5 +1,6 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
@@ -303,9 +304,8 @@ class Python {
     output = undefined;
     inspectionResults = undefined;
 
-    const encoder = new TextEncoder();
-    const encoded = encoder.encode(JSON.stringify(codeResult));
-    pythonCore.sendPythonResults(this.transactionId, encoded.buffer as ArrayBuffer);
+    const uint8Array = toUint8Array(codeResult);
+    pythonCore.sendPythonResults(this.transactionId, uint8Array.buffer as ArrayBuffer);
 
     codeResult = undefined;
 
