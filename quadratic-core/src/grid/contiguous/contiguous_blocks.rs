@@ -204,12 +204,12 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         }
     }
 
-    /// Returns whether `self` has any values in the range from `start` to `end`.
+    /// Returns whether `self` has any values in the range `start..end`.
     fn has_any_in_range(&self, start: u64, end: u64) -> bool {
         self.blocks_touching_range(start, end).next().is_some()
     }
 
-    /// Iterates over blocks that touch the range from `start` to `end`.
+    /// Iterates over blocks that touch the range `start..end`.
     fn blocks_touching_range(&self, start: u64, end: u64) -> impl Iterator<Item = &Block<T>> {
         // There may be a block starting above `y_range.start` that contains
         // `y_range`, so find that.
@@ -236,8 +236,19 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         itertools::chain(first_block, rest)
     }
 
-    /// Removes all blocks that touch the range from `start` to `end`, in order.
-    /// **This breaks the invariant that every key is covered exactly once.**
+    /// Returns an exact set of blocks representing the values in the range from
+    /// `start..end`.
+    pub fn blocks_for_range(&self, start: u64, end: u64) -> impl Iterator<Item = Block<&T>> {
+        self.blocks_touching_range(start, end)
+            .map(move |block| Block {
+                start: u64::max(block.start, start),
+                end: u64::min(block.end, end),
+                value: &block.value,
+            })
+    }
+
+    /// Removes all blocks that touch the range `start..end`, in order. **This
+    /// breaks the invariant that every key is covered exactly once.**
     fn remove_blocks_touching_range(
         &mut self,
         start: u64,
@@ -254,7 +265,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         self.get_block_containing(coordinate)
             .map(|block| &block.value)
     }
-    /// Removes all values in the range from `start` to `end`. **This breaks the
+    /// Removes all values in the range `start..end`. **This breaks the
     /// invariant that every key is covered exactly once.**
     fn raw_remove_range(&mut self, start: u64, end: u64) {
         let mut to_put_back: SmallVec<[Block<T>; 2]> = smallvec![];
@@ -267,8 +278,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
         self.add_blocks(to_put_back);
     }
-    /// Removes all values in the range from `start` to `end` and returns a list
-    /// of blocks that can be added to restore them. **This breaks the invariant
+    /// Removes all values in the range `start..end` and returns a list of
+    /// blocks that can be added to restore them. **This breaks the invariant
     /// that every key is covered exactly once.**
     #[must_use = "if reverse operation doesn't matter, use `raw_remove_range()`"]
     fn remove_range(&mut self, start: u64, end: u64) -> Vec<Block<T>> {
@@ -489,8 +500,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         }
     }
 
-    /// Shifts everything after `start` by `end-start` and then sets the values
-    /// from `start` (inclusive) to `end` (exclusive).
+    /// Shifts everything from `start` onwards by `end-start` and then sets the
+    /// values `start..end`.
     pub fn shift_insert(&mut self, start: u64, end: u64, value: T) {
         let start = start.max(1);
         let end = end.max(1);
@@ -504,8 +515,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         self.add_blocks(shifted_blocks);
         self.add_block(Block { start, end, value });
     }
-    /// Removes the values from `start` (inclusive) to `end` (exclusive) and
-    /// shifts everything after `end` by `start-end`.
+    /// Removes the values `start..end` and shifts everything from `end` onwards
+    /// by `start-end`.
     pub fn shift_remove(&mut self, start: u64, end: u64) {
         let start = start.max(1);
         let end = end.max(1);
