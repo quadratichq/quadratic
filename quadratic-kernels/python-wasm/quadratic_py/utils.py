@@ -181,8 +181,6 @@ def to_python_type_df(value: str, value_type: str) -> int | float | str | bool:
             return datetime.fromisoformat(
                 value,
             ).time()
-        elif value_type == "time":
-            return str(value)
         elif value_type == "date":
             return datetime.fromisoformat(value).date()
         elif value_type == "date time":
