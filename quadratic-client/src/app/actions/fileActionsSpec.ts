@@ -7,6 +7,7 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DownloadIcon, FileRenameIcon, HistoryIcon, PersonAddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import mixpanel from 'mixpanel-browser';
 
 type FileActionSpec = Pick<
   ActionSpecRecord,
@@ -14,7 +15,7 @@ type FileActionSpec = Pick<
 >;
 
 export type FileActionArgs = {
-  [Action.FileDownload]: { name: string };
+  [Action.FileDownload]: { name: string; uuid: string };
   [Action.FileVersionHistory]: { uuid: string };
 };
 
@@ -41,8 +42,9 @@ export const fileActionsSpec: FileActionSpec = {
     label: 'Download',
     Icon: DownloadIcon,
     isAvailable: isAvailableBecauseLoggedIn,
-    run: async ({ name }: FileActionArgs[Action.FileDownload]) => {
+    run: async ({ name, uuid }: FileActionArgs[Action.FileDownload]) => {
       if (!pixiAppSettings.setEditorInteractionState) return;
+      mixpanel.track('[Files].downloadFile', { id: uuid });
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: true }));
       const data = await quadraticCore.export();
       downloadQuadraticFile(name, data);

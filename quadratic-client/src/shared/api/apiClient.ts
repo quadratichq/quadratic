@@ -153,9 +153,6 @@ export const apiClient = {
     },
 
     async download(uuid: string, args: { checkpointDataUrl?: string } = {}) {
-      // TODO: move somewhere more specific to download only? because this works for both download (latest) and download version
-      mixpanel.track('[Files].downloadFile', { id: uuid });
-
       // Get file info from the server
       const { file } = await this.get(uuid);
       const name = file.name;
@@ -167,9 +164,6 @@ export const apiClient = {
     },
 
     async duplicate(uuid: string, args: { isPrivate: boolean; checkpoint?: { dataUrl: string; version: string } }) {
-      // TODO: move this somewhere more specific to duplicate only?
-      mixpanel.track('[Files].duplicateFile', { id: uuid });
-
       // Get the file we want to duplicate
       const {
         file: { name, lastCheckpointDataUrl, lastCheckpointVersion, thumbnail },

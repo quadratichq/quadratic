@@ -136,11 +136,13 @@ export function FilesListItemUserFile({
   };
 
   const handleDownload = () => {
+    mixpanel.track('[Files].downloadFile', { id: uuid });
     const data = getActionFileDownload();
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
   const handleDuplicate = () => {
+    mixpanel.track('[Files].duplicateFile', { id: uuid });
     const data = getActionFileDuplicate({ redirect: false, isPrivate: isTeamPrivateFilesRoute ? true : false });
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };

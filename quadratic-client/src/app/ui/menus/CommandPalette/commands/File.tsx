@@ -64,10 +64,11 @@ const commands: CommandGroup = {
       isAvailable: downloadFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
+        const uuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => downloadFileActionSpec.run({ name })}
+            action={() => downloadFileActionSpec.run({ name, uuid })}
             icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
           />
         );
