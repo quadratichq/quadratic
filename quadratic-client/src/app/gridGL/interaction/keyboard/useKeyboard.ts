@@ -1,6 +1,8 @@
 import { Action } from '@/app/actions/actions';
 import { gridToDataTable } from '@/app/actions/dataTableSpec';
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { debug } from '@/app/debugFlags';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
@@ -31,6 +33,12 @@ export const useKeyboard = (): {
   onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
 } => {
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    // For debugging the core error
+    // todo: remove before merging
+    if (debug && event.key === 'P' && event.shiftKey && event.ctrlKey) {
+      events.emit('coreError');
+    }
+
     if ((pixiAppSettings.input.show && inlineEditorHandler.isOpen()) || pixiAppSettings.isRenamingTable()) return;
     if (
       keyboardPanMode(event) ||

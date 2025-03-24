@@ -21,8 +21,9 @@ export const Reload = () => {
   if (!open) return null;
 
   return (
-    <Dialog defaultOpen={true} open={true}>
-      <DialogContent>
+    <Dialog defaultOpen={true} open={true} modal>
+      {/* couldn't figure out a better way to hide the close button */}
+      <DialogContent className="[&>button]:hidden">
         <DialogHeader>
           <DialogTitle>Quadratic Has Stopped Responding</DialogTitle>
         </DialogHeader>
