@@ -12,6 +12,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import {
@@ -104,11 +105,17 @@ export const Component = () => {
             <Button
               disabled={btnsDisabled}
               onClick={() => {
+                if (!activeCheckpoint) return;
+
+                mixpanel.track('[FileVersions].duplicateVersion', {
+                  uuid,
+                  checkpointId: activeCheckpoint.id,
+                });
                 const data = getActionFileDuplicate({
                   isPrivate: true,
                   redirect: true,
-                  checkpointVersion: activeCheckpoint?.version,
-                  checkpointDataUrl: activeCheckpoint?.dataUrl,
+                  checkpointVersion: activeCheckpoint.version,
+                  checkpointDataUrl: activeCheckpoint.dataUrl,
                 });
                 fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
               }}
@@ -119,10 +126,14 @@ export const Component = () => {
               variant="outline"
               disabled={btnsDisabled}
               onClick={() => {
-                if (activeCheckpoint) {
-                  const data = getActionFileDownload({ checkpointDataUrl: activeCheckpoint.dataUrl });
-                  fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-                }
+                if (!activeCheckpoint) return;
+
+                mixpanel.track('[FileVersions].downloadVersion', {
+                  uuid,
+                  checkpointId: activeCheckpoint.id,
+                });
+                const data = getActionFileDownload({ checkpointDataUrl: activeCheckpoint.dataUrl });
+                fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
               }}
             >
               Download
@@ -133,6 +144,11 @@ export const Component = () => {
               to={ROUTES.FILE(uuid)}
               target="_blank"
               className="group mt-2 flex w-full items-center gap-1 overflow-hidden !px-1 hover:text-primary"
+              onClick={() => {
+                mixpanel.track('[FileVersions].openCurrentVersion', {
+                  uuid,
+                });
+              }}
             >
               <DraftIcon />
               <span className="truncate">{data.name}</span>
