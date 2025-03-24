@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     CellValue, RefAdjust,
     controller::{
@@ -8,7 +10,11 @@ use crate::{
 };
 
 impl GridController {
-    fn adjust_code_cell_references(&self, transaction: &mut PendingTransaction, adjust: RefAdjust) {
+    fn adjust_code_cell_references(
+        &self,
+        transaction: &mut PendingTransaction,
+        adjustments: &[RefAdjust],
+    ) {
         let a1_context = self.a1_context();
 
         for sheet in self.grid.sheets().iter() {
@@ -16,7 +22,9 @@ impl GridController {
                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
                     let mut new_code = code.clone();
-                    new_code.adjust_references(sheet_pos.sheet_id, a1_context, sheet_pos, adjust);
+                    for &adj in adjustments {
+                        new_code.adjust_references(sheet_pos.sheet_id, a1_context, sheet_pos, adj);
+                    }
                     if code.code != new_code.code {
                         transaction.operations.push_back(Operation::SetCellValues {
                             sheet_pos,
@@ -31,7 +39,7 @@ impl GridController {
         }
     }
 
-    fn handle_delete_column(
+    fn handle_delete_columns(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -48,12 +56,13 @@ impl GridController {
                 columns_to_adjust.reverse();
 
                 // adjust formulas to account for deleted column
-                for column in columns_to_adjust {
-                    self.adjust_code_cell_references(
-                        transaction,
-                        RefAdjust::new_delete_column(sheet_id, column),
-                    );
-                }
+                self.adjust_code_cell_references(
+                    transaction,
+                    &columns_to_adjust
+                        .iter()
+                        .map(|&column| RefAdjust::new_delete_column(sheet_id, column))
+                        .collect_vec(),
+                );
 
                 // update information for all cells to the right of the deleted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -72,7 +81,7 @@ impl GridController {
     pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumn { sheet_id, column } = op.clone() {
             transaction.forward_operations.push(op);
-            self.handle_delete_column(transaction, sheet_id, vec![column]);
+            self.handle_delete_columns(transaction, sheet_id, vec![column]);
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
@@ -80,12 +89,12 @@ impl GridController {
     pub fn execute_delete_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumns { sheet_id, columns } = op.clone() {
             transaction.forward_operations.push(op);
-            self.handle_delete_column(transaction, sheet_id, columns);
+            self.handle_delete_columns(transaction, sheet_id, columns);
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
-    pub fn handle_delete_row(
+    pub fn handle_delete_rows(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -103,12 +112,13 @@ impl GridController {
 
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
-                for row in rows_to_adjust {
-                    self.adjust_code_cell_references(
-                        transaction,
-                        RefAdjust::new_delete_row(sheet_id, row),
-                    );
-                }
+                self.adjust_code_cell_references(
+                    transaction,
+                    &rows_to_adjust
+                        .iter()
+                        .map(|&row| RefAdjust::new_delete_row(sheet_id, row))
+                        .collect_vec(),
+                );
 
                 // update information for all cells below the deleted row
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -127,7 +137,7 @@ impl GridController {
     pub fn execute_delete_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteRow { sheet_id, row } = op.clone() {
             transaction.forward_operations.push(op);
-            self.handle_delete_row(transaction, sheet_id, vec![row]);
+            self.handle_delete_rows(transaction, sheet_id, vec![row]);
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
@@ -135,7 +145,7 @@ impl GridController {
     pub fn execute_delete_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteRows { sheet_id, rows } = op.clone() {
             transaction.forward_operations.push(op);
-            self.handle_delete_row(transaction, sheet_id, rows);
+            self.handle_delete_rows(transaction, sheet_id, rows);
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
@@ -162,7 +172,7 @@ impl GridController {
                 // here since it's across sheets)
                 self.adjust_code_cell_references(
                     transaction,
-                    RefAdjust::new_insert_column(sheet_id, column),
+                    &[RefAdjust::new_insert_column(sheet_id, column)],
                 );
 
                 transaction
@@ -207,7 +217,7 @@ impl GridController {
                 // here since it's across sheets)
                 self.adjust_code_cell_references(
                     transaction,
-                    RefAdjust::new_insert_row(sheet_id, row),
+                    &[RefAdjust::new_insert_row(sheet_id, row)],
                 );
 
                 transaction
@@ -285,11 +295,11 @@ mod tests {
         let row = 1;
         gc.adjust_code_cell_references(
             &mut PendingTransaction::default(),
-            RefAdjust::new_insert_column(sheet_id, column),
+            &[RefAdjust::new_insert_column(sheet_id, column)],
         );
         gc.adjust_code_cell_references(
             &mut PendingTransaction::default(),
-            RefAdjust::new_insert_row(sheet_id, row),
+            &[RefAdjust::new_insert_row(sheet_id, row)],
         );
     }
 
@@ -327,7 +337,7 @@ mod tests {
         };
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
+        gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(
             &transaction.operations,
             &[
@@ -345,7 +355,10 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_column(sheet_id, 5));
+        gc.adjust_code_cell_references(
+            &mut transaction,
+            &[RefAdjust::new_insert_column(sheet_id, 5)],
+        );
         assert_eq!(
             &transaction.operations,
             &[
@@ -430,7 +443,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
+        gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
@@ -512,7 +525,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
+        gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
@@ -688,6 +701,30 @@ mod tests {
         assert_eq!(
             sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
             "1".to_string()
+        );
+    }
+
+    #[test]
+    fn delete_columns_rows_formulas() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![sheet_id!J10], // 10,10
+            CodeCellLanguage::Formula,
+            "$F6".into(),
+            None,
+        );
+
+        gc.delete_columns(sheet_id, vec![1, 3, 4, 5], None);
+        gc.delete_rows(sheet_id, vec![2, 7, 8], None);
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(pos![F7]).unwrap(), // 6,10
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "$B5".to_owned(),
+            })
         );
     }
 
