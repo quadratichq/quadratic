@@ -904,6 +904,10 @@ class CoreClient {
   sendA1Context = (context: string) => {
     this.send({ type: 'coreClientA1Context', context });
   };
+
+  sendCoreError = () => {
+    this.send({ type: 'coreClientCoreError' });
+  };
 }
 
 export const coreClient = new CoreClient();

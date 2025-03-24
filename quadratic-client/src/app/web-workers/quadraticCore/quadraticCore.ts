@@ -210,6 +210,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientA1Context') {
       events.emit('a1Context', e.data.context);
       return;
+    } else if (e.data.type === 'coreClientCoreError') {
+      events.emit('coreError');
+      return;
     }
 
     if (e.data.id !== undefined) {

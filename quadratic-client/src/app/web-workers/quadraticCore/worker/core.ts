@@ -69,6 +69,11 @@ import { Rectangle } from 'pixi.js';
 class Core {
   gridController?: GridController;
 
+  private handleCoreError(error: Error | unknown) {
+    Sentry.captureException(error);
+    coreClient.sendCoreError();
+  }
+
   private async loadGridFile(file: string): Promise<Uint8Array> {
     const res = await fetch(file);
     return new Uint8Array(await res.arrayBuffer());
@@ -92,21 +97,36 @@ class Core {
   getSheetName(sheetId: string): Promise<string> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetName');
-      resolve(this.gridController.getSheetName(sheetId));
+      try {
+        resolve(this.gridController.getSheetName(sheetId));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve('');
+      }
     });
   }
 
   getSheetOrder(sheetId: string): Promise<string> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetOrder');
-      resolve(this.gridController.getSheetOrder(sheetId));
+      try {
+        resolve(this.gridController.getSheetOrder(sheetId));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve('');
+      }
     });
   }
 
   getSheetColor(sheetId: string): Promise<string> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetColor');
-      resolve(this.gridController.getSheetColor(sheetId));
+      try {
+        resolve(this.gridController.getSheetColor(sheetId));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve('');
+      }
     });
   }
 
@@ -117,16 +137,21 @@ class Core {
   }): Promise<{ x: number; y: number; width: number; height: number } | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
-      const bounds = this.gridController.getGridBounds(data.sheetId, data.ignoreFormatting);
-      if (bounds.type === 'empty') {
+      try {
+        const bounds = this.gridController.getGridBounds(data.sheetId, data.ignoreFormatting);
+        if (bounds.type === 'empty') {
+          resolve(undefined);
+        } else {
+          resolve({
+            x: bounds.min.x,
+            y: bounds.min.y,
+            width: bounds.max.x - bounds.min.x,
+            height: bounds.max.y - bounds.min.y,
+          });
+        }
+      } catch (e) {
+        this.handleCoreError(e);
         resolve(undefined);
-      } else {
-        resolve({
-          x: bounds.min.x,
-          y: bounds.min.y,
-          width: bounds.max.x - bounds.min.x,
-          height: bounds.max.y - bounds.min.y,
-        });
       }
     });
   }
@@ -141,11 +166,16 @@ class Core {
   }): Promise<JsRenderCell[]> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
-      const renderCells: JsRenderCell[] = this.gridController.getRenderCells(
-        data.sheetId,
-        numbersToRectStringified(data.x, data.y, data.width, data.height)
-      );
-      resolve(renderCells);
+      try {
+        const renderCells: JsRenderCell[] = this.gridController.getRenderCells(
+          data.sheetId,
+          numbersToRectStringified(data.x, data.y, data.width, data.height)
+        );
+        resolve(renderCells);
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve([]);
+      }
     });
   }
 
@@ -153,36 +183,60 @@ class Core {
   getSheetIds(): Promise<string[]> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetIds');
-      const sheetIds: string[] = this.gridController.getSheetIds();
-      resolve(sheetIds);
+      try {
+        const sheetIds: string[] = this.gridController.getSheetIds();
+        resolve(sheetIds);
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve([]);
+      }
     });
   }
 
   getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getCodeCell');
-      resolve(this.gridController.getCodeCell(sheetId, posToPos(x, y)));
+      try {
+        resolve(this.gridController.getCodeCell(sheetId, posToPos(x, y)));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve(undefined);
+      }
     });
   }
 
   cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.cellHasContent');
-      resolve(this.gridController.hasRenderCells(sheetId, posToRect(x, y)));
+      try {
+        resolve(this.gridController.hasRenderCells(sheetId, posToRect(x, y)));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve(false);
+      }
     });
   }
 
   getEditCell(sheetId: string, x: number, y: number): Promise<string> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getEditCell');
-      resolve(this.gridController.getEditCell(sheetId, posToPos(x, y)));
+      try {
+        resolve(this.gridController.getEditCell(sheetId, posToPos(x, y)));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve('');
+      }
     });
   }
 
   setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setCellValue(sheetId, x, y, value, cursor);
+      try {
+        this.gridController.setCellValue(sheetId, x, y, value, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -190,7 +244,11 @@ class Core {
   setCellValues(sheetId: string, x: number, y: number, values: string[][], cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setCellValues(sheetId, x, y, values, cursor);
+      try {
+        this.gridController.setCellValues(sheetId, x, y, values, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -198,22 +256,36 @@ class Core {
   getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      resolve(this.gridController.getCellFormatSummary(sheetId, posToPos(x, y)));
+      try {
+        resolve(this.gridController.getCellFormatSummary(sheetId, posToPos(x, y)));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve({} as CellFormatSummary);
+      }
     });
   }
 
   getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      const format = this.gridController.getFormatCell(sheetId, x, y);
-      resolve(format);
+      try {
+        const format = this.gridController.getFormatCell(sheetId, x, y);
+        resolve(format);
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve(undefined);
+      }
     });
   }
 
   receiveSequenceNum(sequenceNum: number) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.receiveSequenceNum(sequenceNum);
+      try {
+        this.gridController.receiveSequenceNum(sequenceNum);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -221,18 +293,22 @@ class Core {
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     return new Promise(async (resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      const data = message.transaction;
+      try {
+        const data = message.transaction;
 
-      if (typeof data.operations === 'string') {
-        data.operations = Buffer.from(data.operations, 'base64');
-      }
+        if (typeof data.operations === 'string') {
+          data.operations = Buffer.from(data.operations, 'base64');
+        }
 
-      this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
-      offline.markTransactionSent(data.id);
-      if (await offline.unsentTransactionsCount()) {
-        coreClient.sendMultiplayerState('syncing');
-      } else {
-        coreClient.sendMultiplayerState('connected');
+        this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
+        offline.markTransactionSent(data.id);
+        if (await offline.unsentTransactionsCount()) {
+          coreClient.sendMultiplayerState('syncing');
+        } else {
+          coreClient.sendMultiplayerState('connected');
+        }
+      } catch (e) {
+        this.handleCoreError(e);
       }
       resolve(undefined);
     });
@@ -241,27 +317,30 @@ class Core {
   receiveTransactions(receive_transactions: MultiplayerCoreReceiveTransactions) {
     return new Promise(async (resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        const formattedTransactions = receive_transactions.transactions.map((transaction) => ({
+          id: transaction.id,
+          file_id: transaction.file_id,
+          sequence_num: transaction.sequence_num,
+          operations:
+            typeof transaction.operations === 'string'
+              ? Array.from(Buffer.from(transaction.operations, 'base64'))
+              : Array.from(transaction.operations),
+        }));
+        receive_transactions.transactions = [];
 
-      const formattedTransactions = receive_transactions.transactions.map((transaction) => ({
-        id: transaction.id,
-        file_id: transaction.file_id,
-        sequence_num: transaction.sequence_num,
-        operations:
-          typeof transaction.operations === 'string'
-            ? Array.from(Buffer.from(transaction.operations, 'base64'))
-            : Array.from(transaction.operations),
-      }));
-      receive_transactions.transactions = [];
+        this.gridController.receiveMultiplayerTransactions(formattedTransactions);
 
-      this.gridController.receiveMultiplayerTransactions(formattedTransactions);
+        // sends multiplayer synced to the client, to proceed from file loading screen
+        coreClient.sendMultiplayerSynced();
 
-      // sends multiplayer synced to the client, to proceed from file loading screen
-      coreClient.sendMultiplayerSynced();
-
-      if (await offline.unsentTransactionsCount()) {
-        coreClient.sendMultiplayerState('syncing');
-      } else {
-        coreClient.sendMultiplayerState('connected');
+        if (await offline.unsentTransactionsCount()) {
+          coreClient.sendMultiplayerState('syncing');
+        } else {
+          coreClient.sendMultiplayerState('connected');
+        }
+      } catch (e) {
+        this.handleCoreError(e);
       }
       resolve(undefined);
     });
@@ -270,15 +349,24 @@ class Core {
   summarizeSelection(message: ClientCoreSummarizeSelection): Promise<JsSummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      const summary = this.gridController.summarizeSelection(message.selection, BigInt(message.decimalPlaces));
-      resolve(summary);
+      try {
+        const summary = this.gridController.summarizeSelection(message.selection, BigInt(message.decimalPlaces));
+        resolve(summary);
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve(undefined);
+      }
     });
   }
 
   setBold(selection: string, bold?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setBold(selection, bold, cursor);
+      try {
+        this.gridController.setBold(selection, bold, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -286,7 +374,11 @@ class Core {
   setItalic(selection: string, italic?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setItalic(selection, italic, cursor);
+      try {
+        this.gridController.setItalic(selection, italic, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -294,7 +386,11 @@ class Core {
   setTextColor(selection: string, color?: string, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setTextColor(selection, color, cursor);
+      try {
+        this.gridController.setTextColor(selection, color, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -302,7 +398,11 @@ class Core {
   setUnderline(selection: string, underline?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setUnderline(selection, underline, cursor);
+      try {
+        this.gridController.setUnderline(selection, underline, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -310,7 +410,11 @@ class Core {
   setStrikeThrough(selection: string, strikeThrough?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setStrikeThrough(selection, strikeThrough, cursor);
+      try {
+        this.gridController.setStrikeThrough(selection, strikeThrough, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -318,7 +422,11 @@ class Core {
   setFillColor(selection: string, fillColor?: string, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setFillColor(selection, fillColor, cursor);
+      try {
+        this.gridController.setFillColor(selection, fillColor, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -326,7 +434,11 @@ class Core {
   setCommas(selection: string, commas?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setCommas(selection, commas, cursor);
+      try {
+        this.gridController.setCommas(selection, commas, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -334,15 +446,24 @@ class Core {
   getRenderCell(sheetId: string, x: number, y: number): Promise<JsRenderCell | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      const renderCells: JsRenderCell[] | undefined = this.gridController.getRenderCells(sheetId, posToRect(x, y));
-      resolve(renderCells?.[0]);
+      try {
+        const renderCells: JsRenderCell[] | undefined = this.gridController.getRenderCells(sheetId, posToRect(x, y));
+        resolve(renderCells?.[0]);
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve(undefined);
+      }
     });
   }
 
   setCurrency(selection: string, symbol: string, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setCurrency(selection, symbol, cursor);
+      try {
+        this.gridController.setCurrency(selection, symbol, cursor);
+      } catch (e) {
+        this.handleCoreError(e);
+      }
       resolve(undefined);
     });
   }
@@ -552,21 +673,36 @@ class Core {
   export(): Promise<ArrayBuffer> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      resolve(this.gridController.exportOpenGridToFile());
+      try {
+        resolve(this.gridController.exportOpenGridToFile());
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve(new ArrayBuffer(0));
+      }
     });
   }
 
   search(search: string, searchOptions: SearchOptions): Promise<SheetPos[]> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      resolve(this.gridController.search(search, searchOptions));
+      try {
+        resolve(this.gridController.search(search, searchOptions));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve([]);
+      }
     });
   }
 
   hasRenderCells(sheetId: string, x: number, y: number, width: number, height: number): Promise<boolean> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      resolve(this.gridController.hasRenderCells(sheetId, numbersToRectStringified(x, y, width, height)));
+      try {
+        resolve(this.gridController.hasRenderCells(sheetId, numbersToRectStringified(x, y, width, height)));
+      } catch (e) {
+        this.handleCoreError(e);
+        resolve(false);
+      }
     });
   }
 
@@ -868,86 +1004,141 @@ class Core {
 
   moveCodeCellVertically(message: ClientCoreMoveCodeCellVertically): Pos {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.moveCodeCellVertically(
-      message.sheetId,
-      BigInt(message.x),
-      BigInt(message.y),
-      message.sheetEnd,
-      message.reverse,
-      message.cursor
-    );
+    try {
+      return this.gridController.moveCodeCellVertically(
+        message.sheetId,
+        BigInt(message.x),
+        BigInt(message.y),
+        message.sheetEnd,
+        message.reverse,
+        message.cursor
+      );
+    } catch (e) {
+      this.handleCoreError(e);
+      return { x: BigInt(0), y: BigInt(0) };
+    }
   }
 
   moveCodeCellHorizontally(message: ClientCoreMoveCodeCellHorizontally): Pos {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.moveCodeCellHorizontally(
-      message.sheetId,
-      BigInt(message.x),
-      BigInt(message.y),
-      message.sheetEnd,
-      message.reverse,
-      message.cursor
-    );
+    try {
+      return this.gridController.moveCodeCellHorizontally(
+        message.sheetId,
+        BigInt(message.x),
+        BigInt(message.y),
+        message.sheetEnd,
+        message.reverse,
+        message.cursor
+      );
+    } catch (e) {
+      this.handleCoreError(e);
+      return { x: BigInt(0), y: BigInt(0) };
+    }
   }
 
   getValidations(sheetId: string): Validation[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validations: Validation[] = this.gridController.getValidations(sheetId);
-    return validations;
+    try {
+      return this.gridController.getValidations(sheetId);
+    } catch (e) {
+      this.handleCoreError(e);
+      return [];
+    }
   }
 
   updateValidation(validation: Validation, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
+    try {
+      this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   removeValidation(sheetId: string, validationId: string, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.removeValidation(sheetId, validationId, cursor);
+    try {
+      this.gridController.removeValidation(sheetId, validationId, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   removeValidations(sheetId: string, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.removeValidations(sheetId, cursor);
+    try {
+      this.gridController.removeValidations(sheetId, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   getValidationFromPos(sheetId: string, x: number, y: number): Validation | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validation: Validation | undefined = this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
-    return validation;
+    try {
+      return this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
+    } catch (e) {
+      this.handleCoreError(e);
+      return undefined;
+    }
   }
 
   receiveRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
+    try {
+      this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   };
 
   setDateTimeFormat(selection: string, format: string, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.setDateTimeFormat(selection, format, cursor);
+    try {
+      this.gridController.setDateTimeFormat(selection, format, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   getValidationList(sheetId: string, x: number, y: number): string[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const list: string[] = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
-    return list;
+    try {
+      return this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
+    } catch (e) {
+      this.handleCoreError(e);
+      return [];
+    }
   }
 
   getDisplayCell(sheetId: string, x: number, y: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.getDisplayValue(sheetId, posToPos(x, y));
+    try {
+      return this.gridController.getDisplayValue(sheetId, posToPos(x, y));
+    } catch (e) {
+      this.handleCoreError(e);
+      return undefined;
+    }
   }
 
   validateInput(sheetId: string, x: number, y: number, input: string): string | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
-    return validationId;
+    try {
+      return this.gridController.validateInput(sheetId, posToPos(x, y), input);
+    } catch (e) {
+      this.handleCoreError(e);
+      return undefined;
+    }
   }
 
   getCellValue(sheetId: string, x: number, y: number): JsCellValue | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const cellValue: JsCellValue | undefined = this.gridController.getCellValue(sheetId, posToPos(x, y));
-    return cellValue;
+    try {
+      return this.gridController.getCellValue(sheetId, posToPos(x, y));
+    } catch (e) {
+      this.handleCoreError(e);
+      return undefined;
+    }
   }
 
   getAISelectionContexts(args: {
@@ -958,61 +1149,102 @@ class Core {
     includeChartsSummary: boolean;
   }): JsSelectionContext[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const aiSelectionContexts: JsSelectionContext[] | undefined = this.gridController.getAISelectionContexts(
-      args.selections,
-      args.maxRects,
-      args.includeErroredCodeCells,
-      args.includeTablesSummary,
-      args.includeChartsSummary
-    );
-    return aiSelectionContexts;
+    try {
+      return this.gridController.getAISelectionContexts(
+        args.selections,
+        args.maxRects,
+        args.includeErroredCodeCells,
+        args.includeTablesSummary,
+        args.includeChartsSummary
+      );
+    } catch (e) {
+      this.handleCoreError(e);
+      return undefined;
+    }
   }
 
   getAITablesContext(): JsTablesContext[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const aiTablesContext: JsTablesContext[] | undefined = this.gridController.getAITablesContext();
-    return aiTablesContext;
+    try {
+      return this.gridController.getAITablesContext();
+    } catch (e) {
+      this.handleCoreError(e);
+      return undefined;
+    }
   }
 
   neighborText(sheetId: string, x: number, y: number): string[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const neighborText: string[] | undefined = this.gridController.neighborText(sheetId, BigInt(x), BigInt(y));
-    return neighborText ?? [];
+    try {
+      const neighborText: string[] | undefined = this.gridController.neighborText(sheetId, BigInt(x), BigInt(y));
+      return neighborText ?? [];
+    } catch (e) {
+      this.handleCoreError(e);
+      return [];
+    }
   }
 
   deleteColumns(sheetId: string, columns: number[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
+    try {
+      this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.insertColumn(sheetId, BigInt(column), right, cursor);
+    try {
+      this.gridController.insertColumn(sheetId, BigInt(column), right, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   deleteRows(sheetId: string, rows: number[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
+    try {
+      this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
+    try {
+      this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
+    try {
+      this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   codeDataTableToDataTable(sheetId: string, x: number, y: number, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.codeDataTableToDataTable(sheetId, posToPos(x, y), cursor);
+    try {
+      this.gridController.codeDataTableToDataTable(sheetId, posToPos(x, y), cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   gridToDataTable(sheetRect: string, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.gridToDataTable(sheetRect, cursor);
+    try {
+      this.gridController.gridToDataTable(sheetRect, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   dataTableMeta(
@@ -1028,17 +1260,21 @@ class Core {
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.dataTableMeta(
-      sheetId,
-      posToPos(x, y),
-      name,
-      alternatingColors,
-      JSON.stringify(columns),
-      showUI,
-      showName,
-      showColumns,
-      cursor
-    );
+    try {
+      this.gridController.dataTableMeta(
+        sheetId,
+        posToPos(x, y),
+        name,
+        alternatingColors,
+        JSON.stringify(columns),
+        showUI,
+        showName,
+        showColumns,
+        cursor
+      );
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   dataTableMutations(args: {
@@ -1055,68 +1291,102 @@ class Core {
     cursor?: string;
   }) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.dataTableMutations(
-      args.sheetId,
-      posToPos(args.x, args.y),
-      args.select_table,
-      args.columns_to_add ? new Uint32Array(args.columns_to_add) : undefined,
-      args.columns_to_remove ? new Uint32Array(args.columns_to_remove) : undefined,
-      args.rows_to_add ? new Uint32Array(args.rows_to_add) : undefined,
-      args.rows_to_remove ? new Uint32Array(args.rows_to_remove) : undefined,
-      args.flatten_on_delete,
-      args.swallow_on_insert,
-      args.cursor
-    );
+    try {
+      this.gridController.dataTableMutations(
+        args.sheetId,
+        posToPos(args.x, args.y),
+        args.select_table,
+        args.columns_to_add ? new Uint32Array(args.columns_to_add) : undefined,
+        args.columns_to_remove ? new Uint32Array(args.columns_to_remove) : undefined,
+        args.rows_to_add ? new Uint32Array(args.rows_to_add) : undefined,
+        args.rows_to_remove ? new Uint32Array(args.rows_to_remove) : undefined,
+        args.flatten_on_delete,
+        args.swallow_on_insert,
+        args.cursor
+      );
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
+    try {
+      this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+    try {
+      this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   addDataTable(args: ClientCoreAddDataTable) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.addDataTable(
-      args.sheetId,
-      posToPos(args.x, args.y),
-      args.name,
-      args.values,
-      args.firstRowIsHeader,
-      args.cursor
-    );
+    try {
+      this.gridController.addDataTable(
+        args.sheetId,
+        posToPos(args.x, args.y),
+        args.name,
+        args.values,
+        args.firstRowIsHeader,
+        args.cursor
+      );
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   getCellsA1(transactionId: string, a1: string): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.calculationGetCellsA1(transactionId, a1);
+    try {
+      return this.gridController.calculationGetCellsA1(transactionId, a1);
+    } catch (e) {
+      this.handleCoreError(e);
+      return '';
+    }
   }
 
   finiteRectFromSelection(selection: string): Rectangle | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const rect: Rect | undefined = this.gridController.finiteRectFromSelection(selection);
-    return rect
-      ? new Rectangle(
-          Number(rect.min.x),
-          Number(rect.min.y),
-          Number(rect.max.x - rect.min.x) + 1,
-          Number(rect.max.y - rect.min.y) + 1
-        )
-      : undefined;
+    try {
+      const rect: Rect | undefined = this.gridController.finiteRectFromSelection(selection);
+      return rect
+        ? new Rectangle(
+            Number(rect.min.x),
+            Number(rect.min.y),
+            Number(rect.max.x - rect.min.x) + 1,
+            Number(rect.max.y - rect.min.y) + 1
+          )
+        : undefined;
+    } catch (e) {
+      this.handleCoreError(e);
+      return undefined;
+    }
   }
 
   moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.moveColumns(sheetId, colStart, colEnd, to, cursor);
+    try {
+      this.gridController.moveColumns(sheetId, colStart, colEnd, to, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 
   moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
+    try {
+      this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
+    } catch (e) {
+      this.handleCoreError(e);
+    }
   }
 }
 
