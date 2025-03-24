@@ -9,6 +9,9 @@ use uuid::Uuid;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
+use crate::grid::DataTable;
+use crate::grid::DataTableKind;
+use crate::grid::SheetId;
 use crate::grid::formats::Format;
 use crate::grid::formats::FormatUpdate;
 use crate::grid::formats::SheetFormatUpdates;
@@ -17,10 +20,7 @@ use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::unique_data_table_name;
-use crate::grid::DataTable;
-use crate::grid::DataTableKind;
-use crate::grid::SheetId;
-use crate::{a1::A1Selection, CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect};
+use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
 
 // todo: this probably belongs in sheet and not controller
 
@@ -738,6 +738,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::{PasteSpecial, *};
+    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
@@ -748,7 +749,6 @@ mod test {
         assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
     };
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::Rect;
 
     #[test]
     fn move_cell_operations() {
@@ -868,13 +868,15 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 4 }), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![C3]), None);
+        assert_eq!(sheet.formats.italic.get(pos![C4]), None);
+        assert_eq!(sheet.formats.italic.get(pos![C5]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![C6]), Some(true));
 
-        assert_eq!(sheet.formats.italic.get(Pos { x: 1, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 1, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 2, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 2, y: 3 }), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![A3]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![A3]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![B3]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![B3]), Some(true));
     }
 
     #[test]
@@ -1320,13 +1322,14 @@ mod test {
             )
             .unwrap();
 
-        assert!(gc
-            .paste_html_operations(
+        assert!(
+            gc.paste_html_operations(
                 &A1Selection::test_a1_sheet_id("B2", sheet_id),
                 html,
                 PasteSpecial::None,
             )
-            .is_err());
+            .is_err()
+        );
 
         expect_js_call(
             "jsClientMessage",
