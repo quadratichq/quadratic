@@ -1,5 +1,5 @@
-import { ACTIVE_TEAM_UUID_KEY } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
+import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import * as Sentry from '@sentry/react';
 
 // When a user lands on the app, we don't necessarily know what their "active"
