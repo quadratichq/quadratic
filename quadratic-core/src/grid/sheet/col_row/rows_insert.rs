@@ -1,5 +1,5 @@
 use crate::{
-    CopyFormats, Pos,
+    CopyFormats,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -100,7 +100,7 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, DEFAULT_ROW_HEIGHT,
+        CellValue, DEFAULT_ROW_HEIGHT, Pos,
         grid::sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
     };
 

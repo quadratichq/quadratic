@@ -298,6 +298,7 @@ mod tests {
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
         },
+        test_util::first_sheet_id,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
     };
 
@@ -1031,7 +1032,7 @@ mod tests {
     #[test]
     fn test_insert_delete_chart() {
         let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let sheet_id = first_sheet_id(&gc);
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_chart(pos![A1], 3, 3);
@@ -1069,6 +1070,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let dt = sheet.data_table(pos![A1]).unwrap();
         assert_eq!(dt.chart_output.unwrap(), (3, 3));
+
         let dt_2 = sheet.data_table(pos![B5]).unwrap();
         assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
     }
