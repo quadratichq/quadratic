@@ -1,5 +1,5 @@
-import { Empty } from '@/dashboard/components/Empty';
 import { apiClient } from '@/shared/api/apiClient';
+import { Empty } from '@/shared/components/Empty';
 import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';

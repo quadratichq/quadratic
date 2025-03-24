@@ -2,7 +2,6 @@ import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
 import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Reload } from '@/app/gridGL/Reload';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import type { MouseEvent } from 'react';
@@ -57,7 +56,6 @@ export default function QuadraticGrid() {
       <HTMLGridContainer parent={container} />
       <Search />
       <ImportProgress />
-      <Reload />
     </div>
   );
 }

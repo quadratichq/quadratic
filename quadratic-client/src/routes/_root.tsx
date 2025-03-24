@@ -1,7 +1,7 @@
 import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
-import { Empty } from '@/dashboard/components/Empty';
+import { Empty } from '@/shared/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
 import { ShowAfter } from '@/shared/components/ShowAfter';
