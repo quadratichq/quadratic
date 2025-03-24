@@ -50,7 +50,6 @@ export class PixiApp {
   // todo: UI should be pulled out and separated into its own class
 
   canvas!: HTMLCanvasElement;
-  offscreenCanvas!: OffscreenCanvas;
   viewport!: Viewport;
   gridLines: GridLines;
   background: Background;
