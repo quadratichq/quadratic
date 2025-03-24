@@ -6,7 +6,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Close } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import type { FocusEvent } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 interface CheckboxProps {
   className?: string;
@@ -122,13 +122,13 @@ interface DropdownProps {
   tabIndex?: number;
 }
 
-export const ValidationDropdown = (props: DropdownProps) => {
+export const ValidationDropdown = forwardRef((props: DropdownProps, ref: React.Ref<HTMLDivElement>) => {
   const { label, value, className, onChange, options, disabled, readOnly, includeBlank, style, tabIndex } = props;
 
   const optionsBlank = includeBlank ? [{ value: 'blank', label: '' }, ...options] : options;
 
   return (
-    <div className={className} style={style}>
+    <div ref={ref} className={className} style={style}>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <Select value={value} onValueChange={onChange} disabled={disabled || readOnly}>
         <SelectTrigger
@@ -155,7 +155,7 @@ export const ValidationDropdown = (props: DropdownProps) => {
       </Select>
     </div>
   );
-};
+});
 
 interface CloseProps {
   onClose: () => void;
