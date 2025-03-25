@@ -5,13 +5,13 @@ use uuid::Uuid;
 
 use quadratic_core::{
     controller::{
+        GridController,
         operations::operation::Operation,
         transaction::{Transaction, TransactionServer},
-        GridController,
     },
     grid::{
-        file::{export, import, CURRENT_VERSION},
         Grid,
+        file::{CURRENT_VERSION, export, import},
     },
 };
 use quadratic_rust_shared::{
@@ -22,7 +22,7 @@ use quadratic_rust_shared::{
 
 use crate::{
     error::{FilesError, Result},
-    state::{settings::Settings, State},
+    state::{State, settings::Settings},
     truncate::{add_processed_transaction, processed_transaction_key},
 };
 
@@ -217,7 +217,8 @@ pub(crate) async fn process_queue_for_room(
     state.stats.lock().await.last_processed_file_time = Some(Utc::now());
 
     tracing::info!(
-        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}ms", (Utc::now() - start).num_milliseconds()
+        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}ms",
+        (Utc::now() - start).num_milliseconds()
     );
 
     Ok(Some(last_sequence_num))

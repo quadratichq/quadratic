@@ -2,7 +2,7 @@ use std::fmt;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 mod array;
 mod array_size;
@@ -320,8 +320,8 @@ impl Spanned<Value> {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
     use crate::Span;
+    use crate::formulas::tests::*;
 
     #[test]
     fn test_value_repr() {
