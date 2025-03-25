@@ -144,7 +144,6 @@ export const Component = () => {
                     const label = new Date(timestamp).toLocaleTimeString(undefined, {
                       hour: 'numeric',
                       minute: '2-digit',
-                      second: '2-digit',
                     });
                     const isSelected = activeCheckpointId === id;
                     const isCurrentVersion = groupIndex === 0 && checkpointIndex === 0;
