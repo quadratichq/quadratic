@@ -228,6 +228,10 @@ export function FilesListItemUserFile({
                     <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
+                    <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleDownload}>Download</DropdownMenuItem>
+                  {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem
                       onClick={() => {
                         window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
@@ -236,10 +240,6 @@ export function FilesListItemUserFile({
                       Open file history
                     </DropdownMenuItem>
                   )}
-                  {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={handleDownload}>Download</DropdownMenuItem>
                   {canMoveFiles && (
                     <>
                       <DropdownMenuSeparator />
@@ -277,7 +277,6 @@ export function FilesListItemUserFile({
                       )}
                     </>
                   )}
-
                   {permissions.includes('FILE_DELETE') && (
                     <>
                       <DropdownMenuSeparator />
