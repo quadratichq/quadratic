@@ -1,6 +1,6 @@
 use crate::{
     a1::A1Selection,
-    controller::{active_transactions::transaction_name::TransactionName, GridController},
+    controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::sheet::borders::{BorderSelection, BorderStyle},
 };
 

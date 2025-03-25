@@ -1,13 +1,14 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import type {
   InspectPython,
+  outputType,
   PythonError,
   PythonSuccess,
-  outputType,
 } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
 import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
@@ -268,13 +269,48 @@ class Python {
         has_headers: false,
       };
     }
-    if (pythonRun) pythonCore.sendPythonResults(message.transactionId, pythonRun);
 
-    // destroy the output as it can cause memory leaks
-    if (result) result.destroy();
+    if (pythonRun.input_python_stack_trace) {
+      pythonRun.std_err = pythonRun.input_python_stack_trace;
+    }
 
-    pythonClient.sendPythonState('ready', { current: undefined });
+    let output_array: string[][][] | null = null;
+    if (pythonRun.array_output) {
+      // A 1d list was provided. We convert it to a 2d array by changing each entry into an array.
+      if (!Array.isArray(pythonRun.array_output?.[0]?.[0])) {
+        output_array = (pythonRun.array_output as any).map((row: any) => [row]);
+      } else {
+        output_array = pythonRun.array_output as any as string[][][];
+      }
+      pythonRun.array_output = [];
+    }
+
+    let codeResult: JsCodeResult | undefined = {
+      transaction_id: this.transactionId,
+      success: pythonRun.success,
+      std_err: pythonRun.std_err,
+      std_out: pythonRun.std_out,
+      output_value: pythonRun.output ? (pythonRun.output as any as JsCellValueResult) : null,
+      output_array: output_array ? (output_array as any as JsCellValueResult[][]) : null,
+      line_number: pythonRun.lineno ?? null,
+      output_display_type: pythonRun.output_type ?? null,
+      cancel_compute: false,
+      chart_pixel_output: null,
+      has_headers: !!pythonRun.has_headers,
+    };
+
+    result = undefined;
+    pythonRun = undefined;
+    output = undefined;
+    inspectionResults = undefined;
+
+    const uint8Array = toUint8Array(codeResult);
+    pythonCore.sendPythonResults(this.transactionId, uint8Array.buffer as ArrayBuffer);
+
+    codeResult = undefined;
+
     this.state = 'ready';
+    pythonClient.sendPythonState('ready', { current: undefined });
     setTimeout(this.next, 0);
   };
 }

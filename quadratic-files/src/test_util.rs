@@ -8,7 +8,7 @@
 use std::sync::Arc;
 
 use axum::body::Body;
-use axum::{http, Router};
+use axum::{Router, http};
 use http::{Request, Response};
 use jsonwebtoken::jwk::JwkSet;
 use serde_json::json;

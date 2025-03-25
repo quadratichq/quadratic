@@ -19,10 +19,8 @@ impl Validations {
             .filter_map(|validation| {
                 if let Some(intersection) = selection.intersection(&validation.selection, context) {
                     let mut v = validation.clone();
-                    v.selection = intersection;
-                    v.selection
-                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)
-                        .ok()?;
+                    v.selection = intersection
+                        .saturating_translate(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)?;
                     Some(v)
                 } else {
                     None
@@ -43,15 +41,15 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        SheetRect,
         a1::{A1Context, A1Selection},
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
-            sheet::validations::{
-                validation::Validation, validation_rules::ValidationRule, Validations,
-            },
             SheetId,
+            sheet::validations::{
+                Validations, validation::Validation, validation_rules::ValidationRule,
+            },
         },
-        SheetRect,
     };
 
     #[test]
@@ -81,7 +79,7 @@ mod tests {
         let clipboard_origin = ClipboardOrigin {
             x: 2,
             y: 2,
-            ..Default::default()
+            ..ClipboardOrigin::default(sheet_id)
         };
         let clipboard_validations = validations
             .to_clipboard(&selection, &clipboard_origin, &A1Context::default())
@@ -89,7 +87,7 @@ mod tests {
         assert_eq!(clipboard_validations.validations.len(), 1);
         assert_eq!(
             clipboard_validations.validations[0].selection,
-            selection.translate(-1, -1).unwrap(),
+            selection.saturating_translate(-1, -1).unwrap(),
         );
     }
 }

@@ -55,6 +55,7 @@ export const InsertMenubarMenu = () => {
             <MenubarSeparator />
             <MenubarItem onClick={() => setShowCellTypeMenu(true)}>From connection…</MenubarItem>
           </MenubarSubContent>
+          <MenubarItemAction action={Action.InsertDataTable} actionArgs={undefined} />
         </MenubarSub>
 
         <MenubarSeparator />

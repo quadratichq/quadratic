@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use anyhow::Result;
 
-use crate::{grid::Column, CellValue};
+use crate::{CellValue, grid::Column};
 
 use super::{
     cell_value::{export_cell_value, import_cell_value},

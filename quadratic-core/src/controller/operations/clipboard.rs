@@ -9,7 +9,9 @@ use uuid::Uuid;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::formulas::convert_a1_to_rc;
+use crate::grid::DataTable;
+use crate::grid::DataTableKind;
+use crate::grid::SheetId;
 use crate::grid::formats::Format;
 use crate::grid::formats::FormatUpdate;
 use crate::grid::formats::SheetFormatUpdates;
@@ -18,11 +20,7 @@ use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::unique_data_table_name;
-use crate::grid::CodeCellLanguage;
-use crate::grid::DataTable;
-use crate::grid::DataTableKind;
-use crate::grid::SheetId;
-use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
+use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
 
 // todo: this probably belongs in sheet and not controller
 
@@ -39,13 +37,26 @@ pub enum PasteSpecial {
 ///
 /// For example, this is used to copy and paste a column
 /// on top of another column, or a sheet on top of another sheet.
-#[derive(Default, Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ClipboardOrigin {
     pub x: i64,
     pub y: i64,
+    pub sheet_id: SheetId,
     pub column: Option<i64>,
     pub row: Option<i64>,
     pub all: Option<(i64, i64)>,
+}
+impl ClipboardOrigin {
+    pub fn default(sheet_id: SheetId) -> Self {
+        Self {
+            x: 0,
+            y: 0,
+            sheet_id,
+            column: None,
+            row: None,
+            all: None,
+        }
+    }
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -465,7 +476,9 @@ impl GridController {
 
         let mut cursor = clipboard
             .selection
-            .translate(cursor_translate_x, cursor_translate_y)?;
+            .clone()
+            .saturating_translate(cursor_translate_x, cursor_translate_y)
+            .ok_or(RefError)?;
         cursor.sheet_id = selection.sheet_id;
 
         match special {
@@ -661,38 +674,41 @@ impl GridController {
                 drop(decoded);
 
                 let context = self.a1_context();
-                let delta_x = insert_at.x - clipboard.origin.x;
-                let delta_y = insert_at.y - clipboard.origin.y;
 
-                // loop through the clipboard and replace cell references in formulas, translate cell references in other languages
-                for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                    for (&y, cell) in col.iter_mut() {
-                        match cell {
-                            CellValue::Code(code_cell) => match code_cell.language {
-                                CodeCellLanguage::Formula => {
-                                    code_cell.code = convert_a1_to_rc(
-                                        &code_cell.code,
-                                        context,
-                                        Pos {
-                                            x: insert_at.x + x as i64,
-                                            y: insert_at.y + y as i64,
-                                        }
-                                        .to_sheet_pos(selection.sheet_id),
-                                    );
-                                }
-                                _ => {
-                                    if clipboard.operation == ClipboardOperation::Copy {
-                                        code_cell.translate_cell_references(
-                                            delta_x,
-                                            delta_y,
-                                            &selection.sheet_id,
-                                            context,
-                                        );
-                                    }
-                                }
-                            },
-                            _ => { /* noop */ }
-                        };
+                // loop through the clipboard and replace cell references in
+                // formulas and other languages
+                let adjust = match clipboard.operation {
+                    ClipboardOperation::Cut => RefAdjust::NO_OP,
+                    ClipboardOperation::Copy => RefAdjust {
+                        sheet_id: None,
+                        relative_only: true,
+                        dx: insert_at.x - clipboard.origin.x,
+                        dy: insert_at.y - clipboard.origin.y,
+                        x_start: 0,
+                        y_start: 0,
+                    },
+                };
+                let new_default_sheet_id = match clipboard.operation {
+                    ClipboardOperation::Cut => selection.sheet_id,
+                    ClipboardOperation::Copy => clipboard.origin.sheet_id,
+                };
+                if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id) {
+                    for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
+                        for (&y, cell) in col {
+                            if let CellValue::Code(code_cell) = cell {
+                                let original_pos = SheetPos {
+                                    x: clipboard.origin.x + x as i64,
+                                    y: clipboard.origin.y + y as i64,
+                                    sheet_id: clipboard.origin.sheet_id,
+                                };
+                                code_cell.adjust_references(
+                                    new_default_sheet_id,
+                                    context,
+                                    original_pos,
+                                    adjust,
+                                );
+                            }
+                        }
                     }
                 }
 
@@ -722,6 +738,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::{PasteSpecial, *};
+    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
@@ -732,7 +749,6 @@ mod test {
         assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
     };
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::Rect;
 
     #[test]
     fn move_cell_operations() {
@@ -938,6 +954,129 @@ mod test {
             gc.sheet(sheet_id).get_code_cell_value((5, 9).into()),
             Some(CellValue::Number(BigDecimal::from(6)))
         );
+    }
+
+    #[test]
+    fn paste_clipboard_with_formula_across_sheets() {
+        let mut gc = GridController::new();
+        gc.add_sheet(None);
+        let sheet1 = gc.sheet_ids()[0];
+        let sheet2 = gc.sheet_ids()[1];
+
+        gc.set_cell_value(pos![sheet1!B1], "1".into(), None);
+        gc.set_cell_value(pos![sheet1!B2], "2".into(), None);
+        gc.set_cell_value(pos![sheet1!B3], "3".into(), None);
+        gc.set_cell_value(pos![sheet1!B4], "4".into(), None);
+        gc.set_cell_value(pos![sheet1!B5], "5".into(), None);
+        gc.set_cell_value(pos![sheet1!B6], "6".into(), None);
+        gc.set_cell_value(pos![sheet1!C4], "100".into(), None);
+
+        gc.set_cell_value(pos![sheet2!B2], "50".into(), None);
+        gc.set_cell_value(pos![sheet2!C4], "1000".into(), None);
+
+        let s1 = gc.sheet(sheet1).name.clone();
+        let s2 = gc.sheet(sheet2).name.clone();
+        assert_ne!(s1, s2);
+
+        gc.set_code_cell(
+            pos![sheet1!A4],
+            CodeCellLanguage::Formula,
+            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            None,
+        );
+
+        crate::test_util::print_sheet(gc.sheet(sheet1));
+
+        let get_code_cell_value_str = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_pos.sheet_id)
+                .get_code_cell_value(sheet_pos.into())
+                .unwrap()
+                .to_string()
+        };
+        let get_code_cell_source_str = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_pos.sheet_id)
+                .cell_value(sheet_pos.into())
+                .unwrap()
+                .code_cell_value()
+                .unwrap()
+                .code
+        };
+
+        assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A4]));
+
+        let a4_sel = A1Selection::from_single_cell(pos![sheet1!A4]);
+        let a3_sel = A1Selection::from_single_cell(pos![sheet1!A3]);
+
+        // copy within sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Copy, false)
+            .unwrap();
+        gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
+        // all references should have updated
+        assert_eq!(
+            format!("SUM(#REF!, B3:B5, '{s1}'!C3, '{s2}'!C3)"),
+            get_code_cell_source_str(&gc, pos![sheet1!A3]),
+        );
+        // code cell should have been re-evaluated
+        assert_eq!(
+            "Bad cell reference",
+            get_code_cell_value_str(&gc, pos![sheet1!A3])
+        );
+
+        // cut within sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Cut, false)
+            .unwrap();
+        gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
+        // all references should have stayed the same
+        assert_eq!(
+            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            get_code_cell_source_str(&gc, pos![sheet1!A3]),
+        );
+        // code cell should have the same value
+        assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A3]));
+
+        // copy to other sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Copy, false)
+            .unwrap();
+        gc.paste_from_clipboard(
+            &A1Selection::from_single_cell(pos![sheet2!A4]),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+        // all references should have updated
+        assert_eq!(
+            format!("SUM(B2:B4, B5:B7, '{s1}'!C5, '{s2}'!C5)"),
+            get_code_cell_source_str(&gc, pos![sheet2!A4]),
+        );
+        // code cell should have been re-evaluated
+        assert_eq!("50", get_code_cell_value_str(&gc, pos![sheet2!A4]));
+
+        // cut to other sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Cut, false)
+            .unwrap();
+        gc.paste_from_clipboard(
+            &A1Selection::from_single_cell(pos![sheet2!A4]),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+        // all references should have updated to have a sheet name
+        assert_eq!(
+            format!("SUM('{s1}'!B1:B3, '{s1}'!B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            get_code_cell_source_str(&gc, pos![sheet2!A4]),
+        );
+        // code cell should have the same value
+        assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet2!A4]));
     }
 
     #[test]
@@ -1181,13 +1320,14 @@ mod test {
             )
             .unwrap();
 
-        assert!(gc
-            .paste_html_operations(
-                &A1Selection::test_a1_sheet_id("B2", &sheet_id),
+        assert!(
+            gc.paste_html_operations(
+                &A1Selection::test_a1_sheet_id("B2", sheet_id),
                 html,
                 PasteSpecial::None,
             )
-            .is_err());
+            .is_err()
+        );
 
         expect_js_call(
             "jsClientMessage",
@@ -1239,7 +1379,7 @@ mod test {
         let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
-                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
                 false,
@@ -1247,7 +1387,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E13", sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -1380,7 +1520,7 @@ mod test {
         let JsClipboard { plain_text, .. } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
-                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
                 true,
@@ -1388,7 +1528,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E13", sheet_id),
             Some(plain_text),
             None,
             PasteSpecial::None,

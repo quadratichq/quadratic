@@ -2,7 +2,7 @@ use std::fmt::{self, Display};
 use std::ops::{Add, Mul, Neg, Sub};
 use std::str::FromStr;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use regex::Regex;

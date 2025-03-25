@@ -69,26 +69,15 @@ import { Rectangle } from 'pixi.js';
 class Core {
   gridController?: GridController;
 
-  private async loadGridFile(file: string, addToken: boolean): Promise<Uint8Array> {
-    let requestInit = {};
-
-    if (addToken) {
-      const jwt = await coreClient.getJwt();
-      requestInit = { headers: { Authorization: `Bearer ${jwt}` } };
-    }
-
-    const res = await fetch(file, requestInit);
+  private async loadGridFile(file: string): Promise<Uint8Array> {
+    const res = await fetch(file);
     return new Uint8Array(await res.arrayBuffer());
   }
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
-  async loadFile(
-    message: ClientCoreLoad,
-    renderPort: MessagePort,
-    addToken: boolean
-  ): Promise<{ version: string } | { error: string }> {
+  async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
-    const results = await Promise.all([this.loadGridFile(message.url, addToken), initCore()]);
+    const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
     try {
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
@@ -780,9 +769,9 @@ class Core {
     this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
   }
 
-  calculationComplete(results: JsCodeResult) {
+  calculationComplete(jsCodeResultBuffer: ArrayBuffer) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.calculationComplete(JSON.stringify(results));
+    this.gridController.calculationComplete(new Uint8Array(jsCodeResultBuffer));
   }
 
   connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
@@ -835,7 +824,10 @@ class Core {
       chart_pixel_output: null,
       has_headers: false,
     };
-    this.gridController.calculationComplete(JSON.stringify(codeResult));
+    const jsCodeResult = JSON.stringify(codeResult);
+    const encoder = new TextEncoder();
+    const jsCodeResultArray = encoder.encode(jsCodeResult);
+    this.gridController.calculationComplete(jsCodeResultArray);
   }
 
   changeDecimalPlaces(selection: string, decimals: number, cursor?: string) {
@@ -1102,7 +1094,7 @@ class Core {
     );
   }
 
-  getCellsA1(transactionId: string, a1: string): string {
+  getCellsA1(transactionId: string, a1: string): Uint8Array {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.calculationGetCellsA1(transactionId, a1);
   }

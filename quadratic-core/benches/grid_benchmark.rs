@@ -1,9 +1,9 @@
-use criterion::{criterion_group, criterion_main, Bencher, Criterion};
-use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
+use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 use quadratic_core::controller::GridController;
+use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
-use quadratic_core::{a1::A1Selection, Pos, Rect, SheetRect};
+use quadratic_core::{Pos, Rect, SheetRect, a1::A1Selection};
 use std::time::Duration;
 
 criterion_group!(benches, criterion_benchmark);

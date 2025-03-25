@@ -49,7 +49,7 @@ impl fmt::Display for TableRef {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::A1Context, Rect};
+    use crate::{Rect, a1::A1Context};
 
     use super::*;
 

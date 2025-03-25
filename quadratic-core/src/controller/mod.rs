@@ -2,10 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
+    Pos,
     a1::{A1Context, TableMapEntry},
     grid::{Grid, SheetId},
     viewport::ViewportBuffer,
-    Pos,
 };
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;

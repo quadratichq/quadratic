@@ -1,7 +1,7 @@
 use crate::{
-    a1::A1Selection,
-    grid::{formats::SheetFormatUpdates, sheet::borders::BordersUpdates, SheetId},
     Rect, SheetPos, SheetRect,
+    a1::A1Selection,
+    grid::{SheetId, formats::SheetFormatUpdates, sheet::borders::BordersUpdates},
 };
 
 use super::GridController;
@@ -75,14 +75,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
         a1::A1Selection,
         controller::GridController,
         grid::{
+            SheetId,
             formats::{FormatUpdate, SheetFormatUpdates},
             sheet::borders::{BorderStyleCell, BorderStyleTimestamp, BordersUpdates},
-            SheetId,
         },
-        Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
 
     #[test]
@@ -117,11 +117,11 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let wrong_sheet_id = SheetId::new();
 
-        assert!(gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", &sheet_id)));
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", &wrong_sheet_id)));
+        assert!(gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", sheet_id)));
+        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", wrong_sheet_id)));
 
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("O1:O", &sheet_id)));
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A75:75", &sheet_id)));
+        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("O1:O", sheet_id)));
+        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A75:75", sheet_id)));
     }
 
     #[test]

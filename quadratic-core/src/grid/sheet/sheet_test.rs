@@ -3,9 +3,9 @@
 use super::Sheet;
 
 use crate::{
+    Array, ArraySize, CellValue, Pos, Value,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-    Array, ArraySize, CellValue, Pos, Value,
 };
 use bigdecimal::BigDecimal;
 use std::str::FromStr;
@@ -289,7 +289,7 @@ mod tests {
 
     use bigdecimal::BigDecimal;
 
-    use crate::{grid::Sheet, CellValue, Pos};
+    use crate::{CellValue, Pos, grid::Sheet};
 
     #[test]
     fn test_set_value() {

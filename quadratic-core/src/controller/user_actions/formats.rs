@@ -4,10 +4,11 @@
 
 use wasm_bindgen::JsValue;
 
+use crate::RefAdjust;
 use crate::a1::{A1Selection, CellRefRange, RefRangeBounds, TableMapEntry};
+use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
 
@@ -69,7 +70,8 @@ impl GridController {
 
             // Force the range to be within bounds.
             // TODO: this should not be necessary
-            if range.saturating_translate(0, 0).is_none() {
+            let no_op_adjust = RefAdjust::NO_OP;
+            if range.saturating_adjust(no_op_adjust).is_none() {
                 return;
             };
 
@@ -481,13 +483,13 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use crate::SheetPos;
+    use crate::controller::GridController;
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::operations::operation::Operation;
-    use crate::controller::GridController;
-    use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
     use crate::grid::CellWrap;
-    use crate::SheetPos;
-    use crate::{a1::A1Selection, Pos};
+    use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+    use crate::{Pos, a1::A1Selection};
 
     #[test]
     fn test_set_align_selection() {
