@@ -13,6 +13,7 @@ export enum Action {
   InsertChartJavascript = 'insert_chart_javascript',
   InsertApiRequestJavascript = 'insert_api_request_javascript',
   InsertApiRequestPython = 'insert_api_request_python',
+  InsertDataTable = 'insert_data_table',
   InsertCheckbox = 'insert_checkbox',
   InsertDropdown = 'insert_dropdown',
   ToggleDataValidation = 'toggle_data_validation',
