@@ -44,6 +44,7 @@ pub use clear_option::*;
 pub use copy_formats::CopyFormats;
 pub use error_run::*;
 pub use ext::*;
+pub use grid::RefAdjust;
 pub use pos::*;
 pub use rect::*;
 pub use rle::RunLengthEncoding;

@@ -20,8 +20,6 @@ if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none
     tracesSampleRate: 0.1,
   });
 
-Sentry.addTracingExtensions();
-
 // This increases the size of the stack traces that are shown from Rust -> console.error
 Error.stackTraceLimit = 100;
 

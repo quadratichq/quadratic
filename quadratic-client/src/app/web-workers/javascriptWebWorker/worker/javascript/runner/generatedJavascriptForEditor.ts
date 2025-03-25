@@ -113,14 +113,6 @@ declare global {
   }
 }
 
-// JSON.parse convert undefined to null,
-// so we need to convert null back to undefined
-function convertNullToUndefined(
-  arr: (number | string | boolean | Date | null)[][]
-): (number | string | boolean | Date | undefined)[][] {
-  return arr.map((subArr) => subArr.map((element) => (element === null ? undefined : element)));
-}
-
 function lineNumber(): number | undefined {
   try {
     throw new Error();
@@ -216,22 +208,22 @@ export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, delt
 
 export const rc = relCell;
 
+type CellType = number | string | boolean | Date | undefined;
+
+const convertType = (cell: any): CellType => {
+  if (cell.type_name === 'blank') return undefined;
+  if (cell.type_name === 'date time' || cell.type_name === 'date') return new Date(cell.value);
+
+  return cell.type_name === 'number' ? parseFloat(cell.value) : cell.value;
+};
+
 export class q {
   /**
    * Reference cells in the grid.
    * @param a1 A string representing a cell or range of cells.
    * @returns For single returns: the value of the cell referenced. For multiple returns: An array of the cells referenced.
    */
-  static cells(
-    a1: string
-  ):
-    | (number | string | boolean | Date | undefined)[]
-    | (number | string | boolean | Date | undefined)[][]
-    | number
-    | string
-    | boolean
-    | Date
-    | undefined {
+  static cells(a1: string): CellType | CellType[] | CellType[][] {
     if (typeof a1 !== 'string') {
       const line = lineNumber();
 
@@ -275,28 +267,26 @@ export class q {
 
     const decoder = new TextDecoder();
     const resultsStringified = decoder.decode(nonSharedView);
-    const results = JSON.parse(resultsStringified) as {
-      values: {
-        cells: (number | string | boolean | Date | null)[][];
-        one_dimensional: boolean;
-        two_dimensional: boolean;
-      };
-      error: string | null;
-    };
-    if (results.error) {
-      throw new Error(results.error);
+    const results = JSON.parse(resultsStringified);
+
+    if (!results || !results.values || results.error) {
+      throw new Error(results?.error?.core_error ?? 'Failed to get cells');
     }
 
-    const cells = convertNullToUndefined(results.values.cells);
+    const startY = results.values.y;
+    const startX = results.values.x;
+    const height = results.values.h;
+    const width = results.values.w;
 
-    // parse dates
-    cells.forEach((row) => {
-      row.forEach((cell, i) => {
-        if (typeof cell === 'string' && cell.startsWith('___date___')) {
-          row[i] = new Date(parseInt(cell.substring('___date___'.length)));
-        }
-      });
-    });
+    // Initialize 2D array
+    const cells: CellType[][] = Array(height)
+      .fill(null)
+      .map(() => Array(width).fill(undefined));
+
+    for (const cell of results.values.cells) {
+      const typed = cell ? convertType(cell) : undefined;
+      cells[cell.y - startY][cell.x - startX] = typed === null ? undefined : typed;
+    }
 
     // always return a single cell as a single value--even in cases where the
     // selection may change.

@@ -16,6 +16,7 @@
     "types": "cargo watch -x 'CC=clang AR=llvm-ar run --features js --bin export_types'",
     "test": "cargo test",
     "bench": "cargo bench",
-    "bench:single": "cargo bench --features function-timer"
+    "bench:single": "cargo bench --features function-timer",
+    "docs": "cargo doc --no-deps --open --document-private-items"
   }
 }

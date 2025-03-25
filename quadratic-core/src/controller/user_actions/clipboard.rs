@@ -31,7 +31,8 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(selection, html, special) {
-                return self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                return;
             }
         }
 
@@ -44,8 +45,15 @@ impl GridController {
         }
     }
 
-    pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
-        let ops = self.move_cells_operations(source, dest);
+    pub fn move_cells(
+        &mut self,
+        source: SheetRect,
+        dest: SheetPos,
+        columns: bool,
+        rows: bool,
+        cursor: Option<String>,
+    ) {
+        let ops = self.move_cells_operations(source, dest, columns, rows);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
     }
 
@@ -86,7 +94,7 @@ impl GridController {
                 .max(1);
             dest = SheetPos::new(sheet_id, x, row);
         }
-        let ops = self.move_cells_operations(source, dest);
+        let ops = self.move_cells_operations(source, dest, false, false);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
         Some(dest.into())
     }
@@ -128,7 +136,7 @@ impl GridController {
                 .max(1);
             dest = SheetPos::new(sheet_id, col, y);
         }
-        let ops = self.move_cells_operations(source, dest);
+        let ops = self.move_cells_operations(source, dest, false, false);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
         Some(dest.into())
     }
@@ -710,11 +718,11 @@ mod test {
 
         // paste code cell (2,1) from the clipboard to (2,2)
         let dest_pos: SheetPos = (2, 2, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(R[0]C[-1])", 2);
+        assert_code_cell(&mut gc, dest_pos, "SUM(A2)", 2);
 
         // paste code cell (2,1) from the clipboard to (2,3)
         let dest_pos: SheetPos = (2, 3, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(R[0]C[-1])", 3);
+        assert_code_cell(&mut gc, dest_pos, "SUM(A3)", 3);
     }
 
     #[test]
@@ -887,6 +895,8 @@ mod test {
         gc.move_cells(
             SheetRect::new_pos_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 2 }, sheet_id),
             (10, 10, sheet_id).into(),
+            false,
+            false,
             None,
         );
 
@@ -1230,7 +1240,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text.clone()),
             Some(html.clone()),
             PasteSpecial::None,
@@ -1261,7 +1271,7 @@ mod test {
         data_table.header_is_first_row = false;
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("G10", &sheet_id),
+            &A1Selection::test_a1_sheet_id("G10", sheet_id),
             Some(plain_text.clone()),
             Some(html.clone()),
             PasteSpecial::None,
@@ -1292,7 +1302,7 @@ mod test {
         data_table.show_ui = false;
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E11", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E11", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,
@@ -1341,7 +1351,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,
@@ -1389,7 +1399,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,

@@ -12,7 +12,7 @@ export const ConnectionsSidebar = ({ staticIps }: { staticIps: string[] | null }
   const staticIpsContent = staticIps ? staticIps.join('\n') : '';
 
   return (
-    <div className="flex flex-col gap-6 text-sm">
+    <div className="flex flex-col gap-4 text-sm">
       <SidebarItem
         title="About connections"
         description="A connection lets you and your team pull outside data into your sheets."

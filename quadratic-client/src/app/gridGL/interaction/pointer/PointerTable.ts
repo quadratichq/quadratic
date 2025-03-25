@@ -12,7 +12,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { isMac } from '@/shared/utils/isMac';
-import type { Point } from 'pixi.js';
+import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 // todo: dragging on double click
 
@@ -155,7 +155,7 @@ export class PointerTable {
     }
   };
 
-  pointerDown = (world: Point, event: PointerEvent): boolean => {
+  pointerDown = (world: Point, event: FederatedPointerEvent): boolean => {
     let tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
     if (!tableDown) return false;
 

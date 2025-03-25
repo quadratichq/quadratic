@@ -117,11 +117,11 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let wrong_sheet_id = SheetId::new();
 
-        assert!(gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", &sheet_id)));
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", &wrong_sheet_id)));
+        assert!(gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", sheet_id)));
+        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", wrong_sheet_id)));
 
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("O1:O", &sheet_id)));
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A75:75", &sheet_id)));
+        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("O1:O", sheet_id)));
+        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A75:75", sheet_id)));
     }
 
     #[test]

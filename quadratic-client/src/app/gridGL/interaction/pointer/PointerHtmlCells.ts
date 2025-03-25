@@ -5,7 +5,7 @@ import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils.js';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { InteractionEvent, Point } from 'pixi.js';
+import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 export class PointerHtmlCells {
   private resizing: HtmlCell | undefined; // cell that is being resized
@@ -16,7 +16,7 @@ export class PointerHtmlCells {
 
   cursor: string | undefined;
 
-  pointerMove(e: InteractionEvent, world: Point): boolean {
+  pointerMove(world: Point, e: FederatedPointerEvent): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     if (this.resizing) {
@@ -59,11 +59,10 @@ export class PointerHtmlCells {
     return false;
   }
 
-  pointerDown(e: InteractionEvent): boolean {
+  pointerDown(e: FederatedPointerEvent): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
-    const event = e.data.originalEvent as PointerEvent;
-    if (event.button !== 0) return false;
+    if (e.button !== 0) return false;
 
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
@@ -92,7 +91,7 @@ export class PointerHtmlCells {
         }
         // click with meta / ctrl key
         // select cell and add to selection
-        else if (event.metaKey || event.ctrlKey) {
+        else if (e.metaKey || e.ctrlKey) {
           cursor.selectTable(cell.htmlCell.name, undefined, false, true);
         }
         // click without meta / ctrl key
@@ -109,7 +108,7 @@ export class PointerHtmlCells {
     return false;
   }
 
-  pointerUp(e: InteractionEvent): boolean {
+  pointerUp(e: FederatedPointerEvent): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     const active = this.active;

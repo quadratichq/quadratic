@@ -154,6 +154,13 @@ impl A1Context {
     pub fn table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
         self.table_map.get_mut(table_name)
     }
+
+    /// Constructs an A1 context with only a single sheet.
+    pub fn with_single_sheet(sheet_name: &str, sheet_id: SheetId) -> Self {
+        let mut ret = Self::default();
+        ret.sheet_map.insert_parts(sheet_name, sheet_id);
+        ret
+    }
 }
 
 #[cfg(test)]
