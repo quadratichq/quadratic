@@ -9,7 +9,7 @@ import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
-import { useFetcher, useSubmit } from 'react-router-dom';
+import { useFetcher, useSubmit } from 'react-router';
 
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;

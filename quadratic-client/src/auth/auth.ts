@@ -2,8 +2,8 @@ import { auth0Client } from '@/auth/auth0';
 import { oryClient } from '@/auth/ory';
 import { ROUTES } from '@/shared/constants/routes';
 import { useEffect } from 'react';
-import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
-import { redirect } from 'react-router-dom';
+import type { LoaderFunction, LoaderFunctionArgs } from 'react-router';
+import { redirect } from 'react-router';
 
 const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
 

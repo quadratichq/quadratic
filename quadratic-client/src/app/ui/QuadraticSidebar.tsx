@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];

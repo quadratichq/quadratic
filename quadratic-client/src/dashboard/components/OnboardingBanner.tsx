@@ -34,7 +34,7 @@ import mixpanel from 'mixpanel-browser';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSubmit } from 'react-router-dom';
+import { Link, useSubmit } from 'react-router';
 import { z } from 'zod';
 
 const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';

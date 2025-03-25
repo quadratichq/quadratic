@@ -1,8 +1,8 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import getActiveTeam from '@/shared/utils/getActiveTeam';
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import { redirect } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router';
+import { redirect } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);

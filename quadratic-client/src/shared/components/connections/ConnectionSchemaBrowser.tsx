@@ -11,7 +11,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export const ConnectionSchemaBrowser = ({
   TableQueryAction,

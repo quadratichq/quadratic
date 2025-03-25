@@ -3,7 +3,7 @@ import { ExampleFilesList } from '@/dashboard/components/FilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { sanityClient } from 'quadratic-shared/sanityClient';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
 export const loader = async () => {
@@ -12,7 +12,7 @@ export const loader = async () => {
 };
 
 export const Component = () => {
-  const { examples } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  const { examples } = useLoaderData<typeof loader>();
   const {
     activeTeam: {
       team: { uuid: activeTeamUuid },

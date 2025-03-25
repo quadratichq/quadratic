@@ -8,7 +8,7 @@ import type { IconProps } from '@radix-ui/react-icons/dist/types';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 
 export function Empty({
   title,

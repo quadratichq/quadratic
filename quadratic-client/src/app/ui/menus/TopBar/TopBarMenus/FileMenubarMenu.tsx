@@ -26,7 +26,7 @@ import {
 import type { RecentFile } from '@/shared/utils/updateRecentFiles';
 import { clearRecentFiles, RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
 import { useMemo } from 'react';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 // TODO: (enhancement) move these into `fileActionsSpec` by making the `.run()`
