@@ -1510,7 +1510,7 @@ class Core {
       return this.gridController.calculationGetCellsA1(transactionId, a1);
     } catch (e) {
       this.handleCoreError(e);
-      return '';
+      return new Uint8Array();
     }
   }
 
