@@ -1,20 +1,20 @@
 use crate::{
+    ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     cellvalue::Import,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::{
+        DataTable, DataTableKind, SheetId,
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
-        DataTable, DataTableKind, SheetId,
     },
-    ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 impl GridController {
     /// Selects the entire data table, including the header
@@ -557,6 +557,12 @@ impl GridController {
             let rect = Rect::from(sheet_rect);
             let sheet = self.try_sheet_result(sheet_id)?;
             let sheet_pos = sheet_rect.min.to_sheet_pos(sheet_id);
+
+            let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into());
+
+            if !no_data_table {
+                return Ok(());
+            }
 
             let old_values = sheet.cell_values_in_rect(&rect, false)?;
 
@@ -1613,7 +1619,9 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::DataTableFirstRowAsHeader in execute_data_table_first_row_as_header");
+        bail!(
+            "Expected Operation::DataTableFirstRowAsHeader in execute_data_table_first_row_as_header"
+        );
     }
 
     pub(super) fn execute_data_table_format(
@@ -1688,6 +1696,7 @@ impl GridController {
 mod tests {
 
     use crate::{
+        Array, SheetPos, Value,
         controller::{
             active_transactions::transaction_name::TransactionName,
             execution::execute_operation::{
@@ -1696,16 +1705,15 @@ mod tests {
             user_actions::import::tests::{assert_simple_csv, simple_csv, simple_csv_at},
         },
         grid::{
+            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
             column_header::DataTableColumnHeader,
             data_table::sort::{DataTableSort, SortDirection},
-            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
         },
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
             print_data_table, print_table,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call},
-        Array, SheetPos, Value,
     };
 
     use super::*;

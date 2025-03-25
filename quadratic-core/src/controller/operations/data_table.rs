@@ -1,13 +1,14 @@
 use super::operation::Operation;
 use crate::{
+    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
+        DataTable, DataTableKind,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
-        unique_data_table_name, DataTable, DataTableKind,
+        unique_data_table_name,
     },
-    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
 
 use anyhow::Result;
@@ -32,8 +33,20 @@ impl GridController {
         }])
     }
 
+    /// Collects all operations that would be needed to convert a grid to a data table.
+    /// If a data table is found within the sheet_rect, it will not be added to the operations.
     pub fn grid_to_data_table_operations(&self, sheet_rect: SheetRect) -> Vec<Operation> {
-        vec![Operation::GridToDataTable { sheet_rect }]
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
+            let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into());
+
+            if no_data_table {
+                ops.push(Operation::GridToDataTable { sheet_rect })
+            }
+        }
+
+        ops
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -237,11 +250,11 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, SheetPos,
         cellvalue::Import,
-        controller::{operations::operation::Operation, GridController},
+        controller::{GridController, operations::operation::Operation},
         grid::{NumericFormat, NumericFormatKind},
         test_util::assert_display_cell_value,
-        CellValue, SheetPos,
     };
 
     #[test]
