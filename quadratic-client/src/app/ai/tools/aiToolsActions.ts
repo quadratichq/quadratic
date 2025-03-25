@@ -137,16 +137,6 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = selection.getCursor();
 
-      // Calculate a viewport rect that will center the target cell
-      // Assuming we want the cell roughly in the middle of the current viewport
-      const viewportWidth = pixiApp.viewport.screenWidth / pixiApp.viewport.scale.x;
-      const viewportHeight = pixiApp.viewport.screenHeight / pixiApp.viewport.scale.y;
-      const halfWidth = Math.floor(viewportWidth / 2);
-      const halfHeight = Math.floor(viewportHeight / 2);
-
-      // Create a rect that will position our target cell in the center
-      ensureRectVisible({ x: x - halfWidth, y: y - halfHeight }, { x: x + halfWidth, y: y + halfHeight });
-
       if (code_cell_language === 'Formula' && code_string.startsWith('=')) {
         code_string = code_string.slice(1);
       }
@@ -162,6 +152,14 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
+
+        // After execution, adjust viewport to show full output if it exists
+        const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
+        if (table) {
+          const width = table.codeCell.w;
+          const height = table.codeCell.h;
+          ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+        }
 
         const result = await setCodeCellResult(sheetId, x, y);
         return result;
