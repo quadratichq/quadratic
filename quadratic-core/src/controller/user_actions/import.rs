@@ -43,7 +43,7 @@ impl GridController {
     #[function_timer::function_timer]
     pub fn import_excel(
         &mut self,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         cursor: Option<String>,
     ) -> Result<()> {
@@ -239,7 +239,7 @@ pub(crate) mod tests {
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(file, "basic.xlsx", None);
+        let _ = gc.import_excel(&file, "basic.xlsx", None);
         let sheet_id = gc.grid.sheets()[0].id;
 
         assert_cell_value_row(
@@ -335,7 +335,7 @@ pub(crate) mod tests {
         let mut grid_controller = GridController::new_blank();
         let pos = pos![A1];
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
-        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);
+        let _ = grid_controller.import_excel(&file, "all_excel_functions.xlsx", None);
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(

@@ -1,5 +1,12 @@
 use criterion::{Bencher, Criterion};
+use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
+
+#[cfg(feature = "test")]
+use tabled::{
+    builder::Builder,
+    settings::{Color, Modify, Style},
+};
 
 pub fn benchmark<T>(
     c: &mut Criterion,
@@ -18,7 +25,43 @@ pub fn benchmark<T>(
         group.bench_with_input(*id, input, &f);
     }
 
-    println!("benchmark finished");
-
     group.finish()
+}
+
+pub fn benchmark_function(
+    c: &mut Criterion,
+    name: &str,
+    sample_size: Option<usize>,
+    measurement_time: Option<Duration>,
+    f: impl Fn(),
+) {
+    let mut group = c.benchmark_group(&name.to_string());
+
+    measurement_time.map(|t| group.measurement_time(t));
+    sample_size.map(|s| group.sample_size(s));
+
+    group.bench_function(name, |b| b.iter(|| f()));
+}
+
+pub type Functions = LazyLock<Mutex<Vec<(String, i64)>>>;
+
+pub fn print_functions(functions: &Functions, name: &str, ignore_zero: bool) {
+    let mut builder = Builder::default();
+    builder.set_header(vec!["Function", "Time"]);
+    let functions = functions.lock().unwrap();
+
+    functions.iter().for_each(|(name, time)| {
+        if !(ignore_zero && time == &0) {
+            builder.push_record(vec![name, &format!("{time} ms")]);
+        }
+    });
+
+    drop(functions);
+
+    let mut table = builder.build();
+    table.with(Style::modern());
+    table.with(Modify::new((0, 0)).with(Color::BOLD));
+    table.with(Modify::new((0, 1)).with(Color::BOLD));
+
+    println!("\nBenchmark: {name}\n{table}");
 }

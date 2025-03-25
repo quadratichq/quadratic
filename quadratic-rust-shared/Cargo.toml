@@ -48,10 +48,11 @@ tokio-util = { version = "0.7.11", features = ["compat"] }
 tracing = "0.1.40"
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 criterion = { version = "0.5", optional = true }
+tabled = { version = "0.14.0", features = ["color"], optional = true }
 
 [features]
 record-request-mock = []
-test = ["httpmock", "criterion"]
+test = ["httpmock", "criterion", "tabled"]
 
 [dev-dependencies]
 arrow = { version = "54.2.1", features = ["prettyprint"] }

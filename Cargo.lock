@@ -4983,6 +4983,7 @@ dependencies = [
  "sqlx",
  "strum 0.27.1",
  "strum_macros 0.27.1",
+ "tabled",
  "thiserror 2.0.12",
  "tiberius",
  "tokio",
