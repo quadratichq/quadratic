@@ -3,10 +3,10 @@ use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
 use quadratic_core::{
+    Pos,
     a1::A1Context,
     formulas::{parse_and_check_formula, parse_formula::parse_formula_results},
     grid::SheetId,
-    Pos,
 };
 
 #[wasm_bindgen(js_name = "parseFormula")]

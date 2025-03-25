@@ -1,6 +1,9 @@
 use super::current;
 
+use crate::Pos;
+use crate::grid::sheet::validations::Validations;
 use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
+use crate::grid::sheet::validations::validation_rules::ValidationRule;
 use crate::grid::sheet::validations::validation_rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
 };
@@ -14,9 +17,6 @@ use crate::grid::sheet::validations::validation_rules::validation_number::{
 use crate::grid::sheet::validations::validation_rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
-use crate::grid::sheet::validations::validation_rules::ValidationRule;
-use crate::grid::sheet::validations::Validations;
-use crate::Pos;
 
 use super::selection::{export_selection, import_selection};
 

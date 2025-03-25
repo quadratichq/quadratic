@@ -386,7 +386,7 @@ pub(crate) fn upgrade(schema: v1_5::GridSchema) -> Result<v1_6::GridSchema> {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::{anyhow, Result};
+    use anyhow::{Result, anyhow};
 
     use crate::grid::file::v1_5::schema::GridSchema;
 

@@ -791,10 +791,7 @@ mod tests {
         let result = client.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult(
-                "async output".into(),
-                1,
-            )),
+            output_value: Some(JsCellValueResult("async output".into(), 1)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -869,10 +866,7 @@ mod tests {
         let result = client.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult(
-                "async output".into(),
-                1,
-            )),
+            output_value: Some(JsCellValueResult("async output".into(), 1)),
             ..Default::default()
         });
         assert!(result.is_ok());

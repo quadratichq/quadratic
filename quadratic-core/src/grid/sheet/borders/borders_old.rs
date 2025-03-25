@@ -4,9 +4,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::grid::{block::SameValue, ColumnData};
 use crate::Pos;
-use crate::{grid::sheet::borders::BorderStyleTimestamp, RunLengthEncoding};
+use crate::grid::{ColumnData, block::SameValue};
+use crate::{RunLengthEncoding, grid::sheet::borders::BorderStyleTimestamp};
 
 use super::{BorderStyle, BorderStyleCell};
 

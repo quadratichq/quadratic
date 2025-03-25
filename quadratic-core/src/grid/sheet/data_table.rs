@@ -1,19 +1,19 @@
 use super::Sheet;
 use crate::{
+    Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
+        CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        CodeCellLanguage, CodeCellValue, DataTableKind,
     },
-    Pos, Rect, SheetPos,
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use indexmap::{
-    map::{Entry, OccupiedEntry},
     IndexMap,
+    map::{Entry, OccupiedEntry},
 };
 
 impl Sheet {
@@ -428,14 +428,14 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
+        CellValue, Value,
         a1::{A1Selection, RefRangeBounds},
         controller::{
+            GridController,
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
-            GridController,
         },
-        grid::{js_types::JsClipboard, CodeRun, DataTableKind, SheetId},
-        CellValue, Value,
+        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
     };
     use bigdecimal::BigDecimal;
 

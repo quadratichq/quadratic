@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
 use crate::{
+    CellValue, Rect,
     a1::A1Selection,
     grid::js_types::{
         JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
         JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
         JsTableType, JsTablesContext,
     },
-    CellValue, Rect,
 };
 
 use super::Sheet;
@@ -269,12 +269,12 @@ impl Sheet {
 mod tests {
 
     use crate::{
+        Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
         a1::A1Selection,
         grid::{
-            js_types::{JsCellValuePosContext, JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
+            js_types::{JsCellValuePosContext, JsCodeCell, JsReturnInfo},
         },
-        Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
     };
 
     use super::Sheet;

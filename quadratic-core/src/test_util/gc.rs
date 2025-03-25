@@ -1,13 +1,13 @@
 use crate::{
+    CellValue, Pos, Rect,
     controller::GridController,
     formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
-    CellValue, Pos, Rect,
 };
 use std::collections::HashMap;
 use tabled::{
     builder::Builder,
-    settings::{themes::Colorization, Color},
+    settings::{Color, themes::Colorization},
     settings::{Modify, Style},
 };
 
@@ -457,11 +457,13 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
 
 /// Prints the order of the data_tables to the console.
 pub fn print_data_table_order(sheet: &Sheet) {
-    dbgjs!(sheet
-        .data_tables
-        .iter()
-        .map(|(pos, _)| pos)
-        .collect::<Vec<_>>());
+    dbgjs!(
+        sheet
+            .data_tables
+            .iter()
+            .map(|(pos, _)| pos)
+            .collect::<Vec<_>>()
+    );
 }
 
 // prints formatting for table

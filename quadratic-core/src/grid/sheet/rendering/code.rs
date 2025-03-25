@@ -253,10 +253,7 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult(
-                "<html></html>".into(),
-                1,
-            )),
+            output_value: Some(JsCellValueResult("<html></html>".into(), 1)),
             ..Default::default()
         })
         .ok();
