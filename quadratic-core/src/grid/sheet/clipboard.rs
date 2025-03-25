@@ -4,10 +4,9 @@ use crate::a1::{A1Context, A1Selection};
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
-use crate::formulas::{convert_a1_to_rc, convert_rc_to_a1};
+use crate::grid::Sheet;
 use crate::grid::js_types::JsClipboard;
-use crate::grid::{CodeCellLanguage, Sheet};
-use crate::{CellValue, Pos, Rect};
+use crate::{Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
@@ -20,7 +19,7 @@ impl Sheet {
         clipboard_operation: ClipboardOperation,
         include_plain_text: bool,
     ) -> Result<JsClipboard, String> {
-        let mut clipboard_origin = ClipboardOrigin::default();
+        let mut clipboard_origin = ClipboardOrigin::default(selection.sheet_id);
         let mut plain_text = String::new();
         let mut html_body = String::from("<tbody>");
         let mut cells = CellValues::default();
@@ -64,33 +63,7 @@ impl Sheet {
                     let real_value = self.cell_value(pos);
 
                     // create quadratic clipboard values
-                    if let Some(mut real_value) = real_value {
-                        // replace cell references in formulas
-                        match &mut real_value {
-                            CellValue::Code(code_cell) => {
-                                if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                                    let sheet_pos = pos.to_sheet_pos(self.id);
-                                    match clipboard_operation {
-                                        ClipboardOperation::Cut => {
-                                            code_cell.code = convert_rc_to_a1(
-                                                &code_cell.code,
-                                                context,
-                                                sheet_pos,
-                                            );
-                                        }
-                                        ClipboardOperation::Copy => {
-                                            code_cell.code = convert_a1_to_rc(
-                                                &code_cell.code,
-                                                context,
-                                                sheet_pos,
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            _ => { /* noop */ }
-                        };
-
+                    if let Some(real_value) = real_value {
                         cells.set(
                             (x - bounds.min.x) as u32,
                             (y - bounds.min.y) as u32,
@@ -283,11 +256,11 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controller::operations::clipboard::PasteSpecial;
+    use crate::Pos;
     use crate::controller::GridController;
+    use crate::controller::operations::clipboard::PasteSpecial;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::Pos;
 
     #[test]
     fn copy_to_clipboard_exclude() {

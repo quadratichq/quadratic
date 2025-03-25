@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use chrono::Utc;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use std::str::FromStr;
 
 use crate::{
+    ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
     a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
+        CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
         block::SameValue,
         data_table::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
-        CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
-    ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
 };
 
 use super::{

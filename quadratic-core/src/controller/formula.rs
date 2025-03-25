@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    SheetPos, Span, Spanned,
     a1::{A1Context, SheetCellRefRange},
-    formulas, SheetPos, Span, Spanned,
+    formulas,
 };
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -70,7 +71,8 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 ///               }
 ///             }
 ///           }
-///         }
+///         },
+///         explicit_sheet_name: false
 ///       }
 ///     },
 ///     {
@@ -105,7 +107,8 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 ///               }
 ///             }
 ///           }
-///         }
+///         },
+///         explicit_sheet_name: false
 ///       }
 ///     }
 ///   ]
@@ -133,7 +136,7 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_formula, CellRefSpan, FormulaParseResult};
+    use super::{CellRefSpan, FormulaParseResult, parse_formula};
     use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
     use crate::grid::{Grid, Sheet, SheetId};
     use crate::{Pos, Span};
@@ -163,6 +166,7 @@ mod tests {
                             CellRefCoord::new_rel(1),
                             CellRefCoord::new_abs(2),
                         ),
+                        explicit_sheet_name: false,
                     },
                 },
                 CellRefSpan {
@@ -175,6 +179,7 @@ mod tests {
                             CellRefCoord::new_abs(3),
                             CellRefCoord::new_rel(2),
                         ),
+                        explicit_sheet_name: false,
                     },
                 },
             ],
@@ -223,6 +228,7 @@ mod tests {
                         CellRefCoord::new_rel(1),
                         CellRefCoord::UNBOUNDED,
                     ),
+                    explicit_sheet_name: false,
                 },
             }]
         );
@@ -245,7 +251,8 @@ mod tests {
                         CellRefCoord::new_rel(2),
                         CellRefCoord::UNBOUNDED,
                         CellRefCoord::new_rel(3),
-                    )
+                    ),
+                    explicit_sheet_name: false,
                 }
             }]
         );

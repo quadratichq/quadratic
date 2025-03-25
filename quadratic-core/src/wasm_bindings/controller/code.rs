@@ -4,8 +4,8 @@ use super::*;
 impl GridController {
     /// Called after a external calculation is complete.
     #[wasm_bindgen(js_name = "calculationComplete")]
-    pub fn js_calculation_complete(&mut self, result: String) {
-        if let Ok(result) = serde_json::from_str(&result) {
+    pub fn js_calculation_complete(&mut self, result: Vec<u8>) {
+        if let Ok(result) = serde_json::from_slice(&result) {
             let _ = self.calculation_complete(result);
         } else {
             dbgjs!("calculationComplete: Failed to parse calculation result");
@@ -17,10 +17,10 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
-    ) -> Result<String, String> {
+    ) -> Result<Vec<u8>, String> {
         let response = self.calculation_get_cells_a1(transaction_id, a1);
-        match serde_json::to_string(&response) {
-            Ok(json) => Ok(json),
+        match serde_json::to_vec(&response) {
+            Ok(vec) => Ok(vec),
             Err(e) => {
                 dbgjs!(format!(
                     "calculationGetCellsA1: Failed to serialize get cells a1 response: {:?}",

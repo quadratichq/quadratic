@@ -1,5 +1,4 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsCodeResult } from '@/app/quadratic-core-types';
 import type {
   CoreJavascriptGetCellsA1,
   CoreJavascriptMessage,
@@ -19,10 +18,10 @@ class JavascriptCore {
     if (debugWebWorkers) console.log('[javascriptCore] initialized');
   }
 
-  private send(message: JavascriptCoreMessage, transfer?: Transferable) {
+  private send(message: JavascriptCoreMessage, transfer?: Transferable[]) {
     if (!this.coreMessagePort) throw new Error('coreMessagePort not initialized');
     if (transfer) {
-      this.coreMessagePort.postMessage(message, [transfer]);
+      this.coreMessagePort.postMessage(message, transfer);
     } else {
       this.coreMessagePort.postMessage(message);
     }
@@ -51,22 +50,22 @@ class JavascriptCore {
     console.warn("[javascriptCore] didn't handle message", e.data);
   };
 
-  sendJavascriptResults(transactionId: string, results: JsCodeResult, transfer?: Transferable) {
+  sendJavascriptResults(transactionId: string, jsCodeResultBuffer: ArrayBuffer) {
     this.send(
       {
         type: 'javascriptCoreResults',
         transactionId,
-        results,
+        jsCodeResultBuffer,
       },
-      transfer
+      [jsCodeResultBuffer]
     );
   }
 
-  sendGetCellsA1 = (transactionId: string, a1: string): Promise<string> => {
+  sendGetCellsA1 = (transactionId: string, a1: string): Promise<ArrayBuffer> => {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreJavascriptGetCellsA1) => {
-        resolve(message.response);
+        resolve(message.cellsA1ResponseBuffer);
       };
       this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1 });
     });

@@ -50,6 +50,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.render(pixiApp.viewportContents, { transform });
   pixiApp.cleanUpAfterCopying();
   return new Promise((resolve) => {
-    renderer!.view.toBlob((blob) => resolve(blob));
+    renderer!.view.toBlob?.((blob) => resolve(blob));
   });
 };

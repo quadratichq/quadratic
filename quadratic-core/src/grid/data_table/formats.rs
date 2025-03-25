@@ -1,13 +1,15 @@
 use anyhow::Result;
 
 use crate::{
-    grid::{formats::SheetFormatUpdates, CellWrap, Format, Sheet},
     Pos, Rect,
+    grid::{CellWrap, Format, Sheet, formats::SheetFormatUpdates},
 };
 
 use super::DataTable;
 
 impl DataTable {
+    /// Returns the cell format for a relative position within the data table.
+    /// 0,0 is the top left.
     pub fn get_format(&self, pos: Pos) -> Format {
         let pos = self.get_format_pos_from_display_buffer(pos);
         let mut format = self.formats.try_format(pos).unwrap_or_default();
@@ -15,7 +17,8 @@ impl DataTable {
         format
     }
 
-    /// Get the position of the format in the display buffer.
+    /// Get the position of the format in the display buffer for a relative
+    /// position within the data table. 0,0 is the top left.
     pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
         // adjust for hidden columns
         pos.x = self.get_column_index_from_display_index(pos.x as u32, true) as i64;
@@ -117,7 +120,7 @@ pub mod test {
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -148,7 +151,7 @@ pub mod test {
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -161,15 +164,19 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        assert!(data_table
-            .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![G5]).bold, None);
         assert!(sheet.formats.try_format(pos![G5]).is_none());
-        assert!(data_table
-            .get_format(pos![G5].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![G5].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![G4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G4]).is_none());
@@ -188,9 +195,11 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![G4]).bold, None);
         assert!(sheet.formats.try_format(pos![G4]).is_none());
-        assert!(data_table
-            .get_format(pos![G4].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![G4].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![G3]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G3]).is_none());
@@ -205,9 +214,11 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![G3]).bold, None);
         assert!(sheet.formats.try_format(pos![G3]).is_none());
-        assert!(data_table
-            .get_format(pos![G3].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![G3].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![G2]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G2]).is_none());
@@ -222,9 +233,11 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![G2]).bold, None);
         assert!(sheet.formats.try_format(pos![G2]).is_none());
-        assert!(data_table
-            .get_format(pos![G2].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![G2].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![G3]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G3]).is_none());
@@ -244,7 +257,7 @@ pub mod test {
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -268,9 +281,11 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        assert!(data_table
-            .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![F5]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![F5]).is_none());
@@ -287,7 +302,7 @@ pub mod test {
         // add new bold formats with first column hidden
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("F10,G12:J12", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F10,G12:J12", sheet_id),
             Some(true),
             None,
         )
@@ -339,9 +354,11 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![F10]).bold, None);
         assert!(sheet.formats.try_format(pos![F10]).is_none());
-        assert!(data_table
-            .get_format(pos![F10].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![F10].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![H12]).bold, Some(true));
         let sheet_format = sheet.formats.try_format(pos![H12]).unwrap();
@@ -355,7 +372,7 @@ pub mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -386,15 +403,19 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        assert!(data_table
-            .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![H5]).bold, None);
         assert!(sheet.formats.try_format(pos![H5]).is_none());
-        assert!(data_table
-            .get_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
-            .is_table_default());
+        assert!(
+            data_table
+                .get_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
+                .is_table_default()
+        );
 
         assert_eq!(sheet.cell_format(pos![E13]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E13]).is_none());
@@ -408,7 +429,7 @@ pub mod test {
 
         // add new bold formats with sort
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )

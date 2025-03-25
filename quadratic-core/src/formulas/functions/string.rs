@@ -32,7 +32,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .join(", "),
                     Some(Spanned { inner: 1, .. }) => array.repr(),
                     Some(Spanned { span, .. }) => {
-                        return Err(RunErrorMsg::InvalidArgument.with_span(span))
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span));
                     }
                 }
             }
@@ -322,7 +322,9 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// Returns the lowercase equivalent of a string.
-            #[examples("LOWER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"ὀδυσσεύς is my favorite character!\"")]
+            #[examples(
+                "LOWER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"ὀδυσσεύς is my favorite character!\""
+            )]
             #[zip_map]
             fn LOWER([s]: String) {
                 s.to_lowercase()
@@ -339,7 +341,9 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Capitalizes letters that do not have another letter before them,
             /// and lowercases the rest.
-            #[examples("PROPER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"Ὀδυσσεύς Is My Favorite Character!\"")]
+            #[examples(
+                "PROPER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"Ὀδυσσεύς Is My Favorite Character!\""
+            )]
             #[zip_map]
             fn PROPER([s]: String) {
                 let mut last_char = '\0';

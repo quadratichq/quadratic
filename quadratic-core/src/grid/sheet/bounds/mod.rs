@@ -2,8 +2,8 @@
 //! this value and only recalculate when necessary.
 
 use crate::{
-    grid::{Column, GridBounds},
     CellValue, Pos, Rect,
+    grid::{Column, GridBounds},
 };
 use std::cmp::Reverse;
 
@@ -155,11 +155,7 @@ impl Sheet {
             max = max.max(code_bounds.end - 1);
             found = true;
         }
-        if found {
-            Some((min, max))
-        } else {
-            None
-        }
+        if found { Some((min, max)) } else { None }
     }
 
     /// Returns the lower and upper bounds of a row, or `None` if the column is
@@ -249,11 +245,7 @@ impl Sheet {
             max = max.max(code_bounds.end - 1);
             found = true;
         }
-        if found {
-            Some((min, max))
-        } else {
-            None
-        }
+        if found { Some((min, max)) } else { None }
     }
 
     /// Finds the height of a rectangle that contains data given an (x, y, w).
@@ -458,19 +450,19 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
+        Array, CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{
+            CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
             sheet::{
                 borders::{BorderSelection, BorderStyle},
                 validations::{
                     validation::Validation,
-                    validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+                    validation_rules::{ValidationRule, validation_logical::ValidationLogical},
                 },
             },
-            CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
-        Array, CellValue, Pos, Rect, SheetPos,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -839,7 +831,7 @@ mod test {
                     show_checkbox: true,
                     ignore_blank: true,
                 }),
-                selection: A1Selection::test_a1_sheet_id("A1", &sheet_id),
+                selection: A1Selection::test_a1_sheet_id("A1", sheet_id),
                 message: Default::default(),
                 error: Default::default(),
             },

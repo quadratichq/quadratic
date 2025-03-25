@@ -2,8 +2,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    a1::CellRefRange, controller::GridController, error_core::CoreError, grid::CodeCellLanguage,
-    CellValue,
+    CellValue, a1::CellRefRange, controller::GridController, error_core::CoreError,
+    grid::CodeCellLanguage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -75,8 +75,7 @@ impl GridController {
                 "Transaction's position not found".into(),
             ));
         };
-
-        let selection = match self.a1_selection_from_string(&a1, &code_sheet_pos.sheet_id) {
+        let selection = match self.a1_selection_from_string(&a1, code_sheet_pos.sheet_id) {
             Ok(selection) => selection,
             Err(e) => {
                 // unable to parse A1 string
@@ -186,7 +185,7 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{
-        controller::transaction_types::JsCodeResult, grid::CodeCellLanguage, Pos, Rect, SheetPos,
+        Pos, Rect, SheetPos, controller::transaction_types::JsCodeResult, grid::CodeCellLanguage,
     };
 
     #[test]

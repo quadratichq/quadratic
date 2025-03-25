@@ -2,7 +2,7 @@ use itertools::Itertools;
 use regex::Regex;
 use smallvec::smallvec;
 
-use crate::{a1::SheetCellRefRange, ArraySize, CodeResultExt};
+use crate::{ArraySize, CodeResultExt, a1::SheetCellRefRange};
 
 use super::*;
 
@@ -21,11 +21,10 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             fn INDIRECT(ctx: Ctx, cellref_string: (Spanned<String>)) {
                 let span = cellref_string.span;
-                let cell_ref = SheetCellRefRange::parse(
+                let cell_ref = SheetCellRefRange::parse_at(
                     &cellref_string.inner,
-                    ctx.sheet_pos.sheet_id,
+                    ctx.sheet_pos,
                     &ctx.grid.a1_context(),
-                    Some(ctx.sheet_pos.into()),
                 )
                 .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
                 let sheet_rect = ctx.resolve_range_ref(&cell_ref, span)?.inner;
@@ -642,7 +641,7 @@ mod tests {
     use lazy_static::lazy_static;
     use smallvec::smallvec;
 
-    use crate::{formulas::tests::*, Pos};
+    use crate::{Pos, formulas::tests::*};
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -1302,8 +1301,9 @@ mod tests {
         assert_eq!("2", eval_to_string(&g, &make_match_formula_str("Na?pa")));
 
         // with `MAX` (horizontal)
-        let source_array =
-            array![65373.84, 41042.03, 29910.73, 31197.02, 67365.77, 31496.82, 78505.27, 38149.34];
+        let source_array = array![
+            65373.84, 41042.03, 29910.73, 31197.02, 67365.77, 31496.82, 78505.27, 38149.34
+        ];
         let g = Grid::from_array(pos![C1], &source_array);
         assert_eq!(eval_to_string(&g, "=MATCH(MAX(C1:J1), C1:J1, 0)"), "7");
         // with `MAX` (vertical)

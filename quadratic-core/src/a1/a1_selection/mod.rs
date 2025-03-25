@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{grid::SheetId, Pos};
+use crate::{Pos, grid::SheetId};
 
 use super::CellRefRange;
 

@@ -1,6 +1,6 @@
 use quadratic_core::controller::transaction::{Transaction, TransactionServer};
 use quadratic_rust_shared::pubsub::{
-    redis_streams::RedisConnection, Config as PubSubConfig, PubSub as PubSubTrait,
+    Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection,
 };
 use uuid::Uuid;
 

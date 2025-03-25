@@ -487,7 +487,7 @@ impl SyntaxRule for ArrayLiteral {
                             Token::RowSep.to_string(),
                             Token::RBrace.to_string(),
                         ],
-                    )))
+                    )));
                 }
             }
         }

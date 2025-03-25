@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::num::ParseIntError;
@@ -82,11 +82,7 @@ impl Rgba {
     }
     pub fn as_rgb_hex(&self) -> String {
         let s = self.as_string();
-        if s.len() < 8 {
-            s
-        } else {
-            s[0..7].to_string()
-        }
+        if s.len() < 8 { s } else { s[0..7].to_string() }
     }
 }
 
