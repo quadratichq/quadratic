@@ -1,17 +1,17 @@
 use std::str::FromStr;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use bigdecimal::BigDecimal;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
+    Pos,
     a1::A1Selection,
     controller::operations::operation::Operation,
     grid::{
-        formats::{FormatUpdate, SheetFormatUpdates},
         NumericFormat, NumericFormatKind, Sheet,
+        formats::{FormatUpdate, SheetFormatUpdates},
     },
-    Pos,
 };
 
 use super::CellValue;

@@ -1,7 +1,7 @@
 //! Moves the cursor one cell in the given direction, accounting for charts.
 //! (Eventually also accounting for sheet bounds to the right and bottom.)
 
-use crate::{grid::Sheet, Pos};
+use crate::{Pos, grid::Sheet};
 
 use super::Direction;
 

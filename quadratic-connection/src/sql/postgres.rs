@@ -1,7 +1,7 @@
-use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{postgres_connection::PostgresConnection, Connection},
+    sql::{Connection, postgres_connection::PostgresConnection},
 };
 use uuid::Uuid;
 
@@ -9,11 +9,11 @@ use crate::{
     auth::Claims,
     connection::get_api_connection,
     error::Result,
-    server::{test_connection, SqlQuery, TestResponse},
+    server::{SqlQuery, TestResponse, test_connection},
     state::State,
 };
 
-use super::{query_generic, Schema};
+use super::{Schema, query_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(Json(connection): Json<PostgresConnection>) -> Json<TestResponse> {
@@ -363,13 +363,12 @@ mod tests {
             ), // unsupported
             (
                 DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::parse_from_str(
-                    "2024-05-20 06:34:56+00",
-                    "%Y-%m-%d %H:%M:%S%#z"
-                )
-                .unwrap()
-                .and_utc()
-                .timestamp_millis()),
+                num_vec!(
+                    NaiveDateTime::parse_from_str("2024-05-20 06:34:56+00", "%Y-%m-%d %H:%M:%S%#z")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
             ),
             (
                 DataType::Date32,
@@ -379,15 +378,19 @@ mod tests {
             ),
             (
                 DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
-                    .unwrap()
-                    .num_seconds_from_midnight()),
+                num_vec!(
+                    NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
+                        .unwrap()
+                        .num_seconds_from_midnight()
+                ),
             ),
             (
                 DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::parse_from_str("12:34:56+09:30", "%H:%M:%S%z")
-                    .unwrap()
-                    .num_seconds_from_midnight()),
+                num_vec!(
+                    NaiveTime::parse_from_str("12:34:56+09:30", "%H:%M:%S%z")
+                        .unwrap()
+                        .num_seconds_from_midnight()
+                ),
             ),
             (DataType::Utf8, vec![]), // unsupported
             (DataType::Boolean, vec![1]),

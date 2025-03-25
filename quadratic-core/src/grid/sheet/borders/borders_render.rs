@@ -3,8 +3,8 @@
 use crate::{
     a1::UNBOUNDED,
     grid::{
-        sheet::borders::{JsBorderHorizontal, JsBorderVertical},
         DataTable,
+        sheet::borders::{JsBorderHorizontal, JsBorderVertical},
     },
 };
 

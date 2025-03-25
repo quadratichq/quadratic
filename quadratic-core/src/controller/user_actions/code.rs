@@ -1,7 +1,7 @@
 use crate::{
-    controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::{CodeCellLanguage, SheetId},
     SheetPos,
+    controller::{GridController, active_transactions::transaction_name::TransactionName},
+    grid::{CodeCellLanguage, SheetId},
 };
 
 impl GridController {

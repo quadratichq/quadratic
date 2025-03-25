@@ -11,7 +11,7 @@ import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { Texture } from 'pixi.js';
-import { BLEND_MODES, BitmapFont, Loader, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
+import { Assets, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
 
 export class LabelMeshEntry extends Mesh {
   private fontName: string;
@@ -20,11 +20,15 @@ export class LabelMeshEntry extends Mesh {
   constructor(message: RenderClientLabelMeshEntry) {
     const geometry = new MeshGeometry();
     const shader = message.hasColor ? shaderTint : shaderNoTint;
-    const resource = Loader.shared.resources[message.fontName]; // Texture.WHITE; //Texture.from(message.fontName);
-    if (!resource?.bitmapFont) {
-      throw new Error(`Texture not found for font: ${message.fontName}`);
+
+    // Get the font from Assets
+    const font = Assets.get(message.fontName);
+    if (!font) {
+      throw new Error(`Font not found: ${message.fontName}`);
     }
-    const pages = resource.bitmapFont.pageTextures;
+
+    // Get the texture from the font's page textures
+    const pages = font.pageTextures;
     let texture: Texture | undefined;
     for (const page in pages) {
       if (pages[page].baseTexture.uid === message.textureUid) {
@@ -34,6 +38,7 @@ export class LabelMeshEntry extends Mesh {
     if (!texture) {
       throw new Error(`Texture not found for font: ${message.fontName} with uid: ${message.textureUid}`);
     }
+
     const material = new MeshMaterial(texture, {
       program: Program.from(shader.msdfVert, shader.msdfFrag),
       uniforms: { uFWidth: 0 },
@@ -53,10 +58,13 @@ export class LabelMeshEntry extends Mesh {
   }
 
   setUniforms(scale: number) {
-    // Inject the shader code with the correct value
-    const { distanceFieldRange, size } = BitmapFont.available[this.fontName];
-    const fontScale = this.fontSize / size;
-    const ufWidth = distanceFieldRange * fontScale * scale;
+    // Get font from Assets for uniform calculation
+    const font = Assets.get(this.fontName);
+    if (!font) {
+      throw new Error(`Font not found: ${this.fontName}`);
+    }
+    const fontScale = this.fontSize / font.size;
+    const ufWidth = font.distanceFieldRange * fontScale * scale;
     this.shader.uniforms.uFWidth = ufWidth;
   }
 }

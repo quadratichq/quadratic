@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
+    Pos, Rect,
     a1::A1Selection,
     clear_option::ClearOption,
     grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat},
-    Pos, Rect,
 };
 
 use super::FormatUpdate;

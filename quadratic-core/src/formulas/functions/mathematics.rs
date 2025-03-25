@@ -411,7 +411,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use proptest::proptest;
 
-    use crate::{a1::A1Context, formulas::tests::*, Pos};
+    use crate::{Pos, a1::A1Context, formulas::tests::*};
 
     #[test]
     fn test_sum() {
