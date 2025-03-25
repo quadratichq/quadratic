@@ -1047,7 +1047,6 @@ class Core {
         transactionId,
         transactions
       ) as JsResponse;
-      console.log('applyOfflineUnsavedTransaction', { result, error });
       if (error) {
         this.sendAnalyticsError('applyOfflineUnsavedTransaction', error);
       }
