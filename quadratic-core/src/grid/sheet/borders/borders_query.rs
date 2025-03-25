@@ -1,4 +1,4 @@
-use crate::{grid::GridBounds, Pos, Rect};
+use crate::{Pos, Rect, grid::GridBounds};
 
 use super::*;
 

@@ -1,4 +1,4 @@
-use crate::grid::{sheet::borders::JsBordersSheet, Sheet};
+use crate::grid::{Sheet, sheet::borders::JsBordersSheet};
 
 impl Sheet {
     /// Gets packaged borders to send to the client.

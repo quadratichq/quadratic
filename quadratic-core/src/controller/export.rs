@@ -4,8 +4,8 @@ use itertools::PeekingNext;
 
 use super::GridController;
 use crate::{
-    a1::{A1Selection, CellRefRange},
     Pos,
+    a1::{A1Selection, CellRefRange},
 };
 
 impl GridController {
@@ -56,7 +56,7 @@ mod tests {
 
     use super::*;
 
-    use crate::{controller::user_actions::import::tests::simple_csv, Array};
+    use crate::{Array, controller::user_actions::import::tests::simple_csv};
 
     #[test]
     fn exports_a_csv() {

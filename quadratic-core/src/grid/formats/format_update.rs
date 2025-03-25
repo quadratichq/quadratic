@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::format::Format;
-use crate::grid::{formatting::RenderSize, CellAlign, CellVerticalAlign, CellWrap, NumericFormat};
+use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, formatting::RenderSize};
 
 /// Used to store changes from a Format to another Format.
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
