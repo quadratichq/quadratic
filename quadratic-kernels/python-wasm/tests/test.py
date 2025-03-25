@@ -287,39 +287,39 @@ class TestUtils(TestCase):
 
     def test_to_python_type(self):
         # blank
-        assert to_python_type("", CellValueType.Blank) is None
+        assert to_python_type("", CellValueType.Blank.value) is None
 
         # number
-        assert to_python_type("1", CellValueType.Number) == 1
-        assert to_python_type("1.1", CellValueType.Number) == 1.1
-        assert to_python_type("-1", CellValueType.Number) == -1
-        assert to_python_type("-1.1", CellValueType.Number) == -1.1
+        assert to_python_type("1", CellValueType.Number.value) == 1
+        assert to_python_type("1.1", CellValueType.Number.value) == 1.1
+        assert to_python_type("-1", CellValueType.Number.value) == -1
+        assert to_python_type("-1.1", CellValueType.Number.value) == -1.1
 
         # logical
-        assert to_python_type("True", CellValueType.Logical) == True
-        assert to_python_type("False", CellValueType.Logical) == False
-        assert to_python_type("true", CellValueType.Logical) == True
-        assert to_python_type("false", CellValueType.Logical) == False
+        assert to_python_type("True", CellValueType.Logical.value) == True
+        assert to_python_type("False", CellValueType.Logical.value) == False
+        assert to_python_type("true", CellValueType.Logical.value) == True
+        assert to_python_type("false", CellValueType.Logical.value) == False
 
         # string
-        assert to_python_type("abc", CellValueType.Text) == "abc"
-        assert to_python_type("123abc", CellValueType.Text) == "123abc"
-        assert to_python_type("abc123", CellValueType.Text) == "abc123"
+        assert to_python_type("abc", CellValueType.Text.value) == "abc"
+        assert to_python_type("123abc", CellValueType.Text.value) == "123abc"
+        assert to_python_type("abc123", CellValueType.Text.value) == "abc123"
 
         # date
-        assert to_python_type("2012-11-10T00:00:00", CellValueType.Date) == datetime(2012, 11, 10).date()
-        assert to_python_type("2012-11-10T03:30:00", CellValueType.Date) == datetime(
+        assert to_python_type("2012-11-10T00:00:00", CellValueType.Date.value) == datetime(2012, 11, 10).date()
+        assert to_python_type("2012-11-10T03:30:00", CellValueType.Date.value) == datetime(
             2012, 11, 10, 3, 30
         ).date()
 
         # date time
-        assert to_python_type("2012-11-10T00:00:00", CellValueType.DateTime) == datetime(2012, 11, 10)
-        assert to_python_type("2012-11-10T03:30:00", CellValueType.DateTime) == datetime(
+        assert to_python_type("2012-11-10T00:00:00", CellValueType.DateTime.value) == datetime(2012, 11, 10)
+        assert to_python_type("2012-11-10T03:30:00", CellValueType.DateTime.value) == datetime(
             2012, 11, 10, 3, 30
         )
 
         # duration
-        assert to_python_type("1y 2mo 3w 4d 5h 6m 7.5s 3ms 4µs", CellValueType.Duration) == relativedelta(
+        assert to_python_type("1y 2mo 3w 4d 5h 6m 7.5s 3ms 4µs", CellValueType.Duration.value) == relativedelta(
             years=1,
             months=2,
             days=25, # no weeks!
@@ -328,7 +328,7 @@ class TestUtils(TestCase):
             seconds=7.5,
             microseconds=3004,
         )
-        assert to_python_type("1µs 2ns 3ps 4fs 5as", CellValueType.Duration) == relativedelta(
+        assert to_python_type("1µs 2ns 3ps 4fs 5as", CellValueType.Duration.value) == relativedelta(
             microseconds=1.002003004005,
         )
 
