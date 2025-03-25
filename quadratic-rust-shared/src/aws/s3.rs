@@ -1,12 +1,17 @@
+//! AWS S3
+//!
+//! Functions to interact with AWS S3
+
 use aws_sdk_s3::{
+    Client,
     operation::{get_object::GetObjectOutput, put_object::PutObjectOutput},
     primitives::{ByteStream, SdkBody},
-    Client,
 };
 
 use crate::aws::error::Aws as AwsError;
 use crate::error::{Result, SharedError};
 
+/// Download an object from S3
 pub async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<GetObjectOutput> {
     client
         .get_object()
@@ -22,6 +27,7 @@ pub async fn download_object(client: &Client, bucket: &str, key: &str) -> Result
         })
 }
 
+/// Upload an object to S3
 pub async fn upload_object(
     client: &Client,
     bucket: &str,

@@ -1,5 +1,7 @@
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -7,6 +9,61 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { z } from 'zod';
+
+const waitForSetCodeCellValue = (transactionId: string) => {
+  return new Promise((resolve) => {
+    const isTransactionRunning = pixiAppSettings.editorInteractionState.transactionsInfo.some(
+      (t) => t.transactionId === transactionId
+    );
+    if (!isTransactionRunning) {
+      resolve(undefined);
+    } else {
+      events.once('transactionEnd', (transactionEnd) => {
+        if (transactionEnd.transactionId === transactionId) {
+          resolve(undefined);
+        } else {
+          waitForSetCodeCellValue(transactionId).then(resolve);
+        }
+      });
+    }
+  });
+};
+
+const setCodeCellResult = async (sheetId: string, x: number, y: number): Promise<string> => {
+  const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
+  const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
+  if (!table || !codeCell) return 'Error executing set code cell value tool';
+
+  if (codeCell.std_err) {
+    return `
+The code cell run has resulted in an error:
+\`\`\`
+${codeCell.std_err}
+\`\`\`
+Think and reason about the error and try to fix it.
+`;
+  }
+
+  if (codeCell.spill_error) {
+    return `
+The code cell has spilled, because the output overlaps with existing data on the sheet at position:
+\`\`\`json\n
+${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
+\`\`\`
+Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.
+Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet.
+`;
+  }
+
+  return `
+Executed set code cell value tool successfully.
+${
+  table.isSingleValue()
+    ? `Output is ${codeCell.evaluation_result}`
+    : `Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.`
+}
+`;
+};
 
 export type AIToolActionsRecord = {
   [K in AITool]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<string>;
@@ -73,7 +130,8 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetCodeCellValue]: async (args) => {
     let { code_cell_language, code_string, code_cell_position, output_width, output_height } = args;
     try {
-      const selection = stringToSelection(code_cell_position, sheets.current, sheets.a1Context);
+      const sheetId = sheets.current;
+      const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
         return 'Invalid code cell position, this should be a single cell, not a range';
       }
@@ -83,8 +141,8 @@ export const aiToolsActions: AIToolActionsRecord = {
         code_string = code_string.slice(1);
       }
 
-      quadraticCore.setCodeCellValue({
-        sheetId: sheets.current,
+      const transactionId = await quadraticCore.setCodeCellValue({
+        sheetId,
         x,
         y,
         codeString: code_string,
@@ -92,9 +150,17 @@ export const aiToolsActions: AIToolActionsRecord = {
         cursor: sheets.getCursorPosition(),
       });
 
-      ensureRectVisible({ x, y }, { x: x + output_width - 1, y: y + output_height - 1 });
+      if (transactionId) {
+        await waitForSetCodeCellValue(transactionId);
 
-      return 'Executed set code cell value tool successfully';
+        ensureRectVisible({ x, y }, { x: x + output_width - 1, y: y + output_height - 1 });
+
+        const result = await setCodeCellResult(sheetId, x, y);
+
+        return result;
+      } else {
+        return 'Error executing set code cell value tool';
+      }
     } catch (e) {
       return `Error executing set code cell value tool: ${e}`;
     }
@@ -127,7 +193,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = targetSelection.getCursor();
 
-      await quadraticCore.moveCells(sheetRect, x, y, sheets.current);
+      await quadraticCore.moveCells(sheetRect, x, y, sheets.current, false, false);
 
       return `Executed move cells tool successfully.`;
     } catch (e) {
@@ -170,7 +236,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         },
       }));
 
-      quadraticCore.setCodeCellValue({
+      const transactionId = await quadraticCore.setCodeCellValue({
         sheetId: codeCell.sheetId,
         x: codeCell.pos.x,
         y: codeCell.pos.y,
@@ -179,9 +245,26 @@ export const aiToolsActions: AIToolActionsRecord = {
         cursor: sheets.getCursorPosition(),
       });
 
-      return 'The code cell has been updated and is running again, user is presented with diff editor, with accept and reject buttons, to revert the changes if needed';
+      if (transactionId) {
+        await waitForSetCodeCellValue(transactionId);
+
+        const result = await setCodeCellResult(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
+
+        return (
+          result +
+          '\n\nUser is presented with diff editor, with accept and reject buttons, to revert the changes if needed'
+        );
+      } else {
+        return 'Error executing update code cell tool';
+      }
     } catch (e) {
       return `Error executing update code cell tool: ${e}`;
     }
+  },
+  [AITool.CodeEditorCompletions]: async () => {
+    return `Code editor completions tool executed successfully, user is presented with a list of code completions, to choose from.`;
+  },
+  [AITool.UserPromptSuggestions]: async () => {
+    return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
   },
 } as const;

@@ -12,7 +12,7 @@ use super::MAX_OPERATION_SIZE_COL_ROW;
 
 impl Sheet {
     // create reverse operations for values in the column broken up by MAX_OPERATION_SIZE
-    fn reverse_values_ops_for_column(&self, column: i64) -> Vec<Operation> {
+    pub(crate) fn reverse_values_ops_for_column(&self, column: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
         if let Some((min, max)) = self.column_bounds(column, true) {
@@ -130,8 +130,10 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
+        if self.formats.column_has_fills(column) {
+            transaction.add_fill_cells(self.id);
+        }
         self.formats.remove_column(column);
-        transaction.add_fill_cells(self.id);
 
         // remove the column's borders from the sheet
         self.borders.remove_column(column);

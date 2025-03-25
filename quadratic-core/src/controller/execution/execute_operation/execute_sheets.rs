@@ -1,15 +1,15 @@
 use crate::{
     constants::SHEET_NAME,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::{
-        file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, unique_data_table_name,
-        Sheet, SheetId,
+        Sheet, SheetId, file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity,
+        unique_data_table_name,
     },
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use lexicon_fractional_index::key_between;
 
 impl GridController {
@@ -87,10 +87,10 @@ impl GridController {
                     {
                         for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
                             code_cell_value.replace_table_name_in_cell_references(
+                                &context,
+                                pos.to_sheet_pos(sheet_id),
                                 old_name,
                                 unique_name,
-                                &sheet_id,
-                                &context,
                             );
                         }
                     }
@@ -209,12 +209,8 @@ impl GridController {
                 transaction.operations.clear();
                 bail!(e);
             }
-            let context = self.a1_context().to_owned();
 
-            let sheet = self.try_sheet_result(sheet_id)?;
-            let old_name = sheet.name.to_owned();
-
-            self.grid.update_sheet_name(&old_name, &name, &context);
+            let old_name = self.grid.update_sheet_name(sheet_id, &name)?;
 
             transaction
                 .forward_operations
@@ -277,7 +273,7 @@ impl GridController {
             new_sheet.id = new_sheet_id;
             let right = self.grid.next_sheet(sheet_id);
             let right_order = right.map(|right| right.order.clone());
-            if let Ok(order) = key_between(&Some(sheet.order.clone()), &right_order) {
+            if let Ok(order) = key_between(Some(&sheet.order), right_order.as_deref()) {
                 new_sheet.order = order;
             };
             let name = format!("{} Copy", sheet.name);
@@ -307,18 +303,16 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        constants::SHEET_NAME,
+        CellValue, SheetPos,
         controller::{
-            active_transactions::transaction_name::TransactionName,
+            GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
-            GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue, SheetId},
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
 
@@ -646,14 +640,11 @@ mod tests {
         );
 
         gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
+        let quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[0]);
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 20,
-                y: 20,
-            },
+            pos![sheet_id!T20],
             CodeCellLanguage::Python,
-            format!("q.cells(\"\'{}1\'!A1\")", SHEET_NAME.to_owned()),
+            format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,
         );
 
@@ -671,11 +662,12 @@ mod tests {
             })
         );
 
+        let new_quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[1]);
         assert_eq!(
             gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
-                code: r#"q.cells("A1")"#.to_string(),
+                code: format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#),
             })
         );
     }

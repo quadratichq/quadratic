@@ -154,20 +154,15 @@ class q:
 
         if result.w == 1 and result.h == 1:
             return result_to_value(result.cells[0])
-
-        # Create empty df of the correct size
-        df = DataFrame(
-            index=range(result.h),
-            columns=range(result.w),
-        )
-
-        # Fill DF
-        x_offset = result.x
-        y_offset = result.y
-
+        
+        data = [[None] * result.w for _ in range(result.h)]
         for cell in result.cells:
-            value = to_python_type_df(cell.value, cell.type_name)
-            df.at[cell.y - y_offset, cell.x - x_offset] = value
+            row = cell.y - result.y
+            col = cell.x - result.x
+            data[row][col] = to_python_type_df(cell.value, cell.type_name)
+
+        # Create DataFrame from 2D array
+        df = DataFrame(data)
 
         # Move the first row to the header
         if first_row_header or result.has_headers:

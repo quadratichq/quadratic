@@ -56,7 +56,7 @@ export function ReturnTypeInspector() {
         className="ml-auto"
         onClick={() =>
           submitPrompt({
-            userPrompt: 'Fix the error in the code cell',
+            content: [{ type: 'text', text: 'Fix the error in the code cell' }],
             clearMessages: true,
             codeCell: codeCellRecoil,
           }).catch(console.error)

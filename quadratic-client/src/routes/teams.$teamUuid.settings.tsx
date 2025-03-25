@@ -4,10 +4,11 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { CheckIcon } from '@/shared/components/Icons';
+import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI, PRICING_URL } from '@/shared/constants/urls';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -18,7 +19,7 @@ import mixpanel from 'mixpanel-browser';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { Navigate, useFetcher, useSubmit } from 'react-router-dom';
+import { Link, Navigate, useFetcher, useSubmit } from 'react-router-dom';
 
 export const Component = () => {
   const {
@@ -87,6 +88,7 @@ export const Component = () => {
   }
 
   const latestUsage = billing.usage[0] || { ai_messages: 0 };
+  const canManageBilling = teamPermissions.includes('TEAM_MANAGE');
 
   return (
     <>
@@ -104,215 +106,243 @@ export const Component = () => {
           </form>
         </SettingsRow>
 
-        {teamPermissions.includes('TEAM_MANAGE') && (
-          <>
-            <SettingsRow>
-              <Type variant="body2" className="font-bold">
-                Billing
-              </Type>
-              <div>
-                <div className="flex flex-col gap-4">
-                  {/* Plan Comparison */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Free Plan */}
-                    <div className="rounded-lg border border-border p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Free Plan</h3>
-                        {billing.status === undefined && (
-                          <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm">Team Members</span>
-                          <span className="text-sm font-medium">Limited</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">AI Messages</span>
-                          <span className="text-sm font-medium">Limited</span>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Connections</span>
-                          <span className="text-right text-sm font-medium">Limited</span>
-                        </div>
-                      </div>
+        <>
+          <SettingsRow>
+            <Type variant="body2" className="font-bold">
+              Billing
+            </Type>
+            <div>
+              <div className="flex flex-col gap-4">
+                {/* Plan Comparison */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Free Plan */}
+                  <div
+                    className={cn(
+                      'rounded-lg border p-4',
+                      billing.status === undefined ? 'border-foreground' : 'border-border'
+                    )}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Free plan</h3>
+                      {billing.status === undefined && <Badge>Current plan</Badge>}
                     </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm">Team members</span>
+                        <span className="text-sm font-medium">Limited</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">AI messages</span>
+                        <span className="text-sm font-medium">Limited</span>
+                      </div>
 
-                    {/* Team AI Plan */}
-                    <div className="rounded-lg border border-border p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Pro Plan</h3>
-                        {billing.status === 'ACTIVE' && (
-                          <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
-                        )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Connections</span>
+                        <span className="text-right text-sm font-medium">Limited</span>
                       </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Team Members</span>
-                          <span className="text-right text-sm font-medium">
-                            $20 <span className="text-xs text-muted-foreground">/ User / Month</span>
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">AI Messages</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Many</span>
-                            <Dialog>
-                              <DialogTrigger>
-                                <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>AI Message Limits</DialogTitle>
-                                </DialogHeader>
-                                <p className="text-sm text-muted-foreground">
-                                  We don't impose a strict limit on AI usage on the Pro plan. We reserve the right to
-                                  limit unreasonable use and abuse.
-                                </p>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Connections</span>
-                          <span className="text-right text-sm font-medium">Unlimited</span>
-                        </div>
-                      </div>
-                      {billing.status === undefined ? (
-                        <Button
-                          onClick={() => {
-                            mixpanel.track('[TeamSettings].upgradeToProClicked', {
-                              team_uuid: team.uuid,
-                            });
-                            apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                              window.location.href = data.url;
-                            });
-                          }}
-                          className="mt-4 w-full"
-                        >
-                          Upgrade to Pro
-                        </Button>
-                      ) : (
-                        billing.status === 'ACTIVE' && (
-                          <Button
-                            variant="secondary"
-                            className="mt-4 w-full"
-                            onClick={() => {
-                              mixpanel.track('[TeamSettings].manageBillingClicked', {
-                                team_uuid: team.uuid,
-                              });
-                              apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-                                window.location.href = data.url;
-                              });
-                            }}
-                          >
-                            Manage Billing
-                          </Button>
-                        )
-                      )}
                     </div>
                   </div>
 
-                  {/* Current Usage */}
-                  <div className="rounded-lg border border-border p-4">
-                    <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
+                  {/* Team AI Plan */}
+                  <div
+                    className={cn(
+                      'rounded-lg border p-4',
+                      billing.status === 'ACTIVE' ? 'border-foreground' : 'border-border'
+                    )}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Pro plan</h3>
+                      {billing.status === 'ACTIVE' && <Badge>Current plan</Badge>}
+                    </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm">Team Members</span>
-                        <div className="flex items-start gap-2">
-                          <span className="w-4 text-left font-medium">{users.length}</span>
-                        </div>
+                        <span className="text-sm">Team members</span>
+                        <span className="text-right text-sm font-medium">
+                          $20 <span className="text-xs text-muted-foreground">/user/month</span>
+                        </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">Your AI Messages</span>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-1 text-sm">
+                          AI messages
                           <Dialog>
                             <DialogTrigger>
-                              <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Usage History</DialogTitle>
+                                <DialogTitle>AI message limits</DialogTitle>
                               </DialogHeader>
-                              <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
-                              <div className="space-y-3">
-                                {billing.usage.map((usage) => (
-                                  <div key={usage.month} className="flex justify-between">
-                                    <span>
-                                      {(function formatDate(dateStr: string) {
-                                        const [year, month] = dateStr.split('-');
-                                        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                        return date.toLocaleDateString('en-US', {
-                                          month: 'short',
-                                          year: 'numeric',
-                                        });
-                                      })(usage.month)}
-                                    </span>
-                                    <span>{usage.ai_messages}</span>
-                                  </div>
-                                ))}
-                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                We don't impose a strict limit on AI usage on the Pro plan. We reserve the right to
+                                limit unreasonable use and abuse.
+                              </p>
                             </DialogContent>
                           </Dialog>
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-medium">Many</span>
                         </div>
-                        <div className="flex items-start gap-2">
-                          <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
-                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Connections</span>
+                        <span className="text-right text-sm font-medium">Unlimited</span>
+                      </div>
+                    </div>
+                    {billing.status === undefined ? (
+                      <Button
+                        disabled={!canManageBilling}
+                        onClick={() => {
+                          mixpanel.track('[TeamSettings].upgradeToProClicked', {
+                            team_uuid: team.uuid,
+                          });
+                          apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
+                            window.location.href = data.url;
+                          });
+                        }}
+                        className="mt-4 w-full"
+                      >
+                        Upgrade to Pro
+                      </Button>
+                    ) : (
+                      billing.status === 'ACTIVE' && (
+                        <Button
+                          disabled={!canManageBilling}
+                          variant="secondary"
+                          className="mt-4 w-full"
+                          onClick={() => {
+                            mixpanel.track('[TeamSettings].manageBillingClicked', {
+                              team_uuid: team.uuid,
+                            });
+                            apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                              window.location.href = data.url;
+                            });
+                          }}
+                        >
+                          Manage billing
+                        </Button>
+                      )
+                    )}
+                    {!teamPermissions.includes('TEAM_MANAGE') && (
+                      <p className="mt-2 text-center text-xs text-muted-foreground">
+                        You cannot edit billing details. Contact{' '}
+                        <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
+                          your team owner
+                        </Link>
+                        .
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Current Usage */}
+                <div>
+                  <h3 className="text-md mb-3 font-semibold">Current usage</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">
+                        Team members{' '}
+                        <span className="text-muted-foreground">
+                          (
+                          <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className=" underline">
+                            manage
+                          </Link>
+                          )
+                        </span>
+                      </span>
+
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-left font-medium">{users.length}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">Your AI messages</span>
+                        <Dialog>
+                          <DialogTrigger>
+                            <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Usage history</DialogTitle>
+                            </DialogHeader>
+                            <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
+                            <div className="space-y-3">
+                              {billing.usage.map((usage) => (
+                                <div key={usage.month} className="flex justify-between">
+                                  <span>
+                                    {(function formatDate(dateStr: string) {
+                                      const [year, month] = dateStr.split('-');
+                                      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+                                      return date.toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        year: 'numeric',
+                                      });
+                                    })(usage.month)}
+                                  </span>
+                                  <span>{usage.ai_messages}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <p className="pt-4 text-sm text-muted-foreground">
-                  Learn more on our{' '}
-                  <a href={PRICING_URL} target="_blank" className="underline hover:text-primary">
-                    pricing
-                  </a>{' '}
-                  page.
+              <p className="pt-4 text-sm text-muted-foreground">
+                Learn more on our{' '}
+                <a href={PRICING_URL} target="_blank" className="  underline hover:text-primary">
+                  pricing page
+                  <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
+                </a>
+              </p>
+            </div>
+          </SettingsRow>
+          <SettingsRow>
+            <Type variant="body2" className="font-bold">
+              Privacy
+            </Type>
+
+            <div>
+              <SettingControl
+                label="Improve AI results"
+                description={
+                  <>
+                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                      Learn more
+                    </a>
+                    .
+                  </>
+                }
+                onCheckedChange={(checked) => {
+                  handleUpdatePreference('analyticsAi', checked);
+                }}
+                checked={optimisticSettings.analyticsAi}
+                className="rounded-lg border border-border p-4 shadow-sm"
+                disabled={!teamPermissions.includes('TEAM_MANAGE')}
+              />
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground">
+                  When using AI features your data is sent to our AI providers:
                 </p>
+                <ul className="mt-2 space-y-2">
+                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
+                      <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
+                      retention
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </SettingsRow>
-            <SettingsRow>
-              <Type variant="body2" className="font-bold">
-                Privacy
-              </Type>
-
-              <div>
-                <SettingControl
-                  label="Improve AI results"
-                  description={
-                    <>
-                      Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                      <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
-                        Learn more
-                      </a>
-                      .
-                    </>
-                  }
-                  onCheckedChange={(checked) => {
-                    handleUpdatePreference('analyticsAi', checked);
-                  }}
-                  checked={optimisticSettings.analyticsAi}
-                  className="rounded-lg border border-border p-4 shadow-sm"
-                />
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    When using AI features your data is sent to our AI providers:
-                  </p>
-                  <ul className="mt-2 space-y-2">
-                    {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
-                      <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
-                        <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
-                        retention
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </SettingsRow>
-          </>
-        )}
+            </div>
+          </SettingsRow>
+        </>
       </div>
     </>
   );

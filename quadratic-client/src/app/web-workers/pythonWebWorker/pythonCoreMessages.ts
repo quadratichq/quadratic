@@ -1,5 +1,3 @@
-import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-
 export interface CorePythonRun {
   type: 'corePythonRun';
   transactionId: string;
@@ -12,7 +10,7 @@ export interface CorePythonRun {
 export interface PythonCoreResults {
   type: 'pythonCoreResults';
   transactionId: string;
-  results: PythonRun;
+  jsCodeResultBuffer: ArrayBuffer;
 }
 
 export interface PythonCoreGetCellsA1Length {

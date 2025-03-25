@@ -1,3 +1,7 @@
+//! PostgreSQL
+//!
+//! Functions to interact with PostgreSQL
+
 use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
@@ -11,8 +15,8 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use sqlx::{
-    postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow, PgTypeKind},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
+    postgres::{PgColumn, PgConnectOptions, PgRow, PgTypeKind, types::PgTimeTz},
 };
 
 use crate::convert_pg_type;
@@ -21,6 +25,7 @@ use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
 
+/// PostgreSQL connection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostgresConnection {
     pub username: Option<String>,
@@ -31,6 +36,7 @@ pub struct PostgresConnection {
 }
 
 impl PostgresConnection {
+    /// Create a new PostgreSQL connection
     pub fn new(
         username: Option<String>,
         password: Option<String>,
@@ -47,6 +53,7 @@ impl PostgresConnection {
         }
     }
 
+    /// Query all rows from a PostgreSQL database
     async fn query_all(pool: &mut PgConnection, sql: &str) -> Result<Vec<PgRow>> {
         let rows = sqlx::query(sql)
             .fetch_all(pool)
@@ -63,18 +70,22 @@ impl Connection for PostgresConnection {
     type Row = PgRow;
     type Column = PgColumn;
 
+    /// Get the length of a row
     fn row_len(row: &Self::Row) -> usize {
         row.len()
     }
 
+    /// Get the columns of a row
     fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
         Box::new(row.columns().iter())
     }
 
+    /// Get the name of a column
     fn column_name(col: &Self::Column) -> &str {
         col.name()
     }
 
+    /// Connect to a PostgreSQL database
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = PgConnectOptions::new();
         options = options.host(&self.host);
@@ -103,6 +114,7 @@ impl Connection for PostgresConnection {
         Ok(pool)
     }
 
+    /// Query rows from a PostgreSQL database
     async fn query(
         &self,
         pool: &mut Self::Conn,
@@ -140,6 +152,7 @@ impl Connection for PostgresConnection {
         Ok((bytes, over_the_limit, num_records))
     }
 
+    /// Get the schema of a PostgreSQL database
     async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.to_owned();
         let sql = format!("
@@ -185,6 +198,7 @@ impl Connection for PostgresConnection {
         Ok(schema)
     }
 
+    /// Convert a row to an Arrow type
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
@@ -254,6 +268,7 @@ impl Connection for PostgresConnection {
     }
 }
 
+/// Convert a column data to an ArrowType into an Arrow type
 #[macro_export]
 macro_rules! convert_pg_type {
     ( $kind:ty, $row:ident, $index:ident ) => {{

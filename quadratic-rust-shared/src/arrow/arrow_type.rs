@@ -1,7 +1,12 @@
+//! Arrow types
+//!
+//! Arrow types that are used in the application and are used to convert
+//! between Arrow and Quadratic types
+
 use arrow::array::{
-    ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array, Int16Array,
-    Int32Array, Int64Array, Int8Array, StringArray, Time32SecondArray, TimestampMillisecondArray,
-    UInt16Array, UInt32Array, UInt64Array, UInt8Array,
+    ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array, Int8Array,
+    Int16Array, Int32Array, Int64Array, StringArray, Time32SecondArray, TimestampMillisecondArray,
+    UInt8Array, UInt16Array, UInt32Array, UInt64Array,
 };
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Timelike};
@@ -15,6 +20,8 @@ use crate::{
     vec_time_arrow_type_to_array_ref,
 };
 
+/// Arrow types that are used in the application and are used to convert
+/// between Arrow and Quadratic types
 #[derive(Clone, Debug, PartialEq)]
 pub enum ArrowType {
     Int8(i8),
@@ -45,6 +52,7 @@ pub enum ArrowType {
 }
 
 impl ArrowType {
+    /// Convert a vector of ArrowType to an Arrow ArrayRef
     pub fn to_array_ref(values: Vec<ArrowType>) -> ArrayRef {
         // println!("to_array_ref: {:?}", values[0]);
         match values[0] {
@@ -132,6 +140,7 @@ impl ArrowType {
     }
 }
 
+/// Convert a vector of ArrowType to an Arrow ArrayRef
 #[macro_export]
 macro_rules! vec_arrow_type_to_array_ref {
     ( $arrow_type_kind:path, $arrow_kind:ty, $values:ident ) => {{
@@ -144,6 +153,7 @@ macro_rules! vec_arrow_type_to_array_ref {
     }};
 }
 
+/// Convert a vector of ArrowType strings to an Arrow ArrayRef
 #[macro_export]
 macro_rules! vec_string_arrow_type_to_array_ref {
     ( $arrow_type_kind:path, $values:ident ) => {{
@@ -156,6 +166,7 @@ macro_rules! vec_string_arrow_type_to_array_ref {
     }};
 }
 
+/// Convert a vector of ArrowType timestamp types to an Arrow ArrayRef
 #[macro_export]
 macro_rules! vec_time_arrow_type_to_array_ref {
     ( $values:ident ) => {{

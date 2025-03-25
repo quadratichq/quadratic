@@ -8,6 +8,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import * as monaco from 'monaco-editor';
@@ -430,9 +431,6 @@ class InlineEditorMonaco {
 
     this.disableKeybindings();
 
-    interface SuggestController {
-      widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
-    }
     const suggestionWidget = (
       this.editor.getContribution('editor.contrib.suggestController') as SuggestController | null
     )?.widget;

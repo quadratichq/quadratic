@@ -1,6 +1,6 @@
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -33,7 +33,10 @@ export function useCodeCellContextMessages() {
     return [
       {
         role: 'user',
-        content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
+        content: [
+          {
+            type: 'text',
+            text: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 Currently, you are in a code cell that is being edited.\n
 The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
@@ -80,11 +83,18 @@ ${
 \`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\``
     : ``
 }`,
+          },
+        ],
         contextType: 'codeCell',
       },
       {
         role: 'assistant',
-        content: `How can I help you?`,
+        content: [
+          {
+            type: 'text',
+            text: `How can I help you?`,
+          },
+        ],
         contextType: 'codeCell',
       },
     ];
