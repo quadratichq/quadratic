@@ -28,16 +28,40 @@ impl Sheet {
         let mut dt_to_add = Vec::new();
         let mut dt_to_replace = Vec::new();
         let mut dt_to_delete = Vec::new();
+        let mut adjust_chart_size = Vec::new();
 
         self.data_tables
             .iter()
             .enumerate()
             .for_each(|(index, (pos, table))| {
-                // we can only adjust non-readonly (ie, non-code-run) tables
-                if table.readonly || table.is_html_or_image() {
+                let output_rect = table.output_rect(*pos, false);
+
+                // we need to handle charts separately
+                if table.is_html_or_image() {
+                    let count = columns
+                        .iter()
+                        .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
+                        .count();
+                    if count > 0 {
+                        if let Some((width, height)) = table.chart_output {
+                            let min = (width - count as u32).max(1);
+                            if min != width {
+                                adjust_chart_size.push((*pos, min, height));
+                                transaction.add_from_code_run(
+                                    self.id,
+                                    *pos,
+                                    table.is_image(),
+                                    table.is_html(),
+                                );
+                            }
+                        }
+                    }
                     return;
                 }
-                let output_rect = table.output_rect(*pos, false);
+                // we can only adjust non-readonly (ie, non-code-run) tables
+                if table.readonly {
+                    return;
+                }
 
                 // check if the table is outside the deletion range
                 if columns[0] > output_rect.max.x || columns[columns.len() - 1] < output_rect.min.x
@@ -174,6 +198,19 @@ impl Sheet {
             });
         }
 
+        for (pos, width, height) in adjust_chart_size {
+            if let Some(dt) = self.data_tables.get_mut(&pos) {
+                if let Some((old_width, old_height)) = dt.chart_output.clone() {
+                    dt.chart_output = Some((width, height));
+                    reverse_operations.push(Operation::SetChartCellSize {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        w: old_width,
+                        h: old_height,
+                    });
+                }
+            }
+        }
+
         for rect in set_dirty_hash_rects {
             transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(self.id));
             let sheet_rows = self.get_rows_with_wrap_in_rect(&rect, true);
@@ -186,6 +223,7 @@ impl Sheet {
                 resize_rows.extend(table_rows);
             }
         }
+
         for pos in set_dirty_code_cells {
             transaction.add_from_code_run(self.id, pos, false, false);
         }
@@ -200,7 +238,9 @@ mod tests {
         CellValue,
         controller::GridController,
         grid::{SheetId, sort::SortDirection},
-        test_util::{assert_data_table_size, first_sheet, test_create_data_table},
+        test_util::{
+            assert_data_table_size, first_sheet, test_create_data_table, test_create_js_chart,
+        },
     };
 
     use super::*;
@@ -447,5 +487,24 @@ mod tests {
             data_table.sort_dirty,
             "sort_dirty should be true when deleting sorted column"
         );
+    }
+
+    #[test]
+    fn test_delete_columns_with_chart() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::TEST;
+
+        // Create a chart that's 4x4 cells
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 4, 4);
+
+        // Delete a column that intersects with the chart
+        gc.delete_columns(sheet_id, vec![3], None);
+
+        // Verify the chart was resized
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 4, false);
+
+        // Test undo
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 4, false);
     }
 }
