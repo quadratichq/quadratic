@@ -1,4 +1,4 @@
-use axum::http::{header, HeaderValue};
+use axum::http::{HeaderValue, header};
 use tokio::time::Instant;
 
 pub fn time_header(time: Instant) -> HeaderValue {

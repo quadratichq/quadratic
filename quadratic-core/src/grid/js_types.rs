@@ -443,8 +443,8 @@ impl fmt::Display for JsSnackbarSeverity {
 mod test {
 
     use super::JsNumber;
-    use crate::grid::formats::Format;
     use crate::grid::NumericFormat;
+    use crate::grid::formats::Format;
 
     #[test]
     fn to_js_number() {

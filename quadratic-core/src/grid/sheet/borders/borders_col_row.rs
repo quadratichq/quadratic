@@ -91,10 +91,10 @@ impl Borders {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, CopyFormats,
         a1::A1Selection,
         controller::GridController,
         grid::sheet::borders::{BorderSelection, BorderStyle, Borders},
-        CellValue, CopyFormats,
     };
 
     #[test]
