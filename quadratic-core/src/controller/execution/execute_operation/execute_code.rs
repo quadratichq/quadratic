@@ -1,10 +1,10 @@
 use crate::{
+    CellValue, Pos, SheetPos, SheetRect,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::CodeCellLanguage,
-    CellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::Result;
 impl GridController {
@@ -130,12 +130,12 @@ impl GridController {
                     h: original.map(|(_, h)| h).unwrap_or(h),
                 });
 
-            transaction.add_code_cell(sheet_pos.sheet_id, sheet_pos.into());
-            if data_table.is_html() {
-                transaction.add_html_cell(sheet_pos.sheet_id, sheet_pos.into());
-            } else if data_table.is_image() {
-                transaction.add_image_cell(sheet_pos.sheet_id, sheet_pos.into());
-            }
+            transaction.add_from_code_run(
+                sheet_pos.sheet_id,
+                sheet_pos.into(),
+                data_table.is_image(),
+                data_table.is_html(),
+            );
         }
 
         Ok(())
@@ -188,13 +188,13 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, Pos, SheetPos,
         controller::{
-            active_transactions::pending_transaction::PendingTransaction,
-            operations::operation::Operation, GridController,
+            GridController, active_transactions::pending_transaction::PendingTransaction,
+            operations::operation::Operation,
         },
         grid::CodeCellLanguage,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count},
-        CellValue, Pos, SheetPos,
     };
 
     #[test]

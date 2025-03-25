@@ -1,10 +1,10 @@
 use crate::{
+    CopyFormats,
     controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
+        GridController, active_transactions::transaction_name::TransactionName,
+        operations::operation::Operation,
     },
     grid::SheetId,
-    CopyFormats,
 };
 
 impl GridController {
@@ -20,6 +20,7 @@ impl GridController {
         after: bool,
         cursor: Option<String>,
     ) {
+        dbgjs!("HERE?!");
         let ops = vec![Operation::InsertColumn {
             sheet_id,
             column,
@@ -89,8 +90,8 @@ impl GridController {
 mod tests {
 
     use crate::{
-        grid::{formats::Format, CodeCellLanguage, CodeCellValue},
         CellValue, Pos, SheetPos,
+        grid::{CodeCellLanguage, CodeCellValue, formats::Format},
     };
 
     use super::*;

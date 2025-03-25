@@ -23,6 +23,7 @@ impl Sheet {
                     // if html or image, then we need to change the width
                     if let Some((width, height)) = dt.chart_output {
                         dt.chart_output = Some((width + 1, height));
+                        transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                         transaction
                             .reverse_operations
                             .push(Operation::SetChartCellSize {

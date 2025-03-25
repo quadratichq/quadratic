@@ -173,6 +173,7 @@ impl GridController {
             copy_formats,
         } = op
         {
+            dbgjs!("Also here");
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 sheet.insert_column(transaction, column, copy_formats, true);
                 transaction.forward_operations.push(op);
@@ -190,10 +191,6 @@ impl GridController {
                     transaction,
                     &[RefAdjust::new_insert_column(sheet_id, column)],
                 );
-
-                transaction
-                    .operations
-                    .extend(self.check_chart_insert_col_operations(sheet_id, column as u32));
 
                 // update information for all cells to the right of the inserted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -235,10 +232,6 @@ impl GridController {
                     transaction,
                     &[RefAdjust::new_insert_row(sheet_id, row)],
                 );
-
-                transaction
-                    .operations
-                    .extend(self.check_chart_insert_row_operations(sheet_id, row as u32));
 
                 // update information for all cells below the deleted row
                 if let Some(sheet) = self.try_sheet(sheet_id) {
