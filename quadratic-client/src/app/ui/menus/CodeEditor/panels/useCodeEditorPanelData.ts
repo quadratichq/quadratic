@@ -52,7 +52,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   );
 
   // this stores the height when editor is in vertical mode
-  const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>(`codeEditorHeightPercentage`, 75);
+  const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>(`codeEditorHeightPercentage`, 50);
 
   const type = getLanguage(language);
 

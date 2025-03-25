@@ -222,6 +222,28 @@ export const ApiSchemas = {
   '/v0/files/:uuid/sharing.PATCH.response': z.object({ publicLinkAccess: PublicLinkAccessSchema }),
 
   /**
+   * File checkpoints
+   */
+  '/v0/files/:uuid/checkpoints.GET.response': z.object({
+    name: FileSchema.shape.name,
+    checkpoints: z.array(
+      z.object({
+        dataUrl: z.string().url(),
+        id: z.number(),
+        timestamp: z.string().datetime(),
+        version: z.string(),
+      })
+    ),
+  }),
+  '/v0/files/:uuid/checkpoints/:checkpointId.GET.response': z.object({
+    dataUrl: z.string().url(),
+    id: z.number(),
+    sequenceNumber: z.number(),
+    timestamp: z.string().datetime(),
+    version: z.string(),
+  }),
+
+  /**
    * File users
    */
   '/v0/files/:uuid/users/:userId.PATCH.request': FileUserSchema.pick({ role: true }),
