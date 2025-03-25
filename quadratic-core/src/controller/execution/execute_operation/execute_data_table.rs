@@ -1994,21 +1994,41 @@ mod tests {
         let sheet_rect = SheetRect::new_pos_span(new_pos, max, sheet_id);
         let op = Operation::GridToDataTable { sheet_rect };
         let mut transaction = PendingTransaction::default();
-        gc.execute_grid_to_data_table(&mut transaction, op).unwrap();
+        gc.execute_grid_to_data_table(&mut transaction, op.clone())
+            .unwrap();
         gc.data_table_first_row_as_header(sheet_pos, true, None);
         print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
 
-        // undo, the value should be a data table again
+        // undo, the value should be on the grid again
         execute_reverse_operations(&mut gc, &transaction);
         print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
-        // redo, the value should be on the grid
+        // redo, the value should be a data table again
         execute_forward_operations(&mut gc, &mut transaction);
         gc.data_table_first_row_as_header(sheet_pos, true, None);
         print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
+
+        // undo, the value should be on th grid again
+        execute_reverse_operations(&mut gc, &transaction);
+        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+        assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
+
+        // create a formula cell in the grid data table
+        let formula_pos = SheetPos::new(sheet_id, 1, 3);
+        gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
+        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+
+        // there should only be 1 data table, the formula data table
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+
+        // expect that a data table is not created
+        gc.execute_grid_to_data_table(&mut transaction, op).unwrap();
+
+        // there should only be 1 data table, the formula data table
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
     }
 
     #[test]
