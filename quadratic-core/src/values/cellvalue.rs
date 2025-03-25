@@ -133,6 +133,26 @@ impl CellValue {
             CellValue::Import(_) => "import",
         }
     }
+
+    // Returns the type of the value as a u8 id, keep in sync quadratic_py/utils.py and javascript/runner/javascriptLibrary.ts
+    pub fn type_u8(&self) -> u8 {
+        match self {
+            CellValue::Blank => 0,
+            CellValue::Text(_) => 1,
+            CellValue::Number(_) => 2,
+            CellValue::Logical(_) => 3,
+            CellValue::Duration(_) => 4,
+            CellValue::Error(_) => 5,
+            CellValue::Html(_) => 6,
+            CellValue::Code(_) => 7,
+            CellValue::Image(_) => 8,
+            CellValue::Date(_) => 9,
+            CellValue::Time(_) => 10,
+            CellValue::Instant(_) | CellValue::DateTime(_) => 11,
+            CellValue::Import(_) => 12,
+        }
+    }
+
     /// Returns a formula-source-code representation of the value.
     pub fn repr(&self) -> String {
         match self {

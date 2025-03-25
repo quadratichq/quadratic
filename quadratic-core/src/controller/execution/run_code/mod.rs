@@ -455,12 +455,11 @@ impl GridController {
                     Value::Single("".into())
                 }
             } else if let Some(output_value) = js_code_result.output_value {
-                let (cell_value, ops) =
-                    CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
-                        .unwrap_or_else(|e| {
-                            dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
-                            (CellValue::Blank, vec![])
-                        });
+                let (cell_value, ops) = CellValue::from_js(output_value, start.into(), sheet)
+                    .unwrap_or_else(|e| {
+                        dbgjs!(format!("Error parsing output value: {}", e));
+                        (CellValue::Blank, vec![])
+                    });
                 transaction.reverse_operations.extend(ops);
                 Value::Single(cell_value)
             } else {
@@ -540,6 +539,7 @@ impl GridController {
 mod test {
 
     use super::*;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
 
@@ -673,7 +673,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            output_value: Some(vec!["test".into(), "image".into()]),
+            output_value: Some(JsCellValueResult("test".into(), 8)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
@@ -698,7 +698,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((100.0, 100.0)),
                 ..Default::default()
             };
@@ -713,7 +713,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((200.0, 200.0)),
                 ..Default::default()
             };

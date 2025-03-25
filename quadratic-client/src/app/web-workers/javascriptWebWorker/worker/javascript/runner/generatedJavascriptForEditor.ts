@@ -208,13 +208,30 @@ export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, delt
 
 export const rc = relCell;
 
+// type_u8 as per cellvalue.rs
+export enum CellValueType {
+  Blank = 0,
+  Text = 1,
+  Number = 2,
+  Logical = 3,
+  Duration = 4,
+  Error = 5,
+  Html = 6,
+  Code = 7,
+  Image = 8,
+  Date = 9,
+  Time = 10,
+  DateTime = 11,
+  Import = 12,
+}
+
 type CellType = number | string | boolean | Date | undefined;
 
 const convertType = (cell: any): CellType => {
-  if (cell.type_name === 'blank') return undefined;
-  if (cell.type_name === 'date time' || cell.type_name === 'date') return new Date(cell.value);
+  if (cell.t === CellValueType.Blank) return undefined;
+  if (cell.t === CellValueType.DateTime || cell.t === CellValueType.Date) return new Date(cell.v);
 
-  return cell.type_name === 'number' ? parseFloat(cell.value) : cell.value;
+  return cell.t === CellValueType.Number ? parseFloat(cell.v) : cell.v;
 };
 
 export class q {
