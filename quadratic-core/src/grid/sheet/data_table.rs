@@ -472,7 +472,7 @@ impl Sheet {
         let contains_data_table = self.contains_data_table_within_rect(rect);
 
         if contains_data_table {
-            let message = "Code and Formulas currently cannot be added to tables.";
+            let message = "Tables cannot be created over tables, code, or formulas.";
             jsClientMessage(message.to_owned(), JsSnackbarSeverity::Error.to_string());
         }
 
