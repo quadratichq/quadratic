@@ -1,6 +1,6 @@
 import { Empty } from '@/dashboard/components/Empty';
-import { ACTIVE_TEAM_UUID_KEY } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
+import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
