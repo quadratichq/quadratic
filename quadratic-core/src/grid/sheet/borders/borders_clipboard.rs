@@ -1,4 +1,4 @@
-use crate::{a1::A1Selection, grid::Sheet, Pos};
+use crate::{Pos, a1::A1Selection, grid::Sheet};
 
 use super::{Borders, BordersUpdates};
 
@@ -32,10 +32,10 @@ mod tests {
 
     use super::*;
     use crate::{
+        SheetRect,
         color::Rgba,
         controller::GridController,
         grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine},
-        SheetRect,
     };
 
     #[test]

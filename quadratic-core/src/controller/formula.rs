@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    SheetPos, Span, Spanned,
     a1::{A1Context, SheetCellRefRange},
-    formulas, SheetPos, Span, Spanned,
+    formulas,
 };
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -135,7 +136,7 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_formula, CellRefSpan, FormulaParseResult};
+    use super::{CellRefSpan, FormulaParseResult, parse_formula};
     use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
     use crate::grid::{Grid, Sheet, SheetId};
     use crate::{Pos, Span};

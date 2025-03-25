@@ -31,9 +31,9 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, Pos, SheetPos, SheetRect, Value,
         controller::GridController,
         grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
-        CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
     #[test]

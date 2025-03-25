@@ -1,6 +1,6 @@
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 use crate::{Pos, SheetRect};
 
 impl GridController {

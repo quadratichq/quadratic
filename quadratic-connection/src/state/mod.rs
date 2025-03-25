@@ -9,12 +9,12 @@ pub mod stats;
 use std::sync::Arc;
 
 use jsonwebtoken::jwk::JwkSet;
-use reqwest::redirect::Policy;
 use reqwest::Client;
+use reqwest::redirect::Policy;
 use tokio::sync::Mutex;
 
 use crate::config::Config;
-use crate::error::{proxy_error, Result};
+use crate::error::{Result, proxy_error};
 use crate::state::settings::Settings;
 
 use self::stats::Stats;

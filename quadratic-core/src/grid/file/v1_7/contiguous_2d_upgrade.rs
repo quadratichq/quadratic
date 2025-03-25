@@ -1,10 +1,10 @@
 // This file contains code copied from `contiguous_2d.rs`, `contiguous_blocks.rs` and
 // `block.rs` in the `contiguous` module. Only the parts necessary for upgrade are included.
 
-use std::collections::{btree_map, BTreeMap};
+use std::collections::{BTreeMap, btree_map};
 
 use itertools::Itertools;
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use crate::grid::file::v1_7_1::{BlockSchema, Contiguous2DSchema};
 

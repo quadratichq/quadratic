@@ -3,7 +3,7 @@ use regex::Regex;
 
 use crate::a1::{A1Context, A1Error};
 
-use super::{tokenize::Token, ColRange, TableRef};
+use super::{ColRange, TableRef, tokenize::Token};
 
 lazy_static! {
     static ref TABLE_NAME_PATTERN: Regex = Regex::new(r"^([a-zA-Z0-9_.-]{1,255})(?:\[(.*)\])?$")

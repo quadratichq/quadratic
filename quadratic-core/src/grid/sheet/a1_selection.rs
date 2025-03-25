@@ -1,9 +1,9 @@
 use indexmap::IndexMap;
 
 use crate::{
+    CellValue, Pos, Rect,
     a1::{A1Selection, CellRefRange, RefRangeBounds, TableRef},
     grid::GridBounds,
-    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -98,11 +98,7 @@ impl Sheet {
             }
         }
 
-        if cells.is_empty() {
-            None
-        } else {
-            Some(cells)
-        }
+        if cells.is_empty() { None } else { Some(cells) }
     }
 
     ///   Gets a selection of CellValues. This is useful for dealing with a
@@ -278,8 +274,8 @@ impl Sheet {
 mod tests {
 
     use crate::{
-        a1::{A1Selection, CellRefRange, RefRangeBounds, TableRef},
         CellValue, Rect,
+        a1::{A1Selection, CellRefRange, RefRangeBounds, TableRef},
     };
 
     use super::Sheet;

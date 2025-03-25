@@ -5,9 +5,9 @@ use std::{fmt, str::FromStr};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::a1::UNBOUNDED;
 use crate::Rect;
-use crate::{grid::SheetId, ArraySize, Pos, SheetPos};
+use crate::a1::UNBOUNDED;
+use crate::{ArraySize, Pos, SheetPos, grid::SheetId};
 
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
