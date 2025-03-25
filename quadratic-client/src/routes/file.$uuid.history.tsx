@@ -2,7 +2,7 @@ import { authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { ChevronRightIcon, DraftIcon, RefreshIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -91,14 +91,11 @@ export const Component = () => {
           <p className="text-sm text-muted-foreground">
             Files are saved automatically as you work so you can recover previous versions.
           </p>
-          <div className="mb-1 mt-2 flex items-center gap-0.5 text-sm">
-            <DraftIcon />
-            <span className="truncate">{data.name}</span>
-          </div>
 
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="mt-2 flex items-center gap-2">
             <Button
               disabled={btnsDisabled}
+              className="flex-grow"
               onClick={() => {
                 if (!activeCheckpoint) return;
 
@@ -115,7 +112,7 @@ export const Component = () => {
                 fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
               }}
             >
-              Duplicate
+              Duplicate version
             </Button>
             <Button
               variant="outline"

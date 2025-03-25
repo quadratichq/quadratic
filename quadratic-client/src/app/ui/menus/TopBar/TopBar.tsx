@@ -17,10 +17,6 @@ import {
 export const TopBar = () => {
   // TODO: what about embedable view? should we show the file menu?
 
-  if (isEmbed) {
-    return null;
-  }
-
   return (
     <div
       onContextMenu={(event) => {
@@ -36,31 +32,35 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <div className="hidden lg:block">
-          <TopBarMenus />
-        </div>
+        {!isEmbed && (
+          <>
+            <div className="hidden lg:block">
+              <TopBarMenus />
+            </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 md:hidden">
-            <QuadraticLogo />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            onCloseAutoFocus={(e) => {
-              e.preventDefault();
-              focusGrid();
-            }}
-          >
-            <DropdownMenuItem
-              onClick={() => {
-                window.location.href = '/';
-              }}
-            >
-              Back to dashboard
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>Quadratic {VERSION}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 md:hidden">
+                <QuadraticLogo />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                onCloseAutoFocus={(e) => {
+                  e.preventDefault();
+                  focusGrid();
+                }}
+              >
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.location.href = '/';
+                  }}
+                >
+                  Back to dashboard
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled>Quadratic {VERSION}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
       </div>
 
       <TopBarFileNameAndLocationMenu />
@@ -72,12 +72,14 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <>
-          <TopBarUsers />
-          <div className="hidden md:block">
-            <TopBarShareButton />
-          </div>
-        </>
+        {!isEmbed && (
+          <>
+            <TopBarUsers />
+            <div className="hidden md:block">
+              <TopBarShareButton />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
