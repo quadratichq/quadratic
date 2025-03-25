@@ -1,6 +1,6 @@
-use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::{a1::A1Selection, SheetPos};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
@@ -54,14 +54,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
-        grid::{sort::SortDirection, NumericFormat, SheetId},
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
+        grid::{NumericFormat, SheetId, sort::SortDirection},
         test_util::{
             assert_data_table_cell_value_column, assert_data_table_cell_value_row,
             assert_display_cell_value_pos, print_table, str_vec_to_string_vec,
         },
-        CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
 

@@ -4,12 +4,12 @@ use std::iter::StepBy;
 use std::num::NonZeroU32;
 use std::slice::Iter;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::cell_values::CellValues;
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
@@ -531,7 +531,7 @@ impl Array {
                         expected: common_len,
                         got: new_array_len,
                     }
-                    .with_span(array.span))
+                    .with_span(array.span));
                 }
             }
         }

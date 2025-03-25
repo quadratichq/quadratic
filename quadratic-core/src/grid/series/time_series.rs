@@ -87,7 +87,7 @@ pub(crate) fn find_time_series(options: &SeriesOptions) -> Option<Vec<CellValue>
 
 #[cfg(test)]
 mod test {
-    use crate::{grid::series::find_auto_complete, Pos};
+    use crate::{Pos, grid::series::find_auto_complete};
 
     use super::*;
 

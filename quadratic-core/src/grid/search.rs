@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::SheetPos;
 
-use super::{sheet::search::SearchOptions, Grid, SheetId};
+use super::{Grid, SheetId, sheet::search::SearchOptions};
 
 impl Grid {
     pub fn search(&self, query: &String, options: SearchOptions) -> Vec<SheetPos> {

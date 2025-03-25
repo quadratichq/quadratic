@@ -267,9 +267,9 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         Array,
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     };
 
     #[test]

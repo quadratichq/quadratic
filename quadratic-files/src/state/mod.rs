@@ -8,8 +8,8 @@ pub mod settings;
 pub mod stats;
 
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
+use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use tokio::sync::Mutex;
 
 use crate::config::Config;

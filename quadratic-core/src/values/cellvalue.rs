@@ -11,9 +11,9 @@ use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
 use crate::grid::{CodeCellLanguage, CodeCellValue};
 use crate::{
-    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{js_types::JsCellValuePos, NumericFormat, NumericFormatKind},
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
+    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
+    grid::{NumericFormat, NumericFormatKind, js_types::JsCellValuePos},
 };
 
 // todo: fill this out
@@ -177,11 +177,7 @@ impl CellValue {
         } else {
             CellValue::add_commas(&s)
         };
-        if negative {
-            format!("-{}", n)
-        } else {
-            n
-        }
+        if negative { format!("-{}", n) } else { n }
     }
 
     pub fn to_display(&self) -> String {
