@@ -7,7 +7,6 @@ pub(crate) use super::*;
 use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
 use crate::controller::GridController;
 pub(crate) use crate::grid::Grid;
-use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
 pub(crate) use crate::{CodeResult, RunError, RunErrorMsg, Spanned, array};
 use crate::{CoerceInto, Pos, SheetPos};
@@ -326,18 +325,19 @@ fn test_formula_blank_to_string() {
 fn test_find_cell_references() {
     let mut g = GridController::new();
     let sheet1 = g.sheet_ids()[0];
-    let apple = SheetId::new();
-    g.grid_mut()
-        .add_sheet(Some(Sheet::new(apple, "apple".into(), String::new())));
-    let orange = SheetId::new();
-    g.grid_mut()
-        .add_sheet(Some(Sheet::new(orange, "orange".into(), String::new())));
-    let banana = SheetId::new();
-    g.grid_mut()
-        .add_sheet(Some(Sheet::new(banana, "banana".into(), String::new())));
-    let plum = SheetId::new();
-    g.grid_mut()
-        .add_sheet(Some(Sheet::new(plum, "plum".into(), String::new())));
+
+    g.add_sheet(None);
+    g.add_sheet(None);
+    g.add_sheet(None);
+    g.add_sheet(None);
+    let apple = g.sheet_ids()[0];
+    g.set_sheet_name(apple, "apple".into(), None);
+    let orange = g.sheet_ids()[1];
+    g.set_sheet_name(orange, "orange".into(), None);
+    let banana = g.sheet_ids()[1];
+    g.set_sheet_name(banana, "banana".into(), None);
+    let plum = g.sheet_ids()[1];
+    g.set_sheet_name(plum, "plum".into(), None);
 
     let a = CellRefCoord::new_abs;
     let r = CellRefCoord::new_rel;
