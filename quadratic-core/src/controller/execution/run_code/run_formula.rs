@@ -1,10 +1,10 @@
 use itertools::Itertools;
 
 use crate::{
-    controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    formulas::{parse_formula, Ctx},
-    grid::{CodeRun, DataTable, DataTableKind},
     SheetPos,
+    controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
+    formulas::{Ctx, parse_formula},
+    grid::{CodeRun, DataTable, DataTableKind},
 };
 
 impl GridController {
@@ -58,17 +58,17 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
+        Array, ArraySize, CellValue, Pos, SheetPos, Value,
         cell_values::CellValues,
         controller::{
+            GridController,
             active_transactions::{
                 pending_transaction::PendingTransaction, transaction_name::TransactionName,
             },
             operations::operation::Operation,
             transaction_types::JsCodeResult,
-            GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-        Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
     #[test]
@@ -399,11 +399,12 @@ mod test {
                 .unwrap()
                 .spill_error
         );
-        assert!(gc
-            .sheet(sheet_id)
-            .display_value(Pos { x: 2, y: 1 })
-            .unwrap()
-            .is_blank_or_empty_string());
+        assert!(
+            gc.sheet(sheet_id)
+                .display_value(Pos { x: 2, y: 1 })
+                .unwrap()
+                .is_blank_or_empty_string()
+        );
 
         // undo the spill error
         gc.undo(None);

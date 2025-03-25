@@ -203,9 +203,9 @@ pub mod test {
 
     use super::*;
     use crate::{
-        cellvalue::Import,
-        grid::{test::new_data_table, DataTableKind, Sheet},
         Array, Pos,
+        cellvalue::Import,
+        grid::{DataTableKind, Sheet, test::new_data_table},
     };
     use chrono::Utc;
 

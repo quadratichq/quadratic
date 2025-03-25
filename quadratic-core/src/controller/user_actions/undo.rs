@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::controller::{execution::TransactionSource, GridController};
+use crate::controller::{GridController, execution::TransactionSource};
 
 impl GridController {
     pub fn has_undo(&self) -> bool {

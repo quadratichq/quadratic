@@ -1,7 +1,7 @@
 use std::str::FromStr;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-use crate::{controller::GridController, grid::SheetId, Rect};
+use crate::{Rect, controller::GridController, grid::SheetId};
 
 #[allow(non_snake_case)]
 #[wasm_bindgen]

@@ -90,10 +90,14 @@ mod tests {
             drop_down: false,
         };
 
-        assert!(ValidationRule::List(list.clone())
-            .validate(&sheet, Some(&CellValue::Text("test".to_string()))));
-        assert!(!ValidationRule::List(list)
-            .validate(&sheet, Some(&CellValue::Text("test2".to_string()))));
+        assert!(
+            ValidationRule::List(list.clone())
+                .validate(&sheet, Some(&CellValue::Text("test".to_string())))
+        );
+        assert!(
+            !ValidationRule::List(list)
+                .validate(&sheet, Some(&CellValue::Text("test2".to_string())))
+        );
     }
 
     #[test]

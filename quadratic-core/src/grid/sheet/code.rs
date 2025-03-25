@@ -2,14 +2,14 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
+    CellValue, Pos, Rect, Value,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
     grid::{
+        CodeCellLanguage, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
-        CodeCellLanguage, DataTableKind,
     },
-    CellValue, Pos, Rect, Value,
 };
 
 impl Sheet {
@@ -351,9 +351,9 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRun},
         Array, SheetPos, Value,
+        controller::GridController,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
     };
     use std::vec;
 

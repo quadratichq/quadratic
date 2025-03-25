@@ -3,13 +3,13 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::GridController;
 use super::active_transactions::pending_transaction::PendingTransaction;
 use super::execution::TransactionSource;
 use super::operations::operation::Operation;
-use super::GridController;
 use crate::compression::{
-    add_header, decompress_and_deserialize, deserialize, remove_header, serialize,
-    serialize_and_compress, CompressionFormat, SerializationFormat,
+    CompressionFormat, SerializationFormat, add_header, decompress_and_deserialize, deserialize,
+    remove_header, serialize, serialize_and_compress,
 };
 
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
@@ -113,9 +113,9 @@ impl GridController {
 mod tests {
 
     use crate::{
-        grid::{sheet::borders::borders_old::BorderStyleCellUpdate, SheetId},
-        selection::OldSelection,
         RunLengthEncoding,
+        grid::{SheetId, sheet::borders::borders_old::BorderStyleCellUpdate},
+        selection::OldSelection,
     };
 
     use super::*;

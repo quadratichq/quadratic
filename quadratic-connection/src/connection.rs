@@ -1,4 +1,4 @@
-use quadratic_rust_shared::quadratic_api::{get_connection, Connection};
+use quadratic_rust_shared::quadratic_api::{Connection, get_connection};
 use serde::de::DeserializeOwned;
 use uuid::Uuid;
 

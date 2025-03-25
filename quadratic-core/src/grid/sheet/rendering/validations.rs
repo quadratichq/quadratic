@@ -1,7 +1,7 @@
 use crate::{
-    grid::{js_types::JsValidationWarning, Sheet},
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     Rect,
+    grid::{Sheet, js_types::JsValidationWarning},
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
 
 impl Sheet {
@@ -90,17 +90,17 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        Rect,
         a1::A1Selection,
         controller::GridController,
         grid::{
             js_types::JsValidationWarning,
             sheet::validations::{
                 validation::{Validation, ValidationStyle},
-                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+                validation_rules::{ValidationRule, validation_logical::ValidationLogical},
             },
         },
         wasm_bindings::js::expect_js_call,
-        Rect,
     };
 
     #[test]

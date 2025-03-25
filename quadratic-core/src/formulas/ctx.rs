@@ -1,12 +1,12 @@
 use itertools::Itertools;
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::*;
 use crate::{
-    a1::{CellRefRange, SheetCellRefRange, UNBOUNDED},
-    grid::{CellsAccessed, Grid},
     Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect, Span,
     Spanned, Value,
+    a1::{CellRefRange, SheetCellRefRange, UNBOUNDED},
+    grid::{CellsAccessed, Grid},
 };
 
 /// Formula execution context.

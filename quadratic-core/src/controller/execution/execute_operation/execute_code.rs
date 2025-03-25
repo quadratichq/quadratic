@@ -1,10 +1,10 @@
 use crate::{
+    CellValue, Pos, SheetPos, SheetRect,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::CodeCellLanguage,
-    CellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::Result;
 impl GridController {
@@ -188,13 +188,13 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, Pos, SheetPos,
         controller::{
-            active_transactions::pending_transaction::PendingTransaction,
-            operations::operation::Operation, GridController,
+            GridController, active_transactions::pending_transaction::PendingTransaction,
+            operations::operation::Operation,
         },
         grid::CodeCellLanguage,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count},
-        CellValue, Pos, SheetPos,
     };
 
     #[test]
