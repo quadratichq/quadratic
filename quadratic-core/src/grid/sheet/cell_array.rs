@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use anyhow::{Result, anyhow};
 
 use crate::{
-    Array, CellValue, Pos, Rect, cellvalue::CellValueType,
-    controller::execution::run_code::get_cells::JsCellsA1Value,
+    Array, CellValue, Pos, Rect, controller::execution::run_code::get_cells::JsCellsA1Value,
 };
 
 use super::Sheet;
@@ -45,15 +44,15 @@ impl Sheet {
                     response.push(JsCellsA1Value {
                         x: x as i32,
                         y: y as i32,
-                        value: cell.to_get_cells(),
-                        type_enum: cell.type_enum(),
+                        v: cell.to_get_cells(),
+                        t: cell.type_u8(),
                     });
                 } else {
                     response.push(JsCellsA1Value {
                         x: x as i32,
                         y: y as i32,
-                        value: "".into(),
-                        type_enum: CellValueType::Blank,
+                        v: "".into(),
+                        t: CellValue::Blank.type_u8(),
                     });
                 }
             }
@@ -227,56 +226,56 @@ mod tests {
         assert!(response.contains(&JsCellsA1Value {
             x: 0,
             y: 0,
-            value: "1".into(),
-            type_enum: CellValueType::Number,
+            v: "1".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 1,
             y: 0,
-            value: "2".into(),
-            type_enum: CellValueType::Number,
+            v: "2".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 0,
             y: 1,
-            value: "3".into(),
-            type_enum: CellValueType::Number,
+            v: "3".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 1,
             y: 1,
-            value: "4".into(),
-            type_enum: CellValueType::Number,
+            v: "4".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 0,
-            value: "test".into(),
-            type_enum: CellValueType::Text,
+            v: "test".into(),
+            t: 1,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 3,
             y: 1,
-            value: "2024-08-15T01:20:00.000".into(),
-            type_enum: CellValueType::DateTime,
+            v: "2024-08-15T01:20:00.000".into(),
+            t: 11,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 1,
-            value: "true".into(),
-            type_enum: CellValueType::Boolean,
+            v: "true".into(),
+            t: 3,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 2,
-            value: "2024-08-15".into(),
-            type_enum: CellValueType::Date,
+            v: "2024-08-15".into(),
+            t: 9,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 3,
             y: 0,
-            value: "01:20:00.000".into(),
-            type_enum: CellValueType::Time,
+            v: "01:20:00.000".into(),
+            t: 10,
         }));
     }
 

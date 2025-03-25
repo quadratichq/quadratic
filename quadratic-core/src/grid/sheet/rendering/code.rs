@@ -225,7 +225,6 @@ impl Sheet {
 mod tests {
     use crate::{
         Rect, SheetPos,
-        cellvalue::CellValueType,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -256,7 +255,7 @@ mod tests {
             success: true,
             output_value: Some(JsCellValueResult(
                 "<html></html>".into(),
-                CellValueType::Text,
+                1,
             )),
             ..Default::default()
         })

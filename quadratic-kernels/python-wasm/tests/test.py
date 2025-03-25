@@ -35,11 +35,11 @@ def a1_to_xy(a1: str) -> tuple:
 
 #  Mock definitions
 class Cell:
-    def __init__(self, x, y, value, type_enum):
+    def __init__(self, x, y, value, type_u8):
         self.x = x
         self.y = y
-        self.value = value
-        self.type_enum = type_enum
+        self.v = value
+        self.t = type_u8
 
 class Values:
     def __init__(self, w, h, x, y, cells, has_headers):
@@ -227,8 +227,8 @@ class TestUtils(TestCase):
         assert to_quadratic_type(np.float64("1.1")) == ("1.1", CellValueType.Number.value)
 
         # logical
-        assert to_quadratic_type(True) == ("True", CellValueType.Boolean.value)
-        assert to_quadratic_type(False) == ("False", CellValueType.Boolean.value)
+        assert to_quadratic_type(True) == ("True", CellValueType.Logical.value)
+        assert to_quadratic_type(False) == ("False", CellValueType.Logical.value)
 
         # string
         assert to_quadratic_type("abc") == ("abc", CellValueType.Text.value)
@@ -296,10 +296,10 @@ class TestUtils(TestCase):
         assert to_python_type("-1.1", CellValueType.Number) == -1.1
 
         # logical
-        assert to_python_type("True", CellValueType.Boolean) == True
-        assert to_python_type("False", CellValueType.Boolean) == False
-        assert to_python_type("true", CellValueType.Boolean) == True
-        assert to_python_type("false", CellValueType.Boolean) == False
+        assert to_python_type("True", CellValueType.Logical) == True
+        assert to_python_type("False", CellValueType.Logical) == False
+        assert to_python_type("true", CellValueType.Logical) == True
+        assert to_python_type("false", CellValueType.Logical) == False
 
         # string
         assert to_python_type("abc", CellValueType.Text) == "abc"

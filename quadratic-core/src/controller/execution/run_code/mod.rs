@@ -540,7 +540,6 @@ impl GridController {
 mod test {
 
     use super::*;
-    use crate::cellvalue::CellValueType;
     use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
@@ -675,7 +674,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("test".into(), CellValueType::Image)),
+            output_value: Some(JsCellValueResult("test".into(), 8)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
@@ -700,7 +699,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult("test".into(), CellValueType::Image)),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((100.0, 100.0)),
                 ..Default::default()
             };
@@ -715,7 +714,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult("test".into(), CellValueType::Image)),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((200.0, 200.0)),
                 ..Default::default()
             };

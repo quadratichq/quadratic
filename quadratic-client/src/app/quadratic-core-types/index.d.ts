@@ -13,7 +13,7 @@ export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, times
 export type CellValueType = "Number" | "Text" | "Boolean" | "Error" | "DateTime" | "Date" | "Time" | "Duration" | "Blank" | "Html" | "Code" | "Image" | "Import";
 export interface JsCellsA1Error { core_error: string, }
 export interface JsCellsA1Response { values: JsCellsA1Values | null, error: JsCellsA1Error | null, }
-export interface JsCellsA1Value { x: number, y: number, value: string, type_enum: CellValueType, }
+export interface JsCellsA1Value { x: number, y: number, v: string, t: CellValueType, }
 export interface JsCellsA1Values { cells: Array<JsCellsA1Value>, x: number, y: number, w: number, h: number, one_dimensional: boolean, two_dimensional: boolean, has_headers: boolean, }
 export type JsCellValueResult = [string, CellValueType];
 export type CellAlign = "center" | "left" | "right";
@@ -48,7 +48,7 @@ export interface JsCoordinate { x: number, y: number, }
 export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsDataTableContext { sheet_name: string, data_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, }
 export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
-export interface JsCellsA1Value { x: number, y: number, value: string, type_enum: CellValueType, }
+export interface JsCellsA1Value { x: number, y: number, v: string, t: CellValueType, }
 export interface JsHtmlOutput { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsOffset { column: number | null, row: number | null, size: number, }

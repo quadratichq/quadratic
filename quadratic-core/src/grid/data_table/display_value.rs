@@ -197,7 +197,6 @@ impl DataTable {
 pub mod test {
     use crate::{
         CellValue, Pos, SheetPos,
-        cellvalue::CellValueType,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -229,10 +228,7 @@ pub mod test {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult(
-                "<html></html>".to_string(),
-                CellValueType::Text,
-            )),
+            output_value: Some(JsCellValueResult("<html></html>".to_string(), 1)),
             ..Default::default()
         })
         .unwrap();

@@ -48,7 +48,7 @@ describe('javascriptConvertOutputType', () => {
 
     expect(javascriptConvertOutputType(message, true, 0, 0)).toEqual({
       displayType: 'boolean',
-      output: ['true', CellValueType.Boolean],
+      output: ['true', CellValueType.Logical],
     });
     expect(message.length).toBe(0);
 

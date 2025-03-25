@@ -511,7 +511,6 @@ mod test {
     use crate::{
         ClearOption, Pos, SheetPos,
         a1::A1Selection,
-        cellvalue::CellValueType,
         controller::{
             GridController,
             active_transactions::pending_transaction::PendingTransaction,
@@ -620,10 +619,7 @@ mod test {
         gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            output_value: Some(JsCellValueResult(
-                "<html></html>".to_string(),
-                CellValueType::Text,
-            )),
+            output_value: Some(JsCellValueResult("<html></html>".to_string(), 1)),
             ..Default::default()
         })
         .unwrap();

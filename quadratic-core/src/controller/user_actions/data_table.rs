@@ -124,7 +124,7 @@ mod tests {
     use crate::{
         Array, CellValue, Pos, Rect, SheetPos, Value,
         a1::A1Selection,
-        cellvalue::{CellValueType, Import},
+        cellvalue::Import,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -220,7 +220,7 @@ mod tests {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("1".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("1".into(), 2)),
             ..Default::default()
         });
 
@@ -280,7 +280,7 @@ mod tests {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("1".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("1".into(), 2)),
             ..Default::default()
         });
 

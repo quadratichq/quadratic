@@ -12,20 +12,20 @@ import numpy as np
 import pandas as pd
 import pytz
 
-# CellValueType from cellvalue.rs
+# type_u8 as per cellvalue.rs
 class CellValueType(Enum):
-    Number = 0
+    Blank = 0
     Text = 1
-    Boolean = 2
-    Error = 3
-    DateTime = 4
-    Date = 5
-    Time = 6
-    Duration = 7
-    Blank = 8
-    Html = 9
-    Code = 10
-    Image = 11
+    Number = 2
+    Logical = 3
+    Duration = 4
+    Error = 5
+    Html = 6
+    Code = 7
+    Image = 8
+    Date = 9
+    Time = 10
+    DateTime = 11
     Import = 12
 
 JsCellValueResult = Tuple[str, CellValueType]
@@ -134,7 +134,7 @@ def to_quadratic_type(
         if type(value) == int or type(value) == float or isinstance(value, np.number):
             return (str(value), CellValueType.Number.value)
         elif type(value) == bool:
-            return (str(bool(value)), CellValueType.Boolean.value)
+            return (str(bool(value)), CellValueType.Logical.value)
         elif isinstance(value, np.datetime64):
             return (to_iso_format(pd.Timestamp(value)), CellValueType.DateTime.value)
         elif isinstance(value, pd.Timestamp) or pd.api.types.is_datetime64_dtype(value):
@@ -159,26 +159,25 @@ def to_quadratic_type(
 
 
 # Convert from quadratic types to python types
-def to_python_type(value: str, value_type: CellValueType) -> int | float | str | bool:
+def to_python_type(value: str, type_u8: int) -> int | float | str | bool:
     try:
-        cell_type = CellValueType(value_type)
-        match cell_type:
-            case CellValueType.Blank:
+        match type_u8:
+            case CellValueType.Blank.value:
                 return None
-            case CellValueType.Number:
-                return number_type(value)
-            case CellValueType.Text:
+            case CellValueType.Text.value:
                 return str(value)
-            case CellValueType.Boolean:
+            case CellValueType.Number.value:
+                return number_type(value)
+            case CellValueType.Logical.value:
                 return ast.literal_eval(normalize_bool(value))
-            case CellValueType.Time:
-                return datetime.fromisoformat(value).time()
-            case CellValueType.Date:
-                return datetime.fromisoformat(value).date()
-            case CellValueType.DateTime:
-                return datetime.fromisoformat(value)
-            case CellValueType.Duration:
+            case CellValueType.Duration.value:
                 return parse_duration(value)
+            case CellValueType.Date.value:
+                return datetime.fromisoformat(value).date()
+            case CellValueType.Time.value:
+                return datetime.fromisoformat(value).time()
+            case CellValueType.DateTime.value:
+                return datetime.fromisoformat(value)
             case _:
                 return value
     except:
@@ -186,23 +185,22 @@ def to_python_type(value: str, value_type: CellValueType) -> int | float | str |
 
 
 # Convert from quadratic types to python df types
-def to_python_type_df(value: str, value_type: CellValueType) -> int | float | str | bool:
+def to_python_type_df(value: str, type_u8: int) -> int | float | str | bool:
     try:
-        cell_type = CellValueType(value_type)
-        match cell_type:
-            case CellValueType.Blank:
+        match type_u8:
+            case CellValueType.Blank.value:
                 return None
-            case CellValueType.Number:
-                return number_type(value)
-            case CellValueType.Text:
+            case CellValueType.Text.value:
                 return str(value)
-            case CellValueType.Boolean:
+            case CellValueType.Number.value:
+                return number_type(value)
+            case CellValueType.Logical.value:
                 return ast.literal_eval(normalize_bool(value))
-            case CellValueType.Time:
-                return datetime.fromisoformat(value).time()
-            case CellValueType.Date:
+            case CellValueType.Date.value:
                 return datetime.fromisoformat(value).date()
-            case CellValueType.DateTime:
+            case CellValueType.Time.value:
+                return datetime.fromisoformat(value).time()
+            case CellValueType.DateTime.value:
                 return datetime.fromisoformat(value)
             case _:
                 return value
@@ -233,4 +231,4 @@ def stack_line_number() -> int:
 
 
 def result_to_value(result: Tuple[str, str]) -> int | float | str | bool:
-    return to_python_type(result.value, result.type_enum)
+    return to_python_type(result.v, result.t)

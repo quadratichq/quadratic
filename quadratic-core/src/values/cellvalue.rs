@@ -1,7 +1,6 @@
 use std::hash::Hash;
 use std::str::FromStr;
 use std::{fmt, fmt::Display};
-use ts_rs::TS;
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
@@ -20,61 +19,6 @@ use crate::{
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
-
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TS, Default)]
-pub enum CellValueType {
-    Number = 0,
-    Text = 1,
-    Boolean = 2,
-    Error = 3,
-    DateTime = 4,
-    Date = 5,
-    Time = 6,
-    Duration = 7,
-    #[default]
-    Blank = 8,
-    Html = 9,
-    Code = 10,
-    Image = 11,
-    Import = 12,
-}
-
-impl Serialize for CellValueType {
-    #[inline]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_u8(*self as u8)
-    }
-}
-
-impl<'de> Deserialize<'de> for CellValueType {
-    #[inline]
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = u8::deserialize(deserializer)?;
-        match value {
-            0 => Ok(CellValueType::Number),
-            1 => Ok(CellValueType::Text),
-            2 => Ok(CellValueType::Boolean),
-            3 => Ok(CellValueType::Error),
-            4 => Ok(CellValueType::DateTime),
-            5 => Ok(CellValueType::Date),
-            6 => Ok(CellValueType::Time),
-            7 => Ok(CellValueType::Duration),
-            8 => Ok(CellValueType::Blank),
-            9 => Ok(CellValueType::Html),
-            10 => Ok(CellValueType::Code),
-            11 => Ok(CellValueType::Image),
-            12 => Ok(CellValueType::Import),
-            _ => Ok(CellValueType::Blank), // Default to Blank for invalid values
-        }
-    }
-}
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -190,22 +134,22 @@ impl CellValue {
         }
     }
 
-    // Returns the type of the value as a CellValueType enum
-    pub fn type_enum(&self) -> CellValueType {
+    // Returns the type of the value as a u8 id, keep in sync quadratic_py/utils.py and javascript/runner/javascriptLibrary.ts
+    pub fn type_u8(&self) -> u8 {
         match self {
-            CellValue::Number(_) => CellValueType::Number,
-            CellValue::Text(_) => CellValueType::Text,
-            CellValue::Logical(_) => CellValueType::Boolean,
-            CellValue::Error(_) => CellValueType::Error,
-            CellValue::Instant(_) | CellValue::DateTime(_) => CellValueType::DateTime,
-            CellValue::Date(_) => CellValueType::Date,
-            CellValue::Time(_) => CellValueType::Time,
-            CellValue::Duration(_) => CellValueType::Duration,
-            CellValue::Blank => CellValueType::Blank,
-            CellValue::Html(_) => CellValueType::Html,
-            CellValue::Code(_) => CellValueType::Code,
-            CellValue::Image(_) => CellValueType::Image,
-            CellValue::Import(_) => CellValueType::Import,
+            CellValue::Blank => 0,
+            CellValue::Text(_) => 1,
+            CellValue::Number(_) => 2,
+            CellValue::Logical(_) => 3,
+            CellValue::Duration(_) => 4,
+            CellValue::Error(_) => 5,
+            CellValue::Html(_) => 6,
+            CellValue::Code(_) => 7,
+            CellValue::Image(_) => 8,
+            CellValue::Date(_) => 9,
+            CellValue::Time(_) => 10,
+            CellValue::Instant(_) | CellValue::DateTime(_) => 11,
+            CellValue::Import(_) => 12,
         }
     }
 
@@ -509,7 +453,21 @@ impl CellValue {
     /// `SORT()` function. The comparison operators are the same, except that
     /// blank coerces to `0`, `FALSE`, or `""` before comparison.
     pub fn type_id(&self) -> u8 {
-        self.type_enum() as u8
+        match self {
+            CellValue::Number(_) => 0,
+            CellValue::Text(_) => 1,
+            CellValue::Logical(_) => 2,
+            CellValue::Error(_) => 3,
+            CellValue::Instant(_) | CellValue::DateTime(_) => 4,
+            CellValue::Date(_) => 5,
+            CellValue::Time(_) => 6,
+            CellValue::Duration(_) => 7,
+            CellValue::Blank => 8,
+            CellValue::Html(_) => 9,
+            CellValue::Code(_) => 10,
+            CellValue::Image(_) => 11,
+            CellValue::Import(_) => 12,
+        }
     }
 
     /// Compares two values using a total ordering that propagates errors and

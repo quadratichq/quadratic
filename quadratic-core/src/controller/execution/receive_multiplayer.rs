@@ -309,7 +309,6 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::cellvalue::CellValueType;
     use crate::controller::GridController;
     use crate::controller::transaction::Transaction;
     use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
@@ -794,7 +793,7 @@ mod tests {
             success: true,
             output_value: Some(JsCellValueResult(
                 "async output".into(),
-                CellValueType::Text,
+                1,
             )),
             ..Default::default()
         });
@@ -872,7 +871,7 @@ mod tests {
             success: true,
             output_value: Some(JsCellValueResult(
                 "async output".into(),
-                CellValueType::Text,
+                1,
             )),
             ..Default::default()
         });
@@ -912,7 +911,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("2".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("2".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -937,7 +936,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("3".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("3".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());

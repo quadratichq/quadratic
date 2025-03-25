@@ -54,7 +54,7 @@ export function javascriptConvertOutputType(
   } else if (value === undefined || value === null) {
     return null;
   } else if (typeof value === 'boolean') {
-    return { output: [value ? 'true' : 'false', CellValueType.Boolean], displayType: 'boolean' };
+    return { output: [value ? 'true' : 'false', CellValueType.Logical], displayType: 'boolean' };
   } else if (Array.isArray(value)) {
     // this handles the case where the value.flat() is empty
     return { output: ['', CellValueType.Code], displayType: 'empty array' };

@@ -32,7 +32,6 @@ mod tests {
     use super::*;
     use crate::{
         ArraySize, CellValue, Rect,
-        cellvalue::CellValueType,
         controller::{
             execution::run_code::get_cells::{JsCellsA1Response, JsCellsA1Value, JsCellsA1Values},
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -55,7 +54,7 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("test".into(), CellValueType::Text)),
+            output_value: Some(JsCellValueResult("test".into(), 1)),
             ..Default::default()
         })
         .ok();
@@ -101,7 +100,7 @@ mod tests {
         let summary = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("hello world".into(), CellValueType::Text)),
+            output_value: Some(JsCellValueResult("hello world".into(), 1)),
             ..Default::default()
         });
         assert!(summary.is_ok());
@@ -144,8 +143,8 @@ mod tests {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "9".into(),
-                        type_enum: CellValueType::Number,
+                        v: "9".into(),
+                        t: 2,
                     }],
                     x: 1,
                     y: 1,
@@ -164,7 +163,7 @@ mod tests {
             gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult("10".into(), CellValueType::Number)),
+                output_value: Some(JsCellValueResult("10".into(), 2)),
                 ..Default::default()
             })
             .is_ok()
@@ -207,7 +206,7 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("10".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("10".into(), 2)),
             ..Default::default()
         })
         .unwrap();
@@ -226,8 +225,8 @@ mod tests {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "10".into(),
-                        type_enum: CellValueType::Number,
+                        v: "10".into(),
+                        t: 2,
                     }],
                     x: 1,
                     y: 1,
@@ -244,7 +243,7 @@ mod tests {
             gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult("11".into(), CellValueType::Number)),
+                output_value: Some(JsCellValueResult("11".into(), 2)),
                 ..Default::default()
             })
             .is_ok()
@@ -265,7 +264,7 @@ mod tests {
     fn python_array(input: Vec<isize>) -> Vec<Vec<JsCellValueResult>> {
         input
             .iter()
-            .map(|i| vec![JsCellValueResult(i.to_string(), CellValueType::Number)])
+            .map(|i| vec![JsCellValueResult(i.to_string(), 2)])
             .collect()
     }
 
@@ -334,7 +333,7 @@ mod tests {
         let result = JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("".into(), CellValueType::Blank)),
+            output_value: Some(JsCellValueResult("".into(), 0)),
             cancel_compute: Some(true),
             ..Default::default()
         };
@@ -374,10 +373,7 @@ mod tests {
             gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult(
-                    "original output".into(),
-                    CellValueType::Text,
-                )),
+                output_value: Some(JsCellValueResult("original output".into(), 1,)),
                 ..Default::default()
             })
             .is_ok()
@@ -410,7 +406,7 @@ mod tests {
             gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult("new output".into(), CellValueType::Text)),
+                output_value: Some(JsCellValueResult("new output".into(), 1)),
                 ..Default::default()
             })
             .is_ok()
@@ -443,10 +439,7 @@ mod tests {
             gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult(
-                    "new output second time".into(),
-                    CellValueType::Text,
-                )),
+                output_value: Some(JsCellValueResult("new output second time".into(), 1,)),
                 ..Default::default()
             })
             .is_ok()
@@ -485,14 +478,14 @@ mod tests {
             JsCellsA1Value {
                 x: 1,
                 y: 1,
-                value: "1".into(),
-                type_enum: CellValueType::Number,
+                v: "1".into(),
+                t: 2,
             }
         );
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("2".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("2".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -514,14 +507,14 @@ mod tests {
             JsCellsA1Value {
                 x: 2,
                 y: 1,
-                value: "2".into(),
-                type_enum: CellValueType::Number,
+                v: "2".into(),
+                t: 2,
             }
         );
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("3".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("3".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());

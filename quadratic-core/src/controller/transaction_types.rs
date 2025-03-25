@@ -1,10 +1,8 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::cellvalue::CellValueType;
-
 #[derive(Default, Debug, Serialize, Deserialize, Clone, TS)]
-pub struct JsCellValueResult(pub String, pub CellValueType);
+pub struct JsCellValueResult(pub String, pub u8);
 
 #[derive(Default, Debug, Serialize, Deserialize, TS)]
 pub struct JsCodeResult {

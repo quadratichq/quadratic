@@ -29,8 +29,8 @@ class TestProcessOutput(TestCase):
         assert_pov(self, 1.1, None, None, None, ("1.1", CellValueType.Number.value), "float")
         assert_pov(self, -1, None, None, None, ("-1", CellValueType.Number.value), "int")
         assert_pov(self, "hello", None, None, None, ("hello", CellValueType.Text.value), "str")
-        assert_pov(self, True, None, None, None, ("True", CellValueType.Boolean.value), "bool")
-        assert_pov(self, False, None, None, None, ("False", CellValueType.Boolean.value), "bool")
+        assert_pov(self, True, None, None, None, ("True", CellValueType.Logical.value), "bool")
+        assert_pov(self, False, None, None, None, ("False", CellValueType.Logical.value), "bool")
         assert_pov(self, "abc", None, None, None, ("abc", CellValueType.Text.value), "str")
         assert_pov(self, "1", None, None, None, ("1", CellValueType.Text.value), "str")
         assert_pov(self, "True", None, None, None, ("True", CellValueType.Text.value), "str")
@@ -137,7 +137,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [True, False],
-            [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
+            [("True", CellValueType.Logical.value), ("False", CellValueType.Logical.value)],
             [True, False],
             (1, 2),
             None,
@@ -248,8 +248,8 @@ class TestProcessOutput(TestCase):
             self,
             [[True, False], [True, False]],
             [
-                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
-                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
+                [("True", CellValueType.Logical.value), ("False", CellValueType.Logical.value)],
+                [("True", CellValueType.Logical.value), ("False", CellValueType.Logical.value)],
             ],
             [[True, False], [True, False]],
             (2, 2),
@@ -353,7 +353,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series([True, False]),
-            [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
+            [("True", CellValueType.Logical.value), ("False", CellValueType.Logical.value)],
             [True, False],
             (1, 2),
             None,
@@ -444,8 +444,8 @@ class TestProcessOutput(TestCase):
             self,
             pd.DataFrame([[True, False], [True, False]]),
             [
-                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
-                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
+                [("True", CellValueType.Logical.value), ("False", CellValueType.Logical.value)],
+                [("True", CellValueType.Logical.value), ("False", CellValueType.Logical.value)],
             ],
             [[True, False], [True, False]],
             (2, 2),

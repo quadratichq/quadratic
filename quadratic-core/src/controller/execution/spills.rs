@@ -104,7 +104,6 @@ impl GridController {
 #[cfg(test)]
 mod tests {
 
-    use crate::cellvalue::CellValueType;
     use crate::controller::GridController;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
@@ -483,7 +482,7 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             chart_pixel_output: Some((100.0, 100.0)),
-            output_value: Some(JsCellValueResult("<html>".to_string(), CellValueType::Text)),
+            output_value: Some(JsCellValueResult("<html>".to_string(), 1)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();

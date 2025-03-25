@@ -9,7 +9,6 @@ use quadratic_core::a1::JsTableInfo;
 use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
 use quadratic_core::a1::js_selection::JsCoordinate;
-use quadratic_core::cellvalue::CellValueType;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error;
@@ -101,7 +100,6 @@ fn main() {
         BorderStyle,
         BorderStyleCell,
         BorderStyleTimestamp,
-        CellValueType,
         JsCellsA1Error,
         JsCellsA1Response,
         JsCellsA1Value,

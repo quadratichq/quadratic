@@ -159,7 +159,7 @@ class q:
         for cell in result.cells:
             row = cell.y - result.y
             col = cell.x - result.x
-            data[row][col] = to_python_type_df(cell.value, cell.type_enum)
+            data[row][col] = to_python_type_df(cell.v, cell.t)
 
         # Create DataFrame from 2D array
         df = DataFrame(data)

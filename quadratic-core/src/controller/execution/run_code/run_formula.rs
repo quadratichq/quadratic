@@ -60,7 +60,6 @@ mod test {
     use crate::{
         Array, ArraySize, CellValue, Pos, SheetPos, Value,
         cell_values::CellValues,
-        cellvalue::CellValueType,
         controller::{
             GridController,
             active_transactions::{
@@ -231,7 +230,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: Uuid::new_v4().into(),
             success: true,
-            output_value: Some(JsCellValueResult("$12".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("$12".into(), 2)),
             output_display_type: Some("number".into()),
             ..Default::default()
         };
@@ -277,12 +276,12 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let array_output: Vec<Vec<JsCellValueResult>> = vec![
             vec![
-                JsCellValueResult("$1.1".into(), CellValueType::Number),
-                JsCellValueResult("20%".into(), CellValueType::Number),
+                JsCellValueResult("$1.1".into(), 2),
+                JsCellValueResult("20%".into(), 2),
             ],
             vec![
-                JsCellValueResult("3".into(), CellValueType::Number),
-                JsCellValueResult("Hello".into(), CellValueType::Text),
+                JsCellValueResult("3".into(), 2),
+                JsCellValueResult("Hello".into(), 1),
             ],
         ];
         let mut transaction = PendingTransaction::default();

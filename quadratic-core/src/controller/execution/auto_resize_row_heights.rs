@@ -75,7 +75,6 @@ mod tests {
 
     use bigdecimal::BigDecimal;
 
-    use crate::cellvalue::CellValueType;
     use crate::controller::GridController;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
@@ -512,8 +511,8 @@ mod tests {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "9".into(),
-                        type_enum: CellValueType::Number,
+                        v: "9".into(),
+                        t: 2,
                     }],
                     x: 1,
                     y: 1,
@@ -534,7 +533,7 @@ mod tests {
             gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(JsCellValueResult("10".into(), CellValueType::Number)),
+                output_value: Some(JsCellValueResult("10".into(), 2)),
                 ..Default::default()
             })
             .is_ok()

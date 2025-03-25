@@ -280,7 +280,6 @@ mod tests {
 
     use super::*;
     use crate::cell_values::CellValues;
-    use crate::cellvalue::CellValueType;
     use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
     use crate::{CellValue, Pos, Rect, SheetPos};
@@ -418,7 +417,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(JsCellValueResult("1".into(), CellValueType::Number)),
+            output_value: Some(JsCellValueResult("1".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());
