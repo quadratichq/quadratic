@@ -122,7 +122,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{formulas::tests::*, Pos};
+    use crate::{Pos, formulas::tests::*};
 
     #[test]
     fn test_formula_if() {

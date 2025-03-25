@@ -1,7 +1,7 @@
-use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{snowflake_connection::SnowflakeConnection, Connection},
+    sql::{Connection, snowflake_connection::SnowflakeConnection},
 };
 use uuid::Uuid;
 
@@ -13,7 +13,7 @@ use crate::{
     state::State,
 };
 
-use super::{query_generic, Schema};
+use super::{Schema, query_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(

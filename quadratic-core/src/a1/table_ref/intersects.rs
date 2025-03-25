@@ -1,4 +1,4 @@
-use crate::{a1::A1Context, Pos, Rect};
+use crate::{Pos, Rect, a1::A1Context};
 
 use super::*;
 

@@ -1,13 +1,14 @@
 use super::operation::Operation;
 use crate::{
+    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
+        DataTable, DataTableKind,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
-        unique_data_table_name, DataTable, DataTableKind,
+        unique_data_table_name,
     },
-    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
 
 use anyhow::Result;
@@ -237,11 +238,11 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, SheetPos,
         cellvalue::Import,
-        controller::{operations::operation::Operation, GridController},
+        controller::{GridController, operations::operation::Operation},
         grid::{NumericFormat, NumericFormatKind},
         test_util::assert_display_cell_value,
-        CellValue, SheetPos,
     };
 
     #[test]

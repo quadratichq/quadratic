@@ -3,14 +3,13 @@
 //!
 
 use axum::{
-    async_trait,
+    RequestPartsExt, async_trait,
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
-    RequestPartsExt,
 };
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
 use quadratic_rust_shared::auth::jwt::authorize;
 use serde::{Deserialize, Serialize};

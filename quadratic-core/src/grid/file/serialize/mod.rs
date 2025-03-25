@@ -3,8 +3,8 @@
 use anyhow::Result;
 use sheets::{export_sheet, import_sheet};
 
-pub use crate::grid::file::current;
 use crate::grid::Grid;
+pub use crate::grid::file::current;
 
 use super::CURRENT_VERSION;
 

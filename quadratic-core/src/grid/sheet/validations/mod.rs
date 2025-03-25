@@ -7,10 +7,10 @@ use uuid::Uuid;
 use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
 use crate::{
+    Pos, Rect,
     a1::{A1Context, A1Selection},
     controller::operations::operation::Operation,
     grid::js_types::JsRenderCellSpecial,
-    Pos, Rect,
 };
 
 use super::Sheet;
@@ -181,9 +181,9 @@ impl Validations {
 
 #[cfg(test)]
 mod tests {
-    use validation_rules::{validation_logical::ValidationLogical, ValidationRule};
+    use validation_rules::{ValidationRule, validation_logical::ValidationLogical};
 
-    use crate::{a1::CellRefRange, grid::SheetId, SheetRect};
+    use crate::{SheetRect, a1::CellRefRange, grid::SheetId};
 
     use super::*;
 
