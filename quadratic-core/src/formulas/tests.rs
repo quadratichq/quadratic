@@ -330,13 +330,13 @@ fn test_find_cell_references() {
     g.add_sheet(None);
     g.add_sheet(None);
     g.add_sheet(None);
-    let apple = g.sheet_ids()[0];
+    let apple = g.sheet_ids()[1];
     g.set_sheet_name(apple, "apple".into(), None);
-    let orange = g.sheet_ids()[1];
+    let orange = g.sheet_ids()[2];
     g.set_sheet_name(orange, "orange".into(), None);
-    let banana = g.sheet_ids()[1];
+    let banana = g.sheet_ids()[3];
     g.set_sheet_name(banana, "banana".into(), None);
-    let plum = g.sheet_ids()[1];
+    let plum = g.sheet_ids()[4];
     g.set_sheet_name(plum, "plum".into(), None);
 
     let a = CellRefCoord::new_abs;
@@ -399,7 +399,7 @@ fn test_sheet_references() {
     g.add_sheet(None);
     let id2 = g.sheet_ids()[1];
     let name2 = "My Other Sheet".to_string();
-    g.sheet_mut(id2).name.clone_from(&name2);
+    g.set_sheet_name(id2, name2.clone(), None);
 
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A1], 42);
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A3], 6);
