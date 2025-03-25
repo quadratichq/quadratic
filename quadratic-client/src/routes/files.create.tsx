@@ -1,6 +1,6 @@
-import getActiveTeam from '@/dashboard/shared/getActiveTeam';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import getActiveTeam from '@/shared/utils/getActiveTeam';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
 

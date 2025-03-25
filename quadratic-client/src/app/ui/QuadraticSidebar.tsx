@@ -93,8 +93,6 @@ export const QuadraticSidebar = () => {
           </SidebarTooltip>
         )}
 
-        <div className="h-px w-full bg-border" />
-
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
         <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>

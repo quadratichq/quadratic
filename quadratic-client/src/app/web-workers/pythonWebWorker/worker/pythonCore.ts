@@ -1,7 +1,6 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
-import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 
 export class PythonCore {
@@ -14,9 +13,13 @@ export class PythonCore {
     if (debugWebWorkers) console.log('[pythonCore] initialized');
   }
 
-  private send(message: PythonCoreMessage) {
+  private send(message: PythonCoreMessage, transfer?: Transferable[]) {
     if (!this.coreMessagePort) throw new Error('coreMessagePort not initialized');
-    this.coreMessagePort.postMessage(message);
+    if (transfer) {
+      this.coreMessagePort.postMessage(message, transfer);
+    } else {
+      this.coreMessagePort.postMessage(message);
+    }
   }
 
   private handleMessage = async (e: MessageEvent<CorePythonMessage>) => {
@@ -29,12 +32,15 @@ export class PythonCore {
     }
   };
 
-  sendPythonResults(transactionId: string, results: PythonRun) {
-    this.send({
-      type: 'pythonCoreResults',
-      transactionId,
-      results,
-    });
+  sendPythonResults(transactionId: string, jsCodeResultBuffer: ArrayBuffer) {
+    this.send(
+      {
+        type: 'pythonCoreResults',
+        transactionId,
+        jsCodeResultBuffer,
+      },
+      [jsCodeResultBuffer]
+    );
   }
 
   sendGetCellsA1 = (transactionId: string, a1: string): JsCellsA1Response => {
