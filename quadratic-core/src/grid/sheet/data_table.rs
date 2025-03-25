@@ -476,7 +476,7 @@ impl Sheet {
             jsClientMessage(message.to_owned(), JsSnackbarSeverity::Error.to_string());
         }
 
-        return !contains_data_table;
+        !contains_data_table
     }
 }
 

@@ -42,7 +42,7 @@ impl GridController {
             let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into());
 
             if no_data_table {
-                ops.push(Operation::GridToDataTable { sheet_rect })
+                ops.push(Operation::GridToDataTable { sheet_rect });
             }
         }
 
