@@ -25,6 +25,7 @@ import type {
   JsCoordinate,
   JsDataTableColumnHeader,
   JsRenderCell,
+  JsResponse,
   JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
@@ -64,15 +65,24 @@ import {
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
+import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 
 class Core {
   gridController?: GridController;
 
-  private handleCoreError(error: Error | unknown) {
+  private sendAnalyticsError = (from: string, error: Error | unknown) => {
+    console.error(error);
+    mixpanel.track(`[core] ${from} error`, {
+      error,
+    });
     Sentry.captureException(error);
+  };
+
+  private handleCoreError = (from: string, error: Error | unknown) => {
+    this.sendAnalyticsError(from, error);
     coreClient.sendCoreError();
-  }
+  };
 
   private async loadGridFile(file: string): Promise<Uint8Array> {
     const res = await fetch(file);
@@ -86,8 +96,7 @@ class Core {
     try {
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
-      console.error('Error loading grid file:', e);
-      Sentry.captureException(e);
+      this.sendAnalyticsError('loadFile', e);
       return { error: 'Unable to load file' };
     }
     if (debugWebWorkers) console.log('[core] GridController loaded');
@@ -100,7 +109,7 @@ class Core {
       try {
         resolve(this.gridController.getSheetName(sheetId));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getSheetName', e);
         resolve('');
       }
     });
@@ -112,7 +121,7 @@ class Core {
       try {
         resolve(this.gridController.getSheetOrder(sheetId));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getSheetOrder', e);
         resolve('');
       }
     });
@@ -124,7 +133,7 @@ class Core {
       try {
         resolve(this.gridController.getSheetColor(sheetId));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getSheetColor', e);
         resolve('');
       }
     });
@@ -150,7 +159,7 @@ class Core {
           });
         }
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getGridBounds', e);
         resolve(undefined);
       }
     });
@@ -173,7 +182,7 @@ class Core {
         );
         resolve(renderCells);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getRenderCells', e);
         resolve([]);
       }
     });
@@ -187,7 +196,7 @@ class Core {
         const sheetIds: string[] = this.gridController.getSheetIds();
         resolve(sheetIds);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getSheetIds', e);
         resolve([]);
       }
     });
@@ -199,7 +208,7 @@ class Core {
       try {
         resolve(this.gridController.getCodeCell(sheetId, posToPos(x, y)));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getCodeCell', e);
         resolve(undefined);
       }
     });
@@ -211,7 +220,7 @@ class Core {
       try {
         resolve(this.gridController.hasRenderCells(sheetId, posToRect(x, y)));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('cellHasContent', e);
         resolve(false);
       }
     });
@@ -223,7 +232,7 @@ class Core {
       try {
         resolve(this.gridController.getEditCell(sheetId, posToPos(x, y)));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getEditCell', e);
         resolve('');
       }
     });
@@ -235,7 +244,7 @@ class Core {
       try {
         this.gridController.setCellValue(sheetId, x, y, value, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setCellValue', e);
       }
       resolve(undefined);
     });
@@ -247,7 +256,7 @@ class Core {
       try {
         this.gridController.setCellValues(sheetId, x, y, values, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setCellValues', e);
       }
       resolve(undefined);
     });
@@ -259,7 +268,7 @@ class Core {
       try {
         resolve(this.gridController.getCellFormatSummary(sheetId, posToPos(x, y)));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getCellFormatSummary', e);
         resolve({} as CellFormatSummary);
       }
     });
@@ -272,7 +281,7 @@ class Core {
         const format = this.gridController.getFormatCell(sheetId, x, y);
         resolve(format);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getFormatCell', e);
         resolve(undefined);
       }
     });
@@ -284,7 +293,7 @@ class Core {
       try {
         this.gridController.receiveSequenceNum(sequenceNum);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('receiveSequenceNum', e);
       }
       resolve(undefined);
     });
@@ -308,7 +317,7 @@ class Core {
           coreClient.sendMultiplayerState('connected');
         }
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('receiveTransaction', e);
       }
       resolve(undefined);
     });
@@ -340,7 +349,7 @@ class Core {
           coreClient.sendMultiplayerState('connected');
         }
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('receiveTransactions', e);
       }
       resolve(undefined);
     });
@@ -353,7 +362,7 @@ class Core {
         const summary = this.gridController.summarizeSelection(message.selection, BigInt(message.decimalPlaces));
         resolve(summary);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('summarizeSelection', e);
         resolve(undefined);
       }
     });
@@ -365,7 +374,7 @@ class Core {
       try {
         this.gridController.setBold(selection, bold, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setBold', e);
       }
       resolve(undefined);
     });
@@ -377,7 +386,7 @@ class Core {
       try {
         this.gridController.setItalic(selection, italic, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setItalic', e);
       }
       resolve(undefined);
     });
@@ -389,7 +398,7 @@ class Core {
       try {
         this.gridController.setTextColor(selection, color, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setTextColor', e);
       }
       resolve(undefined);
     });
@@ -401,7 +410,7 @@ class Core {
       try {
         this.gridController.setUnderline(selection, underline, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setUnderline', e);
       }
       resolve(undefined);
     });
@@ -413,7 +422,7 @@ class Core {
       try {
         this.gridController.setStrikeThrough(selection, strikeThrough, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setStrikeThrough', e);
       }
       resolve(undefined);
     });
@@ -425,7 +434,7 @@ class Core {
       try {
         this.gridController.setFillColor(selection, fillColor, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setFillColor', e);
       }
       resolve(undefined);
     });
@@ -437,7 +446,7 @@ class Core {
       try {
         this.gridController.setCommas(selection, commas, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setCommas', e);
       }
       resolve(undefined);
     });
@@ -450,7 +459,7 @@ class Core {
         const renderCells: JsRenderCell[] | undefined = this.gridController.getRenderCells(sheetId, posToRect(x, y));
         resolve(renderCells?.[0]);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getRenderCell', e);
         resolve(undefined);
       }
     });
@@ -462,7 +471,7 @@ class Core {
       try {
         this.gridController.setCurrency(selection, symbol, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setCurrency', e);
       }
       resolve(undefined);
     });
@@ -479,9 +488,7 @@ class Core {
       const contents = gc.exportGridToFile();
       return { contents, version };
     } catch (error: unknown) {
-      console.error(error);
-      reportError(error);
-      Sentry.captureException(error);
+      this.sendAnalyticsError('upgradeGridFile', error);
       return { error: error as string };
     }
   }
@@ -517,9 +524,7 @@ class Core {
         const contents = gc.exportGridToFile();
         return { contents, version };
       } catch (error: unknown) {
-        console.error(error);
-        reportError(error);
-        Sentry.captureException(error);
+        this.sendAnalyticsError('importFile.Dashboard', error);
         return { error: error as string };
       }
     } else {
@@ -561,11 +566,7 @@ class Core {
           }
           resolve({});
         } catch (error: unknown) {
-          // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-          // type in the UI.
-          console.error(error);
-          reportError(error);
-          Sentry.captureException(error);
+          this.handleCoreError('importFile.App', error);
           resolve({ error: error as string });
         }
       });
@@ -577,9 +578,7 @@ class Core {
       await initCore();
       return GridController.getCsvPreview(new Uint8Array(file), maxRows, delimiter);
     } catch (error: unknown) {
-      console.error(error);
-      reportError(error);
-      Sentry.captureException(error);
+      this.sendAnalyticsError('getCsvPreview.Dashboard', error);
       return undefined;
     }
   }
@@ -590,7 +589,7 @@ class Core {
       try {
         this.gridController.deleteCellValues(selection, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('deleteCellValues', e);
       }
       resolve(undefined);
     });
@@ -609,7 +608,7 @@ class Core {
       try {
         resolve(this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, cursor));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setCodeCellValue', e);
         resolve(undefined);
       }
     });
@@ -621,7 +620,7 @@ class Core {
       try {
         this.gridController.addSheet(cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('addSheet', e);
       }
       resolve(undefined);
     });
@@ -633,7 +632,7 @@ class Core {
       try {
         this.gridController.deleteSheet(sheetId, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('deleteSheet', e);
       }
       resolve(undefined);
     });
@@ -645,7 +644,7 @@ class Core {
       try {
         this.gridController.moveSheet(sheetId, previous, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('moveSheet', e);
       }
       resolve(undefined);
     });
@@ -657,7 +656,7 @@ class Core {
       try {
         this.gridController.setSheetName(sheetId, name, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setSheetName', e);
       }
       resolve(undefined);
     });
@@ -669,7 +668,7 @@ class Core {
       try {
         this.gridController.setSheetColor(sheetId, color, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setSheetColor', e);
       }
       resolve(undefined);
     });
@@ -681,7 +680,7 @@ class Core {
       try {
         this.gridController.duplicateSheet(sheetId, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('duplicateSheet', e);
       }
       resolve(undefined);
     });
@@ -693,7 +692,7 @@ class Core {
       try {
         this.gridController.undo(cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('undo', e);
       }
       resolve(undefined);
     });
@@ -705,7 +704,7 @@ class Core {
       try {
         this.gridController.redo(cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('redo', e);
       }
       resolve(undefined);
     });
@@ -717,7 +716,7 @@ class Core {
       try {
         resolve(this.gridController.exportOpenGridToFile());
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('export', e);
         resolve(new ArrayBuffer(0));
       }
     });
@@ -729,7 +728,7 @@ class Core {
       try {
         resolve(this.gridController.search(search, searchOptions));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('search', e);
         resolve([]);
       }
     });
@@ -741,7 +740,7 @@ class Core {
       try {
         resolve(this.gridController.hasRenderCells(sheetId, numbersToRectStringified(x, y, width, height)));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('hasRenderCells', e);
         resolve(false);
       }
     });
@@ -753,7 +752,7 @@ class Core {
       try {
         this.gridController.setAlign(selection, align, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setAlign', e);
       }
       resolve(undefined);
     });
@@ -765,7 +764,7 @@ class Core {
       try {
         this.gridController.setVerticalAlign(selection, verticalAlign, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setVerticalAlign', e);
       }
       resolve(undefined);
     });
@@ -777,7 +776,7 @@ class Core {
       try {
         this.gridController.setWrap(selection, wrap, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setWrap', e);
       }
       resolve(undefined);
     });
@@ -791,7 +790,7 @@ class Core {
         const jsClipboard = this.gridController.copyToClipboard(selection);
         resolve(jsClipboard);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('copyToClipboard', e);
         resolve({} as JsClipboard);
       }
     });
@@ -804,7 +803,7 @@ class Core {
         const jsClipboard = this.gridController.cutToClipboard(selection, cursor);
         resolve(jsClipboard);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('cutToClipboard', e);
         resolve({} as JsClipboard);
       }
     });
@@ -828,7 +827,7 @@ class Core {
       try {
         this.gridController.pasteFromClipboard(selection, plainText, html, special, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('pasteFromClipboard', e);
       }
       resolve(undefined);
     });
@@ -842,7 +841,7 @@ class Core {
       try {
         this.gridController.setBorders(selection, JSON.stringify(borderSelection), JSON.stringify(style), cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setBorders', e);
       }
       resolve(undefined);
     });
@@ -854,7 +853,7 @@ class Core {
       try {
         this.gridController.setChartSize(toSheetPos(x, y, sheetId), width, height, cursor);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('setChartSize', e);
       }
       resolve(undefined);
     });
@@ -882,7 +881,7 @@ class Core {
           cursor
         );
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('autocomplete', e);
       }
       resolve(undefined);
     });
@@ -894,7 +893,7 @@ class Core {
       try {
         resolve(this.gridController.exportCsvSelection(selection));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('exportCsvSelection', e);
         resolve('');
       }
     });
@@ -913,7 +912,7 @@ class Core {
         if (result) resolve(result);
         else resolve(undefined);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getColumnsBounds', e);
         resolve(undefined);
       }
     });
@@ -927,7 +926,7 @@ class Core {
         if (result) resolve(result);
         else resolve(undefined);
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('getRowsBounds', e);
         resolve(undefined);
       }
     });
@@ -950,7 +949,7 @@ class Core {
         );
         resolve({ x: Number(pos.x), y: Number(pos.y) });
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('jumpCursor', e);
         resolve(undefined);
       }
     });
@@ -971,7 +970,7 @@ class Core {
           )
         );
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('findNextColumnForRect', e);
         resolve(0);
       }
     });
@@ -992,7 +991,7 @@ class Core {
           )
         );
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('findNextRowForRect', e);
         resolve(0);
       }
     });
@@ -1003,7 +1002,7 @@ class Core {
     try {
       this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('commitTransientResize', e);
     }
   }
 
@@ -1018,7 +1017,7 @@ class Core {
     try {
       this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('commitSingleResize', e);
     }
   }
 
@@ -1027,7 +1026,7 @@ class Core {
     try {
       this.gridController.calculationComplete(new Uint8Array(jsCodeResultBuffer));
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('calculationComplete', e);
     }
   }
 
@@ -1036,7 +1035,7 @@ class Core {
     try {
       this.gridController.connectionComplete(transactionId, new Uint8Array(data), std_out, std_err, extra);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('connectionComplete', e);
     }
   }
 
@@ -1044,10 +1043,17 @@ class Core {
   applyOfflineUnsavedTransaction(transactionId: string, transactions: string): boolean {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.applyOfflineUnsavedTransaction(transactionId, transactions);
-      return true;
+      const { result, error } = this.gridController.applyOfflineUnsavedTransaction(
+        transactionId,
+        transactions
+      ) as JsResponse;
+      console.log('applyOfflineUnsavedTransaction', { result, error });
+      if (error) {
+        this.sendAnalyticsError('applyOfflineUnsavedTransaction', error);
+      }
+      return result;
     } catch (error: any) {
-      console.log(error);
+      this.handleCoreError('applyOfflineUnsavedTransaction', error);
       return false;
     }
   }
@@ -1057,7 +1063,7 @@ class Core {
     try {
       this.gridController.clearFormatting(selection, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('clearFormatting', e);
     }
   }
 
@@ -1073,7 +1079,7 @@ class Core {
         }
         return resolve(this.gridController.rerunAllCodeCells(cursor));
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('rerunCodeCells', e);
         resolve(undefined);
       }
     });
@@ -1100,7 +1106,7 @@ class Core {
     try {
       this.gridController.calculationComplete(jsCodeResultArray);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('cancelExecution', e);
     }
   }
 
@@ -1109,7 +1115,7 @@ class Core {
     try {
       this.gridController.changeDecimalPlaces(selection, decimals, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('changeDecimalPlaces', e);
     }
   }
 
@@ -1118,7 +1124,7 @@ class Core {
     try {
       this.gridController.setPercentage(selection, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('setPercentage', e);
     }
   }
 
@@ -1127,7 +1133,7 @@ class Core {
     try {
       this.gridController.setExponential(selection, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('setExponential', e);
     }
   }
 
@@ -1136,7 +1142,7 @@ class Core {
     try {
       this.gridController.removeNumericFormat(selection, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('removeNumericFormat', e);
     }
   }
 
@@ -1157,7 +1163,7 @@ class Core {
           message.cursor
         );
       } catch (e) {
-        this.handleCoreError(e);
+        this.handleCoreError('moveCells', e);
       }
       resolve(undefined);
     });
@@ -1175,7 +1181,7 @@ class Core {
         message.cursor
       );
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('moveCodeCellVertically', e);
       return { x: BigInt(0), y: BigInt(0) };
     }
   }
@@ -1192,7 +1198,7 @@ class Core {
         message.cursor
       );
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('moveCodeCellHorizontally', e);
       return { x: BigInt(0), y: BigInt(0) };
     }
   }
@@ -1202,7 +1208,7 @@ class Core {
     try {
       return this.gridController.getValidations(sheetId);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getValidations', e);
       return [];
     }
   }
@@ -1212,7 +1218,7 @@ class Core {
     try {
       this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('updateValidation', e);
     }
   }
 
@@ -1221,7 +1227,7 @@ class Core {
     try {
       this.gridController.removeValidation(sheetId, validationId, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('removeValidation', e);
     }
   }
 
@@ -1230,7 +1236,7 @@ class Core {
     try {
       this.gridController.removeValidations(sheetId, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('removeValidations', e);
     }
   }
 
@@ -1239,7 +1245,7 @@ class Core {
     try {
       return this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getValidationFromPos', e);
       return undefined;
     }
   }
@@ -1249,7 +1255,7 @@ class Core {
     try {
       this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('receiveRowHeights', e);
     }
   };
 
@@ -1258,7 +1264,7 @@ class Core {
     try {
       this.gridController.setDateTimeFormat(selection, format, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('setDateTimeFormat', e);
     }
   }
 
@@ -1267,7 +1273,7 @@ class Core {
     try {
       return this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getValidationList', e);
       return [];
     }
   }
@@ -1277,7 +1283,7 @@ class Core {
     try {
       return this.gridController.getDisplayValue(sheetId, posToPos(x, y));
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getDisplayCell', e);
       return undefined;
     }
   }
@@ -1287,7 +1293,7 @@ class Core {
     try {
       return this.gridController.validateInput(sheetId, posToPos(x, y), input);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('validateInput', e);
       return undefined;
     }
   }
@@ -1297,7 +1303,7 @@ class Core {
     try {
       return this.gridController.getCellValue(sheetId, posToPos(x, y));
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getCellValue', e);
       return undefined;
     }
   }
@@ -1319,7 +1325,7 @@ class Core {
         args.includeChartsSummary
       );
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getAISelectionContexts', e);
       return undefined;
     }
   }
@@ -1329,7 +1335,7 @@ class Core {
     try {
       return this.gridController.getAITablesContext();
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getAITablesContext', e);
       return undefined;
     }
   }
@@ -1340,7 +1346,7 @@ class Core {
       const neighborText: string[] | undefined = this.gridController.neighborText(sheetId, BigInt(x), BigInt(y));
       return neighborText ?? [];
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('neighborText', e);
       return [];
     }
   }
@@ -1350,7 +1356,7 @@ class Core {
     try {
       this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('deleteColumns', e);
     }
   }
 
@@ -1359,7 +1365,7 @@ class Core {
     try {
       this.gridController.insertColumn(sheetId, BigInt(column), right, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('insertColumn', e);
     }
   }
 
@@ -1368,7 +1374,7 @@ class Core {
     try {
       this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('deleteRows', e);
     }
   }
 
@@ -1377,7 +1383,7 @@ class Core {
     try {
       this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('insertRow', e);
     }
   }
 
@@ -1386,7 +1392,7 @@ class Core {
     try {
       this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('flattenDataTable', e);
     }
   }
 
@@ -1395,7 +1401,7 @@ class Core {
     try {
       this.gridController.codeDataTableToDataTable(sheetId, posToPos(x, y), cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('codeDataTableToDataTable', e);
     }
   }
 
@@ -1404,7 +1410,7 @@ class Core {
     try {
       this.gridController.gridToDataTable(sheetRect, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('gridToDataTable', e);
     }
   }
 
@@ -1434,7 +1440,7 @@ class Core {
         cursor
       );
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('dataTableMeta', e);
     }
   }
 
@@ -1466,7 +1472,7 @@ class Core {
         args.cursor
       );
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('dataTableMutations', e);
     }
   }
 
@@ -1475,7 +1481,7 @@ class Core {
     try {
       this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('sortDataTable', e);
     }
   }
 
@@ -1484,7 +1490,7 @@ class Core {
     try {
       this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('dataTableFirstRowAsHeader', e);
     }
   }
 
@@ -1500,7 +1506,7 @@ class Core {
         args.cursor
       );
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('addDataTable', e);
     }
   }
 
@@ -1509,7 +1515,7 @@ class Core {
     try {
       return this.gridController.calculationGetCellsA1(transactionId, a1);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('getCellsA1', e);
       return new Uint8Array();
     }
   }
@@ -1527,7 +1533,7 @@ class Core {
           )
         : undefined;
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('finiteRectFromSelection', e);
       return undefined;
     }
   }
@@ -1537,7 +1543,7 @@ class Core {
     try {
       this.gridController.moveColumns(sheetId, colStart, colEnd, to, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('moveColumns', e);
     }
   }
 
@@ -1546,7 +1552,7 @@ class Core {
     try {
       this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
     } catch (e) {
-      this.handleCoreError(e);
+      this.handleCoreError('moveRows', e);
     }
   }
 }

@@ -23,6 +23,7 @@ use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
 use quadratic_core::grid::js_types::JsTablesContext;
 use quadratic_core::grid::js_types::{
@@ -144,6 +145,7 @@ fn main() {
         JsRenderCodeCell,
         JsRenderCodeCellState,
         JsRenderFill,
+        JsResponse,
         JsReturnInfo,
         JsRowHeight,
         JsSelectionContext,
