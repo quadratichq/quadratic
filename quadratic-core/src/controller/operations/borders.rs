@@ -6,10 +6,10 @@
 use std::collections::HashMap;
 
 use crate::{
+    ClearOption, Pos,
     a1::{A1Selection, CellRefRange, RefRangeBounds, TableMapEntry, UNBOUNDED},
     controller::GridController,
     grid::sheet::borders::{BorderSelection, BorderStyle, BordersUpdates},
-    ClearOption, Pos,
 };
 
 use super::operation::Operation;
@@ -509,18 +509,14 @@ impl GridController {
             });
         }
 
-        if ops.is_empty() {
-            None
-        } else {
-            Some(ops)
-        }
+        if ops.is_empty() { None } else { Some(ops) }
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::{grid::SheetId, Pos};
+    use crate::{Pos, grid::SheetId};
 
     use super::*;
 

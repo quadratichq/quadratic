@@ -1,12 +1,12 @@
 use std::str::FromStr;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
 use crate::controller::operations::clipboard::ClipboardOperation;
 use crate::{
-    controller::{operations::clipboard::PasteSpecial, GridController},
-    grid::SheetId,
     SheetPos, SheetRect,
+    controller::{GridController, operations::clipboard::PasteSpecial},
+    grid::SheetId,
 };
 
 use super::Pos;

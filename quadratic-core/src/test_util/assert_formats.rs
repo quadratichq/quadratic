@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{controller::GridController, grid::SheetId, Pos};
+use crate::{Pos, controller::GridController, grid::SheetId};
 
 #[track_caller]
 #[cfg(test)]

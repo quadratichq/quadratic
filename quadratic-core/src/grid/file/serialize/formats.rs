@@ -1,10 +1,10 @@
 use crate::grid::{
+    CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, NumericFormatKind,
+    SheetFormatting,
     contiguous::Block,
     formats::Format,
     formatting::RenderSize,
     resize::{Resize, ResizeMap},
-    CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, NumericFormatKind,
-    SheetFormatting,
 };
 
 use super::{

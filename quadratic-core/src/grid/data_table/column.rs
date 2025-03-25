@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use super::{column_header::DataTableColumnHeader, DataTable};
+use super::{DataTable, column_header::DataTableColumnHeader};
 use crate::{CellValue, CopyFormats};
 
 impl DataTable {
@@ -178,7 +178,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        grid::test::new_data_table, test_util::pretty_print_data_table, ArraySize, CellValue,
+        ArraySize, CellValue, grid::test::new_data_table, test_util::pretty_print_data_table,
     };
 
     #[test]

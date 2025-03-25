@@ -37,8 +37,8 @@ impl Sheet {
 mod tests {
     use super::*;
     use crate::{
-        controller::GridController, grid::resize::Resize,
-        sheet_offsets::resize_transient::TransientResize, Pos, Rect,
+        Pos, Rect, controller::GridController, grid::resize::Resize,
+        sheet_offsets::resize_transient::TransientResize,
     };
 
     #[test]

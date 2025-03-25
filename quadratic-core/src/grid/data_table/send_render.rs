@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
 use crate::{
+    ClearOption, Pos, Rect, SheetPos,
     controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{
-        formats::{SheetFormatUpdates, SheetFormatUpdatesType},
         CellWrap, Sheet, SheetId,
+        formats::{SheetFormatUpdates, SheetFormatUpdatesType},
     },
-    ClearOption, Pos, Rect, SheetPos,
 };
 
 use super::DataTable;

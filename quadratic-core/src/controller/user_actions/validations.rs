@@ -1,19 +1,19 @@
 use uuid::Uuid;
 
 use crate::{
+    CellValue, Pos,
     a1::A1Selection,
     controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
+        GridController, active_transactions::transaction_name::TransactionName,
+        operations::operation::Operation,
     },
     grid::{
+        SheetId,
         sheet::validations::{
             validation::{Validation, ValidationStyle},
             validation_rules::ValidationRule,
         },
-        SheetId,
     },
-    CellValue, Pos,
 };
 
 impl GridController {
@@ -116,9 +116,9 @@ mod tests {
         grid::sheet::validations::{
             validation::ValidationError,
             validation_rules::{
+                ValidationRule,
                 validation_list::{ValidationList, ValidationListSource},
                 validation_logical::ValidationLogical,
-                ValidationRule,
             },
         },
         wasm_bindings::js::expect_js_call,
@@ -246,9 +246,10 @@ mod tests {
         );
 
         // missing sheet_id should return None
-        assert!(gc
-            .get_validation_from_pos(SheetId::new(), (1, 1).into())
-            .is_none());
+        assert!(
+            gc.get_validation_from_pos(SheetId::new(), (1, 1).into())
+                .is_none()
+        );
     }
 
     #[test]

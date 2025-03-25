@@ -433,12 +433,16 @@ mod tests {
             RefRangeBounds::test_a1("A:B").selected_columns_finite(),
             vec![1, 2]
         );
-        assert!(RefRangeBounds::test_a1("A1:")
-            .selected_columns_finite()
-            .is_empty());
-        assert!(RefRangeBounds::test_a1("*")
-            .selected_columns_finite()
-            .is_empty());
+        assert!(
+            RefRangeBounds::test_a1("A1:")
+                .selected_columns_finite()
+                .is_empty()
+        );
+        assert!(
+            RefRangeBounds::test_a1("*")
+                .selected_columns_finite()
+                .is_empty()
+        );
         assert_eq!(
             RefRangeBounds::test_a1(":B").selected_columns_finite(),
             vec![1, 2]
@@ -456,12 +460,16 @@ mod tests {
             RefRangeBounds::test_a1("1:3").selected_rows_finite(),
             vec![1, 2, 3]
         );
-        assert!(RefRangeBounds::test_a1("A1:")
-            .selected_rows_finite()
-            .is_empty());
-        assert!(RefRangeBounds::test_a1("*")
-            .selected_rows_finite()
-            .is_empty());
+        assert!(
+            RefRangeBounds::test_a1("A1:")
+                .selected_rows_finite()
+                .is_empty()
+        );
+        assert!(
+            RefRangeBounds::test_a1("*")
+                .selected_rows_finite()
+                .is_empty()
+        );
         assert_eq!(
             RefRangeBounds::test_a1(":3").selected_rows_finite(),
             vec![1, 2, 3]

@@ -1,6 +1,6 @@
 use crate::grid::file::v1_7_1::{BorderStyleTimestampSchema, BordersSchema};
 
-use super::{schema::BorderStyleCellSchema, Contiguous2DUpgrade};
+use super::{Contiguous2DUpgrade, schema::BorderStyleCellSchema};
 
 use crate::grid::file::add_import_offset_to_contiguous_2d_rect;
 

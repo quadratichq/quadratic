@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
+    Pos, Span, Spanned,
     a1::{A1Context, SheetCellRefRange},
     grid::{JsCellsAccessed, SheetId},
-    Pos, Span, Spanned,
 };
 
 use super::parse_formula;
@@ -102,8 +102,8 @@ pub fn parse_formula_results(
 mod tests {
     use super::*;
     use crate::{
-        a1::{CellRefCoord, CellRefRange},
         Rect, Span,
+        a1::{CellRefCoord, CellRefRange},
     };
 
     /// Run this test with `--nocapture` to generate the example for the

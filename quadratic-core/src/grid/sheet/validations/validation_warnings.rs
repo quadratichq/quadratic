@@ -2,7 +2,7 @@
 
 use uuid::Uuid;
 
-use crate::{controller::operations::operation::Operation, Pos, SheetPos};
+use crate::{Pos, SheetPos, controller::operations::operation::Operation};
 
 use super::Validations;
 
@@ -36,11 +36,11 @@ mod tests {
     use crate::{
         a1::A1Selection,
         grid::{
+            Sheet,
             sheet::validations::{
                 validation::Validation,
-                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+                validation_rules::{ValidationRule, validation_logical::ValidationLogical},
             },
-            Sheet,
         },
     };
 

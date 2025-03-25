@@ -3,9 +3,9 @@ use chrono::{Duration, NaiveDateTime};
 use crate::CellValue;
 
 use super::{
+    SeriesOptions,
     date_series::{date_delta, date_diff},
     time_series::{time_delta, time_diff},
-    SeriesOptions,
 };
 
 pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
@@ -76,7 +76,7 @@ pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellV
 mod tests {
     use chrono::{NaiveDate, NaiveTime};
 
-    use crate::{grid::series::find_auto_complete, Pos};
+    use crate::{Pos, grid::series::find_auto_complete};
 
     use super::*;
 

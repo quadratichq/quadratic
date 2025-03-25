@@ -1,9 +1,9 @@
 use anyhow::Result;
 
-use crate::controller::active_transactions::transaction_name::TransactionName;
-use crate::controller::GridController;
-use crate::grid::SheetId;
 use crate::Pos;
+use crate::controller::GridController;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::grid::SheetId;
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -88,10 +88,10 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
+        CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
         test_util::{assert_cell_value_row, print_table_at, print_table_in_rect},
         wasm_bindings::js::clear_js_calls,
-        CellValue, Rect, RunError, RunErrorMsg, Span,
     };
 
     use bigdecimal::BigDecimal;

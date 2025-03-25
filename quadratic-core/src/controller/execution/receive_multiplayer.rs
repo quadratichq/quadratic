@@ -4,12 +4,12 @@ use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
 
 use super::TransactionSource;
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::{Transaction, TransactionServer};
-use crate::controller::GridController;
 
 // seconds to wait before requesting wait_for_transactions
 const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
@@ -282,7 +282,9 @@ impl GridController {
                         compressed_ops,
                     );
                 } else {
-                    dbgjs!("Unable to serialize and compress operations in apply_offline_unsaved_transaction()");
+                    dbgjs!(
+                        "Unable to serialize and compress operations in apply_offline_unsaved_transaction()"
+                    );
                 }
             }
         } else {
@@ -307,9 +309,9 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
+    use crate::controller::GridController;
     use crate::controller::transaction::Transaction;
     use crate::controller::transaction_types::JsCodeResult;
-    use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, Pos, SheetPos};

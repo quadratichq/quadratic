@@ -27,7 +27,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::{formats::SheetFormatUpdates, sheet::borders::BorderStyle, SheetId};
+    use crate::grid::{SheetId, formats::SheetFormatUpdates, sheet::borders::BorderStyle};
 
     use super::*;
 

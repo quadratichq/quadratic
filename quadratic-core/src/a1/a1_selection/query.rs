@@ -1,9 +1,9 @@
 use std::{cmp::Ordering, collections::HashSet};
 
 use crate::{
+    Pos, Rect, SheetPos,
     a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
     grid::Sheet,
-    Pos, Rect, SheetPos,
 };
 
 use super::{A1Selection, CellRefRange};
@@ -927,20 +927,30 @@ mod tests {
         assert!(!A1Selection::test_a1("E3").cursor_is_on_html_image(&context));
 
         // Test with wrong sheet_id
-        assert!(!A1Selection::test_a1_context("'Sheet 2'!B2", &context)
-            .cursor_is_on_html_image(&context));
+        assert!(
+            !A1Selection::test_a1_context("'Sheet 2'!B2", &context)
+                .cursor_is_on_html_image(&context)
+        );
     }
 
     #[test]
     fn test_has_table_headers() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers(&context, false));
-        assert!(A1Selection::test_a1_context("Table1[#ALL]", &context)
-            .has_table_headers(&context, false));
-        assert!(A1Selection::test_a1_context("Table1[#headers]", &context)
-            .has_table_headers(&context, false));
-        assert!(A1Selection::test_a1_context("Table1[#all]", &context)
-            .has_table_headers(&context, false));
+        assert!(
+            A1Selection::test_a1_context("Table1", &context).has_table_headers(&context, false)
+        );
+        assert!(
+            A1Selection::test_a1_context("Table1[#ALL]", &context)
+                .has_table_headers(&context, false)
+        );
+        assert!(
+            A1Selection::test_a1_context("Table1[#headers]", &context)
+                .has_table_headers(&context, false)
+        );
+        assert!(
+            A1Selection::test_a1_context("Table1[#all]", &context)
+                .has_table_headers(&context, false)
+        );
     }
 
     #[test]

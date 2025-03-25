@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{controller::GridController, grid::SheetId, CellValue, Pos};
+use crate::{CellValue, Pos, controller::GridController, grid::SheetId};
 
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]

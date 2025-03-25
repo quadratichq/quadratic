@@ -11,7 +11,7 @@
 //! DataTable to exist in memory and be used for both display and execution.
 
 use crate::{Array, CellValue, Pos, Value};
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{Ok, Result, anyhow};
 
 use super::DataTable;
 
@@ -196,13 +196,13 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
+        CellValue, Pos, SheetPos,
+        controller::{GridController, transaction_types::JsCodeResult},
         grid::{
-            test::{new_data_table, test_csv_values},
             CodeCellLanguage, DataTable,
+            test::{new_data_table, test_csv_values},
         },
         test_util::{assert_data_table_row, pretty_print_data_table},
-        CellValue, Pos, SheetPos,
     };
 
     #[test]

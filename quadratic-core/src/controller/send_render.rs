@@ -3,17 +3,17 @@ use std::collections::HashSet;
 use itertools::Itertools;
 
 use crate::{
+    Pos, Rect,
     grid::{
-        js_types::{JsHtmlOutput, JsOffset},
         SheetId,
+        js_types::{JsHtmlOutput, JsOffset},
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    Pos, Rect,
 };
 
-use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
+use super::{GridController, active_transactions::pending_transaction::PendingTransaction};
 
 impl GridController {
     pub(crate) fn send_viewport_buffer(&mut self) {
@@ -509,18 +509,18 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        ClearOption, Pos, SheetPos,
         a1::A1Selection,
         controller::{
-            active_transactions::pending_transaction::PendingTransaction,
-            execution::TransactionSource, transaction_types::JsCodeResult, GridController,
+            GridController, active_transactions::pending_transaction::PendingTransaction,
+            execution::TransactionSource, transaction_types::JsCodeResult,
         },
         grid::{
+            Contiguous2D, SheetId,
             formats::SheetFormatUpdates,
             js_types::{JsHtmlOutput, JsRenderCell},
-            Contiguous2D, SheetId,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        ClearOption, Pos, SheetPos,
     };
     use std::collections::HashSet;
 

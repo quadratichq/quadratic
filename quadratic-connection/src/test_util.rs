@@ -40,9 +40,7 @@ macro_rules! test_connection {
 /// Convert a number into a vector of bytes.
 #[macro_export]
 macro_rules! num_vec {
-    ( $value:expr ) => {{
-        $value.to_le_bytes().to_vec()
-    }};
+    ( $value:expr ) => {{ $value.to_le_bytes().to_vec() }};
 }
 
 // Convert a string into a vector of bytes.

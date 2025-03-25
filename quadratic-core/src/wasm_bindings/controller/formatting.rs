@@ -2,10 +2,10 @@ use std::str::FromStr;
 
 use wasm_bindgen::prelude::*;
 
-use crate::a1::A1Selection;
-use crate::controller::GridController;
 use crate::Pos;
 use crate::SheetPos;
+use crate::a1::A1Selection;
+use crate::controller::GridController;
 
 use super::CellFormatSummary;
 use super::NumericFormatKind;
