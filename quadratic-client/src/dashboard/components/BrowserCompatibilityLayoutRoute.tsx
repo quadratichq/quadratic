@@ -5,7 +5,7 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { Empty } from './Empty';
 
 export function BrowserCompatibilityLayoutRoute() {

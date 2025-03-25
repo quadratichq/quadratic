@@ -3,8 +3,8 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import { Navigate, useLoaderData } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Navigate, useLoaderData } from 'react-router';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
@@ -15,7 +15,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 };
 
 export const Component = () => {
-  const { teamUuid, staticIps } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  const { teamUuid, staticIps } = useLoaderData<typeof loader>();
   const {
     activeTeam: {
       connections,

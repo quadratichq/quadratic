@@ -13,7 +13,7 @@ import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAnd
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { useFetchers, useLocation } from 'react-router-dom';
+import { useFetchers, useLocation } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
 export type FilesListUserFile = {

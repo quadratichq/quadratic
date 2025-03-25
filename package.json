@@ -75,7 +75,6 @@
   },
   "dependencies": {
     "@ory/kratos-client": "^1.2.1",
-    "react-router-dom": "^6.28.1",
     "vitest": "^3.0.7",
     "zod": "^3.23.8"
   },

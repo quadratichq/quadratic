@@ -18,7 +18,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { useTheme } from '@mui/material';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 export function ReturnTypeInspector() {

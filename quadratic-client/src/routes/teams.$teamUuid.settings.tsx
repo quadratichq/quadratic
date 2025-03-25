@@ -19,7 +19,7 @@ import mixpanel from 'mixpanel-browser';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useFetcher, useSubmit } from 'react-router-dom';
+import { Link, Navigate, useFetcher, useSubmit } from 'react-router';
 
 export const Component = () => {
   const {

@@ -17,7 +17,7 @@ import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import {
   Link,
   Outlet,
@@ -29,7 +29,7 @@ import {
   useRouteError,
   useRouteLoaderData,
   useSearchParams,
-} from 'react-router-dom';
+} from 'react-router';
 import { RecoilRoot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
