@@ -455,12 +455,11 @@ impl GridController {
                     Value::Single("".into())
                 }
             } else if let Some(output_value) = js_code_result.output_value {
-                let (cell_value, ops) =
-                    CellValue::from_js(output_value.to_owned(), start.into(), sheet)
-                        .unwrap_or_else(|e| {
-                            dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
-                            (CellValue::Blank, vec![])
-                        });
+                let (cell_value, ops) = CellValue::from_js(output_value, start.into(), sheet)
+                    .unwrap_or_else(|e| {
+                        dbgjs!(format!("Error parsing output value: {}", e));
+                        (CellValue::Blank, vec![])
+                    });
                 transaction.reverse_operations.extend(ops);
                 Value::Single(cell_value)
             } else {
