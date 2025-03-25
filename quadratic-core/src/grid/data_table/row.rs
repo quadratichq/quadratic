@@ -105,8 +105,8 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        grid::test::{new_data_table, pretty_print_data_table},
         ArraySize, CellValue,
+        grid::test::{new_data_table, pretty_print_data_table},
     };
 
     #[test]

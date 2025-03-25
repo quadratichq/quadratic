@@ -8,8 +8,8 @@
 use std::cmp::Ordering;
 
 use chrono::{
-    format::{Fixed, Item, Numeric, StrftimeItems},
     DateTime, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
+    format::{Fixed, Item, Numeric, StrftimeItems},
 };
 
 pub const DEFAULT_DATE_FORMAT: &str = "%m/%d/%Y";

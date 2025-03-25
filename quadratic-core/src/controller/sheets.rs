@@ -2,7 +2,7 @@ use super::GridController;
 use crate::grid::Sheet;
 use crate::grid::SheetId;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {

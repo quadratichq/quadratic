@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, SheetPos};
+use crate::{SheetPos, grid::SheetId};
 
 use super::{A1Context, DataTable, Sheet};
 

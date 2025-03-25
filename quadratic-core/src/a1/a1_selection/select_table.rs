@@ -216,7 +216,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::RefRangeBounds, Rect};
+    use crate::{Rect, a1::RefRangeBounds};
 
     use super::*;
 

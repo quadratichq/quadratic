@@ -1,10 +1,10 @@
 use std::{collections::HashSet, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 use wasm_bindgen::prelude::*;
 
-use crate::{cell_values::CellValues, grid::SheetId, ArraySize, Pos, SheetRect};
+use crate::{ArraySize, Pos, SheetRect, cell_values::CellValues, grid::SheetId};
 
 // TODO: these methods should take `Rect`, not `&Rect` (because `Rect` is `Copy`)
 

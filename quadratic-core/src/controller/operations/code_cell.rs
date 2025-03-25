@@ -1,10 +1,10 @@
 use super::operation::Operation;
 use crate::{
+    CellValue, SheetPos,
     cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
-    CellValue, SheetPos,
 };
 
 impl GridController {
@@ -145,7 +145,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
-    use crate::{constants::SHEET_NAME, Pos};
+    use crate::{Pos, constants::SHEET_NAME};
 
     #[test]
     fn test_set_code_cell_operations() {

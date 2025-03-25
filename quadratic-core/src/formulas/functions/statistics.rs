@@ -198,7 +198,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use itertools::Itertools;
 
-    use crate::{a1::A1Context, formulas::tests::*, grid::SheetId, Pos};
+    use crate::{Pos, a1::A1Context, formulas::tests::*, grid::SheetId};
 
     #[test]
     fn test_formula_average() {
