@@ -7,7 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import { Point, Rectangle, type InteractionEvent } from 'pixi.js';
+import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 // Distance from top left corner to trigger a cell move.
@@ -67,11 +67,10 @@ export class PointerCellMoving {
     this.startMove();
   };
 
-  pointerDown = (e: InteractionEvent): boolean => {
-    const event = e.data.originalEvent as PointerEvent;
-    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
+  pointerDown = (e: FederatedPointerEvent): boolean => {
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || e.button === 1) return false;
 
-    if (this.state === 'hover' && this.movingCells && event.button === 0) {
+    if (this.state === 'hover' && this.movingCells && e.button === 0) {
       this.startCell = new Point(this.movingCells.column, this.movingCells.row);
       this.startMove();
       return true;
@@ -245,7 +244,7 @@ export class PointerCellMoving {
     return false;
   };
 
-  pointerMove = (event: PointerEvent, world: Point): boolean => {
+  pointerMove = (world: Point, event: FederatedPointerEvent): boolean => {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
     if (this.state === 'move') {

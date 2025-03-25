@@ -5,8 +5,7 @@ import { SCALE_OUT_OF_BOUNDS_SCROLL } from '@/app/gridGL/pixiApp/viewport/Wheel'
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { Decelerate, Viewport } from 'pixi-viewport';
 import { Plugin } from 'pixi-viewport';
-import type { InteractionEvent } from 'pixi.js';
-import { Point } from 'pixi.js';
+import { Point, type FederatedPointerEvent } from 'pixi.js';
 
 /** Options for {@link Drag}. */
 export interface IDragOptions {
@@ -260,7 +259,7 @@ export class Drag extends Plugin {
    * @param {PIXI.FederatedPointerEvent} event
    * @returns {boolean}
    */
-  protected checkButtons(event: InteractionEvent): boolean {
+  protected checkButtons(event: FederatedPointerEvent): boolean {
     const isMouse = event.data.pointerType === 'mouse';
     const count = this.parent.input.count();
 
@@ -277,7 +276,7 @@ export class Drag extends Plugin {
    * @param {PIXI.FederatedPointerEvent} event
    * @returns {boolean}
    */
-  protected checkKeyPress(event: InteractionEvent): boolean {
+  protected checkKeyPress(event: FederatedPointerEvent): boolean {
     return (
       !this.options.keyToPress ||
       this.keyIsPressed ||
@@ -285,13 +284,13 @@ export class Drag extends Plugin {
     );
   }
 
-  public down(event: InteractionEvent): boolean {
+  public down(event: FederatedPointerEvent): boolean {
     if (this.paused || !this.options.pressDrag) {
       return false;
     }
     if (this.checkButtons(event) && this.checkKeyPress(event)) {
-      this.last = { x: event.data.global.x, y: event.data.global.y };
-      this.current = event.data.pointerId;
+      this.last = { x: event.global.x, y: event.global.y };
+      this.current = event.pointerId;
 
       return true;
     }
@@ -304,13 +303,13 @@ export class Drag extends Plugin {
     return this.moved;
   }
 
-  public move(event: InteractionEvent): boolean {
+  public move(event: FederatedPointerEvent): boolean {
     if (this.paused || !this.options.pressDrag) {
       return false;
     }
-    if (this.last && this.current === event.data.pointerId) {
-      const x = event.data.global.x;
-      const y = event.data.global.y;
+    if (this.last && this.current === event.pointerId) {
+      const x = event.global.x;
+      const y = event.global.y;
       const count = this.parent.input.count();
 
       if (count === 1 || (count > 1 && !this.parent.plugins.get('pinch', true))) {
@@ -349,7 +348,7 @@ export class Drag extends Plugin {
     return false;
   }
 
-  public up(event: InteractionEvent): boolean {
+  public up(event: FederatedPointerEvent): boolean {
     if (this.paused) {
       return false;
     }

@@ -1022,10 +1022,10 @@ class Core {
     }
   }
 
-  calculationComplete(results: JsCodeResult) {
+  calculationComplete(jsCodeResultBuffer: ArrayBuffer) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.calculationComplete(JSON.stringify(results));
+      this.gridController.calculationComplete(new Uint8Array(jsCodeResultBuffer));
     } catch (e) {
       this.handleCoreError(e);
     }
@@ -1081,21 +1081,24 @@ class Core {
 
   cancelExecution(transactionId: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const codeResult: JsCodeResult = {
+      transaction_id: transactionId,
+      success: false,
+      std_err: 'Execution cancelled by user',
+      std_out: null,
+      output_value: null,
+      output_array: null,
+      line_number: null,
+      output_display_type: null,
+      cancel_compute: true,
+      chart_pixel_output: null,
+      has_headers: false,
+    };
+    const jsCodeResult = JSON.stringify(codeResult);
+    const encoder = new TextEncoder();
+    const jsCodeResultArray = encoder.encode(jsCodeResult);
     try {
-      const codeResult: JsCodeResult = {
-        transaction_id: transactionId,
-        success: false,
-        std_err: 'Execution cancelled by user',
-        std_out: null,
-        output_value: null,
-        output_array: null,
-        line_number: null,
-        output_display_type: null,
-        cancel_compute: true,
-        chart_pixel_output: null,
-        has_headers: false,
-      };
-      this.gridController.calculationComplete(JSON.stringify(codeResult));
+      this.gridController.calculationComplete(jsCodeResultArray);
     } catch (e) {
       this.handleCoreError(e);
     }
@@ -1501,7 +1504,7 @@ class Core {
     }
   }
 
-  getCellsA1(transactionId: string, a1: string): string {
+  getCellsA1(transactionId: string, a1: string): Uint8Array {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
       return this.gridController.calculationGetCellsA1(transactionId, a1);

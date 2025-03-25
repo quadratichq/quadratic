@@ -308,8 +308,14 @@ class TestUtils(TestCase):
         assert to_python_type("abc123", "text") == "abc123"
 
         # date
-        assert to_python_type("2012-11-10T00:00:00", "date") == datetime(2012, 11, 10)
+        assert to_python_type("2012-11-10T00:00:00", "date") == datetime(2012, 11, 10).date()
         assert to_python_type("2012-11-10T03:30:00", "date") == datetime(
+            2012, 11, 10, 3, 30
+        ).date()
+
+        # date time
+        assert to_python_type("2012-11-10T00:00:00", "date time") == datetime(2012, 11, 10)
+        assert to_python_type("2012-11-10T03:30:00", "date time") == datetime(
             2012, 11, 10, 3, 30
         )
 

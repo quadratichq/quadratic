@@ -12,7 +12,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
-import { Point, Rectangle } from 'pixi.js';
+import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 const MINIMUM_MOVE_POSITION = 5;
@@ -52,7 +52,7 @@ export class PointerDown {
     return true;
   }
 
-  async pointerDown(world: Point, event: PointerEvent) {
+  async pointerDown(world: Point, event: FederatedPointerEvent) {
     const isMiddleClick = event.button === 1;
     // to prevent default paste behavior on middle click, in Linux
     if (isLinux && isMiddleClick) {
@@ -150,7 +150,7 @@ export class PointerDown {
     this.active = true;
   }
 
-  pointerMove(world: Point, event: PointerEvent) {
+  pointerMove(world: Point, event: FederatedPointerEvent) {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     const { viewport } = pixiApp;
@@ -203,7 +203,7 @@ export class PointerDown {
     }
   }
 
-  pointerUp(event?: PointerEvent) {
+  pointerUp(event?: FederatedPointerEvent) {
     const isMiddleClick = event && event.button === 1;
     // to prevent default paste behavior on middle click, in Linux
     if (isLinux && isMiddleClick) {
