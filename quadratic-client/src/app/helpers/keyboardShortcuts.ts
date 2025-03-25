@@ -3,6 +3,7 @@ import { defaultShortcuts } from '@/app/keyboard/defaults';
 import { MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
 import type { Shortcut } from '@/app/keyboard/shortcut';
 import { isMac } from '@/shared/utils/isMac';
+import type { FederatedPointerEvent } from 'pixi.js';
 
 /**
  * Checks if a keyboard event should trigger a specific action.
@@ -12,7 +13,7 @@ import { isMac } from '@/shared/utils/isMac';
  */
 export const matchShortcut = (
   action: Action,
-  event: KeyboardEvent | React.KeyboardEvent<Element> | PointerEvent
+  event: KeyboardEvent | React.KeyboardEvent<Element> | FederatedPointerEvent
 ): boolean => {
   const shortcuts = isMac ? defaultShortcuts[action]?.mac : defaultShortcuts[action]?.windows;
   if (!shortcuts) {

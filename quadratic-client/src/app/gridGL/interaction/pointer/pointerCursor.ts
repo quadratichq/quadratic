@@ -10,7 +10,7 @@ import type { Point } from 'pixi.js';
 export class PointerCursor {
   private lastInfo?: JsRenderCodeCell | EditingCell | ErrorValidation;
 
-  private checkHoverCell(world: Point, event: PointerEvent) {
+  private checkHoverCell(world: Point) {
     if (!pixiApp.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerCursor');
     const cell = sheets.sheet.getColumnRow(world.x, world.y);
     const editingCell = multiplayer.cellIsBeingEdited(cell.x, cell.y, sheets.current);
@@ -47,10 +47,10 @@ export class PointerCursor {
     }
   }
 
-  pointerMove(world: Point, event: PointerEvent): void {
+  pointerMove(world: Point): void {
     const cursor = pixiApp.pointer.pointerHeading.cursor ?? pixiApp.pointer.pointerAutoComplete.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
     multiplayer.sendMouseMove(world.x, world.y);
-    this.checkHoverCell(world, event);
+    this.checkHoverCell(world);
   }
 }

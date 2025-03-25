@@ -24,19 +24,19 @@ export type EvaluationResult = {
 export type outputType = 'blank' | 'number' | 'text' | 'logical' | 'instant';
 
 export interface PythonSuccess {
-  array_output: string[][];
-  typed_array_output: [string, outputType][];
   code: string;
-  input_python_stack_trace: string;
-  output?: [string, outputType];
-  output_size?: number[];
-
-  // Python type to show in CodeEditor
-  output_type?: string;
 
   std_err: string;
   std_out: string;
+
+  output?: [string, outputType];
+  output_type?: string; // Python type to show in CodeEditor
+  output_size?: number[];
+  array_output: string[][];
+  typed_array_output: [string, outputType][];
+
   success: true;
+  input_python_stack_trace: string;
 
   lineno: undefined;
 
