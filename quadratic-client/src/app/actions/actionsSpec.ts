@@ -52,7 +52,7 @@ export type ActionSpec<ActionArgsType> = {
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
 
   // function to disable the action
-  isDisabled?: (args: ActionAvailabilityArgs) => boolean;
+  isDisabled?: () => boolean;
 
   // Used for command palette search
   keywords?: string[];

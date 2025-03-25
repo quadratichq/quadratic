@@ -32,7 +32,7 @@ export const MenubarItemAction = <T extends Action>({
 
   return (
     <MenubarItem
-      disabled={isDisabled ? isDisabled(isAvailableArgs) : false}
+      disabled={isDisabled ? isDisabled() : false}
       onClick={() => {
         mixpanel.track('[FileMenu].selected', { label });
         if (disableFocusGridRef) {
