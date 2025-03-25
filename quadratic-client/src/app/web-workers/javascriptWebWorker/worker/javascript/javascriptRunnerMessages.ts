@@ -1,10 +1,6 @@
 // Messages sent between the javascript web worker and the javascript runner
 // (which is where the user code is executed).
 
-import type { CellType } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptAPI';
-
-export type JavascriptRunnerGetCells = CellType[][] | undefined;
-
 export interface RunnerJavascriptGetCellsA1Length {
   type: 'getCellsA1Length';
   sharedBuffer: SharedArrayBuffer;
