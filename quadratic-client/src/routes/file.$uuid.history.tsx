@@ -2,12 +2,11 @@ import { authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { ChevronRightIcon, DraftIcon, ExternalLinkIcon, RefreshIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, DraftIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -88,10 +87,14 @@ export const Component = () => {
               <RefreshIcon className={cn(isLoading && 'animate-spin opacity-50')} />
             </Button>
           </div>
-          <h3 className="mr-auto text-lg font-semibold">Version history</h3>
+          <h3 className="mr-auto text-lg font-semibold">File history</h3>
           <p className="text-sm text-muted-foreground">
-            Browse and recover file versions that’ve been automatically saved.
+            Files are saved automatically as you work so you can recover previous versions.
           </p>
+          <div className="mb-1 mt-2 flex items-center gap-0.5 text-sm">
+            <DraftIcon />
+            <span className="truncate">{data.name}</span>
+          </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Button
@@ -131,23 +134,6 @@ export const Component = () => {
               Download
             </Button>
           </div>
-          <Button variant="secondary" size="sm" asChild>
-            <Link
-              to={ROUTES.FILE(uuid)}
-              target="_blank"
-              className="group mt-2 flex w-full items-center gap-1 overflow-hidden !px-1 hover:text-primary"
-              onClick={() => {
-                mixpanel.track('[FileVersionHistory].openCurrentVersion', {
-                  uuid,
-                });
-              }}
-            >
-              <DraftIcon />
-              <span className="truncate">{data.name}</span>
-
-              <ExternalLinkIcon className="ml-auto !text-sm text-muted-foreground opacity-70 group-hover:text-primary group-hover:opacity-100" />
-            </Link>
-          </Button>
         </div>
         <div className="h-full flex-col overflow-auto p-3">
           {Object.entries(checkpointsByDay).map(([day, checkpoints], groupIndex) => {
@@ -171,7 +157,7 @@ export const Component = () => {
                           disabled={isLoading}
                           className={cn(
                             'flex w-full items-center justify-between rounded px-2 py-2 ',
-                            isSelected ? 'bg-accent' : 'hover:bg-accent',
+                            isSelected ? 'bg-primary text-background' : 'hover:bg-accent',
                             isLoading && 'cursor-not-allowed'
                           )}
                           onClick={() => {
@@ -179,11 +165,7 @@ export const Component = () => {
                           }}
                         >
                           <span className="mr-auto">{label}</span>
-                          {isCurrentVersion && (
-                            <Badge variant="outline" className="mr-1">
-                              Current version
-                            </Badge>
-                          )}
+                          {isCurrentVersion && <span className="mr-1 opacity-60">Latest</span>}
                           <ChevronRightIcon className={cn(isSelected ? 'opacity-100' : 'opacity-30')} />
                         </button>
                       </li>

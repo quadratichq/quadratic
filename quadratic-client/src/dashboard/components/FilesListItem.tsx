@@ -230,10 +230,10 @@ export function FilesListItemUserFile({
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem
                       onClick={() => {
-                        window.open(ROUTES.FILE_VERSIONS(uuid), '_blank');
+                        window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
                       }}
                     >
-                      Open version history
+                      Open file history
                     </DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (

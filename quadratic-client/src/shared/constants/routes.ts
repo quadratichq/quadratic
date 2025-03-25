@@ -10,7 +10,7 @@ export const ROUTES = {
   LOGIN_RESULT: '/login-result',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: (uuid: string) => `/file/${uuid}`,
-  FILE_VERSIONS: (uuid: string) => `/file/${uuid}/versions`,
+  FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {

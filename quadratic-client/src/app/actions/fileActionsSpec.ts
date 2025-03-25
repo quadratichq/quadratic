@@ -52,12 +52,12 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileVersionHistory]: {
-    label: 'Open version history',
+    label: 'Open file history',
     Icon: HistoryIcon,
     isAvailable: ({ isAuthenticated, filePermissions, teamPermissions }: ActionAvailabilityArgs) =>
       Boolean(isAuthenticated && filePermissions.includes('FILE_EDIT') && teamPermissions?.includes('TEAM_VIEW')),
     run: ({ uuid }: { uuid: string }) => {
-      window.open(ROUTES.FILE_VERSIONS(uuid), '_blank');
+      window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
     },
   },
 };
