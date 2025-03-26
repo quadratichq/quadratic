@@ -4,12 +4,7 @@ import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
-import type {
-  InspectPython,
-  outputType,
-  PythonError,
-  PythonSuccess,
-} from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import type { InspectPython, PythonError, PythonSuccess } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
 import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
 import type { PyodideInterface } from 'pyodide';
@@ -21,7 +16,7 @@ const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test
 // eslint-disable-next-line no-restricted-globals
 const SELF = self;
 
-function isEmpty(value: [string, outputType] | string | null | undefined) {
+function isEmpty(value: JsCellValueResult | string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
 }
 
@@ -235,7 +230,7 @@ class Python {
       if (nothingReturned) {
         output.array_output = undefined;
         output.typed_array_output = undefined;
-        output.output = ['', 'blank'];
+        output.output = ['', 0];
       } else {
         if (output.array_output && output.array_output.length) {
           if (!Array.isArray(output.array_output[0][0])) {

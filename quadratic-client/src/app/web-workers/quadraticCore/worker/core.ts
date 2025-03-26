@@ -36,6 +36,7 @@ import type {
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -824,9 +825,7 @@ class Core {
       chart_pixel_output: null,
       has_headers: false,
     };
-    const jsCodeResult = JSON.stringify(codeResult);
-    const encoder = new TextEncoder();
-    const jsCodeResultArray = encoder.encode(jsCodeResult);
+    const jsCodeResultArray = toUint8Array(codeResult);
     this.gridController.calculationComplete(jsCodeResultArray);
   }
 
