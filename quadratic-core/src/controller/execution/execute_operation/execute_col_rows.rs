@@ -1076,6 +1076,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_html_chart(&mut gc, sheet_id, pos![B2], 3, 3);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
         gc.delete_rows(sheet_id, vec![3], None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
@@ -1092,6 +1093,7 @@ mod tests {
 
     #[test]
     fn test_delete_bottom_rows_chart() {
+        // tests for adjust_chart_size in rows_delete_table.rs#delete_table_rows()
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
 

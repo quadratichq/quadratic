@@ -69,7 +69,7 @@ pub fn test_create_html_chart(
         std_out: None,
         std_err: None,
         line_number: None,
-        output_value: Some(JsCellValueResult("<html></html>".to_string(), 6)),
+        output_value: Some(JsCellValueResult("<html></html>".to_string(), 1)),
         output_array: None,
         output_display_type: None,
         cancel_compute: None,

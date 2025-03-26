@@ -93,47 +93,15 @@ impl Sheet {
 
         for (pos, width, height) in adjust_chart_size {
             if let Some(dt) = self.data_tables.get_mut(&pos) {
-                dt.chart_output = Some((width, height));
-                println!("adjusting chart size to {} {}", width, height);
-                transaction.add_from_code_run(self.id, pos, dt.is_image(), dt.is_html());
-                // We don't need reverse the chart size ops b/c the chart will
-                // automatically adjust when rows are inserted in the middle of
-                // the chart--with the exception of rows deleted at the end of
-                // the chart; those need to be handled separately (as below)
-                let mut rect = dt.output_rect(pos, false);
-                // need to adjust the rect to account for the UI
-                rect.max.y += 1;
-
-                let mut manual_removal_count = 0;
-                let mut auto_removal_count = 0;
-                for row in rect.y_range().rev() {
-                    println!("checking row: {} against rows: {:?}", row, rows);
-                    if auto_removal_count == 0 && rows.contains(&row) {
-                        manual_removal_count += 1;
-                    } else {
-                        auto_removal_count += 1;
-                    }
-                    println!(
-                        "manual {}, auto: {}",
-                        manual_removal_count, auto_removal_count
-                    );
-                }
-
-                println!(
-                    "manual {}, auto: {}",
-                    manual_removal_count, auto_removal_count
-                );
-
-                // the new height is the original height, minus the number of
-                // rows that were automatically removed, minus 1 for the UI row
-                // note: this op happens before the rows are re-inserted
-                if manual_removal_count > 0 {
+                if let Some((_, original_height)) = dt.chart_output {
+                    dt.chart_output = Some((width, height));
+                    transaction.add_from_code_run(self.id, pos, dt.is_image(), dt.is_html());
                     transaction
                         .reverse_operations
                         .push(Operation::SetChartCellSize {
                             sheet_pos: pos.to_sheet_pos(self.id),
                             w: width,
-                            h: rect.height() - auto_removal_count - 1 as u32,
+                            h: original_height as u32,
                         });
                 }
             }
