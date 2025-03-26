@@ -4,7 +4,12 @@ import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/Files
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
-import { getActionFileDelete, getActionFileDuplicate, getActionFileMove } from '@/routes/api.files.$uuid';
+import {
+  getActionFileDelete,
+  getActionFileDownload,
+  getActionFileDuplicate,
+  getActionFileMove,
+} from '@/routes/api.files.$uuid';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DraftIcon, MoreVertIcon } from '@/shared/components/Icons';
@@ -47,7 +52,6 @@ export function FilesListItemUserFile({
   file,
   filterValue,
   setFilterValue,
-  activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
@@ -55,7 +59,6 @@ export function FilesListItemUserFile({
   file: FilesListUserFile;
   filterValue: string;
   setFilterValue: Function;
-  activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
@@ -133,13 +136,13 @@ export function FilesListItemUserFile({
   };
 
   const handleDownload = () => {
-    const data: FileAction['request.download'] = {
-      action: 'download',
-    };
+    mixpanel.track('[Files].downloadFile', { id: uuid });
+    const data = getActionFileDownload();
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
   const handleDuplicate = () => {
+    mixpanel.track('[Files].duplicateFile', { id: uuid });
     const data = getActionFileDuplicate({ redirect: false, isPrivate: isTeamPrivateFilesRoute ? true : false });
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
@@ -228,6 +231,15 @@ export function FilesListItemUserFile({
                     <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={handleDownload}>Download</DropdownMenuItem>
+                  {permissions.includes('FILE_EDIT') && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
+                      }}
+                    >
+                      Open file history
+                    </DropdownMenuItem>
+                  )}
                   {canMoveFiles && (
                     <>
                       <DropdownMenuSeparator />
@@ -265,7 +277,6 @@ export function FilesListItemUserFile({
                       )}
                     </>
                   )}
-
                   {permissions.includes('FILE_DELETE') && (
                     <>
                       <DropdownMenuSeparator />
