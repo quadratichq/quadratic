@@ -190,7 +190,7 @@ impl Sheet {
         rect: &Rect,
         cells: &mut CellValues,
         values: &mut CellValues,
-        context: &A1Context,
+        a1_context: &A1Context,
         selection: &A1Selection,
         include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
@@ -238,7 +238,7 @@ impl Sheet {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
                             };
-                            if selection.might_contain_pos(Pos { x, y }, context) {
+                            if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 if include_in_cells {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }

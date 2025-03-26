@@ -12,7 +12,7 @@ impl CellRefRange {
     pub fn check_for_table_ref(
         &self,
         sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<CellRefRange> {
         if let CellRefRange::Sheet { range } = self {
             // if the range is unbounded, then it's not a table ref
@@ -31,7 +31,7 @@ impl CellRefRange {
                 y: range.end.row().max(range.start.row()),
             };
 
-            if let Some(table) = context.table_from_pos(start) {
+            if let Some(table) = a1_context.table_from_pos(start) {
                 // We don't change to TableRef if the table is a formula. This
                 // is a hack since we don't show table UI for formulas. if this
                 // changes, we can remove this check.

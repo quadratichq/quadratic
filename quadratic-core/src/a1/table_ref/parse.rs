@@ -27,9 +27,9 @@ impl TableRef {
     /// required because we break non-rectangular regions into multiple
     /// TableRefs, For example: `Table1[[Column 1],[Column 3]]` will become
     /// `Table1[Column 1]` and `Table1[Column 3]`.
-    pub fn parse(s: &str, context: &A1Context) -> Result<TableRef, A1Error> {
+    pub fn parse(s: &str, a1_context: &A1Context) -> Result<TableRef, A1Error> {
         let (table_name, remaining) = Self::parse_table_name(s)?;
-        let Some(table) = context.try_table(&table_name) else {
+        let Some(table) = a1_context.try_table(&table_name) else {
             return Err(A1Error::TableNotFound(table_name.clone()));
         };
 

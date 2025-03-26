@@ -11,14 +11,14 @@ use super::{A1Selection, CellRefRange};
 impl A1Selection {
     // Returns whether the selection is one cell or multiple cells (either a
     // rect, column, row, or all)
-    pub fn is_multi_cursor(&self, context: &A1Context) -> bool {
+    pub fn is_multi_cursor(&self, a1_context: &A1Context) -> bool {
         if self.ranges.len() > 1 {
             return true;
         }
         if let Some(last_range) = self.ranges.last() {
             match last_range {
                 CellRefRange::Sheet { range } => range.is_multi_cursor(),
-                CellRefRange::Table { range } => range.is_multi_cursor(context),
+                CellRefRange::Table { range } => range.is_multi_cursor(a1_context),
             }
         } else {
             false
@@ -43,33 +43,33 @@ impl A1Selection {
     }
 
     /// Returns whether the selection contains the given position.
-    pub fn might_contain_xy(&self, x: i64, y: i64, context: &A1Context) -> bool {
+    pub fn might_contain_xy(&self, x: i64, y: i64, a1_context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .any(|range| range.might_contain_pos(Pos::new(x, y), context))
+            .any(|range| range.might_contain_pos(Pos::new(x, y), a1_context))
     }
 
     /// Returns whether any range in `self` might contain `pos`.
     ///
     /// It's impossible to give an exact answer without knowing the bounds of
     /// each column and row.
-    pub fn might_contain_pos(&self, pos: Pos, context: &A1Context) -> bool {
+    pub fn might_contain_pos(&self, pos: Pos, a1_context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .any(|range| range.might_contain_pos(pos, context))
+            .any(|range| range.might_contain_pos(pos, a1_context))
     }
 
     /// Returns whether any range in `self` contains `pos` regardless of data
     /// bounds. (Use might_contains_pos for that.)
-    pub fn contains_pos(&self, pos: Pos, context: &A1Context) -> bool {
+    pub fn contains_pos(&self, pos: Pos, a1_context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .any(|range| range.contains_pos(pos, context))
+            .any(|range| range.contains_pos(pos, a1_context))
     }
 
     /// Returns the largest rectangle that can be formed by the selection,
     /// ignoring any ranges that extend infinitely.
-    pub fn largest_rect_finite(&self, context: &A1Context) -> Rect {
+    pub fn largest_rect_finite(&self, a1_context: &A1Context) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
@@ -83,7 +83,7 @@ impl A1Selection {
                 }
             }
             CellRefRange::Table { range } => {
-                if let Some(table_rect) = range.to_largest_rect(context) {
+                if let Some(table_rect) = range.to_largest_rect(a1_context) {
                     rect = rect.union(&table_rect);
                 }
             }
@@ -92,13 +92,13 @@ impl A1Selection {
     }
 
     /// Returns rectangle in case of single finite range selection having more than one cell.
-    pub fn single_rect(&self, context: &A1Context) -> Option<Rect> {
-        if self.ranges.len() != 1 || !self.is_multi_cursor(context) {
+    pub fn single_rect(&self, a1_context: &A1Context) -> Option<Rect> {
+        if self.ranges.len() != 1 || !self.is_multi_cursor(a1_context) {
             None
         } else {
             self.ranges.first().and_then(|range| {
                 range
-                    .to_rect(context)
+                    .to_rect(a1_context)
                     .and_then(|rect| if rect.len() > 1 { Some(rect) } else { None })
             })
         }
@@ -106,13 +106,15 @@ impl A1Selection {
 
     /// Returns rectangle in case of single finite range selection,
     /// otherwise returns a rectangle that contains the cursor.
-    pub fn single_rect_or_cursor(&self, context: &A1Context) -> Option<Rect> {
-        if !self.is_multi_cursor(context) {
+    pub fn single_rect_or_cursor(&self, a1_context: &A1Context) -> Option<Rect> {
+        if !self.is_multi_cursor(a1_context) {
             Some(Rect::single_pos(self.cursor))
         } else if self.ranges.len() != 1 {
             None
         } else {
-            self.ranges.first().and_then(|range| range.to_rect(context))
+            self.ranges
+                .first()
+                .and_then(|range| range.to_rect(a1_context))
         }
     }
 
@@ -164,7 +166,7 @@ impl A1Selection {
     /// Returns the last selection's end. It defaults to the cursor if it's a
     /// non-finite range. Note, for tables, we need to use the end of the
     /// selection if the cursor is at the end of the table.
-    pub fn last_selection_end(&self, context: &A1Context) -> Pos {
+    pub fn last_selection_end(&self, a1_context: &A1Context) -> Pos {
         if let Some(range) = self.ranges.last() {
             match range {
                 CellRefRange::Sheet { range } => {
@@ -180,12 +182,12 @@ impl A1Selection {
                 CellRefRange::Table { range } => {
                     let name = range.table_name.clone();
                     if let Some(range) =
-                        range.convert_to_ref_range_bounds(false, context, false, false)
+                        range.convert_to_ref_range_bounds(false, a1_context, false, false)
                     {
                         if self.cursor.x == range.end.col() && self.cursor.y == range.end.row() {
                             // we adjust the y to step over the table name so we
                             // don't end up with the same selection
-                            let adjust_y = if let Some(table) = context.try_table(&name) {
+                            let adjust_y = if let Some(table) = a1_context.try_table(&name) {
                                 if table.show_ui && table.show_name {
                                     -1
                                 } else {
@@ -230,17 +232,17 @@ impl A1Selection {
     }
 
     /// Returns true if all the selected columns are finite.
-    pub fn is_selected_columns_finite(&self, context: &A1Context) -> bool {
+    pub fn is_selected_columns_finite(&self, a1_context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .all(|range| !range.selected_columns_finite(context).is_empty())
+            .all(|range| !range.selected_columns_finite(a1_context).is_empty())
     }
 
     /// Returns the selected columns as a list of column numbers.
-    pub fn selected_columns_finite(&self, context: &A1Context) -> Vec<i64> {
+    pub fn selected_columns_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         let mut columns = HashSet::new();
         self.ranges.iter().for_each(|range| {
-            columns.extend(range.selected_columns_finite(context));
+            columns.extend(range.selected_columns_finite(a1_context));
         });
 
         // sort added for testing purposes
@@ -250,12 +252,12 @@ impl A1Selection {
     }
 
     /// Returns the selected column ranges as a list of [start, end] pairs between two coordinates.
-    pub fn selected_column_ranges(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
+    pub fn selected_column_ranges(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut columns = HashSet::new();
         self.ranges.iter().for_each(|range| {
             columns.extend(
                 range
-                    .selected_columns(from, to, context)
+                    .selected_columns(from, to, a1_context)
                     .iter()
                     .filter(|c| c >= &&from && c <= &&to),
             );
@@ -286,17 +288,17 @@ impl A1Selection {
     }
 
     /// Returns true if all the selected rows are finite.
-    pub fn is_selected_rows_finite(&self, context: &A1Context) -> bool {
+    pub fn is_selected_rows_finite(&self, a1_context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .all(|range| !range.selected_rows_finite(context).is_empty())
+            .all(|range| !range.selected_rows_finite(a1_context).is_empty())
     }
 
     /// Returns the selected rows as a list of row numbers.
-    pub fn selected_rows_finite(&self, context: &A1Context) -> Vec<i64> {
+    pub fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         let mut rows = HashSet::new();
         self.ranges.iter().for_each(|range| {
-            rows.extend(range.selected_rows_finite(context));
+            rows.extend(range.selected_rows_finite(a1_context));
         });
 
         // sort added for testing purposes
@@ -306,11 +308,11 @@ impl A1Selection {
     }
 
     /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
-    pub fn selected_row_ranges(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
+    pub fn selected_row_ranges(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut rows = HashSet::new();
         self.ranges
             .iter()
-            .for_each(|range| rows.extend(range.selected_rows(from, to, context).iter()));
+            .for_each(|range| rows.extend(range.selected_rows(from, to, a1_context).iter()));
 
         let mut rows = rows.into_iter().collect::<Vec<_>>();
         rows.sort_unstable();
@@ -338,24 +340,26 @@ impl A1Selection {
 
     /// Returns true if the selection is a single column or row range or
     /// one_cell is true and the selection is only a single cell.
-    pub fn has_one_column_row_selection(&self, one_cell: bool, context: &A1Context) -> bool {
+    pub fn has_one_column_row_selection(&self, one_cell: bool, a1_context: &A1Context) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
         let Some(range) = self.ranges.first() else {
             return false;
         };
-        range.is_col_range() || range.is_row_range() || (one_cell && range.is_single_cell(context))
+        range.is_col_range()
+            || range.is_row_range()
+            || (one_cell && range.is_single_cell(a1_context))
     }
 
     /// Returns true if the selection is a single cell.
-    pub fn is_single_selection(&self, context: &A1Context) -> bool {
+    pub fn is_single_selection(&self, a1_context: &A1Context) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
 
         if let Some(range) = self.ranges.first() {
-            range.is_single_cell(context)
+            range.is_single_cell(a1_context)
         } else {
             false
         }
@@ -367,10 +371,10 @@ impl A1Selection {
 
     /// Tries to convert the selection to a single position. This works only if
     /// there is one range, and the range is a single cell.
-    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
+    pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
         if self.ranges.len() == 1 {
             if let Some(range) = self.ranges.first() {
-                return range.try_to_pos(context);
+                return range.try_to_pos(a1_context);
             }
         }
         None
@@ -380,17 +384,17 @@ impl A1Selection {
     /// the start).
     pub(crate) fn cursor_pos_from_last_range(
         last_range: &CellRefRange,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Pos {
         match last_range {
             CellRefRange::Sheet { range } => range.cursor_pos_from_last_range(),
-            CellRefRange::Table { range } => range.cursor_pos_from_last_range(context),
+            CellRefRange::Table { range } => range.cursor_pos_from_last_range(a1_context),
         }
     }
 
     /// Returns all finite RefRangeBounds for the selection, converting table selections to
     /// RefRangeBounds.
-    pub fn finite_ref_range_bounds(&self, context: &A1Context) -> Vec<RefRangeBounds> {
+    pub fn finite_ref_range_bounds(&self, a1_context: &A1Context) -> Vec<RefRangeBounds> {
         self.ranges
             .iter()
             .filter_map(|range| match range {
@@ -402,15 +406,15 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    range.convert_to_ref_range_bounds(false, context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
                 }
             })
             .collect()
     }
 
     /// Returns true if the selection is on an image.
-    pub fn cursor_is_on_html_image(&self, context: &A1Context) -> bool {
-        let table = context
+    pub fn cursor_is_on_html_image(&self, a1_context: &A1Context) -> bool {
+        let table = a1_context
             .tables()
             .find(|table| table.contains(self.cursor.to_sheet_pos(self.sheet_id)));
         table.is_some_and(|table| table.is_html_image)
@@ -419,14 +423,14 @@ impl A1Selection {
     /// Used to trigger Python get_cells call to return a DataFrame with the
     /// appropriate column headers. This is true if the selection is a table and
     /// data is included.
-    pub fn has_table_headers(&self, context: &A1Context, is_python: bool) -> bool {
+    pub fn has_table_headers(&self, a1_context: &A1Context, is_python: bool) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
 
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
             if is_python {
-                let show_columns = context
+                let show_columns = a1_context
                     .try_table(&range.table_name)
                     .is_some_and(|table| table.show_columns);
                 return show_columns || range.headers;
@@ -458,12 +462,12 @@ impl A1Selection {
     pub fn table_column_selection(
         &self,
         table_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<Vec<i64>> {
         for range in self.ranges.iter() {
             match range {
                 CellRefRange::Table { range } => {
-                    if let Some(cols) = range.table_column_selection(table_name, context) {
+                    if let Some(cols) = range.table_column_selection(table_name, a1_context) {
                         return Some(cols);
                     }
                 }
@@ -482,13 +486,13 @@ impl A1Selection {
     }
 
     /// Replaces table references with sheet references.
-    pub fn replace_table_refs(&self, context: &A1Context) -> A1Selection {
+    pub fn replace_table_refs(&self, a1_context: &A1Context) -> A1Selection {
         let ranges = self
             .ranges
             .iter()
             .filter_map(|range| match range {
                 CellRefRange::Table { range } => range
-                    .convert_to_ref_range_bounds(false, context, false, true)
+                    .convert_to_ref_range_bounds(false, a1_context, false, true)
                     .map(|range| CellRefRange::Sheet { range }),
                 _ => Some(range.clone()),
             })

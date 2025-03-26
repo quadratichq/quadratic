@@ -111,7 +111,7 @@ impl Sheet {
     pub fn validate_sheet_name(
         name: &str,
         sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Result<bool, String> {
         // Check length limit
         if name.is_empty() || name.len() > 31 {
@@ -125,7 +125,7 @@ impl Sheet {
 
         // Check if sheet name already exists
 
-        if let Some(existing_sheet_id) = context.sheet_map.try_sheet_name(name) {
+        if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name) {
             if existing_sheet_id != sheet_id {
                 return Err("Sheet name must be unique".to_string());
             }

@@ -69,12 +69,12 @@ impl CellRefRange {
     /// `Some`, then A1 and RC notation are both accepted.
     pub fn parse(
         s: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
         base_pos: Option<Pos>,
     ) -> Result<(Self, Option<SheetId>), A1Error> {
         // first try table parsing
-        if let Ok(table_ref) = TableRef::parse(s, context) {
-            if let Some(entry) = context.try_table(&table_ref.table_name) {
+        if let Ok(table_ref) = TableRef::parse(s, a1_context) {
+            if let Some(entry) = a1_context.try_table(&table_ref.table_name) {
                 return Ok((Self::Table { range: table_ref }, Some(entry.sheet_id)));
             }
         }

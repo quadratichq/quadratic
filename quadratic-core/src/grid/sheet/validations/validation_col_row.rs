@@ -21,14 +21,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_column(column, context) {
+            if validation.selection.removed_column(column, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -92,14 +92,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_row(row, context) {
+            if validation.selection.removed_row(row, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -163,13 +163,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_column(column, context) {
+            if validation.selection.inserted_column(column, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -210,13 +210,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_row(row, context) {
+            if validation.selection.inserted_row(row, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,

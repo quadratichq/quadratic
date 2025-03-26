@@ -45,9 +45,9 @@ pub fn unique_data_table_name(
     name: &str,
     require_number: bool,
     sheet_pos: Option<SheetPos>,
-    context: &A1Context,
+    a1_context: &A1Context,
 ) -> String {
-    let check_name = |name: &str| !context.table_map.contains_name(name, sheet_pos);
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
 
     let name = unique_name(name, require_number, check_name);
 
@@ -67,13 +67,13 @@ impl Grid {
         sheet_pos: SheetPos,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
         let unique_name =
-            unique_data_table_name(new_name, require_number, Some(sheet_pos), context);
+            unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
 
-        self.replace_table_name_in_code_cells(old_name, &unique_name, context);
+        self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
 
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
@@ -87,8 +87,8 @@ impl Grid {
     }
 
     /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self, context: &A1Context) -> String {
-        unique_data_table_name("Table", true, None, context)
+    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
+        unique_data_table_name("Table", true, None, a1_context)
     }
 
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
@@ -96,10 +96,10 @@ impl Grid {
         &mut self,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_table_name_in_code_cells(old_name, new_name, context);
+            sheet.replace_table_name_in_code_cells(old_name, new_name, a1_context);
         }
     }
 
@@ -109,10 +109,12 @@ impl Grid {
         table_name: &str,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_table_column_name_in_code_cells(table_name, old_name, new_name, context);
+            sheet.replace_table_column_name_in_code_cells(
+                table_name, old_name, new_name, a1_context,
+            );
         }
     }
 }
@@ -311,7 +313,7 @@ impl DataTable {
     pub fn validate_table_name(
         name: &str,
         sheet_pos: SheetPos,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
         if name.is_empty() || name.len() > 255 {
@@ -334,7 +336,7 @@ impl DataTable {
         }
 
         // Check if table name already exists
-        if let Some(table) = context.table_map.try_table(name) {
+        if let Some(table) = a1_context.table_map.try_table(name) {
             if table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into() {
                 return Err("Table name must be unique".to_string());
             }
@@ -352,7 +354,7 @@ impl DataTable {
         table_name: &str,
         index: usize,
         column_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
         if column_name.is_empty() || column_name.len() > 255 {
@@ -365,7 +367,7 @@ impl DataTable {
         }
 
         // Check if column name already exists
-        if context
+        if a1_context
             .table_map
             .table_has_column(table_name, column_name, index)
         {

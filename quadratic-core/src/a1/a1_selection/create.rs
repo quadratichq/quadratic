@@ -50,10 +50,10 @@ impl From<OldSelection> for A1Selection {
 
 impl A1Selection {
     /// Constructs a basic selection containing a single region.
-    pub fn from_range(range: CellRefRange, sheet: SheetId, context: &A1Context) -> Self {
+    pub fn from_range(range: CellRefRange, sheet: SheetId, a1_context: &A1Context) -> Self {
         Self {
             sheet_id: sheet,
-            cursor: Self::cursor_pos_from_last_range(&range, context),
+            cursor: Self::cursor_pos_from_last_range(&range, a1_context),
             ranges: vec![range],
         }
     }
@@ -61,14 +61,14 @@ impl A1Selection {
     pub fn from_ranges(
         ranges: Vec<CellRefRange>,
         sheet: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<Self> {
         if ranges.is_empty() {
             None
         } else {
             Some(Self {
                 sheet_id: sheet,
-                cursor: Self::cursor_pos_from_last_range(ranges.last().unwrap(), context),
+                cursor: Self::cursor_pos_from_last_range(ranges.last().unwrap(), a1_context),
                 ranges,
             })
         }
@@ -102,7 +102,7 @@ impl A1Selection {
     pub fn from_sheet_ranges(
         ranges: Vec<RefRangeBounds>,
         sheet: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<Self> {
         if ranges.is_empty() {
             None
@@ -111,7 +111,7 @@ impl A1Selection {
                 .into_iter()
                 .map(|range| CellRefRange::Sheet { range })
                 .collect();
-            Self::from_ranges(ranges, sheet, context)
+            Self::from_ranges(ranges, sheet, a1_context)
         }
     }
 
@@ -192,8 +192,8 @@ impl A1Selection {
 
     #[cfg(test)]
     #[track_caller]
-    pub fn test_a1_context(a1: &str, context: &A1Context) -> Self {
-        Self::parse(a1, SheetId::TEST, context, None).unwrap()
+    pub fn test_a1_context(a1: &str, a1_context: &A1Context) -> Self {
+        Self::parse(a1, SheetId::TEST, a1_context, None).unwrap()
     }
 }
 
