@@ -1120,4 +1120,47 @@ mod tests {
         assert_eq!(c.row_min(3), 5);
         assert_eq!(c.row_min(4), 0);
     }
+
+    #[test]
+    fn test_is_all_default_in_range() {
+        let mut c = Contiguous2D::<bool>::new();
+        assert!(c.is_all_default());
+        c.set_rect(5, 2, Some(10), Some(3), true);
+        assert!(!c.is_all_default());
+        assert!(c.is_all_default_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 1)));
+        assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 2)));
+        assert!(c.is_all_default_in_range(RefRangeBounds::new_relative(5, 4, 5, 4)));
+        assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)));
+    }
+
+    #[test]
+    fn test_unique_values_in_range() {
+        let mut c = Contiguous2D::<u8>::new();
+        assert_eq!(
+            HashSet::from_iter([0]),
+            c.unique_values_in_range(RefRangeBounds::ALL),
+        );
+        c.set_rect(5, 2, Some(10), Some(3), 42);
+        c.set_rect(8, 1, Some(9), Some(5), 99);
+        assert_eq!(
+            HashSet::from_iter([0, 42, 99]),
+            c.unique_values_in_range(RefRangeBounds::ALL),
+        );
+        assert_eq!(
+            HashSet::from_iter([0, 99]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 1)),
+        );
+        assert_eq!(
+            HashSet::from_iter([0, 42, 99]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 2)),
+        );
+        assert_eq!(
+            HashSet::from_iter([0]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(5, 4, 5, 4)),
+        );
+        assert_eq!(
+            HashSet::from_iter([99]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)),
+        );
+    }
 }
