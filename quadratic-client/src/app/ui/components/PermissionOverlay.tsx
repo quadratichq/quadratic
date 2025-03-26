@@ -22,7 +22,7 @@ export function PermissionOverlay() {
   // This render path will never be reached if the user doesn't have access to the file.
 
   // If you're not logged in, we've got a message for you
-  if (isAuthenticated) {
+  if (!isAuthenticated) {
     return (
       <FixedBottomAlert>
         <Type>
