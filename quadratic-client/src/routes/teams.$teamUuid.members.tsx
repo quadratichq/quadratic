@@ -2,7 +2,7 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ShareTeamDialog } from '@/shared/components/ShareDialog';
 
-export const Component = () => {
+export default function Component() {
   const { activeTeam } = useDashboardRouteLoaderData();
 
   return (
@@ -14,4 +14,4 @@ export const Component = () => {
       </div>
     </>
   );
-};
+}

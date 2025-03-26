@@ -8,7 +8,7 @@ import { FilesList } from '../dashboard/components/FilesList';
 import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState';
 import NewFileButton from '../dashboard/components/NewFileButton';
 
-export const Component = () => {
+export default function Component() {
   const {
     activeTeam: {
       filesPrivate,
@@ -42,7 +42,7 @@ export const Component = () => {
       />
     </>
   );
-};
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

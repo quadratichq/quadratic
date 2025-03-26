@@ -15,7 +15,9 @@ const getFailUrl = (path: string = '/') => {
   return path + '?' + params.toString();
 };
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const shouldRevalidate = () => false;
+
+export const clientLoader = async ({ request, params }: LoaderFunctionArgs) => {
   // We initialize mixpanel here (again, as we do it in the root loader) because
   // it helps us prevent the app from failing because all the loaders run in parallel
   // and we can't guarantee this loader finishes before the root one
@@ -91,7 +93,7 @@ export type CreateActionRequest = {
   version: string;
 };
 
-export const action = async ({ params, request }: ActionFunctionArgs) => {
+export const clientAction = async ({ params, request }: ActionFunctionArgs) => {
   const { searchParams } = new URL(request.url);
   const isPrivate = searchParams.get('private') !== null;
 

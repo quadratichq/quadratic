@@ -8,7 +8,7 @@ type Loader = {
   data?: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
 };
 
-export const loader = async ({ params }: LoaderFunctionArgs): Promise<Loader> => {
+export const clientLoader = async ({ params }: LoaderFunctionArgs): Promise<Loader> => {
   const { uuid } = params as { uuid: string };
 
   try {
@@ -50,7 +50,7 @@ export type Action = {
   response: { ok: boolean };
 };
 
-export const action = async ({ request, params }: ActionFunctionArgs): Promise<Action['response']> => {
+export const clientAction = async ({ request, params }: ActionFunctionArgs): Promise<Action['response']> => {
   const json: Action['request'] = await request.json();
   const { uuid } = params as { uuid: string };
   const { intent } = json;

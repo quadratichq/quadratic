@@ -1,13 +1,32 @@
+/*
+This is what makes possible the expected effect of panning and zooming (especially
+with pinch to zoom on a trackpad) on the grid without experiencing weird
+zoom or inertial panning effects.
+
+Disable inertial scroll
+https://stackoverflow.com/questions/28103125/disable-inertia-scroll-for-single-page-webapp
+
+Disable two finger scroll to go back (overscroll-behavior-x: contain;)
+https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe
+*/
+html,
+body {
+  height: 100%;
+  overscroll-behavior-x: contain;
+}
+body {
+  overflow: hidden;
+}
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
+/* Box sizing for all! */
 html,
 * {
   box-sizing: border-box;
 }
-
-/* input[type="text"] {
-  font-size: 24px;
-  letter-spacing: 1rem;
-  font-weight: 500;
-} */
 
 @font-face {
   font-family: 'OpenSans';

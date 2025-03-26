@@ -8,7 +8,7 @@ import { cn } from '@/shared/shadcn/utils';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Navigate, useLoaderData } from 'react-router';
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const clientLoader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
   if (!teamUuid) throw new Error('No team UUID provided');
 
@@ -16,8 +16,8 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   return { teamUuid, staticIps };
 };
 
-export const Component = () => {
-  const { teamUuid, staticIps } = useLoaderData<typeof loader>();
+export default function Component() {
+  const { teamUuid, staticIps } = useLoaderData<typeof clientLoader>();
   const {
     activeTeam: {
       connections,
@@ -43,4 +43,4 @@ export const Component = () => {
       </div>
     </>
   );
-};
+}

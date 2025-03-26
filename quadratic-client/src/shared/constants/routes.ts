@@ -60,9 +60,9 @@ export const ROUTES = {
 };
 
 export const ROUTE_LOADER_IDS = {
-  ROOT: 'root',
-  FILE: 'file',
-  DASHBOARD: 'dashboard',
+  ROOT: 'routes/_root', // 'routez/_q',
+  FILE: 'routes/file.$uuid',
+  DASHBOARD: 'routes/_dashboard', // 'routez/_q._auth._dashboard',
 };
 
 export const SEARCH_PARAMS = {

@@ -14,7 +14,7 @@ type LabFeature = {
 
 export const labFeatures: LabFeature[] = [];
 
-export const Component = () => {
+export default function Component() {
   return (
     <>
       <div className="max-w-xl">
@@ -42,7 +42,7 @@ export const Component = () => {
       </div>
     </>
   );
-};
+}
 
 function LabToggle({ featureFlagKey, label, description, Component }: LabFeature) {
   const [featureFlag, setFeatureFlag] = useFeatureFlag(featureFlagKey);

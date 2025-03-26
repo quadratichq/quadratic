@@ -21,7 +21,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useFetcher, useSubmit } from 'react-router';
 
-export const Component = () => {
+export default function Component() {
   const {
     activeTeam: {
       team,
@@ -351,7 +351,7 @@ export const Component = () => {
       </div>
     </>
   );
-};
+}
 
 function SettingsRow(props: { children: ReactNode[]; className?: string }) {
   if (props.children.length !== 2) {

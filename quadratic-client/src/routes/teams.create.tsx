@@ -26,7 +26,7 @@ type ActionData = {
   picture?: string;
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const clientAction = async ({ request }: ActionFunctionArgs) => {
   const data: ActionData = await request.json();
 
   const { uuid } = await apiClient.teams.create(data);
@@ -42,7 +42,7 @@ const FormSchema = z.object({
   name: TeamSchema.shape.name,
 });
 
-export const Component = () => {
+export default function Component() {
   const navigate = useNavigate();
   const location = useLocation();
   const { teamUuid } = useParams() as { teamUuid: string };
@@ -120,4 +120,4 @@ export const Component = () => {
       </DialogContent>
     </Dialog>
   ) : null;
-};
+}

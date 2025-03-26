@@ -1,5 +1,6 @@
 import { FilesList } from '@/dashboard/components/FilesList';
 import { apiClient } from '@/shared/api/apiClient';
+import { dontRevalidateDialogs } from '@/shared/utils/routeUtils';
 import { ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
 import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData, useRouteError } from 'react-router';
@@ -7,7 +8,9 @@ import { debugShowUILogs } from '../app/debugFlags';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { Empty } from '../dashboard/components/Empty';
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const shouldRevalidate = dontRevalidateDialogs;
+
+export const clientLoader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClient.files.list({ shared: 'with-me' });
   // TODO: add these permissions one day
   const filesWithPermissions = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
@@ -22,8 +25,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return filesWithPermissions;
 };
 
-export const Component = () => {
-  const files = useLoaderData<typeof loader>();
+export default function Component() {
+  const files = useLoaderData<typeof clientLoader>();
 
   return (
     <>
@@ -40,7 +43,7 @@ export const Component = () => {
       />
     </>
   );
-};
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

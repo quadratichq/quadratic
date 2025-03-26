@@ -4,7 +4,7 @@ import getActiveTeam from '@/shared/utils/getActiveTeam';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const clientLoader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
 
   // Get the active team

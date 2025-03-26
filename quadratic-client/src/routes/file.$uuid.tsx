@@ -18,7 +18,8 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import type { LoaderFunctionArgs } from 'react-router';
+import { useEffect } from 'react';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
@@ -26,7 +27,7 @@ import { Empty } from '../dashboard/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
+export const clientLoader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
@@ -89,7 +90,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   return data;
 };
 
-export const Component = () => {
+export default function Component() {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {
@@ -110,9 +111,11 @@ export const Component = () => {
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
-  if (isEmbed) {
-    document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
-  }
+  useEffect(() => {
+    if (isEmbed) {
+      document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
+    }
+  }, []);
 
   useCheckForAuthorizationTokenOnWindowFocus();
 
@@ -122,7 +125,7 @@ export const Component = () => {
       <Outlet />
     </RecoilRoot>
   );
-};
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
@@ -214,3 +217,6 @@ export const ErrorBoundary = () => {
     />
   );
 };
+
+export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
+  currentParams.uuid !== nextParams.uuid;
