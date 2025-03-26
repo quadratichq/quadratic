@@ -260,6 +260,10 @@ export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
 };
 
+export const DependencyIcon: IconComponent = (props) => {
+  return <Icon {...props}>deployed_code</Icon>;
+};
+
 export const DiffIcon: IconComponent = (props) => {
   return <Icon {...props}>difference</Icon>;
 };
