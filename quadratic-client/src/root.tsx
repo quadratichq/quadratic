@@ -27,18 +27,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en" data-material-symbols-loaded="false">
       <head>
         <meta charSet="UTF-8" />
+        <title>Quadratic</title>
+
         <meta content="True" name="HandheldFriendly" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="theme-color" content="#FFFFFF" />
         <link rel="apple-touch-icon" href="/logo192.png" />
         <link rel="icon" href="/favicon.ico" />
-        <title>My App</title>
+
         {/*
           manifest.json provides metadata used when your web app is installed on a
           user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
         */}
         <link rel="manifest" href="/manifest.json" />
-        <title>Quadratic</title>
 
         {/* Social share meta info */}
         <meta property="og:type" content="website" />
