@@ -76,7 +76,7 @@ export class Pointer {
 
   // check if more than one touch point (let the viewport handle the event)
   private isMoreThanOneTouch(e: FederatedPointerEvent): boolean {
-    return (nativeEvent?.touches?.length ?? 0) > 1;
+    return ((e.nativeEvent as any)?.touches?.length ?? 0) > 1;
   }
 
   // todo: this should be removed when the code editor's layout is changed
