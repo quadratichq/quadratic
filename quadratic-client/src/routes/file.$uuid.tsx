@@ -30,7 +30,7 @@ import {
 } from 'react-router-dom';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
-import { Empty } from '../dashboard/components/Empty';
+import { Empty } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 

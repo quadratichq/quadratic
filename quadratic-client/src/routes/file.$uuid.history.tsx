@@ -1,7 +1,7 @@
 import { authClient } from '@/auth/auth';
-import { Empty } from '@/dashboard/components/Empty';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
+import { Empty } from '@/shared/components/Empty';
 import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';

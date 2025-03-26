@@ -68,19 +68,37 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let transaction_id = match Uuid::parse_str(&transaction_id) {
             Ok(transaction_id) => transaction_id,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
+            Err(e) => {
+                return Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    result: false,
+                    error: Some(format!(
+                        "Invalid transaction id: {:?}, error: {:?}",
+                        transaction_id, e
+                    )),
+                })?);
+            }
         };
-        if let Ok(unsaved_transaction) =
-            serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction)
-        {
-            Ok(serde_wasm_bindgen::to_value(
-                &self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction),
-            )?)
-        } else {
-            Err(JsValue::from_str(&format!(
-                "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {}",
-                unsaved_transaction
-            )))
+        match serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction) {
+            Ok(unsaved_transaction) => {
+                self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
+                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    result: true,
+                    error: None,
+                })?)
+            }
+            Err(e) => {
+                dbgjs!(format!(
+                    "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {:?}, error: {:?}",
+                    unsaved_transaction, e
+                ));
+                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    result: false,
+                    error: Some(format!(
+                        "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {:?}, error: {:?}",
+                        unsaved_transaction, e
+                    )),
+                })?)
+            }
         }
     }
 }

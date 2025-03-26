@@ -56,6 +56,7 @@ export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical
 export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, columns: Array<JsDataTableColumnHeader>, first_row_header: boolean, sort: Array<DataTableSort> | null, sort_dirty: boolean, alternating_colors: boolean, readonly: boolean, is_html: boolean, is_html_image: boolean, show_ui: boolean, show_name: boolean, show_columns: boolean, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success" | "HTML" | "Image";
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
+export interface JsResponse { result: boolean, error: string | null, }
 export interface JsReturnInfo { line_number: number | null, output_type: string | null, }
 export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSelectionContext { sheet_name: string, data_rects: Array<JsCellValuePosContext>, errored_code_cells: Array<JsCodeCell> | null, tables_summary: Array<JsTableSummaryContext> | null, charts_summary: Array<JsChartSummaryContext> | null, }

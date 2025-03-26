@@ -1,4 +1,4 @@
-import { Empty } from '@/dashboard/components/Empty';
+import { Empty } from '@/shared/components/Empty';
 import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';

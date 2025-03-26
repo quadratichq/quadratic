@@ -3,10 +3,10 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { Empty } from '../dashboard/components/Empty';
 import { FilesList } from '../dashboard/components/FilesList';
 import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState';
 import NewFileButton from '../dashboard/components/NewFileButton';
+import { Empty } from '../shared/components/Empty';
 
 export const Component = () => {
   const {
