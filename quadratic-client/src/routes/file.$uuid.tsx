@@ -18,8 +18,9 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
-import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useMatches, useRouteError } from 'react-router';
+import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../dashboard/components/Empty';
@@ -110,9 +111,11 @@ export default function Component() {
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
-  if (isEmbed) {
-    document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
-  }
+  useEffect(() => {
+    if (isEmbed) {
+      document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
+    }
+  }, []);
 
   useCheckForAuthorizationTokenOnWindowFocus();
 

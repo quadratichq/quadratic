@@ -11,7 +11,7 @@
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",

@@ -2,9 +2,10 @@
   "extends": "./tsconfig.generic.json",
   "compilerOptions": {
     "lib": ["dom", "dom.Iterable", "webworker"],
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "rootDirs": [".", "./.react-router/types"]
   },
-  "include": ["src", "public/pyright.worker.js"],
+  "include": ["src", ".react-router/types/**/*", "public/pyright.worker.js"],
   "exclude": [
     "node_modules/*",
     "src/grid/controller/runners/*",

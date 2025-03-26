@@ -9,6 +9,7 @@ import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMod
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import { useEffect } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
@@ -30,6 +31,21 @@ export const clientLoader = async ({ request, params }: LoaderFunctionArgs): Pro
 };
 
 export default function Component() {
+  // Prevent window zooming on Chrome
+  // https://stackoverflow.com/questions/61114830/how-to-prevent-native-browser-default-pinch-to-zoom-behavior
+  useEffect(() => {
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          return;
+        }
+      },
+      { passive: false }
+    );
+  }, []);
+
   return (
     <MuiTheme>
       <GlobalSnackbarProvider>

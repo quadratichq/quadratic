@@ -2,6 +2,7 @@
 import '@/index.css';
 import '@/shared/shadcn/styles.css';
 
+import { GoogleTagManager, GoogleTagManagerNoScript } from '@/shared/components/GoogleTagManager';
 import * as Sentry from '@sentry/react';
 import React from 'react';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
@@ -57,29 +58,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
           rel="stylesheet"
         />
 
-        {/* Google Tag Manager TODO */}
-
         <Meta />
         <Links />
+
+        <GoogleTagManager />
       </head>
       <body>
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-MDFG6DX4"
-            crossorigin="anonymous"
-            height="0"
-            width="0"
-            title="GTM"
-            style={{ display: 'none', visibility: 'hidden' }}
-          ></iframe>
-        </noscript>
+        <GoogleTagManagerNoScript />
         <noscript>You need to enable JavaScript to run this app.</noscript>
 
         {children}
         <ScrollRestoration />
         <Scripts />
-
-        {/* TODO other scripts/styles */}
       </body>
     </html>
   );
@@ -90,7 +80,11 @@ export default function Root() {
 }
 
 export const HydrateFallback = () => {
-  return <div>Loading</div>;
+  return (
+    <div className="flex h-full select-none items-center justify-center">
+      <img src="/public/images/logo_loading.gif" width="100" height="100" alt="Loading Quadratic logo" />
+    </div>
+  );
 };
 
 // TODO: add error boundary
