@@ -36,7 +36,7 @@ impl TableRef {
         // if it's just the table name, return the entire TableRef
         if remaining.trim().is_empty() {
             return Ok(Self {
-                table_name: table_name.clone(),
+                table_name: table.table_name.to_owned(),
                 data: true,
                 headers: false,
                 totals: false,
@@ -113,7 +113,7 @@ impl TableRef {
         }
 
         Ok(TableRef {
-            table_name: table_name.clone(),
+            table_name: table.table_name.to_owned(),
             data: data.unwrap_or(true),
             headers,
             totals,
@@ -148,6 +148,7 @@ mod tests {
     #[test]
     fn test_table_name_case_insensitive() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        println!("context: {:?}", context);
         let table_ref = TableRef::parse("table1", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
     }

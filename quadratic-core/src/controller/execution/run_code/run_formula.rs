@@ -34,7 +34,7 @@ impl GridController {
                 };
                 let new_data_table = DataTable::new(
                     DataTableKind::CodeRun(new_code_run),
-                    "F1",
+                    "Formula1",
                     output.inner,
                     false,
                     false,
@@ -66,7 +66,7 @@ mod test {
                 pending_transaction::PendingTransaction, transaction_name::TransactionName,
             },
             operations::operation::Operation,
-            transaction_types::JsCodeResult,
+            transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     };
