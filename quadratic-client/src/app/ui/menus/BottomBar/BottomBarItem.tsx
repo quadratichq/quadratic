@@ -1,4 +1,4 @@
-import { Box, ButtonBase, useTheme } from '@mui/material';
+import { cn } from '@/shared/shadcn/utils';
 import { forwardRef } from 'react';
 
 type Props = {
@@ -9,39 +9,22 @@ type Props = {
 };
 
 const BottomBarItem = ({ icon, onClick, style = {}, children }: Props) => {
-  const theme = useTheme();
-  const baseStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(0.5),
-    paddingTop: theme.spacing(0.5),
-    paddingBottom: theme.spacing(0.5),
-    paddingLeft: theme.spacing(1),
-    paddingRight: theme.spacing(1),
-    fontFamily: 'inherit',
-    fontSize: '.7rem',
-  };
-  const styles = { ...baseStyles, ...style };
-
+  const classNames = cn("flex items-center gap-0.5 py-1 px-2 text-xs", onClick && 'hover:bg-accent');
   const inner = (
     <>
       {icon && icon} {children}
     </>
   );
   return onClick ? (
-    <ButtonBase
-      style={styles}
+    <button
+      className={classNames}
       onClick={onClick}
-      sx={{
-        '&:hover': {
-          backgroundColor: theme.palette.action.hover,
-        },
-      }}
+      type="button"
     >
       {inner}
-    </ButtonBase>
+    </button>
   ) : (
-    <Box style={styles}>{inner}</Box>
+    <div className={classNames}>{inner}</div>
   );
 };
 
