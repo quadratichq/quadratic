@@ -15,9 +15,7 @@ impl GridController {
     pub fn export_csv_selection(&self, selection: &mut A1Selection) -> Result<String> {
         let sheet = self
             .grid
-            .sheets
-            .iter()
-            .find(|sheet| sheet.id == selection.sheet_id)
+            .try_sheet(selection.sheet_id)
             .context("Sheet not found")?;
 
         if let Some(CellRefRange::Table { range }) = selection.ranges.first_mut() {

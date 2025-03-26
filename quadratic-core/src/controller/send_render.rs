@@ -225,9 +225,7 @@ impl GridController {
     ) {
         let recalculated = self
             .grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
+            .try_sheet_mut(sheet_id)
             .is_some_and(|sheet| sheet.recalculate_bounds(&self.a1_context));
 
         if !recalculated {
@@ -258,9 +256,7 @@ impl GridController {
     /// Sends add sheet to the client
     pub(crate) fn send_add_sheet(&mut self, transaction: &PendingTransaction, sheet_id: SheetId) {
         self.grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
+            .try_sheet_mut(sheet_id)
             .map(|sheet| sheet.recalculate_bounds(&self.a1_context));
 
         self.update_a1_context_sheet_map(sheet_id);

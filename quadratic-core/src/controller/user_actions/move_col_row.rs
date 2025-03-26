@@ -18,12 +18,7 @@ impl GridController {
         col_end: i64,
         to: i64,
     ) {
-        let Some(sheet) = self
-            .grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
-        else {
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             return;
         };
 
@@ -71,12 +66,7 @@ impl GridController {
         };
 
         // insert new columns at the adjusted location
-        if let Some(sheet) = self
-            .grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
-        {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for col in adjusted_to..=adjusted_to + col_end - col_start {
                 sheet.insert_column(transaction, col, CopyFormats::None, false, &self.a1_context);
             }
@@ -97,12 +87,7 @@ impl GridController {
         row_end: i64,
         to: i64,
     ) {
-        let Some(sheet) = self
-            .grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
-        else {
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             return;
         };
 
@@ -150,12 +135,7 @@ impl GridController {
         };
 
         // insert new rows at the adjusted location
-        if let Some(sheet) = self
-            .grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
-        {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for row in adjusted_to..=adjusted_to + row_end - row_start {
                 sheet.insert_row(transaction, row, CopyFormats::None, false, &self.a1_context);
             }

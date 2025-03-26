@@ -45,12 +45,7 @@ impl GridController {
         sheet_id: SheetId,
         columns: Vec<i64>,
     ) {
-        if let Some(sheet) = self
-            .grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
-        {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
             let mut columns_to_adjust = columns.clone();
             sheet.delete_columns(transaction, columns, &self.a1_context);
@@ -105,12 +100,7 @@ impl GridController {
         sheet_id: SheetId,
         rows: Vec<i64>,
     ) {
-        if let Some(sheet) = self
-            .grid
-            .sheets
-            .iter_mut()
-            .find(|sheet| sheet.id == sheet_id)
-        {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
             sheet.delete_rows(transaction, rows, &self.a1_context);
@@ -167,12 +157,7 @@ impl GridController {
             copy_formats,
         } = op
         {
-            if let Some(sheet) = self
-                .grid
-                .sheets
-                .iter_mut()
-                .find(|sheet| sheet.id == sheet_id)
-            {
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 sheet.insert_column(transaction, column, copy_formats, true, &self.a1_context);
                 transaction.forward_operations.push(op);
 
@@ -217,12 +202,7 @@ impl GridController {
             copy_formats,
         } = op
         {
-            if let Some(sheet) = self
-                .grid
-                .sheets
-                .iter_mut()
-                .find(|sheet| sheet.id == sheet_id)
-            {
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 sheet.insert_row(transaction, row, copy_formats, true, &self.a1_context);
                 transaction.forward_operations.push(op);
 
