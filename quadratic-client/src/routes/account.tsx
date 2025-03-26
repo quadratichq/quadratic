@@ -6,10 +6,13 @@ import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { dontRevalidateDialogs } from '@/shared/utils/routeUtils';
 import type { ReactNode } from 'react';
 import { Form } from 'react-router';
 
-export const Component = () => {
+export const shouldRevalidate = dontRevalidateDialogs;
+
+export default function Component() {
   const { loggedInUser: user } = useRootRouteLoaderData();
 
   return (
@@ -55,7 +58,7 @@ export const Component = () => {
       </div>
     </>
   );
-};
+}
 
 function Row(props: { children: ReactNode; className?: string }) {
   return (

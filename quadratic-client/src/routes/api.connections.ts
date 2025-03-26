@@ -8,7 +8,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
  * Loader
  *
  */
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const clientLoader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
 
@@ -54,7 +54,7 @@ async function getConnection(connectionUuid: string) {
 
 type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction;
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+export const clientAction = async ({ request, params }: ActionFunctionArgs) => {
   const data: Action = await request.json();
 
   if (data.action === 'create-connection') {
