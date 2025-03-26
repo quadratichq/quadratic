@@ -1,4 +1,4 @@
-// eslint-disable eqeqeq
+/* eslint-disable eqeqeq */
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 

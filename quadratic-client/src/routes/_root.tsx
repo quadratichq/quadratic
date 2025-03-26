@@ -34,16 +34,16 @@ export default function Component() {
   // Prevent window zooming on Chrome
   // https://stackoverflow.com/questions/61114830/how-to-prevent-native-browser-default-pinch-to-zoom-behavior
   useEffect(() => {
-    window.addEventListener(
-      'wheel',
-      (e) => {
-        if (e.ctrlKey) {
-          e.preventDefault();
-          return;
-        }
-      },
-      { passive: false }
-    );
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        return;
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      window.addEventListener('wheel', handleWheel, { passive: false });
+    };
   }, []);
 
   return (
