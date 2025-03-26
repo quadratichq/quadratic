@@ -98,8 +98,6 @@ export const AIToolsArgsSchema = {
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
-    output_width: numberSchema,
-    output_height: numberSchema,
   }),
   [AITool.SetCellValues]: z.object({
     top_left_position: z.string(),
@@ -253,7 +251,7 @@ To clear the values of a cell, set the value to an empty string.\n
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the value of a code cell and runs it in the current open sheet, requires the language, cell position (in a1 notation), code string and the width and height of the code output on running this Code in the current open sheet.\n
+Sets the value of a code cell and runs it in the current open sheet, requires the language, cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
@@ -276,28 +274,18 @@ Always refer to the data from cell by its position in a1 notation from respectiv
           type: 'string',
           description: 'The code which will run in the cell',
         },
-        output_width: {
-          type: 'number',
-          description:
-            'The width, i.e. number of columns, of the code output on running this Code in the current open spreadsheet',
-        },
-        output_height: {
-          type: 'number',
-          description:
-            'The height, i.e. number of rows, of the code output on running this Code in the current open spreadsheet',
-        },
       },
-      required: ['code_cell_language', 'code_cell_position', 'code_string', 'output_width', 'output_height'],
+      required: ['code_cell_language', 'code_cell_position', 'code_string'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
-set_code_cell_value function requires language, codeString, the cell position (single cell in a1 notation) and the width and height of the code output on running this Code in the current open sheet.\n
+set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
 The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
- - The code cell location should be empty and should have enough space to the right and below to accommodate the code result. If there is a value in a single cell where the code result is suppose to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+ - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
  - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
  - If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
  - If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n
@@ -307,6 +295,7 @@ The required location code_cell_position for this code cell is one which satisfi
  - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
  - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
  - Do not use conditional returns in python code cells.\n
+ - Do not attempt to return data using conditionals in code cells. Even if the conditional is the last line, it will not be returned if buried in a conditional.
  - Don't prefix formulas with \`=\` in code cells.\n
  `,
   },

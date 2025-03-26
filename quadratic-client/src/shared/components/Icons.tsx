@@ -652,18 +652,18 @@ export const FileOpenIcon: IconComponent = (props) => {
   return <Icon {...props}>file_open</Icon>;
 };
 
-export const ArrowRight: IconComponent = (props) => {
+export const ArrowRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
 };
 
-export const ArrowDoubleRight: IconComponent = (props) => {
+export const ArrowDoubleRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_right</Icon>;
 };
 
-export const ArrowDown: IconComponent = (props) => {
+export const ArrowDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_down</Icon>;
 };
 
-export const ArrowDoubleDown: IconComponent = (props) => {
+export const ArrowDoubleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_down</Icon>;
 };

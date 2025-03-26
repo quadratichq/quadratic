@@ -12,8 +12,9 @@ export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: Bor
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }
 export interface JsCellsA1Error { core_error: string, }
 export interface JsCellsA1Response { values: JsCellsA1Values | null, error: JsCellsA1Error | null, }
-export interface JsCellsA1Value { x: number, y: number, value: string, type_name: string, }
+export interface JsCellsA1Value { x: number, y: number, v: string, t: number, }
 export interface JsCellsA1Values { cells: Array<JsCellsA1Value>, x: number, y: number, w: number, h: number, one_dimensional: boolean, two_dimensional: boolean, has_headers: boolean, }
+export type JsCellValueResult = [string, number];
 export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
@@ -40,13 +41,13 @@ export interface JsCellValuePosContext { sheet_name: string, rect_origin: string
 export interface JsChartContext { sheet_name: string, chart_name: string, bounds: string, language: CodeCellLanguage, code_string: string, spill: boolean, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
-export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
+export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
 export interface JsCodeTableContext { sheet_name: string, code_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, language: CodeCellLanguage, code_string: string, std_err: string | null, error: boolean, spill: boolean, }
 export interface JsCoordinate { x: number, y: number, }
 export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsDataTableContext { sheet_name: string, data_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, }
 export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
-export interface JsCellsA1Value { x: number, y: number, value: string, type_name: string, }
+export interface JsCellsA1Value { x: number, y: number, v: string, t: number, }
 export interface JsHtmlOutput { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsOffset { column: number | null, row: number | null, size: number, }

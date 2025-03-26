@@ -512,8 +512,10 @@ mod test {
         ClearOption, Pos, SheetPos,
         a1::A1Selection,
         controller::{
-            GridController, active_transactions::pending_transaction::PendingTransaction,
-            execution::TransactionSource, transaction_types::JsCodeResult,
+            GridController,
+            active_transactions::pending_transaction::PendingTransaction,
+            execution::TransactionSource,
+            transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{
             Contiguous2D, SheetId,
@@ -617,7 +619,7 @@ mod test {
         gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
+            output_value: Some(JsCellValueResult("<html></html>".to_string(), 1)),
             ..Default::default()
         })
         .unwrap();
