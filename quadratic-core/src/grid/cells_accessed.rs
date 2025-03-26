@@ -191,8 +191,10 @@ mod tests {
         cells.add_sheet_rect(SheetRect::new(1, 2, 3, 4, sheet_id));
         assert_eq!(cells.cells.len(), 1);
         assert_eq!(cells.cells[&sheet_id].len(), 1);
-        assert!(cells.cells[&sheet_id]
-            .contains(&CellRefRange::new_relative_rect(Rect::new(1, 2, 3, 4))));
+        assert!(
+            cells.cells[&sheet_id]
+                .contains(&CellRefRange::new_relative_rect(Rect::new(1, 2, 3, 4)))
+        );
     }
 
     #[test]

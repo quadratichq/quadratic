@@ -311,7 +311,7 @@ mod tests {
     use super::*;
     use crate::controller::GridController;
     use crate::controller::transaction::Transaction;
-    use crate::controller::transaction_types::JsCodeResult;
+    use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, Pos, SheetPos};
@@ -791,7 +791,7 @@ mod tests {
         let result = client.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["async output".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("async output".into(), 1)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -866,7 +866,7 @@ mod tests {
         let result = client.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["async output".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("async output".into(), 1)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -905,7 +905,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["2".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("2".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -930,7 +930,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["3".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("3".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());

@@ -1,5 +1,5 @@
 use quadratic_rust_shared::pubsub::{
-    redis_streams::RedisConnection, Config as PubSubConfig, PubSub as PubSubTrait,
+    Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection,
 };
 
 use crate::error::Result;

@@ -1,5 +1,5 @@
 use crate::{
-    controller::{active_transactions::transaction_name::TransactionName, GridController},
+    controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::SheetId,
 };
 
@@ -51,18 +51,18 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, SheetPos,
         a1::A1Selection,
         constants::SHEET_NAME,
         controller::GridController,
         grid::{
-            sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, SheetId,
+            sheet::borders::{BorderSelection, BorderStyle},
         },
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
 

@@ -340,7 +340,7 @@ pub(crate) fn upgrade(schema: v1_4::GridSchema) -> Result<v1_5::GridSchema> {
 #[cfg(test)]
 mod tests {
     use crate::grid::file::v1_4::schema::GridSchema;
-    use anyhow::{anyhow, Result};
+    use anyhow::{Result, anyhow};
 
     const V1_4_FILE: &str =
         include_str!("../../../../../quadratic-rust-shared/data/grid/v1_4_simple.grid");

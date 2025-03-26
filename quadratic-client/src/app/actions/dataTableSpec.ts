@@ -175,7 +175,7 @@ const isCodeCell = (language: CodeCellLanguage) => {
   return table?.language === language;
 };
 
-const isSingleCell = () => {
+export const isSingleCell = () => {
   const table = getTable();
 
   if (!table) return false;

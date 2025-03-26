@@ -9,7 +9,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use quadratic_rust_shared::{clean_errors, storage::error::Storage as StorageError, SharedError};
+use quadratic_rust_shared::{SharedError, clean_errors, storage::error::Storage as StorageError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

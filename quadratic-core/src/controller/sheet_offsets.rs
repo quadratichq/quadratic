@@ -1,5 +1,5 @@
 use super::active_transactions::transaction_name::TransactionName;
-use super::{operations::operation::Operation, GridController};
+use super::{GridController, operations::operation::Operation};
 use crate::grid::SheetId;
 use crate::sheet_offsets::resize_transient::TransientResize;
 

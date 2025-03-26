@@ -1,13 +1,14 @@
 use super::operation::Operation;
 use crate::{
+    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
+        DataTable, DataTableKind,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
-        unique_data_table_name, DataTable, DataTableKind,
+        unique_data_table_name,
     },
-    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
 
 use anyhow::Result;
@@ -32,8 +33,20 @@ impl GridController {
         }])
     }
 
+    /// Collects all operations that would be needed to convert a grid to a data table.
+    /// If a data table is found within the sheet_rect, it will not be added to the operations.
     pub fn grid_to_data_table_operations(&self, sheet_rect: SheetRect) -> Vec<Operation> {
-        vec![Operation::GridToDataTable { sheet_rect }]
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
+            let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into());
+
+            if no_data_table {
+                ops.push(Operation::GridToDataTable { sheet_rect });
+            }
+        }
+
+        ops
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -237,11 +250,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, Rect, SheetPos, SheetRect,
         cellvalue::Import,
-        controller::{operations::operation::Operation, GridController},
-        grid::{NumericFormat, NumericFormatKind},
-        test_util::assert_display_cell_value,
-        CellValue, SheetPos,
+        controller::{
+            GridController, active_transactions::transaction_name::TransactionName,
+            operations::operation::Operation,
+        },
+        grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
+        test_util::{assert_cell_value, assert_display_cell_value, print_table},
     };
 
     #[test]
@@ -311,5 +327,56 @@ mod test {
             }
             _ => panic!("Expected AddDataTable operation"),
         }
+    }
+
+    #[test]
+    fn test_grid_to_data_table_operations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
+        let sheet_rect = SheetRect::new(1, 1, 2, 2, sheet_id);
+        let data_table_rect = Rect::new(1, 1, 2, 4);
+        let values = vec![
+            vec!["header 1".into(), "header 2".into()],
+            vec!["$123".into(), "123,456.00".into()],
+        ];
+
+        gc.set_cell_values(sheet_pos, values, None);
+        print_table(&gc, sheet_id, sheet_rect.into());
+
+        let ops = gc.grid_to_data_table_operations(sheet_rect);
+        gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
+
+        let import = Import::new("Table1".into());
+        let cell_value = CellValue::Import(import.to_owned());
+
+        print_table(&gc, sheet_id, data_table_rect);
+
+        // check that the data table is in the sheet
+        assert_cell_value(&gc, sheet_id, 1, 1, cell_value.clone());
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+
+        // undo the operation
+        gc.undo(None);
+
+        // convert one of the cells to a formula
+        let formula_pos = SheetPos::new(sheet_id, 1, 2);
+        gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+
+        print_table(&gc, sheet_id, sheet_rect.into());
+
+        let ops = gc.grid_to_data_table_operations(sheet_rect);
+
+        // no operations should be needed since the formula data table is in
+        // the selection
+        assert_eq!(ops.len(), 0);
+
+        gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
+
+        // there should still be just 1 data table
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+
+        print_table(&gc, sheet_id, data_table_rect);
     }
 }

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::Result;
 
 use crate::{
-    grid::{sheet::borders::Borders, GridBounds, Sheet, SheetFormatting, SheetId},
+    grid::{GridBounds, Sheet, SheetFormatting, SheetId, sheet::borders::Borders},
     sheet_offsets::SheetOffsets,
 };
 

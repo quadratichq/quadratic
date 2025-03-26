@@ -17,6 +17,7 @@ import { useRecoilValue } from 'recoil';
 // TODO: make the types better here so it knows whether this exists
 const renameFileActionSpec = defaultActionSpec[Action.FileRename];
 const downloadFileActionSpec = defaultActionSpec[Action.FileDownload];
+const openFileVersionHistoryActionSpec = defaultActionSpec[Action.FileVersionHistory];
 
 const commands: CommandGroup = {
   heading: 'File',
@@ -44,14 +45,30 @@ const commands: CommandGroup = {
       },
     },
     {
+      label: openFileVersionHistoryActionSpec.label,
+      isAvailable: openFileVersionHistoryActionSpec.isAvailable,
+      Component: (props) => {
+        const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
+        const action = () => openFileVersionHistoryActionSpec.run({ uuid: fileUuid });
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={action}
+            icon={openFileVersionHistoryActionSpec.Icon && <openFileVersionHistoryActionSpec.Icon />}
+          />
+        );
+      },
+    },
+    {
       label: downloadFileActionSpec.label,
       isAvailable: downloadFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
+        const uuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => downloadFileActionSpec.run({ name })}
+            action={() => downloadFileActionSpec.run({ name, uuid })}
             icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
           />
         );

@@ -19,7 +19,7 @@ mod string;
 mod tests;
 mod trigonometry;
 
-use super::{util, Criterion, Ctx, Param, ParamKind};
+use super::{Criterion, Ctx, Param, ParamKind, util};
 use crate::{
     Array, Axis, CellValue, CodeResult, CoerceInto, Duration, IsBlank, RunError, RunErrorMsg, Span,
     Spanned, SpannedIterExt, Value,
