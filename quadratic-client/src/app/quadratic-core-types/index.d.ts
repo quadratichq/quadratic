@@ -10,12 +10,11 @@ export type BorderSide = "Top" | "Bottom" | "Left" | "Right";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: BorderStyleTimestamp | null, left: BorderStyleTimestamp | null, right: BorderStyleTimestamp | null, }
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }
-export type CellValueType = "Number" | "Text" | "Boolean" | "Error" | "DateTime" | "Date" | "Time" | "Duration" | "Blank" | "Html" | "Code" | "Image" | "Import";
 export interface JsCellsA1Error { core_error: string, }
 export interface JsCellsA1Response { values: JsCellsA1Values | null, error: JsCellsA1Error | null, }
-export interface JsCellsA1Value { x: number, y: number, v: string, t: CellValueType, }
+export interface JsCellsA1Value { x: number, y: number, v: string, t: number, }
 export interface JsCellsA1Values { cells: Array<JsCellsA1Value>, x: number, y: number, w: number, h: number, one_dimensional: boolean, two_dimensional: boolean, has_headers: boolean, }
-export type JsCellValueResult = [string, CellValueType];
+export type JsCellValueResult = [string, number];
 export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
@@ -48,7 +47,7 @@ export interface JsCoordinate { x: number, y: number, }
 export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsDataTableContext { sheet_name: string, data_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, }
 export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
-export interface JsCellsA1Value { x: number, y: number, v: string, t: CellValueType, }
+export interface JsCellsA1Value { x: number, y: number, v: string, t: number, }
 export interface JsHtmlOutput { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsOffset { column: number | null, row: number | null, size: number, }
@@ -57,6 +56,7 @@ export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical
 export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, columns: Array<JsDataTableColumnHeader>, first_row_header: boolean, sort: Array<DataTableSort> | null, sort_dirty: boolean, alternating_colors: boolean, readonly: boolean, is_html: boolean, is_html_image: boolean, show_ui: boolean, show_name: boolean, show_columns: boolean, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success" | "HTML" | "Image";
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
+export interface JsResponse { result: boolean, error: string | null, }
 export interface JsReturnInfo { line_number: number | null, output_type: string | null, }
 export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSelectionContext { sheet_name: string, data_rects: Array<JsCellValuePosContext>, errored_code_cells: Array<JsCodeCell> | null, tables_summary: Array<JsTableSummaryContext> | null, charts_summary: Array<JsChartSummaryContext> | null, }
