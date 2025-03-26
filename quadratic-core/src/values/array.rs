@@ -14,6 +14,7 @@ use smallvec::{SmallVec, smallvec};
 use super::cell_values::CellValues;
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::controller::operations::operation::Operation;
+use crate::controller::transaction_types::JsCellValueResult;
 use crate::grid::Sheet;
 use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span};
 
@@ -578,7 +579,7 @@ impl Array {
     pub fn from_string_list(
         start: Pos,
         sheet: &mut Sheet,
-        v: Vec<Vec<Vec<String>>>,
+        v: Vec<Vec<JsCellValueResult>>,
     ) -> (Option<Array>, Vec<Operation>) {
         // catch the unlikely case where we receive an array of empty arrays
         if v[0].is_empty() {
@@ -587,21 +588,21 @@ impl Array {
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
         let mut ops = vec![];
         let Pos { mut x, mut y } = start;
+        let x_end = v[0].len() as i64 + start.x;
         let values = v
-            .iter()
+            .into_iter()
             .flatten()
-            .map(|s| {
+            .map(|cell_value| {
                 x += 1;
-                if x == v[0].len() as i64 + start.x {
+                if x == x_end {
                     x = start.x;
                     y += 1;
                 }
-                match CellValue::from_js(&s[0], &s[1], start, sheet) {
+                match CellValue::from_js(cell_value, start, sheet) {
                     Ok(value) => value,
                     Err(_) => (CellValue::Blank, vec![]),
                 }
             })
-            // .flatten_ok()
             .map(|(value, updated_ops)| {
                 ops.extend(updated_ops);
                 value

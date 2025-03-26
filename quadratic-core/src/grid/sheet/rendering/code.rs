@@ -225,7 +225,10 @@ impl Sheet {
 mod tests {
     use crate::{
         Rect, SheetPos,
-        controller::{GridController, transaction_types::JsCodeResult},
+        controller::{
+            GridController,
+            transaction_types::{JsCellValueResult, JsCodeResult},
+        },
         grid::{CodeCellValue, CodeRun, DataTableKind, js_types::JsNumber},
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
@@ -250,7 +253,7 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["<html></html>".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("<html></html>".into(), 1)),
             ..Default::default()
         })
         .ok();

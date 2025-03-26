@@ -66,7 +66,7 @@ mod test {
                 pending_transaction::PendingTransaction, transaction_name::TransactionName,
             },
             operations::operation::Operation,
-            transaction_types::JsCodeResult,
+            transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::pretty_print_data_table,
@@ -231,7 +231,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: Uuid::new_v4().into(),
             success: true,
-            output_value: Some(vec!["$12".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("$12".into(), 2)),
             output_display_type: Some("number".into()),
             ..Default::default()
         };
@@ -275,14 +275,14 @@ mod test {
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let array_output: Vec<Vec<Vec<String>>> = vec![
+        let array_output: Vec<Vec<JsCellValueResult>> = vec![
             vec![
-                vec!["$1.1".into(), "number".into()],
-                vec!["20%".into(), "number".into()],
+                JsCellValueResult("$1.1".into(), 2),
+                JsCellValueResult("20%".into(), 2),
             ],
             vec![
-                vec!["3".into(), "number".into()],
-                vec!["Hello".into(), "text".into()],
+                JsCellValueResult("3".into(), 2),
+                JsCellValueResult("Hello".into(), 1),
             ],
         ];
         let mut transaction = PendingTransaction::default();

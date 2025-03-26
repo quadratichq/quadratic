@@ -81,6 +81,7 @@ mod tests {
     use crate::controller::execution::run_code::get_cells::JsCellsA1Value;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Values;
     use crate::controller::operations::operation::Operation;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::SheetFormatUpdates;
@@ -510,8 +511,8 @@ mod tests {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "9".into(),
-                        type_name: "number".into(),
+                        v: "9".into(),
+                        t: 2,
                     }],
                     x: 1,
                     y: 1,
@@ -532,7 +533,7 @@ mod tests {
             gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["10".into(), "number".into()]),
+                output_value: Some(JsCellValueResult("10".into(), 2)),
                 ..Default::default()
             })
             .is_ok()
