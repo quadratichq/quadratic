@@ -1,14 +1,14 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellsA1Response, JsCodeResult } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import type {
   InspectPython,
+  outputType,
   PythonError,
   PythonSuccess,
-  outputType,
 } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
 import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
@@ -290,8 +290,8 @@ class Python {
       success: pythonRun.success,
       std_err: pythonRun.std_err,
       std_out: pythonRun.std_out,
-      output_value: pythonRun.output ? (pythonRun.output as any as string[]) : null,
-      output_array,
+      output_value: pythonRun.output ? (pythonRun.output as any as JsCellValueResult) : null,
+      output_array: output_array ? (output_array as any as JsCellValueResult[][]) : null,
       line_number: pythonRun.lineno ?? null,
       output_display_type: pythonRun.output_type ?? null,
       cancel_compute: false,
