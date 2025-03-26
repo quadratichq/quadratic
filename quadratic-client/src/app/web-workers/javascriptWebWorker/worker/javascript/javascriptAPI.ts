@@ -4,6 +4,7 @@
 // within the worker using getCells.
 
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { Javascript } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
 import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 
@@ -29,9 +30,7 @@ export class JavascriptAPI {
           core_error: `Failed to parse getCellsA1 response: ${error}`,
         },
       };
-      const responseString = JSON.stringify(response);
-      const encoder = new TextEncoder();
-      const responseUint8Array = encoder.encode(responseString);
+      const responseUint8Array = toUint8Array(response);
       responseBuffer = responseUint8Array.buffer as ArrayBuffer;
     }
 

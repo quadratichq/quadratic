@@ -1,12 +1,12 @@
 import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Avatar } from '@/shared/components/Avatar';
+import { Empty } from '@/shared/components/Empty';
 import { AddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';

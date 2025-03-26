@@ -5,10 +5,16 @@ impl GridController {
     /// Called after a external calculation is complete.
     #[wasm_bindgen(js_name = "calculationComplete")]
     pub fn js_calculation_complete(&mut self, result: Vec<u8>) {
-        if let Ok(result) = serde_json::from_slice(&result) {
-            let _ = self.calculation_complete(result);
-        } else {
-            dbgjs!("calculationComplete: Failed to parse calculation result");
+        match serde_json::from_slice(&result) {
+            Ok(result) => {
+                let _ = self.calculation_complete(result);
+            }
+            Err(e) => {
+                dbgjs!(format!(
+                    "calculationComplete: Failed to parse calculation result: {:?}",
+                    e
+                ));
+            }
         }
     }
 

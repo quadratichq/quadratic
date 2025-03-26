@@ -151,6 +151,8 @@ interface EventTypes {
   pixiAppSettingsInitialized: () => void;
 
   gridLinesDirty: () => void;
+
+  coreError: (from: string, error: Error | unknown) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
