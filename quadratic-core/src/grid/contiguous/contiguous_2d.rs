@@ -156,14 +156,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns whether the values in a rectangle are all default.
     pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
-        let Some((x1, y1, x2, y2)) =
-            convert_rect(rect.min.x, rect.min.y, Some(rect.max.x), Some(rect.max.y))
-        else {
-            return true; // empty range
-        };
-        self.0
-            .blocks_touching_range(x1, x2)
-            .all(move |columns_block| columns_block.value.is_all_default_in_range(y1, y2))
+        self.is_all_default_in_range(RefRangeBounds::new_relative_rect(rect))
     }
 
     /// Returns whether the values in a range are all default.
