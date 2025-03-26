@@ -82,7 +82,7 @@ export default function QuadraticUI() {
     return (
       <Empty
         className="z-50 h-full w-full"
-        title="Quadratic Has Crashed"
+        title="Quadratic crashed"
         description="Something went wrong. Our team has been notified of this issue. Please reload the application to continue."
         Icon={CrossCircledIcon}
         actions={<Button onClick={() => window.location.reload()}>Reload</Button>}
