@@ -11,8 +11,8 @@ pub mod user;
 
 use dashmap::DashMap;
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
+use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 use uuid::Uuid;

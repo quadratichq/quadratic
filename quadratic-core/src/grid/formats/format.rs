@@ -190,11 +190,7 @@ impl Format {
         if self.strike_through.is_some() && update.strike_through.is_some() {
             old.strike_through = Some(None);
         }
-        if old.is_default() {
-            None
-        } else {
-            Some(old)
-        }
+        if old.is_default() { None } else { Some(old) }
     }
 
     /// Turns a Format into a FormatUpdate, with None set to Some(None) to

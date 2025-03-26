@@ -8,7 +8,7 @@ use crate::{
             v1_6::borders_upgrade::export_borders,
             v1_7::schema::{self as v1_7},
         },
-        sheet::borders::{borders_old::OldBorders, BorderStyle, CellBorderLine},
+        sheet::borders::{BorderStyle, CellBorderLine, borders_old::OldBorders},
     },
 };
 

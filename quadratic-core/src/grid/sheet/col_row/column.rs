@@ -1,11 +1,11 @@
 use crate::{
+    CopyFormats, Pos, SheetPos,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
     grid::Sheet,
-    CopyFormats, Pos, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -333,12 +333,12 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, DEFAULT_COLUMN_WIDTH,
         controller::execution::TransactionSource,
         grid::{
-            sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
             CellWrap,
+            sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
         },
-        CellValue, DEFAULT_COLUMN_WIDTH,
     };
 
     use super::*;

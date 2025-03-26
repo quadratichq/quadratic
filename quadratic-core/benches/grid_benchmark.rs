@@ -1,4 +1,5 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
+
 use std::time::Duration;
 
 use quadratic_core::controller::GridController;

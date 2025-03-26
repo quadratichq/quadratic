@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::BlockContent;
 use crate::grid::CellValue;

@@ -1,8 +1,8 @@
 use crate::{
+    RefAdjust,
     a1::CellRefRangeEnd,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    RefAdjust,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -246,9 +246,9 @@ impl SheetPos {
 #[cfg(test)]
 mod test {
     use crate::{
+        Pos, RefAdjust, SheetPos, SheetRect,
         grid::SheetId,
         renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        Pos, RefAdjust, SheetPos, SheetRect,
     };
 
     #[test]

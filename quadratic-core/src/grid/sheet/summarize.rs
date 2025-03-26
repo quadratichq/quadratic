@@ -1,7 +1,7 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 
 use super::Sheet;
-use crate::{a1::A1Selection, grid::js_types::JsSummarizeSelectionResult, util::round, CellValue};
+use crate::{CellValue, a1::A1Selection, grid::js_types::JsSummarizeSelectionResult, util::round};
 
 const MAX_SUMMARIZE_SELECTION_SIZE: i64 = 50000;
 
@@ -47,9 +47,9 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::sheet::summarize::MAX_SUMMARIZE_SELECTION_SIZE;
     use crate::grid::Sheet;
-    use crate::{a1::A1Selection, SheetRect};
+    use crate::grid::sheet::summarize::MAX_SUMMARIZE_SELECTION_SIZE;
+    use crate::{SheetRect, a1::A1Selection};
 
     #[test]
     fn summarize_rects() {
