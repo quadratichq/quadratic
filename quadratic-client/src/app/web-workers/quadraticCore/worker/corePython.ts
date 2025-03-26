@@ -1,5 +1,6 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
@@ -67,9 +68,7 @@ class CorePython {
           core_error: e,
         },
       };
-      const responseString = JSON.stringify(cellA1Response);
-      const encoder = new TextEncoder();
-      responseUint8Array = encoder.encode(responseString);
+      responseUint8Array = toUint8Array(cellA1Response);
     }
 
     const length = responseUint8Array.length;

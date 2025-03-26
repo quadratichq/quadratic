@@ -138,6 +138,29 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         c
     }
 
+    /// Returns an exact set of blocks representing the values in `range`.
+    fn xy_blocks_in_range(
+        &self,
+        range: RefRangeBounds,
+    ) -> impl Iterator<Item = Block<Vec<Block<&T>>>> {
+        fn i64_to_u64(i: i64) -> u64 {
+            if i == i64::MAX {
+                u64::MAX
+            } else {
+                i.try_into().unwrap_or(0)
+            }
+        }
+
+        let r = range.to_rect_unbounded();
+        let x1 = i64_to_u64(r.min.x);
+        let x2 = i64_to_u64(r.max.x).saturating_add(1);
+        let y1 = i64_to_u64(r.min.y);
+        let y2 = i64_to_u64(r.max.y).saturating_add(1);
+        self.0.blocks_for_range(x1, x2).map(move |columns_block| {
+            columns_block.map(|column| column.blocks_for_range(y1, y2).collect())
+        })
+    }
+
     /// Returns whether the whole sheet is default.
     pub fn is_all_default(&self) -> bool {
         self.0.is_all_default()
@@ -240,11 +263,14 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
             .map(|column_block| column_block.map(|column_data| column_data.into_iter()))
     }
 
+    /// Translates all non-default values.
+    ///
+    /// Values before 1,1 are truncated.
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
         self.0.translate_in_place(x);
-        self.0
-            .values_mut()
-            .for_each(|column_data| column_data.value.translate_in_place(y));
+        for column_data in self.0.values_mut() {
+            column_data.value.translate_in_place(y);
+        }
     }
 
     /// Sets a rectangle to the same value and returns the blocks to set undo
@@ -605,6 +631,32 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
                 (Some(x2), None) => (x1, y1, x2, rect.max.y.max(y1), value),
                 _ => (x1, y1, rect.max.x.max(x1), rect.max.y.max(y1), value),
             })
+    }
+
+    /// Constructs an update for a selection, taking values from `self` at every
+    /// location in the selection.
+    pub fn get_update_for_selection(
+        &self,
+        selection: &A1Selection,
+    ) -> Contiguous2D<Option<crate::ClearOption<T>>> {
+        let mut c: Contiguous2D<Option<crate::ClearOption<T>>> = Contiguous2D::new();
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                for xy_block in self.xy_blocks_in_range(*range) {
+                    c.0.update_range(xy_block.start, xy_block.end, |column| {
+                        for y_block in &xy_block.value {
+                            column.update_range(y_block.start, y_block.end, |old_value| {
+                                *old_value = Some(crate::ClearOption::from(y_block.value.clone()));
+                            });
+                        }
+                    });
+                }
+            }
+            // this is handled separately as we need to create different format
+            // operations for tables
+            CellRefRange::Table { .. } => (),
+        });
+        c
     }
 
     /// Returns an iterator over the blocks in the contiguous 2d.
