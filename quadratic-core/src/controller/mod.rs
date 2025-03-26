@@ -44,7 +44,7 @@ pub struct GridController {
 impl Default for GridController {
     fn default() -> Self {
         let grid = Grid::default();
-        let a1_context = grid.a1_context();
+        let a1_context = grid.make_a1_context();
         Self {
             grid,
             a1_context,
@@ -58,7 +58,7 @@ impl Default for GridController {
 
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        let a1_context = grid.a1_context();
+        let a1_context = grid.make_a1_context();
         GridController {
             grid,
             a1_context,
@@ -68,7 +68,7 @@ impl GridController {
     }
 
     pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        let a1_context = grid.a1_context();
+        let a1_context = grid.make_a1_context();
         GridController {
             grid,
             a1_context,

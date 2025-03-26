@@ -232,7 +232,8 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
+            let rects =
+                sheet.selection_to_rects(selection, false, force_table_bounds, &self.a1_context);
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
@@ -337,7 +338,7 @@ mod test {
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::test_util::print_table;
+    use crate::test_util::gc::print_table;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
     #[test]

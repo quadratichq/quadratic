@@ -15,7 +15,7 @@ impl Sheet {
     pub fn copy_to_clipboard(
         &self,
         selection: &A1Selection,
-        context: &A1Context,
+        a1_context: &A1Context,
         clipboard_operation: ClipboardOperation,
         include_plain_text: bool,
     ) -> Result<JsClipboard, String> {
@@ -27,7 +27,7 @@ impl Sheet {
         let mut data_tables = IndexMap::new();
         let mut sheet_bounds: Option<Rect> = None;
 
-        if let Some(bounds) = self.selection_bounds(selection, true) {
+        if let Some(bounds) = self.selection_bounds(selection, true, a1_context) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);
@@ -52,7 +52,7 @@ impl Sheet {
 
                     let pos = Pos { x, y };
 
-                    if !selection.might_contain_pos(pos, context) {
+                    if !selection.might_contain_pos(pos, a1_context) {
                         continue;
                     }
 
@@ -214,7 +214,7 @@ impl Sheet {
                 &bounds,
                 &mut cells,
                 &mut values,
-                context,
+                a1_context,
                 selection,
                 include_code_table_values,
             );
@@ -222,11 +222,11 @@ impl Sheet {
             data_tables.extend(data_tables_in_rect);
         }
 
-        let formats = self.formats.to_clipboard(self, selection);
-        let borders = self.borders.to_clipboard(self, selection);
+        let formats = self.formats.to_clipboard(self, selection, a1_context);
+        let borders = self.borders.to_clipboard(self, selection, a1_context);
         let validations = self
             .validations
-            .to_clipboard(selection, &clipboard_origin, context);
+            .to_clipboard(selection, &clipboard_origin, a1_context);
 
         let clipboard = Clipboard {
             cells,

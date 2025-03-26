@@ -132,12 +132,12 @@ impl A1Selection {
     }
 
     /// Constructs a selection from a list of rectangles.
-    pub fn from_rects(rects: Vec<Rect>, sheet_id: SheetId) -> Option<Self> {
+    pub fn from_rects(rects: Vec<Rect>, sheet_id: SheetId, a1_context: &A1Context) -> Option<Self> {
         let ranges = rects
             .into_iter()
             .map(RefRangeBounds::new_relative_rect)
             .collect::<Vec<_>>();
-        Self::from_sheet_ranges(ranges, sheet_id, &A1Context::default())
+        Self::from_sheet_ranges(ranges, sheet_id, a1_context)
     }
 
     /// Constructs a selection containing a single cell.

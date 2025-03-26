@@ -1,4 +1,5 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
+use quadratic_core::a1::A1Context;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
 use quadratic_core::grid::js_types::JsClipboard;
@@ -22,28 +23,39 @@ fn criterion_benchmark(c: &mut Criterion) {
     ];
 
     benchmark_grids(c, &inputs, "get_render_cells_all", |b, grid| {
+        let a1_context = grid.make_a1_context();
         b.iter(|| {
-            let output = grid.sheets()[0].get_render_cells(Rect {
-                min: Pos { x: -1000, y: -1000 },
-                max: Pos { x: 1000, y: 1000 },
-            });
+            let output = grid.sheets()[0].get_render_cells(
+                Rect {
+                    min: Pos { x: -1000, y: -1000 },
+                    max: Pos { x: 1000, y: 1000 },
+                },
+                &a1_context,
+            );
             serde_json::to_string(&output)
         });
     });
 
     benchmark_grids(c, &inputs, "get_render_cells_10x40", |b, grid| {
+        let a1_context = grid.make_a1_context();
         b.iter(|| {
-            let output = grid.sheets()[0].get_render_cells(Rect {
-                min: Pos { x: 11, y: 11 },
-                max: Pos { x: 20, y: 50 },
-            });
+            let output = grid.sheets()[0].get_render_cells(
+                Rect {
+                    min: Pos { x: 11, y: 11 },
+                    max: Pos { x: 20, y: 50 },
+                },
+                &a1_context,
+            );
             serde_json::to_string(&output)
         });
     });
 
     benchmark_grids(c, &inputs, "recalculate_bounds", |b, grid| {
         let mut grid = grid.clone();
-        b.iter(|| grid.first_sheet_mut().recalculate_bounds());
+        b.iter(|| {
+            let a1_context = grid.make_a1_context();
+            grid.first_sheet_mut().recalculate_bounds(&a1_context);
+        });
     });
 
     benchmark_grids(c, &inputs, "copy_paste_10_x_10", |b, grid| {
@@ -223,7 +235,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         };
         // add some data
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.random_numbers(&small_selection);
+        sheet.random_numbers(&small_selection, &A1Context::default());
         sheet
             .formats
             .bold

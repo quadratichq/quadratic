@@ -1,6 +1,6 @@
 use crate::{
     Pos,
-    a1::A1Selection,
+    a1::{A1Context, A1Selection},
     grid::{Sheet, formats::SheetFormatUpdates},
 };
 
@@ -16,10 +16,11 @@ impl SheetFormatting {
         &self,
         sheet: &Sheet,
         selection: &A1Selection,
+        a1_context: &A1Context,
     ) -> Option<SheetFormatUpdates> {
         let mut updates = SheetFormatUpdates::default();
 
-        for rect in sheet.selection_to_rects(selection, false, false) {
+        for rect in sheet.selection_to_rects(selection, false, false, a1_context) {
             for x in rect.x_range() {
                 for y in rect.y_range() {
                     updates.set_format_cell(Pos { x, y }, self.format(Pos { x, y }).into());
@@ -51,7 +52,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let clipboard = sheet
             .formats
-            .to_clipboard(sheet, &A1Selection::test_a1("A1:C3"))
+            .to_clipboard(sheet, &A1Selection::test_a1("A1:C3"), gc.a1_context())
             .unwrap();
 
         assert_eq!(

@@ -185,7 +185,7 @@ impl GridController {
             CELL_SHEET_WIDTH as i64,
             CELL_SHEET_HEIGHT as i64,
         );
-        let render_cells = sheet.get_render_cells(rect);
+        let render_cells = sheet.get_render_cells(rect, &self.a1_context);
         if let Ok(cells) = serde_json::to_string(&render_cells) {
             crate::wasm_bindings::js::jsRenderCellSheets(
                 sheet_id.to_string(),
@@ -223,11 +223,12 @@ impl GridController {
         transaction: &PendingTransaction,
         sheet_id: SheetId,
     ) {
-        let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-            sheet.recalculate_bounds()
-        } else {
-            false
-        };
+        let recalculated = self
+            .grid
+            .sheets
+            .iter_mut()
+            .find(|sheet| sheet.id == sheet_id)
+            .is_some_and(|sheet| sheet.recalculate_bounds(&self.a1_context));
 
         if !recalculated {
             return;
@@ -256,6 +257,12 @@ impl GridController {
 
     /// Sends add sheet to the client
     pub(crate) fn send_add_sheet(&mut self, transaction: &PendingTransaction, sheet_id: SheetId) {
+        self.grid
+            .sheets
+            .iter_mut()
+            .find(|sheet| sheet.id == sheet_id)
+            .map(|sheet| sheet.recalculate_bounds(&self.a1_context));
+
         self.update_a1_context_sheet_map(sheet_id);
 
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
@@ -337,7 +344,7 @@ impl GridController {
                 };
 
                 for pos in positions.iter() {
-                    sheet.send_code_cell(*pos);
+                    sheet.send_code_cell(*pos, &self.a1_context);
                 }
             }
         }

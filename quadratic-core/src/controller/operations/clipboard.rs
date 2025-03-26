@@ -745,8 +745,9 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
-    use crate::test_util::{
-        assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
+    use crate::test_util::gc::{
+        assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_sheet,
+        print_table,
     };
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
 
@@ -821,7 +822,9 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(3, 3, 2, 2, vec!["1", "2", "3", "4"]);
-        sheet.recalculate_bounds();
+
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
         let selection = A1Selection::all(sheet_id);
         let sheet = gc.sheet(sheet_id);
         let JsClipboard { html, .. } = sheet
@@ -985,7 +988,7 @@ mod test {
             None,
         );
 
-        crate::test_util::print_sheet(gc.sheet(sheet1));
+        print_sheet(gc.sheet(sheet1));
 
         let get_code_cell_value_str = |gc: &GridController, sheet_pos: SheetPos| {
             gc.sheet(sheet_pos.sheet_id)

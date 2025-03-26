@@ -242,7 +242,7 @@ mod test {
         cellvalue::Import,
         controller::{GridController, operations::operation::Operation},
         grid::{NumericFormat, NumericFormatKind},
-        test_util::assert_display_cell_value,
+        test_util::gc::assert_display_cell_value,
     };
 
     #[test]

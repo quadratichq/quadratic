@@ -1,5 +1,6 @@
 use crate::{
     CopyFormats, Pos, SheetPos,
+    a1::A1Context,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -106,7 +107,12 @@ impl Sheet {
     }
 
     /// Deletes columns and returns the operations to undo the deletion.
-    pub(crate) fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
+    pub(crate) fn delete_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        column: i64,
+        a1_context: &A1Context,
+    ) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
@@ -207,8 +213,8 @@ impl Sheet {
 
         let changed_selections =
             self.validations
-                .remove_column(transaction, self.id, column, &self.a1_context());
-        transaction.add_dirty_hashes_from_selections(self, &self.a1_context(), changed_selections);
+                .remove_column(transaction, self.id, column, a1_context);
+        transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
         if transaction.is_user_undo_redo() {
             // reverse operation to create the column (this will also shift all impacted columns)
@@ -228,6 +234,7 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
         send_client: bool,
+        a1_context: &A1Context,
     ) {
         // mark hashes of existing columns dirty
         if send_client {
@@ -301,13 +308,9 @@ impl Sheet {
 
         let changed_selections =
             self.validations
-                .insert_column(transaction, self.id, column, &self.a1_context());
+                .insert_column(transaction, self.id, column, a1_context);
         if send_client {
-            transaction.add_dirty_hashes_from_selections(
-                self,
-                &self.a1_context(),
-                changed_selections,
-            );
+            transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
         }
 
         let changes = self.offsets.insert_column(column);
@@ -378,7 +381,8 @@ mod tests {
             source: TransactionSource::User,
             ..Default::default()
         };
-        sheet.delete_column(&mut transaction, 1);
+        let a1_context = sheet.make_a1_context();
+        sheet.delete_column(&mut transaction, 1, &a1_context);
 
         assert_eq!(transaction.reverse_operations.len(), 3);
 
@@ -429,7 +433,8 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 1, CopyFormats::None, true);
+        let a1_context = sheet.make_a1_context();
+        sheet.insert_column(&mut transaction, 1, CopyFormats::None, true, &a1_context);
 
         assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
@@ -468,7 +473,8 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true);
+        let a1_context = sheet.make_a1_context();
+        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true, &a1_context);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -492,7 +498,8 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 3, CopyFormats::None, true);
+        let a1_context = sheet.make_a1_context();
+        sheet.insert_column(&mut transaction, 3, CopyFormats::None, true, &a1_context);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -522,7 +529,8 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         let mut transaction = PendingTransaction::default();
-        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true);
+        let a1_context = sheet.make_a1_context();
+        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true, &a1_context);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
         assert_eq!(sheet.offsets.column_width(3), 200.0);
@@ -538,7 +546,8 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         let mut transaction = PendingTransaction::default();
-        sheet.delete_column(&mut transaction, 2);
+        let a1_context = sheet.make_a1_context();
+        sheet.delete_column(&mut transaction, 2, &a1_context);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
         assert_eq!(sheet.offsets.column_width(3), 400.0);

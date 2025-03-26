@@ -117,12 +117,12 @@ impl A1Selection {
     }
 
     // Converts to a set of quadrant positions.
-    pub fn rects_to_hashes(&self, sheet: &Sheet, context: &A1Context) -> HashSet<Pos> {
+    pub fn rects_to_hashes(&self, sheet: &Sheet, a1_context: &A1Context) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
-        let finite_selection = sheet.finitize_selection(self, false, false);
+        let finite_selection = sheet.finitize_selection(self, false, false, a1_context);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
-            if let Some(rect) = range.to_rect(context) {
+            if let Some(rect) = range.to_rect(a1_context) {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
                         let mut pos = Pos { x, y };

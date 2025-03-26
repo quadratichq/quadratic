@@ -522,7 +522,7 @@ mod test {
     use crate::{
         CellValue,
         controller::user_actions::import::tests::simple_csv_at,
-        test_util::{assert_data_table_cell_value, assert_display_cell_value},
+        test_util::gc::{assert_data_table_cell_value, assert_display_cell_value},
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
