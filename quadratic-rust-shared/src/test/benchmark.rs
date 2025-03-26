@@ -1,3 +1,5 @@
+//! Benchmark utilities
+
 use criterion::{Bencher, Criterion};
 use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
@@ -10,6 +12,7 @@ use tabled::{
 
 pub type Functions = LazyLock<Mutex<Vec<(String, i64)>>>;
 
+/// Benchmark for a single function with inputs
 pub fn benchmark<T>(
     c: &mut Criterion,
     inputs: &[(&str, T)],
@@ -30,6 +33,7 @@ pub fn benchmark<T>(
     group.finish()
 }
 
+/// Benchmark for a single function
 pub fn benchmark_function(
     c: &mut Criterion,
     name: &str,
@@ -45,6 +49,7 @@ pub fn benchmark_function(
     group.bench_function(name, |b| b.iter(|| f()));
 }
 
+/// Print the functions in the benchmark
 pub fn print_functions(functions: &Functions, name: &str, ignore_zero: bool) {
     let mut builder = Builder::default();
     builder.set_header(vec!["Function", "Time"]);
@@ -66,6 +71,7 @@ pub fn print_functions(functions: &Functions, name: &str, ignore_zero: bool) {
     println!("\nBenchmark: {name}\n{table}");
 }
 
+/// Run a single test or benchmark
 pub fn single_test_or_benchmark(
     c: &mut Criterion,
     single_test: bool,

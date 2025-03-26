@@ -3,11 +3,15 @@
 //! Benchmark for importing excel files
 //!
 //! usage:
+//!
+//! To run a single test
+//! npm run bench:run import_excel
+//!
 //! # for watching the actual benchmark code only, much faster since it doesn't have to recompile core
-//! cargo watch -c -w benches -x "bench --bench import_excel --features function-timer -- --nocapture"
-
+//! npm run bench:watch:bench import_excel
+//!
 //! # when you're making perf changes and want to watch core only
-//! cargo watch -c -w src -x "bench --bench import_excel --features function-timer -- --nocapture"
+//! npm run bench:watch:src import_excel
 
 use criterion::{Criterion, criterion_group, criterion_main};
 
@@ -19,12 +23,14 @@ criterion_main!(benches);
 
 const SINGLE_TEST: bool = true;
 
+/// Execute the import excel benchmark
 fn execute(file: &[u8]) {
     let mut gc = GridController::from_grid(Grid::new_blank(), 0);
     gc.import_excel(file, "all_excel_functions.xlsx", None)
         .unwrap();
 }
 
+/// Benchmark for importing excel files
 fn criterion_benchmark(c: &mut Criterion) {
     let name = "import_excel: 10_formulas";
     let excel_file = include_bytes!("test_files/10_formulas.xlsx").to_vec();

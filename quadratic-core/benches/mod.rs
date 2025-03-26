@@ -1,4 +1,2 @@
-// mod grid_benchmark;
-// mod workflows;
-// #[cfg(feature = "function-timer")]
+/// Keep the below to get rust analyzer monitoring the bench code
 mod import_excel;
