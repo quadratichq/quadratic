@@ -143,19 +143,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         &self,
         range: RefRangeBounds,
     ) -> impl Iterator<Item = Block<Vec<Block<&T>>>> {
-        fn i64_to_u64(i: i64) -> u64 {
-            if i == i64::MAX {
-                u64::MAX
-            } else {
-                i.try_into().unwrap_or(0)
-            }
-        }
-
-        let r = range.to_rect_unbounded();
-        let x1 = i64_to_u64(r.min.x);
-        let x2 = i64_to_u64(r.max.x).saturating_add(1);
-        let y1 = i64_to_u64(r.min.y);
-        let y2 = i64_to_u64(r.max.y).saturating_add(1);
+        let [x1, x2, y1, y2] = range_to_rect(range);
         self.0.blocks_for_range(x1, x2).map(move |columns_block| {
             columns_block.map(|column| column.blocks_for_range(y1, y2).collect())
         })
@@ -164,6 +152,14 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// Returns whether the whole sheet is default.
     pub fn is_all_default(&self) -> bool {
         self.0.is_all_default()
+    }
+
+    /// Returns whether the values in a range are all default.
+    pub fn is_all_default_in_range(&self, range: RefRangeBounds) -> bool {
+        let [x1, x2, y1, y2] = range_to_rect(range);
+        self.0
+            .blocks_touching_range(x1, x2)
+            .all(move |columns_block| columns_block.value.is_all_default_in_range(y1, y2))
     }
 
     /// Returns a single value. Returns `T::default()` if `pos` is invalid.
@@ -695,6 +691,26 @@ fn convert_pos(pos: Pos) -> Option<(u64, u64)> {
 /// coordinate is out of range (i.e., it is **less than 1**).
 fn convert_coord(x: i64) -> Option<u64> {
     x.try_into().ok().filter(|&x| x >= 1)
+}
+
+/// Returns `[x1, x2, y1, y2]` for `range`.
+///
+/// `x1` and `y1` are inclusive; `x2` and `y2` are exclusive.
+fn range_to_rect(range: RefRangeBounds) -> [u64; 4] {
+    fn i64_to_u64(i: i64) -> u64 {
+        if i == i64::MAX {
+            u64::MAX
+        } else {
+            i.try_into().unwrap_or(0)
+        }
+    }
+
+    let r = range.to_rect_unbounded();
+    let x1 = i64_to_u64(r.min.x);
+    let x2 = i64_to_u64(r.max.x).saturating_add(1);
+    let y1 = i64_to_u64(r.min.y);
+    let y2 = i64_to_u64(r.max.y).saturating_add(1);
+    [x1, x2, y1, y2]
 }
 
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that

@@ -77,6 +77,16 @@ impl<T: Default + PartialEq> ContiguousBlocks<T> {
         self.0.values().all(|block| block.value == default)
     }
 
+    /// Returns whether the values in the range `start..end` are all default.
+    pub fn is_all_default_in_range(&self, start: u64, end: u64) -> bool
+    where
+        T: Clone,
+    {
+        let default = T::default();
+        self.blocks_touching_range(start, end)
+            .all(|value_block| value_block.value == default)
+    }
+
     /// Returns an iterator over all non-default blocks.
     fn non_default_blocks(&self) -> impl DoubleEndedIterator<Item = &Block<T>> {
         self.0.values().filter(|block| block.value != T::default())
@@ -210,7 +220,11 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Iterates over blocks that touch the range `start..end`.
-    fn blocks_touching_range(&self, start: u64, end: u64) -> impl Iterator<Item = &Block<T>> {
+    pub(super) fn blocks_touching_range(
+        &self,
+        start: u64,
+        end: u64,
+    ) -> impl Iterator<Item = &Block<T>> {
         // There may be a block starting above `y_range.start` that contains
         // `y_range`, so find that.
         let first_block = self
