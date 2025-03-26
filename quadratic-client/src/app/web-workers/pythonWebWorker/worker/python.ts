@@ -192,7 +192,7 @@ class Python {
   };
 
   runPython = async (message: CorePythonRun) => {
-    if (!this.pyodide || this.state !== 'ready') {
+    if (!this.pyodide || this.state !== 'ready' || this.transactionId) {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
     }
