@@ -1,3 +1,5 @@
+import type { JsCellValueResult } from '@/app/quadratic-core-types';
+
 export interface InspectPython {
   lineno: number;
   col_offset: number;
@@ -21,19 +23,17 @@ export type EvaluationResult = {
   values?: { type: string; value: string }[];
 };
 
-export type outputType = 'blank' | 'number' | 'text' | 'logical' | 'instant';
-
 export interface PythonSuccess {
   code: string;
 
   std_err: string;
   std_out: string;
 
-  output?: [string, outputType];
+  output?: JsCellValueResult;
   output_type?: string; // Python type to show in CodeEditor
   output_size?: number[];
   array_output: string[][];
-  typed_array_output: [string, outputType][];
+  typed_array_output: JsCellValueResult[];
 
   success: true;
   input_python_stack_trace: string;
@@ -51,7 +51,7 @@ export interface PythonError {
   output_type: undefined;
   output_size: undefined;
   array_output: undefined;
-  typed_array_output?: [string, outputType][];
+  typed_array_output?: JsCellValueResult[];
 
   success: false;
   input_python_stack_trace: string;
