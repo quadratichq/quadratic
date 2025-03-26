@@ -11,7 +11,7 @@ if [ "$1" = "run" ]; then
     cargo bench --bench $2 --features function-timer -- --nocapture
 fi
 
-if [ "$1" = "watch" ]; then
+if [ "$1" = "bench" ]; then
     cargo watch -c -w benches -x "bench --bench $2 --features function-timer -- --nocapture"
 fi
 

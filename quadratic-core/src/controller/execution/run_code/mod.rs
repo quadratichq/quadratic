@@ -42,7 +42,7 @@ impl GridController {
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
             let unique_name = unique_data_table_name(
-                &new_data_table.name.to_display(),
+                &new_data_table.name().to_string(),
                 false,
                 Some(sheet_pos),
                 self.a1_context(),
@@ -381,7 +381,7 @@ impl GridController {
             },
         };
         let table_name = match code_cell_value.language {
-            CodeCellLanguage::Formula => "F1",
+            CodeCellLanguage::Formula => "Formula1",
             CodeCellLanguage::Javascript => "JavaScript1",
             CodeCellLanguage::Python => "Python1",
             _ => "Table1",
@@ -410,7 +410,7 @@ impl GridController {
         language: CodeCellLanguage,
     ) -> DataTable {
         let table_name = match language {
-            CodeCellLanguage::Formula => "F1",
+            CodeCellLanguage::Formula => "Formula1",
             CodeCellLanguage::Javascript => "JavaScript1",
             CodeCellLanguage::Python => "Python1",
             _ => "Table1",

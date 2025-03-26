@@ -80,7 +80,6 @@ impl GridController {
 
     /// Used by the server to apply transactions. Since the server owns the sequence_num,
     /// there's no need to check or alter the execution order.
-    #[function_timer::function_timer]
     pub fn server_apply_transaction(
         &mut self,
         operations: Vec<Operation>,

@@ -237,7 +237,6 @@ impl GridController {
     }
 
     /// Imports an Excel file into the grid.
-    #[function_timer::function_timer]
     pub fn import_excel_operations(
         &mut self,
         file: &[u8],
@@ -714,8 +713,7 @@ mod test {
     fn import_excel() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.as_ref(), "simple.xlsx", None)
-            .unwrap();
+        gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);

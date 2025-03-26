@@ -58,7 +58,6 @@ impl GridController {
         }
     }
 
-    #[function_timer::function_timer]
     pub(crate) fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test))
             || transaction.is_server()
@@ -139,7 +138,6 @@ impl GridController {
         remaining_hashes
     }
 
-    #[function_timer::function_timer]
     pub(crate) fn process_remaining_dirty_hashes(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test))
             || transaction.is_server()
@@ -351,7 +349,6 @@ impl GridController {
     }
 
     /// Sends individual offsets that have been modified to the client
-    #[function_timer::function_timer]
     pub(crate) fn send_offsets_modified(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             transaction.offsets_modified.clear();

@@ -32,8 +32,8 @@ fn execute(file: &[u8]) {
 
 /// Benchmark for importing excel files
 fn criterion_benchmark(c: &mut Criterion) {
-    let name = "import_excel: 10_formulas";
-    let excel_file = include_bytes!("test_files/10_formulas.xlsx").to_vec();
+    let name = "import_excel: 10_000_formulas";
+    let excel_file = include_bytes!("test_files/10_000_formulas.xlsx").to_vec();
     let function = || execute(&excel_file);
 
     #[cfg(feature = "function-timer")]

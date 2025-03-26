@@ -27,7 +27,7 @@ impl GridController {
         if transaction.is_user_undo_redo() {
             let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
             transaction
-                .add_update_selection(A1Selection::table(sheet_pos, &data_table.name.to_display()));
+                .add_update_selection(A1Selection::table(sheet_pos, &data_table.name().to_string()));
         }
     }
 
@@ -650,7 +650,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table_sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
             let data_table = self.grid.data_table(sheet_id, data_table_pos)?;
-            let old_name = data_table.name.to_display();
+            let old_name = data_table.name().to_string();
             let old_columns = data_table.column_headers.to_owned();
 
             let context = self.a1_context().to_owned();
@@ -2044,7 +2044,7 @@ mod tests {
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         let updated_name = "My_Table";
 
-        assert_eq!(&data_table.name.to_display(), "simple.csv");
+        assert_eq!(&data_table.name().to_string(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
@@ -2061,27 +2061,27 @@ mod tests {
         gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
 
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name.to_display(), updated_name);
+        assert_eq!(&data_table.name().to_string(), updated_name);
         println!("Updated data table name: {}", &data_table.name);
 
         // undo, the value should be the initial name
         gc.undo(None);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name.to_display(), "simple.csv");
+        assert_eq!(&data_table.name().to_string(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         // redo, the value should be the updated name
         {
             gc.redo(None);
             let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-            assert_eq!(&data_table.name.to_display(), updated_name);
+            assert_eq!(&data_table.name().to_string(), updated_name);
             println!("Updated data table name: {}", &data_table.name);
         }
 
         // ensure names are unique
         gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name.to_display(), "My_Table");
+        assert_eq!(&data_table.name().to_string(), "My_Table");
 
         // ensure numbers aren't added for unique names
         let op = Operation::DataTableMeta {
@@ -2096,7 +2096,7 @@ mod tests {
         };
         gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name.to_display(), "ABC");
+        assert_eq!(&data_table.name().to_string(), "ABC");
     }
 
     #[test]

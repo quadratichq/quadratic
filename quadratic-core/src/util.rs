@@ -304,6 +304,11 @@ pub fn case_fold(s: &str) -> String {
 }
 
 /// Uppercase ascii-only string suitable for case-insensitive comparison.
+pub fn case_fold_ascii(s: &str) -> String {
+    s.to_ascii_uppercase()
+}
+
+/// Uppercase ascii-only string suitable for case-insensitive comparison.
 pub fn case_fold_ascii_in_place(s: &mut str) {
     s.make_ascii_uppercase();
 }

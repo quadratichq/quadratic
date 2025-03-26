@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     Pos, SheetPos,
     grid::{CodeCellLanguage, DataTable, SheetId},
-    util::case_fold,
+    util::case_fold_ascii,
 };
 
 use super::TableMapEntry;
@@ -17,12 +17,17 @@ pub struct TableMap {
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
-        let table_name_folded = case_fold(&table_map_entry.table_name);
+        let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
+    /// Inserts a table into the table map with a key that is already case folded.
+    pub fn insert_with_key(&mut self, table_name: String, table_map_entry: TableMapEntry) {
+        self.tables.insert(table_name, table_map_entry);
+    }
+
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
-        let table_name_folded = case_fold(table_name);
+        let table_name_folded = case_fold_ascii(table_name);
         self.tables.remove(&table_name_folded)
     }
 
@@ -33,33 +38,33 @@ impl TableMap {
         table: &DataTable,
         language: CodeCellLanguage,
     ) {
-        let table_name_folded = case_fold(&table.name.to_display());
+        let table_name_folded = case_fold_ascii(&table.name().to_string());
         let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
     /// Finds a table by name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
-        let table_name = case_fold(table_name);
+        let table_name = case_fold_ascii(table_name);
         self.tables.get(&table_name)
     }
 
     /// Finds a table by name.
     pub fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_name = case_fold(table_name);
+        let table_name = case_fold_ascii(table_name);
         self.tables.get_mut(&table_name)
     }
 
     /// Returns true if the table has a column with the given name.
     pub fn table_has_column(&self, table_name: &str, column_name: &str, index: usize) -> bool {
-        let column_name_folded = case_fold(column_name);
+        let column_name_folded = case_fold_ascii(column_name);
         self.try_table(table_name)
             .map(|table| {
                 table
                     .all_columns
                     .iter()
                     .enumerate()
-                    .any(|(i, col)| case_fold(col) == column_name_folded && i != index)
+                    .any(|(i, col)| case_fold_ascii(col) == column_name_folded && i != index)
             })
             .unwrap_or(false)
     }
@@ -137,7 +142,7 @@ impl TableMap {
         bounds: crate::Rect,
         language: CodeCellLanguage,
     ) {
-        let table_name_folded = case_fold(table_name);
+        let table_name_folded = case_fold_ascii(table_name);
         self.tables.insert(
             table_name_folded,
             TableMapEntry::test(table_name, visible_columns, all_columns, bounds, language),
@@ -146,7 +151,7 @@ impl TableMap {
 
     #[cfg(test)]
     pub fn get_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_name_folded = case_fold(table_name);
+        let table_name_folded = case_fold_ascii(table_name);
         self.tables.get_mut(&table_name_folded)
     }
 }
