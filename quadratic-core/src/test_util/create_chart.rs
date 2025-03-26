@@ -11,6 +11,8 @@ use super::sheet;
 /// Creates a JS chart at the given position with the given width and height (in cells).
 #[cfg(test)]
 pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos, w: u32, h: u32) {
+    use crate::controller::transaction_types::JsCellValueResult;
+
     gc.set_code_cell(
         pos.to_sheet_pos(sheet_id),
         CodeCellLanguage::Javascript,
@@ -27,7 +29,7 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
         std_out: None,
         std_err: None,
         line_number: None,
-        output_value: Some(vec!["image".to_string(), "image".to_string()]),
+        output_value: Some(JsCellValueResult("image".to_string(), 8)),
         output_array: None,
         output_display_type: None,
         cancel_compute: None,
@@ -49,6 +51,8 @@ pub fn test_create_html_chart(
     w: u32,
     h: u32,
 ) {
+    use crate::controller::transaction_types::JsCellValueResult;
+
     gc.set_code_cell(
         pos.to_sheet_pos(sheet_id),
         CodeCellLanguage::Python,
@@ -65,7 +69,7 @@ pub fn test_create_html_chart(
         std_out: None,
         std_err: None,
         line_number: None,
-        output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
+        output_value: Some(JsCellValueResult("<html></html>".to_string(), 6)),
         output_array: None,
         output_display_type: None,
         cancel_compute: None,

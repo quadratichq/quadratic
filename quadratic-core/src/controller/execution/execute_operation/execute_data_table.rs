@@ -2027,13 +2027,13 @@ mod tests {
 
         // undo, the value should be on th grid again
         execute_reverse_operations(&mut gc, &transaction);
-        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
         // create a formula cell in the grid data table
         let formula_pos = SheetPos::new(sheet_id, 1, 3);
         gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
-        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
 
         // there should only be 1 data table, the formula data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);

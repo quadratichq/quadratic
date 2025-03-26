@@ -306,7 +306,7 @@ mod test {
             operations::operation::Operation,
         },
         grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-        test_util::{assert_cell_value, assert_display_cell_value, print_table},
+        test_util::{assert_cell_value, assert_display_cell_value, print_table_in_rect},
     };
 
     #[test]
@@ -391,7 +391,7 @@ mod test {
         ];
 
         gc.set_cell_values(sheet_pos, values, None);
-        print_table(&gc, sheet_id, sheet_rect.into());
+        print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
         let ops = gc.grid_to_data_table_operations(sheet_rect);
         gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
@@ -399,7 +399,7 @@ mod test {
         let import = Import::new("Table1".into());
         let cell_value = CellValue::Import(import.to_owned());
 
-        print_table(&gc, sheet_id, data_table_rect);
+        print_table_in_rect(&gc, sheet_id, data_table_rect);
 
         // check that the data table is in the sheet
         assert_cell_value(&gc, sheet_id, 1, 1, cell_value.clone());
@@ -413,7 +413,7 @@ mod test {
         gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
-        print_table(&gc, sheet_id, sheet_rect.into());
+        print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
         let ops = gc.grid_to_data_table_operations(sheet_rect);
 
@@ -426,6 +426,6 @@ mod test {
         // there should still be just 1 data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
-        print_table(&gc, sheet_id, data_table_rect);
+        print_table_in_rect(&gc, sheet_id, data_table_rect);
     }
 }
