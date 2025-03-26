@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::HashSet, fmt, hash::Hash};
 
 use crate::{
     CopyFormats, Pos, Rect,
@@ -160,6 +160,19 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         self.0
             .blocks_touching_range(x1, x2)
             .all(move |columns_block| columns_block.value.is_all_default_in_range(y1, y2))
+    }
+
+    /// Returns a set of unique values in a range.
+    pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<T>
+    where
+        T: Eq + Hash,
+    {
+        let [x1, x2, y1, y2] = range_to_rect(range);
+        self.0
+            .blocks_touching_range(x1, x2)
+            .flat_map(move |columns_block| columns_block.value.blocks_touching_range(y1, y2))
+            .map(|y_block| y_block.value.clone())
+            .collect()
     }
 
     /// Returns a single value. Returns `T::default()` if `pos` is invalid.
