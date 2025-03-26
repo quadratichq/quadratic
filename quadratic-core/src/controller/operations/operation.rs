@@ -164,10 +164,10 @@ pub enum Operation {
         // the row index is the display index, not the actual index
         rows: Vec<u32>,
 
-        /// Inserts the removed row into sheet at the same position.
+        // Inserts the removed row into sheet at the same position.
         flatten: bool,
 
-        /// select the table after the operation
+        // select the table after the operation
         select_table: bool,
     },
     SetCodeRun {

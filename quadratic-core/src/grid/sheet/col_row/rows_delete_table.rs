@@ -1,5 +1,6 @@
 use crate::{
     SheetRect,
+    cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -152,15 +153,20 @@ impl Sheet {
                     })
                     .collect::<Vec<_>>();
 
+                // create reverse operations for the deleted rows
+                let mut values = CellValues::new(dt.width() as u32, rows.len() as u32);
+                for (row, reverse_row) in rows {
+                    if let Some(reverse_row) = reverse_row {
+                        for (col, value) in reverse_row.into_iter().enumerate() {
+                            values.set(col as u32, row as u32, value);
+                        }
+                    }
+                }
                 transaction
                     .reverse_operations
-                    .push(Operation::InsertDataTableRows {
+                    .push(Operation::SetDataTableAt {
                         sheet_pos: pos.to_sheet_pos(self.id),
-                        rows,
-                        swallow: false,
-                        select_table: false,
-                        copy_formats_from: None,
-                        copy_formats: None,
+                        values,
                     });
             }
         }

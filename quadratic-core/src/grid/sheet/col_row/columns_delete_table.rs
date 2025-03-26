@@ -229,6 +229,8 @@ impl Sheet {
         }
 
         transaction.reverse_operations.extend(reverse_operations);
+
+        dbgjs!(&transaction.reverse_operations);
     }
 }
 
