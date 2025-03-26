@@ -43,7 +43,7 @@ export function getActionUpdateTeam(body: ApiTypes['/v0/teams/:uuid.PATCH.reques
   };
 }
 
-export const action = async ({ request, params }: ActionFunctionArgs): Promise<TeamAction['response']> => {
+export const clientAction = async ({ request, params }: ActionFunctionArgs): Promise<TeamAction['response']> => {
   const data = (await request.json()) as TeamAction['request'];
   const { teamUuid } = params as { teamUuid: string };
   const { intent } = data;
@@ -112,7 +112,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   return { ok: false };
 };
 
-export const Component = () => {
+export default function Component() {
   // const [searchParams, setSearchParams] = useSearchParams();
   // When the user comes back successfully from stripe, fire off an event to Google
   // useEffect(() => {
@@ -137,7 +137,7 @@ export const Component = () => {
   // }, [searchParams, setSearchParams]);
 
   return <Outlet />;
-};
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

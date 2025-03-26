@@ -6,9 +6,9 @@ import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import { Outlet } from 'react-router';
-import { Empty } from './Empty';
+import { Empty } from '../dashboard/components/Empty';
 
-export function BrowserCompatibilityLayoutRoute() {
+export default function Component() {
   useEffect(() => {
     if (!isWASMSupported || !isWebGLSupported()) {
       mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {

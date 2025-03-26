@@ -57,7 +57,7 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
+export const clientLoader = async ({ params, request }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
   /**
    * Get the initial data
    */
@@ -123,7 +123,7 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
 /**
  * Component
  */
-export const Component = () => {
+export default function Component() {
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
@@ -192,7 +192,7 @@ export const Component = () => {
       </TooltipProvider>
     </RecoilRoot>
   );
-};
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

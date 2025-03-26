@@ -13,7 +13,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { FileIcon } from '@radix-ui/react-icons';
 import { Link } from 'react-router';
 
-export const Component = () => {
+export default function Component() {
   const {
     activeTeam: {
       team: { uuid: teamUuid },
@@ -102,4 +102,4 @@ export const Component = () => {
       />
     </div>
   );
-};
+}

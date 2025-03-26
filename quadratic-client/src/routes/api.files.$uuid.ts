@@ -5,7 +5,7 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import type { ActionFunctionArgs } from 'react-router';
 import { redirectDocument } from 'react-router';
 
-export const loader = async () => null;
+export const clientLoader = async () => null;
 
 export type Action = {
   response: { ok: boolean } | null;
@@ -27,7 +27,7 @@ export type Action = {
     | Action['request.rename'];
 };
 
-export const action = async ({ params, request }: ActionFunctionArgs): Promise<Action['response']> => {
+export const clientAction = async ({ params, request }: ActionFunctionArgs): Promise<Action['response']> => {
   const json: Action['request'] = await request.json();
   const { uuid } = params as { uuid: string };
   const { action } = json;

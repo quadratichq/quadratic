@@ -2,7 +2,7 @@ import { authClient } from '@/auth/auth';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const clientLoader = async ({ request }: LoaderFunctionArgs) => {
   const isAuthenticated = await authClient.isAuthenticated();
 
   // If they’re logged in, redirect home

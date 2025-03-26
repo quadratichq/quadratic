@@ -2,17 +2,20 @@ import type { FilesListExampleFile } from '@/dashboard/components/FilesList';
 import { ExampleFilesList } from '@/dashboard/components/FilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
+import { dontRevalidateDialogs } from '@/shared/utils/routeUtils';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import { useLoaderData } from 'react-router';
 import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
-export const loader = async () => {
+export const shouldRevalidate = dontRevalidateDialogs;
+
+export const clientLoader = async () => {
   const examples = await sanityClient.examples.list();
   return { examples };
 };
 
-export const Component = () => {
-  const { examples } = useLoaderData<typeof loader>();
+export default function Component() {
+  const { examples } = useLoaderData<typeof clientLoader>();
   const {
     activeTeam: {
       team: { uuid: activeTeamUuid },
@@ -36,4 +39,4 @@ export const Component = () => {
       <ExampleFilesList files={files} />
     </>
   );
-};
+}
