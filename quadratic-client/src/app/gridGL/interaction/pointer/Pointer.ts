@@ -76,7 +76,8 @@ export class Pointer {
 
   // check if more than one touch point (let the viewport handle the event)
   private isMoreThanOneTouch(e: FederatedPointerEvent): boolean {
-    return e.nativeEvent instanceof TouchEvent && e.nativeEvent.touches.length > 1;
+    const nativeEvent = e.nativeEvent as any;
+    return nativeEvent?.touches?.length > 1;
   }
 
   // todo: this should be removed when the code editor's layout is changed
@@ -90,6 +91,7 @@ export class Pointer {
   }
 
   private handlePointerDown = (e: FederatedPointerEvent): void => {
+    console.log(1);
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.global);
 
