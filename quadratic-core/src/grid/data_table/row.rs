@@ -81,14 +81,17 @@ impl DataTable {
     pub fn delete_row_sorted(
         &mut self,
         display_row_index: usize,
-    ) -> Result<(u32, Option<Vec<CellValue>>)> {
-        let old_values = self.get_row_sorted(display_row_index)?;
-
+    ) -> Result<(
+        u32,
+        Option<Vec<CellValue>>,
+        SheetFormatUpdates,
+        BordersUpdates,
+    )> {
         let row_index = display_row_index as i64 - self.y_adjustment(true);
 
         let actual_row_index = self.get_row_index_from_display_index(row_index as u64);
 
-        self.delete_row(usize::try_from(
+        let (old_values, formats, borders) = self.delete_row(usize::try_from(
             actual_row_index as i64 + self.y_adjustment(true),
         )?)?;
 
@@ -104,7 +107,7 @@ impl DataTable {
 
         let reverse_row_index = u32::try_from(actual_row_index as i64 + self.y_adjustment(true))?;
 
-        Ok((reverse_row_index, Some(old_values)))
+        Ok((reverse_row_index, Some(old_values), formats, borders))
     }
 }
 

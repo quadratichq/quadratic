@@ -291,7 +291,9 @@ mod tests {
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
         },
-        test_util::first_sheet_id,
+        test_util::{
+            assert_data_table_size, first_sheet_id, test_create_html_chart, test_create_js_chart,
+        },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
     };
 
@@ -1066,5 +1068,41 @@ mod tests {
 
         let dt_2 = sheet.data_table(pos![B5]).unwrap();
         assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
+    }
+
+    #[test]
+    fn test_delete_rows_chart() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![B2], 3, 3);
+
+        gc.delete_rows(sheet_id, vec![3], None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+    }
+
+    #[test]
+    fn test_delete_bottom_rows_chart() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 3, 3);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+
+        // deletes the bottom tow rows of the chart
+        gc.delete_rows(sheet_id, vec![3, 4], None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 1, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
     }
 }

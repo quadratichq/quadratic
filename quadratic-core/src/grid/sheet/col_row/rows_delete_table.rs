@@ -70,7 +70,7 @@ impl Sheet {
                     if count > 0 {
                         if let Some((width, height)) = dt.chart_output {
                             // charts cannot be smaller than 2 height (UI + at least one cell for display)
-                            let min = (width - count as u32).max(1);
+                            let min = (height - count as u32).max(1);
                             if min != height {
                                 adjust_chart_size.push((*pos, width, min));
                             }
@@ -94,13 +94,48 @@ impl Sheet {
         for (pos, width, height) in adjust_chart_size {
             if let Some(dt) = self.data_tables.get_mut(&pos) {
                 dt.chart_output = Some((width, height));
-                transaction
-                    .reverse_operations
-                    .push(Operation::SetChartCellSize {
-                        sheet_pos: pos.to_sheet_pos(self.id),
-                        w: width,
-                        h: height,
-                    });
+                println!("adjusting chart size to {} {}", width, height);
+                transaction.add_from_code_run(self.id, pos, dt.is_image(), dt.is_html());
+                // We don't need reverse the chart size ops b/c the chart will
+                // automatically adjust when rows are inserted in the middle of
+                // the chart--with the exception of rows deleted at the end of
+                // the chart; those need to be handled separately (as below)
+                let mut rect = dt.output_rect(pos, false);
+                // need to adjust the rect to account for the UI
+                rect.max.y += 1;
+
+                let mut manual_removal_count = 0;
+                let mut auto_removal_count = 0;
+                for row in rect.y_range().rev() {
+                    println!("checking row: {} against rows: {:?}", row, rows);
+                    if auto_removal_count == 0 && rows.contains(&row) {
+                        manual_removal_count += 1;
+                    } else {
+                        auto_removal_count += 1;
+                    }
+                    println!(
+                        "manual {}, auto: {}",
+                        manual_removal_count, auto_removal_count
+                    );
+                }
+
+                println!(
+                    "manual {}, auto: {}",
+                    manual_removal_count, auto_removal_count
+                );
+
+                // the new height is the original height, minus the number of
+                // rows that were automatically removed, minus 1 for the UI row
+                // note: this op happens before the rows are re-inserted
+                if manual_removal_count > 0 {
+                    transaction
+                        .reverse_operations
+                        .push(Operation::SetChartCellSize {
+                            sheet_pos: pos.to_sheet_pos(self.id),
+                            w: width,
+                            h: rect.height() - auto_removal_count - 1 as u32,
+                        });
+                }
             }
         }
 
@@ -111,38 +146,32 @@ impl Sheet {
                     .iter()
                     .map(|row| {
                         let row = (*row - pos.y) as u32;
-                        let actual_index = dt.get_row_index_from_display_index(row as u64);
-
-                        // add reverse ops for formats and borders, if necessary
-                        // (note, formats and borders are 1-indexed)
-                        if let Some(reverse_formats) = dt.formats.copy_row(actual_index as i64 + 1)
-                        {
-                            if !reverse_formats.is_default() {
+                        let Ok((_actual_index, reverse_row, formats, borders)) =
+                            dt.delete_row_sorted(row as usize)
+                        else {
+                            // there was an error deleting the row, so we skip it
+                            return (row, None);
+                        };
+                        if !formats.is_default() {
+                            if formats.has_fills() {
                                 transaction.add_fill_cells(self.id);
                             }
                             transaction
                                 .reverse_operations
                                 .push(Operation::DataTableFormats {
                                     sheet_pos: pos.to_sheet_pos(self.id),
-                                    formats: reverse_formats,
+                                    formats,
                                 });
                         }
-                        if let Some(reverse_borders) = dt.borders.copy_row(actual_index as i64 + 1)
-                        {
+                        if !borders.is_empty() {
                             transaction.add_borders(self.id);
                             transaction
                                 .reverse_operations
                                 .push(Operation::DataTableBorders {
                                     sheet_pos: pos.to_sheet_pos(self.id),
-                                    borders: reverse_borders,
+                                    borders,
                                 });
                         }
-
-                        let Ok((_actual_index, reverse_row)) = dt.delete_row_sorted(row as usize)
-                        else {
-                            // there was an error deleting the row, so we skip it
-                            return (row, None);
-                        };
                         let w = dt.width() as u32;
                         transaction.add_dirty_hashes_from_sheet_rect(SheetRect::new(
                             pos.x,
@@ -154,6 +183,7 @@ impl Sheet {
                         (row, reverse_row)
                     })
                     .collect::<Vec<_>>();
+
                 transaction
                     .reverse_operations
                     .push(Operation::InsertDataTableRows {

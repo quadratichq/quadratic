@@ -1518,8 +1518,9 @@ impl GridController {
 
             // delete columns
             for index in rows.into_iter() {
-                let reverse_row = data_table.delete_row_sorted(index as usize)?;
-                reverse_rows.push(reverse_row);
+                let (actual_index, reverse_row, _, _) =
+                    data_table.delete_row_sorted(index as usize)?;
+                reverse_rows.push((actual_index, reverse_row));
             }
             reverse_rows.reverse();
             data_table.check_sort()?;
