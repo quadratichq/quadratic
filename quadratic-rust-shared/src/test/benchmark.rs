@@ -8,6 +8,8 @@ use tabled::{
     settings::{Color, Modify, Style},
 };
 
+pub type Functions = LazyLock<Mutex<Vec<(String, i64)>>>;
+
 pub fn benchmark<T>(
     c: &mut Criterion,
     inputs: &[(&str, T)],
@@ -43,8 +45,6 @@ pub fn benchmark_function(
     group.bench_function(name, |b| b.iter(|| f()));
 }
 
-pub type Functions = LazyLock<Mutex<Vec<(String, i64)>>>;
-
 pub fn print_functions(functions: &Functions, name: &str, ignore_zero: bool) {
     let mut builder = Builder::default();
     builder.set_header(vec!["Function", "Time"]);
@@ -64,4 +64,21 @@ pub fn print_functions(functions: &Functions, name: &str, ignore_zero: bool) {
     table.with(Modify::new((0, 1)).with(Color::BOLD));
 
     println!("\nBenchmark: {name}\n{table}");
+}
+
+pub fn single_test_or_benchmark(
+    c: &mut Criterion,
+    single_test: bool,
+    name: &str,
+    functions: &Functions,
+    sample_size: Option<usize>,
+    measurement_time: Option<Duration>,
+    f: impl Fn(),
+) {
+    if single_test {
+        f();
+        print_functions(&functions, name, true);
+    } else {
+        benchmark_function(c, name, sample_size, measurement_time, f);
+    }
 }
