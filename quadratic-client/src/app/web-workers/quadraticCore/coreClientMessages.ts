@@ -1264,6 +1264,8 @@ export interface ClientCoreMoveRows {
 
 export interface CoreClientCoreError {
   type: 'coreClientCoreError';
+  from: string;
+  error: Error | unknown;
 }
 
 export type ClientCoreMessage =

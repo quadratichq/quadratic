@@ -50,9 +50,9 @@ export default function QuadraticUI() {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
-    const handleError = () => setError(true);
+    const handleError = (from: string, error: Error | unknown) => setError({ from, error });
     events.on('coreError', handleError);
     return () => {
       events.off('coreError', handleError);
@@ -87,6 +87,8 @@ export default function QuadraticUI() {
         Icon={CrossCircledIcon}
         actions={<Button onClick={() => window.location.reload()}>Reload</Button>}
         severity="error"
+        error={error.error}
+        source={error.from}
       />
     );
   }

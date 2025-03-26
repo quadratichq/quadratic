@@ -152,7 +152,7 @@ interface EventTypes {
 
   gridLinesDirty: () => void;
 
-  coreError: () => void;
+  coreError: (from: string, error: Error | unknown) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

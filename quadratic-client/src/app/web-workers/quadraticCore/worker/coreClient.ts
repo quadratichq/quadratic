@@ -905,8 +905,8 @@ class CoreClient {
     this.send({ type: 'coreClientA1Context', context });
   };
 
-  sendCoreError = () => {
-    this.send({ type: 'coreClientCoreError' });
+  sendCoreError = (from: string, error: Error | unknown) => {
+    this.send({ type: 'coreClientCoreError', from, error });
   };
 }
 

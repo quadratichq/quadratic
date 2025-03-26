@@ -20,6 +20,7 @@ export function Empty({
   className,
   showLoggedInUser,
   error,
+  source,
 }: {
   title: string;
   description: ReactNode;
@@ -29,25 +30,29 @@ export function Empty({
   className?: string;
   showLoggedInUser?: boolean;
   error?: unknown;
+  source?: string;
 }) {
   const { loggedInUser } = useRootRouteLoaderData();
   const submit = useSubmit();
 
   useEffect(() => {
     if (severity === 'error' || error) {
+      // for core errors, we send the source but don't share it with the user
+      const sourceTitle = source ? `Core Error in ${source}` : title;
+      console.log(sourceTitle);
       mixpanel.track('[Empty].error', {
-        title,
+        title: sourceTitle,
         description,
       });
       Sentry.captureException(new Error('error-page'), {
         extra: {
-          title,
+          title: sourceTitle,
           description,
           error,
         },
       });
     }
-  }, [severity, error, title, description]);
+  }, [severity, error, title, description, source]);
 
   return (
     <div className={cn(`max-w mx-auto my-10 max-w-md px-2 text-center`, className)}>

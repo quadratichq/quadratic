@@ -211,7 +211,7 @@ class QuadraticCore {
       events.emit('a1Context', e.data.context);
       return;
     } else if (e.data.type === 'coreClientCoreError') {
-      events.emit('coreError');
+      events.emit('coreError', e.data.from, e.data.error);
       return;
     }
 

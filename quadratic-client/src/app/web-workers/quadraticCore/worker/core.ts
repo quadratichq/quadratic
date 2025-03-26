@@ -80,8 +80,7 @@ class Core {
   };
 
   private handleCoreError = (from: string, error: Error | unknown) => {
-    this.sendAnalyticsError(from, error);
-    coreClient.sendCoreError();
+    coreClient.sendCoreError(from, error);
   };
 
   private async loadGridFile(file: string): Promise<Uint8Array> {
