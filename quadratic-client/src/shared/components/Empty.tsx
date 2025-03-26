@@ -39,7 +39,6 @@ export function Empty({
     if (severity === 'error' || error) {
       // for core errors, we send the source but don't share it with the user
       const sourceTitle = source ? `Core Error in ${source}` : title;
-      console.log(sourceTitle);
       mixpanel.track('[Empty].error', {
         title: sourceTitle,
         description,
