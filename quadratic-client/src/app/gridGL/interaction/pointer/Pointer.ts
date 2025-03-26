@@ -90,7 +90,6 @@ export class Pointer {
   }
 
   private handlePointerDown = (e: FederatedPointerEvent): void => {
-    console.log(1);
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.global);
 
