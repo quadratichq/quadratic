@@ -164,9 +164,15 @@ impl Sheet {
         // mark hashes of existing rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
+        // todo: this can be optimized by adding a fn that checks if there are
+        // any fills beyond the deleted column
+
+        if self.formats.has_fills() {
+            transaction.add_fill_cells(self.id);
+        }
+
         // remove the row's formats from the sheet
         self.formats.remove_row(row);
-        transaction.add_fill_cells(self.id);
 
         // remove the row's borders from the sheet
         self.borders.remove_row(row);

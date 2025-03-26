@@ -1,5 +1,6 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type {
   CoreJavascriptMessage,
   JavascriptCoreMessage,
@@ -65,9 +66,7 @@ class CoreJavascript {
           core_error: e,
         },
       };
-      const responseString = JSON.stringify(cellA1Response);
-      const encoder = new TextEncoder();
-      responseUint8Array = encoder.encode(responseString);
+      responseUint8Array = toUint8Array(cellA1Response);
     }
 
     // Convert string to ArrayBuffer for transfer

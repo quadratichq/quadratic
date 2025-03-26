@@ -473,3 +473,9 @@ mod test {
         assert_eq!(js_number, JsNumber::default());
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsResponse {
+    pub result: bool,
+    pub error: Option<String>,
+}

@@ -871,13 +871,15 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 4 }), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![C3]), None);
+        assert_eq!(sheet.formats.italic.get(pos![C4]), None);
+        assert_eq!(sheet.formats.italic.get(pos![C5]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![C6]), Some(true));
 
-        assert_eq!(sheet.formats.italic.get(Pos { x: 1, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 1, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 2, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 2, y: 3 }), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![A3]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![A3]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![B3]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![B3]), Some(true));
     }
 
     #[test]

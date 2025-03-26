@@ -135,8 +135,11 @@ impl Sheet {
         // mark hashes of existing columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
+        // todo: this can be optimized by adding a fn that checks if there are
+        // any fills beyond the deleted column
+
         // remove the column's data from the sheet
-        if self.formats.column_has_fills(column) {
+        if self.formats.has_fills() {
             transaction.add_fill_cells(self.id);
         }
         self.formats.remove_column(column);

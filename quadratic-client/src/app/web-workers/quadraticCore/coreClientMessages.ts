@@ -1262,6 +1262,12 @@ export interface ClientCoreMoveRows {
   cursor: string;
 }
 
+export interface CoreClientCoreError {
+  type: 'coreClientCoreError';
+  from: string;
+  error: Error | unknown;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1432,4 +1438,5 @@ export type CoreClientMessage =
   | CoreClientMoveCells
   | CoreClientDeleteCellValues
   | CoreClientDataTableMutations
-  | CoreClientSetCodeCellValue;
+  | CoreClientSetCodeCellValue
+  | CoreClientCoreError;
