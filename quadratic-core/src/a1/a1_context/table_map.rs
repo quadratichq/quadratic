@@ -38,7 +38,7 @@ impl TableMap {
         table: &DataTable,
         language: CodeCellLanguage,
     ) {
-        let table_name_folded = case_fold_ascii(&table.name().to_string());
+        let table_name_folded = case_fold_ascii(table.name());
         let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
         self.tables.insert(table_name_folded, table_map_entry);
     }

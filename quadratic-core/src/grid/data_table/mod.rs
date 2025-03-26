@@ -304,7 +304,7 @@ impl DataTable {
 
     pub fn name(&self) -> &str {
         match &self.name {
-            CellValue::Text(s) => &s,
+            CellValue::Text(s) => s,
             _ => "",
         }
     }
