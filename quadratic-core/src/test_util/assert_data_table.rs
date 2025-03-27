@@ -41,6 +41,21 @@ pub fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) 
     }
 }
 
+/// Run an assertion that the size of a chart is equal to the given width
+/// and height.
+#[cfg(test)]
+#[track_caller]
+pub fn assert_chart_size(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    pos: Pos,
+    width: usize,
+    height: usize,
+    include_ui: bool,
+) {
+    assert_data_table_size(grid_controller, sheet_id, pos, width, height, include_ui);
+}
+
 /// Run an assertion that the size of a data table is equal to the given width
 /// and height. Also works with charts.
 #[cfg(test)]
