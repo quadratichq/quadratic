@@ -221,9 +221,11 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       {messages.length > 0 && !loading && <PromptSuggestions />}
 
-      <div className={cn('flex items-center p-2 transition-opacity', !loading && 'opacity-0')}>
-        <img src="/images/ai_loading.webp" alt="AI is thinking..." className="h-10 w-10" />
-      </div>
+      {loading && (
+        <div className={cn('flex items-center p-2 transition-opacity')}>
+          <img src="/images/logo_loading_ai.gif" alt="AI is thinking..." className="h-7 w-7" />
+        </div>
+      )}
     </div>
   );
 });
