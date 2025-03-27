@@ -692,6 +692,7 @@ impl GridController {
                     ClipboardOperation::Cut => selection.sheet_id,
                     ClipboardOperation::Copy => clipboard.origin.sheet_id,
                 };
+
                 if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id) {
                     for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                         for (&y, cell) in col {
@@ -711,6 +712,8 @@ impl GridController {
                         }
                     }
                 }
+
+                println!("clipboard: {:?}", clipboard);
 
                 self.set_clipboard_cells(selection, clipboard, special)
             }
@@ -739,7 +742,7 @@ mod test {
 
     use super::{PasteSpecial, *};
     use crate::Rect;
-    use crate::a1::{A1Context, A1Selection, CellRefRange, TableRef};
+    use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::JsClipboard;
@@ -1118,7 +1121,7 @@ mod test {
         // paste side by side
         paste(&mut gc, 10, 1, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
-        assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
+        assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_row1);
 
         let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
         expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
@@ -1157,7 +1160,56 @@ mod test {
         // paste side by side
         paste(&mut gc, 10, 1, js_clipboard.html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
-        assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
+        assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_row1);
+    }
+
+    #[test]
+    fn copy_paste_clipboard_first_2_columns_of_data_table() {
+        clear_js_calls();
+
+        let (mut gc, sheet_id, _, _) = simple_csv();
+        let paste = |gc: &mut GridController, x, y, html| {
+            gc.paste_from_clipboard(
+                &A1Selection::from_xy(x, y, sheet_id),
+                None,
+                Some(html),
+                PasteSpecial::None,
+                None,
+            );
+        };
+
+        let table_ref = TableRef {
+            table_name: "simple.csv".to_string(),
+            data: true,
+            headers: false,
+            totals: false,
+            col_range: ColRange::ColRange("city".to_string(), "region".to_string()),
+        };
+        let cell_ref_range = CellRefRange::Table { range: table_ref };
+        let context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[(
+                "simple.csv",
+                &["city", "region", "country", "population"],
+                Rect::test_a1("A1:D11"),
+            )],
+        );
+        let selection = A1Selection::from_range(cell_ref_range, sheet_id, &context);
+
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, false)
+            .unwrap();
+
+        let expected_header_row = vec!["city", "region", "", ""];
+
+        // paste side by side
+        paste(&mut gc, 10, 1, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_header_row);
+
+        // let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+        // expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     }
 
     #[test]
