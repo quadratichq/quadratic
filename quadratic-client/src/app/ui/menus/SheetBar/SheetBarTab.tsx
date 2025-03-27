@@ -11,7 +11,7 @@ import { validateSheetName } from '@/app/quadratic-rust-client/quadratic_rust_cl
 import { SheetBarTabDropdownMenu } from '@/app/ui/menus/SheetBar/SheetBarTabDropdownMenu';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
-import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
+import { Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import type { PointerEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -282,25 +282,17 @@ function TabName({
       dangerouslySetInnerHTML={{ __html: sheet.name }}
     />
   ) : (
-    <Box
+    <div
       data-title={sheet.name}
-      sx={{
+      className={cn(
+        active && 'font-bold',
         // Little trick to bold the text without making the content of
         // the tab change in width
-        '&::after': {
-          content: 'attr(data-title)',
-          display: 'block',
-          fontWeight: '700',
-          height: '1px',
-          color: 'transparent',
-          overflow: 'hidden',
-          visibility: 'hidden',
-        },
-        ...(active ? { fontWeight: '700' } : {}),
-      }}
+        'after:content-[attr(data-title)] after:block after:font-bold after:h-[1px] after:color-transparent after:overflow-hidden after:visibility-hidden',
+      )}
     >
       {sheet.name}
-    </Box>
+    </div>
   );
 }
 
