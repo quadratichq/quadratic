@@ -76,11 +76,15 @@ impl Validations {
     }
 
     /// Gets the JsRenderCellSpecial for a cell based on Validation.
-    pub fn render_special_pos(&self, pos: Pos, context: &A1Context) -> Option<JsRenderCellSpecial> {
+    pub fn render_special_pos(
+        &self,
+        pos: Pos,
+        a1_context: &A1Context,
+    ) -> Option<JsRenderCellSpecial> {
         let mut checkbox = false;
         let mut list = false;
         for v in &self.validations {
-            if v.selection.might_contain_pos(pos, context) {
+            if v.selection.might_contain_pos(pos, a1_context) {
                 match v.rule {
                     validation_rules::ValidationRule::List(ref validation_list) => {
                         if validation_list.drop_down {
@@ -150,15 +154,17 @@ impl Validations {
     }
 
     /// Validates a pos in the sheet. Returns any failing Validation.
-    pub fn validate(&self, sheet: &Sheet, pos: Pos, context: &A1Context) -> Option<&Validation> {
+    pub fn validate(&self, sheet: &Sheet, pos: Pos, a1_context: &A1Context) -> Option<&Validation> {
         self.validations.iter().rev().find(|v| {
-            v.selection.might_contain_pos(pos, context)
-                && !v.rule.validate(sheet, sheet.cell_value_ref(pos))
+            v.selection.might_contain_pos(pos, a1_context)
+                && !v
+                    .rule
+                    .validate(sheet, sheet.cell_value_ref(pos), a1_context)
         })
     }
 
     /// Returns validations that intersect with a rect.
-    pub fn in_rect(&self, rect: Rect, context: &A1Context) -> Vec<&Validation> {
+    pub fn in_rect(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
         self.validations
             .iter()
             .filter(|validation| {
@@ -166,16 +172,16 @@ impl Validations {
                     .selection
                     .ranges
                     .iter()
-                    .any(|range| range.is_finite() && range.might_intersect_rect(rect, context))
+                    .any(|range| range.is_finite() && range.might_intersect_rect(rect, a1_context))
             })
             .collect()
     }
 
     /// Gets a validation from a position
-    pub fn get_validation_from_pos(&self, pos: Pos, context: &A1Context) -> Option<&Validation> {
+    pub fn get_validation_from_pos(&self, pos: Pos, a1_context: &A1Context) -> Option<&Validation> {
         self.validations
             .iter()
-            .find(|v| v.selection.might_contain_pos(pos, context))
+            .find(|v| v.selection.might_contain_pos(pos, a1_context))
     }
 }
 

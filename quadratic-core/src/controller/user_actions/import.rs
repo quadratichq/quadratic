@@ -91,7 +91,7 @@ pub(crate) mod tests {
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
-        test_util::{
+        test_util::gc::{
             assert_cell_value_row, assert_data_table_cell_value_row, print_data_table, print_table,
         },
         wasm_bindings::js::clear_js_calls,

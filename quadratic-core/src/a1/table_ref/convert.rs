@@ -19,7 +19,7 @@ impl TableRef {
     pub fn convert_to_ref_range_bounds(
         &self,
         use_unbounded: bool,
-        context: &A1Context,
+        a1_context: &A1Context,
 
         // forces the columns to be included, regardless of range settings
         force_columns: bool,
@@ -27,7 +27,7 @@ impl TableRef {
         // this returns the table's entire bounds, regardless of the range
         force_table_bounds: bool,
     ) -> Option<RefRangeBounds> {
-        let Some(table) = context.try_table(&self.table_name) else {
+        let Some(table) = a1_context.try_table(&self.table_name) else {
             // the table may no longer exist
             return None;
         };

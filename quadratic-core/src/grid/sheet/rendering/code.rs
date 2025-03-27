@@ -2,6 +2,7 @@
 
 use crate::{
     CellValue, Pos, Value,
+    a1::A1Context,
     grid::{
         CodeCellLanguage, DataTable, Sheet,
         js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
@@ -156,14 +157,15 @@ impl Sheet {
 
     // Sends an update to a code cell. Sends a message regardless of whether the
     // code cell is still present.
-    pub fn send_code_cell(&self, pos: Pos) {
+    pub fn send_code_cell(&self, pos: Pos, a1_context: &A1Context) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        if let (Some(code_cell), Some(render_code_cell)) =
-            (self.edit_code_value(pos), self.get_render_code_cell(pos))
-        {
+        if let (Some(code_cell), Some(render_code_cell)) = (
+            self.edit_code_value(pos, a1_context),
+            self.get_render_code_cell(pos),
+        ) {
             if let (Ok(code_cell), Ok(render_code_cell)) = (
                 serde_json::to_string(&code_cell),
                 serde_json::to_string(&render_code_cell),
