@@ -41,12 +41,12 @@ pub fn benchmark_function(
     measurement_time: Option<Duration>,
     f: impl Fn(),
 ) {
-    let mut group = c.benchmark_group(&name.to_string());
+    let mut group = c.benchmark_group(name.to_string());
 
     measurement_time.map(|t| group.measurement_time(t));
     sample_size.map(|s| group.sample_size(s));
 
-    group.bench_function(name, |b| b.iter(|| f()));
+    group.bench_function(name, |b| b.iter(&f));
 }
 
 /// Print the functions in the benchmark
@@ -83,7 +83,7 @@ pub fn single_test_or_benchmark(
 ) {
     if single_test {
         f();
-        print_functions(&functions, name, true);
+        print_functions(functions, name, true);
     } else {
         benchmark_function(c, name, sample_size, measurement_time, f);
     }
