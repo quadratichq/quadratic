@@ -36,7 +36,7 @@ impl Sheet {
             }
         }
 
-        self.check_insert_tables_columns(transaction, column_inserted, copy_formats);
+        self.check_insert_tables_columns(transaction, column, copy_formats);
         self.adjust_insert_tables_columns(transaction, column, copy_formats, send_client);
 
         // update formatting (fn has maths to find column_inserted)

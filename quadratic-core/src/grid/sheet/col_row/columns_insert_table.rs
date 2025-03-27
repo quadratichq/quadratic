@@ -13,12 +13,17 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
-        _copy_formats: CopyFormats,
+        copy_formats: CopyFormats,
     ) {
+        let column_to_insert = if copy_formats == CopyFormats::After {
+            column + 1
+        } else {
+            column
+        };
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
             if (!dt.readonly || dt.is_html_or_image())
-                && column >= pos.x
-                && column <= pos.x + dt.width() as i64
+                && column_to_insert >= pos.x
+                && column_to_insert <= pos.x + dt.width() as i64
             {
                 if dt.is_html_or_image() {
                     // if html or image, then we need to change the width
@@ -34,7 +39,7 @@ impl Sheet {
                             });
                     }
                 } else {
-                    let column = column - pos.x;
+                    let column = column_to_insert - pos.x;
                     // the table overlaps the inserted column
                     let display_index = dt.get_column_index_from_display_index(column as u32, true);
 
@@ -80,13 +85,18 @@ impl Sheet {
         copy_formats: CopyFormats,
         send_client: bool,
     ) {
+        let column_to_insert = if copy_formats == CopyFormats::After {
+            column + 1
+        } else {
+            column
+        };
         // update the indices of all data_tables impacted by the insertion
         let mut data_tables_to_move_right = Vec::new();
         let mut anchor_cells_to_move_left = Vec::new();
         for (pos, _) in self.data_tables.iter() {
-            if pos.x > column {
+            if pos.x > column_to_insert {
                 data_tables_to_move_right.push(*pos);
-            } else if copy_formats == CopyFormats::Before && pos.x == column {
+            } else if copy_formats == CopyFormats::Before && pos.x == column_to_insert {
                 anchor_cells_to_move_left.push(*pos);
             }
         }
