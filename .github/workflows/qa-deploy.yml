@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Pull Pulumi ESC Environment Variables
         id: pull-pulumi-esc-env-vars
@@ -73,7 +75,7 @@ jobs:
           push: false
           load: true
           tags: quadratic-client-development:local
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
           build-args: |
             ENV_HASH=${{ steps.pull-pulumi-esc-env-vars.outputs.env-hash }}
@@ -169,7 +171,7 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.get-ecr-url.outputs.ECR_URL }}:${{ github.sha }}
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
 
   deploy_client:
@@ -231,7 +233,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 23
 
       - name: Setup Pulumi
         uses: pulumi/actions@v4
@@ -279,10 +281,13 @@ jobs:
     concurrency:
       group: qa-wolf-notify
       cancel-in-progress: true
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Wait for 5 minutes
+        run: sleep 300
 
       - name: Notify deploy_success
         id: run_tests

@@ -40,9 +40,7 @@ macro_rules! test_connection {
 /// Convert a number into a vector of bytes.
 #[macro_export]
 macro_rules! num_vec {
-    ( $value:expr ) => {{
-        $value.to_le_bytes().to_vec()
-    }};
+    ( $value:expr ) => {{ $value.to_le_bytes().to_vec() }};
 }
 
 // Convert a string into a vector of bytes.
@@ -74,10 +72,7 @@ pub(crate) fn get_claims() -> Claims {
 }
 
 pub(crate) async fn response_bytes(response: Response) -> Bytes {
-    response
-        .into_body()
-        .into_data_stream()
-        .into_future()
+    StreamExt::into_future(response.into_body().into_data_stream())
         .await
         .0
         .unwrap_or(Ok(Bytes::new()))

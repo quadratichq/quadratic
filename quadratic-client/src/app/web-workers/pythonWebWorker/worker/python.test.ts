@@ -1,3 +1,4 @@
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
@@ -62,12 +63,11 @@ describe('Python/Pyodide', () => {
   test(
     'can perform a simple calculation',
     async () => {
-      let code = `
+      const code = `
       5 + 3
 `;
-      let results = await runPython(code);
-
-      expect(results).toEqual({
+      const results = await runPython(code);
+      const expected = {
         output: ['8', 'number'],
         array_output: undefined,
         output_type: 'int',
@@ -85,7 +85,10 @@ describe('Python/Pyodide', () => {
         lineno: 2,
         value_type: 'BinOp',
         formatted_code: '\n      5 + 3\n',
-      });
+      };
+
+      const uint8Array = toUint8Array(expected);
+      expect(results).toEqual(uint8Array.buffer);
     },
     30 * 1000
   );

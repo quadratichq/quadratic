@@ -4,7 +4,7 @@ const OUT_PATH_RUST_SHARED: &str = "../quadratic-rust-shared/data/grid";
 const OUT_PATH_API: &str = "../quadratic-api/src/data";
 
 use parquet::data_type::AsBytes;
-use quadratic_core::grid::{file::export, Grid};
+use quadratic_core::grid::{Grid, file::export};
 
 fn write(path: &str, data: &[u8]) {
     let path = format!("{path}/current_blank.grid");

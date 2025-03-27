@@ -16,6 +16,7 @@ import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/share
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { useTheme } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -54,13 +55,16 @@ export function ReturnTypeInspector() {
         size="sm"
         variant="destructive"
         className="ml-auto"
-        onClick={() =>
+        onClick={() => {
+          mixpanel.track('[AIAssistant].fixWithAI', {
+            language: codeCellRecoil.language,
+          });
           submitPrompt({
-            userPrompt: 'Fix the error in the code cell',
+            content: [{ type: 'text', text: 'Fix the error in the code cell' }],
             clearMessages: true,
             codeCell: codeCellRecoil,
-          }).catch(console.error)
-        }
+          }).catch(console.error);
+        }}
         disabled={aiAssistantLoading}
       >
         Fix in AI chat

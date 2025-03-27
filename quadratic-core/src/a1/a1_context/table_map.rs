@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    Pos, SheetPos,
     grid::{CodeCellLanguage, DataTable, SheetId},
     util::case_fold,
-    Pos, SheetPos,
 };
 
 use super::TableMapEntry;

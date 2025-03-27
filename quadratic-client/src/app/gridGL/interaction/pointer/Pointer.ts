@@ -12,7 +12,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { Viewport } from 'pixi-viewport';
-import type { InteractionEvent } from 'pixi.js';
+import type { FederatedPointerEvent } from 'pixi.js';
 
 export class Pointer {
   pointerHeading: PointerHeading;
@@ -75,16 +75,12 @@ export class Pointer {
   }
 
   // check if more than one touch point (let the viewport handle the event)
-  private isMoreThanOneTouch(e: InteractionEvent): boolean {
-    return (
-      e.data.pointerType === 'touch' &&
-      (e.data.originalEvent as TouchEvent).touches &&
-      (e.data.originalEvent as TouchEvent).touches.length > 1
-    );
+  private isMoreThanOneTouch(e: FederatedPointerEvent): boolean {
+    return ((e.nativeEvent as any)?.touches?.length ?? 0) > 1;
   }
 
   // todo: this should be removed when the code editor's layout is changed
-  private isOverCodeEditor(e: InteractionEvent): boolean {
+  private isOverCodeEditor(e: FederatedPointerEvent): boolean {
     const codeEditor = document.getElementById('QuadraticCodeEditorID');
     const overCodeEditor = !!codeEditor?.matches(':hover');
     if (!overCodeEditor) {
@@ -93,53 +89,51 @@ export class Pointer {
     return overCodeEditor;
   }
 
-  private handlePointerDown = (e: InteractionEvent): void => {
+  private handlePointerDown = (e: FederatedPointerEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
-    const world = pixiApp.viewport.toWorld(e.data.global);
-    const event = e.data.originalEvent as PointerEvent;
+    const world = pixiApp.viewport.toWorld(e.global);
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
     // do not interfere with pointerImages when its resizing.
     (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
       this.pointerImages.pointerDown(world) ||
-      this.pointerCellMoving.pointerDown(event) ||
+      this.pointerCellMoving.pointerDown(e) ||
       this.pointerHtmlCells.pointerDown(e) ||
-      this.pointerTable.pointerDown(world, event) ||
-      this.pointerHeading.pointerDown(world, event) ||
-      this.pointerLink.pointerDown(world, event) ||
+      this.pointerTable.pointerDown(world, e) ||
+      this.pointerHeading.pointerDown(world, e) ||
+      this.pointerLink.pointerDown(world, e) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerTableResize.pointerDown(world) ||
-      this.pointerDown.pointerDown(world, event);
+      this.pointerDown.pointerDown(world, e);
 
     this.updateCursor();
   };
 
-  private pointerMove = (e: InteractionEvent): void => {
+  private pointerMove = (e: FederatedPointerEvent): void => {
     // ignore pointerMove if the target is a child of an element with class pointer-move-ignore
-    const target = e.data.originalEvent.target;
+    const target = e.originalEvent.target;
     const isWithinPointerMoveIgnore = target instanceof HTMLElement && !!target.closest('.pointer-move-ignore');
     if (isWithinPointerMoveIgnore) return;
 
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
-    const world = pixiApp.viewport.toWorld(e.data.global);
-    const event = e.data.originalEvent as PointerEvent;
+    const world = pixiApp.viewport.toWorld(e.global);
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
     // do not interfere with pointerImages when its resizing.
-    (!this.pointerImages.resizing && this.pointerHtmlCells.pointerMove(e, world)) ||
+    (!this.pointerImages.resizing && this.pointerHtmlCells.pointerMove(world, e)) ||
       this.pointerImages.pointerMove(world) ||
-      this.pointerCellMoving.pointerMove(event, world) ||
-      this.pointerHtmlCells.pointerMove(e, world) ||
+      this.pointerCellMoving.pointerMove(world, e) ||
+      this.pointerHtmlCells.pointerMove(world, e) ||
       // we need the pointerDown.active and pointerHeading.active check to
       // ensure that when dragging the mouse for selection, we don't call
       // select_table
       (!this.pointerDown.active && !this.pointerHeading.active && this.pointerTable.pointerMove(world)) ||
-      this.pointerHeading.pointerMove(world) ||
+      this.pointerHeading.pointerMove(world, e) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerTableResize.pointerMove(world) ||
-      this.pointerDown.pointerMove(world, event) ||
-      this.pointerCursor.pointerMove(world, event) ||
-      this.pointerLink.pointerMove(world, event);
+      this.pointerDown.pointerMove(world, e) ||
+      this.pointerCursor.pointerMove(world) ||
+      this.pointerLink.pointerMove(world, e);
 
     this.updateCursor();
   };
@@ -159,9 +153,8 @@ export class Pointer {
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
 
-  private pointerUp = (e: InteractionEvent): void => {
+  private pointerUp = (e: FederatedPointerEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
-    const event = e.data.originalEvent as PointerEvent;
 
     this.pointerHtmlCells.pointerUp(e) ||
       this.pointerImages.pointerUp() ||
@@ -170,7 +163,7 @@ export class Pointer {
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
       this.pointerTableResize.pointerUp() ||
-      this.pointerDown.pointerUp(event);
+      this.pointerDown.pointerUp(e);
 
     this.updateCursor();
   };

@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { gridToDataTable } from '@/app/actions/dataTableSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { FILE_INPUT_ID } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -13,6 +14,7 @@ import {
   DataValidationsIcon,
   FormatDateTimeIcon,
   SheetIcon,
+  TableConvertIcon,
 } from '@/shared/components/Icons';
 
 type InsertActionSpec = Pick<
@@ -24,6 +26,7 @@ type InsertActionSpec = Pick<
   | Action.InsertChartJavascript
   | Action.InsertApiRequestJavascript
   | Action.InsertApiRequestPython
+  | Action.InsertDataTable
   | Action.InsertSheet
   | Action.InsertCheckbox
   | Action.InsertDropdown
@@ -254,6 +257,15 @@ export const insertActionsSpec: InsertActionSpec = {
           initialCode: SNIPPET_PY_API,
         },
       }));
+    },
+  },
+  [Action.InsertDataTable]: {
+    label: 'Table',
+    labelVerbose: 'Insert a table',
+    Icon: TableConvertIcon,
+    isDisabled: () => sheets.sheet.cursor.isSingleSelection(),
+    run: () => {
+      gridToDataTable();
     },
   },
   [Action.InsertSheet]: {

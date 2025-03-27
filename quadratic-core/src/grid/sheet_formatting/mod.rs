@@ -33,7 +33,7 @@ pub struct SheetFormatting {
     pub numeric_decimals: SheetFormattingType<i16>,
     pub numeric_commas: SheetFormattingType<bool>,
     pub bold: SheetFormattingType<bool>,
-    pub italic: Contiguous2D<Option<bool>>,
+    pub italic: SheetFormattingType<bool>,
     pub text_color: SheetFormattingType<String>,
     pub fill_color: SheetFormattingType<String>,
     pub date_time: SheetFormattingType<String>,

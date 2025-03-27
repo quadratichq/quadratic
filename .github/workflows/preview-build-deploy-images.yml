@@ -123,6 +123,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -170,6 +172,7 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}-
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-
 
       - name: Build and push
@@ -179,7 +182,7 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
 
       - name: Find Build & Deploy Images Comment

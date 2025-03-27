@@ -8,7 +8,7 @@ use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
 pub(crate) use crate::grid::Grid;
 use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
-pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
+pub(crate) use crate::{CodeResult, RunError, RunErrorMsg, Spanned, array};
 use crate::{CoerceInto, Pos, SheetPos};
 
 #[track_caller]
@@ -320,32 +320,39 @@ fn test_find_cell_references() {
 
     let a = CellRefCoord::new_abs;
     let r = CellRefCoord::new_rel;
-    let new_ref = |sheet_id, x1, y1, x2, y2| {
+    let new_ref = |sheet_id, x1, y1, x2, y2, explicit_sheet_name| {
         Ok(SheetCellRefRange {
             sheet_id,
             cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+            explicit_sheet_name,
         })
     };
 
     // Another test checks that `parse_a1()` is correct.
     let test_cases = [
         // Basic cell reference
-        ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1))),
+        ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1), false)),
         // Range
-        ("A1:A3", new_ref(sheet1, r(1), r(1), r(1), r(3))),
+        ("A1:A3", new_ref(sheet1, r(1), r(1), r(1), r(3), false)),
         // Range with spaces
-        ("A$2 : B2", new_ref(sheet1, r(1), a(2), r(2), r(2))),
+        ("A$2 : B2", new_ref(sheet1, r(1), a(2), r(2), r(2), false)),
         // Unquoted sheet reference
-        ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1))),
+        ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1), true)),
         // Unquoted sheet reference range with spaces
-        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(17), r(9))),
+        (
+            "orange ! A2: $Q9",
+            new_ref(orange, r(1), r(2), a(17), r(9), true),
+        ),
         // Quoted sheet reference range
         (
             "'banana'!$A1:QQ$222",
-            new_ref(banana, a(1), r(1), r(459), a(222)),
+            new_ref(banana, a(1), r(1), r(459), a(222), true),
         ),
         // Quoted sheet reference with spaces
-        ("\"plum\" ! $A1", new_ref(plum, a(1), r(1), a(1), r(1))),
+        (
+            "\"plum\" ! $A1",
+            new_ref(plum, a(1), r(1), a(1), r(1), true),
+        ),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
     let pos = Pos::ORIGIN.to_sheet_pos(sheet1);
@@ -415,8 +422,14 @@ fn test_table_references() {
             "simple.csv[[#HEADERS]]",
             "{city, region, country, population}",
         ),
-        ("simple.csv[region]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
-        ("simple.csv[[region]]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
+        (
+            "simple.csv[region]",
+            "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}",
+        ),
+        (
+            "simple.csv[[region]]",
+            "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}",
+        ),
         (
             "simple.csv[[city]:[country]]",
             "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",

@@ -5,8 +5,8 @@
 //! to only include the relevant elements. (Otherwise it throws an error.)
 
 use crate::{
-    date_time::{date_time_to_date_time_string, date_to_date_string, time_to_time_string},
     CellValue,
+    date_time::{date_time_to_date_time_string, date_to_date_string, time_to_time_string},
 };
 
 use super::Sheet;
@@ -35,9 +35,9 @@ mod tests {
     use chrono::{NaiveDateTime, NaiveTime};
 
     use crate::{
-        controller::GridController,
-        grid::{js_types::JsRenderCell, CellAlign},
         Rect,
+        controller::GridController,
+        grid::{CellAlign, js_types::JsRenderCell},
     };
 
     use super::*;

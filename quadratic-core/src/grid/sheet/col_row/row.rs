@@ -1,11 +1,11 @@
 use crate::{
+    CopyFormats, Pos, SheetPos,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
     grid::{GridBounds, Sheet},
-    CopyFormats, Pos, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -158,9 +158,15 @@ impl Sheet {
         // mark hashes of existing rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
+        // todo: this can be optimized by adding a fn that checks if there are
+        // any fills beyond the deleted column
+
+        if self.formats.has_fills() {
+            transaction.add_fill_cells(self.id);
+        }
+
         // remove the row's formats from the sheet
         self.formats.remove_row(row);
-        transaction.add_fill_cells(self.id);
 
         // remove the row's borders from the sheet
         self.borders.remove_row(row);
@@ -358,12 +364,12 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, DEFAULT_ROW_HEIGHT,
         controller::execution::TransactionSource,
         grid::{
-            sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
             CellWrap,
+            sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
         },
-        CellValue, DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;

@@ -1,5 +1,5 @@
-use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 use crate::Pos;
+use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 
 use super::{A1Selection, CellRefRange};
 
@@ -28,7 +28,7 @@ impl A1Selection {
                 } else {
                     match range {
                         CellRefRange::Table { .. } => (),
-                        CellRefRange::Sheet { mut range } => {
+                        &CellRefRange::Sheet { mut range } => {
                             if range.start.col() == range.end.col() {
                                 // if the range is a single column, then we
                                 // should do nothing to remove the range
@@ -134,7 +134,7 @@ impl A1Selection {
                 } else {
                     match range {
                         CellRefRange::Table { .. } => (),
-                        CellRefRange::Sheet { mut range } => {
+                        &CellRefRange::Sheet { mut range } => {
                             if range.start.row() == range.end.row() {
                                 // if the range is a single row, then we
                                 // should do nothing to remove the range
@@ -417,7 +417,9 @@ impl A1Selection {
                             range: range_converted,
                         };
                     } else {
-                        dbgjs!("Could not convert table range to ref range bounds in A1Selection::select_to");
+                        dbgjs!(
+                            "Could not convert table range to ref range bounds in A1Selection::select_to"
+                        );
                         return;
                     }
                     if !append {
@@ -496,7 +498,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::SheetId, Rect};
+    use crate::{Rect, grid::SheetId};
 
     use super::*;
 

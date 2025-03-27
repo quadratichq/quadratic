@@ -5,7 +5,7 @@
 use crate::error::{ErrorLevel, MpError};
 use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use dashmap::DashMap;
 use quadratic_core::controller::transaction::TransactionServer;
 use serde::{Deserialize, Serialize};

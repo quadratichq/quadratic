@@ -7,16 +7,17 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -177,11 +178,9 @@ export function HoverCell() {
 
     pixiApp.viewport.on('moved', remove);
     pixiApp.viewport.on('zoomed', remove);
-    // events.on('cursorPosition', remove);
     return () => {
       pixiApp.viewport.off('moved', remove);
       pixiApp.viewport.off('zoomed', remove);
-      // events.off('cursorPosition', remove);
     };
   }, [hideHoverCell]);
 
@@ -248,9 +247,14 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
           size="sm"
           variant="destructive"
           onClick={() => {
-            submitPrompt({ userPrompt: 'Fix the error in the code cell', clearMessages: true, codeCell }).catch(
-              console.error
-            );
+            mixpanel.track('[HoverCell].fixWithAI', {
+              language: codeCellCore.language,
+            });
+            submitPrompt({
+              content: [{ type: 'text', text: 'Fix the error in the code cell' }],
+              clearMessages: true,
+              codeCell,
+            }).catch(console.error);
             onClick();
           }}
           disabled={loading}

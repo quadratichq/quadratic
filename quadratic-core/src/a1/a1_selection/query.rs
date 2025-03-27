@@ -1,9 +1,9 @@
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
 
 use crate::{
-    a1::{A1Context, ColRange, RefRangeBounds},
-    grid::Sheet,
     Pos, Rect, SheetPos,
+    a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
+    grid::Sheet,
 };
 
 use super::{A1Selection, CellRefRange};
@@ -32,7 +32,10 @@ impl A1Selection {
             .any(|range| range.is_col_range() || range.is_row_range())
     }
 
-    /// Returns whether the first range is a column range.
+    // range has multiple columns
+    /// Returns whether the first range has multiple columns
+    /// todo (DSF): this is a bit of a weird function; probably worth more
+    /// thought on its utility)
     pub fn is_col_range(&self) -> bool {
         self.ranges
             .first()
@@ -216,6 +219,16 @@ impl A1Selection {
         self.ranges.contains(&CellRefRange::ALL)
     }
 
+    /// Returns true if the selection includes the entire column.
+    pub fn is_entire_column_selected(&self, column: i64) -> bool {
+        self.ranges.iter().any(|range| range.has_col_range(column))
+    }
+
+    /// Returns true if the selection includes the entire row.
+    pub fn is_entire_row_selected(&self, row: i64) -> bool {
+        self.ranges.iter().any(|range| range.has_row_range(row))
+    }
+
     /// Returns true if all the selected columns are finite.
     pub fn is_selected_columns_finite(&self, context: &A1Context) -> bool {
         self.ranges
@@ -229,7 +242,11 @@ impl A1Selection {
         self.ranges.iter().for_each(|range| {
             columns.extend(range.selected_columns_finite(context));
         });
-        columns.into_iter().collect::<Vec<_>>()
+
+        // sort added for testing purposes
+        let mut c = columns.into_iter().collect::<Vec<_>>();
+        c.sort_unstable();
+        c
     }
 
     /// Returns the selected column ranges as a list of [start, end] pairs between two coordinates.
@@ -281,7 +298,11 @@ impl A1Selection {
         self.ranges.iter().for_each(|range| {
             rows.extend(range.selected_rows_finite(context));
         });
-        rows.into_iter().collect::<Vec<_>>()
+
+        // sort added for testing purposes
+        let mut r = rows.into_iter().collect::<Vec<_>>();
+        r.sort_unstable();
+        r
     }
 
     /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
@@ -491,6 +512,53 @@ impl A1Selection {
             }
         }
         None
+    }
+
+    /// If range is a single, contiguous column(s) selection, then it returns
+    /// the [start] or [start, end].
+    pub fn contiguous_columns(&self) -> Option<Vec<u32>> {
+        if self.ranges.len() != 1 {
+            return None;
+        }
+        let Some(CellRefRange::Sheet { range }) = self.ranges.first() else {
+            return None;
+        };
+
+        // we expect a contiguous column range
+        if range.start.row() != 1 || range.end.row() != UNBOUNDED {
+            return None;
+        }
+        let start = range.start.col();
+        let end = range.end.col();
+        match start.cmp(&end) {
+            Ordering::Equal => Some(vec![start as u32]),
+            Ordering::Less => Some(vec![start as u32, end as u32]),
+            Ordering::Greater => Some(vec![end as u32, start as u32]),
+        }
+    }
+
+    /// If range is a single, contiguous column(s) selection, then it returns
+    /// the [start] or [start, end].
+    pub fn contiguous_rows(&self) -> Option<Vec<u32>> {
+        if self.ranges.len() != 1 {
+            return None;
+        }
+        let Some(CellRefRange::Sheet { range }) = self.ranges.first() else {
+            return None;
+        };
+
+        // we expect a contiguous row range
+        if range.start.col() != 1 || range.end.col() != UNBOUNDED {
+            return None;
+        }
+
+        let start = range.start.row();
+        let end = range.end.row();
+        match start.cmp(&end) {
+            Ordering::Equal => Some(vec![start as u32]),
+            Ordering::Less => Some(vec![start as u32, end as u32]),
+            Ordering::Greater => Some(vec![end as u32, start as u32]),
+        }
     }
 }
 
@@ -859,20 +927,30 @@ mod tests {
         assert!(!A1Selection::test_a1("E3").cursor_is_on_html_image(&context));
 
         // Test with wrong sheet_id
-        assert!(!A1Selection::test_a1_context("'Sheet 2'!B2", &context)
-            .cursor_is_on_html_image(&context));
+        assert!(
+            !A1Selection::test_a1_context("'Sheet 2'!B2", &context)
+                .cursor_is_on_html_image(&context)
+        );
     }
 
     #[test]
     fn test_has_table_headers() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers(&context, false));
-        assert!(A1Selection::test_a1_context("Table1[#ALL]", &context)
-            .has_table_headers(&context, false));
-        assert!(A1Selection::test_a1_context("Table1[#headers]", &context)
-            .has_table_headers(&context, false));
-        assert!(A1Selection::test_a1_context("Table1[#all]", &context)
-            .has_table_headers(&context, false));
+        assert!(
+            A1Selection::test_a1_context("Table1", &context).has_table_headers(&context, false)
+        );
+        assert!(
+            A1Selection::test_a1_context("Table1[#ALL]", &context)
+                .has_table_headers(&context, false)
+        );
+        assert!(
+            A1Selection::test_a1_context("Table1[#headers]", &context)
+                .has_table_headers(&context, false)
+        );
+        assert!(
+            A1Selection::test_a1_context("Table1[#all]", &context)
+                .has_table_headers(&context, false)
+        );
     }
 
     #[test]
@@ -1044,6 +1122,54 @@ mod tests {
     }
 
     #[test]
+    fn test_is_entire_column_selected() {
+        // Test explicit column selection
+        assert!(A1Selection::test_a1("A").is_entire_column_selected(1));
+        assert!(!A1Selection::test_a1("A").is_entire_column_selected(2));
+
+        // Test range of columns
+        assert!(A1Selection::test_a1("A:C").is_entire_column_selected(2));
+        assert!(!A1Selection::test_a1("A:C").is_entire_column_selected(4));
+
+        // Test with cell selections (should be false)
+        assert!(!A1Selection::test_a1("A1").is_entire_column_selected(1));
+        assert!(!A1Selection::test_a1("A1:A5").is_entire_column_selected(1));
+
+        // Test with multiple ranges
+        assert!(A1Selection::test_a1("A,C:E").is_entire_column_selected(1));
+        assert!(A1Selection::test_a1("A,C:E").is_entire_column_selected(4));
+        assert!(!A1Selection::test_a1("A,C:E").is_entire_column_selected(6));
+
+        // Test with all cells selected
+        assert!(A1Selection::test_a1("*").is_entire_column_selected(1));
+        assert!(A1Selection::test_a1("*").is_entire_column_selected(100));
+    }
+
+    #[test]
+    fn test_is_entire_row_selected() {
+        // Test explicit row selection
+        assert!(A1Selection::test_a1("1").is_entire_row_selected(1));
+        assert!(!A1Selection::test_a1("1").is_entire_row_selected(2));
+
+        // Test range of rows
+        assert!(A1Selection::test_a1("1:3").is_entire_row_selected(2));
+        assert!(!A1Selection::test_a1("1:3").is_entire_row_selected(4));
+
+        // Test with cell selections (should be false)
+        assert!(!A1Selection::test_a1("A1").is_entire_row_selected(1));
+        assert!(!A1Selection::test_a1("A1:E1").is_entire_row_selected(1));
+
+        // Test with multiple ranges
+        assert!(A1Selection::test_a1("1,3:5").is_entire_row_selected(1));
+        assert!(A1Selection::test_a1("1,3:5").is_entire_row_selected(4));
+        assert!(!A1Selection::test_a1("1,3:5").is_entire_row_selected(6));
+
+        // Test with all cells selected
+        assert!(A1Selection::test_a1("*").is_entire_row_selected(1));
+        assert!(A1Selection::test_a1("*").is_entire_row_selected(100));
+    }
+
+    #[test]
     fn test_single_rect() {
         let context = A1Context::default();
 
@@ -1094,5 +1220,163 @@ mod tests {
             Some(Rect::new(2, 2, 4, 5)),
             "Larger single range should return correct rect"
         );
+    }
+
+    #[test]
+    fn test_contiguous_columns() {
+        // Test single column selection
+        let selection = A1Selection::test_a1("A");
+        assert_eq!(selection.contiguous_columns(), Some(vec![1]));
+
+        // Test column range selection
+        let selection = A1Selection::test_a1("A:C");
+        assert_eq!(selection.contiguous_columns(), Some(vec![1, 3]));
+
+        // Test reverse column range
+        let selection = A1Selection::test_a1("C:A");
+        assert_eq!(selection.contiguous_columns(), Some(vec![1, 3]));
+
+        // Test non-contiguous columns
+        let selection = A1Selection::test_a1("A,C");
+        assert_eq!(selection.contiguous_columns(), None);
+
+        // Test cell selection (not a column)
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.contiguous_columns(), None);
+
+        // Test cell range (not a column)
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.contiguous_columns(), None);
+
+        // Test row selection (not a column)
+        let selection = A1Selection::test_a1("1:3");
+        assert_eq!(selection.contiguous_columns(), None);
+    }
+
+    #[test]
+    fn test_contiguous_rows() {
+        // Test single row selection
+        let selection = A1Selection::test_a1("1");
+        assert_eq!(selection.contiguous_rows(), Some(vec![1]));
+
+        // Test row range selection
+        let selection = A1Selection::test_a1("1:3");
+        assert_eq!(selection.contiguous_rows(), Some(vec![1, 3]));
+
+        // Test reverse row range
+        let selection = A1Selection::test_a1("3:1");
+        assert_eq!(selection.contiguous_rows(), Some(vec![1, 3]));
+
+        // Test non-contiguous rows
+        let selection = A1Selection::test_a1("1,3");
+        assert_eq!(selection.contiguous_rows(), None);
+
+        // Test cell selection (not a row)
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.contiguous_rows(), None);
+
+        // Test cell range (not a row)
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.contiguous_rows(), None);
+
+        // Test column selection (not a row)
+        let selection = A1Selection::test_a1("A:C");
+        assert_eq!(selection.contiguous_rows(), None);
+    }
+
+    #[test]
+    fn test_rects_to_hashes() {
+        let context = A1Context::default();
+        let sheet = Sheet::test();
+
+        // Test single cell
+        let selection = A1Selection::test_a1("A1");
+        let hashes = selection.rects_to_hashes(&sheet, &context);
+        assert_eq!(hashes.len(), 1);
+        assert!(hashes.contains(&Pos { x: 0, y: 0 }));
+
+        // Test range
+        let selection = A1Selection::test_a1("A1:B2");
+        let hashes = selection.rects_to_hashes(&sheet, &context);
+        assert_eq!(hashes.len(), 1);
+        assert!(hashes.contains(&Pos { x: 0, y: 0 }));
+
+        // Test multiple ranges
+        let selection = A1Selection::test_a1("A1,Q31");
+        let hashes = selection.rects_to_hashes(&sheet, &context);
+        assert_eq!(hashes.len(), 2);
+        assert!(hashes.contains(&Pos { x: 0, y: 0 }));
+        assert!(hashes.contains(&Pos { x: 1, y: 1 }));
+    }
+
+    #[test]
+    fn test_is_col_range() {
+        // Test single column
+        assert!(A1Selection::test_a1("A").is_col_range());
+
+        // Test column range
+        assert!(A1Selection::test_a1("A:C").is_col_range());
+
+        // Test cell selection (not a column range)
+        assert!(!A1Selection::test_a1("A1").is_col_range());
+
+        // Test row selection (not a column range)
+        assert!(!A1Selection::test_a1("1").is_col_range());
+
+        // Test row selection (is a column range because multiple columns are selected)
+        assert!(A1Selection::test_a1("1:3").is_col_range());
+
+        // Test cell range (is a column range because multiple columns are selected)
+        assert!(A1Selection::test_a1("A1:C3").is_col_range());
+    }
+
+    #[test]
+    fn test_selected_columns_finite() {
+        let context = A1Context::default();
+
+        // Test single column
+        let selection = A1Selection::test_a1("A");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1]);
+
+        // Test column range
+        let selection = A1Selection::test_a1("A:C");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1, 2, 3]);
+
+        // Test multiple columns
+        let selection = A1Selection::test_a1("A,C,E");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1, 3, 5]);
+
+        // Test cell selection
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1]);
+
+        // Test cell range
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_selected_rows_finite() {
+        let context = A1Context::default();
+
+        // Test single row
+        let selection = A1Selection::test_a1("1");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1]);
+
+        // Test row range
+        let selection = A1Selection::test_a1("1:3");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1, 2, 3]);
+
+        // Test multiple rows
+        let selection = A1Selection::test_a1("1,3,5");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1, 3, 5]);
+
+        // Test cell selection
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1]);
+
+        // Test cell range
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1, 2, 3]);
     }
 }

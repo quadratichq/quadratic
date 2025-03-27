@@ -47,20 +47,20 @@ impl ColRange {
     pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
         match self {
             ColRange::Col(col) => {
-                if col == old_name {
+                if col.eq_ignore_ascii_case(old_name) {
                     *col = new_name.to_string();
                 }
             }
             ColRange::ColRange(col1, col2) => {
-                if col1 == old_name {
+                if col1.eq_ignore_ascii_case(old_name) {
                     *col1 = new_name.to_string();
                 }
-                if col2 == old_name {
+                if col2.eq_ignore_ascii_case(old_name) {
                     *col2 = new_name.to_string();
                 }
             }
             ColRange::ColToEnd(col) => {
-                if col == old_name {
+                if col.eq_ignore_ascii_case(old_name) {
                     *col = new_name.to_string();
                 }
             }
@@ -84,7 +84,7 @@ impl fmt::Display for ColRange {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::CodeCellLanguage, Rect};
+    use crate::{Rect, grid::CodeCellLanguage};
 
     use super::*;
 

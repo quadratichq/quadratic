@@ -12,18 +12,26 @@ export const useGetChatName = () => {
 
   const getChatName = useRecoilCallback(
     ({ snapshot }) =>
-      async () => {
+      async (): Promise<string> => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
-        const chatPromptMessages = getPromptMessages(chatMessages);
+        const chatPromptMessages = getPromptMessages(chatMessages).map((message) => ({
+          ...message,
+          content: message.content.filter((content) => !('type' in content) || content.type !== 'data'),
+        }));
         const messages: ChatMessage[] = [
           {
             role: 'user',
-            content: `Use set_chat_name tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
+            content: [
+              {
+                type: 'text',
+                text: `Use set_chat_name tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
 \`\`\`json
 ${JSON.stringify(chatPromptMessages)}
 \`\`\`
 `,
+              },
+            ],
             contextType: 'userPrompt',
           },
         ];

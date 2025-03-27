@@ -1,14 +1,14 @@
 import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
-import { type TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { sharedEvents } from '@/shared/sharedEvents';
 import type { Point } from 'pixi.js';
-import { BitmapText, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Assets, BitmapText, Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
 export const TABLE_NAME_FONT_SIZE = 14;
 export const TABLE_NAME_PADDING = [4, 2];
@@ -36,7 +36,8 @@ export class TableName extends Container {
     this.background = this.addChild(new Graphics());
     this.text = this.addChild(new BitmapText('', { fontSize: TABLE_NAME_FONT_SIZE, fontName: 'OpenSans-Bold' }));
     this.symbol = this.addChild(new Sprite());
-    this.dropdown = this.addChild(new Sprite(Texture.from('/images/dropdown-white.png')));
+    const dropdownWhiteIconTexture = Assets.get('dropdown-white-icon');
+    this.dropdown = this.addChild(new Sprite(dropdownWhiteIconTexture));
     this.dropdown.anchor.set(0.5, 0);
     this.dropdown.width = DROPDOWN_SIZE[0];
     this.dropdown.height = DROPDOWN_SIZE[1];
