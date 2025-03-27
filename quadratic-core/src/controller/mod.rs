@@ -5,6 +5,7 @@ use crate::{
     Pos,
     a1::{A1Context, TableMapEntry},
     grid::{Grid, SheetId},
+    util::case_fold_ascii,
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
@@ -129,9 +130,10 @@ impl GridController {
                 };
 
                 if let Some(language) = sheet.get_table_language(*pos, table) {
+                    let table_name = case_fold_ascii(table.name());
                     let table_map_entry =
                         TableMapEntry::from_table(*sheet_id, *pos, table, language);
-                    to_insert.push(table_map_entry);
+                    to_insert.push((table_name, table_map_entry));
                 }
             }
 
@@ -142,8 +144,10 @@ impl GridController {
                     .retain(|_, table| table.sheet_id != *sheet_id || table.bounds.min != pos);
             }
 
-            for table_map_entry in to_insert.into_iter() {
-                self.a1_context.table_map.insert(table_map_entry);
+            for (table_name, table_map_entry) in to_insert.into_iter() {
+                self.a1_context
+                    .table_map
+                    .insert_with_key(table_name, table_map_entry);
             }
         }
     }

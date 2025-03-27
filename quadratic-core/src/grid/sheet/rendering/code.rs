@@ -102,7 +102,7 @@ impl Sheet {
             language,
             state,
             spill_error,
-            name: data_table.name.to_display(),
+            name: data_table.name().to_string(),
             columns: data_table.send_columns(),
             first_row_header: data_table.header_is_first_row,
             show_ui: data_table.show_ui,

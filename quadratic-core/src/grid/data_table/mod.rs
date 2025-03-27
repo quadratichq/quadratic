@@ -304,6 +304,13 @@ impl DataTable {
         self
     }
 
+    pub fn name(&self) -> &str {
+        match &self.name {
+            CellValue::Text(s) => s,
+            _ => "",
+        }
+    }
+
     /// Validates the table name. SheetPos is provided to allow the table to be
     /// renamed to itself (eg, with different casing).
     ///

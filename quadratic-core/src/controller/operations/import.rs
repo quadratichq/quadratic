@@ -239,7 +239,7 @@ impl GridController {
     /// Imports an Excel file into the grid.
     pub fn import_excel_operations(
         &mut self,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
@@ -393,12 +393,14 @@ impl GridController {
                 }
                 current_y_formula += 1;
             }
+
             // add new sheets
             ops.push(Operation::AddSheetSchema {
                 schema: Box::new(export_sheet(sheet)),
             });
             ops.extend(formula_compute_ops);
         }
+
         Ok(ops)
     }
 
@@ -711,7 +713,7 @@ mod test {
     fn import_excel() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.to_vec(), "simple.xlsx", None).unwrap();
+        gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -739,7 +741,7 @@ mod test {
     fn import_excel_invalid() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");
-        let result = gc.import_excel(file.to_vec(), "invalid.xlsx", None);
+        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None);
         assert!(result.is_err());
     }
 
@@ -829,7 +831,7 @@ mod test {
     fn import_excel_date_time() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/date_time.xlsx");
-        gc.import_excel(file.to_vec(), "excel", None).unwrap();
+        gc.import_excel(file.as_ref(), "excel", None).unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);

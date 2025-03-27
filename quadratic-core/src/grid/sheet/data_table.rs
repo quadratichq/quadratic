@@ -40,7 +40,7 @@ impl Sheet {
     pub fn data_table_by_name(&self, name: String) -> Option<(&Pos, &DataTable)> {
         self.data_tables
             .iter()
-            .find(|(_, data_table)| data_table.name.to_display() == name)
+            .find(|(_, data_table)| *data_table.name() == name)
     }
 
     /// Returns a DataTable at a Pos as a result

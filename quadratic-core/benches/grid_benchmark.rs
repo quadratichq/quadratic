@@ -1,15 +1,19 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 use quadratic_core::a1::A1Context;
+
+use std::time::Duration;
+
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
 use quadratic_core::{Pos, Rect, SheetRect, a1::A1Selection};
-use std::time::Duration;
+use quadratic_rust_shared::test::benchmark::benchmark;
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
+#[allow(unused)]
 fn criterion_benchmark(c: &mut Criterion) {
     let airports = quadratic_core::grid::file::import(
         include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid")
@@ -372,17 +376,15 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-fn benchmark_grids(
+#[allow(unused)]
+pub fn benchmark_grids(
     c: &mut Criterion,
     inputs: &[(&str, Grid)],
     group_name: impl Into<String>,
     f: impl Fn(&mut Bencher<'_>, &Grid),
 ) {
-    let mut group = c.benchmark_group(group_name);
-    group.measurement_time(Duration::new(5, 0));
-    group.sample_size(10);
-    for (id, grid) in inputs {
-        group.bench_with_input(*id, grid, &f);
-    }
-    group.finish()
+    let measurement_time = Some(Duration::new(5, 0));
+    let sample_size = Some(10);
+
+    benchmark(c, inputs, group_name, measurement_time, sample_size, f);
 }

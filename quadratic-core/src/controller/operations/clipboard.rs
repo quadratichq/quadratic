@@ -328,7 +328,7 @@ impl GridController {
 
                 if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
                     if matches!(clipboard_operation, ClipboardOperation::Copy) {
-                        let old_name = data_table.name.to_display();
+                        let old_name = data_table.name().to_string();
                         let new_name =
                             unique_data_table_name(&old_name, false, None, self.a1_context());
 
