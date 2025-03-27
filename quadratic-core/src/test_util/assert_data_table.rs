@@ -43,8 +43,8 @@ pub fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) 
 
 /// Run an assertion that the size of a data table is equal to the given width
 /// and height. Also works with charts.
-#[track_caller]
 #[cfg(test)]
+#[track_caller]
 pub fn assert_data_table_size(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -54,9 +54,9 @@ pub fn assert_data_table_size(
     include_ui: bool,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let data_table = sheet
-        .data_table(pos)
-        .unwrap_or_else(|| panic!("Data table at {} not found", pos));
+    let Some(data_table) = sheet.data_table(pos) else {
+        panic!("Data table at {} not found", pos);
+    };
 
     if data_table.is_html_or_image() {
         assert_eq!(
@@ -101,14 +101,14 @@ pub fn assert_data_table_size(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::test_create_data_table;
+    use crate::test_util::test_create_data_table_with_values;
 
     use super::*;
     #[test]
     fn test_assert_data_table_size() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn test_assert_data_table_at() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table(
+        let dt = test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -142,7 +142,7 @@ mod tests {
     #[should_panic(expected = "Cell at (0, 0) does not have the value")]
     fn test_assert_data_table_cell_value_failure() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table(
+        let dt = test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn test_assert_data_table_row() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table(
+        let dt = test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn test_assert_data_table_column() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table(
+        let dt = test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -190,7 +190,7 @@ mod tests {
     #[should_panic(expected = "Cell at (0, 2) does not have the value")]
     fn test_assert_data_table_row_failure() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table(
+        let dt = test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -208,7 +208,7 @@ mod tests {
     )]
     fn test_assert_data_table_column_failure() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table(
+        let dt = test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],

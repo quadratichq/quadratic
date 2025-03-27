@@ -229,8 +229,6 @@ impl Sheet {
         }
 
         transaction.reverse_operations.extend(reverse_operations);
-
-        dbgjs!(&transaction.reverse_operations);
     }
 }
 
@@ -241,7 +239,8 @@ mod tests {
         controller::GridController,
         grid::{SheetId, sort::SortDirection},
         test_util::{
-            assert_data_table_size, first_sheet, test_create_data_table, test_create_js_chart,
+            assert_data_table_size, first_sheet, test_create_data_table_with_values,
+            test_create_js_chart,
         },
     };
 
@@ -251,8 +250,22 @@ mod tests {
     fn test_check_delete_tables_columns_outside_table_range() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
-        test_create_data_table(&mut gc, SheetId::TEST, pos![B10], 3, 1, &["D", "E", "F"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            3,
+            1,
+            &["A", "B", "C"],
+        );
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![B10],
+            3,
+            1,
+            &["D", "E", "F"],
+        );
 
         // Delete columns outside data table range
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
@@ -272,7 +285,14 @@ mod tests {
     fn test_check_delete_tables_columns_middle_column() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            3,
+            1,
+            &["A", "B", "C"],
+        );
 
         // Delete middle column for A1
         let sheet = gc.sheet_mut(SheetId::TEST);
@@ -285,7 +305,14 @@ mod tests {
     fn test_check_delete_tables_columns_anchor_column() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            3,
+            1,
+            &["A", "B", "C"],
+        );
 
         // Delete anchor column (first column)
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
@@ -309,7 +336,14 @@ mod tests {
     fn test_check_delete_tables_columns_readonly_table() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            3,
+            1,
+            &["A", "B", "C"],
+        );
 
         // Test 4: Readonly table should not be modified
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
@@ -323,7 +357,14 @@ mod tests {
     #[test]
     fn test_delete_first_column_with_entire_data_table() {
         let mut gc = GridController::test();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 1, 3, &["A", "B", "C"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            1,
+            3,
+            &["A", "B", "C"],
+        );
 
         // Delete first column
         gc.delete_columns(SheetId::TEST, vec![1], None);
@@ -334,7 +375,7 @@ mod tests {
     #[test]
     fn test_delete_first_column_and_shift_data_table() {
         let mut gc = GridController::test();
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -355,7 +396,7 @@ mod tests {
     #[test]
     fn test_delete_multiple_columns_including_anchor_column() {
         let mut gc = GridController::test();
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -378,8 +419,22 @@ mod tests {
     #[test]
     fn test_delete_multiple_tables_with_overlapping_columns() {
         let mut gc = GridController::test();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
-        test_create_data_table(&mut gc, SheetId::TEST, pos![B10], 3, 1, &["D", "E", "F"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            3,
+            1,
+            &["A", "B", "C"],
+        );
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![B10],
+            3,
+            1,
+            &["D", "E", "F"],
+        );
 
         // Delete columns that overlap with both tables
         gc.delete_columns(SheetId::TEST, vec![2, 3], None);
@@ -397,7 +452,7 @@ mod tests {
     #[test]
     fn test_delete_entire_table() {
         let mut gc = GridController::test();
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             SheetId::TEST,
             pos![A1],
@@ -423,8 +478,8 @@ mod tests {
     fn test_delete_multiple_entire_tables() {
         let mut gc = GridController::test();
         // Create two tables
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 2, 1, &["A", "B"]);
-        test_create_data_table(&mut gc, SheetId::TEST, pos![D1], 2, 1, &["C", "D"]);
+        test_create_data_table_with_values(&mut gc, SheetId::TEST, pos![A1], 2, 1, &["A", "B"]);
+        test_create_data_table_with_values(&mut gc, SheetId::TEST, pos![D1], 2, 1, &["C", "D"]);
 
         // Delete all columns containing both tables
         gc.delete_columns(SheetId::TEST, vec![1, 2, 4, 5], None);
@@ -443,7 +498,7 @@ mod tests {
     #[test]
     fn test_delete_entire_table_with_extra_columns() {
         let mut gc = GridController::test();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![B1], 2, 1, &["A", "B"]);
+        test_create_data_table_with_values(&mut gc, SheetId::TEST, pos![B1], 2, 1, &["A", "B"]);
 
         // Delete more columns than the table occupies
         gc.delete_columns(SheetId::TEST, vec![1, 2, 3, 4], None);
@@ -464,7 +519,14 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         // Create a data table and sort the first column
-        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            3,
+            1,
+            &["A", "B", "C"],
+        );
         let sheet = gc.sheet_mut(SheetId::TEST);
         let data_table = sheet.data_table_mut(pos![A1]).unwrap();
         data_table.sort_column(0, SortDirection::Ascending).unwrap();

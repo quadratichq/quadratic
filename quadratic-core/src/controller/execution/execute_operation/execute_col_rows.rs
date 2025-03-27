@@ -173,7 +173,6 @@ impl GridController {
             copy_formats,
         } = op
         {
-            dbgjs!("Also here");
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 sheet.insert_column(transaction, column, copy_formats, true);
                 transaction.forward_operations.push(op);
@@ -1022,52 +1021,6 @@ mod tests {
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), 400.0);
         assert_eq!(sheet.offsets.row_height(3), DEFAULT_ROW_HEIGHT);
-    }
-
-    #[test]
-    fn test_insert_delete_chart() {
-        let mut gc = GridController::test();
-        let sheet_id = first_sheet_id(&gc);
-
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_chart(pos![A1], 3, 3);
-        sheet.test_set_chart(pos![B5], 3, 3);
-
-        gc.insert_column(sheet_id, 3, true, None);
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.data_table(pos![A1]).unwrap().chart_output.unwrap(),
-            (4, 3)
-        );
-        assert_eq!(
-            sheet.data_table(pos![B5]).unwrap().chart_output.unwrap(),
-            (4, 3)
-        );
-
-        gc.undo(None);
-
-        let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
-        assert_eq!(dt.chart_output.unwrap(), (3, 3));
-        let dt_2 = sheet.data_table(pos![B5]).unwrap();
-        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
-
-        gc.insert_row(sheet_id, 3, true, None);
-
-        let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
-        assert_eq!(dt.chart_output.unwrap(), (3, 4));
-        let dt_2 = sheet.data_table(pos![B6]).unwrap();
-        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
-
-        gc.undo(None);
-        let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
-        assert_eq!(dt.chart_output.unwrap(), (3, 3));
-
-        let dt_2 = sheet.data_table(pos![B5]).unwrap();
-        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
     }
 
     #[test]

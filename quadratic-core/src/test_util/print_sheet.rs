@@ -13,14 +13,10 @@ use tabled::{
     settings::{Modify, Style},
 };
 
-/// Util to print the entire sheet from the gc
-#[track_caller]
+/// Util to print the first sheet
 pub fn print_first_sheet(gc: &GridController) {
-    if let Some(sheet) = gc.try_sheet(gc.sheet_ids()[0]) {
-        print_sheet(sheet);
-    } else {
-        println!("Sheet not found");
-    }
+    let sheet = gc.try_sheet(gc.sheet_ids()[0]).unwrap();
+    print_sheet(&sheet);
 }
 
 /// Util to print the entire sheet
@@ -132,5 +128,5 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
         table.with(Colorization::exact([color], (*x, *y)));
     });
 
-    println!("\nsheet: {}\n{}", sheet.id, table);
+    println!("\n{}\n{}", sheet.name, table);
 }

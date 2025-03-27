@@ -20,7 +20,6 @@ impl GridController {
         after: bool,
         cursor: Option<String>,
     ) {
-        dbgjs!("HERE?!");
         let ops = vec![Operation::InsertColumn {
             sheet_id,
             column,

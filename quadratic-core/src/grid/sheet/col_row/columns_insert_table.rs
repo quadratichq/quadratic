@@ -1,5 +1,5 @@
 use crate::{
-    Pos,
+    CopyFormats, Pos,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -13,6 +13,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
+        _copy_formats: CopyFormats,
     ) {
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
             if (!dt.readonly || dt.is_html_or_image())
@@ -33,14 +34,13 @@ impl Sheet {
                             });
                     }
                 } else {
+                    let column = column - pos.x;
                     // the table overlaps the inserted column
-
-                    let table_column = (column - pos.x) as u32;
-                    let display_index = dt.get_column_index_from_display_index(table_column, true);
+                    let display_index = dt.get_column_index_from_display_index(column as u32, true);
 
                     // add reverse ops for formats and borders, if necessary
                     // (note, formats and borders are 1-indexed)
-                    if let Some(reverse_formats) = dt.formats.copy_column(table_column as i64 + 1) {
+                    if let Some(reverse_formats) = dt.formats.copy_column(column as i64) {
                         if !reverse_formats.is_default() {
                             if reverse_formats.has_fills() {
                                 transaction.add_fill_cells(self.id);
@@ -53,7 +53,7 @@ impl Sheet {
                                 });
                         }
                     }
-                    if let Some(reverse_borders) = dt.borders.copy_column(table_column as i64 + 1) {
+                    if let Some(reverse_borders) = dt.borders.copy_column(column) {
                         if !reverse_borders.is_empty() {
                             transaction.add_borders(self.id);
                             transaction
@@ -77,19 +77,23 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
+        copy_formats: CopyFormats,
         send_client: bool,
     ) {
         // update the indices of all data_tables impacted by the insertion
-        let mut data_tables_to_move = Vec::new();
+        let mut data_tables_to_move_right = Vec::new();
+        let mut anchor_cells_to_move_left = Vec::new();
         for (pos, _) in self.data_tables.iter() {
-            if pos.x >= column {
-                data_tables_to_move.push(*pos);
+            if pos.x > column {
+                data_tables_to_move_right.push(*pos);
+            } else if copy_formats == CopyFormats::Before && pos.x == column {
+                anchor_cells_to_move_left.push(*pos);
             }
         }
-        data_tables_to_move.sort_by(|a, b| b.x.cmp(&a.x));
-        for old_pos in data_tables_to_move {
+        data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
+        for old_pos in data_tables_to_move_right {
             let new_pos = Pos {
-                x: old_pos.x + 1,
+                x: old_pos.x,
                 y: old_pos.y,
             };
             if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
@@ -111,5 +115,96 @@ impl Sheet {
                 transaction.add_code_cell(self.id, new_pos);
             }
         }
+
+        // move anchor cells (CellValue::Import) that were moved right by the
+        // insertion back one cell (this is an edge case for inserting a column
+        // to the left in the first column of a table)
+        for pos in anchor_cells_to_move_left {
+            self.move_cell_value(
+                Pos {
+                    x: pos.x + 1,
+                    y: pos.y,
+                },
+                Pos { x: pos.x, y: pos.y },
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        controller::GridController,
+        test_util::{
+            assert_data_table_size, assert_display_cell_value, first_sheet_id,
+            test_create_data_table,
+        },
+    };
+
+    #[test]
+    fn test_insert_column_front_table() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
+
+        gc.insert_column(sheet_id, 2, true, None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
+        assert_display_cell_value(&gc, sheet_id, 3, 4, "");
+
+        gc.insert_column(sheet_id, 2, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 5, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_delete_chart_columns() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        test_create_data_table(&mut gc, sheet_id, pos![B5], 3, 3);
+
+        gc.insert_column(sheet_id, 3, true, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.data_table(pos![A1]).unwrap().chart_output.unwrap(),
+            (4, 3)
+        );
+        assert_eq!(
+            sheet.data_table(pos![B5]).unwrap().chart_output.unwrap(),
+            (4, 3)
+        );
+
+        gc.undo(None);
+
+        let sheet = gc.sheet(sheet_id);
+        let dt = sheet.data_table(pos![A1]).unwrap();
+        assert_eq!(dt.chart_output.unwrap(), (3, 3));
+        let dt_2 = sheet.data_table(pos![B5]).unwrap();
+        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
+
+        gc.insert_row(sheet_id, 3, true, None);
+
+        let sheet = gc.sheet(sheet_id);
+        let dt = sheet.data_table(pos![A1]).unwrap();
+        assert_eq!(dt.chart_output.unwrap(), (3, 4));
+        let dt_2 = sheet.data_table(pos![B6]).unwrap();
+        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        let dt = sheet.data_table(pos![A1]).unwrap();
+        assert_eq!(dt.chart_output.unwrap(), (3, 3));
+
+        let dt_2 = sheet.data_table(pos![B5]).unwrap();
+        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
     }
 }

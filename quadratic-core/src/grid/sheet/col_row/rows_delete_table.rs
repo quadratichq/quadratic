@@ -219,7 +219,8 @@ mod tests {
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
         test_util::{
-            assert_data_table_size, first_sheet_id, test_create_data_table, test_create_js_chart,
+            assert_data_table_size, first_sheet_id, test_create_data_table_with_values,
+            test_create_js_chart,
         },
     };
 
@@ -261,7 +262,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table that will have UI elements
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             sheet_id,
             pos![A1],
@@ -324,7 +325,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             sheet_id,
             pos![A1],
@@ -353,7 +354,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             sheet_id,
             pos![A1],
@@ -380,7 +381,14 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table and make it readonly
-        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2, &["A", "B", "C", "D"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![A1],
+            2,
+            2,
+            &["A", "B", "C", "D"],
+        );
 
         let sheet = gc.sheet_mut(sheet_id);
         if let Some((_, dt)) = sheet.data_tables.iter_mut().next() {
@@ -404,7 +412,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create two data tables that will be affected by the row deletion
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             sheet_id,
             pos![A1],
@@ -413,7 +421,7 @@ mod tests {
             &["A", "B", "C", "D", "E", "F"],
         );
 
-        test_create_data_table(
+        test_create_data_table_with_values(
             &mut gc,
             sheet_id,
             pos![D2],

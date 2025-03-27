@@ -159,7 +159,7 @@ pub fn print_data_table_locations(gc: &GridController, sheet_id: SheetId) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::test_create_data_table;
+    use crate::test_util::test_create_data_table_with_values;
 
     #[test]
     fn print_table_sheet_format() {
@@ -186,8 +186,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create two data tables using the test utility
-        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2, &["A", "B", "C", "D"]);
-        test_create_data_table(&mut gc, sheet_id, pos![C3], 1, 3, &["X", "Y", "Z"]);
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![A1], 2, 2, &["A", "B", "C", "D"]);
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![C3], 1, 3, &["X", "Y", "Z"]);
 
         // Test the print function (this will print to console during test)
         print_data_table_locations(&gc, sheet_id);
