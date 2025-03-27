@@ -15,7 +15,8 @@ use super::*;
 use crate::{
     CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
     a1::{A1Context, CellRefRange, RefRangeBounds, SheetCellRefRange},
-    grid::{Grid, RefAdjust, SheetId},
+    controller::GridController,
+    grid::{RefAdjust, SheetId},
 };
 
 /// Parses a formula.
@@ -28,9 +29,9 @@ pub fn parse_formula(source: &str, ctx: &A1Context, pos: SheetPos) -> CodeResult
 /// Calls `parse_formula()` with an empty context at position A1.
 #[cfg(test)]
 pub fn simple_parse_formula(source: &str) -> CodeResult<ast::Formula> {
-    let g = Grid::new();
-    let pos = g.origin_in_first_sheet();
-    parse_formula(source, &g.a1_context(), pos)
+    let grid_controller = GridController::new();
+    let pos = grid_controller.grid().origin_in_first_sheet();
+    parse_formula(source, grid_controller.a1_context(), pos)
 }
 
 fn parse_exactly_one<R: SyntaxRule>(
@@ -84,8 +85,8 @@ pub fn parse_and_check_formula(formula_string: &str, ctx: &A1Context, pos: Sheet
     // do not have the actual Grid when running this formula in RustClient.)
     match parse_formula(formula_string, ctx, pos) {
         Ok(parsed) => {
-            let grid = Grid::new();
-            let mut ctx = Ctx::new_for_syntax_check(&grid);
+            let grid_controller = GridController::new();
+            let mut ctx = Ctx::new_for_syntax_check(&grid_controller);
             parsed.eval(&mut ctx).into_non_error_value().is_ok()
         }
         Err(_) => false,

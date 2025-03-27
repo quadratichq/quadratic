@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::*;
-use crate::{formulas::tests::*, grid::Grid};
+use crate::{controller::GridController, formulas::tests::*};
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
@@ -42,7 +42,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[test]
 fn test_convert_to_cell_value() {
-    let g = Grid::new();
+    let g = GridController::new();
 
     assert_eq!("3", eval_to_string(&g, "_TEST_CELL_VALUE(3)"));
     assert_eq!("", eval_to_string(&g, "_TEST_CELL_VALUE(A1)"));
@@ -66,16 +66,17 @@ fn test_convert_to_cell_value() {
 
 #[test]
 fn test_convert_to_array() {
-    let mut g = Grid::new();
+    let mut g = GridController::new();
 
     assert_eq!("{3}", eval_to_string(&g, "_TEST_ARRAY(3)"));
     assert_eq!("{}", eval_to_string(&g, "_TEST_ARRAY(A1)"));
     assert_eq!("{3}", eval_to_string(&g, "_TEST_ARRAY({3})"));
     assert_eq!("{}", eval_to_string(&g, "_TEST_ARRAY(A1:A1)"));
-    g.sheets_mut()[0].set_cell_value(pos![A2], 0);
-    g.sheets_mut()[0].set_cell_value(pos![A3], 1);
-    g.sheets_mut()[0].set_cell_value(pos![A4], -5);
-    g.sheets_mut()[0].set_cell_value(pos![A5], "hello");
+    let sheet_id = g.sheet_ids()[0];
+    g.sheet_mut(sheet_id).set_cell_value(pos![A2], 0);
+    g.sheet_mut(sheet_id).set_cell_value(pos![A3], 1);
+    g.sheet_mut(sheet_id).set_cell_value(pos![A4], -5);
+    g.sheet_mut(sheet_id).set_cell_value(pos![A5], "hello");
     // This string format is used for testing and potentially display; not as an
     // unambiguous representation, so it's fine that the string is unquoted.
     assert_eq!(
@@ -93,16 +94,17 @@ fn test_convert_to_array() {
 
 #[test]
 fn test_convert_to_tuple() {
-    let mut g = Grid::new();
+    let mut g = GridController::new();
 
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(3)"));
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1)"));
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE({3})"));
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1:A1)"));
-    g.sheets_mut()[0].set_cell_value(pos![A2], 0);
-    g.sheets_mut()[0].set_cell_value(pos![A3], 1);
-    g.sheets_mut()[0].set_cell_value(pos![A4], -5);
-    g.sheets_mut()[0].set_cell_value(pos![A5], "hello");
+    let sheet_id = g.sheet_ids()[0];
+    g.sheet_mut(sheet_id).set_cell_value(pos![A2], 0);
+    g.sheet_mut(sheet_id).set_cell_value(pos![A3], 1);
+    g.sheet_mut(sheet_id).set_cell_value(pos![A4], -5);
+    g.sheet_mut(sheet_id).set_cell_value(pos![A5], "hello");
     // This string format is used for testing and potentially display; not as an
     // unambiguous representation, so it's fine that the string is unquoted.
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1:A10)"));
