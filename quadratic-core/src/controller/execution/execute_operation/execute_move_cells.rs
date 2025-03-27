@@ -60,7 +60,7 @@ mod tests {
             active_transactions::transaction_name::TransactionName,
             user_actions::import::tests::{simple_csv, simple_csv_at},
         },
-        test_util::print_table,
+        test_util::gc::print_table,
     };
 
     use super::*;

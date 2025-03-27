@@ -30,8 +30,8 @@ impl SheetFormatting {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ClearOption, Pos};
     use crate::controller::GridController;
+    use crate::{ClearOption, Pos};
 
     #[test]
     fn test_to_clipboard() {

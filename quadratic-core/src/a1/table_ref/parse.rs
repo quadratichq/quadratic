@@ -27,18 +27,16 @@ impl TableRef {
     /// required because we break non-rectangular regions into multiple
     /// TableRefs, For example: `Table1[[Column 1],[Column 3]]` will become
     /// `Table1[Column 1]` and `Table1[Column 3]`.
-    pub fn parse(s: &str, context: &A1Context) -> Result<TableRef, A1Error> {
+    pub fn parse(s: &str, a1_context: &A1Context) -> Result<TableRef, A1Error> {
         let (table_name, remaining) = Self::parse_table_name(s)?;
-        let Some(table) = context.try_table(&table_name) else {
+        let Some(table) = a1_context.try_table(&table_name) else {
             return Err(A1Error::TableNotFound(table_name.clone()));
         };
-
-        let table_name = table.table_name.clone();
 
         // if it's just the table name, return the entire TableRef
         if remaining.trim().is_empty() {
             return Ok(Self {
-                table_name,
+                table_name: table.table_name.to_owned(),
                 data: true,
                 headers: false,
                 totals: false,
@@ -115,7 +113,7 @@ impl TableRef {
         }
 
         Ok(TableRef {
-            table_name: table_name.clone(),
+            table_name: table.table_name.to_owned(),
             data: data.unwrap_or(true),
             headers,
             totals,
@@ -150,6 +148,7 @@ mod tests {
     #[test]
     fn test_table_name_case_insensitive() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        println!("context: {:?}", context);
         let table_ref = TableRef::parse("table1", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
     }

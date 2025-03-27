@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.6.7"
+version = "0.6.8"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -44,7 +44,7 @@ js = [
 ]
 show-operations = []
 dbgjs = []
-function-timer = []
+function-timer = ["function-timer/enabled"]
 
 [dependencies]
 anyhow = "1.0"
@@ -109,10 +109,13 @@ fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = ["test"] }
+
 [dev-dependencies]
 criterion = { version = "0.5", default-features = false }
-tokio-test = "0.4.3"
 memory-stats = "1.2.0"
+tokio-test = "0.4.3"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
@@ -121,6 +124,11 @@ proptest-derive = "0.5.0"
 [[bench]]
 name = "grid_benchmark"
 harness = false
+
+[[bench]]
+name = "import_excel"
+harness = false
+required-features = ["function-timer"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem
