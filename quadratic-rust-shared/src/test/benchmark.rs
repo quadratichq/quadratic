@@ -4,7 +4,7 @@ use criterion::{Bencher, Criterion};
 use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 
-#[cfg(feature = "test")]
+#[cfg(any(test, feature = "test"))]
 use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
