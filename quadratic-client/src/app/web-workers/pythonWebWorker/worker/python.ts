@@ -144,6 +144,7 @@ class Python {
 
     pythonClient.sendInit(pythonVersion);
     pythonClient.sendPythonState('ready');
+    this.transactionId = undefined;
     this.state = 'ready';
     await this.next();
   };
@@ -170,6 +171,7 @@ class Python {
       const run = this.awaitingExecution.shift();
       if (run) {
         await this.runPython(this.codeRunToCorePython(run));
+        this.transactionId = undefined;
         this.state = 'ready';
       }
     }
@@ -190,7 +192,7 @@ class Python {
   };
 
   runPython = async (message: CorePythonRun) => {
-    if (!this.pyodide || this.state !== 'ready') {
+    if (!this.pyodide || this.state !== 'ready' || this.transactionId) {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
     }
@@ -281,7 +283,7 @@ class Python {
     }
 
     let codeResult: JsCodeResult | undefined = {
-      transaction_id: this.transactionId,
+      transaction_id: message.transactionId,
       success: pythonRun.success,
       std_err: pythonRun.std_err,
       std_out: pythonRun.std_out,
@@ -300,10 +302,11 @@ class Python {
     inspectionResults = undefined;
 
     const uint8Array = toUint8Array(codeResult);
-    pythonCore.sendPythonResults(this.transactionId, uint8Array.buffer as ArrayBuffer);
+    pythonCore.sendPythonResults(message.transactionId, uint8Array.buffer as ArrayBuffer);
 
     codeResult = undefined;
 
+    this.transactionId = undefined;
     this.state = 'ready';
     pythonClient.sendPythonState('ready', { current: undefined });
     setTimeout(this.next, 0);
