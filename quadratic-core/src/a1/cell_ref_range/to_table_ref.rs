@@ -1,7 +1,7 @@
 use crate::{
+    SheetPos,
     a1::ColRange,
     grid::{CodeCellLanguage, SheetId},
-    SheetPos,
 };
 
 use super::*;
@@ -60,7 +60,7 @@ impl CellRefRange {
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range: ColRange::All,
                             data: true,
                             headers: false,
@@ -72,7 +72,7 @@ impl CellRefRange {
                 if table.is_html_image && b.contains(start.into()) && b.contains(end.into()) {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range: ColRange::All,
                             data: true,
                             headers: false,
@@ -107,7 +107,7 @@ impl CellRefRange {
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range,
                             data: true,
                             headers: false,
@@ -120,7 +120,7 @@ impl CellRefRange {
                 if start.y == b.min.y + adjust_for_name + adjust_for_columns && end.y == b.max.y {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range,
                             data: true,
                             headers: false,
@@ -136,7 +136,7 @@ impl CellRefRange {
                 if full_table || data_and_headers {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range,
                             data: true,
                             headers: true,

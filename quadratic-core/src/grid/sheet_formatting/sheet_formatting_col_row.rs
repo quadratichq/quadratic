@@ -5,8 +5,8 @@ use super::*;
 use std::fmt::Debug;
 
 use crate::{
-    grid::formats::{SheetFormatUpdates, SheetFormatUpdatesType},
     CopyFormats,
+    grid::formats::{SheetFormatUpdates, SheetFormatUpdatesType},
 };
 
 impl SheetFormatting {

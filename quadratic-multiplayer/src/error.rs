@@ -5,7 +5,7 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
-use quadratic_rust_shared::{aws::error::Aws as AwsError, SharedError};
+use quadratic_rust_shared::{SharedError, aws::error::Aws as AwsError};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use thiserror::Error;

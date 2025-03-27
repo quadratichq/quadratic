@@ -2,7 +2,7 @@
 use wasm_bindgen::prelude::*;
 // TODO: replace this whole file with `bytemuck`
 
-use crate::{grid::SheetId, Pos};
+use crate::{Pos, grid::SheetId};
 
 #[cfg(not(test))]
 use js_sys::{Int32Array, SharedArrayBuffer, Uint8Array};

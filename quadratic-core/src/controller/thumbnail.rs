@@ -1,7 +1,7 @@
 use crate::{
-    a1::A1Selection,
-    grid::{formats::SheetFormatUpdates, sheet::borders::BordersUpdates, SheetId},
     Rect, SheetPos, SheetRect,
+    a1::A1Selection,
+    grid::{SheetId, formats::SheetFormatUpdates, sheet::borders::BordersUpdates},
 };
 
 use super::GridController;
@@ -75,14 +75,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
         a1::A1Selection,
         controller::GridController,
         grid::{
+            SheetId,
             formats::{FormatUpdate, SheetFormatUpdates},
             sheet::borders::{BorderStyleCell, BorderStyleTimestamp, BordersUpdates},
-            SheetId,
         },
-        Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
 
     #[test]

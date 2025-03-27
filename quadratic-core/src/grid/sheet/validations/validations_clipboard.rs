@@ -41,15 +41,15 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        SheetRect,
         a1::{A1Context, A1Selection},
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
-            sheet::validations::{
-                validation::Validation, validation_rules::ValidationRule, Validations,
-            },
             SheetId,
+            sheet::validations::{
+                Validations, validation::Validation, validation_rules::ValidationRule,
+            },
         },
-        SheetRect,
     };
 
     #[test]

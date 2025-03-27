@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    date_time::{naive_date_to_i64, naive_time_to_i32},
     CellValue,
+    date_time::{naive_date_to_i64, naive_time_to_i32},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

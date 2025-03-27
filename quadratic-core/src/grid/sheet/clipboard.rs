@@ -4,8 +4,8 @@ use crate::a1::{A1Context, A1Selection};
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
-use crate::grid::js_types::JsClipboard;
 use crate::grid::Sheet;
+use crate::grid::js_types::JsClipboard;
 use crate::{Pos, Rect};
 
 impl Sheet {
@@ -222,8 +222,8 @@ impl Sheet {
             data_tables.extend(data_tables_in_rect);
         }
 
-        let formats = self.formats.to_clipboard(self, selection);
-        let borders = self.borders.to_clipboard(self, selection);
+        let formats = self.formats.to_clipboard(selection);
+        let borders = self.borders.to_clipboard(selection);
         let validations = self
             .validations
             .to_clipboard(selection, &clipboard_origin, context);
@@ -256,11 +256,11 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controller::operations::clipboard::PasteSpecial;
+    use crate::Pos;
     use crate::controller::GridController;
+    use crate::controller::operations::clipboard::PasteSpecial;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::Pos;
 
     #[test]
     fn copy_to_clipboard_exclude() {

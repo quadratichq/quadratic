@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use chrono::Utc;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use std::str::FromStr;
 
 use crate::{
+    ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
     a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
+        CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
         block::SameValue,
         data_table::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
-        CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
-    ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
 };
 
 use super::{
@@ -465,6 +465,7 @@ pub(crate) fn export_data_tables(
     data_tables
         .into_iter()
         .map(|(pos, data_table)| {
+            let name = data_table.name().to_string();
             let value = match data_table.value {
                 Value::Single(cell_value) => {
                     current::OutputValueSchema::Single(export_cell_value(cell_value))
@@ -527,7 +528,7 @@ pub(crate) fn export_data_tables(
 
             let data_table = current::DataTableSchema {
                 kind,
-                name: data_table.name.to_display(),
+                name,
                 header_is_first_row: data_table.header_is_first_row,
                 show_ui: data_table.show_ui,
                 show_name: data_table.show_name,

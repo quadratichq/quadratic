@@ -2,6 +2,11 @@
 #![allow(clippy::diverging_sub_expression, clippy::match_like_matches_macro)]
 #![allow(non_local_definitions)] // TODO: blocked on https://github.com/proptest-rs/proptest/issues/447
 
+#[cfg(feature = "function-timer")]
+use std::sync::{LazyLock, Mutex};
+#[cfg(feature = "function-timer")]
+pub static FUNCTIONS: LazyLock<Mutex<Vec<(String, i64)>>> = LazyLock::new(|| Mutex::new(vec![]));
+
 #[macro_use]
 pub mod util;
 #[macro_use]

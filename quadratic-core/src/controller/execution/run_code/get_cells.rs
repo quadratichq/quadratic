@@ -2,8 +2,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    a1::CellRefRange, controller::GridController, error_core::CoreError, grid::CodeCellLanguage,
-    CellValue,
+    CellValue, a1::CellRefRange, controller::GridController, error_core::CoreError,
+    grid::CodeCellLanguage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -29,8 +29,8 @@ pub struct JsCellsA1Values {
 pub struct JsCellsA1Value {
     pub x: i32,
     pub y: i32,
-    pub value: String,
-    pub type_name: String,
+    pub v: String,
+    pub t: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -185,7 +185,7 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{
-        controller::transaction_types::JsCodeResult, grid::CodeCellLanguage, Pos, Rect, SheetPos,
+        Pos, Rect, SheetPos, controller::transaction_types::JsCodeResult, grid::CodeCellLanguage,
     };
 
     #[test]
@@ -348,8 +348,8 @@ mod test {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "test".into(),
-                        type_name: "text".into()
+                        v: "test".into(),
+                        t: 1,
                     }],
                     x: 1,
                     y: 1,
@@ -428,32 +428,32 @@ mod test {
                         JsCellsA1Value {
                             x: 1,
                             y: 1,
-                            value: "test1".into(),
-                            type_name: "text".into()
+                            v: "test1".into(),
+                            t: 1
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 2,
-                            value: "test2".into(),
-                            type_name: "text".into()
+                            v: "test2".into(),
+                            t: 1
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 3,
-                            value: "test3".into(),
-                            type_name: "text".into()
+                            v: "test3".into(),
+                            t: 1
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 4,
-                            value: "".into(),
-                            type_name: "blank".into()
+                            v: "".into(),
+                            t: 0
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 5,
-                            value: "test4".into(),
-                            type_name: "text".into()
+                            v: "test4".into(),
+                            t: 1
                         }
                     ],
                     x: 1,
@@ -499,8 +499,8 @@ mod test {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "test".into(),
-                        type_name: "text".into()
+                        v: "test".into(),
+                        t: 1
                     }],
                     x: 1,
                     y: 1,
@@ -592,14 +592,14 @@ mod test {
                         JsCellsA1Value {
                             x: 1,
                             y: 2,
-                            value: "Column 1".into(),
-                            type_name: "text".into()
+                            v: "Column 1".into(),
+                            t: 1
                         },
                         JsCellsA1Value {
                             x: 2,
                             y: 2,
-                            value: "Column 2".into(),
-                            type_name: "text".into()
+                            v: "Column 2".into(),
+                            t: 1
                         }
                     ],
                     x: 1,
@@ -651,26 +651,26 @@ mod test {
                         JsCellsA1Value {
                             x: 1,
                             y: 2,
-                            value: "Column 1".into(),
-                            type_name: "text".into()
+                            v: "Column 1".into(),
+                            t: 1
                         },
                         JsCellsA1Value {
                             x: 2,
                             y: 2,
-                            value: "Column 2".into(),
-                            type_name: "text".into()
+                            v: "Column 2".into(),
+                            t: 1
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 3,
-                            value: "1".into(),
-                            type_name: "number".into()
+                            v: "1".into(),
+                            t: 2
                         },
                         JsCellsA1Value {
                             x: 2,
                             y: 3,
-                            value: "2".into(),
-                            type_name: "number".into()
+                            v: "2".into(),
+                            t: 2
                         }
                     ],
                     x: 1,

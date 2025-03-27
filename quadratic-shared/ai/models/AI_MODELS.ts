@@ -9,7 +9,7 @@ export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: ModelKey = 'vertexai:gemini-
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 6;
+export const DEFAULT_MODEL_VERSION = 7;
 
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
@@ -21,7 +21,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinkingToggle: false,
@@ -33,7 +33,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -47,7 +47,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
   },
@@ -58,7 +58,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -71,7 +71,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
   },
@@ -137,7 +137,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
@@ -149,7 +149,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinking: true,
@@ -163,7 +163,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: false,
   },
@@ -174,7 +174,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinking: true,
@@ -187,7 +187,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: false,
   },

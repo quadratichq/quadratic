@@ -1,9 +1,9 @@
 use anyhow::Result;
 
-use crate::controller::active_transactions::transaction_name::TransactionName;
-use crate::controller::GridController;
-use crate::grid::SheetId;
 use crate::Pos;
+use crate::controller::GridController;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::grid::SheetId;
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -40,9 +40,10 @@ impl GridController {
     /// Imports an Excel file into the grid.
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
+    #[function_timer::function_timer]
     pub fn import_excel(
         &mut self,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         cursor: Option<String>,
     ) -> Result<()> {
@@ -88,12 +89,12 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
+        CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value_row, print_data_table, print_table,
         },
         wasm_bindings::js::clear_js_calls,
-        CellValue, Rect, RunError, RunErrorMsg, Span,
     };
 
     use bigdecimal::BigDecimal;
@@ -238,7 +239,7 @@ pub(crate) mod tests {
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(file, "basic.xlsx", None);
+        let _ = gc.import_excel(&file, "basic.xlsx", None);
         let sheet_id = gc.grid.sheets()[0].id;
 
         assert_cell_value_row(
@@ -334,7 +335,7 @@ pub(crate) mod tests {
         let mut grid_controller = GridController::new_blank();
         let pos = pos![A1];
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
-        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);
+        let _ = grid_controller.import_excel(&file, "all_excel_functions.xlsx", None);
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(

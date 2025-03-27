@@ -443,8 +443,8 @@ impl fmt::Display for JsSnackbarSeverity {
 mod test {
 
     use super::JsNumber;
-    use crate::grid::formats::Format;
     use crate::grid::NumericFormat;
+    use crate::grid::formats::Format;
 
     #[test]
     fn to_js_number() {
@@ -472,4 +472,10 @@ mod test {
         let js_number: JsNumber = (&Format::default()).into();
         assert_eq!(js_number, JsNumber::default());
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsResponse {
+    pub result: bool,
+    pub error: Option<String>,
 }

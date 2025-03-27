@@ -82,6 +82,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
                 (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
                 selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
             )
+            .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1))
             .map(([key, modelConfig]) => {
               const { model, displayName, provider } = modelConfig;
 
@@ -95,7 +96,9 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
                   }}
                 >
                   <div className="flex w-full items-center justify-between text-xs">
-                    <span className="pr-4">{(debug ? `${provider} - ` : '') + displayName}</span>
+                    <span className="pr-4">
+                      {(debug ? `${modelConfig.enabled ? '' : 'dbg-'}${provider} - ` : '') + displayName}
+                    </span>
                   </div>
                 </DropdownMenuCheckboxItem>
               );

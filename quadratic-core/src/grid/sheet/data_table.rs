@@ -1,19 +1,21 @@
 use super::Sheet;
 use crate::{
+    Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
+        CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        CodeCellLanguage, CodeCellValue, DataTableKind,
+        js_types::JsSnackbarSeverity,
     },
-    Pos, Rect, SheetPos,
+    wasm_bindings::js::jsClientMessage,
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use indexmap::{
-    map::{Entry, OccupiedEntry},
     IndexMap,
+    map::{Entry, OccupiedEntry},
 };
 
 impl Sheet {
@@ -38,7 +40,7 @@ impl Sheet {
     pub fn data_table_by_name(&self, name: String) -> Option<(&Pos, &DataTable)> {
         self.data_tables
             .iter()
-            .find(|(_, data_table)| data_table.name.to_display() == name)
+            .find(|(_, data_table)| *data_table.name() == name)
     }
 
     /// Returns a DataTable at a Pos as a result
@@ -71,6 +73,9 @@ impl Sheet {
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
 
+    /// Returns all data tables within a position
+    ///
+    /// TODO(ddimaria): make this more efficient
     pub fn data_tables_within(&self, pos: Pos) -> Result<Vec<Pos>> {
         let data_tables = self
             .data_tables
@@ -86,6 +91,43 @@ impl Sheet {
         Ok(data_tables)
     }
 
+    /// Returns all data tables within a rect.
+    /// Partial intersection is also considered a match.
+    /// Stops at the first data table if stop_at_first is true.
+    ///
+    /// TODO(ddimaria): make this more efficient
+    pub fn data_tables_within_rect(&self, rect: Rect, stop_at_first: bool) -> Result<Vec<Pos>> {
+        let mut found = false;
+        let data_tables = self
+            .data_tables
+            .iter()
+            .filter_map(|(data_table_pos, data_table)| {
+                if found && stop_at_first {
+                    return None;
+                }
+
+                let output = data_table
+                    .output_rect(*data_table_pos, false)
+                    .intersects(rect)
+                    .then_some(*data_table_pos);
+
+                found = found || output.is_some();
+
+                output
+            })
+            .collect();
+
+        Ok(data_tables)
+    }
+
+    /// Returns true if there is a data table within a rect
+    pub fn contains_data_table_within_rect(&self, rect: Rect) -> bool {
+        self.data_tables_within_rect(rect, true)
+            .map(|data_tables| !data_tables.is_empty())
+            .unwrap_or(false)
+    }
+
+    /// Returns the first data table within a position
     pub fn first_data_table_within(&self, pos: Pos) -> Result<Pos> {
         let data_tables = self.data_tables_within(pos)?;
 
@@ -422,20 +464,34 @@ impl Sheet {
         self.data_table(pos)
             .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
     }
+
+    /// You shouldn't be able to create a data table that includes a data table.
+    /// Deny the action and give a popup explaining why it was blocked.
+    /// Returns true if the data table is not within the rect
+    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
+        let contains_data_table = self.contains_data_table_within_rect(rect);
+
+        if contains_data_table {
+            let message = "Tables cannot be created over tables, code, or formulas.";
+            jsClientMessage(message.to_owned(), JsSnackbarSeverity::Error.to_string());
+        }
+
+        !contains_data_table
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::{
+        CellValue, Value,
         a1::{A1Selection, RefRangeBounds},
         controller::{
+            GridController,
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
-            GridController,
         },
-        grid::{js_types::JsClipboard, CodeRun, DataTableKind, SheetId},
-        CellValue, Value,
+        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
     };
     use bigdecimal::BigDecimal;
 

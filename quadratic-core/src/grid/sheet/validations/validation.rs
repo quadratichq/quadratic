@@ -3,9 +3,9 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    a1::{A1Selection, CellRefRange},
-    grid::{js_types::JsRenderCellSpecial, Sheet},
     CellValue,
+    a1::{A1Selection, CellRefRange},
+    grid::{Sheet, js_types::JsRenderCellSpecial},
 };
 
 use super::validation_rules::ValidationRule;

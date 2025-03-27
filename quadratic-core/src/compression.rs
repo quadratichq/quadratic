@@ -9,13 +9,14 @@ use std::io::prelude::*;
 
 const HEADER_DELIMITER: u8 = "*".as_bytes()[0];
 const BUFFER_SIZE: usize = 8192; // 8KB chunks
+const MAX_FILE_SIZE: usize = 104857600; // 100 MB
 const BINCODE_CONFIG: bincode::config::Configuration<
     bincode::config::LittleEndian,
     bincode::config::Fixint,
-    bincode::config::Limit<1048576>,
+    bincode::config::Limit<MAX_FILE_SIZE>, // 100 MB
 > = config::standard()
     .with_fixed_int_encoding()
-    .with_limit::<1048576>();
+    .with_limit::<MAX_FILE_SIZE>();
 
 pub enum CompressionFormat {
     None,

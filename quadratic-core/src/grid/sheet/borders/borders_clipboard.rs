@@ -1,4 +1,4 @@
-use crate::{a1::A1Selection, grid::Sheet, Pos};
+use crate::a1::A1Selection;
 
 use super::{Borders, BordersUpdates};
 
@@ -9,21 +9,13 @@ impl Borders {
     /// Prepares borders within the selection for copying to the clipboard.
     ///
     /// Returns `None` if there are no borders to copy.
-    pub fn to_clipboard(&self, sheet: &Sheet, selection: &A1Selection) -> Option<BordersUpdates> {
-        let mut updates = BordersUpdates::default();
-        for rect in sheet.selection_to_rects(selection, false, false) {
-            for x in rect.x_range() {
-                for y in rect.y_range() {
-                    updates.set_style_cell(Pos::new(x, y), self.get_style_cell(Pos::new(x, y)));
-                }
-            }
-        }
-
-        if updates.is_empty() {
-            None
-        } else {
-            Some(updates)
-        }
+    pub fn to_clipboard(&self, selection: &A1Selection) -> Option<BordersUpdates> {
+        Some(BordersUpdates {
+            left: Some(self.left.get_update_for_selection(selection)),
+            right: Some(self.right.get_update_for_selection(selection)),
+            top: Some(self.top.get_update_for_selection(selection)),
+            bottom: Some(self.bottom.get_update_for_selection(selection)),
+        })
     }
 }
 
@@ -32,10 +24,10 @@ mod tests {
 
     use super::*;
     use crate::{
+        Pos, SheetRect,
         color::Rgba,
         controller::GridController,
         grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine},
-        SheetRect,
     };
 
     #[test]
@@ -50,17 +42,16 @@ mod tests {
             None,
         );
 
-        let sheet = gc.sheet(sheet_id);
         let clipboard = gc
             .sheet(sheet_id)
             .borders
-            .to_clipboard(sheet, &A1Selection::test_a1("A1:C3"))
+            .to_clipboard(&A1Selection::test_a1("A1:C3"))
             .unwrap();
 
         assert_eq!(
             clipboard
-                .clone()
                 .top
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -70,8 +61,8 @@ mod tests {
         );
         assert_eq!(
             clipboard
-                .clone()
                 .top
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -81,8 +72,8 @@ mod tests {
         );
         assert_eq!(
             clipboard
-                .clone()
                 .left
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -92,8 +83,8 @@ mod tests {
         );
         assert_eq!(
             clipboard
-                .clone()
                 .left
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -103,8 +94,8 @@ mod tests {
         );
         assert_eq!(
             clipboard
-                .clone()
                 .bottom
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -114,8 +105,8 @@ mod tests {
         );
         assert_eq!(
             clipboard
-                .clone()
                 .bottom
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -125,8 +116,8 @@ mod tests {
         );
         assert_eq!(
             clipboard
-                .clone()
                 .right
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -136,8 +127,8 @@ mod tests {
         );
         assert_eq!(
             clipboard
-                .clone()
                 .right
+                .as_ref()
                 .unwrap()
                 .get(Pos::new(1, 1))
                 .unwrap()
@@ -162,10 +153,9 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let copy = sheet
             .borders
-            .to_clipboard(
-                sheet,
-                &A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
-            )
+            .to_clipboard(&A1Selection::from_rect(SheetRect::new(
+                1, 1, 1, 1, sheet_id,
+            )))
             .unwrap();
 
         assert_eq!(

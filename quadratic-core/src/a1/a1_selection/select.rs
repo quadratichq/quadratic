@@ -1,5 +1,5 @@
-use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 use crate::Pos;
+use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 
 use super::{A1Selection, CellRefRange};
 
@@ -417,7 +417,9 @@ impl A1Selection {
                             range: range_converted,
                         };
                     } else {
-                        dbgjs!("Could not convert table range to ref range bounds in A1Selection::select_to");
+                        dbgjs!(
+                            "Could not convert table range to ref range bounds in A1Selection::select_to"
+                        );
                         return;
                     }
                     if !append {
@@ -496,7 +498,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::SheetId, Rect};
+    use crate::{Rect, grid::SheetId};
 
     use super::*;
 

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use ts_rs::TS;
 
-use super::{range_might_intersect, A1Error, CellRefRangeEnd};
+use super::{A1Error, CellRefRangeEnd, range_might_intersect};
 use crate::{Pos, Rect};
 
 mod contains;

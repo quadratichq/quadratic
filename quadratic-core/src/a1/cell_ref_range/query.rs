@@ -1,6 +1,6 @@
 use crate::{
-    a1::{A1Context, UNBOUNDED},
     Pos, Rect,
+    a1::{A1Context, UNBOUNDED},
 };
 
 use super::CellRefRange;
@@ -462,12 +462,16 @@ mod tests {
             CellRefRange::test_a1("A:B").selected_columns_finite(&context),
             vec![1, 2]
         );
-        assert!(CellRefRange::test_a1("A1:")
-            .selected_columns_finite(&context)
-            .is_empty());
-        assert!(CellRefRange::test_a1("*")
-            .selected_columns_finite(&context)
-            .is_empty());
+        assert!(
+            CellRefRange::test_a1("A1:")
+                .selected_columns_finite(&context)
+                .is_empty()
+        );
+        assert!(
+            CellRefRange::test_a1("*")
+                .selected_columns_finite(&context)
+                .is_empty()
+        );
         assert_eq!(
             CellRefRange::test_a1(":B").selected_columns_finite(&context),
             vec![1, 2]
@@ -489,12 +493,16 @@ mod tests {
             CellRefRange::test_a1("1:3").selected_rows_finite(&context),
             vec![1, 2, 3]
         );
-        assert!(CellRefRange::test_a1("A1:")
-            .selected_rows_finite(&context)
-            .is_empty());
-        assert!(CellRefRange::test_a1("*")
-            .selected_rows_finite(&context)
-            .is_empty());
+        assert!(
+            CellRefRange::test_a1("A1:")
+                .selected_rows_finite(&context)
+                .is_empty()
+        );
+        assert!(
+            CellRefRange::test_a1("*")
+                .selected_rows_finite(&context)
+                .is_empty()
+        );
         assert_eq!(
             CellRefRange::test_a1(":3").selected_rows_finite(&context),
             vec![1, 2, 3]

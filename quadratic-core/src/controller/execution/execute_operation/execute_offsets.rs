@@ -1,10 +1,10 @@
 use crate::{
+    SheetPos,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::js_types::JsRowHeight,
-    SheetPos,
 };
 
 impl GridController {
