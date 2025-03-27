@@ -51,6 +51,7 @@ tracing = "0.1.40"
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [features]
+default = []
 record-request-mock = []
 test = ["httpmock", "criterion", "tabled"]
 
