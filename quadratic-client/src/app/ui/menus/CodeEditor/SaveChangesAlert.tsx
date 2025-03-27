@@ -1,10 +1,9 @@
 import { codeEditorAtom, codeEditorShowSaveChangesAlertAtom } from '@/app/atoms/codeEditorAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { useAfterDialogCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useAfterDialogCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/shared/shadcn/ui/alert-dialog';
 import type * as monaco from 'monaco-editor';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 interface SaveChangesAlertProps {
@@ -35,50 +34,32 @@ export const SaveChangesAlert = ({ editorInst }: SaveChangesAlertProps) => {
       escapePressed: false,
       waitingForEditorClose: undefined,
     }));
-  }, [setCodeEditorState, setShowSaveChangesAlert]);
-
-  const DialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // focus on dialog when it opens
-    if (DialogRef.current) {
-      DialogRef.current.focus();
-    }
-
-    // focus on grid when dialog closes
-    return () => focusGrid();
-  }, []);
+    // Return focus to the code editor instead of the grid
+    requestAnimationFrame(() => editorInst?.focus());
+  }, [setCodeEditorState, setShowSaveChangesAlert, editorInst]);
 
   if (!showSaveChangesAlert) {
     return null;
   }
-
+  
   return (
-    <Dialog
-      ref={DialogRef}
+    <AlertDialog
       open={true}
-      onClose={onCancel}
-      aria-labelledby="save-changes-title"
-      aria-describedby="save-changes-description"
-      maxWidth="sm"
+      onOpenChange={onCancel}
     >
-      <DialogTitle>Do you want to save your code editor changes?</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="save-changes-description">
-          Your changes will be lost if you don’t save and run them.
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onDiscard} color="error" sx={{ marginRight: 'auto' }}>
-          Discard changes
-        </Button>
-        <Button onClick={onCancel} color="inherit">
-          Cancel
-        </Button>
-        <Button onClick={onSave} autoFocus>
-          Save & run
-        </Button>
-      </DialogActions>
-    </Dialog>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Do you want to save your code changes?</AlertDialogTitle>
+          <AlertDialogDescription>
+              Any unsaved changes will be lost if you don’t save and run them.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction variant="outline-destructive" onClick={onDiscard} className="mr-auto">Discard changes</AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onSave}>Save & run</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
