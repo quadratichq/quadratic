@@ -79,7 +79,7 @@
     "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5"
   },
-  "main": "public/electron.js",
+  "main": "index.html",
   "scripts": {
     "preview": "npm run build && vite preview --port=3000",
     "start": "export VITE_VERSION=$npm_package_version && export NODE_OPTIONS=--max-old-space-size=16384 && vite dev",
