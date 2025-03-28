@@ -1,5 +1,6 @@
 use crate::{
     CopyFormats,
+    a1::A1Context,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -40,12 +41,8 @@ impl Sheet {
         row: i64,
         copy_formats: CopyFormats,
         send_client: bool,
+        a1_context: &A1Context,
     ) {
-        // mark hashes of existing rows dirty
-        if send_client {
-            transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
-        }
-
         self.insert_and_shift_values(row);
 
         // update formatting
@@ -68,15 +65,11 @@ impl Sheet {
             transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
         }
 
-        let changed_selections =
-            self.validations
-                .insert_row(transaction, self.id, row, &self.a1_context());
+        let changed_selections = self
+            .validations
+            .insert_row(transaction, self.id, row, a1_context);
         if send_client {
-            transaction.add_dirty_hashes_from_selections(
-                self,
-                &self.a1_context(),
-                changed_selections,
-            );
+            transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
         }
 
         let changes = self.offsets.insert_row(row);
@@ -101,6 +94,7 @@ impl Sheet {
 mod test {
     use crate::{
         CellValue, DEFAULT_ROW_HEIGHT, Pos,
+        a1::A1Context,
         grid::sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
     };
 
@@ -139,11 +133,17 @@ mod test {
         );
         sheet.test_set_code_run_array(4, 1, vec!["A", "B"], false);
 
-        sheet.recalculate_bounds();
+        sheet.recalculate_bounds(&A1Context::default());
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 1, CopyFormats::None, false);
+        sheet.insert_row(
+            &mut transaction,
+            1,
+            CopyFormats::None,
+            false,
+            &A1Context::default(),
+        );
 
         assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
@@ -194,7 +194,13 @@ mod test {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false);
+        sheet.insert_row(
+            &mut transaction,
+            2,
+            CopyFormats::None,
+            false,
+            &A1Context::default(),
+        );
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -217,8 +223,9 @@ mod test {
         sheet.test_set_values(1, 1, 1, 2, vec!["A", "B"]);
 
         let mut transaction = PendingTransaction::default();
+        let context = A1Context::default();
 
-        sheet.insert_row(&mut transaction, 3, CopyFormats::None, false);
+        sheet.insert_row(&mut transaction, 3, CopyFormats::None, false, &context);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -239,7 +246,9 @@ mod test {
         sheet.offsets.set_row_height(4, 400.0);
 
         let mut transaction = PendingTransaction::default();
-        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false);
+        let context = A1Context::default();
+
+        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false, &context);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
         assert_eq!(sheet.offsets.row_height(3), 200.0);

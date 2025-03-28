@@ -236,7 +236,8 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
+            let rects =
+                sheet.selection_to_rects(selection, false, force_table_bounds, &self.a1_context);
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
@@ -251,10 +252,8 @@ impl GridController {
 
                         let is_full_table_selected = rect.contains_rect(&data_table_rect);
                         let can_delete_table = is_full_table_selected || data_table.readonly;
-                        let table_column_selection = selection.table_column_selection(
-                            &data_table.name.to_display(),
-                            self.a1_context(),
-                        );
+                        let table_column_selection =
+                            selection.table_column_selection(data_table.name(), self.a1_context());
                         can_delete_column = !is_full_table_selected
                             && table_column_selection.is_some()
                             && !data_table.readonly;

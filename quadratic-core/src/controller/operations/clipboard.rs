@@ -328,7 +328,7 @@ impl GridController {
 
                 if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
                     if matches!(clipboard_operation, ClipboardOperation::Copy) {
-                        let old_name = data_table.name.to_display();
+                        let old_name = data_table.name().to_string();
                         let new_name =
                             unique_data_table_name(&old_name, false, None, self.a1_context());
 
@@ -745,7 +745,7 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
-    use crate::test_util::{assert_cell_value_row, assert_display_cell_value, print_table_in_rect};
+    use crate::test_util::{assert_cell_value_row, assert_display_cell_value, print_sheet, print_table_in_rect};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
 
     #[test]
@@ -819,7 +819,9 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(3, 3, 2, 2, vec!["1", "2", "3", "4"]);
-        sheet.recalculate_bounds();
+
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
         let selection = A1Selection::all(sheet_id);
         let sheet = gc.sheet(sheet_id);
         let JsClipboard { html, .. } = sheet
@@ -866,13 +868,15 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 4 }), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![C3]), None);
+        assert_eq!(sheet.formats.italic.get(pos![C4]), None);
+        assert_eq!(sheet.formats.italic.get(pos![C5]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![C6]), Some(true));
 
-        assert_eq!(sheet.formats.italic.get(Pos { x: 1, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 1, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 2, y: 3 }), Some(true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 2, y: 3 }), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![A3]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![A3]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![B3]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![B3]), Some(true));
     }
 
     #[test]
@@ -983,7 +987,7 @@ mod test {
             None,
         );
 
-        crate::test_util::print_sheet(gc.sheet(sheet1));
+        print_sheet(gc.sheet(sheet1));
 
         let get_code_cell_value_str = |gc: &GridController, sheet_pos: SheetPos| {
             gc.sheet(sheet_pos.sheet_id)

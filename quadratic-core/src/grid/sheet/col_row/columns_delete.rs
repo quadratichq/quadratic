@@ -1,5 +1,6 @@
 use crate::{
     CopyFormats, Pos, SheetPos,
+    a1::A1Context,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -106,7 +107,12 @@ impl Sheet {
     }
 
     /// Deletes columns and returns the operations to undo the deletion.
-    pub(crate) fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
+    pub(crate) fn delete_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        column: i64,
+        a1_context: &A1Context,
+    ) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
@@ -210,8 +216,8 @@ impl Sheet {
 
         let changed_selections =
             self.validations
-                .remove_column(transaction, self.id, column, &self.a1_context());
-        transaction.add_dirty_hashes_from_selections(self, &self.a1_context(), changed_selections);
+                .remove_column(transaction, self.id, column, a1_context);
+        transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
         if transaction.is_user_undo_redo() {
             // reverse operation to create the column (this will also shift all impacted columns)
@@ -227,7 +233,12 @@ impl Sheet {
 
     /// Deletes columns. Columns is a vec of all columns to be deleted. This fn
     /// will dedup and sort the columns.
-    pub fn delete_columns(&mut self, transaction: &mut PendingTransaction, columns: Vec<i64>) {
+    pub fn delete_columns(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        columns: Vec<i64>,
+        context: &A1Context,
+    ) {
         if columns.is_empty() {
             return;
         }
@@ -241,9 +252,9 @@ impl Sheet {
         columns.reverse();
 
         for column in columns {
-            self.delete_column(transaction, column);
+            self.delete_column(transaction, column, context);
         }
-        self.recalculate_bounds();
+        self.recalculate_bounds(context);
     }
 }
 
@@ -290,7 +301,8 @@ mod tests {
             source: TransactionSource::User,
             ..Default::default()
         };
-        sheet.delete_column(&mut transaction, 1);
+        let a1_context = sheet.make_a1_context();
+        sheet.delete_column(&mut transaction, 1, &a1_context);
 
         assert_eq!(transaction.reverse_operations.len(), 3);
 
@@ -324,7 +336,8 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         let mut transaction = PendingTransaction::default();
-        sheet.delete_column(&mut transaction, 2);
+        let a1_context = sheet.make_a1_context();
+        sheet.delete_column(&mut transaction, 2, &a1_context);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
         assert_eq!(sheet.offsets.column_width(3), 400.0);

@@ -6,14 +6,15 @@ use crate::{
     Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect, Span,
     Spanned, Value,
     a1::{CellRefRange, SheetCellRefRange, UNBOUNDED},
-    grid::{CellsAccessed, Grid},
+    controller::GridController,
+    grid::CellsAccessed,
 };
 
 /// Formula execution context.
 #[derive(Debug)]
 pub struct Ctx<'ctx> {
-    /// Grid file to access cells from.
-    pub grid: &'ctx Grid,
+    /// GridController to access file data.
+    pub grid_controller: &'ctx GridController,
     /// Position in the grid from which the formula is being evaluated.
     pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
@@ -24,9 +25,9 @@ pub struct Ctx<'ctx> {
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
-    pub fn new(grid: &'ctx Grid, sheet_pos: SheetPos) -> Self {
+    pub fn new(grid_controller: &'ctx GridController, sheet_pos: SheetPos) -> Self {
         Ctx {
-            grid,
+            grid_controller,
             sheet_pos,
             cells_accessed: Default::default(),
             skip_computation: false,
@@ -36,10 +37,10 @@ impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for checking the syntax and some basic types of a
     /// formula in `grid`. Expensive computations are skipped, so the value
     /// returned by "evaluating" the formula will be nonsense (probably blank).
-    pub fn new_for_syntax_check(grid: &'ctx Grid) -> Self {
+    pub fn new_for_syntax_check(grid_controller: &'ctx GridController) -> Self {
         Ctx {
-            grid,
-            sheet_pos: Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id),
+            grid_controller,
+            sheet_pos: Pos::ORIGIN.to_sheet_pos(grid_controller.grid().sheets()[0].id),
             cells_accessed: Default::default(),
             skip_computation: true,
         }
@@ -52,14 +53,16 @@ impl<'ctx> Ctx<'ctx> {
         span: Span,
     ) -> CodeResult<Spanned<SheetRect>> {
         let sheet = self
-            .grid
+            .grid_controller
             .try_sheet(range.sheet_id)
             .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
+
+        let a1_context = self.grid_controller.a1_context();
 
         let rect = match &range.cells {
             CellRefRange::Sheet { range } => sheet.ref_range_bounds_to_rect(range),
             CellRefRange::Table { range } => sheet
-                .table_ref_to_rect(range, false, false)
+                .table_ref_to_rect(range, false, false, a1_context)
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
         };
 
@@ -89,7 +92,7 @@ impl<'ctx> Ctx<'ctx> {
             Spanned { inner: value, span }
         };
 
-        let Some(sheet) = self.grid.try_sheet(pos.sheet_id) else {
+        let Some(sheet) = self.grid_controller.try_sheet(pos.sheet_id) else {
             return error_value(RunErrorMsg::BadCellReference);
         };
         if pos == self.sheet_pos {
@@ -111,7 +114,7 @@ impl<'ctx> Ctx<'ctx> {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
 
-        let Some(sheet) = self.grid.try_sheet(rect.sheet_id) else {
+        let Some(sheet) = self.grid_controller.try_sheet(rect.sheet_id) else {
             return Err(RunErrorMsg::BadCellReference.with_span(span));
         };
         let bounds = sheet.bounds(true);

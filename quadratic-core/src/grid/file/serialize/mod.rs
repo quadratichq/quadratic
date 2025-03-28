@@ -20,13 +20,18 @@ pub mod sheets;
 pub(crate) mod validations;
 
 pub fn import(file: current::GridSchema) -> Result<Grid> {
-    Ok(Grid {
+    let mut grid = Grid {
         sheets: file
             .sheets
             .into_iter()
             .map(import_sheet)
             .collect::<Result<_>>()?,
-    })
+    };
+    let a1_context = grid.make_a1_context();
+    for sheet in grid.sheets.iter_mut() {
+        sheet.recalculate_bounds(&a1_context);
+    }
+    Ok(grid)
 }
 
 pub fn export(grid: Grid) -> Result<current::GridSchema> {

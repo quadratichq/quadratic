@@ -40,9 +40,10 @@ impl GridController {
     /// Imports an Excel file into the grid.
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
+    #[function_timer::function_timer]
     pub fn import_excel(
         &mut self,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         cursor: Option<String>,
     ) -> Result<()> {
@@ -236,7 +237,7 @@ pub(crate) mod tests {
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(file, "basic.xlsx", None);
+        let _ = gc.import_excel(&file, "basic.xlsx", None);
         let sheet_id = gc.grid.sheets()[0].id;
 
         assert_cell_value_row(
@@ -331,7 +332,7 @@ pub(crate) mod tests {
     fn import_all_excel_functions() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(file, "all_excel_functions.xlsx", None);
+        let _ = gc.import_excel(&file, "all_excel_functions.xlsx", None);
         let sheet_id = gc.grid.sheets()[0].id;
 
         print_table_at(&gc, sheet_id, pos![A1]);

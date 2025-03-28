@@ -30,12 +30,12 @@ pub(crate) fn parse_optional_sheet_name(a1: &str) -> Result<(Option<String>, &st
 
 pub(crate) fn parse_optional_sheet_name_to_id<'a>(
     a1: &'a str,
-    context: &A1Context,
+    a1_context: &A1Context,
 ) -> Result<(Option<SheetId>, &'a str), A1Error> {
     let (sheet_name, rest) = parse_optional_sheet_name(a1)?;
     let sheet_id = match sheet_name {
         Some(sheet_name) => Some(
-            context
+            a1_context
                 .try_sheet_name(&sheet_name)
                 .ok_or(A1Error::InvalidSheetName(sheet_name))?,
         ),

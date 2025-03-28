@@ -75,15 +75,11 @@ pub fn assert_display_cell_value_pos(
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_code_cell_value(
-    grid_controller: &GridController,
-    sheet_id: SheetId,
-    x: i64,
-    y: i64,
-    value: &str,
-) {
-    let sheet = grid_controller.sheet(sheet_id);
-    let cell_value = sheet.edit_code_value(Pos { x, y }).unwrap();
+pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
+    let sheet = gc.sheet(sheet_id);
+    let cell_value = sheet
+        .edit_code_value(Pos { x, y }, gc.a1_context())
+        .unwrap();
 
     assert_eq!(
         value, cell_value.code_string,

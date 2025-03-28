@@ -6,7 +6,7 @@ import type { LoaderFunctionArgs } from 'react-router-dom';
 import { useLoaderData, useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { Empty } from '../dashboard/components/Empty';
+import { Empty } from '../shared/components/Empty';
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListUserFile[]> => {
   const files = await apiClient.files.list({ shared: 'with-me' });

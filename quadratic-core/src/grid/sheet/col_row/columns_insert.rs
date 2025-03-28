@@ -1,5 +1,6 @@
 use crate::{
     CopyFormats,
+    a1::A1Context,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -14,6 +15,7 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
         send_client: bool,
+        a1_context: &A1Context,
     ) {
         let column_inserted = if copy_formats == CopyFormats::After {
             column + 1
@@ -57,18 +59,11 @@ impl Sheet {
         }
 
         // update validations
-        let changed_selections = self.validations.insert_column(
-            transaction,
-            self.id,
-            column_inserted,
-            &self.a1_context(),
-        );
+        let changed_selections =
+            self.validations
+                .insert_column(transaction, self.id, column_inserted, a1_context);
         if send_client {
-            transaction.add_dirty_hashes_from_selections(
-                self,
-                &self.a1_context(),
-                changed_selections,
-            );
+            transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
         }
 
         let changes = self.offsets.insert_column(column_inserted);
@@ -134,7 +129,13 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 1, CopyFormats::None, true);
+        sheet.insert_column(
+            &mut transaction,
+            1,
+            CopyFormats::None,
+            true,
+            &A1Context::default(),
+        );
 
         assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
@@ -173,7 +174,13 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true);
+        sheet.insert_column(
+            &mut transaction,
+            2,
+            CopyFormats::None,
+            true,
+            &A1Context::default(),
+        );
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -197,7 +204,13 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 3, CopyFormats::None, true);
+        sheet.insert_column(
+            &mut transaction,
+            3,
+            CopyFormats::None,
+            true,
+            &A1Context::default(),
+        );
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -219,7 +232,13 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         let mut transaction = PendingTransaction::default();
-        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true);
+        sheet.insert_column(
+            &mut transaction,
+            2,
+            CopyFormats::None,
+            true,
+            &A1Context::default(),
+        );
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
         assert_eq!(sheet.offsets.column_width(3), 200.0);

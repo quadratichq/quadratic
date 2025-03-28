@@ -1,5 +1,6 @@
 use crate::{
     CellValue, Pos, Rect,
+    a1::A1Context,
     controller::GridController,
     formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, GridBounds, Sheet},
@@ -45,8 +46,8 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let mut fill_colors = vec![];
     let mut count_x = 0;
     let mut count_y = 0;
-    // `self.a1_context()` is unaware of other sheets, which might cause issues?
-    let parse_ctx = sheet.a1_context();
+    // `self.a1_context()` is default--DF: may cause issues?
+    let parse_ctx = A1Context::default();
 
     // convert the selected range in the sheet to tabled
     rect.y_range().for_each(|y| {

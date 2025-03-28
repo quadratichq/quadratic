@@ -1,5 +1,6 @@
 use crate::{
     SheetRect,
+    a1::A1Context,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -179,6 +180,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         rows: Vec<i64>,
+        a1_context: &A1Context,
     ) -> Result<(), ()> {
         if rows.is_empty() {
             return Ok(());
@@ -204,9 +206,9 @@ impl Sheet {
         self.delete_table_rows(transaction, &rows);
 
         for row in rows {
-            self.delete_row(transaction, row);
+            self.delete_row(transaction, row, a1_context);
         }
-        self.recalculate_bounds();
+        self.recalculate_bounds(a1_context);
         Ok(())
     }
 }
@@ -215,6 +217,7 @@ impl Sheet {
 mod tests {
     use crate::{
         CellValue,
+        a1::A1Context,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
@@ -227,6 +230,8 @@ mod tests {
     #[test]
     fn test_delete_multiple_rows() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
+
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
 
@@ -243,7 +248,11 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        assert!(sheet.delete_rows(&mut transaction, vec![2, 3]).is_ok());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![2, 3], &context)
+                .is_ok()
+        );
 
         // Verify rows 2 and 3 were deleted
         assert_eq!(
@@ -259,6 +268,7 @@ mod tests {
     #[test]
     fn test_delete_rows_with_table_ui() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table that will have UI elements
@@ -275,23 +285,33 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         // Attempt to delete rows that contain table UI
-        assert!(sheet.delete_rows(&mut transaction, vec![1]).is_err());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![1], &context)
+                .is_err()
+        );
     }
 
     #[test]
     fn test_delete_rows_empty_vec() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         let mut transaction = PendingTransaction::default();
 
         // Empty vector should return Ok
-        assert!(sheet.delete_rows(&mut transaction, vec![]).is_ok());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![], &context)
+                .is_ok()
+        );
     }
 
     #[test]
     fn test_delete_rows_dedup_and_sort() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
 
@@ -308,7 +328,7 @@ mod tests {
         // Test with unsorted and duplicate rows
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![2, 1, 2, 3])
+                .delete_rows(&mut transaction, vec![2, 1, 2, 3], &context)
                 .is_ok()
         );
 
@@ -322,6 +342,7 @@ mod tests {
     #[test]
     fn test_delete_entire_table() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table
@@ -340,7 +361,7 @@ mod tests {
         // Delete all rows that contain the table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1, 2, 3, 4, 5])
+                .delete_rows(&mut transaction, vec![1, 2, 3, 4, 5], &context)
                 .is_ok()
         );
 
@@ -351,6 +372,7 @@ mod tests {
     #[test]
     fn test_delete_partial_table_rows() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table
@@ -367,7 +389,11 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         // Delete some rows from the middle of the table
-        assert!(sheet.delete_rows(&mut transaction, vec![3, 4]).is_ok());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![3, 4], &context)
+                .is_ok()
+        );
 
         // Verify the table still exists but has fewer rows
         assert_eq!(sheet.data_tables.len(), 1);
@@ -378,6 +404,7 @@ mod tests {
     #[test]
     fn test_delete_rows_with_readonly_table() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table and make it readonly
@@ -398,7 +425,11 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         // Try to delete rows containing the readonly table
-        assert!(sheet.delete_rows(&mut transaction, vec![1, 2]).is_err());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![1, 2], &context)
+                .is_err()
+        );
 
         // Verify the readonly table wasn't modified
         assert_eq!(sheet.data_tables.len(), 1);
@@ -409,6 +440,7 @@ mod tests {
     #[test]
     fn test_delete_rows_intersecting_multiple_tables() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = gc.sheet_ids()[0];
 
         // Create two data tables that will be affected by the row deletion
@@ -429,12 +461,15 @@ mod tests {
             3,
             &["G", "H", "I", "J", "K", "L"],
         );
-
         let sheet = gc.sheet_mut(sheet_id);
         let mut transaction = PendingTransaction::default();
 
         // Delete row that intersects both tables
-        assert!(sheet.delete_rows(&mut transaction, vec![4]).is_ok());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![4], &context)
+                .is_ok()
+        );
 
         // Verify both tables still exist but have fewer rows
         assert_eq!(sheet.data_tables.len(), 2);
@@ -447,6 +482,7 @@ mod tests {
     #[test]
     fn test_delete_rows_with_chart() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = first_sheet_id(&gc);
 
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 4, 4);
@@ -455,7 +491,11 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         // Delete rows that contain the chart
-        assert!(sheet.delete_rows(&mut transaction, vec![3, 4]).is_ok());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![3, 4], &context)
+                .is_ok()
+        );
 
         // Verify the chart was resized
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 2, false);
@@ -464,6 +504,7 @@ mod tests {
     #[test]
     fn test_delete_rows_with_chart_too_small() {
         let mut gc = GridController::test();
+        let context = A1Context::default();
         let sheet_id = first_sheet_id(&gc);
 
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 4, 4);
@@ -474,7 +515,7 @@ mod tests {
         // Delete all rows (except UI) that contain the chart
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4, 5, 6])
+                .delete_rows(&mut transaction, vec![3, 4, 5, 6], &context)
                 .is_ok()
         );
 

@@ -11,9 +11,9 @@ impl A1Selection {
     pub fn parse_a1(
         a1: &str,
         default_sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Result<Self, A1Error> {
-        Self::parse(a1, default_sheet_id, context, None)
+        Self::parse(a1, default_sheet_id, a1_context, None)
     }
 
     /// Parses a selection from a comma-separated list of ranges.
@@ -26,7 +26,7 @@ impl A1Selection {
     pub fn parse(
         s: &str,
         default_sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
         base_pos: Option<Pos>,
     ) -> Result<Self, A1Error> {
         let mut sheet = None;
@@ -78,7 +78,7 @@ impl A1Selection {
         let mut sheet_id = None;
         for segment in segments {
             let range =
-                SheetCellRefRange::parse(segment.trim(), default_sheet_id, context, base_pos)?;
+                SheetCellRefRange::parse(segment.trim(), default_sheet_id, a1_context, base_pos)?;
             if *sheet.get_or_insert(range.sheet_id) != range.sheet_id {
                 return Err(A1Error::TooManySheets(s.to_string()));
             }
@@ -93,7 +93,7 @@ impl A1Selection {
 
         Ok(Self {
             sheet_id: sheet_id.unwrap_or(default_sheet_id.to_owned()),
-            cursor: Self::cursor_pos_from_last_range(last_range, context),
+            cursor: Self::cursor_pos_from_last_range(last_range, a1_context),
             ranges,
         })
     }
