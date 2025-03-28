@@ -40,7 +40,7 @@ impl Sheet {
     pub fn data_table_by_name(&self, name: String) -> Option<(&Pos, &DataTable)> {
         self.data_tables
             .iter()
-            .find(|(_, data_table)| data_table.name.to_display() == name)
+            .find(|(_, data_table)| *data_table.name() == name)
     }
 
     /// Returns a DataTable at a Pos as a result
@@ -232,7 +232,7 @@ impl Sheet {
         rect: &Rect,
         cells: &mut CellValues,
         values: &mut CellValues,
-        context: &A1Context,
+        a1_context: &A1Context,
         selection: &A1Selection,
         include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
@@ -280,7 +280,7 @@ impl Sheet {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
                             };
-                            if selection.might_contain_pos(Pos { x, y }, context) {
+                            if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 if include_in_cells {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }

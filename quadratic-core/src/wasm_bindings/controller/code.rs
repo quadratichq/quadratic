@@ -50,7 +50,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return Ok(JsValue::null());
         };
-        if let Some(edit_code) = sheet.edit_code_value(pos) {
+        if let Some(edit_code) = sheet.edit_code_value(pos, self.a1_context()) {
             Ok(serde_wasm_bindgen::to_value(&edit_code)?)
         } else {
             Ok(JsValue::null())

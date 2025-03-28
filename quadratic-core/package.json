@@ -15,6 +15,10 @@
     "lint": "cargo clippy --all-targets --all-features -- -D warnings",
     "types": "cargo watch -x 'CC=clang AR=llvm-ar run --features js --bin export_types'",
     "test": "cargo test",
+    "bench": "cargo bench",
+    "bench:run": "./benches.sh run",
+    "bench:watch:bench": "./benches.sh bench",
+    "bench:watch:src": "./benches.sh src",
     "docs": "cargo doc --no-deps --open --document-private-items"
   }
 }

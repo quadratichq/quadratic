@@ -45,6 +45,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     let mut changed = false;
     let mut shifted_offsets_sheet_name = HashMap::new(); // for migrating cells to q.cells
     let mut shifted_offsets_sheet_id = HashMap::new(); // for translating code runs's cells_accessed
+    let a1_context = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         let mut x_shift = 0;
         let mut y_shift = 0;
@@ -55,8 +56,14 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 changed = true;
                 let insert = bounds.min.x - 1;
                 for _ in bounds.min.x..=0 {
-                    sheet.insert_column(&mut transaction, insert, CopyFormats::None, false);
-                    sheet.recalculate_bounds();
+                    sheet.insert_column(
+                        &mut transaction,
+                        insert,
+                        CopyFormats::None,
+                        false,
+                        &a1_context,
+                    );
+                    sheet.recalculate_bounds(&a1_context);
                     x_shift += 1;
                 }
             }
@@ -66,8 +73,14 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 changed = true;
                 let insert = bounds.min.y - 1;
                 for _ in bounds.min.y..=0 {
-                    sheet.insert_row(&mut transaction, insert, CopyFormats::None, false);
-                    sheet.recalculate_bounds();
+                    sheet.insert_row(
+                        &mut transaction,
+                        insert,
+                        CopyFormats::None,
+                        false,
+                        &a1_context,
+                    );
+                    sheet.recalculate_bounds(&a1_context);
                     y_shift += 1;
                 }
             }
@@ -110,7 +123,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         sheet
             .borders
             .translate_in_place(-IMPORT_OFFSET, -IMPORT_OFFSET);
-        sheet.recalculate_bounds();
+        sheet.recalculate_bounds(&a1_context);
     }
 
     if changed && (cfg!(target_family = "wasm") || cfg!(test)) {

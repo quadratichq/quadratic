@@ -154,6 +154,11 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         self.0.is_all_default()
     }
 
+    /// Returns whether the values in a rectangle are all default.
+    pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
+        self.is_all_default_in_range(RefRangeBounds::new_relative_rect(rect))
+    }
+
     /// Returns whether the values in a range are all default.
     pub fn is_all_default_in_range(&self, range: RefRangeBounds) -> bool {
         let [x1, x2, y1, y2] = range_to_rect(range);
@@ -731,6 +736,8 @@ fn range_to_rect(range: RefRangeBounds) -> [u64; 4] {
 /// than 1. Returns `None` if there is no part of the rectangle that intersects
 /// the valid region. `u64::MAX` represents infinity.
 ///
+/// Returns `(x1, y1, x2, y2)`.
+///
 /// TODO: when doing `i64 -> u64` refactor, consider making `Rect` do this
 ///       validation on construction. this means we'd need to handle infinity
 ///       everywhere.
@@ -1131,6 +1138,8 @@ mod tests {
         assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 2)));
         assert!(c.is_all_default_in_range(RefRangeBounds::new_relative(5, 4, 5, 4)));
         assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)));
+        assert!(c.is_all_default_in_rect(Rect::new(5, 4, 5, 4)));
+        assert!(!c.is_all_default_in_rect(Rect::new(8, 3, 8, 3)));
     }
 
     #[test]
