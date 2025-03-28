@@ -3,12 +3,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { A1Selection } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { A1SelectionToJsSelection, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { InsertCellRefIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import type { FocusEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -147,7 +147,7 @@ export const SheetRange = (props: Props) => {
             side="bottom"
           >
             <Button size="sm" onClick={onInsert} disabled={disableButton}>
-              <HighlightAltIcon fontSize="small" />
+              <InsertCellRefIcon />
             </Button>
           </TooltipPopover>
         )}
