@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::formulas::{escape_string, parse_sheet_name};
-use crate::{a1::UNBOUNDED, Pos};
+use crate::{Pos, a1::UNBOUNDED};
 
 /// A reference to a cell or a range of cells.
 ///

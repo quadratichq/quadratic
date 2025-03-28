@@ -1,7 +1,7 @@
-use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{mysql_connection::MySqlConnection, Connection},
+    sql::{Connection, mysql_connection::MySqlConnection},
 };
 use uuid::Uuid;
 
@@ -9,11 +9,11 @@ use crate::{
     auth::Claims,
     connection::get_api_connection,
     error::Result,
-    server::{test_connection, SqlQuery, TestResponse},
+    server::{SqlQuery, TestResponse, test_connection},
     state::State,
 };
 
-use super::{query_generic, Schema};
+use super::{Schema, query_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(Json(connection): Json<MySqlConnection>) -> Json<TestResponse> {
@@ -349,9 +349,11 @@ mod tests {
             ),
             (
                 DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
-                    .unwrap()
-                    .num_seconds_from_midnight()),
+                num_vec!(
+                    NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
+                        .unwrap()
+                        .num_seconds_from_midnight()
+                ),
             ),
             (DataType::UInt16, num_vec!(2024_u16)),
             (DataType::Utf8, str_vec(r#"{"key":"value"}"#)),

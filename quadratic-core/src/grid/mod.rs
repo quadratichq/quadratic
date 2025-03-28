@@ -15,9 +15,6 @@ use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
 pub use sheet_formatting::SheetFormatting;
 
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::*;
-
 use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
@@ -45,9 +42,8 @@ pub mod sheet_formatting;
 pub mod sheets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
-    sheets: Vec<Sheet>,
+    pub sheets: Vec<Sheet>,
 }
 impl Default for Grid {
     fn default() -> Self {

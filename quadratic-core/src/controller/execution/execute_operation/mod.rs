@@ -1,6 +1,6 @@
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 
 /// Asserts that an operation is a particular type, and unpacks its contents
 /// into the current scope.
@@ -46,8 +46,7 @@ impl GridController {
         }
     }
 
-    /// Executes the given operation.
-    ///
+    /// Removes the first operation from a transaction and executes it.
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
         if let Some(op) = transaction.operations.pop_front() {
             #[cfg(feature = "show-operations")]
@@ -173,9 +172,15 @@ impl GridController {
                 }
 
                 Operation::DeleteColumn { .. } => self.execute_delete_column(transaction, op),
+                Operation::DeleteColumns { .. } => self.execute_delete_columns(transaction, op),
                 Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
+                Operation::DeleteRows { .. } => self.execute_delete_rows(transaction, op),
+
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
+
+                Operation::MoveColumns { .. } => self.execute_move_columns(transaction, op),
+                Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
             }
         }
     }

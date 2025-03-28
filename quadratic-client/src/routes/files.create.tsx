@@ -1,6 +1,6 @@
-import { determineAndSetActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { determineAndSetActiveTeam } from '@/shared/utils/getActiveTeam';
 import type { LoaderFunctionArgs } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 

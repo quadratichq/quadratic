@@ -1,6 +1,6 @@
-import type { Link } from '@/app/gridGL/types/links';
-import type { DrawRects } from '@/app/gridGL/types/size';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { Link } from '@/app/shared/types/links';
+import type { DrawRects } from '@/app/shared/types/size';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import type { Rectangle } from 'pixi.js';

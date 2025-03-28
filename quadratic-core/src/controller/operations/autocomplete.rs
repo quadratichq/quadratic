@@ -1,15 +1,16 @@
 use crate::{
+    CellValue, Pos, Rect, RefAdjust, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     grid::{
+        SheetId,
         formats::SheetFormatUpdates,
-        series::{find_auto_complete, SeriesOptions},
+        series::{SeriesOptions, find_auto_complete},
         sheet::borders::BordersUpdates,
-        unique_data_table_name, SheetId,
+        unique_data_table_name,
     },
     util::maybe_reverse,
-    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;
@@ -662,9 +663,19 @@ impl GridController {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     let mut data_table_ops = vec![];
                     if let Some(original_pos) = original_pos {
-                        let new_x = x - original_pos.x;
-                        let new_y = y - original_pos.y;
-                        code_cell.translate_cell_references(new_x, new_y, &sheet_id, context);
+                        code_cell.adjust_references(
+                            sheet_id,
+                            context,
+                            original_pos.to_sheet_pos(sheet_id),
+                            RefAdjust {
+                                sheet_id: None,
+                                relative_only: true,
+                                dx: x - original_pos.x,
+                                dy: y - original_pos.y,
+                                x_start: 0,
+                                y_start: 0,
+                            },
+                        );
 
                         let source_pos = original_pos.to_owned();
                         original_pos.x = x;
@@ -673,7 +684,7 @@ impl GridController {
                         // collecte SetDataTable operations for any data tables in the source_pos
                         if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
                             let mut data_table = data_table.to_owned();
-                            let old_name = data_table.name.to_display();
+                            let old_name = data_table.name().to_string();
                             let new_name = unique_data_table_name(&old_name, false, None, context);
                             data_table.name = new_name.into();
 

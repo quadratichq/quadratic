@@ -1,12 +1,13 @@
 use indexmap::IndexMap;
 
 use crate::{
+    CellValue, Pos,
+    a1::A1Context,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    CellValue, Pos,
 };
 
 use super::Sheet;
@@ -21,6 +22,7 @@ impl Sheet {
         pos: Pos,
         cell_values: &CellValues,
         send: bool,
+        a1_context: &A1Context,
     ) -> CellValues {
         let mut old = CellValues::new(cell_values.w, cell_values.h);
 
@@ -42,8 +44,6 @@ impl Sheet {
             }
         }
 
-        let context = self.a1_context();
-
         // check the validations for the new cells; note: IndexMap is necessary
         // so the tests pass (ie, the order of the cells is deterministic)
         let mut validation_warnings = IndexMap::new();
@@ -56,7 +56,7 @@ impl Sheet {
                     y: grid_y,
                 };
                 let sheet_pos = pos.to_sheet_pos(self.id);
-                if let Some(validation) = self.validations.validate(self, pos, &context) {
+                if let Some(validation) = self.validations.validate(self, pos, a1_context) {
                     validation_warnings.insert(pos, validation.id);
                     transaction
                         .forward_operations
@@ -130,13 +130,13 @@ mod test {
     use std::str::FromStr;
 
     use crate::{
+        CellValue,
         a1::A1Selection,
         grid::{
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
+            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
         },
         wasm_bindings::js::expect_js_call,
-        CellValue,
     };
 
     use super::*;
@@ -153,8 +153,14 @@ mod test {
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
 
         let mut transaction = PendingTransaction::default();
-        let old =
-            sheet.merge_cell_values(&mut transaction, Pos { x: -1, y: -2 }, &cell_values, false);
+        let a1_context = sheet.make_a1_context();
+        let old = sheet.merge_cell_values(
+            &mut transaction,
+            Pos { x: -1, y: -2 },
+            &cell_values,
+            false,
+            &a1_context,
+        );
         assert_eq!(old.w, 2);
         assert_eq!(old.h, 2);
 
@@ -214,7 +220,7 @@ mod test {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C1", &sheet.id),
+            selection: A1Selection::test_a1_sheet_id("A1:C1", sheet.id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -227,7 +233,14 @@ mod test {
             CellValue::Logical(true),
         ]]);
         let mut transaction = PendingTransaction::default();
-        sheet.merge_cell_values(&mut transaction, Pos { x: 1, y: 1 }, &cell_values, true);
+        let a1_context = sheet.make_a1_context();
+        sheet.merge_cell_values(
+            &mut transaction,
+            Pos { x: 1, y: 1 },
+            &cell_values,
+            true,
+            &a1_context,
+        );
 
         assert_eq!(
             sheet.cell_value(Pos { x: 3, y: 1 }),

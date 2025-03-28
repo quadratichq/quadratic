@@ -1,6 +1,6 @@
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
-import { getActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { VERSION } from '@/shared/constants/appConstants';
+import { getActiveTeam } from '@/shared/utils/getActiveTeam';
 import { useRecoilValue } from 'recoil';
 import { debugShowActiveTeam, debugShowFPS } from '../../../debugFlags';
 import BottomBarItem from './BottomBarItem';
@@ -56,7 +56,7 @@ export const BottomBar = () => {
           </BottomBarItem>
         )}
       </div>
-      <div className="flex items-center">
+      <div className="mr-2 flex items-center">
         <SelectionSummary />
         <SyncState />
         <div className="hidden lg:block">

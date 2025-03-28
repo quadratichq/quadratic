@@ -1,3 +1,7 @@
+//! Snowflake
+//!
+//! Functions to interact with Snowflake
+
 use arrow::array::ArrayRef;
 use arrow_array::array::Array;
 use async_trait::async_trait;
@@ -12,11 +16,12 @@ use std::sync::Arc;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError};
+use crate::sql::Connection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
-use crate::sql::Connection;
 use crate::utils::array::transpose;
 
+/// Snowflake connection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SnowflakeConnection {
     pub account_identifier: String,
@@ -29,6 +34,7 @@ pub struct SnowflakeConnection {
 }
 
 impl SnowflakeConnection {
+    /// Create a new Snowflake connection
     pub fn new(
         account_identifier: String,
         username: String,
@@ -60,22 +66,27 @@ impl Connection for SnowflakeConnection {
     type Row = Arc<dyn Array>;
     type Column = ArrayRef;
 
+    /// Get the length of a row
     fn row_len(_row: &Self::Row) -> usize {
         unimplemented!();
     }
 
+    /// Get the columns of a row
     fn row_columns(_row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
         unimplemented!();
     }
 
+    /// Get the name of a column
     fn column_name(_col: &Self::Column) -> &str {
         unimplemented!();
     }
 
+    /// Convert a row to an Arrow type
     fn to_arrow(_row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
         unimplemented!();
     }
 
+    /// Connect to a Snowflake database
     async fn connect(&self) -> Result<SnowflakeApi> {
         let client = SnowflakeApi::with_password_auth(
             &self.account_identifier,
@@ -95,6 +106,7 @@ impl Connection for SnowflakeConnection {
         Ok(client)
     }
 
+    /// Query rows from a Snowflake database
     async fn query(
         &self,
         _client: &mut Self::Conn,
@@ -103,15 +115,19 @@ impl Connection for SnowflakeConnection {
     ) -> Result<(Bytes, bool, usize)> {
         let query_error = |e: String| SharedError::Sql(SqlError::Query(e));
 
-        #[cfg(any(test, feature = "test"))]
-        let (mut _client, _recording) = tests::get_mocked(&self, "snowflake-connection").await;
+        #[cfg(all(any(test, feature = "test"), not(clippy)))]
+        let (mut _client, _recording) = tests::get_mocked(self, "snowflake-connection").await;
 
         let query_result = _client
             .exec_raw(sql, true)
             .await
             .map_err(|e| query_error(e.to_string()))?;
 
-        #[cfg(all(any(test, feature = "test"), feature = "record-request-mock"))]
+        #[cfg(all(
+            any(test, feature = "test"),
+            feature = "record-request-mock",
+            not(clippy)
+        ))]
         record_stop(scenario, _recording).await;
 
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
@@ -192,16 +208,20 @@ impl Connection for SnowflakeConnection {
                 col.ordinal_position;"
         );
 
-        #[cfg(any(test, feature = "test"))]
+        #[cfg(all(any(test, feature = "test"), not(clippy)))]
         let (mut _client, _recording) =
-            tests::get_mocked(&self, "snowflake-connection-schema").await;
+            tests::get_mocked(self, "snowflake-connection-schema").await;
 
         let row_stream = _client
             .exec(&sql)
             .await
             .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
 
-        #[cfg(all(any(test, feature = "test"), feature = "record-request-mock"))]
+        #[cfg(all(
+            any(test, feature = "test"),
+            feature = "record-request-mock",
+            not(clippy)
+        ))]
         record_stop(scenario, _recording).await;
 
         let mut data = vec![vec![]; 6];
@@ -211,6 +231,7 @@ impl Connection for SnowflakeConnection {
                 for batch in a {
                     let num_cols = batch.num_columns();
 
+                    #[allow(clippy::needless_range_loop)]
                     for col_index in 0..num_cols {
                         let col = batch.column(col_index);
 
@@ -265,6 +286,7 @@ impl Connection for SnowflakeConnection {
     }
 }
 
+#[cfg(not(clippy))]
 #[cfg(any(test, feature = "test"))]
 pub mod tests {
 
@@ -328,8 +350,8 @@ pub mod tests {
         connection: &'a SnowflakeConnection,
         scenario: &'a str,
     ) -> (SnowflakeApi, Option<Recording<'a>>) {
-        let (recording, server) = tests::get_mock_server(&connection, scenario);
-        let client = tests::get_mocked_client(&connection, &server).await;
+        let (recording, server) = tests::get_mock_server(connection, scenario);
+        let client = tests::get_mocked_client(connection, &server).await;
         (client, recording)
     }
 
@@ -394,16 +416,15 @@ pub mod tests {
     pub async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
         let connection = new_snowflake_connection();
         let mut client = connection.connect().await.unwrap();
-        let result = connection
+
+        connection
             .query(
                 &mut client,
                 "select * from all_native_data_types;",
                 max_bytes,
             )
             .await
-            .unwrap();
-
-        result
+            .unwrap()
     }
 
     #[tokio::test]
@@ -422,12 +443,12 @@ pub mod tests {
             PARQUET_FILE,
             rows
         ));
-        assert_eq!(over_the_limit, false);
+        assert!(!over_the_limit);
         assert_eq!(num_records, 2);
 
         // // test if we're over the limit
         let (_, over_the_limit, num_records) = test_query(Some(10)).await;
-        assert_eq!(over_the_limit, true);
+        assert!(over_the_limit);
         assert_eq!(num_records, 0);
     }
 

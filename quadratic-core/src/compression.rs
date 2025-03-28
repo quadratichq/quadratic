@@ -1,14 +1,22 @@
-use anyhow::{anyhow, Result};
-use bincode::Options;
+use anyhow::{Result, anyhow};
+use bincode::config;
 use flate2::{
-    write::{ZlibDecoder, ZlibEncoder},
     Compression,
+    write::{ZlibDecoder, ZlibEncoder},
 };
 use serde::de::DeserializeOwned;
 use std::io::prelude::*;
 
 const HEADER_DELIMITER: u8 = "*".as_bytes()[0];
 const BUFFER_SIZE: usize = 8192; // 8KB chunks
+const MAX_FILE_SIZE: usize = 104857600; // 100 MB
+const BINCODE_CONFIG: bincode::config::Configuration<
+    bincode::config::LittleEndian,
+    bincode::config::Fixint,
+    bincode::config::Limit<MAX_FILE_SIZE>, // 100 MB
+> = config::standard()
+    .with_fixed_int_encoding()
+    .with_limit::<MAX_FILE_SIZE>();
 
 pub enum CompressionFormat {
     None,
@@ -51,7 +59,7 @@ where
     T: serde::Serialize,
 {
     match serialization_format {
-        SerializationFormat::Bincode => Ok(bincode::serialize::<T>(&data)?),
+        SerializationFormat::Bincode => Ok(bincode::serde::encode_to_vec(&data, BINCODE_CONFIG)?),
         SerializationFormat::Json => Ok(serde_json::to_string(&data)?.into_bytes()),
     }
 }
@@ -70,12 +78,10 @@ pub fn deserialize_bincode<T>(data: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    let config = bincode::DefaultOptions::new()
-        .with_fixint_encoding()
-        .with_limit(1024 * 1024)
-        .allow_trailing_bytes();
+    let deserialized =
+        bincode::serde::decode_from_slice(data, BINCODE_CONFIG).map_err(|e| anyhow!(e))?;
 
-    Ok(config.deserialize(data)?)
+    Ok(deserialized.0)
 }
 
 // COMPRESSION

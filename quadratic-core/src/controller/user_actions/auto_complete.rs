@@ -1,6 +1,6 @@
-use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::{grid::SheetId, Rect};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::{Rect, grid::SheetId};
 use anyhow::Result;
 
 impl GridController {
@@ -28,18 +28,17 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
+        CellValue, Pos, SheetPos, SheetRect,
         a1::A1Selection,
         array,
-        formulas::convert_a1_to_rc,
         grid::{
-            sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
+            sheet::borders::{BorderSelection, BorderStyle},
         },
-        test_util::{
+        test_util::gc::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        CellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
@@ -103,23 +102,10 @@ mod tests {
                 }
 
                 if let Some(code_cell) = code_cells.get(count) {
-                    let code_cell = match code_cell.language {
-                        CodeCellLanguage::Formula => {
-                            let mut code_cell = code_cell.to_owned();
-                            code_cell.code = convert_a1_to_rc(
-                                &code_cell.code,
-                                grid_controller.a1_context(),
-                                sheet_pos,
-                            );
-                            code_cell
-                        }
-                        _ => code_cell.to_owned(),
-                    };
-
                     grid_controller.set_code_cell(
                         sheet_pos,
-                        code_cell.language,
-                        code_cell.code,
+                        code_cell.language.clone(),
+                        code_cell.code.clone(),
                         None,
                     );
                 }

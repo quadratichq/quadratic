@@ -13,7 +13,7 @@ export const ROUTES = {
   LOGIN_RESULT: '/login-result',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: (uuid: string) => `/file/${uuid}`,
-
+  FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {
@@ -74,4 +74,6 @@ export const SEARCH_PARAMS = {
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
   DUPLICATE: { KEY: 'duplicate', VALUE: 'true' },
+  // Used to load a specific checkpoint (version history), e.g. /file/123?checkpoint=456
+  CHECKPOINT: { KEY: 'checkpoint' },
 };

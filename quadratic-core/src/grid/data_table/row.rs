@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, bail};
 
 use super::DataTable;
 use crate::{CellValue, CopyFormats};
@@ -42,14 +42,23 @@ impl DataTable {
         self.borders.insert_row(row_index + 1, CopyFormats::None);
 
         let row_index = u64::try_from(row_index)?;
+
         // add the row to the display buffer
         if let Some(display_buffer) = &mut self.display_buffer {
+            let len = display_buffer.len();
+            let index = usize::try_from(row_index)?;
+
+            if index >= len {
+                bail!("Row index {index} is out of bounds. Display buffer length: {len}");
+            }
+
             for y in display_buffer.iter_mut() {
                 if *y >= row_index {
                     *y += 1;
                 }
             }
-            display_buffer.insert(usize::try_from(row_index)?, row_index);
+
+            display_buffer.insert(index, row_index);
         }
 
         Ok(())
@@ -105,8 +114,11 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        grid::test::{new_data_table, pretty_print_data_table},
         ArraySize, CellValue,
+        grid::{
+            sort::SortDirection,
+            test::{new_data_table, pretty_print_data_table},
+        },
     };
 
     #[test]
@@ -122,6 +134,12 @@ pub mod test {
         // this should be a 5x4 array
         let expected_size = ArraySize::new(4, 6).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
+
+        // expect index out of bounds error
+        // first sort the table to create the display buffer
+        data_table.sort_column(0, SortDirection::Ascending).unwrap();
+        let expected_error = data_table.insert_row(10, None);
+        assert!(expected_error.is_err());
     }
 
     #[test]

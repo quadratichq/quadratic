@@ -1,3 +1,4 @@
+export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 export const SUPPORT_EMAIL = 'support@quadratichq.com';
 export const DEFAULT_FILE_NAME = 'Untitled';
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
@@ -17,4 +18,4 @@ export const TYPE = {
   // Taken from shadcn/ui form styles
   formError: 'text-[0.8rem] font-medium text-destructive',
 };
-export const VERSION = `Quadratic ${import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)`;
+export const VERSION = import.meta.env.VITE_VERSION;

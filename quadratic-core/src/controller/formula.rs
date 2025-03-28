@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    SheetPos, Span, Spanned,
     a1::{A1Context, SheetCellRefRange},
-    formulas, SheetPos, Span, Spanned,
+    formulas,
 };
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -70,7 +71,8 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 ///               }
 ///             }
 ///           }
-///         }
+///         },
+///         explicit_sheet_name: false
 ///       }
 ///     },
 ///     {
@@ -105,7 +107,8 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 ///               }
 ///             }
 ///           }
-///         }
+///         },
+///         explicit_sheet_name: false
 ///       }
 ///     }
 ///   ]
@@ -133,15 +136,16 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_formula, CellRefSpan, FormulaParseResult};
+    use super::{CellRefSpan, FormulaParseResult, parse_formula};
     use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
-    use crate::grid::{Grid, Sheet, SheetId};
+    use crate::controller::GridController;
+    use crate::grid::SheetId;
     use crate::{Pos, Span};
 
-    fn parse(grid: &Grid, s: &str) -> FormulaParseResult {
+    fn parse(grid_controller: &GridController, s: &str) -> FormulaParseResult {
         println!("Parsing {s}");
-        let pos = Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id);
-        parse_formula(s, &grid.a1_context(), pos)
+        let pos = Pos::ORIGIN.to_sheet_pos(grid_controller.sheet_ids()[0]);
+        parse_formula(s, grid_controller.a1_context(), pos)
     }
 
     /// Run this test with `--nocapture` to generate the example for the
@@ -163,6 +167,7 @@ mod tests {
                             CellRefCoord::new_rel(1),
                             CellRefCoord::new_abs(2),
                         ),
+                        explicit_sheet_name: false,
                     },
                 },
                 CellRefSpan {
@@ -175,6 +180,7 @@ mod tests {
                             CellRefCoord::new_abs(3),
                             CellRefCoord::new_rel(2),
                         ),
+                        explicit_sheet_name: false,
                     },
                 },
             ],
@@ -185,13 +191,11 @@ mod tests {
 
     #[test]
     fn test_parse_formula_output() {
-        let mut g = Grid::new();
-        g.add_sheet(Some(Sheet::new(
-            SheetId::new(),
-            "Sheet 2".to_string(),
-            String::new(),
-        )));
-        let result = parse(&g, "'Sheet 2'!A1");
+        let mut g = GridController::new();
+        g.add_sheet(None);
+        let sheet2_id = g.sheet_ids()[1];
+        let sheet2_name = &g.sheet(sheet2_id).name;
+        let result = parse(&g, &format!("'{sheet2_name}'!A1"));
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);
@@ -200,15 +204,15 @@ mod tests {
 
     #[test]
     fn test_parse_formula_case_insensitive() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(parse(&g, "A1:A2"), parse(&g, "a1:a2"));
         assert_eq!(parse(&g, "A1:AA2"), parse(&g, "a1:aa2"));
     }
 
     #[test]
     fn test_parse_formula_column() {
-        let g = Grid::new();
-        let sheet_id = g.sheets()[0].id;
+        let g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
         let cell_refs = parse(&g, "SUM(A1:A)").cell_refs;
 
         assert_eq!(
@@ -223,6 +227,7 @@ mod tests {
                         CellRefCoord::new_rel(1),
                         CellRefCoord::UNBOUNDED,
                     ),
+                    explicit_sheet_name: false,
                 },
             }]
         );
@@ -230,8 +235,8 @@ mod tests {
 
     #[test]
     fn test_parse_formula_row() {
-        let g = Grid::new();
-        let sheet_id = g.sheets()[0].id;
+        let g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
         let cell_refs = parse(&g, "SUM(2:3)").cell_refs;
 
         assert_eq!(
@@ -245,7 +250,8 @@ mod tests {
                         CellRefCoord::new_rel(2),
                         CellRefCoord::UNBOUNDED,
                         CellRefCoord::new_rel(3),
-                    )
+                    ),
+                    explicit_sheet_name: false,
                 }
             }]
         );

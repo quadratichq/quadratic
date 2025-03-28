@@ -1,12 +1,12 @@
 use anyhow::Result;
 
+use crate::Pos;
 use crate::grid::file::serialize::contiguous_2d::import_contiguous_2d;
 use crate::grid::file::serialize::contiguous_2d::opt_fn;
 use crate::grid::file::v1_7::schema::OffsetsSchema;
 use crate::grid::file::v1_7_1 as current;
 use crate::grid::file::v1_8;
 use crate::grid::formatting::RenderSize;
-use crate::Pos;
 
 use super::sheet_offsets::Offsets;
 

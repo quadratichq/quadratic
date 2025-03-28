@@ -19,7 +19,7 @@ mod string;
 mod tests;
 mod trigonometry;
 
-use super::{util, Criterion, Ctx, Param, ParamKind};
+use super::{Criterion, Ctx, Param, ParamKind, util};
 use crate::{
     Array, Axis, CellValue, CodeResult, CoerceInto, Duration, IsBlank, RunError, RunErrorMsg, Span,
     Spanned, SpannedIterExt, Value,
@@ -121,7 +121,7 @@ impl FormulaFnArgs {
         })
     }
     /// Takes the rest of the arguments and iterates over them.
-    pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> {
+    pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> + use<> {
         std::mem::take(&mut self.values).into_iter()
     }
 

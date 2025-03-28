@@ -4,7 +4,7 @@ use super::*;
 
 impl A1Selection {
     /// Finds intersection of two Selections.
-    pub fn intersection(&self, other: &Self, context: &A1Context) -> Option<Self> {
+    pub fn intersection(&self, other: &Self, a1_context: &A1Context) -> Option<Self> {
         if self.sheet_id != other.sheet_id {
             return None;
         }
@@ -24,7 +24,7 @@ impl A1Selection {
                             }
                         }
                         CellRefRange::Table { range: other_range } => {
-                            if let Some(rect) = other_range.to_largest_rect(context) {
+                            if let Some(rect) = other_range.to_largest_rect(a1_context) {
                                 if let Some(intersection) =
                                     RefRangeBounds::new_relative_rect(rect).intersection(range)
                                 {
@@ -37,7 +37,8 @@ impl A1Selection {
                     });
             }
             CellRefRange::Table { range } => {
-                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false, false)
+                if let Some(range) =
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
                 {
                     other
                         .ranges
@@ -66,17 +67,17 @@ impl A1Selection {
             };
 
             // try to find a better cursor position
-            result.cursor = if result.contains_pos(self.cursor, context) {
+            result.cursor = if result.contains_pos(self.cursor, a1_context) {
                 self.cursor
-            } else if result.contains_pos(other.cursor, context) {
+            } else if result.contains_pos(other.cursor, a1_context) {
                 other.cursor
             } else {
-                let pos = result.last_selection_end(context);
-                if result.contains_pos(pos, context) {
+                let pos = result.last_selection_end(a1_context);
+                if result.contains_pos(pos, a1_context) {
                     pos
                 } else {
-                    let pos = result.last_selection_end(context);
-                    if result.contains_pos(pos, context) {
+                    let pos = result.last_selection_end(a1_context);
+                    if result.contains_pos(pos, a1_context) {
                         pos
                     } else {
                         // give up and just use the cursor even though it's wrong
@@ -92,10 +93,10 @@ impl A1Selection {
     fn overlap_ref_range_bounds_table_ref(
         range: &RefRangeBounds,
         other_range: &TableRef,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> bool {
         let rect = range.to_rect_unbounded();
-        if let Some(other_rect) = other_range.to_largest_rect(context) {
+        if let Some(other_rect) = other_range.to_largest_rect(a1_context) {
             rect.intersects(other_rect)
         } else {
             false
@@ -103,7 +104,7 @@ impl A1Selection {
     }
 
     /// Returns `true` if the two selections overlap.
-    pub fn overlaps_a1_selection(&self, other: &Self, context: &A1Context) -> bool {
+    pub fn overlaps_a1_selection(&self, other: &Self, a1_context: &A1Context) -> bool {
         if self.sheet_id != other.sheet_id {
             return false;
         }
@@ -115,14 +116,22 @@ impl A1Selection {
                         range.intersection(other_range).is_some()
                     }
                     CellRefRange::Table { range: other_range } => {
-                        A1Selection::overlap_ref_range_bounds_table_ref(range, other_range, context)
+                        A1Selection::overlap_ref_range_bounds_table_ref(
+                            range,
+                            other_range,
+                            a1_context,
+                        )
                     }
                 })
             }
             CellRefRange::Table { range } => {
                 other.ranges.iter().any(|other_range| match other_range {
                     CellRefRange::Sheet { range: other_range } => {
-                        A1Selection::overlap_ref_range_bounds_table_ref(other_range, range, context)
+                        A1Selection::overlap_ref_range_bounds_table_ref(
+                            other_range,
+                            range,
+                            a1_context,
+                        )
                     }
                     // two tables cannot overlap
                     CellRefRange::Table { .. } => false,
@@ -142,8 +151,8 @@ mod tests {
     fn test_intersection() {
         let context = A1Context::default();
         // Test different sheets return None
-        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
-        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
+        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", SheetId::new());
+        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", SheetId::new());
         assert_eq!(
             sel1.intersection(&sel2, &context),
             None,
@@ -272,8 +281,8 @@ mod tests {
     fn test_overlaps_a1_selection() {
         let context = A1Context::test(&[], &[]);
         // Different sheets don't overlap
-        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
-        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
+        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", SheetId::new());
+        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", SheetId::new());
         assert!(
             !sel1.overlaps_a1_selection(&sel2, &context),
             "Different sheets should not overlap"

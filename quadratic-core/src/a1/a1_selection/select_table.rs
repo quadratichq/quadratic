@@ -8,12 +8,12 @@ impl A1Selection {
         &mut self,
         table_name: &str,
         col: Option<String>,
-        context: &A1Context,
+        a1_context: &A1Context,
         screen_col_left: i64,
         shift_key: bool,
         ctrl_key: bool,
     ) {
-        let Some(table) = context.try_table(table_name) else {
+        let Some(table) = a1_context.try_table(table_name) else {
             return;
         };
 
@@ -202,7 +202,7 @@ impl A1Selection {
                         self.ranges
                             .push(CellRefRange::new_relative_pos(self.cursor));
                     }
-                    self.update_cursor(context);
+                    self.update_cursor(a1_context);
                     return;
                 }
             }
@@ -216,7 +216,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::RefRangeBounds, Rect};
+    use crate::{Rect, a1::RefRangeBounds};
 
     use super::*;
 

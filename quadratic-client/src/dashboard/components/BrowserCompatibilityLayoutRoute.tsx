@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Empty } from './Empty';
+import { Empty } from '../../shared/components/Empty';
 
 export function BrowserCompatibilityLayoutRoute() {
   useEffect(() => {

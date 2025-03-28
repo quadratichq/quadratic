@@ -122,12 +122,13 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{formulas::tests::*, Pos};
+    use crate::{Pos, controller::GridController, formulas::tests::*};
 
     #[test]
     fn test_formula_if() {
-        let mut g = Grid::new();
-        let sheet = &mut g.sheets_mut()[0];
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+        let sheet = g.sheet_mut(sheet_id);
         sheet.set_cell_value(Pos { x: 1, y: 2 }, "q");
         sheet.set_cell_value(Pos { x: 2, y: 2 }, "w");
 
@@ -147,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_formula_iferror() {
-        let mut g = Grid::new();
+        let mut g = GridController::new();
 
         assert_eq!("ok", eval_to_string(&g, "IFERROR(\"ok\", 42)"));
         assert_eq!("ok", eval_to_string(&g, "IFERROR(\"ok\", 0/0)"));
@@ -162,11 +163,13 @@ mod tests {
             eval_to_string(&g, "IFERROR(SQRT(-1), \"complex!\")"),
         );
 
-        g.sheets_mut()[0].set_cell_value(pos![A6], "happy");
+        let sheet_id = g.sheet_ids()[0];
+
+        g.sheet_mut(sheet_id).set_cell_value(pos![A6], "happy");
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 42)"));
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 0/0)"));
 
-        g.sheets_mut()[0].set_cell_value(
+        g.sheet_mut(sheet_id).set_cell_value(
             pos![A6],
             CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         );
@@ -179,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_formula_ifna() {
-        let mut g = Grid::new();
+        let mut g = GridController::new();
 
         assert_eq!("ok", eval_to_string(&g, "IFNA(\"ok\", 42)"));
         assert_eq!("ok", eval_to_string(&g, "IFNA(\"ok\", 0/0)"));
@@ -193,7 +196,8 @@ mod tests {
         );
 
         let div_by_zero_error = eval(&g, "0/0").into_cell_value().unwrap();
-        let sheet = &mut g.sheets_mut()[0];
+        let sheet_id = g.sheet_ids()[0];
+        let sheet = g.sheet_mut(sheet_id);
         sheet.set_cell_value(pos![A1], 10);
         sheet.set_cell_value(pos![A2], 20);
         sheet.set_cell_value(pos![A3], 30);

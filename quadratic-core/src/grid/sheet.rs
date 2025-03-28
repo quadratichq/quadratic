@@ -1,7 +1,7 @@
-use std::collections::{btree_map, BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashSet, btree_map};
 use std::str::FromStr;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use bigdecimal::{BigDecimal, RoundingMode};
 use borders::Borders;
 use indexmap::IndexMap;
@@ -111,7 +111,7 @@ impl Sheet {
     pub fn validate_sheet_name(
         name: &str,
         sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Result<bool, String> {
         // Check length limit
         if name.is_empty() || name.len() > 31 {
@@ -125,7 +125,7 @@ impl Sheet {
 
         // Check if sheet name already exists
 
-        if let Some(existing_sheet_id) = context.sheet_map.try_sheet_name(name) {
+        if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name) {
             if existing_sheet_id != sheet_id {
                 return Err("Sheet name must be unique".to_string());
             }
@@ -134,21 +134,33 @@ impl Sheet {
         Ok(true)
     }
 
-    pub fn replace_sheet_name_in_code_cells(
+    /// Replaces a sheet name when referenced in code cells.
+    pub fn replace_sheet_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        let sheet_id = SheetId::new();
+        let old_a1_context = A1Context::with_single_sheet(old_name, sheet_id);
+        let new_a1_context = A1Context::with_single_sheet(new_name, sheet_id);
+        self.replace_names_in_code_cells(&old_a1_context, &new_a1_context);
+    }
+
+    /// Replaces any number of sheet names and table names when referenced in
+    /// code cells.
+    pub fn replace_names_in_code_cells(
         &mut self,
-        old_name: &str,
-        new_name: &str,
-        context: &A1Context,
+        old_a1_context: &A1Context,
+        new_a1_context: &A1Context,
     ) {
-        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
-            code_cell_value
-                .replace_sheet_name_in_cell_references(old_name, new_name, id, a1_context);
+        self.update_code_cells(|code_cell_value, pos| {
+            code_cell_value.replace_sheet_name_in_cell_references(
+                old_a1_context,
+                new_a1_context,
+                pos,
+            );
         });
     }
 
     /// Populates the current sheet with random values
     /// Should only be used for testing (as it will not propagate in multiplayer)
-    pub fn random_numbers(&mut self, rect: &Rect) {
+    pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
         self.columns.clear();
         let mut rng = rand::rng();
         for x in rect.x_range() {
@@ -160,7 +172,7 @@ impl Sheet {
                     .insert(y, CellValue::Number(BigDecimal::from_str(&value).unwrap()));
             }
         }
-        self.recalculate_bounds();
+        self.recalculate_bounds(a1_context);
     }
 
     /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
@@ -503,13 +515,6 @@ impl Sheet {
         }
     }
 
-    /// Deletes all data and formatting in the sheet, effectively recreating it.
-    pub fn clear(&mut self) {
-        self.columns.clear();
-        self.data_tables.clear();
-        self.recalculate_bounds();
-    }
-
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
     }
@@ -611,12 +616,15 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         include_blanks: bool,
+        a1_context: &A1Context,
     ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
             if let Some(rect) = match range {
                 CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
-                CellRefRange::Table { range } => self.table_ref_to_rect(range, false, false),
+                CellRefRange::Table { range } => {
+                    self.table_ref_to_rect(range, false, false, a1_context)
+                }
             } {
                 let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
                 rows_set.extend(rows);
@@ -637,7 +645,7 @@ mod test {
     use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
-    use crate::test_util::print_table;
+    use crate::test_util::gc::print_table;
     use crate::{SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -1057,15 +1065,16 @@ mod test {
         sheet.set_cell_value(pos![A1], "test");
         sheet.set_cell_value(pos![A3], "test");
         let selection = A1Selection::test_a1("A1:A4");
+        let a1_context = sheet.make_a1_context();
         assert_eq!(
-            sheet.get_rows_with_wrap_in_selection(&selection, false),
+            sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context),
             Vec::<i64>::new()
         );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false);
+        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context);
         rows.sort();
         assert_eq!(rows, vec![1, 3]);
     }
@@ -1445,8 +1454,11 @@ mod test {
 
         // Table with blank content should be ignored
         sheet.test_set_code_run_array(10, 10, vec!["1", "", "", "4"], false);
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().clone();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 10, y: 10 }));
         assert!(!sheet.has_content_ignore_blank_table(Pos { x: 11, y: 10 }));
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 13, y: 10 }));
@@ -1455,9 +1467,13 @@ mod test {
         let mut dt_chart = dt.clone();
         dt_chart.chart_output = Some((5, 5));
         let pos3 = Pos { x: 20, y: 20 };
+        let sheet = gc.sheet_mut(sheet_id);
         sheet.data_tables.insert(pos3, dt_chart);
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().clone();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert!(sheet.has_content_ignore_blank_table(pos3));
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 24, y: 20 }));
         assert!(!sheet.has_content_ignore_blank_table(Pos { x: 25, y: 20 }));

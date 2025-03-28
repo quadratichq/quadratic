@@ -1,9 +1,9 @@
+use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::PasteSpecial;
-use crate::controller::GridController;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{GridBounds, SheetId};
-use crate::{a1::A1Selection, Pos, Rect, SheetPos, SheetRect};
+use crate::{Pos, Rect, SheetPos, SheetRect, a1::A1Selection};
 
 // To view you clipboard contents, go to https://evercoder.github.io/clipboard-inspector/
 // To decode the html, use https://codebeautify.org/html-decode-string
@@ -31,7 +31,8 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(selection, html, special) {
-                return self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                return;
             }
         }
 
@@ -44,8 +45,15 @@ impl GridController {
         }
     }
 
-    pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
-        let ops = self.move_cells_operations(source, dest);
+    pub fn move_cells(
+        &mut self,
+        source: SheetRect,
+        dest: SheetPos,
+        columns: bool,
+        rows: bool,
+        cursor: Option<String>,
+    ) {
+        let ops = self.move_cells_operations(source, dest, columns, rows);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
     }
 
@@ -86,7 +94,7 @@ impl GridController {
                 .max(1);
             dest = SheetPos::new(sheet_id, x, row);
         }
-        let ops = self.move_cells_operations(source, dest);
+        let ops = self.move_cells_operations(source, dest, false, false);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
         Some(dest.into())
     }
@@ -128,7 +136,7 @@ impl GridController {
                 .max(1);
             dest = SheetPos::new(sheet_id, col, y);
         }
-        let ops = self.move_cells_operations(source, dest);
+        let ops = self.move_cells_operations(source, dest, false, false);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
         Some(dest.into())
     }
@@ -139,17 +147,17 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
+    use crate::Array;
     use crate::controller::operations::clipboard::ClipboardOperation;
     use crate::controller::user_actions::import::tests::simple_csv_at;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
-    use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
-    use crate::Array;
+    use crate::test_util::gc::{assert_code_cell_value, assert_display_cell_value};
     use crate::{
-        controller::GridController,
-        grid::{js_types::CellFormatSummary, CodeCellLanguage, CodeCellValue, SheetId},
         CellValue, Pos, SheetPos, SheetRect,
+        controller::GridController,
+        grid::{CodeCellLanguage, CodeCellValue, SheetId, js_types::CellFormatSummary},
     };
 
     #[track_caller]
@@ -223,7 +231,12 @@ mod test {
         let JsClipboard { plain_text, .. } = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
-        assert_eq!(plain_text, String::from("2, 2\t\t\t\t\t\t\n\t\t12\t\t\t\t\n\t\t\t\tunderline\t\t\n\t\t\t\t\t\tstrike through"));
+        assert_eq!(
+            plain_text,
+            String::from(
+                "2, 2\t\t\t\t\t\t\n\t\t12\t\t\t\t\n\t\t\t\tunderline\t\t\n\t\t\t\t\t\tstrike through"
+            )
+        );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 8, 6, sheet_id));
         let JsClipboard { plain_text, html } = sheet
@@ -710,11 +723,11 @@ mod test {
 
         // paste code cell (2,1) from the clipboard to (2,2)
         let dest_pos: SheetPos = (2, 2, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(R[0]C[-1])", 2);
+        assert_code_cell(&mut gc, dest_pos, "SUM(A2)", 2);
 
         // paste code cell (2,1) from the clipboard to (2,3)
         let dest_pos: SheetPos = (2, 3, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(R[0]C[-1])", 3);
+        assert_code_cell(&mut gc, dest_pos, "SUM(A3)", 3);
     }
 
     #[test]
@@ -887,6 +900,8 @@ mod test {
         gc.move_cells(
             SheetRect::new_pos_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 2 }, sheet_id),
             (10, 10, sheet_id).into(),
+            false,
+            false,
             None,
         );
 
@@ -1230,7 +1245,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text.clone()),
             Some(html.clone()),
             PasteSpecial::None,
@@ -1261,7 +1276,7 @@ mod test {
         data_table.header_is_first_row = false;
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("G10", &sheet_id),
+            &A1Selection::test_a1_sheet_id("G10", sheet_id),
             Some(plain_text.clone()),
             Some(html.clone()),
             PasteSpecial::None,
@@ -1292,7 +1307,7 @@ mod test {
         data_table.show_ui = false;
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E11", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E11", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,
@@ -1341,7 +1356,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,
@@ -1389,7 +1404,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,

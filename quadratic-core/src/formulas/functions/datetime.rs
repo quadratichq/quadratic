@@ -228,7 +228,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "date or duration".into(),
                             got: Some(date.inner.type_name().into()),
                         }
-                        .with_span(date.span))
+                        .with_span(date.span));
                     }
                 }
             }
@@ -269,7 +269,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "date or duration".into(),
                             got: Some(date.inner.type_name().into()),
                         }
-                        .with_span(date.span))
+                        .with_span(date.span));
                     }
                 }
             }
@@ -312,7 +312,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "date, duration, or number".into(),
                             got: Some(date.inner.type_name().into()),
                         }
-                        .with_span(date.span))
+                        .with_span(date.span));
                     }
                 }
             }
@@ -361,7 +361,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "time, duration, or number".into(),
                             got: Some(time.inner.type_name().into()),
                         }
-                        .with_span(time.span))
+                        .with_span(time.span));
                     }
                 }
             }
@@ -410,7 +410,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "time, duration, or number".into(),
                             got: Some(time.inner.type_name().into()),
                         }
-                        .with_span(time.span))
+                        .with_span(time.span));
                     }
                 }
             }
@@ -459,7 +459,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "time, duration, or number".into(),
                             got: Some(time.inner.type_name().into()),
                         }
-                        .with_span(time.span))
+                        .with_span(time.span));
                     }
                 }
             }
@@ -517,20 +517,20 @@ fn add_months_offset_to_day(day: NaiveDate, months: i64) -> Option<NaiveDate> {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{controller::GridController, formulas::tests::*};
 
     #[test]
     fn test_formula_now_today() {
         // Hopefully we get a date time! There's not really anything else we can
         // do to test this without duplicating the code in `fn NOW()`.
-        let g = Grid::new();
+        let g = GridController::new();
         assert!(matches!(
             eval(&g, "NOW()"),
             Value::Single(CellValue::DateTime(_)),
         ));
 
         // Hopefully we get a date!
-        let g = Grid::new();
+        let g = GridController::new();
         assert!(matches!(
             eval(&g, "TODAY()"),
             Value::Single(CellValue::Date(_)),
@@ -539,7 +539,7 @@ mod tests {
 
     #[test]
     fn test_formula_date() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "DATE(2024, 4, 8)"), "2024-04-08"); // no wrapping
         assert_eq!(eval_to_string(&g, "DATE(2024, 13, 1)"), "2025-01-01"); // wrap month->year
         assert_eq!(eval_to_string(&g, "DATE(2024, 1, 99)"), "2024-04-08"); // wrap day->month
@@ -552,7 +552,7 @@ mod tests {
 
     #[test]
     fn test_formula_time() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "TIME(2, 30, 45)"), "02:30:45");
         assert_eq!(eval_to_string(&g, "TIME(2, 30, -45)"), "02:29:15");
         assert_eq!(eval_to_string(&g, "TIME(2, -30, 45)"), "01:30:45");
@@ -563,7 +563,7 @@ mod tests {
 
     #[test]
     fn test_formula_duration_ymd() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "DURATION.YMD(5, -3, 50)"), "4y 9mo 50d");
         assert_eq!(eval_to_string(&g, "DURATION.YMD(0, 0, 60)"), "60d");
         assert_eq!(eval_to_string(&g, "DURATION.YMD(-5, 0, 999)"), "-5y 999d");
@@ -573,7 +573,7 @@ mod tests {
 
     #[test]
     fn test_formula_duration_hms() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "DURATION.HMS(6, 30, 0)"), "6h 30m");
         assert_eq!(eval_to_string(&g, "DURATION.HMS(0, 6, 30)"), "6m 30s");
         assert_eq!(eval_to_string(&g, "DURATION.HMS(0, 6, 30.2)"), "6m 30.2s");
@@ -590,7 +590,7 @@ mod tests {
 
     #[test]
     fn test_formula_year() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "YEAR(DATE(2024, 4, 8))"), "2024");
         assert_eq!(eval_to_string(&g, "YEAR(TIME(30, 16, 45))"), "0");
         assert_eq!(eval_to_string(&g, "YEAR(DURATION.HMS(6, 10, 15))"), "0");
@@ -616,7 +616,7 @@ mod tests {
 
     #[test]
     fn test_formula_month() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "MONTH(DATE(2024, 4, 8))"), "4");
         assert_eq!(eval_to_string(&g, "MONTH(TIME(30, 16, 45))"), "0");
         assert_eq!(eval_to_string(&g, "MONTH(DURATION.HMS(6, 10, 15))"), "0");
@@ -648,7 +648,7 @@ mod tests {
 
     #[test]
     fn test_formula_day() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "DAY(DATE(2024, 4, 8))"), "8");
         assert_eq!(eval_to_string(&g, "DAY(TIME(30, 16, 45))"), "0");
         assert_eq!(eval_to_string(&g, "DAY(DURATION.HMS(6, 10, 15))"), "0");
@@ -674,7 +674,7 @@ mod tests {
 
     #[test]
     fn test_formula_hour() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "HOUR(TIME(30, 16, 45))"), "6");
         assert_eq!(eval_to_string(&g, "HOUR(TIME(30, 0, -1))"), "5");
         assert_eq!(eval_to_string(&g, "HOUR(TIME(0, 0, 0))"), "0");
@@ -703,7 +703,7 @@ mod tests {
 
     #[test]
     fn test_formula_minute() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_eq!(eval_to_string(&g, "MINUTE(TIME(30, 16, 45))"), "16");
         assert_eq!(eval_to_string(&g, "MINUTE(TIME(30, 0, -1))"), "59");
@@ -745,7 +745,7 @@ mod tests {
 
     #[test]
     fn test_formula_second() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(eval_to_string(&g, "SECOND(TIME(30, 16, 45))"), "45");
         assert_eq!(eval_to_string(&g, "SECOND(TIME(30, 0, -1))"), "59");
         assert_eq!(eval_to_string(&g, "SECOND(TIME(0, 0, 0))"), "0");
@@ -787,7 +787,7 @@ mod tests {
     #[test]
     fn test_formula_eomonth() {
         let year = 2006; // not before or after a leap year
-        let g = Grid::new();
+        let g = GridController::new();
         for (month, expected_final_day) in [(1, 31), (2, 28), (3, 31), (4, 30), (11, 30), (12, 31)]
         {
             for init_day in [1, 2, expected_final_day - 1, expected_final_day] {
@@ -819,7 +819,7 @@ mod tests {
 
     #[test]
     fn test_formula_edate() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(
             "2008-02-29",
             eval_to_string(&g, "EDATE(DATE(2008, 01, 31), 1)"),

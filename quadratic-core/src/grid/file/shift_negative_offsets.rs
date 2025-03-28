@@ -7,11 +7,11 @@
 use std::collections::HashMap;
 
 use crate::{
+    CopyFormats, RefAdjust,
     controller::{
         active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource,
     },
-    grid::{js_types::JsSnackbarSeverity, Grid, GridBounds},
-    CopyFormats,
+    grid::{Grid, GridBounds, js_types::JsSnackbarSeverity},
 };
 
 const IMPORT_OFFSET: i64 = 1000000;
@@ -45,6 +45,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     let mut changed = false;
     let mut shifted_offsets_sheet_name = HashMap::new(); // for migrating cells to q.cells
     let mut shifted_offsets_sheet_id = HashMap::new(); // for translating code runs's cells_accessed
+    let a1_context = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         let mut x_shift = 0;
         let mut y_shift = 0;
@@ -55,8 +56,14 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 changed = true;
                 let insert = bounds.min.x - 1;
                 for _ in bounds.min.x..=0 {
-                    sheet.insert_column(&mut transaction, insert, CopyFormats::None, false);
-                    sheet.recalculate_bounds();
+                    sheet.insert_column(
+                        &mut transaction,
+                        insert,
+                        CopyFormats::None,
+                        false,
+                        &a1_context,
+                    );
+                    sheet.recalculate_bounds(&a1_context);
                     x_shift += 1;
                 }
             }
@@ -66,8 +73,14 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 changed = true;
                 let insert = bounds.min.y - 1;
                 for _ in bounds.min.y..=0 {
-                    sheet.insert_row(&mut transaction, insert, CopyFormats::None, false);
-                    sheet.recalculate_bounds();
+                    sheet.insert_row(
+                        &mut transaction,
+                        insert,
+                        CopyFormats::None,
+                        false,
+                        &a1_context,
+                    );
+                    sheet.recalculate_bounds(&a1_context);
                     y_shift += 1;
                 }
             }
@@ -83,7 +96,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         for (_, code_run) in sheet.iter_code_runs_mut() {
             let cells = &mut code_run.cells_accessed.cells;
             for (sheet_id, ranges) in cells {
-                // Get shift values for the current sheet, skip if not found
+                // Get shift values for the referenced sheet, skip if not found
                 let Some(&(x_shift, y_shift)) = shifted_offsets_sheet_id.get(sheet_id) else {
                     continue;
                 };
@@ -94,9 +107,9 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 }
 
                 // Translate all ranges and collect into new HashSet
-                *ranges = ranges
-                    .iter()
-                    .filter_map(|r| r.translate(x_shift, y_shift).ok())
+                *ranges = std::mem::take(ranges)
+                    .into_iter()
+                    .filter_map(|r| r.adjust(RefAdjust::new_translate(x_shift, y_shift)).ok())
                     .collect();
             }
         }
@@ -110,7 +123,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         sheet
             .borders
             .translate_in_place(-IMPORT_OFFSET, -IMPORT_OFFSET);
-        sheet.recalculate_bounds();
+        sheet.recalculate_bounds(&a1_context);
     }
 
     if changed && (cfg!(target_family = "wasm") || cfg!(test)) {
@@ -127,10 +140,10 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 mod test {
 
     use crate::{
+        CellValue, Pos,
         a1::UNBOUNDED,
         controller::GridController,
         grid::{file::import, sheet::borders::CellBorderLine},
-        CellValue, Pos,
     };
 
     #[test]

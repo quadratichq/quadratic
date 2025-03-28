@@ -3,9 +3,9 @@
 use super::Sheet;
 
 use crate::{
+    Array, ArraySize, CellValue, Pos, Value,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-    Array, ArraySize, CellValue, Pos, Value,
 };
 use bigdecimal::BigDecimal;
 use std::str::FromStr;
@@ -41,7 +41,8 @@ impl Sheet {
                 }
             }
         }
-        self.recalculate_bounds();
+        let a1_context = self.make_a1_context();
+        self.recalculate_bounds(&a1_context);
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
@@ -135,7 +136,8 @@ impl Sheet {
                 None,
             )),
         );
-        self.recalculate_bounds();
+        let a1_context = self.make_a1_context();
+        self.recalculate_bounds(&a1_context);
     }
 
     pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
@@ -289,7 +291,7 @@ mod tests {
 
     use bigdecimal::BigDecimal;
 
-    use crate::{grid::Sheet, CellValue, Pos};
+    use crate::{CellValue, Pos, grid::Sheet};
 
     #[test]
     fn test_set_value() {

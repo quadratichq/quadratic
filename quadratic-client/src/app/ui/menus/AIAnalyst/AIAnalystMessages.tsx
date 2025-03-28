@@ -3,6 +3,8 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPromptSuggestionsAtom,
+  aiAnalystPromptSuggestionsCountAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
@@ -10,14 +12,16 @@ import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamp
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
+import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { getLastUserPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
@@ -28,6 +32,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -117,6 +122,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     }
   }, [messages, scrollToBottom, loading, shouldAutoScroll]);
 
+  // Scroll to bottom when prompt suggestions are available
+  useEffect(() => {
+    if (promptSuggestionsCount > 0) {
+      scrollToBottom();
+    }
+  }, [promptSuggestionsCount, scrollToBottom]);
+
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
   }
@@ -158,13 +170,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
                 <AIAnalystUserMessageForm
-                  initialPrompt={message.content}
+                  initialContent={message.content}
                   initialContext={message.context}
                   messageIndex={index}
                   textareaRef={textareaRef}
                 />
               ) : Array.isArray(message.content) ? (
-                message.content.map(({ content }) => <Markdown key={content}>{content}</Markdown>)
+                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
               ) : (
                 <Markdown key={message.content}>{message.content}</Markdown>
               )
@@ -191,9 +203,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}
@@ -206,6 +218,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       })}
 
       {messages.length > 0 && !loading && <FeedbackButtons />}
+
+      {messages.length > 0 && !loading && <PromptSuggestions />}
 
       <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
@@ -281,6 +295,49 @@ const FeedbackButtons = memo(() => {
           <ThumbDownIcon className="scale-75" />
         </Button>
       </TooltipPopover>
+    </div>
+  );
+});
+
+const PromptSuggestions = memo(() => {
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
+  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
+  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const lastContext = useMemo(
+    () =>
+      getUserPromptMessages(messages)
+        .filter((message) => message.contextType === 'userPrompt')
+        .at(-1)?.context,
+    [messages]
+  );
+
+  if (!messages.length || !promptSuggestions.suggestions.length) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2 px-2">
+      {promptSuggestions.suggestions.map((suggestion, index) => (
+        <div
+          key={`${index}-${suggestion.label}`}
+          className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+          onClick={() =>
+            submitPrompt({
+              content: [
+                {
+                  type: 'text',
+                  text: suggestion.prompt,
+                },
+              ],
+              context: {
+                ...(lastContext ?? defaultAIAnalystContext),
+              },
+            })
+          }
+        >
+          <span className="truncate">{suggestion.label}</span>
+        </div>
+      ))}
     </div>
   );
 });

@@ -1,19 +1,21 @@
 use super::Sheet;
 use crate::{
+    Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
+        CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        CodeCellLanguage, CodeCellValue, DataTableKind, SheetId,
+        js_types::JsSnackbarSeverity,
     },
-    Pos, Rect, SheetPos,
+    wasm_bindings::js::jsClientMessage,
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use indexmap::{
-    map::{Entry, OccupiedEntry},
     IndexMap,
+    map::{Entry, OccupiedEntry},
 };
 
 impl Sheet {
@@ -38,7 +40,7 @@ impl Sheet {
     pub fn data_table_by_name(&self, name: String) -> Option<(&Pos, &DataTable)> {
         self.data_tables
             .iter()
-            .find(|(_, data_table)| data_table.name.to_display() == name)
+            .find(|(_, data_table)| *data_table.name() == name)
     }
 
     /// Returns a DataTable at a Pos as a result
@@ -71,6 +73,9 @@ impl Sheet {
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
 
+    /// Returns all data tables within a position
+    ///
+    /// TODO(ddimaria): make this more efficient
     pub fn data_tables_within(&self, pos: Pos) -> Result<Vec<Pos>> {
         let data_tables = self
             .data_tables
@@ -86,6 +91,43 @@ impl Sheet {
         Ok(data_tables)
     }
 
+    /// Returns all data tables within a rect.
+    /// Partial intersection is also considered a match.
+    /// Stops at the first data table if stop_at_first is true.
+    ///
+    /// TODO(ddimaria): make this more efficient
+    pub fn data_tables_within_rect(&self, rect: Rect, stop_at_first: bool) -> Result<Vec<Pos>> {
+        let mut found = false;
+        let data_tables = self
+            .data_tables
+            .iter()
+            .filter_map(|(data_table_pos, data_table)| {
+                if found && stop_at_first {
+                    return None;
+                }
+
+                let output = data_table
+                    .output_rect(*data_table_pos, false)
+                    .intersects(rect)
+                    .then_some(*data_table_pos);
+
+                found = found || output.is_some();
+
+                output
+            })
+            .collect();
+
+        Ok(data_tables)
+    }
+
+    /// Returns true if there is a data table within a rect
+    pub fn contains_data_table_within_rect(&self, rect: Rect) -> bool {
+        self.data_tables_within_rect(rect, true)
+            .map(|data_tables| !data_tables.is_empty())
+            .unwrap_or(false)
+    }
+
+    /// Returns the first data table within a position
     pub fn first_data_table_within(&self, pos: Pos) -> Result<Pos> {
         let data_tables = self.data_tables_within(pos)?;
 
@@ -143,19 +185,15 @@ impl Sheet {
         })
     }
 
-    /// Replaces in code cells using a supplied function.
-    pub fn replace_in_code_cells(
-        &mut self,
-        context: &A1Context,
-        func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId),
-    ) {
+    /// Calls a function to mutate all code cells.
+    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
         let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
         let sheet_id = self.id;
 
         for pos in positions {
             if let Some(cell_value) = self.cell_value_mut(pos) {
                 if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, context, &sheet_id);
+                    func(code_cell_value, pos.to_sheet_pos(sheet_id));
                 }
             }
         }
@@ -166,11 +204,11 @@ impl Sheet {
         &mut self,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
-        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
+        self.update_code_cells(|code_cell_value, pos| {
             code_cell_value
-                .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
+                .replace_table_name_in_cell_references(a1_context, pos, old_name, new_name);
         });
     }
 
@@ -180,11 +218,11 @@ impl Sheet {
         table_name: &str,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
-        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
+        self.update_code_cells(|code_cell_value, pos| {
             code_cell_value.replace_column_name_in_cell_references(
-                table_name, old_name, new_name, id, a1_context,
+                a1_context, pos, table_name, old_name, new_name,
             );
         });
     }
@@ -194,7 +232,7 @@ impl Sheet {
         rect: &Rect,
         cells: &mut CellValues,
         values: &mut CellValues,
-        context: &A1Context,
+        a1_context: &A1Context,
         selection: &A1Selection,
         include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
@@ -242,7 +280,7 @@ impl Sheet {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
                             };
-                            if selection.might_contain_pos(Pos { x, y }, context) {
+                            if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 if include_in_cells {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
@@ -426,20 +464,34 @@ impl Sheet {
         self.data_table(pos)
             .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
     }
+
+    /// You shouldn't be able to create a data table that includes a data table.
+    /// Deny the action and give a popup explaining why it was blocked.
+    /// Returns true if the data table is not within the rect
+    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
+        let contains_data_table = self.contains_data_table_within_rect(rect);
+
+        if contains_data_table {
+            let message = "Tables cannot be created over tables, code, or formulas.";
+            jsClientMessage(message.to_owned(), JsSnackbarSeverity::Error.to_string());
+        }
+
+        !contains_data_table
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::{
+        CellValue, Value,
         a1::{A1Selection, RefRangeBounds},
         controller::{
+            GridController,
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
-            GridController,
         },
-        grid::{js_types::JsClipboard, CodeRun, DataTableKind},
-        CellValue, Value,
+        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
     };
     use bigdecimal::BigDecimal;
 

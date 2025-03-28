@@ -1,7 +1,7 @@
 ###########################################################################################
 # Builder 1 - Build core
 ###########################################################################################
-FROM node:18 AS core-builder
+FROM node:23 AS core-builder
 
 ARG CLIENT_DEV
 
@@ -44,7 +44,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 # Builder 2 - Build TS/Rust types
 ###########################################################################################
-FROM node:18 AS ts-rust-types-builder
+FROM node:23 AS ts-rust-types-builder
 
 # Install build-essential, llvm, and clang
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
@@ -81,7 +81,7 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 ###########################################################################################
 # Builder 3 - Build rust client
 ###########################################################################################
-FROM node:18 AS rust-client-builder
+FROM node:23 AS rust-client-builder
 
 ARG CLIENT_DEV
 
@@ -127,7 +127,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 # Builder 4 - Combine all builder files and build the client
 ###########################################################################################
-FROM node:18 AS vite-builder
+FROM node:23 AS vite-builder
 
 WORKDIR /quadratic
 
@@ -166,26 +166,37 @@ COPY --link ./quadratic-client/. ./quadratic-client/
 # Run the packaging script for quadratic_py
 RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
 
-# Build the quadratic-shared
-RUN echo 'Building quadratic-shared...' && npm run compile --workspace=quadratic-shared
+# Hash of the environment variables, as a cache buster
+# This is non empty when env variables are set in the github action
+ARG ENV_HASH
+
+# If ENV_HASH is set, copy the client.env, otherwise create default .env
+RUN if [ ! -z "$ENV_HASH" ]; then \
+  echo "ENV_HASH is set, renaming client.env to .env" && \
+  mv ./quadratic-client/client.env ./quadratic-client/.env; \
+  else \
+  echo "ENV_HASH is not set, creating default .env" && \
+  echo "VITE_DEBUG=VITE_DEBUG_VAL" > ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_ORY_HOST=VITE_ORY_HOST_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL" >> ./quadratic-client/.env; \
+  fi
 
 # Build the front-end
-ENV VITE_DEBUG=VITE_DEBUG_VAL
-ENV VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL
-ENV VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL
-ENV VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL
-ENV VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL
-ENV VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL
-ENV VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL
-ENV VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL
-ENV VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL
-ENV VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL
-ENV VITE_ORY_HOST=VITE_ORY_HOST_VAL
-ENV VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL
-RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
+RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
 
 # Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
-RUN find /quadratic/build -type f \
+# Compress files only when ENV_HASH is not set, i.e. when env variables are not set in the github action
+RUN if [ -z "$ENV_HASH" ]; then \
+  find /quadratic/build -type f \
   \( \
   -name "*.wasm" -o \
   -name "*.whl" -o \
@@ -220,7 +231,8 @@ RUN find /quadratic/build -type f \
   brotli -q 9 -w 24 -f "{}" && \
   pigz -6kf "{}" && \
   echo "Created: {}.br and {}.gz" \
-  '
+  '; \
+  fi
 
 
 ###########################################################################################

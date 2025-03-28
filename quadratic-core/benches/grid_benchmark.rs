@@ -1,14 +1,19 @@
-use criterion::{criterion_group, criterion_main, Bencher, Criterion};
-use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
+use criterion::{Bencher, Criterion, criterion_group, criterion_main};
+use quadratic_core::a1::A1Context;
+
+use std::time::Duration;
+
 use quadratic_core::controller::GridController;
+use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
-use quadratic_core::{a1::A1Selection, Pos, Rect, SheetRect};
-use std::time::Duration;
+use quadratic_core::{Pos, Rect, SheetRect, a1::A1Selection};
+use quadratic_rust_shared::test::benchmark::benchmark;
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
+#[allow(unused)]
 fn criterion_benchmark(c: &mut Criterion) {
     let airports = quadratic_core::grid::file::import(
         include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid")
@@ -22,28 +27,39 @@ fn criterion_benchmark(c: &mut Criterion) {
     ];
 
     benchmark_grids(c, &inputs, "get_render_cells_all", |b, grid| {
+        let a1_context = grid.make_a1_context();
         b.iter(|| {
-            let output = grid.sheets()[0].get_render_cells(Rect {
-                min: Pos { x: -1000, y: -1000 },
-                max: Pos { x: 1000, y: 1000 },
-            });
+            let output = grid.sheets()[0].get_render_cells(
+                Rect {
+                    min: Pos { x: -1000, y: -1000 },
+                    max: Pos { x: 1000, y: 1000 },
+                },
+                &a1_context,
+            );
             serde_json::to_string(&output)
         });
     });
 
     benchmark_grids(c, &inputs, "get_render_cells_10x40", |b, grid| {
+        let a1_context = grid.make_a1_context();
         b.iter(|| {
-            let output = grid.sheets()[0].get_render_cells(Rect {
-                min: Pos { x: 11, y: 11 },
-                max: Pos { x: 20, y: 50 },
-            });
+            let output = grid.sheets()[0].get_render_cells(
+                Rect {
+                    min: Pos { x: 11, y: 11 },
+                    max: Pos { x: 20, y: 50 },
+                },
+                &a1_context,
+            );
             serde_json::to_string(&output)
         });
     });
 
     benchmark_grids(c, &inputs, "recalculate_bounds", |b, grid| {
         let mut grid = grid.clone();
-        b.iter(|| grid.first_sheet_mut().recalculate_bounds());
+        b.iter(|| {
+            let a1_context = grid.make_a1_context();
+            grid.first_sheet_mut().recalculate_bounds(&a1_context);
+        });
     });
 
     benchmark_grids(c, &inputs, "copy_paste_10_x_10", |b, grid| {
@@ -223,7 +239,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         };
         // add some data
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.random_numbers(&small_selection);
+        sheet.random_numbers(&small_selection, &A1Context::default());
         sheet
             .formats
             .bold
@@ -360,17 +376,15 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-fn benchmark_grids(
+#[allow(unused)]
+pub fn benchmark_grids(
     c: &mut Criterion,
     inputs: &[(&str, Grid)],
     group_name: impl Into<String>,
     f: impl Fn(&mut Bencher<'_>, &Grid),
 ) {
-    let mut group = c.benchmark_group(group_name);
-    group.measurement_time(Duration::new(5, 0));
-    group.sample_size(10);
-    for (id, grid) in inputs {
-        group.bench_with_input(*id, grid, &f);
-    }
-    group.finish()
+    let measurement_time = Some(Duration::new(5, 0));
+    let sample_size = Some(10);
+
+    benchmark(c, inputs, group_name, measurement_time, sample_size, f);
 }

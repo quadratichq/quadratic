@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use super::operation::Operation;
+use crate::Pos;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::CodeCellLanguage;
-use crate::Pos;
-use crate::{a1::A1Selection, CellValue, SheetPos};
-use anyhow::{bail, Result};
+use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::{CellValue, SheetPos, a1::A1Selection};
+use anyhow::{Result, bail};
 
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
@@ -232,7 +232,8 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
+            let rects =
+                sheet.selection_to_rects(selection, false, force_table_bounds, &self.a1_context);
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
@@ -248,7 +249,7 @@ impl GridController {
                         let is_full_table_selected = rect.contains_rect(&data_table_rect);
                         let can_delete_table = is_full_table_selected || data_table.readonly;
                         let table_column_selection = selection.table_column_selection(
-                            &data_table.name.to_display(),
+                            data_table.name(),
                             self.a1_context(),
                         );
                         can_delete_column = !is_full_table_selected
@@ -332,13 +333,13 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    use crate::cell_values::CellValues;
-    use crate::controller::operations::operation::Operation;
-    use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::test_util::print_table;
     use crate::Rect;
-    use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
+    use crate::cell_values::CellValues;
+    use crate::controller::GridController;
+    use crate::controller::operations::operation::Operation;
+    use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
+    use crate::test_util::gc::print_table;
+    use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
     #[test]
     fn test() {

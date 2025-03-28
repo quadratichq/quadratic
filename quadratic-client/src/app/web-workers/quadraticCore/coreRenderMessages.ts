@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';
@@ -89,6 +89,18 @@ export interface CoreRenderViewportBuffer {
   buffer: SharedArrayBuffer;
 }
 
+export interface CoreRenderTransactionStart {
+  type: 'coreRenderTransactionStart';
+  transactionId: string;
+  transactionName: TransactionName;
+}
+
+export interface CoreRenderTransactionEnd {
+  type: 'coreRenderTransactionEnd';
+  transactionId: string;
+  transactionName: TransactionName;
+}
+
 export type CoreRenderMessage =
   | CoreRenderCells
   | CoreRenderSheetInfo
@@ -100,6 +112,8 @@ export type CoreRenderMessage =
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
   | CoreRenderHashesDirty
-  | CoreRenderViewportBuffer;
+  | CoreRenderViewportBuffer
+  | CoreRenderTransactionStart
+  | CoreRenderTransactionEnd;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreResponseRowHeights;

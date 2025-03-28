@@ -8,9 +8,9 @@ use super::{
 use crate::{
     color::Rgba,
     grid::{
+        Contiguous2D,
         block::SameValue,
         sheet::borders::{BorderStyleCell, BorderStyleTimestamp, Borders, CellBorderLine},
-        Contiguous2D,
     },
     small_timestamp::SmallTimestamp,
 };

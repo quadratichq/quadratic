@@ -1,9 +1,10 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { getActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { type FileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { getActiveTeam } from '@/shared/utils/getActiveTeam';
+import mixpanel from 'mixpanel-browser';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import type { SubmitFunction } from 'react-router-dom';
@@ -92,6 +93,8 @@ export const duplicateFileAction = {
       team: { uuid: teamUuid },
       userMakingRequest: { teamPermissions },
     } = fileRouteLoaderData;
+
+    mixpanel.track('[Files].duplicateFile', { id: fileUuid });
 
     // By default, duplicate the file to the user's currently active team
     // But if the user doesn't have permission to edit that team, duplicate it to

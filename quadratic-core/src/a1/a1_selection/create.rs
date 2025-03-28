@@ -1,6 +1,6 @@
 use crate::{
-    a1::{A1Context, ColRange, RefRangeBounds, TableRef},
     OldSelection, Rect, SheetPos, SheetRect,
+    a1::{A1Context, ColRange, RefRangeBounds, TableRef},
 };
 
 use super::*;
@@ -50,10 +50,10 @@ impl From<OldSelection> for A1Selection {
 
 impl A1Selection {
     /// Constructs a basic selection containing a single region.
-    pub fn from_range(range: CellRefRange, sheet: SheetId, context: &A1Context) -> Self {
+    pub fn from_range(range: CellRefRange, sheet: SheetId, a1_context: &A1Context) -> Self {
         Self {
             sheet_id: sheet,
-            cursor: Self::cursor_pos_from_last_range(&range, context),
+            cursor: Self::cursor_pos_from_last_range(&range, a1_context),
             ranges: vec![range],
         }
     }
@@ -61,14 +61,14 @@ impl A1Selection {
     pub fn from_ranges(
         ranges: Vec<CellRefRange>,
         sheet: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<Self> {
         if ranges.is_empty() {
             None
         } else {
             Some(Self {
                 sheet_id: sheet,
-                cursor: Self::cursor_pos_from_last_range(ranges.last().unwrap(), context),
+                cursor: Self::cursor_pos_from_last_range(ranges.last().unwrap(), a1_context),
                 ranges,
             })
         }
@@ -102,7 +102,7 @@ impl A1Selection {
     pub fn from_sheet_ranges(
         ranges: Vec<RefRangeBounds>,
         sheet: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<Self> {
         if ranges.is_empty() {
             None
@@ -111,7 +111,7 @@ impl A1Selection {
                 .into_iter()
                 .map(|range| CellRefRange::Sheet { range })
                 .collect();
-            Self::from_ranges(ranges, sheet, context)
+            Self::from_ranges(ranges, sheet, a1_context)
         }
     }
 
@@ -132,12 +132,12 @@ impl A1Selection {
     }
 
     /// Constructs a selection from a list of rectangles.
-    pub fn from_rects(rects: Vec<Rect>, sheet_id: SheetId) -> Option<Self> {
+    pub fn from_rects(rects: Vec<Rect>, sheet_id: SheetId, a1_context: &A1Context) -> Option<Self> {
         let ranges = rects
             .into_iter()
             .map(RefRangeBounds::new_relative_rect)
             .collect::<Vec<_>>();
-        Self::from_sheet_ranges(ranges, sheet_id, &A1Context::default())
+        Self::from_sheet_ranges(ranges, sheet_id, a1_context)
     }
 
     /// Constructs a selection containing a single cell.
@@ -156,21 +156,72 @@ impl A1Selection {
         Self::from_single_cell(pos![A1].to_sheet_pos(sheet))
     }
 
+    /// Constructs a selection for a range of columns.
+    pub fn cols(sheet: SheetId, col_start: i64, col_end: i64) -> Self {
+        Self {
+            sheet_id: sheet,
+            cursor: Pos { x: col_start, y: 1 },
+            ranges: vec![CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_column_range(col_start, col_end),
+            }],
+        }
+    }
+
+    /// Constructs a selection for a range of rows.
+    pub fn rows(sheet: SheetId, row_start: i64, row_end: i64) -> Self {
+        Self {
+            sheet_id: sheet,
+            cursor: Pos { x: 0, y: row_start },
+            ranges: vec![CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_row_range(row_start, row_end),
+            }],
+        }
+    }
+
     /// Returns a test selection from the A1-string with SheetId::TEST.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::parse(a1, &SheetId::TEST, &A1Context::default(), None).unwrap()
+        Self::parse(a1, SheetId::TEST, &A1Context::default(), None).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
     #[cfg(test)]
-    pub fn test_a1_sheet_id(a1: &str, sheet_id: &SheetId) -> Self {
+    pub fn test_a1_sheet_id(a1: &str, sheet_id: SheetId) -> Self {
         Self::parse(a1, sheet_id, &A1Context::default(), None).unwrap()
     }
 
     #[cfg(test)]
     #[track_caller]
-    pub fn test_a1_context(a1: &str, context: &A1Context) -> Self {
-        Self::parse(a1, &SheetId::TEST, context, None).unwrap()
+    pub fn test_a1_context(a1: &str, a1_context: &A1Context) -> Self {
+        Self::parse(a1, SheetId::TEST, a1_context, None).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cols() {
+        let selection = A1Selection::cols(SheetId::TEST, 1, 3);
+        assert_eq!(selection.ranges.len(), 1);
+        assert_eq!(
+            selection.ranges[0],
+            CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_column_range(1, 3)
+            }
+        );
+    }
+
+    #[test]
+    fn test_rows() {
+        let selection = A1Selection::rows(SheetId::TEST, 1, 3);
+        assert_eq!(selection.ranges.len(), 1);
+        assert_eq!(
+            selection.ranges[0],
+            CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_row_range(1, 3)
+            }
+        );
     }
 }

@@ -1,19 +1,19 @@
 use uuid::Uuid;
 
 use crate::{
+    CellValue, Pos,
     a1::A1Selection,
     controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
+        GridController, active_transactions::transaction_name::TransactionName,
+        operations::operation::Operation,
     },
     grid::{
+        SheetId,
         sheet::validations::{
             validation::{Validation, ValidationStyle},
             validation_rules::ValidationRule,
         },
-        SheetId,
     },
-    CellValue, Pos,
 };
 
 impl GridController {
@@ -73,7 +73,7 @@ impl GridController {
         self.try_sheet(sheet_id).and_then(|sheet| {
             sheet
                 .validations
-                .get_validation_from_pos(pos, &sheet.a1_context())
+                .get_validation_from_pos(pos, &self.a1_context)
         })
     }
 
@@ -82,9 +82,9 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations
-            .get_validation_from_pos(Pos { x, y }, &sheet.a1_context())?;
+            .get_validation_from_pos(Pos { x, y }, &self.a1_context)?;
         match validation.rule {
-            ValidationRule::List(ref list) => list.to_drop_down(sheet),
+            ValidationRule::List(ref list) => list.to_drop_down(sheet, &self.a1_context),
             _ => None,
         }
     }
@@ -96,12 +96,15 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations
-            .get_validation_from_pos(pos, &sheet.a1_context())?;
+            .get_validation_from_pos(pos, &self.a1_context)?;
         if validation.error.style != ValidationStyle::Stop {
             return None;
         }
         let cell_value = CellValue::parse_from_str(input);
-        if validation.rule.validate(sheet, Some(&cell_value)) {
+        if validation
+            .rule
+            .validate(sheet, Some(&cell_value), &self.a1_context)
+        {
             None
         } else {
             Some(validation.id)
@@ -116,9 +119,9 @@ mod tests {
         grid::sheet::validations::{
             validation::ValidationError,
             validation_rules::{
+                ValidationRule,
                 validation_list::{ValidationList, ValidationListSource},
                 validation_logical::ValidationLogical,
-                ValidationRule,
             },
         },
         wasm_bindings::js::expect_js_call,
@@ -141,7 +144,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -173,7 +176,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
         let validation1 = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -246,9 +249,10 @@ mod tests {
         );
 
         // missing sheet_id should return None
-        assert!(gc
-            .get_validation_from_pos(SheetId::new(), (1, 1).into())
-            .is_none());
+        assert!(
+            gc.get_validation_from_pos(SheetId::new(), (1, 1).into())
+                .is_none()
+        );
     }
 
     #[test]
@@ -290,7 +294,7 @@ mod tests {
 
         let list = ValidationList {
             source: ValidationListSource::Selection(A1Selection::test_a1_sheet_id(
-                "A1:A4", &sheet_id,
+                "A1:A4", sheet_id,
             )),
             ignore_blank: true,
             drop_down: true,

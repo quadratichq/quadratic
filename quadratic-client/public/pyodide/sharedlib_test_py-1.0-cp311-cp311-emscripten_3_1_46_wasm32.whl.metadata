@@ -1,7 +1,0 @@
-Metadata-Version: 2.1
-Name: sharedlib-test-py
-Version: 1.0
-Summary: A package to test Pyodide shared libraries
-Home-page: https://github.com/pyodide/pyodide
-Author: Pyodide team
-

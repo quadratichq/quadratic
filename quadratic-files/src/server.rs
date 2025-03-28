@@ -3,10 +3,10 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
+use axum::Json;
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
-use axum::Json;
-use axum::{routing::get, Extension, Router};
+use axum::{Extension, Router, routing::get};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::storage::Storage;
 use std::time::Duration;
@@ -57,7 +57,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         //
         // get a file from storage
         .route(
-            "/storage/:key",
+            "/storage/{key}",
             get(get_storage)
                 //
                 // upload a file
@@ -76,7 +76,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         .route("/stats", get(stats))
         //
         // presigned urls
-        .route("/storage/presigned/:key", get(get_presigned_storage))
+        .route("/storage/presigned/{key}", get(get_presigned_storage))
         //
         // state
         .layer(Extension(state))

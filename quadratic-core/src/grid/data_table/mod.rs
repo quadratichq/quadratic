@@ -21,7 +21,7 @@ use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{anyhow, bail, Ok, Result};
+use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use lazy_static::lazy_static;
@@ -45,9 +45,9 @@ pub fn unique_data_table_name(
     name: &str,
     require_number: bool,
     sheet_pos: Option<SheetPos>,
-    context: &A1Context,
+    a1_context: &A1Context,
 ) -> String {
-    let check_name = |name: &str| !context.table_map.contains_name(name, sheet_pos);
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
 
     let name = unique_name(name, require_number, check_name);
 
@@ -67,13 +67,13 @@ impl Grid {
         sheet_pos: SheetPos,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
         let unique_name =
-            unique_data_table_name(new_name, require_number, Some(sheet_pos), context);
+            unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
 
-        self.replace_table_name_in_code_cells(old_name, &unique_name, context);
+        self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
 
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
@@ -87,8 +87,8 @@ impl Grid {
     }
 
     /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self, context: &A1Context) -> String {
-        unique_data_table_name("Table", true, None, context)
+    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
+        unique_data_table_name("Table", true, None, a1_context)
     }
 
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
@@ -96,10 +96,10 @@ impl Grid {
         &mut self,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_table_name_in_code_cells(old_name, new_name, context);
+            sheet.replace_table_name_in_code_cells(old_name, new_name, a1_context);
         }
     }
 
@@ -109,10 +109,12 @@ impl Grid {
         table_name: &str,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_table_column_name_in_code_cells(table_name, old_name, new_name, context);
+            sheet.replace_table_column_name_in_code_cells(
+                table_name, old_name, new_name, a1_context,
+            );
         }
     }
 }
@@ -302,6 +304,13 @@ impl DataTable {
         self
     }
 
+    pub fn name(&self) -> &str {
+        match &self.name {
+            CellValue::Text(s) => s,
+            _ => "",
+        }
+    }
+
     /// Validates the table name. SheetPos is provided to allow the table to be
     /// renamed to itself (eg, with different casing).
     ///
@@ -311,7 +320,7 @@ impl DataTable {
     pub fn validate_table_name(
         name: &str,
         sheet_pos: SheetPos,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
         if name.is_empty() || name.len() > 255 {
@@ -334,7 +343,7 @@ impl DataTable {
         }
 
         // Check if table name already exists
-        if let Some(table) = context.table_map.try_table(name) {
+        if let Some(table) = a1_context.table_map.try_table(name) {
             if table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into() {
                 return Err("Table name must be unique".to_string());
             }
@@ -352,7 +361,7 @@ impl DataTable {
         table_name: &str,
         index: usize,
         column_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
         if column_name.is_empty() || column_name.len() > 255 {
@@ -365,7 +374,7 @@ impl DataTable {
         }
 
         // Check if column name already exists
-        if context
+        if a1_context
             .table_map
             .table_has_column(table_name, column_name, index)
         {
@@ -426,7 +435,7 @@ impl DataTable {
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
         match &mut self.kind {
-            DataTableKind::CodeRun(ref mut code_run) => Some(code_run),
+            DataTableKind::CodeRun(code_run) => Some(code_run),
             _ => None,
         }
     }
@@ -692,6 +701,19 @@ impl DataTable {
         y_adjustment
     }
 
+    /// Applies settings for a single value data table
+    ///
+    /// This is used when a single value data table is created from a code run
+    /// and is a code cell.
+    pub fn apply_single_value_settings(&mut self) {
+        if self.is_single_value() {
+            self.show_name = false;
+            self.show_columns = false;
+            self.header_is_first_row = false;
+            self.column_headers = None;
+        }
+    }
+
     /// Returns true if the data table is a single value (ie, not an array)
     pub fn is_single_value(&self) -> bool {
         if self.is_html_or_image() {
@@ -717,7 +739,24 @@ impl DataTable {
     pub fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
-                || code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a pandas Series
+    pub fn is_series(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a list
+    pub fn is_list(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("list".into())
         } else {
             false
         }
@@ -729,9 +768,9 @@ pub mod test {
 
     use super::*;
     use crate::{
+        Array,
         controller::GridController,
         grid::{Sheet, SheetId},
-        Array,
     };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {

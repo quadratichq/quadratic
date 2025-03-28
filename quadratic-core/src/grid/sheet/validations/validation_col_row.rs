@@ -1,16 +1,16 @@
 use std::cmp::Ordering;
 
 use crate::{
+    Pos,
     a1::{A1Context, A1Selection},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
     grid::SheetId,
-    Pos,
 };
 
-use super::{validation::Validation, Validations};
+use super::{Validations, validation::Validation};
 
 impl Validations {
     /// Removes a column from all validations and adds undo operations.
@@ -21,14 +21,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_column(column, context) {
+            if validation.selection.removed_column(column, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -92,14 +92,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_row(row, context) {
+            if validation.selection.removed_row(row, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -163,13 +163,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_column(column, context) {
+            if validation.selection.inserted_column(column, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -210,13 +210,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_row(row, context) {
+            if validation.selection.inserted_row(row, a1_context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -255,12 +255,12 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        controller::{active_transactions::transaction_name::TransactionName, GridController},
+        CellValue, CopyFormats,
+        controller::{GridController, active_transactions::transaction_name::TransactionName},
         grid::sheet::validations::validation_rules::{
-            validation_logical::ValidationLogical, ValidationRule,
+            ValidationRule, validation_logical::ValidationLogical,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
-        CellValue, CopyFormats,
     };
 
     use super::*;
@@ -277,7 +277,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_columns = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,A:C", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,A:C", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -286,7 +286,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("B2:B3,B", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("B2:B3,B", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -295,7 +295,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A,5:10", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,A,5:10", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -352,7 +352,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_column = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:B3,A:B", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:B3,A:B", sheet_id),
             ..validation_rect_columns.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_column);
@@ -431,7 +431,7 @@ mod tests {
         // rect and rows to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,1:3", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,1:3", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -440,7 +440,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A2:C2,2", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A2:C2,2", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -449,7 +449,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A1:D1,1", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,A1:D1,1", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -503,7 +503,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_row = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:C2,1:2", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C2,1:2", sheet_id),
             ..validation_rect_rows.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_row);
@@ -582,7 +582,7 @@ mod tests {
         // rect and rows to be updated
         let validation_rect_cols = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,A,B,C", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,A,B,C", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -591,7 +591,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,A", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -644,7 +644,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_col = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:D3,A,C,D", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:D3,A,C,D", sheet_id),
             ..validation_rect_cols.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_col);
@@ -718,7 +718,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,1,2,3", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,1,2,3", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -727,7 +727,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,1", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,1", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -781,7 +781,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_row = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:C4,1,3,4", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C4,1,3,4", sheet_id),
             ..validation_rect_rows.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_row);

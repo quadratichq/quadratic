@@ -3,11 +3,11 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { Link } from '@/app/gridGL/types/links';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { openLink } from '@/app/helpers/links';
+import type { Link } from '@/app/shared/types/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import type { Point } from 'pixi.js';
+import type { FederatedPointerEvent, Point } from 'pixi.js';
 import { Rectangle } from 'pixi.js';
 
 const HOVER_DELAY = 500;
@@ -57,7 +57,7 @@ export class PointerLink {
     return link;
   };
 
-  pointerMove = (world: Point, event: PointerEvent): boolean => {
+  pointerMove = (world: Point, event: FederatedPointerEvent): boolean => {
     this.point = world;
     const link = this.checkHoverLink(world);
     if (link) {
@@ -72,7 +72,7 @@ export class PointerLink {
     return false;
   };
 
-  pointerDown = (world: Point, event: PointerEvent): boolean => {
+  pointerDown = (world: Point, event: FederatedPointerEvent): boolean => {
     if (matchShortcut(Action.CmdClick, event) && !sheets.sheet.cursor.isMultiCursor()) {
       const link = this.checkHoverLink(world);
       if (link?.pos) {

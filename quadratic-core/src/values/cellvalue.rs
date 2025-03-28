@@ -11,9 +11,9 @@ use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
 use crate::grid::{CodeCellLanguage, CodeCellValue};
 use crate::{
-    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{js_types::JsCellValuePos, NumericFormat, NumericFormatKind},
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
+    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
+    grid::{NumericFormat, NumericFormatKind, js_types::JsCellValuePos},
 };
 
 // todo: fill this out
@@ -133,6 +133,26 @@ impl CellValue {
             CellValue::Import(_) => "import",
         }
     }
+
+    // Returns the type of the value as a u8 id, keep in sync quadratic_py/utils.py and javascript/runner/javascriptLibrary.ts
+    pub fn type_u8(&self) -> u8 {
+        match self {
+            CellValue::Blank => 0,
+            CellValue::Text(_) => 1,
+            CellValue::Number(_) => 2,
+            CellValue::Logical(_) => 3,
+            CellValue::Duration(_) => 4,
+            CellValue::Error(_) => 5,
+            CellValue::Html(_) => 6,
+            CellValue::Code(_) => 7,
+            CellValue::Image(_) => 8,
+            CellValue::Date(_) => 9,
+            CellValue::Time(_) => 10,
+            CellValue::Instant(_) | CellValue::DateTime(_) => 11,
+            CellValue::Import(_) => 12,
+        }
+    }
+
     /// Returns a formula-source-code representation of the value.
     pub fn repr(&self) -> String {
         match self {
@@ -177,11 +197,7 @@ impl CellValue {
         } else {
             CellValue::add_commas(&s)
         };
-        if negative {
-            format!("-{}", n)
-        } else {
-            n
-        }
+        if negative { format!("-{}", n) } else { n }
     }
 
     pub fn to_display(&self) -> String {

@@ -10,7 +10,6 @@ import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
-import { determineAndSetActiveTeam, getActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -18,10 +17,12 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { determineAndSetActiveTeam, getActiveTeam } from '@/shared/utils/getActiveTeam';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { useEffect } from 'react';
 import type { LoaderFunctionArgs } from 'react-router-dom';
 import {
@@ -30,18 +31,25 @@ import {
   isRouteErrorResponse,
   redirect,
   useLoaderData,
+  useParams,
   useRouteError,
   useSearchParams,
   useSubmit,
 } from 'react-router-dom';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
-import { Empty } from '../dashboard/components/Empty';
+import { Empty } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
+
+  // Figure out if we're loading a specific checkpoint (for version history)
+  const url = new URL(request.url);
+  const searchParams = new URLSearchParams(url.search);
+  const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
+  const isVersionHistoryPreview = checkpointId !== null;
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
   let data;
@@ -52,7 +60,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     if (error.status === 403 && !isLoggedIn) {
       return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
     }
-    updateRecentFiles(uuid, '', false);
+    if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
     throw new Response('Failed to load file from server.', { status: error.status });
   }
   if (debugShowMultiplayer || debugShowFileIO)
@@ -73,40 +81,67 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // initialize: Rust metadata and PIXI assets
   await Promise.all([initRustClient(), loadAssets()]);
 
-  // initialize Core web worker
-  const result = await quadraticCore.load({
-    fileId: uuid,
+  // Load the latest checkpoint by default, but a specific one if we're in version history preview
+  let checkpoint = {
     url: data.file.lastCheckpointDataUrl,
     version: data.file.lastCheckpointVersion,
     sequenceNumber: data.file.lastCheckpointSequenceNumber,
+  };
+  if (isVersionHistoryPreview) {
+    const c = await apiClient.files.checkpoints.get(uuid, checkpointId);
+    checkpoint.url = c.dataUrl;
+    checkpoint.version = c.version;
+    checkpoint.sequenceNumber = c.sequenceNumber;
+  }
+
+  // initialize Core web worker
+  const result = await quadraticCore.load({
+    fileId: uuid,
+    url: checkpoint.url,
+    version: checkpoint.version,
+    sequenceNumber: checkpoint.sequenceNumber,
   });
   if (result.error) {
-    Sentry.captureEvent({
-      message: `Failed to deserialize file ${uuid} from server.`,
-      extra: {
-        error: result.error,
-      },
-    });
-    updateRecentFiles(uuid, data.file.name, false);
+    if (!isVersionHistoryPreview) {
+      Sentry.captureEvent({
+        message: `Failed to deserialize file ${uuid} from server.`,
+        extra: {
+          error: result.error,
+        },
+      });
+      updateRecentFiles(uuid, data.file.name, false);
+    }
     throw new Response('Failed to deserialize file from server.', { statusText: result.error });
   } else if (result.version) {
     // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
     if (compareVersions(result.version, data.file.lastCheckpointVersion) === VersionComparisonResult.LessThan) {
-      Sentry.captureEvent({
-        message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
-        level: 'log',
-      });
-      updateRecentFiles(uuid, data.file.name, false);
+      if (!isVersionHistoryPreview) {
+        Sentry.captureEvent({
+          message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
+          level: 'log',
+        });
+        updateRecentFiles(uuid, data.file.name, false);
+      }
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }
-    if (!data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT')) {
+    if (
+      !isVersionHistoryPreview &&
+      !data.file.thumbnail &&
+      data.userMakingRequest.filePermissions.includes('FILE_EDIT')
+    ) {
       thumbnail.setThumbnailDirty();
     }
   } else {
     throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
-  updateRecentFiles(uuid, data.file.name, true);
+  if (!isVersionHistoryPreview) updateRecentFiles(uuid, data.file.name, true);
+
+  // Hot-modify permissions if its the version history, so it's read-only
+  if (isVersionHistoryPreview) {
+    data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
+  }
+
   return data;
 };
 
@@ -160,6 +195,7 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
+  const { uuid } = useParams() as { uuid: string };
 
   const actionsDefault = (
     <div className={`flex justify-center gap-2`}>
@@ -170,6 +206,19 @@ export const ErrorBoundary = () => {
       </Button>
       <Button asChild variant="default">
         <Link to="/">Go home</Link>
+      </Button>
+    </div>
+  );
+
+  const actionsFileFailedToLoad = (
+    <div className={`flex justify-center gap-2`}>
+      <Button asChild variant="outline">
+        <Link to="/">Go home</Link>
+      </Button>
+      <Button asChild variant="default">
+        <Link to={ROUTES.FILE_HISTORY(uuid)} reloadDocument>
+          Open file history
+        </Link>
       </Button>
     </div>
   );
@@ -215,6 +264,7 @@ export const ErrorBoundary = () => {
       title = 'File validation failed';
       description =
         'The file was retrieved from the server but failed to load into the app. Try again or contact us for help.';
+      actions = actionsFileFailedToLoad;
       reportError = true;
     } else {
       title = 'Failed to load file';

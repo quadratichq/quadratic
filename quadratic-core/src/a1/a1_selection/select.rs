@@ -1,5 +1,5 @@
-use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 use crate::Pos;
+use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 
 use super::{A1Selection, CellRefRange};
 
@@ -17,7 +17,7 @@ impl A1Selection {
     }
 
     /// Removes a column if it is in any column ranges, or adds it if it is not.
-    fn add_or_remove_column(&mut self, col: i64, top: i64, context: &A1Context) {
+    fn add_or_remove_column(&mut self, col: i64, top: i64, a1_context: &A1Context) {
         // If the full column is in any range, then we'll remove it from all
         // ranges. Otherwise we'll add it.
         if self.ranges.iter().any(|range| range.has_col_range(col)) {
@@ -28,7 +28,7 @@ impl A1Selection {
                 } else {
                     match range {
                         CellRefRange::Table { .. } => (),
-                        CellRefRange::Sheet { mut range } => {
+                        &CellRefRange::Sheet { mut range } => {
                             if range.start.col() == range.end.col() {
                                 // if the range is a single column, then we
                                 // should do nothing to remove the range
@@ -86,10 +86,10 @@ impl A1Selection {
             self.cursor.y = top;
         }
 
-        if !self.contains_pos(self.cursor, context) {
-            if self.contains_pos(Pos { x: col + 1, y: top }, context) {
+        if !self.contains_pos(self.cursor, a1_context) {
+            if self.contains_pos(Pos { x: col + 1, y: top }, a1_context) {
                 self.cursor = Pos { x: col + 1, y: top };
-            } else if self.contains_pos(Pos { x: col - 1, y: top }, context) {
+            } else if self.contains_pos(Pos { x: col - 1, y: top }, a1_context) {
                 self.cursor = Pos { x: col - 1, y: top };
             } else {
                 // otherwise find a sensible default
@@ -123,7 +123,7 @@ impl A1Selection {
     }
 
     /// Removes a row if it is in any row ranges, or adds it if it is not.
-    fn add_or_remove_row(&mut self, row: i64, left: i64, context: &A1Context) {
+    fn add_or_remove_row(&mut self, row: i64, left: i64, a1_context: &A1Context) {
         // If the full row is in any range, then we'll remove it from all
         // ranges. Otherwise we'll add it.
         if self.ranges.iter().any(|range| range.has_row_range(row)) {
@@ -134,7 +134,7 @@ impl A1Selection {
                 } else {
                     match range {
                         CellRefRange::Table { .. } => (),
-                        CellRefRange::Sheet { mut range } => {
+                        &CellRefRange::Sheet { mut range } => {
                             if range.start.row() == range.end.row() {
                                 // if the range is a single row, then we
                                 // should do nothing to remove the range
@@ -187,13 +187,13 @@ impl A1Selection {
             self.cursor.y = row;
         }
 
-        if !self.contains_pos(self.cursor, context) {
+        if !self.contains_pos(self.cursor, a1_context) {
             if self.contains_pos(
                 Pos {
                     x: left,
                     y: row + 1,
                 },
-                context,
+                a1_context,
             ) {
                 self.cursor = Pos {
                     x: left,
@@ -204,7 +204,7 @@ impl A1Selection {
                     x: left,
                     y: row - 1,
                 },
-                context,
+                a1_context,
             ) {
                 self.cursor = Pos {
                     x: left,
@@ -239,7 +239,7 @@ impl A1Selection {
         // top of the screen to change the cursor position when selecting a column
         top: i64,
 
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
         let select_only_column = |selection: &mut A1Selection, col: i64, top: i64| {
             selection.ranges.clear();
@@ -257,7 +257,7 @@ impl A1Selection {
         } else if !ctrl_key && !shift_key {
             select_only_column(self, col, top);
         } else if ctrl_key && !shift_key {
-            self.add_or_remove_column(col, top, context);
+            self.add_or_remove_column(col, top, a1_context);
         } else if shift_key {
             self.extend_column(col, top);
         }
@@ -293,7 +293,7 @@ impl A1Selection {
         // left of the screen to change the cursor position when selecting a row
         left: i64,
 
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
         let select_only_row = |selection: &mut A1Selection, row: i64, left: i64| {
             selection.ranges.clear();
@@ -309,7 +309,7 @@ impl A1Selection {
         } else if !ctrl_key && !shift_key {
             select_only_row(self, row, left);
         } else if ctrl_key && !shift_key {
-            self.add_or_remove_row(row, left, context);
+            self.add_or_remove_row(row, left, a1_context);
         } else if shift_key {
             self.extend_row(row, left);
         }
@@ -349,7 +349,13 @@ impl A1Selection {
 
     /// Extends the last selection to the given position. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of that range is extended).
-    pub(crate) fn select_to(&mut self, column: i64, row: i64, append: bool, context: &A1Context) {
+    pub(crate) fn select_to(
+        &mut self,
+        column: i64,
+        row: i64,
+        append: bool,
+        a1_context: &A1Context,
+    ) {
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
             self.ranges
@@ -358,7 +364,7 @@ impl A1Selection {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Table { range } => {
-                    if let Some(table) = context.try_table(&range.table_name) {
+                    if let Some(table) = a1_context.try_table(&range.table_name) {
                         let mut start: Option<(i64, i64)> = None;
                         match &range.col_range {
                             // all gets the entire table selection
@@ -404,7 +410,7 @@ impl A1Selection {
                     }
                     if let Some(mut range_converted) = range
                         .clone()
-                        .convert_to_ref_range_bounds(false, context, false, false)
+                        .convert_to_ref_range_bounds(false, a1_context, false, false)
                     {
                         // if cursor is at the end of the table, then reverse the selection
                         if self.cursor.x == range_converted.end.col()
@@ -417,7 +423,9 @@ impl A1Selection {
                             range: range_converted,
                         };
                     } else {
-                        dbgjs!("Could not convert table range to ref range bounds in A1Selection::select_to");
+                        dbgjs!(
+                            "Could not convert table range to ref range bounds in A1Selection::select_to"
+                        );
                         return;
                     }
                     if !append {
@@ -443,14 +451,15 @@ impl A1Selection {
 
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
-    pub fn set_columns_selected(&mut self, context: &A1Context) {
+    pub fn set_columns_selected(&mut self, a1_context: &A1Context) {
         let Some(last) = self.ranges.last() else {
             return;
         };
         let last = match last {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
-                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false, false)
+                if let Some(range) =
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
                 {
                     range
                 } else {
@@ -469,14 +478,15 @@ impl A1Selection {
 
     /// Changes the selection to select all rows that have a selection (used by shift+space). It only
     /// checks the last range (the same as Excel and Sheets)
-    pub fn set_rows_selected(&mut self, context: &A1Context) {
+    pub fn set_rows_selected(&mut self, a1_context: &A1Context) {
         let Some(last) = self.ranges.last() else {
             return;
         };
         let last = match last {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
-                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false, false)
+                if let Some(range) =
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
                 {
                     range
                 } else {
@@ -496,7 +506,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::SheetId, Rect};
+    use crate::{Rect, grid::SheetId};
 
     use super::*;
 
