@@ -24,7 +24,6 @@ import {
   ScientificIcon,
 } from '@/shared/components/Icons';
 
-
 const commands: CommandGroup = {
   heading: 'Format',
   commands: [

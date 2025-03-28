@@ -1,6 +1,5 @@
 import tailwindColors from 'tailwindcss/colors';
 
-
 export const colors = {
   // Pulled from the CSS theme styles
   // hsla(from var(--border) h s 20% / a) - a is set in pixi

@@ -288,7 +288,7 @@ function TabName({
         active && 'font-bold',
         // Little trick to bold the text without making the content of
         // the tab change in width
-        'after:content-[attr(data-title)] after:block after:font-bold after:h-[1px] after:text-transparent after:overflow-hidden after:visibility-hidden',
+        'after:visibility-hidden after:block after:h-[1px] after:overflow-hidden after:font-bold after:text-transparent after:content-[attr(data-title)]'
       )}
     >
       {sheet.name}

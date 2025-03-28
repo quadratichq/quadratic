@@ -9,18 +9,14 @@ type Props = {
 };
 
 const BottomBarItem = ({ icon, onClick, style = {}, children }: Props) => {
-  const classNames = cn("flex items-center gap-0.5 py-1 px-2 text-xs", onClick && 'hover:bg-accent');
+  const classNames = cn('flex items-center gap-0.5 py-1 px-2 text-xs', onClick && 'hover:bg-accent');
   const inner = (
     <>
       {icon && icon} {children}
     </>
   );
   return onClick ? (
-    <button
-      className={classNames}
-      onClick={onClick}
-      type="button"
-    >
+    <button className={classNames} onClick={onClick} type="button">
       {inner}
     </button>
   ) : (

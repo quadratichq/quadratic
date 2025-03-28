@@ -28,7 +28,7 @@ export function PermissionOverlay() {
         <Type>
           <strong>Welcome to Quadratic.</strong>
         </Type>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex flex-shrink-0 gap-2">
           <Button asChild variant="outline" size="sm">
             <Link to={ROUTES.LOGIN_WITH_REDIRECT()}>Log in</Link>
           </Button>

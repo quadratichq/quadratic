@@ -9,7 +9,6 @@ const SHOW_SELECTION_SUMMARY_DELAY = 500;
 const DECIMAL_PLACES = 2;
 
 export const SelectionSummary = () => {
-  
   const [count, setCount] = useState<string | undefined>('');
   const [sum, setSum] = useState<string | undefined>('');
   const [avg, setAvg] = useState<string | undefined>('');
@@ -116,7 +115,7 @@ export const SelectionSummary = () => {
       {count && (
         <TooltipPopover label={tooltipTitle}>
           <BottomBarItem
-          className="hidden lg:block"
+            className="hidden lg:block"
             onClick={(e: React.MouseEvent<HTMLDivElement>) => {
               e.stopPropagation();
               e.preventDefault();
