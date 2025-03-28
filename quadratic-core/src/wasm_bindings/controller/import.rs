@@ -111,16 +111,14 @@ impl GridController {
                 error: None,
             })?),
             Err(e) => {
-                dbgjs!(format!(
+                let error = format!(
                     "Error importing Excel file: {:?}, error: {:?}",
                     file_name, e
-                ));
+                );
+                dbgjs!(error.clone());
                 Ok(serde_wasm_bindgen::to_value(&JsResponse {
                     result: false,
-                    error: Some(format!(
-                        "Error importing Excel file: {:?}, error: {:?}",
-                        file_name, e
-                    )),
+                    error: Some(error),
                 })?)
             }
         }
