@@ -92,6 +92,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
     }
 
     /// Server sends us the latest sequence_num to ensure we're in sync. We respond with a request if

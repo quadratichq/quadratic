@@ -68,14 +68,15 @@ impl GridController {
         cursor: Option<String>,
     ) -> Option<String> {
         if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
-            let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-            if let Ok(language) = serde_wasm_bindgen::from_value(language) {
-                return Some(self.set_code_cell(
-                    pos.to_sheet_pos(sheet_id),
-                    language,
-                    code_string,
-                    cursor,
-                ));
+            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+                if let Ok(language) = serde_wasm_bindgen::from_value(language) {
+                    return Some(self.set_code_cell(
+                        pos.to_sheet_pos(sheet_id),
+                        language,
+                        code_string,
+                        cursor,
+                    ));
+                }
             }
         }
         None
