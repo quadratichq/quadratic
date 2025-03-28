@@ -34,12 +34,22 @@ export const vertex_anthropic = new AnthropicVertex({
   googleAuth: new GoogleAuth(googleAuthOptions),
 });
 
-// gcp-sdk for vertexai, generic for all models
-export const vertexai = new VertexAI({
-  project: GCP_PROJECT_ID,
-  location: GCP_REGION,
-  googleAuthOptions,
-});
+// Create a map of Vertex AI instances for different regions
+export const vertexaiByRegion = {
+  'us-east5': new VertexAI({
+    project: GCP_PROJECT_ID,
+    location: 'us-east5',
+    googleAuthOptions,
+  }),
+  'us-central1': new VertexAI({
+    project: GCP_PROJECT_ID,
+    location: 'us-central1',
+    googleAuthOptions,
+  }),
+};
+
+// Keep the default instance for backward compatibility
+export const vertexai = vertexaiByRegion['us-east5'];
 
 // anthropic-sdk for bedrock
 export const bedrock_anthropic = new AnthropicBedrock({

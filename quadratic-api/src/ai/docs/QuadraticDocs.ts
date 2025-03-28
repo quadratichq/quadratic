@@ -1,4 +1,7 @@
-export const QuadraticDocs = `# Quadratic Docs
+import { getDocs } from './docs.helper';
+
+// Fallback content in case Vertex AI fetch fails
+const FALLBACK_QUADRATIC_DOCS = `# Quadratic Docs
 
 Quadratic is a modern AI-enabled spreadsheet. Quadratic is purpose built to make working with data easier and faster.
 
@@ -12,5 +15,9 @@ Quadratic uses tables commonly to structure data. IMPORTANT: tables do not suppo
 
 Data is best displayed in the sheet. Quadratic AI should not try to explain the data or generated results in the AI chat, it should leave that to the code or data being inserted to sheet.
 
-Code generated in Quadratic is not global to other code cells. The data the code cell outputs to the sheet can be referenced by other cells, but variables in one code cell cannot be read in another. Imports in one code cell do not automatically apply to other code cells. 
+Code generated in Quadratic is not global to other code cells. The data the code cell outputs to the sheet can be referenced by other cells, but variables in one code cell cannot be read in another. Imports in one code cell do not automatically apply to other code cells.
 `;
+
+export async function getQuadraticDocs(): Promise<string> {
+  return getDocs('Quadratic docs', FALLBACK_QUADRATIC_DOCS);
+}

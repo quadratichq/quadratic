@@ -1,4 +1,7 @@
-export const FormulaDocs = `# Formula Docs
+import { getDocs } from './docs.helper';
+
+// Fallback content in case Vertex AI fetch fails
+const FALLBACK_FORMULA_DOCS = `# Formula Docs
 
 Formulas in Quadratic are similar to how you'd expect in any spreadsheet. Formulas are relatively referenced by default, with $ notation to support absolute references. 
 
@@ -144,3 +147,7 @@ TODAY
 ## Filters
 FILTER
 `;
+
+export async function getFormulaDocs(): Promise<string> {
+  return getDocs('Formula docs', FALLBACK_FORMULA_DOCS);
+}

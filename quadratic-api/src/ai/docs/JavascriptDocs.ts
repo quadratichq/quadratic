@@ -1,4 +1,7 @@
-export const JavascriptDocs = `# Javascript Docs
+import { getDocs } from './docs.helper';
+
+// Fallback content in case Vertex AI fetch fails
+const FALLBACK_JAVASCRIPT_DOCS = `# Javascript Docs
 
 With Javascript in Quadratic, the world's most popular programming language meets the world's most popular tool for working with data - spreadsheets. 
 
@@ -404,3 +407,7 @@ JavaScript can not be used to import files like .xlsx or .csv. Users should impo
 
 JavaScript can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.
 `;
+
+export async function getJavascriptDocs(): Promise<string> {
+  return getDocs('Javascript docs', FALLBACK_JAVASCRIPT_DOCS);
+}

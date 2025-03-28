@@ -1,4 +1,7 @@
-export const ConnectionDocs = `# Connections Docs
+import { getDocs } from './docs.helper';
+
+// Fallback content in case Vertex AI fetch fails
+const FALLBACK_CONNECTION_DOCS = `# Connections Docs
 
 Use SQL to create live connections from your spreadsheets to your databases and data warehouses. 
 
@@ -64,3 +67,7 @@ There are some slight differences between SQL syntax across databases to keep in
 * In MySQL it is best practice to use backticks around table names and column names.
 * In MS SQL Server it is best practice to use double quotes around table names and column names.
 `;
+
+export async function getConnectionDocs(): Promise<string> {
+  return getDocs('Connection docs', FALLBACK_CONNECTION_DOCS);
+}

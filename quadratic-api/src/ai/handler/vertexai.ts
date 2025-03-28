@@ -38,27 +38,30 @@ export const handleVertexAIRequest = async (
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const parsedResponse = await parseVertexAIStream(result, response, modelKey);
-      return parsedResponse;
+      return await parseVertexAIStream(result, response, modelKey);
     } else {
       const result = await generativeModel.generateContent(apiArgs);
-
-      const parsedResponse = parseVertexAIResponse(result, response, modelKey);
-      return parsedResponse;
+      return parseVertexAIResponse(result, response, modelKey);
     }
   } catch (error: any) {
     if (!options.stream || !response.headersSent) {
       if (error instanceof ClientError || error instanceof GoogleApiError || error instanceof GoogleAuthError) {
         const code = 'code' in error ? Number(error.code) : 400;
-        response.status(code).json({ error: error.message });
-        console.error(code, error.message);
+        const errorMessage = error.message || 'Unknown Google API error';
+        const errorDetails =
+          error instanceof GoogleAuthError ? 'Authentication failed. Please check your GCP credentials.' : errorMessage;
+        response.status(code).json({ error: errorDetails });
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        response.status(error.response.status).json({
+          error: 'Authentication failed. Please check your GCP credentials and permissions.',
+        });
       } else {
-        response.status(400).json({ error });
-        console.error(error);
+        response.status(400).json({
+          error: 'Failed to process request',
+        });
       }
     } else {
       response.end();
-      console.error('Error occurred after headers were sent:', error);
     }
   }
 };
