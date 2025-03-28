@@ -379,4 +379,15 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for xai
     strictParams: false,
   },
+  'vertexai:custom-endpoint-509017808567271424': {
+    model: 'projects/108931143838/locations/us-central1/endpoints/509017808567271424',
+    displayName: 'SheetPlacer-32B-Instruct',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'vertexai',
+    promptCaching: true,
+  },
 } as const;
