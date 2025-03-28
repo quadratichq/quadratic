@@ -5,11 +5,12 @@
 //! format string to only include the relevant elements. (Otherwise it throws an
 //! error.)
 
+use lazy_static::lazy_static;
 use std::cmp::Ordering;
 
 use chrono::{
-    DateTime, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
-    format::{Fixed, Item, Numeric, StrftimeItems},
+    DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike, Utc,
+    format::{Fixed, Item, Numeric, Parsed, StrftimeItems},
 };
 
 pub const DEFAULT_DATE_FORMAT: &str = "%m/%d/%Y";
@@ -217,7 +218,20 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 
 /// Parses a date string using a list of possible formats.
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
-    let formats = vec![
+    // chrono's parsing API doesn't support patterns without a specified day, so
+    // we use a workaround from https://github.com/chronotope/chrono/issues/191
+
+    const FORMATS: &[&str] = &[
+        "%d %b", // Day and abbreviated month name (assumes current year)
+        "%d %B", // Day and full month name (assumes current year)
+        "%b %d", // Abbreviated month name and day (assumes current year)
+        "%B %d", // Full month name and day (assumes current year)
+        "%m/%Y", // 12/2024
+        "%Y/%m", // 2024/12
+        "%B %Y", // December 2024
+        "%b %Y", // Dec 2024
+        "%Y %B", // 2024 December
+        "%Y %b", // 2024 Dec
         "%Y-%m-%d",
         "%m-%d-%Y",
         "%d-%m-%Y",
@@ -238,15 +252,30 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         "%d %B %Y",
         "%b %d, %Y",
         "%B %d, %Y", // Added to support "December 23, 2024"
-        "%d %b",     // Day and abbreviated month name (assumes current year)
-        "%d %B",     // Day and full month name (assumes current year)
-        "%b %d",     // Abbreviated month name and day (assumes current year)
-        "%B %d",     // Full month name and day (assumes current year)
     ];
 
-    for &format in formats.iter() {
-        if let Ok(parsed_date) = NaiveDate::parse_from_str(value, format) {
-            return Some(parsed_date);
+    lazy_static! {
+        static ref FORMATS_AS_STRFTIME_ITEMS: Vec<StrftimeItems<'static>> =
+            FORMATS.iter().map(|f| StrftimeItems::new(f)).collect();
+    }
+
+    for format in &*FORMATS_AS_STRFTIME_ITEMS {
+        let mut parsed = Parsed::new();
+        if chrono::format::parse(&mut parsed, value, format.clone()).is_ok() {
+            // We allow dates with negative years, but you have to construct
+            // them explicitly using a formula. Don't parse them.
+            if parsed.year.is_some_and(|y| y < 1) {
+                continue;
+            }
+
+            // Infer defaults if unspecified in the pattern.
+            parsed.year = parsed.year.or(Some(Utc::now().year()));
+            parsed.month = parsed.month.or(Some(1));
+            parsed.day = parsed.day.or(Some(1));
+
+            if let Ok(parsed_date) = parsed.to_naive_date() {
+                return Some(parsed_date);
+            }
         }
     }
     None
@@ -344,6 +373,7 @@ mod tests {
             parse_date("jan 1,2024"),
             NaiveDate::from_ymd_opt(2024, 1, 1)
         );
+        assert_eq!(parse_date("Jan 2024"), NaiveDate::from_ymd_opt(2024, 1, 1));
     }
 
     #[test]
@@ -410,5 +440,6 @@ mod tests {
     fn test_parse_date_time() {
         assert_eq!(parse_date("1893-01"), None);
         assert_eq!(parse_date("1902-01"), None);
+        assert_eq!(parse_date("101-250"), None);
     }
 }
