@@ -539,7 +539,7 @@ class Core {
                 cursor
               );
               if (response.error) {
-                resolve({ error: response.error });
+                return resolve({ error: response.error });
               }
               break;
             case 'csv':
