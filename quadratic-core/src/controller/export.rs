@@ -14,6 +14,7 @@ impl GridController {
     /// Returns a [`String`].
     pub fn export_csv_selection(&self, selection: &mut A1Selection) -> Result<String> {
         let sheet = self
+            .grid
             .try_sheet(selection.sheet_id)
             .context("Sheet not found")?;
 
@@ -22,10 +23,10 @@ impl GridController {
         }
 
         let bounds = sheet
-            .selection_bounds(selection, false)
+            .selection_bounds(selection, false, &self.a1_context)
             .context("No values")?;
 
-        let values = sheet.selection_sorted_vec(selection, false);
+        let values = sheet.selection_sorted_vec(selection, false, &self.a1_context);
         let mut writer = Writer::from_writer(vec![]);
         let mut iter = values.iter();
         let context = self.a1_context();

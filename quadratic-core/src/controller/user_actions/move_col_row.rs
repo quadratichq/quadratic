@@ -18,17 +18,19 @@ impl GridController {
         col_end: i64,
         to: i64,
     ) {
-        let context = self.a1_context().clone();
-        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             return;
         };
 
         // copy all data in the columns range
         let html = {
             let selection = A1Selection::cols(sheet_id, col_start, col_end);
-            let Ok(clipboard) =
-                sheet.copy_to_clipboard(&selection, &context, ClipboardOperation::Cut, false)
-            else {
+            let Ok(clipboard) = sheet.copy_to_clipboard(
+                &selection,
+                &self.a1_context,
+                ClipboardOperation::Cut,
+                false,
+            ) else {
                 return;
             };
             clipboard.html
@@ -36,7 +38,11 @@ impl GridController {
 
         // delete existing columns
         let min_column = col_start.min(col_end);
-        sheet.delete_columns(transaction, (col_start..=col_end).collect());
+        sheet.delete_columns(
+            transaction,
+            (col_start..=col_end).collect(),
+            &self.a1_context,
+        );
 
         // update information for all cells to the right of the deleted column
         if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -60,9 +66,9 @@ impl GridController {
         };
 
         // insert new columns at the adjusted location
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for col in adjusted_to..=adjusted_to + col_end - col_start {
-                sheet.insert_column(transaction, col, CopyFormats::None, false);
+                sheet.insert_column(transaction, col, CopyFormats::None, false, &self.a1_context);
             }
         }
 
@@ -81,17 +87,19 @@ impl GridController {
         row_end: i64,
         to: i64,
     ) {
-        let context = self.a1_context().clone();
-        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             return;
         };
 
         // copy all data in the rows range
         let html = {
             let selection = A1Selection::rows(sheet_id, row_start, row_end);
-            let Ok(clipboard) =
-                sheet.copy_to_clipboard(&selection, &context, ClipboardOperation::Cut, false)
-            else {
+            let Ok(clipboard) = sheet.copy_to_clipboard(
+                &selection,
+                &self.a1_context,
+                ClipboardOperation::Cut,
+                false,
+            ) else {
                 return;
             };
             clipboard.html
@@ -99,7 +107,11 @@ impl GridController {
 
         // delete existing rows
         let min_row = row_start.min(row_end);
-        sheet.delete_rows(transaction, (row_start..=row_end).collect());
+        sheet.delete_rows(
+            transaction,
+            (row_start..=row_end).collect(),
+            &self.a1_context,
+        );
 
         // update information for all cells below the deleted rows
         if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -123,9 +135,9 @@ impl GridController {
         };
 
         // insert new rows at the adjusted location
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for row in adjusted_to..=adjusted_to + row_end - row_start {
-                sheet.insert_row(transaction, row, CopyFormats::None, false);
+                sheet.insert_row(transaction, row, CopyFormats::None, false, &self.a1_context);
             }
         }
 
@@ -139,7 +151,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{assert_display_cell_value_first_sheet, print_first_sheet};
+    use crate::test_util::gc::{assert_display_cell_value_first_sheet, print_first_sheet};
 
     use super::*;
 

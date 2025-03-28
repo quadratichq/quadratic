@@ -115,7 +115,7 @@ impl Connection for SnowflakeConnection {
     ) -> Result<(Bytes, bool, usize)> {
         let query_error = |e: String| SharedError::Sql(SqlError::Query(e));
 
-        #[cfg(any(test, feature = "test"))]
+        #[cfg(all(any(test, feature = "test"), not(clippy)))]
         let (mut _client, _recording) = tests::get_mocked(self, "snowflake-connection").await;
 
         let query_result = _client
@@ -123,7 +123,11 @@ impl Connection for SnowflakeConnection {
             .await
             .map_err(|e| query_error(e.to_string()))?;
 
-        #[cfg(all(any(test, feature = "test"), feature = "record-request-mock"))]
+        #[cfg(all(
+            any(test, feature = "test"),
+            feature = "record-request-mock",
+            not(clippy)
+        ))]
         record_stop(scenario, _recording).await;
 
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
@@ -204,7 +208,7 @@ impl Connection for SnowflakeConnection {
                 col.ordinal_position;"
         );
 
-        #[cfg(any(test, feature = "test"))]
+        #[cfg(all(any(test, feature = "test"), not(clippy)))]
         let (mut _client, _recording) =
             tests::get_mocked(self, "snowflake-connection-schema").await;
 
@@ -213,7 +217,11 @@ impl Connection for SnowflakeConnection {
             .await
             .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
 
-        #[cfg(all(any(test, feature = "test"), feature = "record-request-mock"))]
+        #[cfg(all(
+            any(test, feature = "test"),
+            feature = "record-request-mock",
+            not(clippy)
+        ))]
         record_stop(scenario, _recording).await;
 
         let mut data = vec![vec![]; 6];
@@ -278,6 +286,7 @@ impl Connection for SnowflakeConnection {
     }
 }
 
+#[cfg(not(clippy))]
 #[cfg(any(test, feature = "test"))]
 pub mod tests {
 

@@ -11,13 +11,15 @@ impl Validations {
         &self,
         selection: &A1Selection,
         clipboard_origin: &ClipboardOrigin,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<ClipboardValidations> {
         let validations = self
             .validations
             .iter()
             .filter_map(|validation| {
-                if let Some(intersection) = selection.intersection(&validation.selection, context) {
+                if let Some(intersection) =
+                    selection.intersection(&validation.selection, a1_context)
+                {
                     let mut v = validation.clone();
                     v.selection = intersection
                         .saturating_translate(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)?;

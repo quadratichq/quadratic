@@ -117,12 +117,12 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{controller::GridController, formulas::tests::*};
 
     #[test]
     fn test_formula_comparison_ops() {
         fn assert_all_compare_ops_work(lesser: &str, greater: &str) {
-            let g = Grid::new();
+            let g = GridController::new();
             let eval =
                 |lhs: &str, op: &str, rhs: &str| eval_to_string(&g, &format!("{lhs} {op} {rhs}"));
 
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     #[allow(clippy::identity_op)]
     fn test_formula_math_operators__() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_eq!(
             (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
@@ -190,7 +190,7 @@ mod tests {
     fn test_formula_math_operators_on_empty_string() {
         // Empty string should coerce to zero
 
-        let g = Grid::new();
+        let g = GridController::new();
 
         // Test addition
         assert_eq!("2", eval_to_string(&g, "C6 + 2"));
@@ -214,7 +214,8 @@ mod tests {
 
     #[test]
     fn test_formula_datetime_add() {
-        let mut g = Grid::new();
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
 
         for (a, b, expected) in [
             (val("10"), val("51"), Ok("61")),
@@ -256,8 +257,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheets_mut()[0].set_cell_value(pos![A1], a);
-            g.sheets_mut()[0].set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
 
             for formula_str in ["=A1+A2", "=A2+A1"] {
                 match expected {
@@ -270,16 +271,19 @@ mod tests {
 
     #[test]
     fn test_formula_datetime_subtract() {
-        let mut g = Grid::new();
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
 
         // Test error message formatting
-        g.sheets_mut()[0].set_cell_value(pos![A1], val("41y6mo4h"));
-        g.sheets_mut()[0].set_cell_value(pos![A2], date("1983-09-26"));
+        g.sheet_mut(sheet_id)
+            .set_cell_value(pos![A1], val("41y6mo4h"));
+        g.sheet_mut(sheet_id)
+            .set_cell_value(pos![A2], date("1983-09-26"));
         assert_eq!(
             eval_to_err(&g, "=A1-A2").msg.to_string(),
             "Cannot subtract duration and date",
         );
-        g.sheets_mut()[0].set_cell_value(pos![A1], time("1:30"));
+        g.sheet_mut(sheet_id).set_cell_value(pos![A1], time("1:30"));
         assert_eq!(
             eval_to_err(&g, "=A1-A2").msg.to_string(),
             "Cannot subtract time and date; use a duration such as '1y 5d 12h 30m' instead",
@@ -343,8 +347,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheets_mut()[0].set_cell_value(pos![A1], a);
-            g.sheets_mut()[0].set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
 
             match expected {
                 Ok(s) => assert_eq!(eval_to_string(&g, "=A1-A2"), s),
@@ -355,7 +359,8 @@ mod tests {
 
     #[test]
     fn test_formula_datetime_multiply() {
-        let mut g = Grid::new();
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
 
         for (a, b, expected) in [
             (val("oh"), val("dear"), Err(false)),
@@ -384,8 +389,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheets_mut()[0].set_cell_value(pos![A1], a);
-            g.sheets_mut()[0].set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
 
             for formula_str in ["=A1*A2", "=A2*A1"] {
                 match expected {
@@ -398,7 +403,8 @@ mod tests {
 
     #[test]
     fn test_formula_datetime_divide() {
-        let mut g = Grid::new();
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
 
         for (a, b, expected) in [
             (val("oh"), val("dear"), Err(false)),
@@ -448,8 +454,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheets_mut()[0].set_cell_value(pos![A1], a);
-            g.sheets_mut()[0].set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
 
             match expected {
                 Ok(s) => assert_eq!(eval_to_string(&g, "=A1/A2"), s),
@@ -462,8 +468,8 @@ mod tests {
         let b = val("0");
         println!("A1 = {a}");
         println!("A2 = {b}");
-        g.sheets_mut()[0].set_cell_value(pos![A1], a);
-        g.sheets_mut()[0].set_cell_value(pos![A2], b);
+        g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
+        g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
         assert_eq!(eval_to_err(&g, "=A1/A2").msg, RunErrorMsg::DivideByZero);
     }
 

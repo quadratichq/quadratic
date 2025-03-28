@@ -465,6 +465,7 @@ pub(crate) fn export_data_tables(
     data_tables
         .into_iter()
         .map(|(pos, data_table)| {
+            let name = data_table.name().to_string();
             let value = match data_table.value {
                 Value::Single(cell_value) => {
                     current::OutputValueSchema::Single(export_cell_value(cell_value))
@@ -527,7 +528,7 @@ pub(crate) fn export_data_tables(
 
             let data_table = current::DataTableSchema {
                 kind,
-                name: data_table.name.to_display(),
+                name,
                 header_is_first_row: data_table.header_is_first_row,
                 show_ui: data_table.show_ui,
                 show_name: data_table.show_name,

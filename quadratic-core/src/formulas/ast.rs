@@ -301,7 +301,7 @@ impl AstNode {
                     .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
 
                 let sheet = ctx
-                    .grid
+                    .grid_controller
                     .try_sheet(indexed_pos.sheet_id)
                     .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
 

@@ -57,7 +57,7 @@ impl CellRefRange {
     }
 
     /// Returns true if the range is a single position or a range that contains the given position.
-    pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>, context: &A1Context) -> bool {
+    pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>, a1_context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => {
                 if let Some(p2) = p2 {
@@ -68,7 +68,7 @@ impl CellRefRange {
                 }
             }
             Self::Table { range } => range
-                .convert_to_ref_range_bounds(false, context, false, false)
+                .convert_to_ref_range_bounds(false, a1_context, false, false)
                 .is_some_and(|range| {
                     if let Some(p2) = p2 {
                         range.start.is_pos(p1) && range.end.is_pos(p2)
@@ -123,52 +123,52 @@ impl CellRefRange {
         }
     }
 
-    pub fn to_rect(&self, context: &A1Context) -> Option<Rect> {
+    pub fn to_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
             Self::Sheet { range } => range.to_rect(),
-            Self::Table { range } => range.to_largest_rect(context),
+            Self::Table { range } => range.to_largest_rect(a1_context),
         }
     }
 
-    pub fn selected_columns_finite(&self, context: &A1Context) -> Vec<i64> {
+    pub fn selected_columns_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns_finite(),
-            Self::Table { range } => range.selected_cols_finite(context),
+            Self::Table { range } => range.selected_cols_finite(a1_context),
         }
     }
 
-    pub fn selected_columns(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
+    pub fn selected_columns(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns(from, to),
-            Self::Table { range } => range.selected_cols(from, to, context),
+            Self::Table { range } => range.selected_cols(from, to, a1_context),
         }
     }
 
-    pub fn selected_rows_finite(&self, context: &A1Context) -> Vec<i64> {
+    pub fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows_finite(),
-            Self::Table { range } => range.selected_rows_finite(context),
+            Self::Table { range } => range.selected_rows_finite(a1_context),
         }
     }
 
-    pub fn selected_rows(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
+    pub fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows(from, to),
-            Self::Table { range } => range.selected_rows(from, to, context),
+            Self::Table { range } => range.selected_rows(from, to, a1_context),
         }
     }
 
-    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
+    pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
         match self {
             Self::Sheet { range } => range.try_to_pos(),
-            Self::Table { range } => range.try_to_pos(context),
+            Self::Table { range } => range.try_to_pos(a1_context),
         }
     }
 
-    pub fn is_single_cell(&self, context: &A1Context) -> bool {
+    pub fn is_single_cell(&self, a1_context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.is_single_cell(),
-            Self::Table { range } => range.is_single_cell(context),
+            Self::Table { range } => range.is_single_cell(a1_context),
         }
     }
 
@@ -176,10 +176,10 @@ impl CellRefRange {
     pub fn table_column_selection(
         &self,
         table_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<Vec<i64>> {
         match self {
-            Self::Table { range } => range.table_column_selection(table_name, context),
+            Self::Table { range } => range.table_column_selection(table_name, a1_context),
             _ => None,
         }
     }

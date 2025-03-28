@@ -4,7 +4,7 @@ use syn::{ItemFn, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn function_timer(_attrs: TokenStream, item: TokenStream) -> TokenStream {
-    if cfg!(not(feature = "function-timer")) {
+    if cfg!(not(feature = "enabled")) {
         return item;
     }
 
@@ -19,6 +19,15 @@ pub fn function_timer(_attrs: TokenStream, item: TokenStream) -> TokenStream {
         ..
     } = input_fn;
 
+    let mut print_output = quote! {};
+    let should_print = _attrs.to_string().contains("dbgjs");
+
+    if should_print {
+        print_output = quote! {
+            dbgjs!(format!("Function {} took {} ms", #fn_name, duration.num_milliseconds()));
+        };
+    }
+
     let expanded = quote! {
             #(#attrs)*
             #vis #sig {
@@ -27,7 +36,9 @@ pub fn function_timer(_attrs: TokenStream, item: TokenStream) -> TokenStream {
             let end = chrono::Utc::now();
             let duration = end - start;
 
-            dbgjs!(format!("Function {} took {} ms", #fn_name, duration.num_milliseconds()));
+            crate::FUNCTIONS.lock().unwrap().push((#fn_name.to_string(), duration.num_milliseconds()));
+
+            #print_output
 
             out
         }

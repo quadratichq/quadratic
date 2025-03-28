@@ -88,7 +88,7 @@ impl GridController {
         let grid = Grid::new_blank();
         let mut grid_controller = GridController::from_grid(grid, 0);
         grid_controller
-            .import_excel(file, file_name, None)
+            .import_excel(&file, file_name, None)
             .map_err(|e| e.to_string())?;
 
         Ok(grid_controller)
@@ -104,7 +104,7 @@ impl GridController {
         file_name: &str,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        self.import_excel(file, file_name, cursor)
+        self.import_excel(&file, file_name, cursor)
             .map_err(|e| e.to_string())?;
 
         Ok(())

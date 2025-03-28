@@ -14,7 +14,7 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        let mut eval_ctx = Ctx::new(self.grid(), sheet_pos);
+        let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
 

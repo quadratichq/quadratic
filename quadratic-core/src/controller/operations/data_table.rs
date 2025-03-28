@@ -257,7 +257,7 @@ mod test {
             operations::operation::Operation,
         },
         grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-        test_util::{assert_cell_value, assert_display_cell_value, print_table},
+        test_util::gc::{assert_cell_value, assert_display_cell_value, print_table},
     };
 
     #[test]

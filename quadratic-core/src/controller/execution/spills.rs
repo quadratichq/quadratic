@@ -278,7 +278,8 @@ mod tests {
         assert!(code_run.spill_error);
 
         // should be a spill caused by 1,2
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(render_cells, output_spill_error(1, 1));
 
         // remove 'hello' that caused spill
@@ -297,7 +298,8 @@ mod tests {
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().spill_error);
 
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
 
         // should be B0: "1" since spill was removed
         assert_eq!(
@@ -335,12 +337,14 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(
             render_cells,
             output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None)
         );
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
         gc.set_code_cell(
@@ -356,7 +360,8 @@ mod tests {
 
         // should be spilled because of the code_cell
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(render_cells, output_spill_error(1, 1),);
     }
 
@@ -405,7 +410,8 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }), gc.a1_context());
         assert_eq!(render_cells, output_spill_error(12, 10));
 
         // delete the code_cell that caused the spill
@@ -420,7 +426,8 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }), gc.a1_context());
         assert_eq!(
             render_cells,
             output_number(12, 10, "1", Some(CodeCellLanguage::Formula), None)
@@ -489,7 +496,8 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(
             render_cells,
             vec![JsRenderCell {

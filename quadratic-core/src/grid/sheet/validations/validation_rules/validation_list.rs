@@ -2,7 +2,11 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{CellValue, a1::A1Selection, grid::Sheet};
+use crate::{
+    CellValue,
+    a1::{A1Context, A1Selection},
+    grid::Sheet,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationListSource {
@@ -19,8 +23,13 @@ pub struct ValidationList {
 
 impl ValidationList {
     /// Compares all CellValues within a Selection to the provided CellValue.
-    fn validate_selection(sheet: &Sheet, selection: &A1Selection, value: &CellValue) -> bool {
-        if let Some(values) = sheet.selection_values(selection, None, false, true) {
+    fn validate_selection(
+        sheet: &Sheet,
+        selection: &A1Selection,
+        value: &CellValue,
+        a1_context: &A1Context,
+    ) -> bool {
+        if let Some(values) = sheet.selection_values(selection, None, false, true, a1_context) {
             values.iter().any(|(_, search)| *search == value)
         } else {
             false
@@ -28,11 +37,16 @@ impl ValidationList {
     }
 
     /// Validates a CellValue against a ValidationList.
-    pub(crate) fn validate(&self, sheet: &Sheet, value: Option<&CellValue>) -> bool {
+    pub(crate) fn validate(
+        &self,
+        sheet: &Sheet,
+        value: Option<&CellValue>,
+        a1_context: &A1Context,
+    ) -> bool {
         if let Some(value) = value {
             match &self.source {
                 ValidationListSource::Selection(selection) => {
-                    ValidationList::validate_selection(sheet, selection, value)
+                    ValidationList::validate_selection(sheet, selection, value, a1_context)
                 }
                 ValidationListSource::List(list) => list.contains(&value.to_string()),
             }
@@ -42,13 +56,13 @@ impl ValidationList {
     }
 
     /// Gets the drop down list.
-    pub fn to_drop_down(&self, sheet: &Sheet) -> Option<Vec<String>> {
+    pub fn to_drop_down(&self, sheet: &Sheet, a1_context: &A1Context) -> Option<Vec<String>> {
         if !self.drop_down {
             return None;
         }
         match &self.source {
             ValidationListSource::Selection(selection) => {
-                let values = sheet.selection_values(selection, None, false, false)?;
+                let values = sheet.selection_values(selection, None, false, false, a1_context)?;
                 Some(
                     values
                         .values()
@@ -75,9 +89,19 @@ mod tests {
             drop_down: true,
         };
 
-        assert!(list.validate(&sheet, Some(&CellValue::Text("test".to_string()))));
-        assert!(!list.validate(&sheet, Some(&CellValue::Text("test2".to_string()))));
-        assert!(list.validate(&sheet, None));
+        let a1_context = sheet.make_a1_context();
+
+        assert!(list.validate(
+            &sheet,
+            Some(&CellValue::Text("test".to_string())),
+            &a1_context
+        ));
+        assert!(!list.validate(
+            &sheet,
+            Some(&CellValue::Text("test2".to_string())),
+            &a1_context
+        ));
+        assert!(list.validate(&sheet, None, &a1_context));
     }
 
     #[test]
@@ -86,16 +110,20 @@ mod tests {
         sheet.set_cell_value((1, 1).into(), "test");
         let selection = A1Selection::test_a1("A1");
 
+        let a1_context = sheet.make_a1_context();
+
         assert!(ValidationList::validate_selection(
             &sheet,
             &selection,
-            &CellValue::Text("test".to_string())
+            &CellValue::Text("test".to_string()),
+            &a1_context
         ));
 
         assert!(!ValidationList::validate_selection(
             &sheet,
             &selection,
-            &CellValue::Text("test2".to_string())
+            &CellValue::Text("test2".to_string()),
+            &a1_context
         ));
 
         let list = ValidationList {
@@ -103,7 +131,7 @@ mod tests {
             ignore_blank: false,
             drop_down: true,
         };
-        assert!(!list.validate(&sheet, None));
+        assert!(!list.validate(&sheet, None, &a1_context));
     }
 
     #[test]
@@ -115,13 +143,18 @@ mod tests {
             drop_down: true,
         };
 
-        assert_eq!(list.to_drop_down(&sheet), Some(vec!["test".to_string()]));
+        let a1_context = sheet.make_a1_context();
+
+        assert_eq!(
+            list.to_drop_down(&sheet, &a1_context),
+            Some(vec!["test".to_string()])
+        );
         let list = ValidationList {
             source: ValidationListSource::List(vec!["test".to_string(), "test2".to_string()]),
             ignore_blank: true,
             drop_down: false,
         };
-        assert_eq!(list.to_drop_down(&sheet), None);
+        assert_eq!(list.to_drop_down(&sheet, &a1_context), None);
     }
 
     #[test]
@@ -137,8 +170,10 @@ mod tests {
             drop_down: true,
         };
 
+        let a1_context = sheet.make_a1_context();
+
         assert_eq!(
-            list.to_drop_down(&sheet),
+            list.to_drop_down(&sheet, &a1_context),
             Some(vec!["test".to_string(), "test2".to_string()])
         );
     }

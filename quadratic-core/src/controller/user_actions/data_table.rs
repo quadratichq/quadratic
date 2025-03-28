@@ -131,7 +131,7 @@ mod tests {
             user_actions::import::tests::simple_csv,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-        test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
+        test_util::gc::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
     };
 

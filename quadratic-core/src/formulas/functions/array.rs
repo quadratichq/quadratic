@@ -273,7 +273,7 @@ fn by_column_to_axis(by_column: Option<bool>) -> Axis {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{controller::GridController, formulas::tests::*};
 
     #[test]
     fn test_formula_filter() {
@@ -284,7 +284,7 @@ mod tests {
             "dodecahedron", 5, 3;
             "icosahedron", 3, 5; // favorite
         ];
-        let g = Grid::from_array(pos![A1], &all_shapes);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &all_shapes), 0);
 
         // General case
         let favorites = array![
@@ -355,7 +355,7 @@ mod tests {
         );
 
         // Transposed
-        let g = Grid::from_array(pos![A1], &all_shapes.transpose());
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &all_shapes.transpose()), 0);
         assert_eq!(
             favorites.transpose().to_string(),
             eval_to_string(&g, "FILTER(A1:E3, {0,1,-6,FALSE,TRUE})"),
@@ -396,7 +396,7 @@ mod tests {
             "dynamic",    "activity",   -7, -9;
         ];
 
-        let g = Grid::from_array(pos![A1], &source_data);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &source_data), 0);
 
         let expected = array![
             "classify",   "onion",      0,  5;
@@ -509,7 +509,7 @@ mod tests {
             time("13:00");
         ];
 
-        let g = Grid::from_array(pos![A1], &source_array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &source_array), 0);
 
         let expected = array![
             -10.0;
@@ -571,7 +571,7 @@ mod tests {
             "HI", 2;
         ];
 
-        let g = Grid::from_array(pos![A1], &source_data);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &source_data), 0);
 
         let expected_unique = array![
             1, 2;
@@ -617,7 +617,7 @@ mod tests {
             expected_exactly_once.to_string(),
         );
 
-        let g = Grid::from_array(pos![A1], &source_data.transpose());
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &source_data.transpose()), 0);
         let expected_unique = expected_unique.transpose();
         let expected_exactly_once = expected_exactly_once.transpose();
 
@@ -657,7 +657,7 @@ mod tests {
             "B", "R", 41;
             "C", "Q", 19;
         ];
-        let g = Grid::from_array(pos![A1], &a);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &a), 0);
         assert_eq!(
             "62",
             eval_to_string(&g, "SUMPRODUCT(A1:A6=\"B\", B1:B6=\"R\", C1:C6)")

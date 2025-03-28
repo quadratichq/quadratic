@@ -19,6 +19,7 @@ impl GridController {
                         sheet_pos.into(),
                         &values,
                         !transaction.is_server(),
+                        &self.a1_context,
                     );
                     if old_values == values {
                         return;
