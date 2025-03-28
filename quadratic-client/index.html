@@ -55,7 +55,35 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <!-- These styles are carried over to the <QuadraticLoading> component
+         which additionally adds the effects for light/dark mode -->
+    <style>
+      body {
+        margin: 0;
+      }
+      .root-loader {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        user-select: none;
+        position: relative;
+      }
+      .root-loader > div {
+        position: relative;
+        width: 100px;
+        height: 100px;
+      }
+      .root-loader img {
+        width: 100px;
+        height: 100px;
+      }
+    </style>
+    <div id="root">
+      <div class="root-loader">
+        <img src="/images/logo_etching.png" alt="Loading..." width="100" height="100" />
+      </div>
+    </div>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 
