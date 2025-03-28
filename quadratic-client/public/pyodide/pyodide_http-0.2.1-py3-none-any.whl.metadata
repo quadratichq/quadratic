@@ -1,14 +1,3 @@
-Metadata-Version: 2.1
-Name: pyodide-http
-Version: 0.2.1
-Summary: Patch requests, urllib and urllib3 to make them work in Pyodide
-Home-page: https://github.com/koenvo/pyodide-http
-Author: Koen Vossen
-Author-email: info@koenvossen.nl
-License: MIT
-Platform: UNKNOWN
-Description-Content-Type: text/markdown
-License-File: LICENSE
-
-Patch requests, urllib and urllib3 to make them work in Pyodide
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:7ec37506900437305236b2a10e9f9b2293a8175e1dca2100fc4c3931cfaa0303
+size 391
