@@ -786,7 +786,8 @@ mod tests {
     fn test_add_dirty_hashes_from_sheet_columns() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
         transaction.add_dirty_hashes_from_sheet_columns(&sheet, 1, None);
@@ -800,7 +801,8 @@ mod tests {
     fn test_add_dirty_hashes_from_sheet_rows() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
         transaction.add_dirty_hashes_from_sheet_rows(&sheet, 1, None);
