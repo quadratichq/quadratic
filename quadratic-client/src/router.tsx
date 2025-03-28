@@ -7,7 +7,7 @@ import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import getActiveTeam from '@/shared/utils/getActiveTeam';
+import { determineAndSetActiveTeam } from '@/shared/utils/getActiveTeam';
 import type { ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirect } from 'react-router-dom';
 
@@ -92,7 +92,7 @@ export const router = createBrowserRouter(
               path="team/*"
               loader={async ({ params }) => {
                 const { teams } = await apiClient.teams.list();
-                const { teamUuid } = await getActiveTeam(teams, undefined);
+                const { teamUuid } = await determineAndSetActiveTeam(teams, undefined);
                 return redirect(ROUTES.TEAM(teamUuid) + '/' + params['*']);
               }}
             />

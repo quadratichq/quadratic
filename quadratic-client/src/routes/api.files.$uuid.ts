@@ -53,10 +53,11 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'duplicate') {
     try {
-      const { redirect, isPrivate, checkpointDataUrl, checkpointVersion } = json as Action['request.duplicate'];
+      const { redirect, isPrivate, teamUuid, checkpointDataUrl, checkpointVersion } =
+        json as Action['request.duplicate'];
       const checkpoint =
         checkpointDataUrl && checkpointVersion ? { dataUrl: checkpointDataUrl, version: checkpointVersion } : undefined;
-      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, { isPrivate, checkpoint });
+      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, { isPrivate, checkpoint, teamUuid });
       return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
     } catch (error) {
       return { ok: false };
@@ -108,11 +109,13 @@ export const getActionFileMove = (ownerUserId: number | null) => {
 export const getActionFileDuplicate = ({
   isPrivate,
   redirect,
+  teamUuid,
   checkpointDataUrl,
   checkpointVersion,
 }: {
   isPrivate: boolean;
   redirect: boolean;
+  teamUuid: string;
   checkpointDataUrl?: string;
   checkpointVersion?: string;
 }) => {
@@ -120,6 +123,7 @@ export const getActionFileDuplicate = ({
     action: 'duplicate' as const,
     isPrivate,
     redirect,
+    teamUuid,
     ...(checkpointDataUrl ? { checkpointDataUrl } : {}),
     ...(checkpointVersion ? { checkpointVersion } : {}),
   };

@@ -10,6 +10,7 @@ import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { getActiveTeam } from '@/shared/utils/getActiveTeam';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -45,6 +46,7 @@ export const Component = () => {
   const [activeCheckpointId, setActiveCheckpointId] = useState<number | null>(null);
   const activeCheckpoint = data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId);
   const iframeUrl = activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : '';
+  const teamUuid = getActiveTeam();
 
   const checkpointsByDay = data.checkpoints.reduce((acc, version) => {
     const date = new Date(version.timestamp);
@@ -97,13 +99,14 @@ export const Component = () => {
               disabled={btnsDisabled}
               className="flex-grow"
               onClick={() => {
-                if (!activeCheckpoint) return;
+                if (!activeCheckpoint || !teamUuid) return;
 
                 mixpanel.track('[FileVersionHistory].duplicateVersion', {
                   uuid,
                   checkpointId: activeCheckpoint.id,
                 });
                 const data = getActionFileDuplicate({
+                  teamUuid,
                   isPrivate: true,
                   redirect: true,
                   checkpointVersion: activeCheckpoint.version,

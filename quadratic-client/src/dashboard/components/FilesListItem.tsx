@@ -143,7 +143,11 @@ export function FilesListItemUserFile({
 
   const handleDuplicate = () => {
     mixpanel.track('[Files].duplicateFile', { id: uuid });
-    const data = getActionFileDuplicate({ redirect: false, isPrivate: isTeamPrivateFilesRoute ? true : false });
+    const data = getActionFileDuplicate({
+      redirect: false,
+      isPrivate: isTeamPrivateFilesRoute ? true : false,
+      teamUuid: activeTeamUuid,
+    });
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
