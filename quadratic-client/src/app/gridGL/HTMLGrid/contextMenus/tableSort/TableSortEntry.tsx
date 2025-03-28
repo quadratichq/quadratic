@@ -9,7 +9,7 @@ import {
 } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useState } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
 
 interface Props {
   index: number;
@@ -22,7 +22,7 @@ interface Props {
   last: boolean;
 }
 
-export const TableSortEntry = (props: Props) => {
+export const TableSortEntry = forwardRef((props: Props, ref: React.Ref<HTMLDivElement>) => {
   const { index, availableColumns, direction, name, onChange, onDelete, onReorder, last } = props;
 
   const [newColumn, setNewColumn] = useState<string | undefined>(name);
@@ -45,6 +45,7 @@ export const TableSortEntry = (props: Props) => {
     <div className="flex h-fit w-full items-center gap-2">
       <span className="text-xs">{index + 1}.</span>
       <ValidationDropdown
+        ref={ref}
         className="first-focus w-fit grow"
         style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 1 }}
         value={name}
@@ -102,4 +103,4 @@ export const TableSortEntry = (props: Props) => {
       </div>
     </div>
   );
-};
+});

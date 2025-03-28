@@ -48,8 +48,8 @@ export const CodeEditorRefButton = () => {
       !disabled
         ? `Insert ${relative ? 'relative ' : ''}cell reference`
         : codeCellIsAConnection(codeEditor.language)
-        ? `Select only one cell to insert cell reference.`
-        : `Select cells on the grid to insert cell reference.`,
+          ? `Select only one cell to insert cell reference.`
+          : `Select cells on the grid to insert cell reference.`,
     [codeEditor.language, disabled, relative]
   );
 

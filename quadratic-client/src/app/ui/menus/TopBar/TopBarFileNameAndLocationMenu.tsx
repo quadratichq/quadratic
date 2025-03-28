@@ -152,7 +152,7 @@ function FileNameInput({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateActi
       defaultValue={name}
       ref={inputRef}
       autoFocus
-      className="w-full bg-transparent text-center text-sm text-foreground outline-none "
+      className="w-full bg-transparent text-center text-sm text-foreground outline-none"
     />
   );
 }

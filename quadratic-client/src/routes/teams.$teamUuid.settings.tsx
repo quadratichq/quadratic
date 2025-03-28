@@ -243,7 +243,7 @@ export const Component = () => {
                         Team members{' '}
                         <span className="text-muted-foreground">
                           (
-                          <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className=" underline">
+                          <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
                             manage
                           </Link>
                           )
@@ -296,7 +296,7 @@ export const Component = () => {
 
               <p className="pt-4 text-sm text-muted-foreground">
                 Learn more on our{' '}
-                <a href={PRICING_URL} target="_blank" className="  underline hover:text-primary">
+                <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                   pricing page
                   <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
                 </a>
@@ -314,7 +314,12 @@ export const Component = () => {
                 description={
                   <>
                     Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                    <a
+                      href={DOCUMENTATION_ANALYTICS_AI}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline hover:text-primary"
+                    >
                       Learn more
                     </a>
                     .

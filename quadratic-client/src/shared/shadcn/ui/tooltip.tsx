@@ -42,7 +42,7 @@ const TooltipPopover = ({
   tooltipProps,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: JSX.Element;
   shortcut?: string;
   side?: PopoverContentProps['side'];
   tooltipProps?: TooltipPrimitive.TooltipProps;

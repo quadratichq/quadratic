@@ -404,8 +404,8 @@ class InlineEditorMonaco {
       wordWrap: 'off',
       wrappingStrategy: 'advanced',
       wordBreak: 'keepAll',
-      occurrencesHighlight: false,
-      wordBasedSuggestions: false,
+      occurrencesHighlight: 'off',
+      wordBasedSuggestions: 'off',
       find: {
         addExtraSpaceOnTop: false,
         autoFindInSelection: 'never',

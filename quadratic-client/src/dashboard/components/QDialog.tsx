@@ -59,7 +59,9 @@ const QDialog: React.FC<QDialogProps> & {
 const Title: React.FC<QDialogTitleProps> = ({ children }) => {
   return (
     <DialogHeader>
-      <DialogTitle>{children}</DialogTitle>
+      <DialogTitle>
+        <>{children}</>
+      </DialogTitle>
     </DialogHeader>
   );
 };

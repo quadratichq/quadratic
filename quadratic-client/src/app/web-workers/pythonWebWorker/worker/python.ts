@@ -56,7 +56,7 @@ class Python {
               url: string | URL,
               async: boolean,
               username?: string | null | undefined,
-              password?: string | null | undefined
+              password?: string | null | undefined,
             ]
           ) {
             Object.defineProperty(xhr, '__url', { value: args[1].toString(), writable: true });

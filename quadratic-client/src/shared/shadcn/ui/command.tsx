@@ -20,13 +20,12 @@ const Command = React.forwardRef<
 ));
 Command.displayName = CommandPrimitive.displayName;
 
-interface CommandDialogProps {
-  children: React.ReactNode;
+type CommandDialogProps = {
+  children?: React.ReactNode;
   dialogProps: DialogProps;
   commandProps: React.ComponentPropsWithoutRef<typeof Command>;
   overlayProps?: React.ComponentPropsWithoutRef<typeof DialogOverlay>;
-}
-interface CommandDialogProps extends DialogProps {}
+} & DialogProps;
 
 const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: CommandDialogProps) => {
   return (
@@ -39,7 +38,7 @@ const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: Co
           {...commandProps}
           className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_button_svg]:h-4 [&_[cmdk-item]_button_svg]:w-4 [&_[cmdk-item]_svg]:h-[18px] [&_[cmdk-item]_svg]:w-[18px]"
         >
-          {children}
+          <>{children}</>
         </Command>
       </DialogContent>
     </Dialog>
@@ -47,7 +46,7 @@ const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: Co
 };
 
 const CommandInput = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Input>,
+  HTMLInputElement,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & { omitIcon?: boolean }
 >(({ className, omitIcon, ...props }, ref) => (
   <div className="flex items-center border-b px-3" cmdk-input-wrapper="">

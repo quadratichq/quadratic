@@ -48,7 +48,10 @@ export class LanguageServerClient extends EventEmitter {
   private diagnostics: Map<string, Diagnostic[]> = new Map();
   private initializePromise: Promise<void> | undefined;
 
-  constructor(public connection: MessageConnection, public rootUri: string) {
+  constructor(
+    public connection: MessageConnection,
+    public rootUri: string
+  ) {
     super();
   }
 

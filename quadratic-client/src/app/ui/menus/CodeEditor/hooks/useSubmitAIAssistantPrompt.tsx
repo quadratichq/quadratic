@@ -113,15 +113,23 @@ export function useSubmitAIAssistantPrompt() {
         }
 
         set(codeEditorDiffEditorContentAtom, undefined);
+        const currentCodeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         if (codeCell) {
-          set(codeEditorWaitingForEditorClose, {
-            codeCell,
-            showCellTypeMenu: false,
-            initialCode: '',
-            inlineEditor: false,
-          });
+          if (
+            codeCell.sheetId !== currentCodeCell.sheetId ||
+            codeCell.pos.x !== currentCodeCell.pos.x ||
+            codeCell.pos.y !== currentCodeCell.pos.y ||
+            codeCell.language !== currentCodeCell.language
+          ) {
+            set(codeEditorWaitingForEditorClose, {
+              codeCell,
+              showCellTypeMenu: false,
+              initialCode: '',
+              inlineEditor: false,
+            });
+          }
         } else {
-          codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+          codeCell = { ...currentCodeCell };
         }
 
         set(aiAssistantMessagesAtom, (prevMessages) => [

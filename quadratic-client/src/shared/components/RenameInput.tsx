@@ -23,7 +23,7 @@ export function RenameInput({
 }) {
   const theme = useTheme();
 
-  const inputRef = useRef<HTMLInputElement>();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [localValue, setLocalValue] = useState<string>(value);
 
   // Focus and highlight input contents on mount

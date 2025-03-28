@@ -67,7 +67,7 @@ export function FilesListItemCore({
               className={cn(
                 'relative',
                 (filterMatch === 'creator-email' || filterMatch === 'creator-name') &&
-                  "after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded-full  after:outline after:outline-4 after:outline-yellow-200 after:content-[''] dark:after:outline-yellow-700"
+                  "after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded-full after:outline after:outline-4 after:outline-yellow-200 after:content-[''] dark:after:outline-yellow-700"
               )}
             >
               <Avatar alt={creator.name} src={creator.picture}>

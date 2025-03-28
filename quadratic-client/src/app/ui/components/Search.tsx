@@ -17,7 +17,7 @@ import {
 import { Input } from '@/shared/shadcn/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/shadcn/ui/popover';
 import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 const findInSheetActionSpec = defaultActionSpec[Action.FindInCurrentSheet];
@@ -25,6 +25,7 @@ const findInSheetsActionSpec = defaultActionSpec[Action.FindInAllSheets];
 
 export function Search() {
   const [showSearch, setShowSearch] = useRecoilState(editorInteractionStateShowSearchAtom);
+  const [cursor, setCursor] = useState<SheetPos | undefined>(undefined);
 
   const [searchOptions, setSearchOptions] = useState<SearchOptions>({
     case_sensitive: false,
@@ -34,26 +35,34 @@ export function Search() {
   });
   const [results, setResults] = useState<SheetPos[]>([]);
   const [current, setCurrent] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
+  const ref = useCallback((el: HTMLInputElement) => {
+    if (el) {
+      setInputEl(el);
+      el.focus();
+    }
+  }, []);
 
   const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label : findInSheetActionSpec.label;
 
-  const moveCursor = useCallback((pos: SheetPos) => {
-    if (sheets.current !== pos.sheet_id.id) {
-      sheets.current = pos.sheet_id.id;
+  useEffect(() => {
+    if (cursor) {
+      if (sheets.current !== cursor.sheet_id.id) {
+        sheets.current = cursor.sheet_id.id;
+      }
+      sheets.sheet.cursor.moveTo(Number(cursor.x), Number(cursor.y));
+      inputEl?.focus();
     }
-    sheets.sheet.cursor.moveTo(Number(pos.x), Number(pos.y));
-    inputRef.current?.focus();
-  }, []);
+  }, [cursor, inputEl]);
 
   const onChange = useCallback(
-    async (search: string, updatedSearchOptions = searchOptions) => {
-      if (search.length > 0) {
+    async (search: string | undefined, updatedSearchOptions = searchOptions) => {
+      if (search && search.length > 0) {
         const found = await quadraticCore.search(search, updatedSearchOptions);
         if (found.length) {
           setResults(found);
           setCurrent(0);
-          moveCursor(found[0]);
+          setCursor(found[0]);
           events.emit(
             'search',
             found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), 0)
@@ -64,7 +73,7 @@ export function Search() {
       setResults([]);
       events.emit('search');
     },
-    [moveCursor, searchOptions]
+    [searchOptions]
   );
 
   const navigate = useCallback(
@@ -77,11 +86,11 @@ export function Search() {
           results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), next)
         );
         const result = results[next];
-        moveCursor(result);
+        setCursor(result);
         return next;
       });
     },
-    [moveCursor, results]
+    [results]
   );
 
   const changeOptions = useCallback(
@@ -106,10 +115,9 @@ export function Search() {
         });
       }
 
-      const search = (inputRef.current as HTMLInputElement).value;
-      onChange(search, updatedSearchOptions!);
+      onChange(inputEl?.value, updatedSearchOptions!);
     },
-    [onChange, searchOptions.sheet_id]
+    [inputEl?.value, onChange, searchOptions.sheet_id]
   );
 
   const closeSearch = useCallback(() => {
@@ -127,13 +135,13 @@ export function Search() {
         newSearchOptions.sheet_id = sheets.current;
       }
       setSearchOptions(newSearchOptions);
-      onChange((inputRef.current as HTMLInputElement).value, newSearchOptions);
+      onChange(inputEl?.value, newSearchOptions);
     };
     events.on('changeSheet', changeSheet);
     return () => {
       events.off('changeSheet', changeSheet);
     };
-  }, [showSearch, searchOptions, onChange]);
+  }, [inputEl?.value, onChange, searchOptions, showSearch]);
 
   useEffect(() => {
     if (!showSearch) {
@@ -169,22 +177,21 @@ export function Search() {
           }
           if (matchShortcut(Action.FindInCurrentSheet, e)) {
             e.preventDefault();
-            inputRef.current?.focus();
-            inputRef.current?.select();
+            inputEl?.focus();
+            inputEl?.select();
             // shift+cmd+f let's you change to all sheets search mode while in the dialog box
             if (e.shiftKey) {
               setSearchOptions((prev) => {
                 if (!prev.sheet_id) return prev;
                 const updatedSearchOptions = { ...prev, sheet_id: undefined };
-                const search = (inputRef.current as HTMLInputElement).value;
-                onChange(search, { ...searchOptions, sheet_id: undefined });
+                onChange(inputEl?.value, { ...searchOptions, sheet_id: undefined });
                 return updatedSearchOptions;
               });
             }
           }
           if (e.key === 'Enter') {
             // If other elements have focus, like the 'close' button, don't handle Enter
-            if (document.activeElement !== inputRef.current) return;
+            if (document.activeElement !== inputEl) return;
 
             e.preventDefault();
             if (results.length > 1) {
@@ -199,7 +206,7 @@ export function Search() {
           <Input
             id="search-input"
             type="text"
-            ref={inputRef}
+            ref={ref}
             placeholder={placeholder}
             onChange={(e) => onChange(e.target.value)}
             className={`pr-[4rem]`}
@@ -207,7 +214,7 @@ export function Search() {
             autoCapitalize="off"
             autoCorrect="off"
           />
-          {inputRef.current && inputRef.current.value.length !== 0 && (
+          {inputEl && inputEl.value.length !== 0 && (
             <div className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground">
               {results.length === 0 ? '0' : current + 1} of {results.length}
             </div>
@@ -230,7 +237,7 @@ export function Search() {
             <DropdownMenuContent
               onCloseAutoFocus={(e) => {
                 e.preventDefault();
-                inputRef.current?.focus();
+                inputEl?.focus();
               }}
             >
               <DropdownMenuCheckboxItem

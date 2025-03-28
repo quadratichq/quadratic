@@ -85,12 +85,12 @@ const ImportProgressItem = ({
     file.step === 'error'
       ? 'Import failed'
       : file.step === 'cancel'
-      ? 'Import canceled'
-      : file.step === 'done'
-      ? 'Imported'
-      : file.step === 'read' && current < index
-      ? 'Pending...'
-      : 'Importing...';
+        ? 'Import canceled'
+        : file.step === 'done'
+          ? 'Imported'
+          : file.step === 'read' && current < index
+            ? 'Pending...'
+            : 'Importing...';
 
   const disabled = file.uuid === undefined;
 

@@ -31,14 +31,14 @@ export const useUpdateCodeEditor = () => {
             editorContent: initialCode
               ? initialCode
               : usePrevEditorContent && prev.editorContent
-              ? prev.editorContent
-              : codeCell.code_string,
+                ? prev.editorContent
+                : codeCell.code_string,
             diffEditorContent:
               editorContent === prev.diffEditorContent?.editorContent ? undefined : prev.diffEditorContent,
             evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
             cellsAccessed: codeCell.cells_accessed,
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
-            spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as JsCoordinate)),
+            spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) }) as JsCoordinate),
             initialCode: undefined,
           }));
         } else {
@@ -51,7 +51,7 @@ export const useUpdateCodeEditor = () => {
               language: prev.codeCell.language,
             },
             codeString: '',
-            editorContent: initialCode ? initialCode : prev.diffEditorContent?.editorContent ?? '',
+            editorContent: initialCode ? initialCode : (prev.diffEditorContent?.editorContent ?? ''),
             diffEditorContent: initialCode ? prev.diffEditorContent : undefined,
             evaluationResult: undefined,
             cellsAccessed: null,

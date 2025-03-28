@@ -56,12 +56,7 @@ export const FormattingBar = () => {
       <Separator />
 
       <FormatColorPickerButton action={Action.FormatFillColor} />
-      <FormatButtonPopover
-        disableCloseAutoFocus
-        tooltipLabel="Borders"
-        Icon={BorderAllIcon}
-        className="flex flex-row flex-wrap"
-      >
+      <FormatButtonPopover tooltipLabel="Borders" Icon={BorderAllIcon} className="flex flex-row flex-wrap">
         <BorderMenu />
       </FormatButtonPopover>
 
@@ -138,7 +133,7 @@ function FormatButtonDropdown({
           focusGrid();
         }}
       >
-        {children}
+        <>{children}</>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -150,14 +145,12 @@ function FormatButtonPopover({
   children,
   showDropdownArrow,
   className,
-  disableCloseAutoFocus,
 }: {
   Icon: any;
   children: ReactNode;
   tooltipLabel: string;
   showDropdownArrow?: boolean;
   className?: string;
-  disableCloseAutoFocus?: boolean;
 }) {
   return (
     <Popover>
@@ -181,7 +174,7 @@ function FormatButtonPopover({
           focusGrid();
         }}
       >
-        {children}
+        <>{children}</>
       </PopoverContent>
     </Popover>
   );
