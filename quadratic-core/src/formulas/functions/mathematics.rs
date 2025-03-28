@@ -795,6 +795,12 @@ mod tests {
                 assert_f64_eval(&g, expected_output, &format!("TRUNC({input}, {digits})"));
             }
         }
+
+        // Test string printing
+        assert_eq!("44999.55", eval_to_string(&g, "ROUND(44999.553294, 2)"));
+        assert_eq!("44999.55", eval_to_string(&g, "TRUNC(44999.553294, 2)"));
+        assert_eq!("44999.55", eval_to_string(&g, "ROUNDDOWN(44999.553294, 2)"));
+        assert_eq!("44999.56", eval_to_string(&g, "ROUNDUP(44999.553294, 2)"));
     }
 
     #[test]
