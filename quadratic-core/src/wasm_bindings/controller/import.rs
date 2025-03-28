@@ -115,7 +115,7 @@ impl GridController {
                     "Error importing Excel file: {:?}, error: {:?}",
                     file_name, e
                 );
-                dbgjs!(error.clone());
+                dbgjs!(&error);
                 Ok(serde_wasm_bindgen::to_value(&JsResponse {
                     result: false,
                     error: Some(error),
