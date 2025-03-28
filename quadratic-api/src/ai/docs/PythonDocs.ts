@@ -1,4 +1,7 @@
-export const PythonDocs = `# Python Docs
+import { getDocs } from './docs.helper';
+
+// Fallback content in case Vertex AI fetch fails
+const FALLBACK_PYTHON_DOCS = `# Python Docs
 
 Python is a first-class citizen that integrates seamlessly with Quadratic spreadsheets.
 Below are in-depth details for Python in Quadratic. 
@@ -470,4 +473,13 @@ Do not attempt to build a correlation analysis unless the user asks for it.
 Python can not be used to import files like .xlsx or .csv. Users should import those files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
 
 Python can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.
-`;
+\`\`\`
+
+# File imports and exports
+Python can not be used to import files like .xlsx or .csv. Users should import those files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
+
+Python can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.`;
+
+export async function getPythonDocs(): Promise<string> {
+  return getDocs('Python docs', FALLBACK_PYTHON_DOCS);
+}

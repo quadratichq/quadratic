@@ -61,7 +61,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(args.language);
+    const quadraticContext = await getQuadraticContext(args.language);
     args.messages.unshift(...quadraticContext);
   }
 
