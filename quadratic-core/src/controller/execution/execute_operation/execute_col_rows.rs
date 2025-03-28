@@ -554,7 +554,7 @@ mod tests {
     }
 
     #[test]
-    fn execute_insert_column() {
+    fn test_execute_insert_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -573,8 +573,10 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
         );
-        gc.insert_column(sheet_id, 3, true, None);
 
+        crate::test_util::print_first_sheet(&gc);
+        gc.insert_column(sheet_id, 3, true, None);
+        crate::test_util::print_first_sheet(&gc);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.bounds(false),

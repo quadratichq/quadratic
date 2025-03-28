@@ -9,6 +9,18 @@ use crate::{
 };
 
 impl Sheet {
+    /// Inserts a column at the given column index.
+    ///
+    /// send_client indicates whether this should trigger client changes
+    ///
+    /// todo: this can probably be removed since transaction handles all client
+    /// communications now.
+    ///
+    /// Note: the column that insert column receives relates to where the column
+    /// is being inserted. So if insert to the left of the column, then the
+    /// column is the selected column, and CopyFormats::After. If inserting to
+    /// the right of the column, then the column is the selected column + 1, and
+    /// CopyFormats::Before.
     pub(crate) fn insert_column(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -17,16 +29,11 @@ impl Sheet {
         send_client: bool,
         a1_context: &A1Context,
     ) {
-        let column_inserted = if copy_formats == CopyFormats::After {
-            column + 1
-        } else {
-            column
-        };
         // update the indices of all columns impacted by the insertion by
         // incrementing by one
         let mut columns_to_update = Vec::new();
         for col in self.columns.keys() {
-            if *col >= column_inserted {
+            if *col >= column {
                 columns_to_update.push(*col);
             }
         }
@@ -38,8 +45,8 @@ impl Sheet {
             }
         }
 
-        self.check_insert_tables_columns(transaction, column_inserted, copy_formats);
-        self.adjust_insert_tables_columns(transaction, column_inserted, copy_formats, send_client);
+        self.check_insert_tables_columns(transaction, column, copy_formats);
+        self.adjust_insert_tables_columns(transaction, column, copy_formats, send_client);
 
         // update formatting (fn has maths to find column_inserted)
         self.formats.insert_column(column, copy_formats);
@@ -55,18 +62,18 @@ impl Sheet {
 
         // mark hashes of new columns dirty
         if send_client {
-            transaction.add_dirty_hashes_from_sheet_columns(self, column_inserted, None);
+            transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
         }
 
         // update validations
         let changed_selections =
             self.validations
-                .insert_column(transaction, self.id, column_inserted, a1_context);
+                .insert_column(transaction, self.id, column, a1_context);
         if send_client {
             transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
         }
 
-        let changes = self.offsets.insert_column(column_inserted);
+        let changes = self.offsets.insert_column(column);
         if send_client && !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
@@ -80,7 +87,7 @@ impl Sheet {
                 .reverse_operations
                 .push(Operation::DeleteColumn {
                     sheet_id: self.id,
-                    column: column_inserted,
+                    column,
                 });
         }
     }

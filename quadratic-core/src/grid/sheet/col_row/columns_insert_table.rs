@@ -1,3 +1,11 @@
+//! Insert columns in data tables that overlap the inserted column.
+//!
+//! Note: the column that insert column receives relates to where the column is
+//! being inserted. So if insert to the left of the column, then the column is
+//! the selected column, and CopyFormats::After. If inserting to the right of
+//! the column, then the column is the selected column + 1, and
+//! CopyFormats::Before. This is important to keep in mind for table operations.
+
 use crate::{
     CopyFormats, Pos,
     controller::{
@@ -15,17 +23,14 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
-        let column_to_insert = if copy_formats == CopyFormats::After {
-            column + 1
-        } else {
-            column
+        let source_column = match copy_formats {
+            CopyFormats::Before => column - 1,
+            _ => column,
         };
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
             if dt.is_html_or_image() {
                 if let Some((width, height)) = dt.chart_output {
-                    if column_to_insert <= pos.x + width as i64
-                        || (copy_formats == CopyFormats::After && column <= pos.x + width as i64)
-                    {
+                    if source_column >= pos.x as i64 && source_column <= pos.x + width as i64 {
                         // if html or image, then we need to change the width
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
@@ -42,8 +47,9 @@ impl Sheet {
             }
             // code tables are not impacted by insertions; we do not insert the
             // first column (the table is moved over instead)
-            if !dt.readonly && column_to_insert > pos.x {
-                let column = column_to_insert - pos.x;
+            if !dt.readonly && source_column >= pos.x && source_column <= pos.x + dt.width() as i64
+            {
+                let column = column - pos.x;
                 // the table overlaps the inserted column
                 let display_index = dt.get_column_index_from_display_index(column as u32, true);
 
@@ -85,19 +91,13 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
-        copy_formats: CopyFormats,
+        _copy_formats: CopyFormats,
         send_client: bool,
     ) {
-        // calculate the column to insert
-        let column_to_insert = if copy_formats == CopyFormats::After {
-            column + 1
-        } else {
-            column
-        };
         // update the indices of all data_tables impacted by the insertion
         let mut data_tables_to_move_right = Vec::new();
         for (pos, _) in self.data_tables.iter() {
-            if pos.x >= column_to_insert {
+            if pos.x >= column {
                 data_tables_to_move_right.push(*pos);
             }
         }
@@ -145,8 +145,10 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
+        crate::test_util::print_first_sheet(&gc);
 
         gc.insert_column(sheet_id, 2, true, None);
+        crate::test_util::print_first_sheet(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "");
@@ -185,7 +187,10 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
+        crate::test_util::print_first_sheet(&gc);
         gc.insert_column(sheet_id, 4, true, None);
+        crate::test_util::print_first_sheet(&gc);
+
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");

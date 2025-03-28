@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::*;
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
-    Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
+    Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
 )]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Pos {
@@ -234,6 +234,12 @@ impl FromStr for SheetPos {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         serde_json::from_str::<SheetPos>(s).map_err(|e| e.to_string())
+    }
+}
+
+impl fmt::Debug for Pos {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Pos ({}, {}) {}", self.x, self.y, self.a1_string())
     }
 }
 
