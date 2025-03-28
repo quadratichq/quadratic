@@ -198,6 +198,10 @@ export const insertActionsSpec: InsertActionSpec = {
       const el = document.getElementById(FILE_INPUT_ID) as HTMLInputElement;
       if (el) {
         el.click();
+
+        // clear the file input to trigger the onChange event for subsequent
+        // file imports
+        el.value = '';
       }
     },
   },
