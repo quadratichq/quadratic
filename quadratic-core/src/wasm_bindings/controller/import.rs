@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::Pos;
 use crate::controller::GridController;
+use crate::grid::js_types::JsResponse;
 use crate::grid::{Grid, SheetId};
 
 #[wasm_bindgen]
@@ -103,11 +104,26 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        self.import_excel(file, file_name, cursor)
-            .map_err(|e| e.to_string())?;
-
-        Ok(())
+    ) -> Result<JsValue, JsValue> {
+        match self.import_excel(file, file_name, cursor) {
+            Ok(_) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                result: true,
+                error: None,
+            })?),
+            Err(e) => {
+                dbgjs!(format!(
+                    "Error importing Excel file: {:?}, error: {:?}",
+                    file_name, e
+                ));
+                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    result: false,
+                    error: Some(format!(
+                        "Error importing Excel file: {:?}, error: {:?}",
+                        file_name, e
+                    )),
+                })?)
+            }
+        }
     }
 }
 

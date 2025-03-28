@@ -533,11 +533,18 @@ class Core {
         try {
           switch (fileType) {
             case 'excel':
-              this.gridController.importExcelIntoExistingFile(new Uint8Array(file), fileName, cursor);
+              const response: JsResponse = this.gridController.importExcelIntoExistingFile(
+                new Uint8Array(file),
+                fileName,
+                cursor
+              );
+              if (response.error) {
+                resolve({ error: response.error });
+              }
               break;
             case 'csv':
               if (sheetId === undefined || location === undefined) {
-                throw new Error('Expected sheetId and location to be defined');
+                return resolve({ error: 'Expected sheetId and location to be defined' });
               }
               this.gridController.importCsvIntoExistingFile(
                 new Uint8Array(file),
@@ -551,7 +558,7 @@ class Core {
               break;
             case 'parquet':
               if (sheetId === undefined || location === undefined) {
-                throw new Error('Expected sheetId and location to be defined');
+                return resolve({ error: 'Expected sheetId and location to be defined' });
               }
               this.gridController.importParquetIntoExistingFile(
                 new Uint8Array(file),
@@ -562,7 +569,7 @@ class Core {
               );
               break;
             default:
-              throw new Error('Unsupported file type');
+              return resolve({ error: 'Unsupported file type' });
           }
           resolve({});
         } catch (error: unknown) {
