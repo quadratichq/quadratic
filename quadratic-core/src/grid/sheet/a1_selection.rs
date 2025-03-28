@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 
 use crate::{
     CellValue, Pos, Rect,
-    a1::{A1Selection, CellRefRange, RefRangeBounds, TableRef},
+    a1::{A1Context, A1Selection, CellRefRange, RefRangeBounds, TableRef},
     grid::GridBounds,
 };
 
@@ -30,6 +30,7 @@ impl Sheet {
         max_count: Option<i64>,
         skip_code_runs: bool,
         include_blanks: bool,
+        a1_context: &A1Context,
     ) -> Option<IndexMap<Pos, &CellValue>> {
         let mut count = 0u64;
         let max_count = max_count.unwrap_or(i64::MAX) as u64;
@@ -48,7 +49,9 @@ impl Sheet {
         for range in selection.ranges.iter() {
             let rect = match range {
                 CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
-                CellRefRange::Table { range } => self.table_ref_to_rect(range, false, false),
+                CellRefRange::Table { range } => {
+                    self.table_ref_to_rect(range, false, false, a1_context)
+                }
             };
             if let Some(rect) = rect {
                 for x in rect.x_range() {
@@ -107,8 +110,10 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         skip_code_runs: bool,
+        a1_context: &A1Context,
     ) -> Vec<(Pos, &CellValue)> {
-        if let Some(map) = self.selection_values(selection, None, skip_code_runs, false) {
+        if let Some(map) = self.selection_values(selection, None, skip_code_runs, false, a1_context)
+        {
             let mut vec: Vec<_> = map.iter().map(|(pos, value)| (*pos, *value)).collect();
             vec.sort_by(|(a, _), (b, _)| {
                 if a.y < b.y {
@@ -134,14 +139,10 @@ impl Sheet {
         range: &TableRef,
         force_columns: bool,
         force_table_bounds: bool,
+        a1_context: &A1Context,
     ) -> Option<Rect> {
         range
-            .convert_to_ref_range_bounds(
-                false,
-                &self.a1_context(),
-                force_columns,
-                force_table_bounds,
-            )
+            .convert_to_ref_range_bounds(false, a1_context, force_columns, force_table_bounds)
             .and_then(|range| range.to_rect())
     }
 
@@ -211,6 +212,7 @@ impl Sheet {
         selection: &A1Selection,
         force_columns: bool,
         force_table_bounds: bool,
+        a1_context: &A1Context,
     ) -> Vec<Rect> {
         let mut rects = Vec::new();
         for range in selection.ranges.iter() {
@@ -218,7 +220,7 @@ impl Sheet {
                 CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
                 CellRefRange::Table { range } => {
                     if let Some(rect) =
-                        self.table_ref_to_rect(range, force_columns, force_table_bounds)
+                        self.table_ref_to_rect(range, force_columns, force_table_bounds, a1_context)
                     {
                         rects.push(rect);
                     }
@@ -234,8 +236,9 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         force_table_bounds: bool,
+        a1_context: &A1Context,
     ) -> Option<Rect> {
-        let rects = self.selection_to_rects(selection, false, force_table_bounds);
+        let rects = self.selection_to_rects(selection, false, force_table_bounds, a1_context);
         if rects.is_empty() {
             None
         } else {
@@ -250,6 +253,7 @@ impl Sheet {
         selection: &A1Selection,
         force_columns: bool,
         force_table_bounds: bool,
+        a1_context: &A1Context,
     ) -> A1Selection {
         A1Selection {
             sheet_id: selection.sheet_id,
@@ -262,7 +266,7 @@ impl Sheet {
                         self.ref_range_bounds_to_rect(range),
                     )),
                     CellRefRange::Table { range } => self
-                        .table_ref_to_rect(range, force_columns, force_table_bounds)
+                        .table_ref_to_rect(range, force_columns, force_table_bounds, a1_context)
                         .map(CellRefRange::new_relative_rect),
                 })
                 .collect(),
@@ -276,6 +280,7 @@ mod tests {
     use crate::{
         CellValue, Rect,
         a1::{A1Selection, CellRefRange, RefRangeBounds, TableRef},
+        controller::GridController,
     };
 
     use super::Sheet;
@@ -286,7 +291,8 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         // Test fully specified range
         let range = RefRangeBounds::test_a1("A1:E5");
@@ -304,7 +310,8 @@ mod tests {
         let sheet = Sheet::test();
         let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
-        let rects = sheet.selection_to_rects(&selection, false, false);
+        let a1_context = sheet.make_a1_context();
+        let rects = sheet.selection_to_rects(&selection, false, false, &a1_context);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
     }
 
@@ -314,7 +321,8 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         // Test unbounded range
         let range = RefRangeBounds::test_a1("B2:");
@@ -338,10 +346,11 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         let selection = A1Selection::test_a1("A1:C3,E5:");
-        let finite_selection = sheet.finitize_selection(&selection, false, false);
+        let finite_selection = sheet.finitize_selection(&selection, false, false, &a1_context);
         assert_eq!(
             finite_selection.ranges,
             vec![
@@ -352,7 +361,7 @@ mod tests {
 
         // Test select all
         let selection = A1Selection::test_a1("*");
-        let finite_selection = sheet.finitize_selection(&selection, false, false);
+        let finite_selection = sheet.finitize_selection(&selection, false, false, &a1_context);
         assert_eq!(
             finite_selection.ranges,
             vec![CellRefRange::test_a1("A1:J10")]
@@ -366,99 +375,106 @@ mod tests {
         // Setup some data to establish sheet bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         // Single cell selection
         let single_cell = A1Selection::test_a1("B2");
         assert_eq!(
-            sheet.selection_bounds(&single_cell, false),
+            sheet.selection_bounds(&single_cell, false, &a1_context),
             Some(Rect::new(2, 2, 2, 2))
         );
 
         // Regular rectangular selection
         let rect_selection = A1Selection::test_a1("B2:D4");
         assert_eq!(
-            sheet.selection_bounds(&rect_selection, false),
+            sheet.selection_bounds(&rect_selection, false, &a1_context),
             Some(Rect::new(2, 2, 4, 4))
         );
 
         // Multiple disjoint rectangles
         let multi_rect = A1Selection::test_a1("A1:B2,D4:E5");
         assert_eq!(
-            sheet.selection_bounds(&multi_rect, false),
+            sheet.selection_bounds(&multi_rect, false, &a1_context),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Overlapping rectangles
         let overlapping = A1Selection::test_a1("B2:D4,C3:E5");
         assert_eq!(
-            sheet.selection_bounds(&overlapping, false),
+            sheet.selection_bounds(&overlapping, false, &a1_context),
             Some(Rect::new(2, 2, 5, 5))
         );
 
         // Infinite column selection (should be clamped to sheet bounds)
         let infinite_col = A1Selection::test_a1("C:C");
         assert_eq!(
-            sheet.selection_bounds(&infinite_col, false),
+            sheet.selection_bounds(&infinite_col, false, &a1_context),
             Some(Rect::new(3, 1, 3, 1))
         );
 
         // Infinite row selection (should be clamped to sheet bounds)
         let infinite_row = A1Selection::test_a1("3:3");
         assert_eq!(
-            sheet.selection_bounds(&infinite_row, false),
+            sheet.selection_bounds(&infinite_row, false, &a1_context),
             Some(Rect::new(1, 3, 1, 3))
         );
 
         // Select all (should be clamped to sheet bounds)
         let select_all = A1Selection::test_a1("*");
         assert_eq!(
-            sheet.selection_bounds(&select_all, false),
+            sheet.selection_bounds(&select_all, false, &a1_context),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Multiple infinite selections (should be clamped to sheet bounds)
         let multi_infinite = A1Selection::test_a1("A:B,2:3");
         assert_eq!(
-            sheet.selection_bounds(&multi_infinite, false),
+            sheet.selection_bounds(&multi_infinite, false, &a1_context),
             Some(Rect::new(1, 1, 2, 3))
         );
 
         // Mixed finite and infinite selections
         let mixed = A1Selection::test_a1("B2:C3,D:D,4:4");
         assert_eq!(
-            sheet.selection_bounds(&mixed, false),
+            sheet.selection_bounds(&mixed, false, &a1_context),
             Some(Rect::new(1, 1, 4, 4))
         );
     }
 
     #[test]
     fn test_table_ref_to_rect() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
-        let dt = sheet.data_table_mut(pos![A1]).unwrap();
-        dt.show_ui = true;
-
-        let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.test_data_table_update_meta(
+            pos![A1].to_sheet_pos(sheet_id),
+            None,
+            Some(true),
+            None,
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        let table_ref = TableRef::parse("Table1", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false, false),
+            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context()),
             Some(Rect::test_a1("A3:B4"))
         );
 
-        let table_ref = TableRef::parse("Table1[#HEADERS]", &sheet.a1_context()).unwrap();
+        let table_ref = TableRef::parse("Table1[#HEADERS]", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false, false),
+            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context()),
             Some(Rect::test_a1("A2:B2"))
         );
 
-        let table_ref = TableRef::parse("Table1[#All]", &sheet.a1_context()).unwrap();
+        let table_ref = TableRef::parse("Table1[#All]", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false, false),
+            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context()),
             Some(Rect::test_a1("A2:B4"))
         );
-        let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
+        let table_ref = TableRef::parse("Table1", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, true, false),
+            sheet.table_ref_to_rect(&table_ref, true, false, gc.a1_context()),
             Some(Rect::test_a1("A2:B4"))
         );
     }
