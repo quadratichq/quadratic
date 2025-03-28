@@ -3,6 +3,7 @@ import { ClientError, GoogleApiError, GoogleAuthError } from '@google-cloud/vert
 import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AIRequestHelperArgs, ParsedAIResponse, VertexAIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { getVertexAIForTask } from '../helpers/vertex.helper';
 import { getVertexAIApiArgs, parseVertexAIResponse, parseVertexAIStream } from '../helpers/vertexai.helper';
 
 export const handleVertexAIRequest = async (
@@ -15,8 +16,23 @@ export const handleVertexAIRequest = async (
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getVertexAIApiArgs(args);
 
+  // Log when custom endpoint is used
+  if (modelKey === 'vertexai:custom-endpoint-509017808567271424') {
+    console.log(`[Vertex AI] Using custom endpoint: ${model}`);
+    console.log(`[Vertex AI] Request args:`, {
+      model,
+      maxTokens: options.max_tokens,
+      temperature: options.temperature,
+      hasTools: !!tools,
+      hasToolChoice: !!tool_choice,
+      messageCount: messages.length,
+    });
+  }
+
   try {
-    const generativeModel = vertexai.getGenerativeModel({
+    // Get the correct Vertex AI instance for the model
+    const vertexAIInstance = getVertexAIForTask('chat', modelKey);
+    const generativeModel = vertexAIInstance.getGenerativeModel({
       model,
       generationConfig: {
         maxOutputTokens: options.max_tokens,
@@ -44,6 +60,16 @@ export const handleVertexAIRequest = async (
       return parseVertexAIResponse(result, response, modelKey);
     }
   } catch (error: any) {
+    // Log errors for custom endpoint
+    if (modelKey === 'vertexai:custom-endpoint-509017808567271424') {
+      console.error(`[Vertex AI] Custom endpoint error:`, {
+        error: error.message,
+        code: error.code,
+        status: error.response?.status,
+        details: error.details,
+      });
+    }
+
     if (!options.stream || !response.headersSent) {
       if (error instanceof ClientError || error instanceof GoogleApiError || error instanceof GoogleAuthError) {
         const code = 'code' in error ? Number(error.code) : 400;

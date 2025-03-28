@@ -21,6 +21,7 @@ const VertexAIModelSchema = z.enum([
   'gemini-2.0-flash-lite-001',
   'gemini-1.5-pro-002',
   'gemini-1.5-flash-002',
+  'projects/108931143838/locations/us-central1/endpoints/509017808567271424',
 ]);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -70,6 +71,7 @@ const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.0-flash-lite-001',
   'vertexai:gemini-1.5-pro-002',
   'vertexai:gemini-1.5-flash-002',
+  'vertexai:custom-endpoint-509017808567271424',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
