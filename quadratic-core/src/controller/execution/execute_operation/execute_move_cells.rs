@@ -40,6 +40,7 @@ impl GridController {
                     &A1Selection::from_single_cell(dest),
                     js_clipboard.html,
                     PasteSpecial::None,
+                    None,
                 ) {
                     Ok(paste_ops) => ops.extend(paste_ops),
                     Err(_) => return,
