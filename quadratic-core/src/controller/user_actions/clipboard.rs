@@ -28,9 +28,18 @@ impl GridController {
         special: PasteSpecial,
         cursor: Option<String>,
     ) {
+        let is_multi_cursor = selection.is_multi_cursor(&self.a1_context());
+        let mut end_pos = None;
+
+        if is_multi_cursor {
+            if let Some(range) = selection.ranges.first() {
+                end_pos = Some(range.to_rect(&self.a1_context()).unwrap().max);
+            }
+        }
+
         // first try html
         if let Some(html) = html {
-            if let Ok(ops) = self.paste_html_operations(selection, html, special) {
+            if let Ok(ops) = self.paste_html_operations(selection, html, special, end_pos) {
                 self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
                 return;
             }
@@ -153,7 +162,9 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
-    use crate::test_util::gc::{assert_code_cell_value, assert_display_cell_value};
+    use crate::test_util::gc::{
+        assert_cell_value, assert_code_cell_value, assert_display_cell_value, print_table,
+    };
     use crate::{
         CellValue, Pos, SheetPos, SheetRect,
         controller::GridController,
@@ -728,6 +739,40 @@ mod test {
         // paste code cell (2,1) from the clipboard to (2,3)
         let dest_pos: SheetPos = (2, 3, sheet_id).into();
         assert_code_cell(&mut gc, dest_pos, "SUM(A3)", 3);
+    }
+
+    #[test]
+    fn test_paste_with_range_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = Pos::new(1, 1);
+
+        set_cell_value(&mut gc, sheet_id, "1", pos.x, pos.y);
+
+        let selection = A1Selection::from_xy(pos.x, pos.y, sheet_id);
+        let JsClipboard { plain_text, html } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .unwrap();
+
+        let paste_rect = SheetRect::new(pos.x, pos.y + 1, pos.x, pos.y + 3, sheet_id);
+        gc.paste_from_clipboard(
+            &A1Selection::from_rect(paste_rect),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        print_table(
+            &gc,
+            sheet_id,
+            Rect::new(pos.x, pos.y, paste_rect.max.x, paste_rect.max.y),
+        );
+
+        assert_cell_value(&gc, sheet_id, 1, 2, 1.into());
+        assert_cell_value(&gc, sheet_id, 1, 3, 1.into());
+        assert_cell_value(&gc, sheet_id, 1, 4, 1.into());
     }
 
     #[test]

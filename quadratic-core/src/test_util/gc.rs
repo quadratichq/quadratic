@@ -33,7 +33,7 @@ pub fn assert_cell_value(
     value: CellValue,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let cell_value = sheet.cell_value(Pos { x, y }).unwrap();
+    let cell_value = sheet.cell_value(Pos { x, y }).unwrap_or(CellValue::Blank);
 
     assert_eq!(
         value, cell_value,
