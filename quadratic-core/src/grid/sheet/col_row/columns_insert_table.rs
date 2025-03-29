@@ -30,7 +30,7 @@ impl Sheet {
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
             if dt.is_html_or_image() {
                 if let Some((width, height)) = dt.chart_output {
-                    if source_column >= pos.x as i64 && source_column <= pos.x + width as i64 {
+                    if source_column >= pos.x as i64 && source_column < pos.x + width as i64 {
                         // if html or image, then we need to change the width
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
@@ -47,8 +47,7 @@ impl Sheet {
             }
             // code tables are not impacted by insertions; we do not insert the
             // first column (the table is moved over instead)
-            if !dt.readonly && source_column >= pos.x && source_column <= pos.x + dt.width() as i64
-            {
+            if !dt.readonly && source_column >= pos.x && source_column < pos.x + dt.width() as i64 {
                 let column = column - pos.x;
                 // the table overlaps the inserted column
                 let display_index = dt.get_column_index_from_display_index(column as u32, true);
@@ -98,12 +97,19 @@ impl Sheet {
         let mut data_tables_to_move_right = Vec::new();
         let mut data_tables_to_move_left = Vec::new();
         for (pos, dt) in self.data_tables.iter() {
+            // We need to catch the special case of inserting before at the
+            // first column. That should insert a table column and not push the
+            // table over. data_tables_to_move_left handles this case. Note: we
+            // treat charts differently and they are moved over.
             if (copy_formats == CopyFormats::After && pos.x > column)
                 || (copy_formats == CopyFormats::Before && pos.x >= column)
             {
                 data_tables_to_move_right.push(*pos);
             }
-            if !dt.readonly && copy_formats == CopyFormats::After && pos.x == column {
+            if (!dt.readonly || dt.is_html_or_image())
+                && copy_formats == CopyFormats::After
+                && pos.x == column
+            {
                 data_tables_to_move_left.push(*pos);
             }
         }
@@ -238,5 +244,32 @@ mod tests {
         gc.undo(None);
         assert_chart_size(&gc, sheet_id, pos![A1], 3, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_column_before_table() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        gc.insert_column(sheet_id, 1, true, None);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_column_after_table() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        gc.insert_column(sheet_id, 3, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
     }
 }
