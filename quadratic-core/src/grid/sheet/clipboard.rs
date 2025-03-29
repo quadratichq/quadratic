@@ -62,22 +62,17 @@ impl Sheet {
                     // the CellValue at the cell (ignoring code_runs)
                     let real_value = self.cell_value(pos);
 
+                    let new_x = (x - bounds.min.x) as u32;
+                    let new_y = (y - bounds.min.y) as u32;
+
                     // create quadratic clipboard values
                     if let Some(real_value) = real_value {
-                        cells.set(
-                            (x - bounds.min.x) as u32,
-                            (y - bounds.min.y) as u32,
-                            real_value,
-                        );
+                        cells.set(new_x, new_y, real_value);
                     }
 
                     // create quadratic clipboard value-only
                     if let Some(simple_value) = &simple_value {
-                        values.set(
-                            (x - bounds.min.x) as u32,
-                            (y - bounds.min.y) as u32,
-                            simple_value.clone(),
-                        );
+                        values.set(new_x, new_y, simple_value.clone());
                     }
 
                     // add styling for html (only used for pasting to other spreadsheets)
