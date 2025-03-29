@@ -332,7 +332,6 @@ export class Control {
         this.files = spawn("cargo", this.cli.options.files
             ? [
                 "watch",
-                "--skip-local-deps",
                 "-x",
                 "run -p quadratic-files --target-dir=target",
             ]

@@ -107,11 +107,17 @@ impl GridController {
 
         // delete existing rows
         let min_row = row_start.min(row_end);
-        sheet.delete_rows(
-            transaction,
-            (row_start..=row_end).collect(),
-            &self.a1_context,
-        );
+        if sheet
+            .delete_rows(
+                transaction,
+                (row_start..=row_end).collect(),
+                &self.a1_context,
+            )
+            .is_err()
+        {
+            // todo: handle move failing b/c of table ui
+            return;
+        }
 
         // update information for all cells below the deleted rows
         if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -151,7 +157,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::gc::{assert_display_cell_value_first_sheet, print_first_sheet};
+    use crate::test_util::{assert_display_cell_value_first_sheet, print_first_sheet};
 
     use super::*;
 

@@ -118,6 +118,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableColumns {
         sheet_pos: SheetPos,
@@ -144,6 +150,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableRows {
         sheet_pos: SheetPos,
@@ -152,10 +164,10 @@ pub enum Operation {
         // the row index is the display index, not the actual index
         rows: Vec<u32>,
 
-        /// Inserts the removed row into sheet at the same position.
+        // Inserts the removed row into sheet at the same position.
         flatten: bool,
 
-        /// select the table after the operation
+        // select the table after the operation
         select_table: bool,
     },
     SetCodeRun {
