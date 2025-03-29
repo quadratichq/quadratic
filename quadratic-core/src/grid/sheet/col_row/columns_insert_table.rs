@@ -91,16 +91,24 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
-        _copy_formats: CopyFormats,
+        copy_formats: CopyFormats,
         send_client: bool,
     ) {
         // update the indices of all data_tables impacted by the insertion
         let mut data_tables_to_move_right = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.x >= column {
+        let mut data_tables_to_move_left = Vec::new();
+        for (pos, dt) in self.data_tables.iter() {
+            if (copy_formats == CopyFormats::After && pos.x > column)
+                || (copy_formats == CopyFormats::Before && pos.x >= column)
+            {
                 data_tables_to_move_right.push(*pos);
             }
+            if !dt.readonly && copy_formats == CopyFormats::After && pos.x == column {
+                data_tables_to_move_left.push(*pos);
+            }
         }
+
+        // move the data tables to the right to match with their new anchor positions
         data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in data_tables_to_move_right {
             let new_pos = Pos {
@@ -126,6 +134,18 @@ impl Sheet {
                 transaction.add_code_cell(self.id, new_pos);
             }
         }
+
+        // In the special case of CopyFormats::Before and column == pos.x, we
+        // need to move it back.
+        for old_pos in data_tables_to_move_left {
+            let from = Pos {
+                x: old_pos.x + 1,
+                y: old_pos.y,
+            };
+            self.move_cell_value(from, old_pos);
+            transaction.add_code_cell(self.id, from);
+            transaction.add_code_cell(self.id, old_pos);
+        }
     }
 }
 
@@ -150,11 +170,12 @@ mod tests {
         gc.insert_column(sheet_id, 2, true, None);
         crate::test_util::print_first_sheet(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
-        assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
-        assert_display_cell_value(&gc, sheet_id, 3, 4, "");
+        assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
-        // this will move the table one to the right (which is different from Google Sheets)
         gc.insert_column(sheet_id, 2, false, None);
+        crate::test_util::print_first_sheet(&gc);
+
         assert_data_table_size(&gc, sheet_id, pos![C2], 4, 3, false);
 
         gc.undo(None);
@@ -186,9 +207,9 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
-
         crate::test_util::print_first_sheet(&gc);
-        gc.insert_column(sheet_id, 4, true, None);
+
+        gc.insert_column(sheet_id, 5, true, None);
         crate::test_util::print_first_sheet(&gc);
 
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);

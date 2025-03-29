@@ -46,14 +46,14 @@ pub fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) 
 #[cfg(test)]
 #[track_caller]
 pub fn assert_chart_size(
-    grid_controller: &GridController,
+    gc: &GridController,
     sheet_id: SheetId,
     pos: Pos,
     width: usize,
     height: usize,
     include_ui: bool,
 ) {
-    assert_data_table_size(grid_controller, sheet_id, pos, width, height, include_ui);
+    assert_data_table_size(gc, sheet_id, pos, width, height, include_ui);
 }
 
 /// Run an assertion that the size of a data table is equal to the given width
@@ -61,14 +61,14 @@ pub fn assert_chart_size(
 #[cfg(test)]
 #[track_caller]
 pub fn assert_data_table_size(
-    grid_controller: &GridController,
+    gc: &GridController,
     sheet_id: SheetId,
     pos: Pos,
     width: usize,
     height: usize,
     include_ui: bool,
 ) {
-    let sheet = grid_controller.sheet(sheet_id);
+    let sheet = gc.sheet(sheet_id);
     let Some(data_table) = sheet.data_table(pos) else {
         panic!("Data table at {} not found", pos);
     };
