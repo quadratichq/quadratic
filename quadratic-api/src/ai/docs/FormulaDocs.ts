@@ -149,5 +149,5 @@ FILTER
 `;
 
 export async function getFormulaDocs(): Promise<string> {
-  return getDocs('Formula docs', FALLBACK_FORMULA_DOCS);
+  return getDocs('Formula docs', FALLBACK_FORMULA_DOCS, 1);
 }

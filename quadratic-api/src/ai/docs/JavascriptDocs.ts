@@ -409,5 +409,5 @@ JavaScript can also not be used to export/download data as various file types. T
 `;
 
 export async function getJavascriptDocs(): Promise<string> {
-  return getDocs('Javascript docs', FALLBACK_JAVASCRIPT_DOCS);
+  return getDocs('Javascript docs', FALLBACK_JAVASCRIPT_DOCS, 1);
 }

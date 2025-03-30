@@ -69,5 +69,5 @@ There are some slight differences between SQL syntax across databases to keep in
 `;
 
 export async function getConnectionDocs(): Promise<string> {
-  return getDocs('Connection docs', FALLBACK_CONNECTION_DOCS);
+  return getDocs('Connection docs', FALLBACK_CONNECTION_DOCS, 1);
 }

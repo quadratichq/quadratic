@@ -481,5 +481,5 @@ Python can not be used to import files like .xlsx or .csv. Users should import t
 Python can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.`;
 
 export async function getPythonDocs(): Promise<string> {
-  return getDocs('Python docs', FALLBACK_PYTHON_DOCS);
+  return getDocs('Python docs', FALLBACK_PYTHON_DOCS, 2);
 }

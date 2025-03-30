@@ -46,6 +46,8 @@ export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 export const XAI_API_KEY = process.env.XAI_API_KEY;
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+export const PROMPTLAYER_API_KEY = process.env.PROMPTLAYER_API_KEY || '';
+export const PROMPTLAYER_WORKSPACE_ID = parseInt(process.env.PROMPTLAYER_WORKSPACE_ID || '19736', 10);
 
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);

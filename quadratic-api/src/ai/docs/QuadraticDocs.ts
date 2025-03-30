@@ -19,5 +19,5 @@ Code generated in Quadratic is not global to other code cells. The data the code
 `;
 
 export async function getQuadraticDocs(): Promise<string> {
-  return getDocs('Quadratic docs', FALLBACK_QUADRATIC_DOCS);
+  return getDocs('Quadratic docs', FALLBACK_QUADRATIC_DOCS, 1);
 }
