@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUser } from '../../billing/AIUsageHelpers';
-import { AI_USAGE_LIMIT } from '../../env-vars';
+import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { RequestWithUser } from '../../types/Request';
@@ -12,7 +12,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const { user } = req;
 
   // If the billing limit is not set, we don't need to check if the user has exceeded it
-  if (!AI_USAGE_LIMIT) {
+  if (!BILLING_AI_USAGE_LIMIT) {
     return res.status(200).json({ exceededBillingLimit: false });
   }
 
