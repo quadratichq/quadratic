@@ -31,6 +31,9 @@ export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID as string;
 export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL as string;
 export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY as string;
 
+// Optional Billing
+export const AI_USAGE_LIMIT = Number(process.env.AI_USAGE_LIMIT) || undefined;
+
 // Required
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
 export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;

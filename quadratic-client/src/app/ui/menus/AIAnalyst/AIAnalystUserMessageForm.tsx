@@ -5,13 +5,24 @@ import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMe
 import { AIUserMessageForm, FREE_TIER_WAIT_TIME_SECONDS } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { authClient } from '@/auth/auth';
+import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import type { Content, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 // Simulate API check - will be replaced with actual API call later
-const hasHitBillableLimit = () => true;
+const hasHitBillableLimit = async () => {
+  const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat/billing`;
+  const token = await authClient.getTokenOrRedirect();
+  const response = await fetch(endpoint, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await response.json();
+  return data.exceededBillingLimit;
+};
 
 type Props = AIUserMessageFormWrapperProps & {
   initialContext?: Context;
@@ -38,8 +49,8 @@ export const AIAnalystUserMessageForm = memo(
     }, [delayTimer]);
 
     const handleSubmitWithDelay = useCallback(
-      (content: Content) => {
-        const isOverLimit = hasHitBillableLimit();
+      async (content: Content) => {
+        const isOverLimit = await hasHitBillableLimit();
 
         if (isOverLimit) {
           setIsWaitingToSubmit(true);
