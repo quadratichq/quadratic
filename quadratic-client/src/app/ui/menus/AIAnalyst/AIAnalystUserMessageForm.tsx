@@ -7,14 +7,15 @@ import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultA
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import mixpanel from 'mixpanel-browser';
 import type { Content, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 // Simulate API check - will be replaced with actual API call later
-const hasHitBillableLimit = async () => {
-  const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat/billing`;
+const hasHitBillableLimit = async (teamUuid: string) => {
+  const endpoint = `${apiClient.getApiUrl()}/v0/teams/${teamUuid}/billing/ai/usage`;
   const token = await authClient.getTokenOrRedirect();
   const response = await fetch(endpoint, {
     method: 'GET',
@@ -38,6 +39,7 @@ export const AIAnalystUserMessageForm = memo(
     const [isWaitingToSubmit, setIsWaitingToSubmit] = useState(false);
     const [submittedMessage, setSubmittedMessage] = useState<Content | null>(null);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
+    const { team } = useFileRouteLoaderData();
 
     // Cancel the delay timer if component unmounts or user cancels
     useEffect(() => {
@@ -50,7 +52,7 @@ export const AIAnalystUserMessageForm = memo(
 
     const handleSubmitWithDelay = useCallback(
       async (content: Content) => {
-        const isOverLimit = await hasHitBillableLimit();
+        const isOverLimit = await hasHitBillableLimit(team.uuid);
 
         if (isOverLimit) {
           setIsWaitingToSubmit(true);
@@ -82,7 +84,7 @@ export const AIAnalystUserMessageForm = memo(
           }
         }
       },
-      [context, props.messageIndex, submitPrompt]
+      [context, props.messageIndex, submitPrompt, team.uuid]
     );
 
     const cancelDelayedSubmit = useCallback(() => {
