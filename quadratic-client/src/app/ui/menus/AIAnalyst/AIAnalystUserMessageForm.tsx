@@ -2,13 +2,16 @@ import { Action } from '@/app/actions/actions';
 import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
-import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
+import { AIUserMessageForm, FREE_TIER_WAIT_TIME_SECONDS } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import mixpanel from 'mixpanel-browser';
-import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useState } from 'react';
+import type { Content, Context } from 'quadratic-shared/typesAndSchemasAI';
+import { forwardRef, memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
+
+// Simulate API check - will be replaced with actual API call later
+const hasHitBillableLimit = () => true;
 
 type Props = AIUserMessageFormWrapperProps & {
   initialContext?: Context;
@@ -20,7 +23,65 @@ export const AIAnalystUserMessageForm = memo(
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
+    const [delayTimer, setDelayTimer] = useState<NodeJS.Timeout | null>(null);
+    const [isWaitingToSubmit, setIsWaitingToSubmit] = useState(false);
+    const [submittedMessage, setSubmittedMessage] = useState<Content | null>(null);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
+
+    // Cancel the delay timer if component unmounts or user cancels
+    useEffect(() => {
+      return () => {
+        if (delayTimer) {
+          clearTimeout(delayTimer);
+        }
+      };
+    }, [delayTimer]);
+
+    const handleSubmitWithDelay = useCallback(
+      (content: Content) => {
+        const isOverLimit = hasHitBillableLimit();
+
+        if (isOverLimit) {
+          setIsWaitingToSubmit(true);
+          setSubmittedMessage(content);
+          const timer = setTimeout(() => {
+            mixpanel.track('[AIAnalyst].submitPrompt');
+            const textContent = content[0];
+            if (textContent.type === 'text') {
+              submitPrompt({
+                content: [{ type: 'text', text: textContent.text }],
+                context,
+                messageIndex: props.messageIndex,
+              });
+            }
+            setIsWaitingToSubmit(false);
+            setDelayTimer(null);
+            setSubmittedMessage(null);
+          }, FREE_TIER_WAIT_TIME_SECONDS * 1000);
+          setDelayTimer(timer);
+        } else {
+          mixpanel.track('[AIAnalyst].submitPrompt');
+          const textContent = content[0];
+          if (textContent.type === 'text') {
+            submitPrompt({
+              content: [{ type: 'text', text: textContent.text }],
+              context,
+              messageIndex: props.messageIndex,
+            });
+          }
+        }
+      },
+      [context, props.messageIndex, submitPrompt]
+    );
+
+    const cancelDelayedSubmit = useCallback(() => {
+      if (delayTimer) {
+        clearTimeout(delayTimer);
+        setDelayTimer(null);
+        setIsWaitingToSubmit(false);
+        setSubmittedMessage(null);
+      }
+    }, [delayTimer]);
 
     const formOnKeyDown = useRecoilCallback(
       ({ set }) =>
@@ -38,12 +99,9 @@ export const AIAnalystUserMessageForm = memo(
         {...rest}
         ref={ref}
         abortController={abortController}
-        loading={loading}
+        loading={loading || isWaitingToSubmit}
         setLoading={setLoading}
-        submitPrompt={(content) => {
-          mixpanel.track('[AIAnalyst].submitPrompt');
-          submitPrompt({ content, context, messageIndex: props.messageIndex });
-        }}
+        submitPrompt={handleSubmitWithDelay}
         formOnKeyDown={formOnKeyDown}
         ctx={{
           context,
@@ -51,6 +109,9 @@ export const AIAnalystUserMessageForm = memo(
           initialContext,
         }}
         maxHeight="275px"
+        onCancel={cancelDelayedSubmit}
+        submittedMessage={submittedMessage}
+        isWaitingToSubmit={isWaitingToSubmit}
       />
     );
   })

@@ -31,6 +31,8 @@ import {
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilValue } from 'recoil';
 
+export const FREE_TIER_WAIT_TIME_SECONDS = 15;
+
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   autoFocusRef?: React.RefObject<boolean>;
@@ -45,6 +47,9 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   submitPrompt: (content: Content) => void;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
+  onCancel?: () => void;
+  submittedMessage?: Content | null;
+  isWaitingToSubmit?: boolean;
   ctx?: {
     context: Context;
     setContext: React.Dispatch<React.SetStateAction<Context>>;
@@ -65,9 +70,35 @@ export const AIUserMessageForm = memo(
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
+      onCancel,
+      submittedMessage,
+      isWaitingToSubmit,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
+    const [remainingSeconds, setRemainingSeconds] = useState(FREE_TIER_WAIT_TIME_SECONDS);
+
+    // Handle countdown timer
+    useEffect(() => {
+      let timer: NodeJS.Timeout;
+      if (isWaitingToSubmit && remainingSeconds > 0) {
+        timer = setInterval(() => {
+          setRemainingSeconds((prev) => prev - 1);
+        }, 1000);
+      }
+      return () => {
+        if (timer) {
+          clearInterval(timer);
+        }
+      };
+    }, [isWaitingToSubmit, remainingSeconds]);
+
+    // Reset countdown when waiting state changes
+    useEffect(() => {
+      if (isWaitingToSubmit) {
+        setRemainingSeconds(FREE_TIER_WAIT_TIME_SECONDS);
+      }
+    }, [isWaitingToSubmit]);
 
     const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
     const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
@@ -82,9 +113,29 @@ export const AIUserMessageForm = memo(
     );
     const [prompt, setPrompt] = useState<string>(initialPrompt ?? '');
 
+    useEffect(() => {
+      if (submittedMessage) {
+        const textContent = submittedMessage.find((item) => item.type === 'text');
+        if (textContent && 'text' in textContent) {
+          setPrompt(textContent.text);
+        }
+      }
+    }, [submittedMessage]);
+
     const submit = useCallback(() => {
       submitPrompt([...files, { type: 'text', text: prompt }]);
+      // Clear input immediately after submission
+      setPrompt('');
+      setFiles([]);
     }, [files, prompt, submitPrompt]);
+
+    // Clear input when waiting state changes from true to false (message was sent)
+    useEffect(() => {
+      if (!isWaitingToSubmit && submittedMessage) {
+        setPrompt('');
+        setFiles([]);
+      }
+    }, [isWaitingToSubmit, submittedMessage]);
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
@@ -141,7 +192,7 @@ export const AIUserMessageForm = memo(
         onPaste={handleFiles}
         onDrop={handleFiles}
       >
-        {!editing && !loading && (
+        {!editing && !loading && !isWaitingToSubmit && (
           <TooltipPopover label="Edit">
             <Button
               variant="ghost"
@@ -172,53 +223,92 @@ export const AIUserMessageForm = memo(
           />
         )}
         {editing ? (
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
-            )}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              event.stopPropagation();
+          <>
+            <Textarea
+              ref={textareaRef}
+              value={prompt}
+              className={cn(
+                'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+                editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit',
+                isWaitingToSubmit && 'pointer-events-none opacity-50'
+              )}
+              onChange={(event) => setPrompt(event.target.value)}
+              onKeyDown={(event) => {
+                event.stopPropagation();
 
-              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-                event.preventDefault();
-                if (loading) return;
+                if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+                  event.preventDefault();
+                  if (loading || isWaitingToSubmit) return;
 
-                if (prompt.trim().length === 0) return;
+                  if (prompt.trim().length === 0) return;
 
-                submit();
+                  submit();
 
-                if (initialPrompt === undefined) {
-                  setFiles([]);
-                  setPrompt('');
-                  textareaRef.current?.focus();
-                } else {
-                  setEditing(false);
-                  bottomTextareaRef.current?.focus();
+                  if (initialPrompt === undefined) {
+                    setFiles([]);
+                    setPrompt('');
+                    textareaRef.current?.focus();
+                  } else {
+                    setEditing(false);
+                    bottomTextareaRef.current?.focus();
+                  }
                 }
-              }
 
-              if (loading) return;
+                if (loading || isWaitingToSubmit) return;
 
-              if (formOnKeyDown) {
-                formOnKeyDown(event);
-              }
-            }}
-            autoComplete="off"
-            placeholder="Ask a question..."
-            autoHeight={true}
-            maxHeight={maxHeight}
-          />
+                if (formOnKeyDown) {
+                  formOnKeyDown(event);
+                }
+              }}
+              autoComplete="off"
+              placeholder={isWaitingToSubmit ? 'Waiting to send message...' : 'Ask a question...'}
+              autoHeight={true}
+              maxHeight={maxHeight}
+              disabled={isWaitingToSubmit}
+            />
+            {isWaitingToSubmit && (
+              <div className="mx-2 my-1 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50">
+                Exceeded free tier AI usage. Wait {remainingSeconds} seconds or{' '}
+                <a
+                  href="/team/settings"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  upgrade to Quadratic Pro
+                </a>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="pointer-events-none whitespace-pre-wrap p-2 text-sm">{prompt}</div>
+          <div className={cn('pointer-events-none whitespace-pre-wrap p-2 text-sm', isWaitingToSubmit && 'opacity-50')}>
+            {prompt}
+            {isWaitingToSubmit && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Exceeded free tier AI usage. Wait {remainingSeconds} seconds or{' '}
+                <a
+                  href="/pricing"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  upgrade to Quadratic Pro
+                </a>
+              </div>
+            )}
+          </div>
         )}
 
         {editing && (
           <>
-            <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
+            <div
+              className={cn(
+                'flex w-full select-none items-center justify-between px-2 pb-1 @container',
+                isWaitingToSubmit && 'pointer-events-none opacity-50'
+              )}
+            >
               <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -244,7 +334,7 @@ export const AIUserMessageForm = memo(
                       e.stopPropagation();
                       submit();
                     }}
-                    disabled={prompt.length === 0 || loading}
+                    disabled={prompt.length === 0 || loading || isWaitingToSubmit}
                   >
                     <ArrowUpwardIcon />
                   </Button>
@@ -252,7 +342,7 @@ export const AIUserMessageForm = memo(
               </div>
             </div>
 
-            {loading && (
+            {(loading || isWaitingToSubmit) && (
               <Button
                 size="sm"
                 variant="outline"
@@ -260,9 +350,10 @@ export const AIUserMessageForm = memo(
                 onClick={(e) => {
                   e.stopPropagation();
                   abortPrompt();
+                  onCancel?.();
                 }}
               >
-                <BackspaceIcon className="mr-1" /> Cancel generating
+                <BackspaceIcon className="mr-1" /> Cancel {isWaitingToSubmit ? 'sending' : 'generating'}
               </Button>
             )}
           </>
