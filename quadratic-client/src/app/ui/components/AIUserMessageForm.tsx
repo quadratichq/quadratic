@@ -218,7 +218,7 @@ export const AIUserMessageForm = memo(
             files={files}
             setFiles={setFiles}
             editing={editing}
-            disabled={!editing}
+            disabled={isWaitingToSubmit || !editing}
             textAreaRef={textareaRef}
           />
         )}
