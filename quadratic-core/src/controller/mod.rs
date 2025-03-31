@@ -149,7 +149,10 @@ impl GridController {
         }
 
         if sort {
-            self.a1_context.table_map.tables.sort_unstable_keys();
+            self.a1_context
+                .table_map
+                .tables
+                .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
         }
     }
 
