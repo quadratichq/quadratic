@@ -173,7 +173,6 @@ impl SheetDataTables {
             )
             .sorted_unstable()
             .dedup()
-            .into_iter()
     }
 
     pub fn get_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Pos, &DataTable)> {

@@ -82,37 +82,34 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
     ) {
-        let sheet_id = sheet_rect.sheet_id;
-        let Some(sheet) = self.grid.try_sheet(sheet_id) else {
+        let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) else {
             // sheet may have been deleted
             return;
         };
-        let rect: Rect = (*sheet_rect).into();
         let data_tables_to_delete: Vec<Pos> = sheet
-            .data_tables_pos_intersect_rect(rect)
+            .data_tables_pos_intersect_rect((*sheet_rect).into())
             .filter_map(|pos| {
-                // only delete code runs that are within the sheet_rect
-                if rect.contains(pos) {
-                    // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
-                    if let Some(value) = sheet.cell_value(pos) {
-                        if matches!(value, CellValue::Code(_))
-                            || matches!(value, CellValue::Import(_))
-                        {
+                // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
+                match sheet.cell_value(pos) {
+                    Some(value) => {
+                        if value.is_code() || value.is_import() {
                             None
                         } else {
                             Some(pos)
                         }
-                    } else {
-                        Some(pos)
                     }
-                } else {
-                    None
+                    None => Some(pos),
                 }
             })
             .collect();
 
-        data_tables_to_delete.iter().for_each(|pos| {
-            self.finalize_data_table(transaction, pos.to_sheet_pos(sheet_id), None, None);
+        data_tables_to_delete.into_iter().for_each(|pos| {
+            self.finalize_data_table(
+                transaction,
+                pos.to_sheet_pos(sheet_rect.sheet_id),
+                None,
+                None,
+            );
         });
     }
 
