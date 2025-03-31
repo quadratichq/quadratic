@@ -461,6 +461,8 @@ export const ApiSchemas = {
   }),
   '/v0/teams/:uuid/billing/ai/usage.GET.response': z.object({
     exceededBillingLimit: z.boolean(),
+    billingLimit: z.number(),
+    currentPeriodUsage: z.number(),
   }),
 };
 

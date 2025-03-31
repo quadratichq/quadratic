@@ -31,7 +31,7 @@ import {
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilValue } from 'recoil';
 
-export const FREE_TIER_WAIT_TIME_SECONDS = 15;
+export const FREE_TIER_WAIT_TIME_SECONDS = 6;
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -50,6 +50,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   onCancel?: () => void;
   submittedMessage?: Content | null;
   isWaitingToSubmit?: boolean;
+  totalDelaySeconds?: number;
   ctx?: {
     context: Context;
     setContext: React.Dispatch<React.SetStateAction<Context>>;
@@ -73,10 +74,11 @@ export const AIUserMessageForm = memo(
       onCancel,
       submittedMessage,
       isWaitingToSubmit,
+      totalDelaySeconds,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
-    const [remainingSeconds, setRemainingSeconds] = useState(FREE_TIER_WAIT_TIME_SECONDS);
+    const [remainingSeconds, setRemainingSeconds] = useState(totalDelaySeconds ?? FREE_TIER_WAIT_TIME_SECONDS);
 
     // Handle countdown timer
     useEffect(() => {
@@ -96,9 +98,9 @@ export const AIUserMessageForm = memo(
     // Reset countdown when waiting state changes
     useEffect(() => {
       if (isWaitingToSubmit) {
-        setRemainingSeconds(FREE_TIER_WAIT_TIME_SECONDS);
+        setRemainingSeconds(totalDelaySeconds ?? FREE_TIER_WAIT_TIME_SECONDS);
       }
-    }, [isWaitingToSubmit]);
+    }, [isWaitingToSubmit, totalDelaySeconds]);
 
     const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
     const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);

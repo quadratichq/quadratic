@@ -1,7 +1,11 @@
 import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import z from 'zod';
-import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUser } from '../../billing/AIUsageHelpers';
+import {
+  BillingAIUsageForCurrentMonth,
+  BillingAIUsageLimitExceeded,
+  BillingAIUsageMonthlyForUser,
+} from '../../billing/AIUsageHelpers';
 import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -44,9 +48,10 @@ async function handler(req: Request, res: Response) {
 
   // Get the user's monthly AI usage
   const usage = await BillingAIUsageMonthlyForUser(userId);
+  const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
 
   // Check if the user has exceeded the billing limit
   const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
 
-  return res.status(200).json({ exceededBillingLimit });
+  return res.status(200).json({ exceededBillingLimit, billingLimit: BILLING_AI_USAGE_LIMIT, currentPeriodUsage });
 }

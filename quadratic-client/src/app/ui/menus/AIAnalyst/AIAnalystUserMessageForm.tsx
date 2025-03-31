@@ -5,7 +5,6 @@ import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMe
 import { AIUserMessageForm, FREE_TIER_WAIT_TIME_SECONDS } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import mixpanel from 'mixpanel-browser';
@@ -15,14 +14,18 @@ import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 // Simulate API check - will be replaced with actual API call later
 const hasHitBillableLimit = async (teamUuid: string) => {
-  const endpoint = `${apiClient.getApiUrl()}/v0/teams/${teamUuid}/billing/ai/usage`;
-  const token = await authClient.getTokenOrRedirect();
-  const response = await fetch(endpoint, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const data = await response.json();
-  return data.exceededBillingLimit;
+  const data = await apiClient.teams.billing.aiUsage(teamUuid);
+
+  // Send to mixpanel
+  if (data.exceededBillingLimit) {
+    mixpanel.track('[AIAnalyst].hasHitBillableLimit', {
+      exceededBillingLimit: data.exceededBillingLimit,
+      billingLimit: data.billingLimit,
+      currentPeriodUsage: data.currentPeriodUsage,
+    });
+  }
+
+  return data;
 };
 
 type Props = AIUserMessageFormWrapperProps & {
@@ -38,6 +41,7 @@ export const AIAnalystUserMessageForm = memo(
     const [delayTimer, setDelayTimer] = useState<NodeJS.Timeout | null>(null);
     const [isWaitingToSubmit, setIsWaitingToSubmit] = useState(false);
     const [submittedMessage, setSubmittedMessage] = useState<Content | null>(null);
+    const [totalDelaySeconds, setTotalDelaySeconds] = useState(FREE_TIER_WAIT_TIME_SECONDS);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
     const { team } = useFileRouteLoaderData();
 
@@ -52,11 +56,13 @@ export const AIAnalystUserMessageForm = memo(
 
     const handleSubmitWithDelay = useCallback(
       async (content: Content) => {
-        const isOverLimit = await hasHitBillableLimit(team.uuid);
+        const { exceededBillingLimit, currentPeriodUsage } = await hasHitBillableLimit(team.uuid);
 
-        if (isOverLimit) {
+        if (exceededBillingLimit) {
           setIsWaitingToSubmit(true);
           setSubmittedMessage(content);
+          const totalDelay = FREE_TIER_WAIT_TIME_SECONDS + Math.ceil(currentPeriodUsage * 0.25);
+          setTotalDelaySeconds(totalDelay);
           const timer = setTimeout(() => {
             mixpanel.track('[AIAnalyst].submitPrompt');
             const textContent = content[0];
@@ -70,7 +76,7 @@ export const AIAnalystUserMessageForm = memo(
             setIsWaitingToSubmit(false);
             setDelayTimer(null);
             setSubmittedMessage(null);
-          }, FREE_TIER_WAIT_TIME_SECONDS * 1000);
+          }, totalDelay * 1000);
           setDelayTimer(timer);
         } else {
           mixpanel.track('[AIAnalyst].submitPrompt');
@@ -125,6 +131,7 @@ export const AIAnalystUserMessageForm = memo(
         onCancel={cancelDelayedSubmit}
         submittedMessage={submittedMessage}
         isWaitingToSubmit={isWaitingToSubmit}
+        totalDelaySeconds={totalDelaySeconds}
       />
     );
   })
