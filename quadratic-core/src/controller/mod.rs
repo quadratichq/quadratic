@@ -108,47 +108,48 @@ impl GridController {
 
     pub(crate) fn update_a1_context_table_map(
         &mut self,
-        code_cells: &HashMap<SheetId, HashSet<Pos>>,
+        code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
+        sort: bool,
     ) {
-        for (sheet_id, positions) in code_cells.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
+        for (sheet_id, table_info) in code_cells_a1_context.into_iter() {
+            let Some(sheet) = self.grid.try_sheet(sheet_id) else {
                 self.a1_context
                     .table_map
                     .tables
-                    .retain(|_, table| table.sheet_id != *sheet_id);
+                    .retain(|_, table| table.sheet_id != sheet_id);
                 continue;
             };
 
-            let mut to_remove = Vec::new();
-            let mut to_insert = Vec::new();
-
-            for pos in positions.iter() {
-                to_remove.push(*pos);
-
-                let Some(table) = sheet.data_table(*pos) else {
+            for pos in table_info.into_iter() {
+                let Some(table) = sheet.data_table_at(&pos) else {
+                    self.a1_context.table_map.remove_at(sheet_id, pos);
                     continue;
                 };
 
-                if let Some(language) = sheet.get_table_language(*pos, table) {
-                    let table_name = case_fold_ascii(table.name());
-                    let table_map_entry =
-                        TableMapEntry::from_table(*sheet_id, *pos, table, language);
-                    to_insert.push((table_name, table_map_entry));
-                }
-            }
+                let table_name_folded = case_fold_ascii(table.name());
 
-            for pos in to_remove.into_iter() {
-                self.a1_context
+                if !self
+                    .a1_context()
                     .table_map
                     .tables
-                    .retain(|_, table| table.sheet_id != *sheet_id || table.bounds.min != pos);
-            }
+                    .contains_key(&table_name_folded)
+                {
+                    self.a1_context.table_map.remove_at(sheet_id, pos);
+                }
 
-            for (table_name, table_map_entry) in to_insert.into_iter() {
-                self.a1_context
-                    .table_map
-                    .insert_with_key(table_name, table_map_entry);
+                if let Some(language) = sheet.get_table_language(pos, table) {
+                    let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
+                    self.a1_context
+                        .table_map
+                        .insert_with_key(table_name_folded, table_map_entry);
+                } else {
+                    self.a1_context.table_map.remove_at(sheet_id, pos);
+                }
             }
+        }
+
+        if sort {
+            self.a1_context.table_map.tables.sort_unstable_keys();
         }
     }
 

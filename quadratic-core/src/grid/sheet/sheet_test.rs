@@ -216,7 +216,7 @@ impl Sheet {
                 Some((1.0, 1.0)),
             )),
         );
-        self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
+        self.data_tables.get_mut_at(&pos).unwrap().chart_output = Some((w, h));
     }
 
     /// Sets a JS chart at the given position with the given width and height (in cells).
@@ -249,7 +249,7 @@ impl Sheet {
                 Some((1.0, 1.0)),
             )),
         );
-        self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
+        self.data_tables.get_mut_at(&pos).unwrap().chart_output = Some((w, h));
     }
 
     /// Sets an empty data table on the sheet.

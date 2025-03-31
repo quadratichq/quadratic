@@ -14,7 +14,7 @@ import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsUpdateCodeCell } from '@/app/quadratic-core-types';
 import { useUpdateCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useUpdateCodeEditor';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -40,22 +40,21 @@ export const CodeEditorEffects = memo(() => {
 
   // ensure codeCell is created w/content and updated when it receives a change request from Rust
   useEffect(() => {
-    const update = (options: {
-      sheetId: string;
-      x: number;
-      y: number;
-      codeCell?: JsCodeCell;
-      renderCodeCell?: JsRenderCodeCell;
-    }) => {
-      const { sheetId, x, y, codeCell: codeCellCore } = options;
-      if (showCodeEditor && sheetId === codeCell.sheetId && x === codeCell.pos.x && y === codeCell.pos.y) {
-        updateCodeEditor(sheetId, x, y, codeCellCore, undefined, true);
+    const update = (updateCodeCells: JsUpdateCodeCell[]) => {
+      const updateCodeCell = updateCodeCells.find(
+        (updateCodeCell) =>
+          updateCodeCell.sheet_id.id === codeCell.sheetId &&
+          Number(updateCodeCell.pos.x) === codeCell.pos.x &&
+          Number(updateCodeCell.pos.y) === codeCell.pos.y
+      );
+      if (updateCodeCell) {
+        updateCodeEditor(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, updateCodeCell.code_cell, undefined, true);
       }
     };
 
-    events.on('updateCodeCell', update);
+    events.on('updateCodeCells', update);
     return () => {
-      events.off('updateCodeCell', update);
+      events.off('updateCodeCells', update);
     };
   }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, showCodeEditor, updateCodeEditor]);
 

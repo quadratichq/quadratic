@@ -329,7 +329,7 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
         .try_sheet(sheet_id)
         .expect("Sheet not found");
 
-    if let Some(data_table) = sheet.data_table(rect.min) {
+    if let Some(data_table) = sheet.data_table_at(&rect.min) {
         let max = rect.max.y - rect.min.y + 1;
         crate::grid::data_table::test::pretty_print_data_table(
             data_table,
@@ -400,7 +400,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
             let cell_value = match display_cell_values {
                 true => sheet.cell_value(pos),
                 false => sheet
-                    .data_table(rect.min)
+                    .data_table_at(&rect.min)
                     .unwrap_or_else(|| panic!("Data table not found at {:?}", rect.min))
                     .cell_value_at(x as u32, y as u32),
             };

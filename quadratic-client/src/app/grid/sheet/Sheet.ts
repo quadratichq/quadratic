@@ -59,9 +59,9 @@ export class Sheet {
     events.on('sheetValidations', this.sheetValidations);
   }
 
-  private sheetValidations = (sheetId: string, validations: Validation[]) => {
+  private sheetValidations = (sheetId: string, sheetValidations: Validation[]) => {
     if (sheetId === this.id) {
-      this.validations = validations;
+      this.validations = sheetValidations;
     }
   };
 

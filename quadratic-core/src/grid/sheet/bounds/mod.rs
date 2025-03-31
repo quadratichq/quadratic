@@ -22,7 +22,7 @@ impl Sheet {
         self.data_bounds.clear();
         self.format_bounds.clear();
 
-        for (&x, column) in &self.columns {
+        for (&x, column) in self.columns.iter() {
             if let Some(data_range) = column.range() {
                 let y = data_range.start;
                 self.data_bounds.add(Pos { x, y });
@@ -31,15 +31,9 @@ impl Sheet {
             }
         }
 
-        if let Some(rect) = self.formats.finite_bounds() {
-            self.format_bounds.add_rect(rect);
-        }
-
-        self.data_tables.iter().for_each(|(pos, code_cell_value)| {
-            let output_rect = code_cell_value.output_rect(*pos, false);
-            self.data_bounds.add(output_rect.min);
-            self.data_bounds.add(output_rect.max);
-        });
+        if let Some(rect) = self.data_tables.finite_bounds() {
+            self.data_bounds.add_rect(rect);
+        };
 
         for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
@@ -49,6 +43,10 @@ impl Sheet {
                     self.data_bounds.add(rect.max);
                 }
             }
+        }
+
+        if let Some(rect) = self.formats.finite_bounds() {
+            self.format_bounds.add_rect(rect);
         }
 
         old_data_bounds != self.data_bounds.to_bounds_rect()
@@ -87,7 +85,7 @@ impl Sheet {
     /// `false`, then data and formatting are both considered.
     pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         // Get bounds from data columns
-        let data_range = self.columns.get(&column).and_then(|col| col.range());
+        let data_range = self.columns.get_column(column).and_then(|col| col.range());
 
         // Get bounds from code columns
         let code_range = self.code_columns_bounds(column, column);
@@ -396,7 +394,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.first_data_table_within(pos).is_ok();
+                    let is_table_cell = self.data_table_pos_that_contains(&pos).is_ok();
                     if is_table_cell {
                         continue;
                     }
@@ -1011,7 +1009,7 @@ mod test {
                 min: Pos { x: 6, y: 2 },
                 max: Pos { x: 15, y: 101 },
             },
-            &Array::from(
+            Array::from(
                 (2..=101)
                     .map(|row| {
                         (6..=15)
@@ -1033,7 +1031,7 @@ mod test {
                 min: Pos { x: 31, y: 101 },
                 max: Pos { x: 35, y: 303 },
             },
-            &Array::from(
+            Array::from(
                 (101..=303)
                     .map(|row| {
                         (31..=35)

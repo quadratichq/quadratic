@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    Pos, SheetPos, SheetRect,
+    Instant, Pos, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
@@ -73,6 +73,9 @@ pub struct PendingTransaction {
     /// cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
+    /// track last time when updates were sent to client
+    pub last_client_update: Option<Instant>,
+
     /// sheets w/updated validations
     pub validations: HashSet<SheetId>,
 
@@ -87,6 +90,9 @@ pub struct PendingTransaction {
 
     /// sheets with updated borders
     pub sheet_borders: HashSet<SheetId>,
+
+    /// code cells to update in a1_context
+    pub code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
 
     /// code cells to update
     pub code_cells: HashMap<SheetId, HashSet<Pos>>,
@@ -127,11 +133,13 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            last_client_update: None,
             validations: HashSet::new(),
             validations_warnings: HashMap::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             sheet_borders: HashSet::new(),
+            code_cells_a1_context: HashMap::new(),
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
@@ -366,6 +374,11 @@ impl PendingTransaction {
 
     /// Adds a code cell to the transaction
     pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.code_cells_a1_context
+            .entry(sheet_id)
+            .or_default()
+            .insert(pos);
+
         self.code_cells.entry(sheet_id).or_default().insert(pos);
     }
 
@@ -420,13 +433,7 @@ impl PendingTransaction {
         self.validations_warnings
             .entry(sheet_id)
             .or_default()
-            .insert(
-                Pos {
-                    x: warning.x,
-                    y: warning.y,
-                },
-                warning,
-            );
+            .insert(warning.pos, warning);
     }
 
     pub fn validation_warning_deleted(&mut self, sheet_id: SheetId, pos: Pos) {
@@ -440,8 +447,7 @@ impl PendingTransaction {
             .insert(
                 pos,
                 JsValidationWarning {
-                    x: pos.x,
-                    y: pos.y,
+                    pos,
                     style: None,
                     validation: None,
                 },
@@ -500,6 +506,13 @@ impl PendingTransaction {
 
         for (sheet_id, code_cells) in transaction.code_cells {
             self.code_cells
+                .entry(sheet_id)
+                .or_default()
+                .extend(code_cells);
+        }
+
+        for (sheet_id, code_cells) in transaction.code_cells_a1_context {
+            self.code_cells_a1_context
                 .entry(sheet_id)
                 .or_default()
                 .extend(code_cells);

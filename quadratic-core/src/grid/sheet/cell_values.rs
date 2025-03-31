@@ -1,18 +1,27 @@
-use indexmap::IndexMap;
-
 use crate::{
-    CellValue, Pos,
-    a1::A1Context,
-    cell_values::CellValues,
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation,
-    },
+    CellValue, Pos, Rect, a1::A1Context, cell_values::CellValues,
+    controller::active_transactions::pending_transaction::PendingTransaction,
+    grid::js_types::JsValidationWarning,
 };
 
 use super::Sheet;
 
 impl Sheet {
+    /// Returns true if there is a value within a rect
+    pub fn contains_value_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
+        if let Some(skip) = skip {
+            let skip_rect = Rect::single_pos(*skip);
+            return self
+                .columns
+                .get_nondefault_rects_in_rect(rect)
+                .filter(|(rect, _)| rect != &skip_rect)
+                .count()
+                > 0;
+        } else {
+            self.columns.get_nondefault_rects_in_rect(rect).count() > 0
+        }
+    }
+
     /// Replace cell_values with CellValues.
     ///
     /// Returns the old CellValues.
@@ -21,7 +30,6 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         pos: Pos,
         cell_values: &CellValues,
-        send: bool,
         a1_context: &A1Context,
     ) -> CellValues {
         let mut old = CellValues::new(cell_values.w, cell_values.h);
@@ -29,24 +37,24 @@ impl Sheet {
         // add the values and return the old values
         for x in 0..cell_values.w {
             let grid_x = pos.x + x as i64;
-            let col = self.get_or_create_column(grid_x);
+
             for y in 0..cell_values.h {
                 let grid_y = pos.y + y as i64;
 
-                let old_value = if let Some(value) = cell_values.get_except_blank(x, y) {
-                    col.values.insert(grid_y, value.clone())
-                } else {
-                    col.values.remove(&grid_y)
-                };
+                let old_value = self.set_cell_value(
+                    (grid_x, grid_y).into(),
+                    cell_values
+                        .get(x, y)
+                        .unwrap_or(&CellValue::Blank)
+                        .to_owned(),
+                );
+
                 if let Some(old_value) = old_value {
                     old.set(x, y, old_value);
                 }
             }
         }
 
-        // check the validations for the new cells; note: IndexMap is necessary
-        // so the tests pass (ie, the order of the cells is deterministic)
-        let mut validation_warnings = IndexMap::new();
         for x in 0..cell_values.w {
             let grid_x = pos.x + x as i64;
             for y in 0..cell_values.h {
@@ -57,53 +65,20 @@ impl Sheet {
                 };
                 let sheet_pos = pos.to_sheet_pos(self.id);
                 if let Some(validation) = self.validations.validate(self, pos, a1_context) {
-                    validation_warnings.insert(pos, validation.id);
-                    transaction
-                        .forward_operations
-                        .push(Operation::SetValidationWarning {
-                            sheet_pos,
-                            validation_id: Some(validation.id),
-                        });
+                    let warning = JsValidationWarning {
+                        pos,
+                        validation: Some(validation.id),
+                        style: Some(validation.error.style.clone()),
+                    };
+                    transaction.validation_warning_added(self.id, warning);
+                    self.validations.set_warning(sheet_pos, Some(validation.id));
                 } else if self.validations.has_warning(pos) {
-                    transaction
-                        .forward_operations
-                        .push(Operation::SetValidationWarning {
-                            sheet_pos: pos.to_sheet_pos(self.id),
-                            validation_id: None,
-                        });
-                    let old = self.validations.set_warning(sheet_pos, None);
-                    transaction.reverse_operations.insert(0, old);
+                    transaction.validation_warning_deleted(self.id, pos);
+                    self.validations.set_warning(sheet_pos, None);
                 }
             }
         }
 
-        if !validation_warnings.is_empty() {
-            // apply the validation warnings to the sheet
-            validation_warnings.iter().for_each(|(pos, validation_id)| {
-                let sheet_pos = pos.to_sheet_pos(self.id);
-                let old = self
-                    .validations
-                    .set_warning(sheet_pos, Some(*validation_id));
-                transaction
-                    .forward_operations
-                    .push(Operation::SetValidationWarning {
-                        sheet_pos: pos.to_sheet_pos(self.id),
-                        validation_id: Some(*validation_id),
-                    });
-                transaction.reverse_operations.insert(0, old);
-            });
-
-            // send the warnings if necessary
-            if send {
-                let validations = validation_warnings
-                    .iter()
-                    .map(|(pos, validation_id)| (pos.x, pos.y, *validation_id, false))
-                    .collect::<Vec<_>>();
-                if let Ok(validations) = serde_json::to_string(&validations) {
-                    crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), validations);
-                }
-            }
-        }
         old
     }
 
@@ -158,7 +133,6 @@ mod test {
             &mut transaction,
             Pos { x: -1, y: -2 },
             &cell_values,
-            false,
             &a1_context,
         );
         assert_eq!(old.w, 2);
@@ -238,7 +212,6 @@ mod test {
             &mut transaction,
             Pos { x: 1, y: 1 },
             &cell_values,
-            true,
             &a1_context,
         );
 
@@ -250,7 +223,7 @@ mod test {
         assert_eq!(sheet.validations.warnings.len(), 2);
         let warnings = vec![(1, 1, validation.id, false), (2, 1, validation.id, false)];
         expect_js_call(
-            "jsValidationWarning",
+            "jsValidationWarnings",
             format!("{},{}", sheet.id, serde_json::to_string(&warnings).unwrap()),
             true,
         );

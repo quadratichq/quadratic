@@ -18,7 +18,6 @@ impl GridController {
                         transaction,
                         sheet_pos.into(),
                         &values,
-                        !transaction.is_server(),
                         &self.a1_context,
                     );
                     if old_values == values {
@@ -180,8 +179,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             sheet_id,
         };
         gc.set_code_cell(

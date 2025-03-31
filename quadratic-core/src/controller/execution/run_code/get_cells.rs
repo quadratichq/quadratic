@@ -258,7 +258,7 @@ mod test {
         .unwrap();
         let sheet = gc.sheet(sheet_id);
         let error = sheet
-            .data_table(Pos { x: 1, y: 1 })
+            .data_table_at(&Pos { x: 1, y: 1 })
             .unwrap()
             .code_run()
             .unwrap()

@@ -1025,35 +1025,43 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.data_table(pos![A1]).unwrap().chart_output.unwrap(),
+            sheet
+                .data_table_at(&pos![A1])
+                .unwrap()
+                .chart_output
+                .unwrap(),
             (4, 3)
         );
         assert_eq!(
-            sheet.data_table(pos![B5]).unwrap().chart_output.unwrap(),
+            sheet
+                .data_table_at(&pos![B5])
+                .unwrap()
+                .chart_output
+                .unwrap(),
             (4, 3)
         );
 
         gc.undo(None);
 
         let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
+        let dt = sheet.data_table_at(&pos![A1]).unwrap();
         assert_eq!(dt.chart_output.unwrap(), (3, 3));
-        let dt_2 = sheet.data_table(pos![B5]).unwrap();
+        let dt_2 = sheet.data_table_at(&pos![B5]).unwrap();
         assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
 
         gc.insert_row(sheet_id, 3, true, None);
 
         let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
+        let dt = sheet.data_table_at(&pos![A1]).unwrap();
         assert_eq!(dt.chart_output.unwrap(), (3, 4));
-        let dt_2 = sheet.data_table(pos![B6]).unwrap();
+        let dt_2 = sheet.data_table_at(&pos![B6]).unwrap();
         assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
 
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
+        let dt = sheet.data_table_at(&pos![A1]).unwrap();
         assert_eq!(dt.chart_output.unwrap(), (3, 3));
-        let dt_2 = sheet.data_table(pos![B5]).unwrap();
+        let dt_2 = sheet.data_table_at(&pos![B5]).unwrap();
         assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
     }
 }

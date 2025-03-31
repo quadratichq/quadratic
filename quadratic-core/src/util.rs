@@ -202,7 +202,12 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
 /// Returns a unique name by appending numbers to the base name if the name is not unique.
 /// Starts at 1, and checks if the name is unique, then 2, etc.
 /// If `require_number` is true, the name will always have an appended number.
-pub fn unique_name(name: &str, require_number: bool, check_name: impl Fn(&str) -> bool) -> String {
+pub fn unique_name<'a>(
+    name: &str,
+    require_number: bool,
+    check_name: impl Fn(&str) -> bool,
+    mut iter_names: impl Iterator<Item = &'a String>,
+) -> String {
     let base = MATCH_NUMBERS.replace(name, "");
     let contains_number = base != name;
     let should_short_circuit = !require_number || contains_number;
@@ -213,7 +218,24 @@ pub fn unique_name(name: &str, require_number: bool, check_name: impl Fn(&str) -
     }
 
     // if not unique, try appending numbers until we find a unique name
-    let mut num = 1;
+
+    // Find the highest existing number
+    let base_folded = case_fold_ascii(&*base);
+    let mut num = iter_names
+        .find_map(|name| {
+            if name.len() > base_folded.len() && name.starts_with(&base_folded) {
+                MATCH_NUMBERS
+                    .find(name)?
+                    .as_str()
+                    .trim()
+                    .parse::<usize>()
+                    .ok()
+            } else {
+                None
+            }
+        })
+        .map_or(1, |n| n + 1);
+
     let mut name = String::from("");
 
     while name.is_empty() {

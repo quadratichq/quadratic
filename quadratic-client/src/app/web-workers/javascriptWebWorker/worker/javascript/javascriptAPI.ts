@@ -4,7 +4,7 @@
 // within the worker using getCells.
 
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { Javascript } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
 import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 

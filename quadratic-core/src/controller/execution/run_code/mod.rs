@@ -60,8 +60,7 @@ impl GridController {
         let index = index.unwrap_or(
             sheet
                 .data_tables
-                .iter()
-                .position(|(p, _)| p == &pos)
+                .get_index_of(&pos)
                 .unwrap_or(sheet.data_tables.len()),
         );
 
@@ -79,9 +78,10 @@ impl GridController {
             }
         }
 
+        let old_data_table = sheet.data_table_at(&pos);
+
         // preserve some settings from the previous code run
-        if let (Some(old_data_table), Some(new_data_table)) =
-            (sheet.data_table(pos), &mut new_data_table)
+        if let (Some(old_data_table), Some(new_data_table)) = (old_data_table, &mut new_data_table)
         {
             let is_code_cell = sheet
                 .get_table_language(pos, new_data_table)
@@ -146,27 +146,6 @@ impl GridController {
             }
         }
 
-        let old_data_table = if let Some(new_data_table) = &new_data_table {
-            let (old_index, old_data_table) =
-                sheet.data_tables.insert_sorted(pos, new_data_table.clone());
-
-            // keep the orderings of the code runs consistent, particularly when undoing/redoing
-            let index = if index > sheet.data_tables.len() - 1 {
-                sheet.data_tables.len() - 1
-            } else {
-                index
-            };
-
-            sheet.data_tables.move_index(old_index, index);
-            old_data_table
-        } else {
-            sheet.data_tables.shift_remove(&pos)
-        };
-
-        if old_data_table == new_data_table {
-            return;
-        }
-
         let sheet_rect = match (&old_data_table, &new_data_table) {
             (None, None) => sheet_pos.into(),
             (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
@@ -223,19 +202,28 @@ impl GridController {
         );
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
-        self.send_updated_bounds(transaction, sheet_id);
+        if transaction.is_user_undo_redo() {
+            let old_data_table = if let Some(new_data_table) = &new_data_table {
+                let index = index.min(sheet.data_tables.len());
+                sheet
+                    .data_tables
+                    .shift_insert(index, &pos, new_data_table.to_owned())
+            } else {
+                sheet.data_tables.shift_remove(&pos)
+            };
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
-                if !rows.is_empty() {
-                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                    resize_rows.extend(rows);
+            self.send_updated_bounds(transaction, sheet_id);
+
+            if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
+                    if !rows.is_empty() {
+                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                        resize_rows.extend(rows);
+                    }
                 }
             }
-        }
 
-        if transaction.is_user_undo_redo() {
             transaction
                 .forward_operations
                 .push(Operation::SetDataTable {
@@ -258,6 +246,15 @@ impl GridController {
             }
 
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+        } else {
+            if let Some(new_data_table) = new_data_table {
+                let index = index.min(sheet.data_tables.len());
+                sheet.data_tables.shift_insert(index, &pos, new_data_table);
+            } else {
+                sheet.data_tables.shift_remove(&pos);
+            };
+
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -339,7 +336,7 @@ impl GridController {
         };
 
         let code_run = sheet
-            .data_table(pos)
+            .data_table_at(&pos)
             .and_then(|data_table| data_table.code_run());
 
         let new_code_run = match code_run {
@@ -578,7 +575,10 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_data_table));
+        assert_eq!(
+            sheet.data_table_at(&sheet_pos.into()),
+            Some(&new_data_table)
+        );
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -617,7 +617,10 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_data_table));
+        assert_eq!(
+            sheet.data_table_at(&sheet_pos.into()),
+            Some(&new_data_table)
+        );
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -631,7 +634,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), None);
+        assert_eq!(sheet.data_table_at(&sheet_pos.into()), None);
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -692,7 +695,7 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table(sheet_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
@@ -707,7 +710,7 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table(sheet_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
         }
     }

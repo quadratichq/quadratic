@@ -98,8 +98,8 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
-            let data_table = sheet.data_table_mut(data_table_pos)?;
+            let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
+            let data_table = sheet.data_table_mut_at(&data_table_pos)?;
             data_table.chart_pixel_output = Some((pixel_width, pixel_height));
             let new_data_table = data_table.clone();
 
@@ -117,7 +117,7 @@ impl GridController {
         if let Operation::SetChartCellSize { sheet_pos, w, h } = op {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.data_table_mut(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut_at(&sheet_pos.into())?;
             let original = data_table.chart_output;
             data_table.chart_output = Some((w, h));
 
@@ -254,7 +254,7 @@ mod tests {
             Some(CellValue::Blank)
         );
 
-        let code_cell = sheet.data_table(Pos { x: 2, y: 1 });
+        let code_cell = sheet.data_table_at(&Pos { x: 2, y: 1 });
         assert!(code_cell.unwrap().spill_error);
     }
 
@@ -307,7 +307,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.data_table(pos![A1]).unwrap().chart_output,
+            sheet.data_table_at(&pos![A1]).unwrap().chart_output,
             Some((4, 5))
         );
     }

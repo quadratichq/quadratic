@@ -4,7 +4,7 @@ use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::grid::SheetId;
-use crate::{ArraySize, Pos, Rect};
+use crate::{Pos, Rect};
 
 impl GridController {
     /// Changes the spill error for a code_cell and adds necessary operations
@@ -18,7 +18,7 @@ impl GridController {
         // change the spill for the first code_cell and then iterate the later code_cells.
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let mut code_pos: Option<Pos> = None;
-            if let Some((pos, run)) = sheet.data_tables.get_index_mut(index) {
+            if let Some((pos, run)) = sheet.data_tables.get_mut_at_index(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
                 transaction
                     .reverse_operations
@@ -43,7 +43,7 @@ impl GridController {
                 run.add_dirty_fills_and_borders(transaction, sheet_id);
             }
             if let Some(code_pos) = code_pos {
-                if let Some(data_table) = sheet.data_tables.get(&code_pos) {
+                if let Some(data_table) = sheet.data_tables.get_at(&code_pos) {
                     transaction.add_from_code_run(
                         sheet_id,
                         code_pos,
@@ -58,22 +58,20 @@ impl GridController {
     /// Checks if a code_cell has a spill error by comparing its output to both CellValues in that range, and earlier data_tables output.
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
-            if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
+            if let Some((pos, data_table)) = sheet.data_tables.get_at_index(index) {
+                let output_rect: Rect = data_table.output_rect(*pos, true).into();
+
                 // we can short circuit the output if the size is now 1x1, which can never spill
-                if matches!(data_table.output_size(), ArraySize::_1X1) {
+                if output_rect.len() == 1 {
                     if data_table.spill_error {
                         return Some(false);
                     }
                     return None;
                 }
 
-                let output: Rect = data_table
-                    .output_sheet_rect(pos.to_sheet_pos(sheet_id), true)
-                    .into();
-
                 // then do the more expensive checks to see if there is a spill error
-                if sheet.has_cell_value_in_rect(&output, Some(*pos))
-                    || sheet.has_code_cell_in_rect(&output, *pos)
+                if sheet.contains_value_within_rect(output_rect, Some(pos))
+                    || sheet.contains_data_table_within_rect(output_rect, Some(pos))
                 {
                     // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
                     //
@@ -168,12 +166,12 @@ mod tests {
         sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Number(3.into()));
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        assert!(!sheet.data_tables[0].spill_error);
+        assert!(!sheet.data_tables.get_at_index(0).unwrap().1.spill_error);
 
         gc.check_all_spills(&mut transaction, sheet_id);
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        assert!(sheet.data_tables[0].spill_error);
+        assert!(sheet.data_tables.get_at_index(0).unwrap().1.spill_error);
     }
 
     #[test]
@@ -201,7 +199,7 @@ mod tests {
         clear_js_calls();
 
         let sheet = gc.sheet(sheet_id);
-        assert!(!sheet.data_tables[0].spill_error);
+        assert!(!sheet.data_tables.get_at_index(0).unwrap().1.spill_error);
 
         // manually set a cell value and see if the spill error changed
         gc.set_cell_value(
@@ -218,7 +216,7 @@ mod tests {
 
         gc.check_all_spills(&mut transaction, sheet_id);
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.data_tables[0].spill_error);
+        assert!(sheet.data_tables.get_at_index(0).unwrap().1.spill_error);
 
         // remove the cell causing the spill error
         gc.set_cell_value(
@@ -235,8 +233,8 @@ mod tests {
         gc.check_all_spills(&mut transaction, sheet_id);
 
         let sheet = gc.sheet(sheet_id);
-        assert!(!sheet.data_tables[0].spill_error);
-        expect_js_call_count("jsUpdateCodeCell", 2, true);
+        assert!(!sheet.data_tables.get_at_index(0).unwrap().1.spill_error);
+        expect_js_call_count("jsUpdateCodeCells", 2, true);
     }
 
     #[test]
@@ -274,7 +272,7 @@ mod tests {
         gc.check_all_spills(transaction, sheet_id);
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.data_table(Pos { x: 1, y: 1 }).unwrap();
+        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
         assert!(code_run.spill_error);
 
         // should be a spill caused by 1,2
@@ -294,7 +292,7 @@ mod tests {
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let code_run = sheet.data_table(Pos { x: 1, y: 1 });
+        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 });
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().spill_error);
 

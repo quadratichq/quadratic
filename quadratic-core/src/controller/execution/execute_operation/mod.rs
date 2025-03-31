@@ -52,6 +52,14 @@ impl GridController {
             #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {:?}", &op));
 
+            if transaction.operations.len() % 100 == 0 {
+                dbgjs!(format!(
+                    "transaction: {:?}, op: {:?}",
+                    &transaction.operations.len(),
+                    &op,
+                ));
+            }
+
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),

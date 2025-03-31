@@ -286,7 +286,7 @@ mod test {
 
         let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
             gc.sheet(sheet_id)
-                .data_table(data_table_pos)
+                .data_table_at(&data_table_pos)
                 .unwrap()
                 .value
                 .get(value_pos.x as u32, value_pos.y as u32)
@@ -334,7 +334,7 @@ mod test {
 
         let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
             gc.sheet(sheet_id)
-                .data_table(data_table_pos)
+                .data_table_at(&data_table_pos)
                 .unwrap()
                 .value
                 .get(value_pos.x as u32, value_pos.y as u32)
@@ -342,7 +342,7 @@ mod test {
                 .clone()
         };
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         data_table.header_is_first_row = false;
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E4], sheet_id))),
@@ -384,7 +384,7 @@ mod test {
 
         // show name
         let data_table: &mut crate::grid::DataTable =
-            gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+            gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         data_table.show_name = false;
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E3], sheet_id))),
@@ -417,7 +417,7 @@ mod test {
 
         // show columns
         let data_table: &mut crate::grid::DataTable =
-            gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+            gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         data_table.show_columns = false;
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
@@ -448,7 +448,7 @@ mod test {
             CellValue::Number(3333.into())
         );
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         data_table.header_is_first_row = true;
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
@@ -472,7 +472,7 @@ mod test {
 
         let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
             gc.sheet(sheet_id)
-                .data_table(data_table_pos)
+                .data_table_at(&data_table_pos)
                 .unwrap()
                 .value
                 .get(value_pos.x as u32, value_pos.y as u32)
@@ -481,7 +481,7 @@ mod test {
         };
 
         // hide first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         let column_headers = data_table.column_headers.as_mut().unwrap();
         column_headers[0].display = false;
         assert_eq!(
@@ -505,7 +505,7 @@ mod test {
         );
 
         // show first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         let column_headers = data_table.column_headers.as_mut().unwrap();
         column_headers[0].display = true;
         assert_eq!(
@@ -530,7 +530,7 @@ mod test {
 
         let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
             gc.sheet(sheet_id)
-                .data_table(data_table_pos)
+                .data_table_at(&data_table_pos)
                 .unwrap()
                 .value
                 .get(value_pos.x as u32, value_pos.y as u32)
@@ -540,7 +540,7 @@ mod test {
 
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
+        let data_table = sheet.data_table_mut_at(&pos).unwrap();
         data_table
             .sort_column(3, SortDirection::Descending)
             .unwrap();
@@ -566,7 +566,7 @@ mod test {
 
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
+        let data_table = sheet.data_table_mut_at(&pos).unwrap();
         data_table.sort_column(3, SortDirection::None).unwrap();
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
@@ -587,13 +587,13 @@ mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
         let sheet_pos = SheetPos::from((pos, sheet_id));
 
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
 
         print_table(&gc, sheet_id, Rect::new(5, 2, 8, 13));
 
         // hide first column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
         gc.test_data_table_update_meta(sheet_pos, Some(column_headers), None, None, None);
@@ -606,7 +606,7 @@ mod test {
         print_table(&gc, sheet_id, Rect::new(5, 2, 10, 13));
 
         // column expand
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
         assert_eq!(
             data_table.cell_value_at(3, 2),
@@ -616,7 +616,7 @@ mod test {
         gc.undo(None);
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![H4]),
@@ -626,7 +626,7 @@ mod test {
         gc.set_cell_value(SheetPos::from((8, 6, sheet_id)), "test2".into(), None);
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![H6]),
@@ -637,7 +637,7 @@ mod test {
         gc.set_cell_value(SheetPos::from((6, 14, sheet_id)), "test3".into(), None);
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 14));
         assert_eq!(
             data_table.cell_value_at(1, 12),
@@ -647,7 +647,7 @@ mod test {
         gc.undo(None);
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![F14]),
@@ -657,7 +657,7 @@ mod test {
         gc.set_cell_value(SheetPos::from((8, 14, sheet_id)), "test4".into(), None);
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![H14]),
@@ -710,7 +710,7 @@ mod test {
             str_vec_to_string_vec(&row_1_values),
             str_vec_to_string_vec(&row_2_values),
         ];
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
         assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 4, 12));
 
@@ -720,7 +720,7 @@ mod test {
 
         print_table(&gc, sheet_id, Rect::new(1, 1, 12, 13));
 
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 4, 14));
 
         assert_data_table_cell_value_row(&gc, sheet_id, 1, 3, 13, row_1_values);
@@ -736,7 +736,7 @@ mod test {
             vec!["b".into(), "e".into()],
             vec!["c".into(), "f".into()],
         ];
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
         assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 4, 12));
 
@@ -746,7 +746,7 @@ mod test {
 
         print_table(&gc, sheet_id, Rect::new(1, 1, 6, 12));
 
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 6, 12));
 
         assert_data_table_cell_value_column(&gc, sheet_id, 5, 3, 5, vec!["a", "b", "c"]);

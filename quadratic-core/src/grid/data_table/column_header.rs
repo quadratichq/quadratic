@@ -150,7 +150,8 @@ impl DataTable {
                 .collect::<Vec<_>>();
 
             let check_name = |name: &str| !all_names.contains(&name.to_string());
-            unique_name(name, false, check_name)
+            let iter_names = all_names.iter().rev();
+            unique_name(name, false, check_name, iter_names)
         } else {
             name.to_string()
         }
@@ -163,7 +164,8 @@ impl DataTable {
         if let Some(columns) = self.column_headers.as_mut() {
             columns.iter_mut().for_each(|column| {
                 let check_name = |name: &str| !all_names.contains(&name.to_string());
-                let name = unique_name(&column.name.to_string(), false, check_name);
+                let iter_names = all_names.iter().rev();
+                let name = unique_name(&column.name.to_string(), false, check_name, iter_names);
                 column.name = CellValue::Text(name.to_owned());
                 all_names.push(name);
             });
@@ -314,7 +316,7 @@ pub mod test {
             Some(CellValue::Text("first".into()))
         );
 
-        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
+        let data_table = sheet.data_table_mut_at(&(1, 1).into()).unwrap();
         data_table.toggle_first_row_as_header(false);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
@@ -370,7 +372,7 @@ pub mod test {
         );
 
         // make first row a header
-        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
+        let data_table = sheet.data_table_mut_at(&(1, 1).into()).unwrap();
         data_table.toggle_first_row_as_header(true);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
@@ -378,7 +380,7 @@ pub mod test {
         );
 
         // hide first column
-        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
+        let data_table = sheet.data_table_mut_at(&(1, 1).into()).unwrap();
         let column_headers = data_table.column_headers.as_mut().unwrap();
         column_headers[0].display = false;
         assert_eq!(

@@ -1,5 +1,6 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 
@@ -81,9 +82,7 @@ export class PythonCore {
       int32View = undefined;
       uint8View = undefined;
 
-      const decoder = new TextDecoder();
-      const cellsStringified = decoder.decode(nonSharedView);
-      const response = JSON.parse(cellsStringified) as JsCellsA1Response;
+      const response = fromUint8Array(nonSharedView) as JsCellsA1Response;
       return response;
     } catch (e) {
       console.warn('[pythonCore] getCellsA1 error', e);

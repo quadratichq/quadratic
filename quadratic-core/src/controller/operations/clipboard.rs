@@ -1356,7 +1356,7 @@ mod test {
         gc.set_cell_value(pos![C3].to_sheet_pos(sheet_id), "4".to_string(), None);
 
         // hide the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
@@ -1435,7 +1435,7 @@ mod test {
         assert!(sheet.cell_format(pos![F14]).is_default());
 
         // show the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
@@ -1497,7 +1497,7 @@ mod test {
         gc.set_cell_value(pos![C3].to_sheet_pos(sheet_id), "4".to_string(), None);
 
         // hide the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
@@ -1563,7 +1563,7 @@ mod test {
         assert!(sheet.cell_format(pos![F14]).is_default());
 
         // show the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
