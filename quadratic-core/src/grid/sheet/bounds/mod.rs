@@ -22,14 +22,9 @@ impl Sheet {
         self.data_bounds.clear();
         self.format_bounds.clear();
 
-        for (&x, column) in self.columns.iter() {
-            if let Some(data_range) = column.range() {
-                let y = data_range.start;
-                self.data_bounds.add(Pos { x, y });
-                let y = data_range.end - 1;
-                self.data_bounds.add(Pos { x, y });
-            }
-        }
+        if let Some(rect) = self.columns.finite_bounds() {
+            self.data_bounds.add_rect(rect);
+        };
 
         if let Some(rect) = self.data_tables.finite_bounds() {
             self.data_bounds.add_rect(rect);
