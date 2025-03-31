@@ -193,6 +193,27 @@ impl GridController {
         bail!("Expected Operation::AddDataTable in execute_add_data_table");
     }
 
+    pub(super) fn execute_move_data_table_entry_position(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::MoveDataTableEntryPosition { from, to } = op {
+            let sheet_id = from.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            if let Some(dt) = sheet.data_tables.shift_remove(&Pos::from(from)) {
+                sheet.data_tables.insert(to.into(), dt);
+            }
+            transaction
+                .reverse_operations
+                .push(Operation::MoveDataTableEntryPosition { from: to, to: from });
+            return Ok(());
+        }
+        bail!(
+            "Expected Operation::MoveDataTableEntryPosition in execute_move_data_table_entry_position"
+        );
+    }
+
     pub(super) fn execute_delete_data_table(
         &mut self,
         transaction: &mut PendingTransaction,

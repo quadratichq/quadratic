@@ -219,6 +219,10 @@ impl PendingTransaction {
         self.source == TransactionSource::User || self.source == TransactionSource::Unsaved
     }
 
+    pub fn is_undo(&self) -> bool {
+        self.source == TransactionSource::Undo
+    }
+
     /// Returns whether the transaction is from an undo/redo.
     pub fn is_undo_redo(&self) -> bool {
         self.source == TransactionSource::Undo || self.source == TransactionSource::Redo

@@ -72,17 +72,24 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
             };
 
             let cell_value = match cell_value {
-                Some(CellValue::Code(code_cell)) => match code_cell.language {
-                    CodeCellLanguage::Formula => convert_rc_to_a1(
-                        &code_cell.code.to_string(),
-                        &parse_ctx,
-                        pos.to_sheet_pos(sheet.id),
-                    ),
-                    CodeCellLanguage::Python => code_cell.code.to_string(),
-                    CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
-                    CodeCellLanguage::Javascript => code_cell.code.to_string(),
-                    CodeCellLanguage::Import => "import".to_string(),
-                },
+                Some(CellValue::Code(code_cell)) => {
+                    match code_cell.language {
+                        CodeCellLanguage::Formula => convert_rc_to_a1(
+                            &code_cell.code.to_string(),
+                            &parse_ctx,
+                            pos.to_sheet_pos(sheet.id),
+                        ),
+                        CodeCellLanguage::Python => code_cell.code.to_string(),
+                        CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
+                        CodeCellLanguage::Javascript => code_cell.code.to_string(),
+                        CodeCellLanguage::Import => "import".to_string(),
+                    };
+                    let value = sheet
+                        .display_value(pos)
+                        .unwrap_or_else(|| CellValue::Blank)
+                        .to_string();
+                    format!("{:?} ({})", code_cell.language, value)
+                }
                 Some(CellValue::Import(import)) => import.to_string(),
                 _ => sheet
                     .display_value(pos)

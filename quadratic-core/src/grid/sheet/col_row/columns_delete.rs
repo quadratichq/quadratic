@@ -1,5 +1,5 @@
 use crate::{
-    CopyFormats, Pos, SheetPos,
+    CopyFormats,
     a1::A1Context,
     cell_values::CellValues,
     controller::{
@@ -67,25 +67,25 @@ impl Sheet {
         }
     }
 
-    /// Creates reverse operations for code runs within the column.
-    fn reverse_code_runs_ops_for_column(&self, column: i64) -> Vec<Operation> {
-        let mut reverse_operations = Vec::new();
+    // /// Creates reverse operations for code runs within the column.
+    // fn reverse_code_runs_ops_for_column(&self, column: i64) -> Vec<Operation> {
+    //     let mut reverse_operations = Vec::new();
 
-        self.data_tables
-            .iter()
-            .enumerate()
-            .for_each(|(index, (pos, data_table))| {
-                if pos.x == column {
-                    reverse_operations.push(Operation::SetDataTable {
-                        sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
-                        data_table: Some(data_table.clone()),
-                        index,
-                    });
-                }
-            });
+    //     self.data_tables
+    //         .iter()
+    //         .enumerate()
+    //         .for_each(|(index, (pos, data_table))| {
+    //             if pos.x == column {
+    //                 reverse_operations.push(Operation::SetDataTable {
+    //                     sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
+    //                     data_table: Some(data_table.clone()),
+    //                     index,
+    //                 });
+    //             }
+    //         });
 
-        reverse_operations
-    }
+    //     reverse_operations
+    // }
 
     fn delete_column_offset(&mut self, transaction: &mut PendingTransaction, column: i64) {
         let (changed, new_size) = self.offsets.delete_column(column);
@@ -124,9 +124,6 @@ impl Sheet {
                 .extend(self.reverse_formats_ops_for_column(column));
             transaction
                 .reverse_operations
-                .extend(self.reverse_code_runs_ops_for_column(column));
-            transaction
-                .reverse_operations
                 .extend(self.reverse_values_ops_for_column(column));
         }
 
@@ -150,21 +147,6 @@ impl Sheet {
 
         self.columns.remove(&column);
 
-        // remove the column's code runs from the sheet
-        self.data_tables.retain(|pos, code_run| {
-            if pos.x == column {
-                transaction.add_from_code_run(
-                    self.id,
-                    *pos,
-                    code_run.is_image(),
-                    code_run.is_html(),
-                );
-                false
-            } else {
-                true
-            }
-        });
-
         // update the indices of all columns impacted by the deletion
         let mut columns_to_update = Vec::new();
         for col in self.columns.keys() {
@@ -177,37 +159,6 @@ impl Sheet {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x -= 1;
                 self.columns.insert(col - 1, column_data);
-            }
-        }
-
-        // update the indices of all code_runs impacted by the deletion
-        let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.x > column {
-                code_runs_to_move.push(*pos);
-            }
-        }
-        code_runs_to_move.sort_by(|a, b| a.x.cmp(&b.x));
-        for old_pos in code_runs_to_move {
-            let new_pos = Pos {
-                x: old_pos.x - 1,
-                y: old_pos.y,
-            };
-            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
-                // signal html and image cells to update
-                if code_run.is_html() {
-                    transaction.add_html_cell(self.id, old_pos);
-                    transaction.add_html_cell(self.id, new_pos);
-                } else if code_run.is_image() {
-                    transaction.add_image_cell(self.id, old_pos);
-                    transaction.add_image_cell(self.id, new_pos);
-                }
-
-                self.data_tables.insert_sorted(new_pos, code_run);
-
-                // signal client to update the code runs
-                transaction.add_code_cell(self.id, old_pos);
-                transaction.add_code_cell(self.id, new_pos);
             }
         }
 
@@ -261,7 +212,8 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, DEFAULT_COLUMN_WIDTH, controller::execution::TransactionSource, grid::CellWrap,
+        CellValue, DEFAULT_COLUMN_WIDTH, Pos, controller::execution::TransactionSource,
+        grid::CellWrap,
     };
 
     use super::*;

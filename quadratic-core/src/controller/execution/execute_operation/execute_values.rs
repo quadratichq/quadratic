@@ -88,6 +88,36 @@ impl GridController {
             }
         }
     }
+
+    pub(crate) fn execute_move_cell_value(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::MoveCellValue { from, to } = op {
+            let sheet_rect = SheetRect {
+                sheet_id: from.sheet_id,
+                min: from.into(),
+                max: to.into(),
+            };
+            if let Some(sheet) = self.grid.try_sheet_mut(from.sheet_id) {
+                sheet.move_cell_value(from.into(), to.into());
+                transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+                transaction
+                    .reverse_operations
+                    .push(Operation::MoveCellValue { from: to, to: from });
+            }
+            if transaction.is_user() {
+                if let Some(sheet) = self.try_sheet(from.sheet_id) {
+                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
+                    if !rows.is_empty() {
+                        let resize_rows = transaction.resize_rows.entry(from.sheet_id).or_default();
+                        resize_rows.extend(rows);
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -95,8 +125,10 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::GridController;
-    use crate::grid::SheetId;
-    use crate::{CellValue, Pos, SheetPos};
+    use crate::controller::active_transactions::transaction_name::TransactionName;
+    use crate::controller::operations::operation::Operation;
+    use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::{CellValue, Pos, SheetPos, assert_display_cell_value};
 
     #[test]
     fn test_set_cell_value() {
@@ -165,15 +197,6 @@ mod tests {
             None,
         );
     }
-}
-
-#[cfg(test)]
-mod test {
-    use bigdecimal::BigDecimal;
-
-    use super::*;
-    use crate::grid::CodeCellLanguage;
-    use crate::{CellValue, SheetPos};
 
     #[test]
     fn test_set_cell_values_code_cell_remove() {
@@ -255,5 +278,42 @@ mod test {
             .last()
             .unwrap();
         assert_eq!(last_transaction.forward.operations.len(), 1);
+    }
+
+    #[test]
+    fn test_move_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let from_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+        let to_pos = SheetPos {
+            x: 2,
+            y: 2,
+            sheet_id,
+        };
+
+        // Set initial value
+        gc.set_cell_value(from_pos, "test".to_string(), None);
+
+        // Verify initial value is set
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "test");
+
+        // Move the cell value
+        let ops = vec![Operation::MoveCellValue {
+            from: from_pos,
+            to: to_pos,
+        }];
+        gc.start_user_transaction(ops, None, TransactionName::SetCells);
+
+        // Verify the value was moved correctly
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "test");
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "");
+
+        gc.undo(None);
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "test");
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "");
     }
 }

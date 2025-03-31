@@ -23,6 +23,11 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
+        // undo and redo are handled by the reverse_operations (we can't rely on
+        // the insert tables logic for undo or redo)
+        if transaction.is_undo_redo() {
+            return;
+        }
         let source_column = match copy_formats {
             CopyFormats::Before => column - 1,
             _ => column,
@@ -80,6 +85,14 @@ impl Sheet {
                 }
                 if dt.insert_column(display_index as usize, None, None).is_ok() {
                     transaction.add_code_cell(self.id, *pos);
+                    transaction
+                        .reverse_operations
+                        .push(Operation::DeleteDataTableColumns {
+                            sheet_pos: pos.to_sheet_pos(self.id),
+                            columns: vec![display_index as u32],
+                            flatten: false,
+                            select_table: false,
+                        });
                 }
             }
         });
@@ -93,6 +106,11 @@ impl Sheet {
         copy_formats: CopyFormats,
         send_client: bool,
     ) {
+        // undo and redo are handled by the reverse_operations (we can't rely on
+        // the insert tables logic for undo or redo)
+        if transaction.is_undo_redo() {
+            return;
+        }
         // update the indices of all data_tables impacted by the insertion
         let mut data_tables_to_move_right = Vec::new();
         let mut data_tables_to_move_left = Vec::new();
@@ -149,6 +167,12 @@ impl Sheet {
                 y: old_pos.y,
             };
             self.move_cell_value(from, old_pos);
+            transaction
+                .reverse_operations
+                .push(Operation::MoveCellValue {
+                    from: old_pos.to_sheet_pos(self.id),
+                    to: from.to_sheet_pos(self.id),
+                });
             transaction.add_code_cell(self.id, from);
             transaction.add_code_cell(self.id, old_pos);
         }
@@ -178,7 +202,6 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
         gc.insert_column(sheet_id, 2, false, None);
-
         assert_data_table_size(&gc, sheet_id, pos![C2], 4, 3, false);
 
         gc.undo(None);
@@ -202,6 +225,9 @@ mod tests {
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
     }
 
     #[test]
@@ -219,6 +245,11 @@ mod tests {
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
+        assert_display_cell_value(&gc, sheet_id, 5, 4, "");
     }
 
     #[test]
@@ -238,6 +269,10 @@ mod tests {
         gc.undo(None);
         assert_chart_size(&gc, sheet_id, pos![A1], 3, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 3, 3, false);
+
+        gc.redo(None);
+        assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
+        assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
     }
 
     #[test]
@@ -248,9 +283,11 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
 
         gc.insert_column(sheet_id, 1, true, None);
+        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
 
         gc.undo(None);
+        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
     }
 

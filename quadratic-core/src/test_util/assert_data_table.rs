@@ -68,10 +68,22 @@ pub fn assert_data_table_size(
     height: usize,
     include_ui: bool,
 ) {
+    use crate::CellValue;
+
     let sheet = gc.sheet(sheet_id);
     let Some(data_table) = sheet.data_table(pos) else {
         panic!("Data table at {} not found", pos);
     };
+    let Some(cell_value) = sheet.cell_value(pos) else {
+        panic!("Anchor for data table at {} not found", pos);
+    };
+    match cell_value {
+        CellValue::Import(_) | CellValue::Code(_) => (),
+        _ => panic!(
+            "Anchor for data table at {} is not a code or import cell",
+            pos
+        ),
+    }
 
     if data_table.is_html_or_image() {
         assert_eq!(
@@ -115,8 +127,39 @@ pub fn assert_data_table_size(
 }
 
 #[cfg(test)]
+#[track_caller]
+pub fn assert_data_table_count(gc: &GridController, sheet_id: SheetId, count: usize) {
+    let sheet = gc.sheet(sheet_id);
+    assert_eq!(
+        sheet.data_tables.len(),
+        count,
+        "Data table count at {} is not {}",
+        sheet_id,
+        count
+    );
+}
+
+#[cfg(test)]
+#[track_caller]
+pub fn assert_data_table_sort_dirty(
+    gc: &GridController,
+    sheet_id: SheetId,
+    pos: Pos,
+    sort_dirty: bool,
+) {
+    let sheet = gc.sheet(sheet_id);
+    let data_table = sheet
+        .data_table(pos)
+        .expect(&format!("Data table at {} not found", pos));
+    assert_eq!(
+        data_table.sort_dirty, sort_dirty,
+        "Sort data table at {} is not {}",
+        pos, sort_dirty
+    );
+}
+#[cfg(test)]
 mod tests {
-    use crate::test_util::test_create_data_table_with_values;
+    use crate::{test_create_data_table, test_util::test_create_data_table_with_values};
 
     use super::*;
     #[test]
@@ -233,5 +276,22 @@ mod tests {
         );
 
         assert_data_table_column(&dt, 1, vec!["wrong", "value"]);
+    }
+
+    #[test]
+    fn test_assert_data_table_count() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Initially should have no data tables
+        assert_data_table_count(&gc, sheet_id, 0);
+
+        // Add one data table
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 2, 2);
+        assert_data_table_count(&gc, sheet_id, 1);
+
+        // Add another data table
+        test_create_data_table(&mut gc, SheetId::TEST, pos![D1], 1, 1);
+        assert_data_table_count(&gc, sheet_id, 2);
     }
 }

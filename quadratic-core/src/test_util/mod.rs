@@ -6,7 +6,7 @@ mod create_code_table;
 mod create_data_table;
 mod get_sheets;
 mod print_gc;
-mod print_sheet;
+pub mod print_sheet;
 mod print_table;
 
 #[allow(unused_imports)]

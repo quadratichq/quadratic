@@ -59,6 +59,16 @@ pub enum Operation {
         pixel_width: f32,
         pixel_height: f32,
     },
+    // used to move the data_table entry's position without changing the anchor
+    // cell (used by delete_columns)
+    MoveDataTableEntryPosition {
+        from: SheetPos,
+        to: SheetPos,
+    },
+    MoveCellValue {
+        from: SheetPos,
+        to: SheetPos,
+    },
     SetChartCellSize {
         sheet_pos: SheetPos,
         w: u32,
