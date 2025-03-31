@@ -241,8 +241,9 @@ impl GridController {
                 });
 
             if transaction.is_user() {
-                self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-                self.check_all_spills(transaction, sheet_pos.sheet_id);
+                dbgjs!(format!("todo(ayush): enable compute operations and spills"));
+                // self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+                // self.check_all_spills(transaction, sheet_pos.sheet_id);
             }
 
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
