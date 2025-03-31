@@ -59,7 +59,7 @@ impl GridController {
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, data_table)) = sheet.data_tables.get_at_index(index) {
-                let output_rect: Rect = data_table.output_rect(*pos, true).into();
+                let output_rect: Rect = data_table.output_rect(*pos, true);
 
                 // we can short circuit the output if the size is now 1x1, which can never spill
                 if output_rect.len() == 1 {

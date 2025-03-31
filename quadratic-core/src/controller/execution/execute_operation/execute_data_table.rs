@@ -88,18 +88,12 @@ impl GridController {
         };
         let data_tables_to_delete: Vec<Pos> = sheet
             .data_tables_pos_intersect_rect((*sheet_rect).into())
-            .filter_map(|pos| {
-                // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
-                match sheet.cell_value(pos) {
-                    Some(value) => {
-                        if value.is_code() || value.is_import() {
-                            None
-                        } else {
-                            Some(pos)
-                        }
-                    }
-                    None => Some(pos),
-                }
+            .filter(|pos| {
+                // only delete when there's not another code cell in the same position
+                // (this maintains the original output until a run completes)
+                sheet
+                    .cell_value(*pos)
+                    .is_none_or(|value| !(value.is_code() || value.is_import()))
             })
             .collect();
 

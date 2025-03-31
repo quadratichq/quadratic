@@ -11,12 +11,11 @@ impl Sheet {
     pub fn contains_value_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
         if let Some(skip) = skip {
             let skip_rect = Rect::single_pos(*skip);
-            return self
-                .columns
+            self.columns
                 .get_nondefault_rects_in_rect(rect)
                 .filter(|(rect, _)| rect != &skip_rect)
                 .count()
-                > 0;
+                > 0
         } else {
             self.columns.get_nondefault_rects_in_rect(rect).count() > 0
         }

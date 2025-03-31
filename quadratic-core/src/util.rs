@@ -220,7 +220,7 @@ pub fn unique_name<'a>(
     // if not unique, try appending numbers until we find a unique name
 
     // Find the highest existing number
-    let base_folded = case_fold_ascii(&*base);
+    let base_folded = case_fold_ascii(&base);
     let mut num = iter_names
         .find_map(|name| {
             if name.len() > base_folded.len() && name.starts_with(&base_folded) {
