@@ -33,7 +33,9 @@ impl GridController {
 
         if is_multi_cursor {
             if let Some(range) = selection.ranges.first() {
-                end_pos = Some(range.to_rect(&self.a1_context()).unwrap().max);
+                end_pos = range
+                    .to_rect(&self.a1_context())
+                    .map_or_else(|| None, |rect| Some(rect.max));
             }
         }
 

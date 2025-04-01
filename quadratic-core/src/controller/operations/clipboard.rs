@@ -131,8 +131,8 @@ impl GridController {
     fn cell_values_from_clipboard_cells(
         w: u32,
         h: u32,
-        cells: CellValues,
-        values: CellValues,
+        cells: &CellValues,
+        values: &CellValues,
         special: PasteSpecial,
     ) -> (Option<CellValues>, Vec<(u32, u32)>) {
         if w == 0 && h == 0 {
@@ -140,7 +140,7 @@ impl GridController {
         }
 
         match special {
-            PasteSpecial::Values => (Some(values), vec![]),
+            PasteSpecial::Values => (Some(values.to_owned()), vec![]),
             PasteSpecial::None => {
                 let code = cells
                     .columns
@@ -157,7 +157,7 @@ impl GridController {
                             .collect::<Vec<_>>()
                     })
                     .collect::<Vec<_>>();
-                (Some(cells), code)
+                (Some(cells.to_owned()), code)
             }
             _ => (None, vec![]),
         }
@@ -165,6 +165,7 @@ impl GridController {
 
     fn clipboard_cell_values_operations(
         &self,
+        cell_values: &mut CellValues,
         start_pos: SheetPos,
         mut values: CellValues,
         clipboard_selection: Option<&A1Selection>,
@@ -275,6 +276,9 @@ impl GridController {
             values,
         });
 
+        println!("cell_values: {:?}", cell_values);
+        // cell_values.s
+
         Ok(ops)
     }
 
@@ -286,7 +290,7 @@ impl GridController {
         clipboard_origin: &ClipboardOrigin,
         clipboard_selection: &A1Selection,
         clipboard_operation: &ClipboardOperation,
-        mut clipboard_data_tables: IndexMap<Pos, DataTable>,
+        clipboard_data_tables: &IndexMap<Pos, DataTable>,
         cursor: &mut A1Selection,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
@@ -326,7 +330,9 @@ impl GridController {
                     return Err(Error::msg(message));
                 }
 
-                if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
+                if let Some(data_table) = clipboard_data_tables.get(&source_pos) {
+                    let mut data_table = data_table.to_owned();
+
                     if matches!(clipboard_operation, ClipboardOperation::Copy) {
                         let old_name = data_table.name().to_string();
                         let new_name =
@@ -422,11 +428,12 @@ impl GridController {
     /// Gets operations to add validations from clipboard to sheet.
     fn clipboard_validations_operations(
         &self,
-        validations: Option<ClipboardValidations>,
+        validations: &Option<ClipboardValidations>,
         start_pos: SheetPos,
     ) -> Vec<Operation> {
         if let Some(validations) = validations {
             validations
+                .to_owned()
                 .validations
                 .into_iter()
                 .filter_map(|mut validation| {
@@ -444,7 +451,8 @@ impl GridController {
     }
 
     fn set_clipboard_cells(
-        &mut self,
+        &self,
+        cell_values: &mut CellValues,
         selection: &A1Selection,
         clipboard: &Clipboard,
         special: PasteSpecial,
@@ -477,6 +485,7 @@ impl GridController {
             .clone()
             .saturating_translate(cursor_translate_x, cursor_translate_y)
             .ok_or(RefError)?;
+
         cursor.sheet_id = selection.sheet_id;
 
         match special {
@@ -484,13 +493,14 @@ impl GridController {
                 let (values, tables) = GridController::cell_values_from_clipboard_cells(
                     clipboard.w,
                     clipboard.h,
-                    clipboard.cells.clone(),
-                    clipboard.values.clone(),
+                    &clipboard.cells,
+                    &clipboard.values,
                     special,
                 );
 
                 if let Some(values) = values {
                     let cell_value_ops = self.clipboard_cell_values_operations(
+                        cell_values,
                         start_pos.to_sheet_pos(selection.sheet_id),
                         values,
                         Some(&clipboard.selection),
@@ -505,13 +515,13 @@ impl GridController {
                     &clipboard.origin,
                     &clipboard.selection,
                     &clipboard.operation,
-                    clipboard.data_tables.clone(),
+                    &clipboard.data_tables,
                     &mut cursor,
                 )?;
                 ops.extend(code_ops);
 
                 let validations_ops = self.clipboard_validations_operations(
-                    clipboard.validations.clone(),
+                    &clipboard.validations,
                     start_pos.to_sheet_pos(selection.sheet_id),
                 );
                 ops.extend(validations_ops);
@@ -520,8 +530,8 @@ impl GridController {
                 let (values, _) = GridController::cell_values_from_clipboard_cells(
                     clipboard.w,
                     clipboard.h,
-                    clipboard.cells.clone(),
-                    clipboard.values.clone(),
+                    &clipboard.cells,
+                    &clipboard.values,
                     special,
                 );
                 if let Some(values) = values {
@@ -539,7 +549,7 @@ impl GridController {
             let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
             let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
 
-            if let Some(mut formats) = clipboard.formats.clone() {
+            if let Some(mut formats) = clipboard.formats.to_owned() {
                 formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
                 let formats_ops = self.clipboard_formats_operations(
                     selection.sheet_id,
@@ -554,7 +564,7 @@ impl GridController {
                 ops.extend(formats_ops);
             }
 
-            if let Some(mut borders) = clipboard.borders.clone() {
+            if let Some(mut borders) = clipboard.borders.to_owned() {
                 borders.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
                 ops.push(Operation::SetBordersA1 {
                     sheet_id: selection.sheet_id,
@@ -581,61 +591,61 @@ impl GridController {
         let lines: Vec<&str> = plain_text.split('\n').collect();
 
         let mut ops = vec![];
-        let mut compute_code_ops = vec![];
+        // let mut compute_code_ops = vec![];
 
-        // calculate the width by checking the first line (with the assumption that all lines should have the same width)
-        let w = lines
-            .first()
-            .map(|line| line.split('\t').count())
-            .unwrap_or(0);
-        let h = lines.len();
+        // // calculate the width by checking the first line (with the assumption that all lines should have the same width)
+        // let w = lines
+        //     .first()
+        //     .map(|line| line.split('\t').count())
+        //     .unwrap_or(0);
+        // let h = lines.len();
 
-        let mut values = CellValues::new(w as u32, h as u32);
-        let mut sheet_format_updates = SheetFormatUpdates::default();
+        // let mut values = CellValues::new(w as u32, h as u32);
+        // let mut sheet_format_updates = SheetFormatUpdates::default();
 
-        lines.iter().enumerate().for_each(|(y, line)| {
-            line.split('\t').enumerate().for_each(|(x, value)| {
-                let (cell_value, format_update) = self.string_to_cell_value(value, true);
+        // lines.iter().enumerate().for_each(|(y, line)| {
+        //     line.split('\t').enumerate().for_each(|(x, value)| {
+        //         let (cell_value, format_update) = self.string_to_cell_value(value, true);
 
-                let is_code = matches!(cell_value, CellValue::Code(_));
+        //         let is_code = matches!(cell_value, CellValue::Code(_));
 
-                if cell_value != CellValue::Blank {
-                    values.set(x as u32, y as u32, cell_value);
-                }
+        //         if cell_value != CellValue::Blank {
+        //             values.set(x as u32, y as u32, cell_value);
+        //         }
 
-                let pos = Pos {
-                    x: start_pos.x + x as i64,
-                    y: start_pos.y + y as i64,
-                };
+        //         let pos = Pos {
+        //             x: start_pos.x + x as i64,
+        //             y: start_pos.y + y as i64,
+        //         };
 
-                if !format_update.is_default() {
-                    sheet_format_updates.set_format_cell(pos, format_update);
-                }
+        //         if !format_update.is_default() {
+        //             sheet_format_updates.set_format_cell(pos, format_update);
+        //         }
 
-                if is_code {
-                    compute_code_ops.push(Operation::ComputeCode {
-                        sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
-                    });
-                }
-            });
-        });
+        //         if is_code {
+        //             compute_code_ops.push(Operation::ComputeCode {
+        //                 sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+        //             });
+        //         }
+        //     });
+        // });
 
-        let cell_value_ops =
-            self.clipboard_cell_values_operations(start_pos, values, None, None)?;
-        ops.extend(cell_value_ops);
+        // let cell_value_ops =
+        //     self.clipboard_cell_values_operations(start_pos, values, None, None)?;
+        // ops.extend(cell_value_ops);
 
-        if !sheet_format_updates.is_default() {
-            let formats_rect =
-                Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
-            let formats_ops = self.clipboard_formats_operations(
-                start_pos.sheet_id,
-                sheet_format_updates,
-                formats_rect,
-            );
-            ops.extend(formats_ops);
-        }
+        // if !sheet_format_updates.is_default() {
+        //     let formats_rect =
+        //         Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
+        //     let formats_ops = self.clipboard_formats_operations(
+        //         start_pos.sheet_id,
+        //         sheet_format_updates,
+        //         formats_rect,
+        //     );
+        //     ops.extend(formats_ops);
+        // }
 
-        ops.extend(compute_code_ops);
+        // ops.extend(compute_code_ops);
 
         Ok(ops)
     }
@@ -672,10 +682,11 @@ impl GridController {
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
 
-                let context = self.a1_context().clone();
                 let end_pos = end_pos.unwrap_or(insert_at);
                 let mut ops = vec![];
 
+                // If the clipboard is larger than the selection, we need to paste multiple times.
+                // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
                 let max_x = {
                     let width = (end_pos.x - insert_at.x + 1) as f64;
                     let clipboard_width = clipboard.w as f64;
@@ -683,7 +694,6 @@ impl GridController {
 
                     insert_at.x + (multiples * clipboard.w as i64)
                 };
-
                 let max_y = {
                     let height = (end_pos.y - insert_at.y + 1) as f64;
                     let clipboard_height = clipboard.h as f64;
@@ -692,10 +702,15 @@ impl GridController {
                     insert_at.y + (multiples * clipboard_height as i64)
                 };
 
+                // collect all cell values for a a single operation
+                let cell_value_width = max_x - insert_at.x + 1;
+                let cell_value_height = max_y - insert_at.y + 1;
+                let mut cell_values =
+                    CellValues::new(cell_value_width as u32, cell_value_height as u32);
+
                 for x in (insert_at.x..=max_x).step_by(clipboard.w as usize) {
                     for y in (insert_at.y..=max_y).step_by(clipboard.h as usize) {
                         let pos = Pos { x, y };
-                        let mut clipboard = clipboard.clone();
 
                         // loop through the clipboard and replace cell references in
                         // formulas and other languages
@@ -717,7 +732,8 @@ impl GridController {
 
                         if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id)
                         {
-                            for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
+                            let mut columns = clipboard.cells.columns.to_owned();
+                            for (x, col) in columns.iter_mut().enumerate() {
                                 for (&y, cell) in col {
                                     if let CellValue::Code(code_cell) = cell {
                                         let original_pos = SheetPos {
@@ -727,7 +743,7 @@ impl GridController {
                                         };
                                         code_cell.adjust_references(
                                             new_default_sheet_id,
-                                            &context,
+                                            &self.a1_context(),
                                             original_pos,
                                             adjust,
                                         );
@@ -735,7 +751,13 @@ impl GridController {
                                 }
                             }
                         }
-                        ops.extend(self.set_clipboard_cells(selection, &clipboard, special, pos)?);
+                        ops.extend(self.set_clipboard_cells(
+                            &mut cell_values,
+                            selection,
+                            &clipboard,
+                            special,
+                            pos,
+                        )?);
                     }
                 }
 
@@ -922,7 +944,7 @@ mod test {
             }],
         };
         let operations = gc.clipboard_validations_operations(
-            Some(validations),
+            &Some(validations),
             SheetPos {
                 x: 2,
                 y: 2,
