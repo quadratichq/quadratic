@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, CopyFormats, SheetPos, SheetRect,
+    CellValue, CopyFormats, Pos, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -66,8 +66,9 @@ pub enum Operation {
         to: SheetPos,
     },
     MoveCellValue {
-        from: SheetPos,
-        to: SheetPos,
+        sheet_id: SheetId,
+        from: Pos,
+        to: Pos,
     },
     SetChartCellSize {
         sheet_pos: SheetPos,

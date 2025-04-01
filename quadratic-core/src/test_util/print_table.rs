@@ -89,6 +89,14 @@ pub fn output_pretty_print_data_table(
     format!("\nData Table: {title}\n{table}")
 }
 
+/// Prints the positions of all data tables in a sheet
+pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
+    let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
+    sheet.data_tables.iter().for_each(|(pos, _)| {
+        println!("Data table at {:?}", pos);
+    });
+}
+
 // Util to print a data table given its anchor position
 #[track_caller]
 pub fn print_table_at(gc: &GridController, sheet_id: SheetId, pos: Pos) {
@@ -186,7 +194,14 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create two data tables using the test utility
-        test_create_data_table_with_values(&mut gc, sheet_id, pos![A1], 2, 2, &["A", "B", "C", "D"]);
+        test_create_data_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![A1],
+            2,
+            2,
+            &["A", "B", "C", "D"],
+        );
         test_create_data_table_with_values(&mut gc, sheet_id, pos![C3], 1, 3, &["X", "Y", "Z"]);
 
         // Test the print function (this will print to console during test)

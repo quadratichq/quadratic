@@ -45,6 +45,19 @@ impl Sheet {
             }
         }
 
+        // create undo operations for the inserted column; we need this before
+        // the table operations so the reverse operations are in the correct
+        // order
+        if transaction.is_user_undo_redo() {
+            // reverse operation to delete the column (this will also shift all impacted columns)
+            transaction
+                .reverse_operations
+                .push(Operation::DeleteColumn {
+                    sheet_id: self.id,
+                    column,
+                });
+        }
+
         self.check_insert_tables_columns(transaction, column, copy_formats);
         self.adjust_insert_tables_columns(transaction, column, copy_formats, send_client);
 
@@ -78,17 +91,6 @@ impl Sheet {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
-        }
-
-        // create undo operations for the inserted column
-        if transaction.is_user_undo_redo() {
-            // reverse operation to delete the column (this will also shift all impacted columns)
-            transaction
-                .reverse_operations
-                .push(Operation::DeleteColumn {
-                    sheet_id: self.id,
-                    column,
-                });
         }
     }
 }

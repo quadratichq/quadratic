@@ -29,7 +29,7 @@ impl Sheet {
             return;
         }
         let source_column = match copy_formats {
-            CopyFormats::Before => column - 1,
+            CopyFormats::After => column - 1,
             _ => column,
         };
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
@@ -50,8 +50,8 @@ impl Sheet {
                 }
                 return;
             }
-            // code tables are not impacted by insertions; we do not insert the
-            // first column (the table is moved over instead)
+            // Adds columns to data tables if the column is inserted inside the
+            // table. Code is not impacted by this change.
             if !dt.readonly && source_column >= pos.x && source_column < pos.x + dt.width() as i64 {
                 let column = column - pos.x;
                 // the table overlaps the inserted column
@@ -119,13 +119,13 @@ impl Sheet {
             // first column. That should insert a table column and not push the
             // table over. data_tables_to_move_left handles this case. Note: we
             // treat charts differently and they are moved over.
-            if (copy_formats == CopyFormats::After && pos.x > column)
-                || (copy_formats == CopyFormats::Before && pos.x >= column)
+            if (copy_formats == CopyFormats::Before && pos.x > column)
+                || (copy_formats == CopyFormats::After && pos.x >= column)
             {
                 data_tables_to_move_right.push(*pos);
             }
             if (!dt.readonly || dt.is_html_or_image())
-                && copy_formats == CopyFormats::After
+                && copy_formats == CopyFormats::Before
                 && pos.x == column
             {
                 data_tables_to_move_left.push(*pos);
@@ -176,8 +176,9 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .push(Operation::MoveCellValue {
-                    from: old_pos.to_sheet_pos(self.id),
-                    to: from.to_sheet_pos(self.id),
+                    sheet_id: self.id,
+                    from: old_pos,
+                    to: from,
                 });
             transaction.add_code_cell(self.id, from);
             transaction.add_code_cell(self.id, old_pos);
@@ -189,6 +190,7 @@ impl Sheet {
 mod tests {
     use crate::{
         controller::GridController,
+        test_create_code_table,
         test_util::{
             assert_chart_size, assert_data_table_size, assert_display_cell_value, first_sheet_id,
             test_create_data_table, test_create_html_chart, test_create_js_chart,
@@ -196,25 +198,76 @@ mod tests {
     };
 
     #[test]
-    fn test_insert_column_front_table() {
+    fn test_insert_column_before_table() {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
 
+        test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
+        test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
+
+        gc.insert_column(sheet_id, 1, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_column_after_table() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
+        test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
+
+        gc.insert_column(sheet_id, 10, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_column_front_data_table() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
+        // insert column before the table (which should shift the table over by 1)
         gc.insert_column(sheet_id, 2, true, None);
-        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
-        gc.insert_column(sheet_id, 2, false, None);
-        assert_data_table_size(&gc, sheet_id, pos![C2], 4, 3, false);
-
         gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
+
+        // insert column as the second column (cannot insert the first column except via the table menu)
+        gc.insert_column(sheet_id, 2, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "");
+        assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
+
+        gc.redo(None);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "");
+        assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
     }
 
     #[test]
@@ -282,34 +335,7 @@ mod tests {
     }
 
     #[test]
-    fn test_insert_column_before_table() {
-        let mut gc = GridController::test();
-        let sheet_id = first_sheet_id(&gc);
-
-        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-
-        gc.insert_column(sheet_id, 1, false, None);
-        print_first_sheet!(&gc);
-        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
-
-        gc.undo(None);
-        print_first_sheet!(&gc);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
-
-        gc.insert_column(sheet_id, 1, true, None);
-        print_first_sheet!(&gc);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
-
-        gc.undo(None);
-        print_first_sheet!(&gc);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
-
-        gc.redo(None);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
-    }
-
-    #[test]
-    fn test_insert_column_after_table() {
+    fn test_insert_column_end_of_table() {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
 

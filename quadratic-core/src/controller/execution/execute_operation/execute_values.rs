@@ -1,7 +1,7 @@
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::{Pos, SheetRect};
+use crate::{CellValue, Pos, SheetRect};
 
 impl GridController {
     pub(crate) fn execute_set_cell_values(
@@ -89,29 +89,46 @@ impl GridController {
         }
     }
 
+    /// Moves a cell value from one position on a sheet to another position on the same sheet.
     pub(crate) fn execute_move_cell_value(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::MoveCellValue { from, to } = op {
+        if let Operation::MoveCellValue { sheet_id, from, to } = op {
             let sheet_rect = SheetRect {
-                sheet_id: from.sheet_id,
-                min: from.into(),
-                max: to.into(),
+                sheet_id,
+                min: Pos {
+                    x: from.x.min(to.x),
+                    y: from.y.min(to.y),
+                },
+                max: Pos {
+                    x: from.x.max(to.x),
+                    y: from.y.max(to.y),
+                },
             };
-            if let Some(sheet) = self.grid.try_sheet_mut(from.sheet_id) {
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 sheet.move_cell_value(from.into(), to.into());
                 transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                 transaction
                     .reverse_operations
-                    .push(Operation::MoveCellValue { from: to, to: from });
+                    .push(Operation::MoveCellValue {
+                        sheet_id,
+                        from: to,
+                        to: from,
+                    });
+                if let Some(cell_value) = sheet.cell_value_ref(to.into()) {
+                    if matches!(cell_value, CellValue::Code(_) | CellValue::Import(_)) {
+                        transaction.add_code_cell(sheet_id, to.into());
+                        transaction.add_code_cell(sheet_id, from.into());
+                    }
+                }
             }
             if transaction.is_user() {
-                if let Some(sheet) = self.try_sheet(from.sheet_id) {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
                     let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
                     if !rows.is_empty() {
-                        let resize_rows = transaction.resize_rows.entry(from.sheet_id).or_default();
+                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                         resize_rows.extend(rows);
                     }
                 }
@@ -284,25 +301,18 @@ mod tests {
     fn test_move_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let from_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-        let to_pos = SheetPos {
-            x: 2,
-            y: 2,
-            sheet_id,
-        };
+        let from_pos = Pos { x: 1, y: 1 };
+        let to_pos = Pos { x: 2, y: 2 };
 
         // Set initial value
-        gc.set_cell_value(from_pos, "test".to_string(), None);
+        gc.set_cell_value(from_pos.to_sheet_pos(sheet_id), "test".to_string(), None);
 
         // Verify initial value is set
         assert_display_cell_value(&gc, sheet_id, 1, 1, "test");
 
         // Move the cell value
         let ops = vec![Operation::MoveCellValue {
+            sheet_id,
             from: from_pos,
             to: to_pos,
         }];

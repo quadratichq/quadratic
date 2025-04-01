@@ -26,7 +26,8 @@ impl Sheet {
         // undo is handled by the reverse_operations (we can't rely on the
         // delete tables logic for undo or redo)
         if transaction.is_undo_redo() {
-            return;
+            // in case of undo or redo, we only need to signal the client as to
+            // moved data tables
         }
         let mut dt_to_delete = Vec::new();
 
@@ -249,8 +250,9 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .push(Operation::MoveCellValue {
-                    from: new_pos.to_sheet_pos(self.id),
-                    to: pos.to_sheet_pos(self.id),
+                    sheet_id: self.id,
+                    from: new_pos,
+                    to: pos,
                 });
         }
 
