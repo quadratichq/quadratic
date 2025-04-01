@@ -38,8 +38,8 @@ jest.mock('./src/licenseClient', () => {
 jest.mock('./src/storage/storage', () => {
   return {
     s3Client: {},
-    getFileUrl: jest.fn().mockImplementation(async (str) => str),
-    getPresignedFileUrl: jest.fn().mockImplementation(async (str) => str),
+    getFileUrl: jest.fn().mockImplementation(async (str) => 'https://' + str),
+    getPresignedFileUrl: jest.fn().mockImplementation(async (str) => 'https://' + str),
     uploadFile: jest.fn().mockImplementation(async () => {
       return { bucket: 'test-bucket', key: 'test-key' };
     }),

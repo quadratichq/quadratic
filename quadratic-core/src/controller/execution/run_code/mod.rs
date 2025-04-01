@@ -42,7 +42,7 @@ impl GridController {
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
             let unique_name = unique_data_table_name(
-                &new_data_table.name.to_display(),
+                new_data_table.name(),
                 false,
                 Some(sheet_pos),
                 self.a1_context(),
@@ -88,6 +88,7 @@ impl GridController {
                 .is_some_and(|lang| lang.is_code_language());
 
             new_data_table.alternating_colors = old_data_table.alternating_colors;
+            new_data_table.name = old_data_table.name.to_owned();
 
             // for python dataframes, we don't want preserve the show_columns setting
             // for other data tables types, we want to preserve most settings
@@ -140,6 +141,7 @@ impl GridController {
             if new_data_table.is_html_or_image() {
                 if let Some(chart_output) = old_data_table.chart_output {
                     new_data_table.chart_output = Some(chart_output);
+                    new_data_table.show_ui = old_data_table.show_ui;
                 }
             }
         }
@@ -285,26 +287,12 @@ impl GridController {
                     ));
                 }
 
-                let mut new_data_table = self.js_code_result_to_code_cell_value(
+                let new_data_table = self.js_code_result_to_code_cell_value(
                     transaction,
                     result,
                     current_sheet_pos,
                     language.clone(),
                 );
-
-                // Keep chart_pixel_output and table name consistent if
-                // there already exists a data table at the same position.
-                if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
-                    if let Some((_, existing_data_table)) = sheet
-                        .data_tables
-                        .iter()
-                        .find(|(p, _)| **p == current_sheet_pos.into())
-                    {
-                        // new_data_table.chart_pixel_output = existing_data_table.chart_pixel_output;
-                        new_data_table.name = existing_data_table.name.clone();
-                        new_data_table.show_ui = existing_data_table.show_ui;
-                    }
-                }
 
                 self.finalize_data_table(
                     transaction,
@@ -455,12 +443,11 @@ impl GridController {
                     Value::Single("".into())
                 }
             } else if let Some(output_value) = js_code_result.output_value {
-                let (cell_value, ops) =
-                    CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
-                        .unwrap_or_else(|e| {
-                            dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
-                            (CellValue::Blank, vec![])
-                        });
+                let (cell_value, ops) = CellValue::from_js(output_value, start.into(), sheet)
+                    .unwrap_or_else(|e| {
+                        dbgjs!(format!("Error parsing output value: {}", e));
+                        (CellValue::Blank, vec![])
+                    });
                 transaction.reverse_operations.extend(ops);
                 Value::Single(cell_value)
             } else {
@@ -540,6 +527,7 @@ impl GridController {
 mod test {
 
     use super::*;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
 
@@ -614,7 +602,7 @@ mod test {
         };
         let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table_2",
+            "Table_1",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,
@@ -673,7 +661,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            output_value: Some(vec!["test".into(), "image".into()]),
+            output_value: Some(JsCellValueResult("test".into(), 8)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
@@ -698,7 +686,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((100.0, 100.0)),
                 ..Default::default()
             };
@@ -713,7 +701,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((200.0, 200.0)),
                 ..Default::default()
             };

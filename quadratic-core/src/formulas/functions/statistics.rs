@@ -198,7 +198,9 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use itertools::Itertools;
 
-    use crate::{Pos, a1::A1Context, formulas::tests::*, grid::SheetId};
+    use crate::{
+        Pos, a1::A1Context, controller::GridController, formulas::tests::*, grid::SheetId,
+    };
 
     #[test]
     fn test_formula_average() {
@@ -206,8 +208,9 @@ mod tests {
         let pos = pos![A10].to_sheet_pos(SheetId::TEST);
         let form = parse_formula("AVERAGE(3, A1:C3)", &parse_ctx, pos).unwrap();
 
-        let mut g = Grid::new();
-        let sheet = &mut g.sheets_mut()[0];
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+        let sheet = g.sheet_mut(sheet_id);
         for x in 1..=3 {
             for y in 1..=3 {
                 let _ = sheet.set_cell_value(Pos { x, y }, x * 3 + y);
@@ -238,7 +241,7 @@ mod tests {
         assert_eq!("0", eval_to_string(&g, "AVERAGE(,)"));
 
         // Test with no arguments
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "AVERAGE".into(),
@@ -254,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_averageif() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(0..10, \"<=5\")"));
         assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(0..10, \"<=5\")"));
@@ -262,14 +265,15 @@ mod tests {
         // Blank values are treated as zeros when summing, but *not* when
         // evaluating conditions.
         {
-            let mut g = Grid::new();
-            let sheet = &mut g.sheets_mut()[0];
+            let mut g = GridController::new();
+            let sheet_id = g.sheet_ids()[0];
+            let sheet = &mut g.sheet_mut(sheet_id);
             for y in 1..=11 {
                 let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
             }
             assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(A1:A10, \"<=5\")"));
         }
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(
             "7.5",
             eval_to_string(&g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, A2})"),
@@ -302,8 +306,8 @@ mod tests {
 
     #[test]
     fn test_count() {
-        let g = Grid::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let g = GridController::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNT".into(),
@@ -329,8 +333,8 @@ mod tests {
 
     #[test]
     fn test_counta() {
-        let g = Grid::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let g = GridController::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNTA".into(),
@@ -357,13 +361,14 @@ mod tests {
 
     #[test]
     fn test_countif() {
-        let g: Grid = Grid::new();
+        let g = GridController::new();
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
 
         // Test that blank cells are ignored
-        let mut g = Grid::new();
-        let sheet = &mut g.sheets_mut()[0];
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+        let sheet = &mut g.sheet_mut(sheet_id);
         for y in 1..=11 {
             let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
         }
@@ -372,7 +377,7 @@ mod tests {
 
     #[test]
     fn test_countifs() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNTIFS".into(),
@@ -431,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_countblank() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("1", eval_to_string(&g, "COUNTBLANK(\"\")"));
         assert_eq!("0", eval_to_string(&g, "COUNTBLANK(\"a\")"));
         assert_eq!("0", eval_to_string(&g, "COUNTBLANK(0)"));
@@ -444,19 +449,19 @@ mod tests {
 
     #[test]
     fn test_min() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("1", eval_to_string(&g, "MIN(1, 3, 2)"));
     }
 
     #[test]
     fn test_max() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("3", eval_to_string(&g, "MAX(1, 3, 2)"));
     }
 
     #[test]
     fn test_var() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         // Test basic variance calculation
         assert_eq!("7", eval_to_string(&g, "VAR(9, 5, 4)"));
@@ -464,7 +469,7 @@ mod tests {
 
     #[test]
     fn test_stdev() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         // Test basic standard deviation calculation
         assert_eq!("2", eval_to_string(&g, "STDEV(1, 3, 5)"));

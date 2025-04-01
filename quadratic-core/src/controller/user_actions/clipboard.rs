@@ -153,7 +153,7 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
-    use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
+    use crate::test_util::gc::{assert_code_cell_value, assert_display_cell_value};
     use crate::{
         CellValue, Pos, SheetPos, SheetRect,
         controller::GridController,

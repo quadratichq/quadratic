@@ -15,7 +15,8 @@ use super::*;
 use crate::{
     CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
     a1::{A1Context, CellRefRange, RefRangeBounds, SheetCellRefRange},
-    grid::{Grid, RefAdjust, SheetId},
+    controller::GridController,
+    grid::{RefAdjust, SheetId},
 };
 
 /// Parses a formula.
@@ -28,9 +29,9 @@ pub fn parse_formula(source: &str, ctx: &A1Context, pos: SheetPos) -> CodeResult
 /// Calls `parse_formula()` with an empty context at position A1.
 #[cfg(test)]
 pub fn simple_parse_formula(source: &str) -> CodeResult<ast::Formula> {
-    let g = Grid::new();
-    let pos = g.origin_in_first_sheet();
-    parse_formula(source, &g.a1_context(), pos)
+    let grid_controller = GridController::new();
+    let pos = grid_controller.grid().origin_in_first_sheet();
+    parse_formula(source, grid_controller.a1_context(), pos)
 }
 
 fn parse_exactly_one<R: SyntaxRule>(
@@ -84,8 +85,8 @@ pub fn parse_and_check_formula(formula_string: &str, ctx: &A1Context, pos: Sheet
     // do not have the actual Grid when running this formula in RustClient.)
     match parse_formula(formula_string, ctx, pos) {
         Ok(parsed) => {
-            let grid = Grid::new();
-            let mut ctx = Ctx::new_for_syntax_check(&grid);
+            let grid_controller = GridController::new();
+            let mut ctx = Ctx::new_for_syntax_check(&grid_controller);
             parsed.eval(&mut ctx).into_non_error_value().is_ok()
         }
         Err(_) => false,
@@ -103,10 +104,10 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, controller::GridController, grid::SheetId};
 ///
-/// let g = Grid::new();
-/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
+/// let g = GridController::new();
+/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
 /// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
 /// ```
@@ -123,11 +124,11 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, controller::GridController, grid::SheetId};
 ///
-/// let g = Grid::new();
-/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
-/// let replaced = convert_a1_to_rc("SUM(B$3)", &g.a1_context(), pos);
+/// let g = GridController::new();
+/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
+/// let replaced = convert_a1_to_rc("SUM(B$3)", g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
 #[must_use = "this method returns a new value instead of modifying its input"]

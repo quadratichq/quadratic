@@ -24,7 +24,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let cell_ref = SheetCellRefRange::parse_at(
                     &cellref_string.inner,
                     ctx.sheet_pos,
-                    &ctx.grid.a1_context(),
+                    ctx.grid_controller.a1_context(),
                 )
                 .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
                 let sheet_rect = ctx.resolve_range_ref(&cell_ref, span)?.inner;
@@ -641,7 +641,7 @@ mod tests {
     use lazy_static::lazy_static;
     use smallvec::smallvec;
 
-    use crate::{Pos, formulas::tests::*};
+    use crate::{Pos, controller::GridController, formulas::tests::*};
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -673,12 +673,13 @@ mod tests {
 
     #[test]
     fn test_formula_indirect() {
-        let mut g = Grid::new();
-        let ctx = g.a1_context();
-        let sheet = &mut g.sheets_mut()[0];
-        let pos = pos![B2].to_sheet_pos(sheet.id);
-        let form = parse_formula("INDIRECT(\"D5\")", &ctx, pos).unwrap();
+        let mut g = GridController::new();
+        let ctx: &crate::a1::A1Context = g.a1_context();
+        let sheet_id = g.sheet_ids()[0];
+        let pos = pos![B2].to_sheet_pos(sheet_id);
+        let form = parse_formula("INDIRECT(\"D5\")", ctx, pos).unwrap();
 
+        let sheet = g.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(pos![D5], 35);
         let _ = sheet.set_cell_value(pos![D6], 36);
         let _ = sheet.set_cell_value(pos![D7], 37);
@@ -702,7 +703,7 @@ mod tests {
     fn test_vlookup_errors() {
         // Test using numbers ...
         let array = &*NUMBERS_LOOKUP_ARRAY;
-        let g = Grid::from_array(pos![A1], array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], array), 0);
 
         // Test no match (value missing)
         for col in 1..=3 {
@@ -728,7 +729,7 @@ mod tests {
 
         // Test using strings ...
         let array = &*STRINGS_LOOKUP_ARRAY;
-        let g = Grid::from_array(pos![A1], array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], array), 0);
 
         // Test no match
         for word in ["aardvark", "crackers", "zebra"] {
@@ -748,7 +749,7 @@ mod tests {
     fn test_vlookup() {
         // Test exact match (unsorted)
         let array = &*MIXED_LOOKUP_ARRAY;
-        let g = Grid::from_array(pos![A1], array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], array), 0);
         for is_sorted in ["", ", FALSE"] {
             for row in array.clone().rows() {
                 let s = row[0].repr();
@@ -767,7 +768,7 @@ mod tests {
 
         // Test exact match (sorted)
         let array = &*STRINGS_LOOKUP_ARRAY;
-        let g = Grid::from_array(pos![A1], array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], array), 0);
         for row in array.clone().rows() {
             let s = row[0].repr();
             // should be case-insensitive
@@ -786,7 +787,10 @@ mod tests {
     /// Test that VLOOKUP ignores error values.
     #[test]
     fn test_vlookup_ignore_errors() {
-        let g = Grid::from_array(pos![A1], &array!["a", 10; 1.0 / 0.0, 20; "b", 30]);
+        let g = GridController::from_grid(
+            Grid::from_array(pos![A1], &array!["a", 10; 1.0 / 0.0, 20; "b", 30]),
+            0,
+        );
         assert_eq!("10", eval_to_string(&g, "VLOOKUP(\"a\", A1:B3, 2)"));
         assert_eq!("30", eval_to_string(&g, "VLOOKUP(\"b\", A1:B3, 2)"));
     }
@@ -797,7 +801,7 @@ mod tests {
         // Test using numbers ...
         let transposed_array = &*NUMBERS_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = Grid::from_array(pos![A1], &array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &array), 0);
 
         // Test no match (value missing)
         for row in 1..=3 {
@@ -824,7 +828,7 @@ mod tests {
         // Test using strings ...
         let transposed_array = &*STRINGS_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = Grid::from_array(pos![A1], &array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &array), 0);
 
         // Test no match
         for word in ["aardvark", "crackers", "zebra"] {
@@ -845,7 +849,7 @@ mod tests {
         // Test exact match (unsorted)
         let transposed_array = &*MIXED_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = Grid::from_array(pos![A1], &array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &array), 0);
         for is_sorted in ["", ", FALSE"] {
             for col in transposed_array.clone().rows() {
                 let s = col[0].repr();
@@ -863,7 +867,7 @@ mod tests {
         // Test exact match (sorted)
         let transposed_array = &*STRINGS_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = Grid::from_array(pos![A1], &array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &array), 0);
         for col in transposed_array.clone().rows() {
             let s = col[0].repr();
             // should be case-insensitive
@@ -881,7 +885,7 @@ mod tests {
     #[test]
     fn test_xlookup_validation() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
-        let g = Grid::from_array(pos![A1], array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], array), 0);
 
         const EXPECTED_NUMBER_ERR: RunErrorMsg = RunErrorMsg::Expected {
             expected: Cow::Borrowed("number"),
@@ -968,8 +972,9 @@ mod tests {
         ) {
             let w = array.width() as i64;
             let h = array.height() as i64;
-            let grid_vlookup = Grid::from_array(pos![A1], array);
-            let grid_hlookup = Grid::from_array(pos![A1], &array.transpose());
+            let grid_vlookup = GridController::from_grid(Grid::from_array(pos![A1], array), 0);
+            let grid_hlookup =
+                GridController::from_grid(Grid::from_array(pos![A1], &array.transpose()), 0);
 
             for &col in columns_to_search {
                 for if_not_found in [CellValue::Blank, "default-value".into()] {
@@ -1066,14 +1071,17 @@ mod tests {
 
         // Test that forward and reverse linear search are capable of giving
         // different results
-        let g = Grid::from_array(
-            pos![A1],
-            &array![
-                1, "a";
-                2, "b";
-                1, "c";
-                3, "d";
-            ],
+        let g = GridController::from_grid(
+            Grid::from_array(
+                pos![A1],
+                &array![
+                    1, "a";
+                    2, "b";
+                    1, "c";
+                    3, "d";
+                ],
+            ),
+            0,
         );
         expect_val(
             Array::from(CellValue::from("a")),
@@ -1090,9 +1098,14 @@ mod tests {
     /// Tests XLOOKUP's various match modes.
     #[test]
     fn test_xlookup_match_modes() {
-        let numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY);
-        let rev_numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY.flip_vertically());
-        let mixed_grid = Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY);
+        let numbers_grid =
+            GridController::from_grid(Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY), 0);
+        let rev_numbers_grid = GridController::from_grid(
+            Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY.flip_vertically()),
+            0,
+        );
+        let mixed_grid =
+            GridController::from_grid(Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY), 0);
 
         // Get array heights
         let numbers_h = NUMBERS_LOOKUP_ARRAY.height();
@@ -1147,7 +1160,7 @@ mod tests {
         test_xlookup_comparison_match("{x, x, x}", "9999", 1);
 
         // Test wildcard search
-        let g = Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY), 0);
         assert_eq!(
             "{bread}",
             eval_to_string(&g, "XLOOKUP('b*', A1:A20, A1:A20,, 2)"),
@@ -1177,7 +1190,7 @@ mod tests {
     #[test]
     fn test_xlookup_zip_map() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
-        let g = Grid::from_array(pos![A1], array);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], array), 0);
 
         let formula = "XLOOKUP({1, 2, 3; 4, 50, 100}, A1:A4, A1:C4, {'a', 'b', 'c'})";
         assert_eq!(
@@ -1203,8 +1216,9 @@ mod tests {
 
     #[test]
     fn test_xlookup() {
-        let mut g = Grid::new();
-        let sheet = &mut g.sheets_mut()[0];
+        let mut g = GridController::from_grid(Grid::new(), 0);
+        let sheet_id = g.sheet_ids()[0];
+        let sheet = g.sheet_mut(sheet_id);
         for y in 1..=6 {
             let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
             let _ = sheet.set_cell_value(Pos { x: 2, y }, format!("cell #{y}"));
@@ -1221,8 +1235,9 @@ mod tests {
 
     #[test]
     fn test_match() {
-        let mut g = Grid::test();
-        let sheet = &mut g.sheets_mut()[0];
+        let mut g = GridController::from_grid(Grid::test(), 0);
+        let sheet_id = g.sheet_ids()[0];
+        let sheet = g.sheet_mut(sheet_id);
 
         // Produce the following grid:
         // 11 21 31 41 51 61
@@ -1304,27 +1319,29 @@ mod tests {
         let source_array = array![
             65373.84, 41042.03, 29910.73, 31197.02, 67365.77, 31496.82, 78505.27, 38149.34
         ];
-        let g = Grid::from_array(pos![C1], &source_array);
+        let g = GridController::from_grid(Grid::from_array(pos![C1], &source_array), 0);
         assert_eq!(eval_to_string(&g, "=MATCH(MAX(C1:J1), C1:J1, 0)"), "7");
         // with `MAX` (vertical)
-        let g = Grid::from_array(pos![C1], &source_array.transpose());
+        let g = GridController::from_grid(Grid::from_array(pos![C1], &source_array.transpose()), 0);
         assert_eq!(eval_to_string(&g, "=MATCH(MAX(C1:C8), C1:C8, 0)"), "7");
     }
 
     #[test]
     fn test_index() {
-        let mut g = Grid::new();
+        let mut g = GridController::from_grid(Grid::new(), 0);
 
         let s = "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)";
         assert_check_syntax_succeeds(&g, s);
         assert_eq!("3", eval_to_string(&g, s));
 
-        g.sheets_mut()[0].set_cell_value(pos![A42], "funny number");
+        let sheet_id = g.sheet_ids()[0];
+        g.sheet_mut(sheet_id)
+            .set_cell_value(pos![A42], "funny number");
         let s = "INDEX(A1:A100, 42)";
         assert_check_syntax_succeeds(&g, s);
         assert_eq!("funny number", eval_to_string(&g, s));
 
-        g.sheets_mut()[0].set_cell_value(pos![L6], "twelfth");
+        g.sheet_mut(sheet_id).set_cell_value(pos![L6], "twelfth");
         let s = "INDEX((A6:Q6), 12)"; // parens are ok
         assert_check_syntax_succeeds(&g, s);
         assert_eq!("twelfth", eval_to_string(&g, s));
@@ -1340,36 +1357,36 @@ mod tests {
 
         let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
         assert_check_syntax_succeeds(&g, s);
-        g.sheets_mut()[0].set_cell_value(pos![A5], "aaa");
-        g.sheets_mut()[0].set_cell_value(pos![C5], "ccc");
-        g.sheets_mut()[0].set_cell_value(pos![D5], "ddd");
-        g.sheets_mut()[0].set_cell_value(pos![C6], 1);
+        g.sheet_mut(sheet_id).set_cell_value(pos![A5], "aaa");
+        g.sheet_mut(sheet_id).set_cell_value(pos![C5], "ccc");
+        g.sheet_mut(sheet_id).set_cell_value(pos![D5], "ddd");
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 1);
         assert_eq!("aaa", eval_to_string(&g, s));
-        g.sheets_mut()[0].set_cell_value(pos![C6], 2);
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 2);
         assert_eq!("ccc", eval_to_string(&g, s));
-        g.sheets_mut()[0].set_cell_value(pos![C6], 3);
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 3);
         assert_eq!("ddd", eval_to_string(&g, s));
-        g.sheets_mut()[0].set_cell_value(pos![C6], 4);
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 4);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.sheets_mut()[0].set_cell_value(pos![C6], -1);
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], -1);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.sheets_mut()[0].set_cell_value(pos![C6], i64::MAX);
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], i64::MAX);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.sheets_mut()[0].set_cell_value(pos![C6], i64::MIN);
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], i64::MIN);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
 
         let s = "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)";
         assert_check_syntax_succeeds(&g, s);
-        g.sheets_mut()[0].set_cell_value(pos![A2], 12);
-        g.sheets_mut()[0].set_cell_value(pos![L3], "l3");
-        g.sheets_mut()[0].set_cell_value(pos![L4], "l4");
-        g.sheets_mut()[0].set_cell_value(pos![L5], "l5");
-        g.sheets_mut()[0].set_cell_value(pos![L6], "l6");
+        g.sheet_mut(sheet_id).set_cell_value(pos![A2], 12);
+        g.sheet_mut(sheet_id).set_cell_value(pos![L3], "l3");
+        g.sheet_mut(sheet_id).set_cell_value(pos![L4], "l4");
+        g.sheet_mut(sheet_id).set_cell_value(pos![L5], "l5");
+        g.sheet_mut(sheet_id).set_cell_value(pos![L6], "l6");
         assert_eq!("{l3; l4; l5; l6}", eval_to_string(&g, s));
 
         let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)";
         assert_check_syntax_succeeds(&g, s);
-        g.sheets_mut()[0].set_cell_value(pos![C6], "2");
+        g.sheet_mut(sheet_id).set_cell_value(pos![C6], "2");
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
 
         let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";

@@ -1,6 +1,6 @@
 // Converts
 
-import type { JsCodeResult } from '@/app/quadratic-core-types';
+import type { JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import {
   javascriptConvertOutputArray,
@@ -44,10 +44,10 @@ export function javascriptResults(
   const codeResult: JsCodeResult = {
     transaction_id: transactionId,
     success: true,
-    output_value: outputType?.output ? outputType.output : null,
+    output_value: outputType?.output ? (outputType.output as any as JsCellValueResult) : null,
     std_out: (consoleOutput ? consoleOutput : '') + (message.length ? message.join('\n') : ''),
     std_err: null,
-    output_array: outputArray ? outputArray.output : null,
+    output_array: outputArray ? (outputArray.output as any as JsCellValueResult[][]) : null,
 
     // lineNumber is tricky because of the hacky way we count it. A return on line 0
     // will never increment the line number, which is why we have to increment it.
