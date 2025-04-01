@@ -29,6 +29,7 @@ export const useSaveAndRunCell = () => {
           cursor: sheets.getCursorPosition(),
         });
 
+        set(codeEditorEditorContentAtom, editorContent ?? '');
         set(codeEditorDiffEditorContentAtom, undefined);
 
         mixpanel.track('[CodeEditor].cellRun', {
