@@ -200,11 +200,7 @@ impl Sheet {
     /// current input value.
     pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
         let mut text = vec![];
-        if let Ok(data_table_pos) = self.first_data_table_within(pos) {
-            let Some(data_table) = self.data_tables.get(&data_table_pos) else {
-                return text;
-            };
-
+        if let Some((data_table_pos, data_table)) = self.data_table_that_contains(&pos) {
             let Ok(display_column_index) = u32::try_from(pos.x - data_table_pos.x) else {
                 return text;
             };
@@ -232,7 +228,7 @@ impl Sheet {
                     text.push(cell.to_string());
                 }
             }
-        } else if let Some(column) = self.columns.get(&pos.x) {
+        } else if let Some(column) = self.columns.get_column(pos.x) {
             // walk forwards
             let mut y = pos.y + 1;
             while let Some(CellValue::Text(t)) = column.values.get(&y) {
@@ -720,7 +716,7 @@ mod test {
         assert!(!neighbors.contains(&"hello".to_string()));
 
         // hide first column
-        let data_table = sheet.data_table_mut(pos).unwrap();
+        let data_table = sheet.data_table_mut_at(&pos).unwrap();
         let column_headers = data_table.column_headers.as_mut().unwrap();
         column_headers[0].display = false;
 

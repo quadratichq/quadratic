@@ -24,9 +24,13 @@ use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsHashRenderCells;
+use quadratic_core::grid::js_types::JsHashValidationWarnings;
+use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
 use quadratic_core::grid::js_types::JsTablesContext;
+use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosContext, JsClipboard, JsCodeCell,
     JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
@@ -139,7 +143,10 @@ fn main() {
         JsDataTableContext,
         JsFormulaParseResult,
         JsCellsA1Value,
+        JsHashesDirty,
+        JsHashRenderCells,
         JsHtmlOutput,
+        JsHashValidationWarnings,
         JsNumber,
         JsOffset,
         JsRenderCell,
@@ -156,6 +163,7 @@ fn main() {
         JsSummarizeSelectionResult,
         JsTableInfo,
         JsTablesContext,
+        JsUpdateCodeCell,
         JsValidationWarning,
         MinMax,
         NumberRange,

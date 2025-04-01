@@ -240,18 +240,16 @@ impl GridController {
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
                 let mut can_delete_column = false;
 
-                if let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) {
-                    if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
+                if let Ok(data_table_pos) = sheet.data_table_pos_that_contains(&sheet_pos.into()) {
+                    if let Some(data_table) = sheet.data_table_at(&data_table_pos) {
                         let mut data_table_rect =
                             data_table.output_rect(data_table_pos.to_owned(), false);
                         data_table_rect.min.y += data_table.y_adjustment(true);
 
                         let is_full_table_selected = rect.contains_rect(&data_table_rect);
                         let can_delete_table = is_full_table_selected || data_table.readonly;
-                        let table_column_selection = selection.table_column_selection(
-                            data_table.name(),
-                            self.a1_context(),
-                        );
+                        let table_column_selection =
+                            selection.table_column_selection(data_table.name(), self.a1_context());
                         can_delete_column = !is_full_table_selected
                             && table_column_selection.is_some()
                             && !data_table.readonly;

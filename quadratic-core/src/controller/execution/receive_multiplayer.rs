@@ -1070,13 +1070,8 @@ mod tests {
             "3".to_string(),
             None,
         );
-        let find_index = |sheet: &Sheet, x: i64, y: i64| {
-            sheet
-                .data_tables
-                .iter()
-                .position(|(code_pos, _)| *code_pos == Pos { x, y })
-                .unwrap()
-        };
+        let find_index =
+            |sheet: &Sheet, x: i64, y: i64| sheet.data_tables.get_index_of(&Pos { x, y }).unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 0, 0), 0);
         assert_eq!(find_index(sheet, 1, 0), 1);

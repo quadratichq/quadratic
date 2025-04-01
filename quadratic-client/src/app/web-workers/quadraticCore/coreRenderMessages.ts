@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
+import type { JsOffset, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';
@@ -24,7 +24,7 @@ export interface RenderCoreResponseRowHeights {
 export interface CoreRenderCells {
   type: 'coreRenderRenderCells';
   id: number;
-  cells: JsRenderCell[];
+  data: Uint8Array | undefined;
 }
 
 export type SheetRenderMetadata = {
@@ -37,12 +37,14 @@ export interface CoreRenderSheetInfo {
   sheetInfo: SheetInfo[];
 }
 
-export interface CoreRenderCompleteRenderCells {
-  type: 'coreRenderCompleteRenderCells';
-  sheetId: string;
-  hashX: number;
-  hashY: number;
-  renderCells: JsRenderCell[];
+export interface CoreRenderHashRenderCells {
+  type: 'coreRenderHashRenderCells';
+  hashRenderCells: Uint8Array;
+}
+
+export interface CoreRenderHashesDirty {
+  type: 'coreRenderHashesDirty';
+  dirtyHashes: Uint8Array;
 }
 
 export interface CoreRenderAddSheet {
@@ -78,12 +80,6 @@ export interface CoreRenderRequestRowHeights {
   rows: string;
 }
 
-export interface CoreRenderHashesDirty {
-  type: 'coreRenderHashesDirty';
-  sheetId: string;
-  hashes: string;
-}
-
 export interface CoreRenderViewportBuffer {
   type: 'coreRenderViewportBuffer';
   buffer: SharedArrayBuffer;
@@ -104,14 +100,14 @@ export interface CoreRenderTransactionEnd {
 export type CoreRenderMessage =
   | CoreRenderCells
   | CoreRenderSheetInfo
-  | CoreRenderCompleteRenderCells
+  | CoreRenderHashRenderCells
+  | CoreRenderHashesDirty
   | CoreRenderAddSheet
   | CoreRenderDeleteSheet
   | CoreRenderSheetOffsets
   | CoreRenderSheetInfoUpdate
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
-  | CoreRenderHashesDirty
   | CoreRenderViewportBuffer
   | CoreRenderTransactionStart
   | CoreRenderTransactionEnd;

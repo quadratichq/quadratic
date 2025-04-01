@@ -337,7 +337,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove column 2
         gc.start_user_transaction(
@@ -375,7 +375,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -401,7 +401,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -416,7 +416,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 
     #[test]
@@ -491,7 +491,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove row 2
         gc.start_user_transaction(
@@ -526,7 +526,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -552,7 +552,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -567,7 +567,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 
     #[test]
@@ -703,7 +703,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 
     #[test]
@@ -766,7 +766,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         // insert row 2
         gc.start_user_transaction(
@@ -840,6 +840,6 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 }

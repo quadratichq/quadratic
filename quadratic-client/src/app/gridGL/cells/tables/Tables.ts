@@ -12,7 +12,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point } from 'pixi.js';
 import { Container, Rectangle } from 'pixi.js';
@@ -51,7 +51,7 @@ export class Tables extends Container<Table> {
     this.hoverTableHeaders = new Container();
 
     events.on('renderCodeCells', this.renderCodeCells);
-    events.on('updateCodeCell', this.updateCodeCell);
+    events.on('updateCodeCells', this.updateCodeCells);
 
     events.on('cursorPosition', this.cursorPosition);
     events.on('sheetOffsets', this.sheetOffsets);
@@ -65,7 +65,7 @@ export class Tables extends Container<Table> {
 
   destroy() {
     events.off('renderCodeCells', this.renderCodeCells);
-    events.off('updateCodeCell', this.updateCodeCell);
+    events.off('updateCodeCells', this.updateCodeCells);
 
     events.off('cursorPosition', this.cursorPosition);
     events.off('sheetOffsets', this.sheetOffsets);
@@ -117,32 +117,30 @@ export class Tables extends Container<Table> {
     return sheet;
   }
 
-  private updateCodeCell = (args: {
-    sheetId: string;
-    x: number;
-    y: number;
-    codeCell?: JsCodeCell;
-    renderCodeCell?: JsRenderCodeCell;
-  }) => {
-    const { sheetId, x, y, renderCodeCell } = args;
-    if (sheetId === this.cellsSheet.sheetId) {
-      const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-      if (table) {
-        if (!renderCodeCell) {
-          pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
-          this.removeChild(table);
-          table.destroy();
-        } else {
-          table.updateCodeCell(renderCodeCell);
-          if (this.isActive(table)) {
-            table.showActive();
+  private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
+    updateCodeCells
+      .filter((updateCodeCell) => updateCodeCell.sheet_id.id === this.cellsSheet.sheetId)
+      .forEach((updateCodeCell) => {
+        const { pos, render_code_cell } = updateCodeCell;
+        const x = Number(pos.x);
+        const y = Number(pos.y);
+        const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+        if (table) {
+          if (!render_code_cell) {
+            pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
+            this.removeChild(table);
+            table.destroy();
+          } else {
+            table.updateCodeCell(render_code_cell);
+            if (this.isActive(table)) {
+              table.showActive();
+            }
           }
+        } else if (render_code_cell) {
+          this.addChild(new Table(this.sheet, render_code_cell));
         }
-      } else if (renderCodeCell) {
-        this.addChild(new Table(this.sheet, renderCodeCell));
-      }
-      pixiApp.setViewportDirty();
-    }
+        pixiApp.setViewportDirty();
+      });
   };
 
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {

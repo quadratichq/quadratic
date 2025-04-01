@@ -9,14 +9,10 @@ use crate::{
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
     },
-    wasm_bindings::js::jsClientMessage,
 };
 
 use anyhow::{Result, anyhow, bail};
-use indexmap::{
-    IndexMap,
-    map::{Entry, OccupiedEntry},
-};
+use indexmap::IndexMap;
 
 impl Sheet {
     /// Sets or deletes a data table.
@@ -25,15 +21,15 @@ impl Sheet {
     #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
         if let Some(data_table) = data_table {
-            self.data_tables.insert_sorted(pos, data_table).1
+            self.data_tables.insert_full(&pos, data_table).1
         } else {
             self.data_tables.shift_remove(&pos)
         }
     }
 
     /// Returns a DataTable at a Pos
-    pub fn data_table(&self, pos: Pos) -> Option<&DataTable> {
-        self.data_tables.get(&pos)
+    pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
+        self.data_tables.get_at(pos)
     }
 
     /// Returns a DataTable by name
@@ -43,113 +39,71 @@ impl Sheet {
             .find(|(_, data_table)| *data_table.name() == name)
     }
 
+    /// Returns the (Pos, DataTable) that intersects a position
+    pub fn data_table_that_contains(&self, pos: &Pos) -> Option<(Pos, &DataTable)> {
+        self.data_tables.get_contains(pos)
+    }
+
+    /// Returns the (Pos, DataTable) that intersects a position
+    pub fn data_table_mut_that_contains(&mut self, pos: &Pos) -> Option<(Pos, &mut DataTable)> {
+        self.data_tables.get_mut_contains(pos)
+    }
+
+    /// Returns the data table pos of the data table that contains a position
+    pub fn data_table_pos_that_contains(&self, pos: &Pos) -> Result<Pos> {
+        if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
+            Ok(data_table_pos)
+        } else {
+            bail!(
+                "No data tables found within {:?} in data_table_pos_that_contains()",
+                pos
+            )
+        }
+    }
+
+    /// Returns true if there is a data table within a rect
+    pub fn data_tables_pos_intersect_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.data_tables.get_pos_in_rect(rect)
+    }
+
+    /// Returns true if there is a data table within a rect
+    pub fn data_tables_intersect_rect(
+        &self,
+        rect: Rect,
+    ) -> impl Iterator<Item = (Pos, &DataTable)> {
+        self.data_tables.get_in_rect(rect)
+    }
+
+    /// Returns true if there is a data table within a rect
+    pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
+        if let Some(skip) = skip {
+            self.data_tables
+                .get_pos_in_rect(rect)
+                .filter(|pos| pos != skip)
+                .count()
+                > 0
+        } else {
+            self.data_tables.get_pos_in_rect(rect).count() > 0
+        }
+    }
+
     /// Returns a DataTable at a Pos as a result
-    pub fn data_table_result(&self, pos: Pos) -> Result<&DataTable> {
-        self.data_tables
-            .get(&pos)
+    pub fn data_table_result(&self, pos: &Pos) -> Result<&DataTable> {
+        self.data_table_at(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_result()", pos))
     }
 
     /// Returns a mutable DataTable at a Pos
-    pub fn data_table_mut(&mut self, pos: Pos) -> Result<&mut DataTable> {
+    pub fn data_table_mut_at(&mut self, pos: &Pos) -> Result<&mut DataTable> {
         self.data_tables
-            .get_mut(&pos)
+            .get_mut_at(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_mut()", pos))
-    }
-
-    /// Returns a DataTable entry at a Pos for in-place manipulation
-    pub fn data_table_entry(&mut self, pos: Pos) -> Result<OccupiedEntry<'_, Pos, DataTable>> {
-        let entry = self.data_tables.entry(pos);
-
-        match entry {
-            Entry::Occupied(entry) => Ok(entry),
-            Entry::Vacant(_) => bail!("Data table not found at {:?} in data_table_entry()", pos),
-        }
     }
 
     pub fn delete_data_table(&mut self, pos: Pos) -> Result<DataTable> {
         self.data_tables
             .shift_remove(&pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
-    }
-
-    /// Returns all data tables within a position
-    ///
-    /// TODO(ddimaria): make this more efficient
-    pub fn data_tables_within(&self, pos: Pos) -> Result<Vec<Pos>> {
-        let data_tables = self
-            .data_tables
-            .iter()
-            .filter_map(|(data_table_pos, data_table)| {
-                data_table
-                    .output_rect(*data_table_pos, false)
-                    .contains(pos)
-                    .then_some(*data_table_pos)
-            })
-            .collect();
-
-        Ok(data_tables)
-    }
-
-    /// Returns all data tables within a rect.
-    /// Partial intersection is also considered a match.
-    /// Stops at the first data table if stop_at_first is true.
-    ///
-    /// TODO(ddimaria): make this more efficient
-    pub fn data_tables_within_rect(&self, rect: Rect, stop_at_first: bool) -> Result<Vec<Pos>> {
-        let mut found = false;
-        let data_tables = self
-            .data_tables
-            .iter()
-            .filter_map(|(data_table_pos, data_table)| {
-                if found && stop_at_first {
-                    return None;
-                }
-
-                let output = data_table
-                    .output_rect(*data_table_pos, false)
-                    .intersects(rect)
-                    .then_some(*data_table_pos);
-
-                found = found || output.is_some();
-
-                output
-            })
-            .collect();
-
-        Ok(data_tables)
-    }
-
-    /// Returns true if there is a data table within a rect
-    pub fn contains_data_table_within_rect(&self, rect: Rect) -> bool {
-        self.data_tables_within_rect(rect, true)
-            .map(|data_tables| !data_tables.is_empty())
-            .unwrap_or(false)
-    }
-
-    /// Returns the first data table within a position
-    pub fn first_data_table_within(&self, pos: Pos) -> Result<Pos> {
-        let data_tables = self.data_tables_within(pos)?;
-
-        match data_tables.first() {
-            Some(pos) => Ok(*pos),
-            None => bail!(
-                "No data tables found within {:?} in first_data_table_within()",
-                pos
-            ),
-        }
-    }
-
-    /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_at(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
-        self.data_tables
-            .iter()
-            .find_map(|(data_table_pos, data_table)| {
-                data_table
-                    .output_rect(*data_table_pos, false)
-                    .contains(pos)
-                    .then_some((*data_table_pos, data_table))
-            })
     }
 
     /// Checks whether a chart intersects a position. We ignore the chart if it
@@ -161,13 +115,13 @@ impl Sheet {
         exclude_x: Option<i64>,
         exclude_y: Option<i64>,
     ) -> bool {
-        self.data_tables.iter().any(|(data_table_pos, data_table)| {
-            // we only care about html or image tables
-            if !data_table.is_html_or_image() {
-                return false;
-            }
-            let output_rect = data_table.output_rect(*data_table_pos, false);
-            if output_rect.contains(Pos { x, y }) {
+        self.data_table_that_contains(&Pos { x, y })
+            .is_some_and(|(data_table_pos, data_table)| {
+                // we only care about html or image tables
+                if !data_table.is_html_or_image() {
+                    return false;
+                }
+                let output_rect = data_table.output_rect(data_table_pos, false);
                 if let Some(exclude_x) = exclude_x {
                     if exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
                         return false;
@@ -179,18 +133,18 @@ impl Sheet {
                     }
                 }
                 true
-            } else {
-                false
-            }
-        })
+            })
     }
 
     /// Calls a function to mutate all code cells.
     pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
-        let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
+        let positions = self
+            .data_tables
+            .iter()
+            .map(|(pos, _)| pos.to_owned())
+            .collect::<Vec<_>>();
         let sheet_id = self.id;
-
-        for pos in positions {
+        for pos in positions.into_iter() {
             if let Some(cell_value) = self.cell_value_mut(pos) {
                 if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
                     func(code_cell_value, pos.to_sheet_pos(sheet_id));
@@ -302,7 +256,7 @@ impl Sheet {
         data_table_pos: Pos,
         format_update: FormatUpdate,
     ) -> Result<SheetFormatUpdates> {
-        let data_table = self.data_table_result(data_table_pos)?;
+        let data_table = self.data_table_result(&data_table_pos)?;
 
         Ok(SheetFormatUpdates::from_selection(
             &A1Selection::from_xy(
@@ -352,7 +306,7 @@ impl Sheet {
                 }
 
                 if self
-                    .data_table(data_table_left.min)
+                    .data_table_at(&data_table_left.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
                         if data_table.readonly {
@@ -384,7 +338,7 @@ impl Sheet {
                     let mut column_index = data_table_left.width();
 
                     // the column index is the display index, not the actual index, we need to convert it to the actual index
-                    if let Ok(data_table) = self.data_table_result(data_table_left.min) {
+                    if let Ok(data_table) = self.data_table_result(&data_table_left.min) {
                         column_index =
                             data_table.get_column_index_from_display_index(column_index, true);
                     }
@@ -416,7 +370,7 @@ impl Sheet {
                 }
 
                 if self
-                    .data_table(data_table_above.min)
+                    .data_table_at(&data_table_above.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
                         if data_table.readonly {
@@ -448,7 +402,7 @@ impl Sheet {
 
     /// Returns the code language at a pos
     pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
-        self.data_table(pos)
+        self.data_table_at(&pos)
             .and_then(|data_table| self.get_table_language(pos, data_table))
     }
 
@@ -461,7 +415,7 @@ impl Sheet {
     /// Returns true if the cell at pos is a source cell
     /// If the show_name=false and show_columns=false, it cannot be the source cell
     pub fn is_source_cell(&self, pos: Pos) -> bool {
-        self.data_table(pos)
+        self.data_table_at(&pos)
             .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
     }
 
@@ -469,11 +423,14 @@ impl Sheet {
     /// Deny the action and give a popup explaining why it was blocked.
     /// Returns true if the data table is not within the rect
     pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
-        let contains_data_table = self.contains_data_table_within_rect(rect);
+        let contains_data_table = self.contains_data_table_within_rect(rect, None);
 
-        if contains_data_table {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && contains_data_table {
             let message = "Tables cannot be created over tables, code, or formulas.";
-            jsClientMessage(message.to_owned(), JsSnackbarSeverity::Error.to_string());
+            crate::wasm_bindings::js::jsClientMessage(
+                message.to_owned(),
+                JsSnackbarSeverity::Error.to_string(),
+            );
         }
 
         !contains_data_table
@@ -546,8 +503,8 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
 
         assert_eq!(old, None);
-        assert_eq!(sheet.data_table(pos![A1]), Some(&data_table));
-        assert_eq!(sheet.data_table(pos![B2]), None);
+        assert_eq!(sheet.data_table_at(&pos![A1]), Some(&data_table));
+        assert_eq!(sheet.data_table_at(&pos![B2]), None);
     }
 
     #[test]
@@ -559,14 +516,14 @@ mod test {
             sheet.get_code_cell_value(pos![A1]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
-        assert_eq!(sheet.data_table(pos![A1]), Some(&data_table));
-        assert_eq!(sheet.data_table(pos![B2]), None);
+        assert_eq!(sheet.data_table_at(&pos![A1]), Some(&data_table));
+        assert_eq!(sheet.data_table_at(&pos![B2]), None);
     }
 
     #[test]
     fn test_copy_data_table_to_clipboard() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
 
         data_table.chart_pixel_output = Some((100.0, 100.0));
 
@@ -589,7 +546,7 @@ mod test {
         println!(
             "data_table : {:?}",
             gc.sheet_mut(sheet_id)
-                .data_table(Pos::new(10, 10))
+                .data_table_at(&Pos::new(10, 10))
                 .unwrap()
                 .chart_pixel_output
         );
@@ -605,15 +562,15 @@ mod test {
         let _ = code_data_table(sheet, pos![A1]);
 
         // Test position within the data table
-        let result = sheet.data_table_at(pos![A1]);
+        let result = sheet.data_table_that_contains(&pos![A1]);
         assert!(result.is_some());
 
         let (pos, dt) = result.unwrap();
         assert_eq!(pos, pos![A1]);
-        assert_eq!(dt.name.to_display(), "Table 1");
+        assert_eq!(dt.name().to_owned(), "Table 1");
 
         // Test position outside the data table
-        assert!(sheet.data_table_at(pos![D4]).is_none());
+        assert!(sheet.data_table_that_contains(&pos![D4]).is_none());
     }
 
     #[test]

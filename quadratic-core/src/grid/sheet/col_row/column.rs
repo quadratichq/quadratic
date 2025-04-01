@@ -1,6 +1,6 @@
 use crate::{
-    CopyFormats, Pos, SheetPos,
-    a1::A1Context,
+    CopyFormats, Pos, Rect, SheetPos,
+    a1::{A1Context, UNBOUNDED},
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -22,7 +22,7 @@ impl Sheet {
                 let current_max = (current_min + MAX_OPERATION_SIZE_COL_ROW).min(max);
                 let mut values = CellValues::new(1, (current_max - current_min) as u32 + 1);
 
-                if let Some(col) = self.columns.get(&column) {
+                if let Some(col) = self.columns.get_column(column) {
                     for y in current_min..=current_max {
                         if let Some(cell_value) = col.values.get(&y) {
                             values.set(0, (y - current_min) as u32, cell_value.clone());
@@ -71,8 +71,7 @@ impl Sheet {
     fn reverse_code_runs_ops_for_column(&self, column: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
-        self.data_tables
-            .iter()
+        self.data_tables_intersect_rect(Rect::new(column, 1, column, UNBOUNDED))
             .enumerate()
             .for_each(|(index, (pos, data_table))| {
                 if pos.x == column {
@@ -148,8 +147,6 @@ impl Sheet {
         self.borders.remove_column(column);
         transaction.sheet_borders.insert(self.id);
 
-        self.columns.remove(&column);
-
         // remove the column's code runs from the sheet
         self.data_tables.retain(|pos, code_run| {
             if pos.x == column {
@@ -165,27 +162,12 @@ impl Sheet {
             }
         });
 
-        // update the indices of all columns impacted by the deletion
-        let mut columns_to_update = Vec::new();
-        for col in self.columns.keys() {
-            if *col > column {
-                columns_to_update.push(*col);
-            }
-        }
-        columns_to_update.sort();
-        for col in columns_to_update {
-            if let Some(mut column_data) = self.columns.remove(&col) {
-                column_data.x -= 1;
-                self.columns.insert(col - 1, column_data);
-            }
-        }
-
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.x > column {
-                code_runs_to_move.push(*pos);
-            }
+        for pos in
+            self.data_tables_pos_intersect_rect(Rect::new(column + 1, 1, UNBOUNDED, UNBOUNDED))
+        {
+            code_runs_to_move.push(pos);
         }
         code_runs_to_move.sort_by(|a, b| a.x.cmp(&b.x));
         for old_pos in code_runs_to_move {
@@ -203,13 +185,15 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.data_tables.insert_sorted(new_pos, code_run);
+                self.data_tables.insert_sorted(&new_pos, code_run);
 
                 // signal client to update the code runs
                 transaction.add_code_cell(self.id, old_pos);
                 transaction.add_code_cell(self.id, new_pos);
             }
         }
+
+        self.columns.remove_column(column);
 
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
@@ -244,27 +228,12 @@ impl Sheet {
             transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
         }
 
-        // update the indices of all columns impacted by the insertion
-        let mut columns_to_update = Vec::new();
-        for col in self.columns.keys() {
-            if *col >= column {
-                columns_to_update.push(*col);
-            }
-        }
-        columns_to_update.sort_by(|a, b| b.cmp(a));
-        for col in columns_to_update {
-            if let Some(mut column_data) = self.columns.remove(&col) {
-                column_data.x += 1;
-                self.columns.insert(col + 1, column_data);
-            }
-        }
+        self.columns.insert_column(column);
 
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.x >= column {
-                code_runs_to_move.push(*pos);
-            }
+        for pos in self.data_tables_pos_intersect_rect(Rect::new(column, 1, UNBOUNDED, UNBOUNDED)) {
+            code_runs_to_move.push(pos);
         }
         code_runs_to_move.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in code_runs_to_move {
@@ -284,7 +253,7 @@ impl Sheet {
                     }
                 }
 
-                self.data_tables.insert_sorted(new_pos, code_run);
+                self.data_tables.insert_sorted(&new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_code_cell(self.id, old_pos);
@@ -399,7 +368,7 @@ mod tests {
             sheet.formats.fill_color.get(Pos { x: 3, y: 4 }),
             Some("blue".to_string())
         );
-        assert!(sheet.data_tables.get(&Pos { x: 1, y: 5 }).is_some());
+        assert!(sheet.data_tables.get_at(&Pos { x: 1, y: 5 }).is_some());
     }
 
     #[test]

@@ -1,12 +1,12 @@
 use crate::{
-    CopyFormats, Pos, SheetPos,
-    a1::A1Context,
+    CopyFormats, Pos, Rect, SheetPos,
+    a1::{A1Context, UNBOUNDED},
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{GridBounds, Sheet},
+    grid::Sheet,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -68,8 +68,7 @@ impl Sheet {
     fn reverse_code_runs_ops_for_row(&self, row: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
-        self.data_tables
-            .iter()
+        self.data_tables_intersect_rect(Rect::new(1, row, UNBOUNDED, row))
             .enumerate()
             .for_each(|(index, (pos, data_table))| {
                 if pos.y == row {
@@ -82,36 +81,6 @@ impl Sheet {
             });
 
         reverse_operations
-    }
-
-    /// Removes any value at row and shifts the remaining values up by 1.
-    fn delete_and_shift_values(&mut self, row: i64) {
-        // use the sheet bounds to determine the approximate bounds for the impacted range
-        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
-            for x in bounds.min.x..=bounds.max.x {
-                if let Some(column) = self.columns.get_mut(&x) {
-                    if column.values.contains_key(&row) {
-                        column.values.remove(&row);
-                    }
-
-                    let mut keys_to_move: Vec<i64> = column
-                        .values
-                        .keys()
-                        .filter(|&key| *key > row)
-                        .cloned()
-                        .collect();
-
-                    keys_to_move.sort_unstable();
-
-                    // Move up remaining values
-                    for key in keys_to_move {
-                        if let Some(value) = column.values.remove(&key) {
-                            column.values.insert(key - 1, value);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
@@ -179,7 +148,7 @@ impl Sheet {
         transaction.sheet_borders.insert(self.id);
 
         // update all cells that were impacted by the deletion
-        self.delete_and_shift_values(row);
+        self.columns.remove_row(row);
 
         // remove the row's code runs from the sheet
         self.data_tables.retain(|pos, code_run| {
@@ -200,10 +169,9 @@ impl Sheet {
 
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.y > row {
-                code_runs_to_move.push(*pos);
-            }
+        for pos in self.data_tables_pos_intersect_rect(Rect::new(1, row + 1, UNBOUNDED, UNBOUNDED))
+        {
+            code_runs_to_move.push(pos);
         }
         code_runs_to_move.sort_by(|a, b| a.y.cmp(&b.y));
         for old_pos in code_runs_to_move {
@@ -222,7 +190,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.data_tables.insert_sorted(new_pos, code_run);
+                self.data_tables.insert_sorted(&new_pos, code_run);
 
                 // signal client to update the code runs
                 transaction.add_code_cell(self.id, old_pos);
@@ -248,32 +216,6 @@ impl Sheet {
         }
     }
 
-    /// Removes any value at row and shifts the remaining values up by 1.
-    fn insert_and_shift_values(&mut self, row: i64) {
-        // use the sheet bounds to determine the approximate bounds for the impacted range
-        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
-            for x in bounds.min.x..=bounds.max.x {
-                if let Some(column) = self.columns.get_mut(&x) {
-                    let mut keys_to_move: Vec<i64> = column
-                        .values
-                        .keys()
-                        .filter(|&key| *key >= row)
-                        .cloned()
-                        .collect();
-
-                    keys_to_move.sort_unstable_by(|a, b| b.cmp(a));
-
-                    // Move down values
-                    for key in keys_to_move {
-                        if let Some(value) = column.values.remove(&key) {
-                            column.values.insert(key + 1, value);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     pub(crate) fn insert_row(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -287,7 +229,7 @@ impl Sheet {
             transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
         }
 
-        self.insert_and_shift_values(row);
+        self.columns.insert_row(row);
 
         // update formatting
         self.formats.insert_row(row, copy_formats);
@@ -303,10 +245,8 @@ impl Sheet {
 
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.y >= row {
-                code_runs_to_move.push(*pos);
-            }
+        for pos in self.data_tables_pos_intersect_rect(Rect::new(1, row, UNBOUNDED, UNBOUNDED)) {
+            code_runs_to_move.push(pos);
         }
         code_runs_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in code_runs_to_move {
@@ -326,7 +266,7 @@ impl Sheet {
                     }
                 }
 
-                self.data_tables.insert_sorted(new_pos, code_run);
+                self.data_tables.insert_sorted(&new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_code_cell(self.id, old_pos);
@@ -390,7 +330,7 @@ mod test {
             ],
         );
         sheet.recalculate_bounds(&sheet.make_a1_context());
-        sheet.delete_and_shift_values(1);
+        sheet.columns.remove_row(1);
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("E".to_string()))
@@ -456,8 +396,8 @@ mod test {
             sheet.formats.fill_color.get(pos![C1]),
             Some("blue".to_string())
         );
-        assert!(sheet.data_tables.get(&Pos { x: 1, y: 2 }).is_some());
-        assert!(sheet.data_tables.get(&Pos { x: 1, y: 3 }).is_some());
+        assert!(sheet.data_tables.get_at(&Pos { x: 1, y: 2 }).is_some());
+        assert!(sheet.data_tables.get_at(&Pos { x: 1, y: 3 }).is_some());
     }
 
     #[test]
@@ -534,8 +474,8 @@ mod test {
         );
         assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![E1]), None);
 
-        assert!(sheet.data_tables.get(&pos![D1]).is_none());
-        assert!(sheet.data_tables.get(&pos![D2]).is_some());
+        assert!(sheet.data_tables.get_at(&pos![D1]).is_none());
+        assert!(sheet.data_tables.get_at(&pos![D2]).is_some());
 
         assert_eq!(
             sheet.display_value(pos![D2]),

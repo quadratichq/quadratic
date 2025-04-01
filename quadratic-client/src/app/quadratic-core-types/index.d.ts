@@ -48,7 +48,10 @@ export interface JsDataTableColumnHeader { name: string, display: boolean, value
 export interface JsDataTableContext { sheet_name: string, data_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, }
 export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
 export interface JsCellsA1Value { x: number, y: number, v: string, t: number, }
+export interface JsHashesDirty { sheet_id: SheetId, hashes: Array<Pos>, }
+export interface JsHashRenderCells { sheet_id: SheetId, hash: Pos, cells: Array<JsRenderCell>, }
 export interface JsHtmlOutput { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, }
+export interface JsHashValidationWarnings { sheet_id: SheetId, hash: Pos | null, warnings: Array<JsValidationWarning>, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsOffset { column: number | null, row: number | null, size: number, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special?: JsRenderCellSpecial, number?: JsNumber, underline?: boolean, strikeThrough?: boolean, columnHeader?: boolean, }
@@ -65,7 +68,8 @@ export type JsSnackbarSeverity = "error" | "warning" | "success";
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, language: CodeCellLanguage, }
 export interface JsTablesContext { sheet_name: string, data_tables: Array<JsDataTableContext>, code_tables: Array<JsCodeTableContext>, charts: Array<JsChartContext>, }
-export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
+export interface JsUpdateCodeCell { sheet_id: SheetId, pos: Pos, code_cell: JsCodeCell | null, render_code_cell: JsRenderCodeCell | null, }
+export interface JsValidationWarning { pos: Pos, validation: string | null, style: ValidationStyle | null, }
 export interface MinMax { min: number, max: number, }
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }

@@ -68,7 +68,7 @@ mod tests {
             }
             _ => panic!("expected code cell"),
         }
-        let data_table = sheet.data_tables.get_mut(&pos).unwrap();
+        let data_table = sheet.data_tables.get_mut_at(&pos).unwrap();
         data_table.show_ui = false;
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(

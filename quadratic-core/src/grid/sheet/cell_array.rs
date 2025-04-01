@@ -9,23 +9,15 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    pub fn set_cell_values(&mut self, rect: Rect, values: &Array) -> Array {
+    pub fn set_cell_values(&mut self, rect: Rect, values: Array) -> Array {
         let mut old_values = Array::new_empty(values.size());
 
         for x in rect.x_range() {
-            let column = self.get_or_create_column(x);
-
             for y in rect.y_range() {
-                let old_value;
-                if let Ok(value) = values.get((x - rect.min.x) as u32, (y - rect.min.y) as u32) {
-                    if value.is_blank_or_empty_string() {
-                        old_value = column.values.remove(&y);
-                    } else {
-                        old_value = column.values.insert(y, value.clone());
-                    }
-                } else {
-                    old_value = column.values.remove(&y);
-                }
+                let new_value = values
+                    .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                    .unwrap_or(&CellValue::Blank);
+                let old_value = self.set_cell_value((x, y).into(), new_value.to_owned());
                 if let Some(old_value) = old_value {
                     let _ =
                         old_values.set((x - rect.min.x) as u32, (y - rect.min.y) as u32, old_value);
@@ -127,50 +119,32 @@ impl Sheet {
             .collect()
     }
 
-    /// Returns whether a rect has any CellValue within it.
-    pub fn has_cell_value_in_rect(&self, rect: &Rect, skip: Option<Pos>) -> bool {
-        for x in rect.x_range() {
-            if let Some(column) = self.get_column(x) {
-                for y in rect.y_range() {
-                    let cell_pos = Pos { x, y };
-                    if column.values.get(&y).is_some_and(|cell| {
-                        Some(cell_pos) != skip && !cell.is_blank_or_empty_string()
-                    }) {
-                        return true;
-                    }
-                }
-            }
-        }
-        false
-    }
-
     /// Returns all positions that caused a spill error in the rect.
     /// Note this assumes there is a spill error with the output = spill_rect, and position in code_pos
     pub fn find_spill_error_reasons(&self, spill_rect: &Rect, code_pos: Pos) -> Vec<Pos> {
         let mut results = HashSet::new();
 
         // first check cell values
-        for x in spill_rect.x_range() {
-            if let Some(column) = self.get_column(x) {
-                for y in spill_rect.y_range() {
+        for (rect, _) in self.columns.get_nondefault_rects_in_rect(*spill_rect) {
+            for x in rect.x_range() {
+                for y in rect.y_range() {
                     let cell_pos = Pos { x, y };
-                    if column.values.get(&y).is_some_and(|cell| {
-                        cell_pos != code_pos && !cell.is_blank_or_empty_string()
-                    }) {
+                    if cell_pos != code_pos {
                         results.insert(cell_pos);
                     }
                 }
             }
         }
 
-        // then check code runs
-        for (pos, code_run) in &self.data_tables {
-            // once we reach the code_pos, no later code runs can be the cause of the spill error
-            if pos == &code_pos {
-                break;
-            }
-            if code_run.output_rect(*pos, true).intersects(*spill_rect) {
-                results.insert(*pos);
+        for x in spill_rect.x_range() {
+            for y in spill_rect.y_range() {
+                let cell_pos = Pos { x, y };
+                if self
+                    .data_table_pos_that_contains(&cell_pos)
+                    .is_ok_and(|data_table_pos| cell_pos != data_table_pos)
+                {
+                    results.insert(cell_pos);
+                }
             }
         }
 
@@ -189,16 +163,6 @@ mod tests {
         grid::{CodeCellLanguage, Sheet},
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-
-    #[test]
-    fn test_has_cell_values_in_rect() {
-        let mut sheet = Sheet::test();
-        let rect = Rect::from_numbers(0, 0, 10, 10);
-        assert!(!sheet.has_cell_value_in_rect(&rect, None));
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        assert!(sheet.has_cell_value_in_rect(&rect, None));
-        assert!(!sheet.has_cell_value_in_rect(&rect, Some(Pos { x: 0, y: 0 })));
-    }
 
     #[test]
     fn get_cells_response() {
@@ -285,8 +249,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "causes spill error".into(),
@@ -294,8 +258,8 @@ mod tests {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 2,
-                y: 0,
+                x: 3,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -304,8 +268,8 @@ mod tests {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -313,15 +277,15 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let run = sheet.data_table(Pos { x: 0, y: 0 }).unwrap();
+        let run = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
         assert!(run.spill_error);
         let reasons = sheet.find_spill_error_reasons(
-            &run.output_rect(Pos { x: 0, y: 0 }, true),
-            Pos { x: 0, y: 0 },
+            &run.output_rect(Pos { x: 1, y: 1 }, true),
+            Pos { x: 1, y: 1 },
         );
         assert_eq!(reasons.len(), 2);
-        assert!(reasons.iter().any(|p| *p == Pos { x: 1, y: 0 }));
-        assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 0 }));
+        assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 1 }));
+        assert!(reasons.iter().any(|p| *p == Pos { x: 3, y: 1 }));
     }
 
     #[test]
@@ -329,7 +293,7 @@ mod tests {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);
         let values = Array::from_random_floats(rect.size());
-        let old_values = sheet.set_cell_values(rect, &values);
+        let old_values = sheet.set_cell_values(rect, values.clone());
         for y in rect.y_range() {
             for x in rect.x_range() {
                 assert_eq!(
@@ -349,7 +313,7 @@ mod tests {
 
         // replace old values with new values
         let values_2 = Array::from_random_floats(rect.size());
-        let old_values = sheet.set_cell_values(rect, &values_2);
+        let old_values = sheet.set_cell_values(rect, values_2.clone());
         for y in rect.y_range() {
             for x in rect.x_range() {
                 assert_eq!(

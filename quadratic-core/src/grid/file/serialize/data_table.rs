@@ -16,6 +16,7 @@ use crate::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
+        sheet::data_tables::SheetDataTables,
     },
 };
 
@@ -264,7 +265,7 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
 
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
-) -> Result<IndexMap<Pos, DataTable>> {
+) -> Result<SheetDataTables> {
     let mut new_data_tables = IndexMap::new();
 
     for (pos, data_table) in data_tables.into_iter() {
@@ -340,7 +341,7 @@ pub(crate) fn import_data_table_builder(
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
     }
 
-    Ok(new_data_tables)
+    Ok(SheetDataTables::from_data_tables(new_data_tables))
 }
 
 pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
@@ -460,9 +461,9 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
 }
 
 pub(crate) fn export_data_tables(
-    data_tables: IndexMap<Pos, DataTable>,
+    sheet_data_tables: SheetDataTables,
 ) -> Vec<(current::PosSchema, current::DataTableSchema)> {
-    data_tables
+    sheet_data_tables
         .into_iter()
         .map(|(pos, data_table)| {
             let name = data_table.name().to_string();

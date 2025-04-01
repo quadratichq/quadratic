@@ -18,7 +18,6 @@ impl GridController {
                         transaction,
                         sheet_pos.into(),
                         &values,
-                        !transaction.is_server(),
                         &self.a1_context,
                     );
                     if old_values == values {
@@ -52,8 +51,11 @@ impl GridController {
 
                         if transaction.is_user() {
                             self.check_deleted_data_tables(transaction, &sheet_rect);
-                            self.add_compute_operations(transaction, &sheet_rect, None);
-                            self.check_all_spills(transaction, sheet_rect.sheet_id);
+
+                            // dbgjs!(format!("todo(ayush): enable compute operations and spills"));
+
+                            // self.add_compute_operations(transaction, &sheet_rect, None);
+                            // self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
                         transaction
@@ -180,8 +182,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             sheet_id,
         };
         gc.set_code_cell(

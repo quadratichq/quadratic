@@ -83,8 +83,7 @@ impl GridController {
             validation_warnings.insert(
                 *pos,
                 JsValidationWarning {
-                    x: pos.x,
-                    y: pos.y,
+                    pos: *pos,
                     style: Some(validation.error.style.clone()),
                     validation: Some(*validation_id),
                 },
@@ -216,8 +215,7 @@ impl GridController {
                 if let Some(sheet) = self.grid.try_sheet(sheet_pos.sheet_id) {
                     if let Some(validation) = sheet.validations.validation(validation_id) {
                         let warning = JsValidationWarning {
-                            x: sheet_pos.x,
-                            y: sheet_pos.y,
+                            pos: sheet_pos.into(),
                             validation: Some(validation_id),
                             style: Some(validation.error.style.clone()),
                         };
@@ -238,6 +236,7 @@ impl GridController {
 mod tests {
     use super::*;
 
+    use crate::Pos;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, a1::A1Selection};
@@ -279,13 +278,12 @@ mod tests {
             false,
         );
         let warnings = vec![JsValidationWarning {
-            x: 1,
-            y: 1,
+            pos: Pos { x: 1, y: 1 },
             validation: Some(validation.id),
             style: Some(validation.error.style.clone()),
         }];
         expect_js_call(
-            "jsValidationWarning",
+            "jsValidationWarnings",
             format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
             true,
         );
@@ -301,13 +299,12 @@ mod tests {
             false,
         );
         let warnings = vec![JsValidationWarning {
-            x: 1,
-            y: 1,
+            pos: Pos { x: 1, y: 1 },
             validation: None,
             style: None,
         }];
         expect_js_call(
-            "jsValidationWarning",
+            "jsValidationWarnings",
             format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
             true,
         );
@@ -351,13 +348,12 @@ mod tests {
             false,
         );
         let warnings = vec![JsValidationWarning {
-            x: 1,
-            y: 1,
+            pos: Pos { x: 1, y: 1 },
             validation: Some(validation.id),
             style: Some(validation.error.style.clone()),
         }];
         expect_js_call(
-            "jsValidationWarning",
+            "jsValidationWarnings",
             format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
             true,
         );
@@ -385,13 +381,12 @@ mod tests {
             false,
         );
         let warnings = vec![JsValidationWarning {
-            x: 1,
-            y: 1,
+            pos: Pos { x: 1, y: 1 },
             validation: None,
             style: None,
         }];
         expect_js_call(
-            "jsValidationWarning",
+            "jsValidationWarnings",
             format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
             true,
         );
@@ -407,13 +402,12 @@ mod tests {
             false,
         );
         let warnings = vec![JsValidationWarning {
-            x: 1,
-            y: 1,
+            pos: Pos { x: 1, y: 1 },
             validation: Some(validation.id),
             style: Some(validation.error.style.clone()),
         }];
         expect_js_call(
-            "jsValidationWarning",
+            "jsValidationWarnings",
             format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
             true,
         );
@@ -429,13 +423,12 @@ mod tests {
             false,
         );
         let warnings = vec![JsValidationWarning {
-            x: 1,
-            y: 1,
+            pos: Pos { x: 1, y: 1 },
             validation: None,
             style: None,
         }];
         expect_js_call(
-            "jsValidationWarning",
+            "jsValidationWarnings",
             format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
             true,
         );
