@@ -29,19 +29,24 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let is_multi_cursor = selection.is_multi_cursor(&self.a1_context());
-        let mut end_pos = None;
+        let insert_at = selection.to_cursor_sheet_pos();
+        let insert_at_pos = Pos::from(insert_at);
+        let mut end_pos = insert_at_pos;
 
         if is_multi_cursor {
             if let Some(range) = selection.ranges.first() {
                 end_pos = range
                     .to_rect(&self.a1_context())
-                    .map_or_else(|| None, |rect| Some(rect.max));
+                    .map_or_else(|| None, |rect| Some(rect.max))
+                    .unwrap_or(insert_at_pos);
             }
         }
 
         // first try html
         if let Some(html) = html {
-            if let Ok(ops) = self.paste_html_operations(selection, html, special, end_pos) {
+            if let Ok(ops) =
+                self.paste_html_operations(insert_at.into(), selection, html, special, end_pos)
+            {
                 self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
                 return;
             }
@@ -49,8 +54,9 @@ impl GridController {
 
         // if not quadratic html, then use the plain text
         if let Some(plain_text) = plain_text {
-            let dest_pos = selection.to_cursor_sheet_pos();
-            if let Ok(ops) = self.paste_plain_text_operations(dest_pos, plain_text, special) {
+            if let Ok(ops) =
+                self.paste_plain_text_operations(insert_at, plain_text, special, end_pos)
+            {
                 self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
             }
         }
@@ -757,7 +763,7 @@ mod test {
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
-        let paste_rect = SheetRect::new(pos.x, pos.y + 1, pos.x, pos.y + 3, sheet_id);
+        let paste_rect = SheetRect::new(pos.x, pos.y + 1, pos.x + 1, pos.y + 3, sheet_id);
         gc.paste_from_clipboard(
             &A1Selection::from_rect(paste_rect),
             None,
@@ -766,15 +772,30 @@ mod test {
             None,
         );
 
-        print_table(
-            &gc,
-            sheet_id,
-            Rect::new(pos.x, pos.y, paste_rect.max.x, paste_rect.max.y),
+        let assert_range_paste = |gc: &GridController| {
+            print_table(
+                &gc,
+                sheet_id,
+                Rect::new(pos.x, pos.y, paste_rect.max.x, paste_rect.max.y),
+            );
+
+            paste_rect.iter().for_each(|pos| {
+                assert_cell_value(&gc, sheet_id, pos.x, pos.y, 1.into());
+            });
+        };
+
+        assert_range_paste(&gc);
+
+        gc.undo(None);
+        gc.paste_from_clipboard(
+            &A1Selection::from_rect(paste_rect),
+            Some(plain_text),
+            None,
+            PasteSpecial::None,
+            None,
         );
 
-        assert_cell_value(&gc, sheet_id, 1, 2, 1.into());
-        assert_cell_value(&gc, sheet_id, 1, 3, 1.into());
-        assert_cell_value(&gc, sheet_id, 1, 4, 1.into());
+        assert_range_paste(&gc);
     }
 
     #[test]

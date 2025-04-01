@@ -583,69 +583,82 @@ impl GridController {
         start_pos: SheetPos,
         plain_text: String,
         special: PasteSpecial,
+        end_pos: Pos,
     ) -> Result<Vec<Operation>> {
         // nothing to paste from plain text for formats
         if matches!(special, PasteSpecial::Formats) {
             return Ok(vec![]);
         }
         let lines: Vec<&str> = plain_text.split('\n').collect();
-
         let mut ops = vec![];
-        // let mut compute_code_ops = vec![];
+        let mut compute_code_ops = vec![];
 
-        // // calculate the width by checking the first line (with the assumption that all lines should have the same width)
-        // let w = lines
-        //     .first()
-        //     .map(|line| line.split('\t').count())
-        //     .unwrap_or(0);
-        // let h = lines.len();
+        // calculate the width by checking the first line (with the assumption that all lines should have the same width)
+        let w = lines
+            .first()
+            .map(|line| line.split('\t').count())
+            .unwrap_or(0);
+        let h = lines.len();
 
-        // let mut values = CellValues::new(w as u32, h as u32);
-        // let mut sheet_format_updates = SheetFormatUpdates::default();
+        let (max_x, max_y, cell_value_width, cell_value_height) =
+            Self::get_max_paste_area(start_pos.into(), end_pos, w as u32, h as u32);
+        let mut cell_values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
+        let mut values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
+        let mut sheet_format_updates = SheetFormatUpdates::default();
 
-        // lines.iter().enumerate().for_each(|(y, line)| {
-        //     line.split('\t').enumerate().for_each(|(x, value)| {
-        //         let (cell_value, format_update) = self.string_to_cell_value(value, true);
+        lines.iter().enumerate().for_each(|(y, line)| {
+            line.split('\t').enumerate().for_each(|(x, value)| {
+                let (cell_value, format_update) = self.string_to_cell_value(value, true);
 
-        //         let is_code = matches!(cell_value, CellValue::Code(_));
+                let is_code = matches!(cell_value, CellValue::Code(_));
 
-        //         if cell_value != CellValue::Blank {
-        //             values.set(x as u32, y as u32, cell_value);
-        //         }
+                if cell_value != CellValue::Blank {
+                    values.set(x as u32, y as u32, cell_value);
+                }
 
-        //         let pos = Pos {
-        //             x: start_pos.x + x as i64,
-        //             y: start_pos.y + y as i64,
-        //         };
+                let pos = Pos {
+                    x: start_pos.x + x as i64,
+                    y: start_pos.y + y as i64,
+                };
 
-        //         if !format_update.is_default() {
-        //             sheet_format_updates.set_format_cell(pos, format_update);
-        //         }
+                if !format_update.is_default() {
+                    sheet_format_updates.set_format_cell(pos, format_update);
+                }
 
-        //         if is_code {
-        //             compute_code_ops.push(Operation::ComputeCode {
-        //                 sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
-        //             });
-        //         }
-        //     });
-        // });
+                if is_code {
+                    compute_code_ops.push(Operation::ComputeCode {
+                        sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+                    });
+                }
+            });
+        });
 
-        // let cell_value_ops =
-        //     self.clipboard_cell_values_operations(start_pos, values, None, None)?;
-        // ops.extend(cell_value_ops);
+        for x in (start_pos.x..=max_x).step_by(w as usize) {
+            for y in (start_pos.y..=max_y).step_by(h as usize) {
+                let pos = SheetPos::new(start_pos.sheet_id, x, y);
+                let cell_value_ops = self.clipboard_cell_values_operations(
+                    &mut cell_values,
+                    pos,
+                    values.to_owned(),
+                    None,
+                    None,
+                )?;
+                ops.extend(cell_value_ops);
+            }
+        }
 
-        // if !sheet_format_updates.is_default() {
-        //     let formats_rect =
-        //         Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
-        //     let formats_ops = self.clipboard_formats_operations(
-        //         start_pos.sheet_id,
-        //         sheet_format_updates,
-        //         formats_rect,
-        //     );
-        //     ops.extend(formats_ops);
-        // }
+        if !sheet_format_updates.is_default() {
+            let formats_rect =
+                Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
+            let formats_ops = self.clipboard_formats_operations(
+                start_pos.sheet_id,
+                sheet_format_updates,
+                formats_rect,
+            );
+            ops.extend(formats_ops);
+        }
 
-        // ops.extend(compute_code_ops);
+        ops.extend(compute_code_ops);
 
         Ok(ops)
     }
@@ -653,13 +666,13 @@ impl GridController {
     // todo: parse table structure to provide better pasting experience from other spreadsheets
     pub fn paste_html_operations(
         &mut self,
+        insert_at: Pos,
         selection: &A1Selection,
         html: String,
         special: PasteSpecial,
-        end_pos: Option<Pos>,
+        end_pos: Pos,
     ) -> Result<Vec<Operation>> {
         let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
-        let insert_at = selection.cursor;
 
         // use regex to find data-quadratic
         match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
@@ -682,29 +695,14 @@ impl GridController {
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
 
-                let end_pos = end_pos.unwrap_or(insert_at);
                 let mut ops = vec![];
 
                 // If the clipboard is larger than the selection, we need to paste multiple times.
                 // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
-                let max_x = {
-                    let width = (end_pos.x - insert_at.x + 1) as f64;
-                    let clipboard_width = clipboard.w as f64;
-                    let multiples = ((width / clipboard_width).floor() as i64 - 1).max(0);
-
-                    insert_at.x + (multiples * clipboard.w as i64)
-                };
-                let max_y = {
-                    let height = (end_pos.y - insert_at.y + 1) as f64;
-                    let clipboard_height = clipboard.h as f64;
-                    let multiples = ((height / clipboard_height).floor() as i64 - 1).max(0);
-
-                    insert_at.y + (multiples * clipboard_height as i64)
-                };
+                let (max_x, max_y, cell_value_width, cell_value_height) =
+                    Self::get_max_paste_area(insert_at, end_pos, clipboard.w, clipboard.h);
 
                 // collect all cell values for a a single operation
-                let cell_value_width = max_x - insert_at.x + 1;
-                let cell_value_height = max_y - insert_at.y + 1;
                 let mut cell_values =
                     CellValues::new(cell_value_width as u32, cell_value_height as u32);
 
@@ -764,6 +762,33 @@ impl GridController {
                 Ok(ops)
             }
         }
+    }
+
+    /// If the clipboard is larger than the selection, we need to paste multiple times.
+    /// We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
+    fn get_max_paste_area(
+        insert_at: Pos,
+        end_pos: Pos,
+        clipboard_width: u32,
+        clipboard_height: u32,
+    ) -> (i64, i64, i64, i64) {
+        let max_x = {
+            let width = (end_pos.x - insert_at.x + 1) as f64;
+            let multiples = ((width / clipboard_width as f64).floor() as i64 - 1).max(0);
+
+            insert_at.x + (multiples * clipboard_width as i64)
+        };
+        let max_y = {
+            let height = (end_pos.y - insert_at.y + 1) as f64;
+            let multiples = ((height / clipboard_height as f64).floor() as i64 - 1).max(0);
+
+            insert_at.y + (multiples * clipboard_height as i64)
+        };
+
+        let cell_value_width = max_x - insert_at.x + 1;
+        let cell_value_height = max_y - insert_at.y + 1;
+
+        (max_x, max_y, cell_value_width, cell_value_height)
     }
 
     pub fn move_cells_operations(
@@ -830,8 +855,15 @@ mod test {
         let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
+        let insert_at = Pos::from(selection.cursor);
         let operations = gc
-            .paste_html_operations(&A1Selection::test_a1("E"), html, PasteSpecial::None, None)
+            .paste_html_operations(
+                insert_at,
+                &A1Selection::test_a1("E"),
+                html,
+                PasteSpecial::None,
+                insert_at,
+            )
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -853,8 +885,15 @@ mod test {
         let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
+        let insert_at = Pos::from(selection.cursor);
         let operations = gc
-            .paste_html_operations(&A1Selection::test_a1("5"), html, PasteSpecial::None, None)
+            .paste_html_operations(
+                insert_at,
+                &A1Selection::test_a1("5"),
+                html,
+                PasteSpecial::None,
+                insert_at,
+            )
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -882,8 +921,15 @@ mod test {
         gc.add_sheet(None);
 
         let sheet_id = gc.sheet_ids()[1];
+        let insert_at = Pos::from(selection.cursor);
         let operations = gc
-            .paste_html_operations(&A1Selection::all(sheet_id), html, PasteSpecial::None, None)
+            .paste_html_operations(
+                insert_at,
+                &A1Selection::all(sheet_id),
+                html,
+                PasteSpecial::None,
+                insert_at,
+            )
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -1373,13 +1419,15 @@ mod test {
                 false,
             )
             .unwrap();
+        let insert_at = Pos::from(rect.min);
 
         assert!(
             gc.paste_html_operations(
+                insert_at,
                 &A1Selection::test_a1_sheet_id("B2", sheet_id),
                 html,
                 PasteSpecial::None,
-                None,
+                insert_at,
             )
             .is_err()
         );
