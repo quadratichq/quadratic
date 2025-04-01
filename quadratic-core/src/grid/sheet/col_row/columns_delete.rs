@@ -212,63 +212,53 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, DEFAULT_COLUMN_WIDTH, Pos, controller::execution::TransactionSource,
-        grid::CellWrap,
+        DEFAULT_COLUMN_WIDTH,
+        a1::A1Selection,
+        assert_cell_format_fill_color, assert_display_cell_value,
+        controller::GridController,
+        grid::{CellWrap, CodeCellLanguage},
+        test_util::{first_sheet_id, test_set_values},
     };
 
     use super::*;
 
     #[test]
     fn test_delete_column() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_values(
-            1,
-            1,
-            4,
-            4,
-            vec![
-                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
-            ],
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+        test_set_values(&mut gc, sheet_id, pos![A1], 4, 4);
+
+        gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
+            .unwrap();
+        gc.set_cell_wrap(&A1Selection::test_a1("A1"), CellWrap::Clip, None)
+            .unwrap();
+        gc.set_fill_color(&A1Selection::test_a1("D4"), Some("blue".to_string()), None)
+            .unwrap();
+
+        gc.set_code_cell(
+            pos![sheet_id!B5],
+            CodeCellLanguage::Formula,
+            "{A1, B1}".to_string(),
+            None,
         );
-        sheet
-            .formats
-            .fill_color
-            .set(pos![A1], Some("red".to_string()));
-        sheet.formats.wrap.set(pos![C4], Some(CellWrap::Clip));
-
-        sheet
-            .formats
-            .fill_color
-            .set(pos![D4], Some("blue".to_string()));
-        sheet.test_set_code_run_array(2, 5, vec!["=A1", "=B1"], true);
-        sheet.test_set_code_run_array(4, 5, vec!["=A1", "=B1"], true);
-
-        sheet.formats.bold.set_rect(1, 1, Some(1), None, Some(true));
-        sheet
-            .formats
-            .italic
-            .set_rect(4, 1, Some(4), None, Some(true));
-
-        let mut transaction = PendingTransaction {
-            source: TransactionSource::User,
-            ..Default::default()
-        };
-        let a1_context = sheet.make_a1_context();
-        sheet.delete_column(&mut transaction, 1, &a1_context);
-
-        assert_eq!(transaction.reverse_operations.len(), 3);
-
-        assert_eq!(sheet.columns.len(), 3);
-
-        assert_eq!(
-            sheet.cell_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Text("B".to_string()))
+        gc.set_code_cell(
+            pos![sheet_id!D5],
+            CodeCellLanguage::Formula,
+            "{A1, B1}".to_string(),
+            None,
         );
-        assert_eq!(
-            sheet.formats.fill_color.get(Pos { x: 3, y: 4 }),
-            Some("blue".to_string())
-        );
-        assert!(sheet.data_tables.get(&Pos { x: 1, y: 5 }).is_some());
+
+        gc.set_bold(&A1Selection::test_a1("A1:A"), Some(true), None)
+            .unwrap();
+        gc.set_italic(&A1Selection::test_a1("D1:D"), Some(true), None)
+            .unwrap();
+
+        gc.delete_columns(sheet_id, vec![1], None);
+
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "1");
+        assert_cell_format_fill_color(&gc, sheet_id, 3, 4, "blue");
+        assert_display_cell_value(&gc, sheet_id, 3, 4, "15");
+        assert_display_cell_value(&gc, sheet_id, 2, 5, "1");
     }
 
     #[test]

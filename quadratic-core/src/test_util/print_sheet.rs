@@ -1,6 +1,6 @@
 use crate::{
     CellValue, Pos, Rect,
-    a1::A1Context,
+    a1::{A1Context, column_name},
     controller::GridController,
     formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, GridBounds, Sheet},
@@ -37,7 +37,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let mut vals = vec![];
     let mut builder = Builder::default();
     let columns = (rect.x_range())
-        .map(|i| i.to_string())
+        .map(|i| column_name(i))
         .collect::<Vec<String>>();
     let mut blank = vec!["".to_string()];
     blank.extend(columns.clone());

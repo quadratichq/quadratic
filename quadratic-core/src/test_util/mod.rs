@@ -4,6 +4,7 @@ mod assert_values;
 mod create_chart;
 mod create_code_table;
 mod create_data_table;
+mod create_values;
 mod get_sheets;
 mod print_gc;
 pub mod print_sheet;
@@ -12,8 +13,8 @@ mod print_table;
 #[allow(unused_imports)]
 pub use {
     assert_data_table::*, assert_formats::*, assert_values::*, create_chart::*,
-    create_code_table::*, create_data_table::*, get_sheets::*, print_gc::*, print_sheet::*,
-    print_table::*,
+    create_code_table::*, create_data_table::*, create_values::*, get_sheets::*, print_gc::*,
+    print_sheet::*, print_table::*,
 };
 
 #[track_caller]

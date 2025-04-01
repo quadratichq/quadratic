@@ -152,6 +152,12 @@ impl Sheet {
                 }
 
                 self.data_tables.insert_sorted(new_pos, code_run);
+                transaction
+                    .reverse_operations
+                    .push(Operation::MoveDataTableEntryPosition {
+                        from: new_pos.to_sheet_pos(self.id),
+                        to: old_pos.to_sheet_pos(self.id),
+                    });
 
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_code_cell(self.id, old_pos);
@@ -282,6 +288,14 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
 
+        gc.insert_column(sheet_id, 1, false, None);
+        print_first_sheet!(&gc);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+
+        gc.undo(None);
+        print_first_sheet!(&gc);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
+
         gc.insert_column(sheet_id, 1, true, None);
         print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
@@ -289,6 +303,9 @@ mod tests {
         gc.undo(None);
         print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
     }
 
     #[test]
