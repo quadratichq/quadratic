@@ -166,6 +166,7 @@ impl GridController {
     fn clipboard_cell_values_operations(
         &self,
         cell_values: &mut CellValues,
+        cell_value_pos: Pos,
         start_pos: SheetPos,
         mut values: CellValues,
         clipboard_selection: Option<&A1Selection>,
@@ -204,14 +205,16 @@ impl GridController {
 
                     // pull the values from `values`, replacing
                     // the values in `values` with CellValue::Blank
-                    let cell_values = values.get_rect(adjusted_rect);
+                    let data_table_cell_values = values.get_rect(adjusted_rect);
 
-                    let paste_table_in_import = cell_values.iter().flatten().find(|cell_value| {
-                        cell_value.is_code()
-                            || cell_value.is_import()
-                            || cell_value.is_image()
-                            || cell_value.is_html()
-                    });
+                    let paste_table_in_import =
+                        data_table_cell_values.iter().flatten().find(|cell_value| {
+                            cell_value.is_code()
+                                || cell_value.is_import()
+                                || cell_value.is_image()
+                                || cell_value.is_html()
+                        });
+
                     if let Some(paste_table_in_import) = paste_table_in_import {
                         let cell_type = match paste_table_in_import {
                             CellValue::Code(_) => "code",
@@ -265,19 +268,19 @@ impl GridController {
                     let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
                     ops.push(Operation::SetDataTableAt {
                         sheet_pos,
-                        values: CellValues::from(cell_values),
+                        values: CellValues::from(data_table_cell_values),
                     });
                 }
             }
         }
 
-        ops.push(Operation::SetCellValues {
-            sheet_pos: start_pos,
-            values,
-        });
-
-        println!("cell_values: {:?}", cell_values);
-        // cell_values.s
+        for (x, y, value) in values.into_owned_iter() {
+            cell_values.set(
+                cell_value_pos.x as u32 + x,
+                cell_value_pos.y as u32 + y,
+                value,
+            );
+        }
 
         Ok(ops)
     }
@@ -452,6 +455,7 @@ impl GridController {
 
     fn set_clipboard_cells(
         &self,
+        cell_value_pos: Pos,
         cell_values: &mut CellValues,
         selection: &A1Selection,
         clipboard: &Clipboard,
@@ -501,6 +505,7 @@ impl GridController {
                 if let Some(values) = values {
                     let cell_value_ops = self.clipboard_cell_values_operations(
                         cell_values,
+                        cell_value_pos,
                         start_pos.to_sheet_pos(selection.sheet_id),
                         values,
                         Some(&clipboard.selection),
@@ -534,11 +539,17 @@ impl GridController {
                     &clipboard.values,
                     special,
                 );
+
                 if let Some(values) = values {
-                    ops.push(Operation::SetCellValues {
-                        sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
+                    let cell_value_ops = self.clipboard_cell_values_operations(
+                        cell_values,
+                        cell_value_pos,
+                        start_pos.to_sheet_pos(selection.sheet_id),
                         values,
-                    });
+                        Some(&clipboard.selection),
+                        Some(&clipboard.operation),
+                    )?;
+                    ops.extend(cell_value_ops);
                 }
             }
             _ => (),
@@ -633,12 +644,17 @@ impl GridController {
             });
         });
 
-        for x in (start_pos.x..=max_x).step_by(w as usize) {
-            for y in (start_pos.y..=max_y).step_by(h as usize) {
-                let pos = SheetPos::new(start_pos.sheet_id, x, y);
+        for (start_x, x) in (start_pos.x..=max_x).step_by(w as usize).enumerate() {
+            for (start_y, y) in (start_pos.y..=max_y).step_by(h as usize).enumerate() {
+                let cell_value_pos = Pos {
+                    x: start_x as i64,
+                    y: start_y as i64,
+                };
+                let sheet_pos = SheetPos::new(start_pos.sheet_id, x, y);
                 let cell_value_ops = self.clipboard_cell_values_operations(
                     &mut cell_values,
-                    pos,
+                    cell_value_pos,
+                    sheet_pos,
                     values.to_owned(),
                     None,
                     None,
@@ -646,6 +662,11 @@ impl GridController {
                 ops.extend(cell_value_ops);
             }
         }
+
+        ops.push(Operation::SetCellValues {
+            sheet_pos: start_pos,
+            values: cell_values,
+        });
 
         if !sheet_format_updates.is_default() {
             let formats_rect =
@@ -659,6 +680,8 @@ impl GridController {
         }
 
         ops.extend(compute_code_ops);
+
+        println!("paste_plain_text_operations: {:?}", ops.len());
 
         Ok(ops)
     }
@@ -706,8 +729,14 @@ impl GridController {
                 let mut cell_values =
                     CellValues::new(cell_value_width as u32, cell_value_height as u32);
 
-                for x in (insert_at.x..=max_x).step_by(clipboard.w as usize) {
-                    for y in (insert_at.y..=max_y).step_by(clipboard.h as usize) {
+                for (start_x, x) in (insert_at.x..=max_x)
+                    .step_by(clipboard.w as usize)
+                    .enumerate()
+                {
+                    for (start_y, y) in (insert_at.y..=max_y)
+                        .step_by(clipboard.h as usize)
+                        .enumerate()
+                    {
                         let pos = Pos { x, y };
 
                         // loop through the clipboard and replace cell references in
@@ -750,6 +779,7 @@ impl GridController {
                             }
                         }
                         ops.extend(self.set_clipboard_cells(
+                            Pos::new(start_x as i64, start_y as i64),
                             &mut cell_values,
                             selection,
                             &clipboard,
@@ -758,6 +788,13 @@ impl GridController {
                         )?);
                     }
                 }
+
+                ops.push(Operation::SetCellValues {
+                    sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
+                    values: cell_values,
+                });
+
+                println!("paste_html_operations: {:?}", ops.len());
 
                 Ok(ops)
             }
