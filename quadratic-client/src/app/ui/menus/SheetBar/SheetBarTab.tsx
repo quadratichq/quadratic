@@ -250,12 +250,12 @@ function TabName({
       }}
       onInput={() => setErrorMessage(undefined)}
       onBlur={(event) => {
+        if (!contentEditableRef.current) return;
         if (Date.now() - isRenamingTimeRef.current < HACK_TO_NOT_BLUR_ON_RENAME) {
           contentEditableRef.current?.focus();
           return;
         }
-        const div = event.currentTarget;
-        if (!(div instanceof HTMLInputElement)) return false;
+        const div = contentEditableRef.current;
         const value = div.innerText.trim();
         if (!div) return false;
         if (!isRenaming) return;
