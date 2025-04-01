@@ -561,7 +561,7 @@ mod tests {
             y_start: 0,
         };
         code.adjust_references(pos.sheet_id, &a1_context, pos, adjust);
-        assert_eq!(code.code, r#"B3 + Sheet1!B3 + Sheet2!F4 + Sheet3!A1"#)
+        assert_eq!(code.code, r#"B3 + Sheet1!B3 + Sheet2!F4 + Sheet3!A1"#);
     }
 
     #[test]

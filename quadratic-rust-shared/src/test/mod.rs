@@ -1,5 +1,6 @@
 //! Test utilities
 
+pub mod benchmark;
 pub mod request;
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/auto_gen_path.rs"));

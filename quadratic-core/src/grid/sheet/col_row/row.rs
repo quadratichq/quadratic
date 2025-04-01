@@ -1,5 +1,6 @@
 use crate::{
     CopyFormats, Pos, SheetPos,
+    a1::A1Context,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -135,7 +136,12 @@ impl Sheet {
         }
     }
 
-    pub(crate) fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
+    pub(crate) fn delete_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        row: i64,
+        a1_context: &A1Context,
+    ) {
         // create undo operations for the deleted row (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
@@ -158,9 +164,15 @@ impl Sheet {
         // mark hashes of existing rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
+        // todo: this can be optimized by adding a fn that checks if there are
+        // any fills beyond the deleted column
+
+        if self.formats.has_fills() {
+            transaction.add_fill_cells(self.id);
+        }
+
         // remove the row's formats from the sheet
         self.formats.remove_row(row);
-        transaction.add_fill_cells(self.id);
 
         // remove the row's borders from the sheet
         self.borders.remove_row(row);
@@ -221,10 +233,10 @@ impl Sheet {
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        let changed_selections =
-            self.validations
-                .remove_row(transaction, self.id, row, &self.a1_context());
-        transaction.add_dirty_hashes_from_selections(self, &self.a1_context(), changed_selections);
+        let changed_selections = self
+            .validations
+            .remove_row(transaction, self.id, row, a1_context);
+        transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
         if transaction.is_user_undo_redo() {
             // reverse operation to create the row (this will also shift all impacted rows)
@@ -268,6 +280,7 @@ impl Sheet {
         row: i64,
         copy_formats: CopyFormats,
         send_client: bool,
+        a1_context: &A1Context,
     ) {
         // mark hashes of existing rows dirty
         if send_client {
@@ -326,15 +339,11 @@ impl Sheet {
             transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
         }
 
-        let changed_selections =
-            self.validations
-                .insert_row(transaction, self.id, row, &self.a1_context());
+        let changed_selections = self
+            .validations
+            .insert_row(transaction, self.id, row, a1_context);
         if send_client {
-            transaction.add_dirty_hashes_from_selections(
-                self,
-                &self.a1_context(),
-                changed_selections,
-            );
+            transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
         }
 
         let changes = self.offsets.insert_row(row);
@@ -380,7 +389,7 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.recalculate_bounds();
+        sheet.recalculate_bounds(&sheet.make_a1_context());
         sheet.delete_and_shift_values(1);
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
@@ -428,13 +437,15 @@ mod test {
             .italic
             .set_rect(2, 1, Some(2), None, Some(false));
 
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+
+        sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction {
             source: TransactionSource::User,
             ..Default::default()
         };
-        sheet.delete_row(&mut transaction, 1);
+        sheet.delete_row(&mut transaction, 1, &a1_context);
         assert_eq!(transaction.reverse_operations.len(), 3);
 
         assert_eq!(
@@ -482,11 +493,13 @@ mod test {
         );
         sheet.test_set_code_run_array(4, 1, vec!["A", "B"], false);
 
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+
+        sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 1, CopyFormats::None, false);
+        sheet.insert_row(&mut transaction, 1, CopyFormats::None, false, &a1_context);
 
         assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
@@ -537,7 +550,9 @@ mod test {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false);
+        let a1_context = sheet.make_a1_context();
+
+        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false, &a1_context);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -561,7 +576,9 @@ mod test {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 3, CopyFormats::None, false);
+        let a1_context = sheet.make_a1_context();
+
+        sheet.insert_row(&mut transaction, 3, CopyFormats::None, false, &a1_context);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -589,8 +606,10 @@ mod test {
         sheet.offsets.set_row_height(2, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
+        let a1_context = sheet.make_a1_context();
+
         let mut transaction = PendingTransaction::default();
-        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false);
+        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false, &a1_context);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
         assert_eq!(sheet.offsets.row_height(3), 200.0);
@@ -604,8 +623,10 @@ mod test {
         sheet.offsets.set_row_height(2, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
+        let a1_context = sheet.make_a1_context();
+
         let mut transaction = PendingTransaction::default();
-        sheet.delete_row(&mut transaction, 2);
+        sheet.delete_row(&mut transaction, 2, &a1_context);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
         assert_eq!(sheet.offsets.row_height(3), 400.0);

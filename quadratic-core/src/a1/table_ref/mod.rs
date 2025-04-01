@@ -97,8 +97,8 @@ impl TableRef {
     }
 
     /// Returns true if the table reference is a single cell.
-    pub fn is_single_cell(&self, context: &A1Context) -> bool {
-        context
+    pub fn is_single_cell(&self, a1_context: &A1Context) -> bool {
+        a1_context
             .try_table(&self.table_name)
             .is_some_and(|table| table.bounds.size() == ArraySize::_1X1)
     }
