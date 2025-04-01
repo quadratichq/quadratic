@@ -128,7 +128,7 @@ pub fn assert_data_table_size(
 
 #[cfg(test)]
 #[track_caller]
-pub fn assert_data_table_count(gc: &GridController, sheet_id: SheetId, count: usize) {
+pub fn assert_table_count(gc: &GridController, sheet_id: SheetId, count: usize) {
     let sheet = gc.sheet(sheet_id);
     assert_eq!(
         sheet.data_tables.len(),
@@ -284,14 +284,14 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Initially should have no data tables
-        assert_data_table_count(&gc, sheet_id, 0);
+        assert_table_count(&gc, sheet_id, 0);
 
         // Add one data table
         test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 2, 2);
-        assert_data_table_count(&gc, sheet_id, 1);
+        assert_table_count(&gc, sheet_id, 1);
 
         // Add another data table
         test_create_data_table(&mut gc, SheetId::TEST, pos![D1], 1, 1);
-        assert_data_table_count(&gc, sheet_id, 2);
+        assert_table_count(&gc, sheet_id, 2);
     }
 }
