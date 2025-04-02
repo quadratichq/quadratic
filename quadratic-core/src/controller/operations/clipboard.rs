@@ -739,7 +739,7 @@ impl GridController {
                     CellValues::new(cell_value_width as u32, cell_value_height as u32);
                 let mut formats = clipboard.formats.to_owned().unwrap_or_default();
                 let mut borders = clipboard.borders.to_owned().unwrap_or_default();
-                let source_columns = clipboard.cells.columns.to_owned();
+                let source_columns = clipboard.cells.columns;
 
                 // loop through the clipboard and replace cell references in formulas and other languages
                 for (start_x, x) in (insert_at.x..=max_x)
