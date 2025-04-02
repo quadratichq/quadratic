@@ -801,6 +801,33 @@ mod test {
     }
 
     #[test]
+    fn test_paste_formula_with_range_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = Pos::new(1, 1);
+
+        set_cell_value(&mut gc, sheet_id, "1", 1, 1);
+        set_cell_value(&mut gc, sheet_id, "2", 1, 2);
+        set_cell_value(&mut gc, sheet_id, "3", 1, 3);
+        set_formula_code_cell(&mut gc, sheet_id, "A1 + 1", 2, 1);
+
+        let selection = A1Selection::from_xy(2, 1, sheet_id);
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .unwrap();
+        let paste_rect = SheetRect::new(2, 2, 2, 3, sheet_id);
+
+        // paste as html
+        let paste_selection = A1Selection::from_rect(paste_rect);
+        gc.paste_from_clipboard(&paste_selection, None, Some(html), PasteSpecial::None, None);
+
+        print_table(&gc, sheet_id, Rect::new_span(pos, paste_rect.max));
+        assert_code_cell_value(&gc, sheet_id, 2, 2, "A2 + 1");
+        assert_code_cell_value(&gc, sheet_id, 2, 3, "A3 + 1");
+    }
+
+    #[test]
     fn paste_special_values() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];

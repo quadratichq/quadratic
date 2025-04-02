@@ -750,13 +750,14 @@ impl GridController {
                         .enumerate()
                     {
                         let pos = Pos { x, y };
+
                         let adjust = match clipboard.operation {
                             ClipboardOperation::Cut => RefAdjust::NO_OP,
                             ClipboardOperation::Copy => RefAdjust {
                                 sheet_id: None,
                                 relative_only: true,
-                                dx: pos.x - clipboard.origin.x,
-                                dy: pos.y - clipboard.origin.y,
+                                dx: insert_at.x - clipboard.origin.x,
+                                dy: insert_at.y - clipboard.origin.y,
                                 x_start: 0,
                                 y_start: 0,
                             },
