@@ -52,7 +52,8 @@ impl Sheet {
             }
             // Adds columns to data tables if the column is inserted inside the
             // table. Code is not impacted by this change.
-            if !dt.readonly && source_column >= pos.x && source_column < pos.x + dt.width() as i64 {
+            if !dt.readonly && source_column >= pos.x && source_column <= pos.x + dt.width() as i64
+            {
                 let column = column - pos.x;
                 // the table overlaps the inserted column
                 let display_index = dt.get_column_index_from_display_index(column as u32, true);
