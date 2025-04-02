@@ -502,6 +502,8 @@ impl GridController {
                     special,
                 );
 
+                println!("PasteSpecial::None values: {:?}", values);
+
                 if let Some(values) = values {
                     let cell_value_ops = self.clipboard_cell_values_operations(
                         cell_values,
@@ -714,11 +716,12 @@ impl GridController {
                 drop(html);
 
                 // parse into Clipboard
-                let clipboard = serde_json::from_str::<Clipboard>(&decoded)
+                let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
 
                 let mut ops = vec![];
+                let mut compute_code_ops = vec![];
 
                 // If the clipboard is larger than the selection, we need to paste multiple times.
                 // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
@@ -759,8 +762,7 @@ impl GridController {
 
                         if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id)
                         {
-                            let mut columns = clipboard.cells.columns.to_owned();
-                            for (x, col) in columns.iter_mut().enumerate() {
+                            for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                                 for (&y, cell) in col {
                                     if let CellValue::Code(code_cell) = cell {
                                         let original_pos = SheetPos {
@@ -778,7 +780,8 @@ impl GridController {
                                 }
                             }
                         }
-                        ops.extend(self.set_clipboard_cells(
+
+                        compute_code_ops.extend(self.set_clipboard_cells(
                             Pos::new(start_x as i64, start_y as i64),
                             &mut cell_values,
                             selection,
@@ -793,6 +796,8 @@ impl GridController {
                     sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
                     values: cell_values,
                 });
+
+                ops.extend(compute_code_ops);
 
                 println!("paste_html_operations: {:?}", ops.len());
 

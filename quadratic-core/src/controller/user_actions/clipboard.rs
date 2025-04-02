@@ -1,6 +1,7 @@
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::PasteSpecial;
+use crate::controller::operations::operation::Operation;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{GridBounds, SheetId};
 use crate::{Pos, Rect, SheetPos, SheetRect, a1::A1Selection};
@@ -47,6 +48,18 @@ impl GridController {
             if let Ok(ops) =
                 self.paste_html_operations(insert_at.into(), selection, html, special, end_pos)
             {
+                ops.iter().for_each(|op| match op {
+                    Operation::SetCellValues { sheet_pos, values } => {
+                        println!(
+                            "Operation::SetCellValues sheet_pos: {:?}, values: {:?}",
+                            sheet_pos, values
+                        );
+                    }
+                    Operation::ComputeCode { sheet_pos } => {
+                        println!("Operation::ComputeCode sheet_pos: {:?}", sheet_pos);
+                    }
+                    _ => {}
+                });
                 self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
                 return;
             }
