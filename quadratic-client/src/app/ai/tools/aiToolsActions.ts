@@ -41,11 +41,15 @@ const setCodeCellResult = async (
   const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
   if (!table || !codeCell) return 'Error executing set code cell value tool';
 
-  if (codeCell.std_err || codeCell.spill_error){
+  if (codeCell.std_err || codeCell.spill_error) {
     // log code run error in analytics, if enabled
     const aiAnalyticsSettings = pixiAppSettings.editorInteractionState.settings.analyticsAi;
     if (aiAnalyticsSettings && !!messageMetaData.chatId && messageMetaData.messageIndex >= 0) {
-      const codeRunError = JSON.stringify({code_string: codeCell.code_string , std_err: codeCell.std_err, spill_error: codeCell.spill_error});
+      const codeRunError = JSON.stringify({
+        code_string: codeCell.code_string,
+        std_err: codeCell.std_err,
+        spill_error: codeCell.spill_error,
+      });
       apiClient.ai.codeRunError({
         chatId: messageMetaData.chatId,
         messageIndex: messageMetaData.messageIndex,
@@ -55,8 +59,6 @@ const setCodeCellResult = async (
   }
 
   if (codeCell.std_err) {
-    
-
     return `
 The code cell run has resulted in an error:
 \`\`\`
