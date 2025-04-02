@@ -17,12 +17,12 @@ import {
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
   FormatClearIcon,
+  FormatDateTimeIcon,
   FormatNumberAutomaticIcon,
   FormatToggleCommasIcon,
   PercentIcon,
   ScientificIcon,
 } from '@/shared/components/Icons';
-import DateRangeIcon from '@mui/icons-material/DateRange';
 
 const commands: CommandGroup = {
   heading: 'Format',
@@ -99,7 +99,7 @@ const commands: CommandGroup = {
       label: 'Date and time format',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={props.openDateFormat} icon={<DateRangeIcon />} />;
+        return <CommandPaletteListItem {...props} action={props.openDateFormat} icon={<FormatDateTimeIcon />} />;
       },
     },
   ],

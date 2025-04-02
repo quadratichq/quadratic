@@ -3,14 +3,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { useMediaQuery } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const SHOW_SELECTION_SUMMARY_DELAY = 500;
 const DECIMAL_PLACES = 2;
 
 export const SelectionSummary = () => {
-  const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
   const [count, setCount] = useState<string | undefined>('');
   const [sum, setSum] = useState<string | undefined>('');
   const [avg, setAvg] = useState<string | undefined>('');
@@ -71,8 +69,6 @@ export const SelectionSummary = () => {
 
   const tooltipTitle = useMemo(() => (copied ? 'Copied!' : 'Copy to clipboard'), [copied]);
 
-  if (!isBigEnoughForActiveSelectionStats) return null;
-
   const cursor = sheets.sheet.cursor;
   if (!cursor.isMultiCursor() && !cursor.isColumnRow()) return null;
 
@@ -81,6 +77,7 @@ export const SelectionSummary = () => {
       {sum && (
         <TooltipPopover label={tooltipTitle}>
           <BottomBarItem
+            className="hidden lg:block"
             onClick={(e: React.MouseEvent<HTMLDivElement>) => {
               e.stopPropagation();
               e.preventDefault();
@@ -99,6 +96,7 @@ export const SelectionSummary = () => {
       {avg && (
         <TooltipPopover label={tooltipTitle}>
           <BottomBarItem
+            className="hidden lg:block"
             onClick={(e: React.MouseEvent<HTMLDivElement>) => {
               e.stopPropagation();
               e.preventDefault();
@@ -117,6 +115,7 @@ export const SelectionSummary = () => {
       {count && (
         <TooltipPopover label={tooltipTitle}>
           <BottomBarItem
+            className="hidden lg:block"
             onClick={(e: React.MouseEvent<HTMLDivElement>) => {
               e.stopPropagation();
               e.preventDefault();
