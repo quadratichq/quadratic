@@ -221,6 +221,8 @@ impl Sheet {
             .iter()
             .filter_map(move |(pos, data_table)| {
                 let output_rect = data_table.output_rect(*pos, false);
+                println!("output_rect: {:?}", output_rect);
+                println!("rect: {:?}", rect);
                 output_rect
                     .intersection(&rect)
                     .map(|intersection_rect| (output_rect, intersection_rect, data_table))

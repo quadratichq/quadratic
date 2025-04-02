@@ -502,8 +502,6 @@ impl GridController {
                     special,
                 );
 
-                println!("PasteSpecial::None values: {:?}", values);
-
                 if let Some(values) = values {
                     let cell_value_ops = self.clipboard_cell_values_operations(
                         cell_values,
@@ -897,15 +895,10 @@ mod test {
         let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
+        let selection = A1Selection::test_a1("E");
         let insert_at = Pos::from(selection.cursor);
         let operations = gc
-            .paste_html_operations(
-                insert_at,
-                &A1Selection::test_a1("E"),
-                html,
-                PasteSpecial::None,
-                insert_at,
-            )
+            .paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -927,15 +920,10 @@ mod test {
         let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
+        let selection = A1Selection::test_a1("5");
         let insert_at = Pos::from(selection.cursor);
         let operations = gc
-            .paste_html_operations(
-                insert_at,
-                &A1Selection::test_a1("5"),
-                html,
-                PasteSpecial::None,
-                insert_at,
-            )
+            .paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -1461,17 +1449,12 @@ mod test {
                 false,
             )
             .unwrap();
-        let insert_at = Pos::from(rect.min);
+        let selection = A1Selection::test_a1_sheet_id("B2", sheet_id);
+        let insert_at = Pos::from(selection.cursor);
 
         assert!(
-            gc.paste_html_operations(
-                insert_at,
-                &A1Selection::test_a1_sheet_id("B2", sheet_id),
-                html,
-                PasteSpecial::None,
-                insert_at,
-            )
-            .is_err()
+            gc.paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at,)
+                .is_err()
         );
 
         expect_js_call(
