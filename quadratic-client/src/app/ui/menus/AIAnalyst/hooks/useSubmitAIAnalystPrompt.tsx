@@ -16,7 +16,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -159,6 +159,7 @@ export function useSubmitAIAnalystPrompt() {
           },
         ]);
 
+        let lastMessageIndex = -1;
         let chatId = '';
         set(aiAnalystCurrentChatAtom, (prev) => {
           chatId = prev.id ? prev.id : v4();
@@ -175,6 +176,7 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const updatedMessages = await updateInternalContext({ context });
+            lastMessageIndex = getLastAIPromptMessageIndex(updatedMessages);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
@@ -211,7 +213,11 @@ export function useSubmitAIAnalystPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any);
+                const result = await aiToolsActions[aiTool](args as any, {
+                  source: 'AIAnalyst',
+                  chatId,
+                  messageIndex: lastMessageIndex + 1,
+                });
                 toolResultMessage.content.push({
                   id: toolCall.id,
                   text: result,

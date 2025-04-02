@@ -20,7 +20,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { getLastUserPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -242,7 +242,7 @@ const FeedbackButtons = memo(() => {
 
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
-        const messageIndex = getLastUserPromptMessageIndex(messages);
+        const messageIndex = getLastAIPromptMessageIndex(messages);
         if (messageIndex < 0) return;
 
         const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;

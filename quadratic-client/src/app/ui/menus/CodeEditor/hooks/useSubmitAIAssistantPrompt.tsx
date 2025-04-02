@@ -17,7 +17,7 @@ import {
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { CodeCell } from '@/app/shared/types/codeCell';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -133,6 +133,7 @@ export function useSubmitAIAssistantPrompt() {
           },
         ]);
 
+        let lastMessageIndex = -1;
         let chatId = '';
         set(aiAssistantIdAtom, (prev) => {
           chatId = prev ? prev : v4();
@@ -145,6 +146,7 @@ export function useSubmitAIAssistantPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const updatedMessages = await updateInternalContext({ codeCell });
+            lastMessageIndex = getLastAIPromptMessageIndex(updatedMessages);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAssistant',
@@ -177,7 +179,11 @@ export function useSubmitAIAssistantPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any);
+                const result = await aiToolsActions[aiTool](args as any,  {
+                  source: 'AIAssistant',
+                  chatId,
+                  messageIndex: lastMessageIndex + 1,
+                });
                 toolResultMessage.content.push({
                   id: toolCall.id,
                   text: result,

@@ -391,6 +391,13 @@ export const apiClient = {
         ApiSchemas['/v0/ai/feedback.PATCH.response']
       );
     },
+    codeRunError(body: ApiTypes['/v0/ai/codeRunError.PATCH.request']) {
+      return fetchFromApi(
+        `/v0/ai/codeRunError`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+        ApiSchemas['/v0/ai/codeRunError.PATCH.response']
+      );
+    },
   },
 
   postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {

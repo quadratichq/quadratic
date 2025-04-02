@@ -459,6 +459,15 @@ export const ApiSchemas = {
   '/v0/ai/feedback.PATCH.response': z.object({
     message: z.string(),
   }),
+
+  '/v0/ai/codeRunError.PATCH.request': z.object({
+    chatId: z.string().uuid(),
+    messageIndex: z.number(),
+    codeRunError: z.string(),
+  }),
+  '/v0/ai/codeRunError.PATCH.response': z.object({
+    message: z.string(),
+  }),
 };
 
 /**
