@@ -19,8 +19,8 @@ type AIAnalystContextProps = {
   initialContext?: Context;
   context: Context;
   setContext: React.Dispatch<React.SetStateAction<Context>>;
-  files: FileContent[];
-  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  files?: FileContent[];
+  setFiles?: React.Dispatch<React.SetStateAction<FileContent[]>>;
   editing: boolean;
   disabled: boolean;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
@@ -87,7 +87,7 @@ export const AIAnalystContext = memo(
     return (
       <div
         className={cn(
-          `z-10 ml-2 flex select-none flex-wrap items-center gap-1 text-xs`,
+          `z-10 flex select-none flex-wrap items-center gap-1 px-2 text-xs`,
           disabled && 'select-none',
           loading && 'select-none opacity-60'
         )}
@@ -101,13 +101,13 @@ export const AIAnalystContext = memo(
           />
         )}
 
-        {files.map((file, index) => (
+        {files?.map((file, index) => (
           <ContextPill
             key={`${index}-${file.fileName}`}
             primary={file.fileName}
             secondary=""
             disabled={disabled}
-            onClick={() => setFiles(files.filter((f) => f !== file))}
+            onClick={() => setFiles?.(files.filter((f) => f !== file))}
           />
         ))}
 

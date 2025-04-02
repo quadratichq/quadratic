@@ -1,5 +1,10 @@
 import { Action } from '@/app/actions/actions';
-import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import {
+  aiAnalystAbortControllerAtom,
+  aiAnalystFilesAtom,
+  aiAnalystLoadingAtom,
+  showAIAnalystAtom,
+} from '@/app/atoms/aiAnalystAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
@@ -19,6 +24,7 @@ export const AIAnalystUserMessageForm = memo(
     const { initialContext, ...rest } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
+    const [files, setFiles] = useRecoilState(aiAnalystFilesAtom);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
@@ -40,6 +46,8 @@ export const AIAnalystUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
+        files={files}
+        setFiles={setFiles}
         submitPrompt={(content) => {
           mixpanel.track('[AIAnalyst].submitPrompt');
           submitPrompt({ content, context, messageIndex: props.messageIndex });

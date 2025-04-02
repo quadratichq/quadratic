@@ -3,7 +3,6 @@ import {
   editorInteractionStateSettingsAtom,
   editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { debug } from '@/app/debugFlags';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
@@ -38,11 +37,13 @@ export type AIUserMessageFormWrapperProps = {
   messageIndex?: number;
 };
 
-type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
+type AIUserMessageFormProps = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
-  submitPrompt: (content: Content) => void;
+  files?: FileContent[];
+  setFiles?: SetterOrUpdater<FileContent[]>;
+  submitPrompt: (content: Content, files?: FileContent[]) => void;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   ctx?: {
@@ -53,7 +54,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
 };
 
 export const AIUserMessageForm = memo(
-  forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
+  forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
     const {
       initialContent,
       ctx,
@@ -62,15 +63,14 @@ export const AIUserMessageForm = memo(
       abortController,
       loading,
       setLoading,
+      files,
+      setFiles,
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
-
-    const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
-    const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
 
     const initialPrompt = useMemo(
       () =>
@@ -83,35 +83,40 @@ export const AIUserMessageForm = memo(
     const [prompt, setPrompt] = useState<string>(initialPrompt ?? '');
 
     const submit = useCallback(() => {
-      submitPrompt([...files, { type: 'text', text: prompt }]);
-    }, [files, prompt, submitPrompt]);
+      submitPrompt([{ type: 'text', text: prompt }]);
+    }, [prompt, submitPrompt]);
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
       setLoading(false);
     }, [abortController, setLoading]);
 
-    const handleFiles = useCallback((e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
-      if (!debug) return;
+    const handleFiles = useCallback(
+      (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
+        if (!setFiles) {
+          return;
+        }
 
-      const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
-      if (files && files.length > 0) {
-        e.preventDefault();
+        const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
+        if (files && files.length > 0) {
+          e.preventDefault();
 
-        for (const file of files) {
-          const mimeType = file.type;
-          if (isSupportedMimeType(mimeType)) {
-            const reader = new FileReader();
-            reader.onloadend = (e) => {
-              const dataUrl = e.target?.result as string;
-              const base64 = dataUrl.split(',')[1];
-              setFiles((prev) => [...prev, { type: 'data', data: base64, mimeType, fileName: file.name }]);
-            };
-            reader.readAsDataURL(file);
+          for (const file of files) {
+            const mimeType = file.type;
+            if (isSupportedMimeType(mimeType)) {
+              const reader = new FileReader();
+              reader.onloadend = (e) => {
+                const dataUrl = e.target?.result as string;
+                const base64 = dataUrl.split(',')[1];
+                setFiles((prev) => [...prev, { type: 'data', data: base64, mimeType, fileName: file.name }]);
+              };
+              reader.readAsDataURL(file);
+            }
           }
         }
-      }
-    }, []);
+      },
+      [setFiles]
+    );
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
@@ -164,7 +169,7 @@ export const AIUserMessageForm = memo(
             initialContext={ctx.initialContext}
             context={ctx.context}
             setContext={ctx.setContext}
-            files={files}
+            files={editing ? files : []}
             setFiles={setFiles}
             editing={editing}
             disabled={!editing}
@@ -192,7 +197,6 @@ export const AIUserMessageForm = memo(
                 submit();
 
                 if (initialPrompt === undefined) {
-                  setFiles([]);
                   setPrompt('');
                   textareaRef.current?.focus();
                 } else {

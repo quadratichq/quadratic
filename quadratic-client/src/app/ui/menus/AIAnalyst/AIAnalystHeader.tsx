@@ -4,6 +4,7 @@ import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystFilesAtom,
   aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
@@ -23,6 +24,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
+  const setFiles = useSetRecoilState(aiAnalystFilesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
@@ -42,6 +44,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
             className="text-muted-foreground hover:text-foreground"
             disabled={loading || messagesCount === 0}
             onClick={() => {
+              setFiles([]);
               setCurrentChat({
                 id: '',
                 name: '',

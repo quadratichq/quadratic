@@ -1,4 +1,9 @@
-import { aiAnalystChatsAtom, aiAnalystCurrentChatAtom, aiAnalystShowChatHistoryAtom } from '@/app/atoms/aiAnalystAtom';
+import {
+  aiAnalystChatsAtom,
+  aiAnalystCurrentChatAtom,
+  aiAnalystFilesAtom,
+  aiAnalystShowChatHistoryAtom,
+} from '@/app/atoms/aiAnalystAtom';
 import { DeleteIcon, FileRenameIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -13,6 +18,7 @@ const DEFAULT_CHAT_NAME = 'Untitled chat';
 export const AIAnalystChatHistory = memo(() => {
   const [chats, setChats] = useRecoilState(aiAnalystChatsAtom);
   const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
+  const setFiles = useSetRecoilState(aiAnalystFilesAtom);
   const setShowChatHistory = useSetRecoilState(aiAnalystShowChatHistoryAtom);
   const [searchValue, setSearchValue] = useState('');
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -56,6 +62,7 @@ export const AIAnalystChatHistory = memo(() => {
                           return;
                         }
                         setCurrentChat(chat);
+                        setFiles([]);
                       }}
                     >
                       {isBeingRenamed ? (
