@@ -1,5 +1,5 @@
 use crate::{
-    CopyFormats, Pos,
+    CopyFormats,
     a1::A1Selection,
     controller::{
         GridController,
@@ -74,7 +74,7 @@ impl GridController {
 
         // paste the copied data into the new columns
         let selection = A1Selection::from_single_cell((to, 1, sheet_id).into());
-        let insert_at = Pos::from(selection.cursor);
+        let insert_at = selection.cursor;
 
         if let Ok(ops) =
             self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
@@ -147,7 +147,7 @@ impl GridController {
 
         // paste the copied data into the new rows
         let selection = A1Selection::from_single_cell((1, to, sheet_id).into());
-        let insert_at = Pos::from(selection.cursor);
+        let insert_at = selection.cursor;
 
         if let Ok(ops) =
             self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)

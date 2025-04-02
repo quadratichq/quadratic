@@ -647,8 +647,8 @@ impl GridController {
         });
 
         // loop through the paste area and collect the operations
-        for (start_x, x) in (start_pos.x..=max_x).step_by(w as usize).enumerate() {
-            for (start_y, y) in (start_pos.y..=max_y).step_by(h as usize).enumerate() {
+        for (start_x, x) in (start_pos.x..=max_x).step_by(w).enumerate() {
+            for (start_y, y) in (start_pos.y..=max_y).step_by(h).enumerate() {
                 let cell_value_pos = Pos::from((start_x, start_y));
                 let sheet_pos = SheetPos::new(start_pos.sheet_id, x, y);
 
@@ -777,7 +777,7 @@ impl GridController {
                                         };
                                         code_cell.adjust_references(
                                             new_default_sheet_id,
-                                            &self.a1_context(),
+                                            self.a1_context(),
                                             original_pos,
                                             adjust,
                                         );
@@ -922,7 +922,7 @@ mod test {
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
         let selection = A1Selection::test_a1("E");
-        let insert_at = Pos::from(selection.cursor);
+        let insert_at = selection.cursor;
         let operations = gc
             .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
             .unwrap();
@@ -947,7 +947,7 @@ mod test {
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
         let selection = A1Selection::test_a1("5");
-        let insert_at = Pos::from(selection.cursor);
+        let insert_at = selection.cursor;
         let operations = gc
             .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
             .unwrap();
@@ -977,7 +977,7 @@ mod test {
         gc.add_sheet(None);
 
         let sheet_id = gc.sheet_ids()[1];
-        let insert_at = Pos::from(selection.cursor);
+        let insert_at = selection.cursor;
         let operations = gc
             .paste_html_operations(
                 insert_at,
@@ -1471,7 +1471,7 @@ mod test {
             )
             .unwrap();
         let selection = A1Selection::test_a1_sheet_id("B2", sheet_id);
-        let insert_at = Pos::from(selection.cursor);
+        let insert_at = selection.cursor;
 
         assert!(
             gc.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
