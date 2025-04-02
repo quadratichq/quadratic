@@ -368,7 +368,7 @@ impl GridController {
     fn clipboard_formats_operations(
         &self,
         sheet_id: SheetId,
-        mut sheet_format_updates: SheetFormatUpdates,
+        sheet_format_updates: &mut SheetFormatUpdates,
         formats_rect: Rect,
     ) -> Vec<Operation> {
         let mut ops = vec![];
@@ -418,13 +418,6 @@ impl GridController {
             }
         }
 
-        if !sheet_format_updates.is_default() {
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id,
-                formats: sheet_format_updates,
-            });
-        }
-
         ops
     }
 
@@ -457,6 +450,7 @@ impl GridController {
         &self,
         cell_value_pos: Pos,
         cell_values: &mut CellValues,
+        formats: &mut SheetFormatUpdates,
         selection: &A1Selection,
         clipboard: &Clipboard,
         special: PasteSpecial,
@@ -560,7 +554,7 @@ impl GridController {
             let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
             let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
 
-            if let Some(mut formats) = clipboard.formats.to_owned() {
+            if !formats.is_default() {
                 formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
                 let formats_ops = self.clipboard_formats_operations(
                     selection.sheet_id,
@@ -673,10 +667,15 @@ impl GridController {
                 Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
             let formats_ops = self.clipboard_formats_operations(
                 start_pos.sheet_id,
-                sheet_format_updates,
+                &mut sheet_format_updates,
                 formats_rect,
             );
             ops.extend(formats_ops);
+
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: start_pos.sheet_id,
+                formats: sheet_format_updates,
+            });
         }
 
         ops.extend(compute_code_ops);
@@ -730,6 +729,11 @@ impl GridController {
                 let mut cell_values =
                     CellValues::new(cell_value_width as u32, cell_value_height as u32);
 
+                let mut formats = clipboard
+                    .formats
+                    .to_owned()
+                    .unwrap_or_else(SheetFormatUpdates::default);
+
                 for (start_x, x) in (insert_at.x..=max_x)
                     .step_by(clipboard.w as usize)
                     .enumerate()
@@ -782,6 +786,7 @@ impl GridController {
                         compute_code_ops.extend(self.set_clipboard_cells(
                             Pos::new(start_x as i64, start_y as i64),
                             &mut cell_values,
+                            &mut formats,
                             selection,
                             &clipboard,
                             special,
@@ -790,10 +795,18 @@ impl GridController {
                     }
                 }
 
+                // cell values need to be set before the compute_code_ops
                 ops.push(Operation::SetCellValues {
                     sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
                     values: cell_values,
                 });
+
+                if !formats.is_default() {
+                    ops.push(Operation::SetCellFormatsA1 {
+                        sheet_id: selection.sheet_id,
+                        formats,
+                    });
+                }
 
                 ops.extend(compute_code_ops);
 
