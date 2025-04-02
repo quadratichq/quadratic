@@ -15,7 +15,6 @@ import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
@@ -23,7 +22,6 @@ import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
 export function ReturnTypeInspector() {
-  const theme = useTheme();
   const loading = useRecoilValue(codeEditorLoadingAtom);
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const mode = useMemo(() => getLanguage(language), [language]);
@@ -128,10 +126,7 @@ export function ReturnTypeInspector() {
     const fullMessage = evaluationResult.output_type.split('\n');
     message = (
       <>
-        Returned{' '}
-        <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
-          {fullMessage[0]}
-        </span>
+        Returned <ReturnType>{fullMessage[0]}</ReturnType>
         {fullMessage[1]}
       </>
     );
