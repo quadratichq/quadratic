@@ -55,7 +55,7 @@ impl GridController {
         // if not quadratic html, then use the plain text
         if let Some(plain_text) = plain_text {
             if let Ok(ops) =
-                self.paste_plain_text_operations(insert_at, plain_text, special, end_pos)
+                self.paste_plain_text_operations(insert_at, selection, plain_text, special, end_pos)
             {
                 self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
             }

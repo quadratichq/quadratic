@@ -581,6 +581,7 @@ impl GridController {
     pub fn paste_plain_text_operations(
         &mut self,
         start_pos: SheetPos,
+        selection: &A1Selection,
         plain_text: String,
         special: PasteSpecial,
         end_pos: Pos,
@@ -673,9 +674,11 @@ impl GridController {
             });
         }
 
-        ops.extend(compute_code_ops);
+        ops.push(Operation::SetCursorA1 {
+            selection: selection.to_owned(),
+        });
 
-        println!("paste_plain_text_operations: {:?}", ops.len());
+        ops.extend(compute_code_ops);
 
         Ok(ops)
     }
@@ -821,8 +824,6 @@ impl GridController {
                 });
 
                 ops.extend(compute_code_ops);
-
-                println!("paste_html_operations: {:?}", ops.len());
 
                 Ok(ops)
             }
@@ -1273,7 +1274,7 @@ mod test {
         print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
 
-        let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+        let cursor = A1Selection::from_rect(SheetRect::from_numbers(10, 1, 1, 1, sheet_id));
         expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     }
 
