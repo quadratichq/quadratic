@@ -401,7 +401,7 @@ export const SheetBar = (): JSX.Element => {
   return (
     <div
       ref={sheetBarRef}
-      className="align-stretch z-[1] flex h-8 flex-shrink-0 select-none flex-row justify-between bg-background text-xs text-muted-foreground"
+      className="align-stretch z-[1] flex h-8 flex-shrink-0 select-none flex-row justify-between bg-background text-xs"
     >
       {hasPermission && (
         <SheetBarButton
