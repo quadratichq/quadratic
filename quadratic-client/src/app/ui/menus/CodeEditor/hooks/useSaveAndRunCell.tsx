@@ -1,5 +1,6 @@
 import {
   codeEditorCodeCellAtom,
+  codeEditorCodeStringAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -30,6 +31,7 @@ export const useSaveAndRunCell = () => {
         });
 
         set(codeEditorEditorContentAtom, editorContent ?? '');
+        set(codeEditorCodeStringAtom, editorContent ?? '');
         set(codeEditorDiffEditorContentAtom, undefined);
 
         mixpanel.track('[CodeEditor].cellRun', {
