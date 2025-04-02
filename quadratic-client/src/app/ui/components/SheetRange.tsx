@@ -50,7 +50,7 @@ export const SheetRange = (props: Props) => {
     if (onlyCurrentSheet) {
       return onlyCurrentSheet;
     }
-    const id = changeCursor === true ? sheets.current : changeCursor ?? sheets.current;
+    const id = changeCursor === true ? sheets.current : (changeCursor ?? sheets.current);
     return id;
   }, [changeCursor, onlyCurrentSheet]);
 
