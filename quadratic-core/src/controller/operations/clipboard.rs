@@ -739,6 +739,7 @@ impl GridController {
                     CellValues::new(cell_value_width as u32, cell_value_height as u32);
                 let mut formats = clipboard.formats.to_owned().unwrap_or_default();
                 let mut borders = clipboard.borders.to_owned().unwrap_or_default();
+                let source_columns = clipboard.cells.columns.to_owned();
 
                 // loop through the clipboard and replace cell references in formulas and other languages
                 for (start_x, x) in (insert_at.x..=max_x)
@@ -750,14 +751,16 @@ impl GridController {
                         .enumerate()
                     {
                         let pos = Pos { x, y };
+                        let dx = insert_at.x - clipboard.origin.x + start_x as i64;
+                        let dy = insert_at.y - clipboard.origin.y + start_y as i64;
 
                         let adjust = match clipboard.operation {
                             ClipboardOperation::Cut => RefAdjust::NO_OP,
                             ClipboardOperation::Copy => RefAdjust {
                                 sheet_id: None,
                                 relative_only: true,
-                                dx: insert_at.x - clipboard.origin.x,
-                                dy: insert_at.y - clipboard.origin.y,
+                                dx,
+                                dy,
                                 x_start: 0,
                                 y_start: 0,
                             },
@@ -767,16 +770,20 @@ impl GridController {
                             ClipboardOperation::Copy => clipboard.origin.sheet_id,
                         };
 
+                        // restore the original columns for each pass to avoid replacing the replaced code cells
+                        clipboard.cells.columns = source_columns.to_owned();
+
                         if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id)
                         {
-                            for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                                for (&y, cell) in col {
+                            for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
+                                for (cols_y, cell) in col {
                                     if let CellValue::Code(code_cell) = cell {
                                         let original_pos = SheetPos {
-                                            x: clipboard.origin.x + x as i64,
-                                            y: clipboard.origin.y + y as i64,
+                                            x: clipboard.origin.x + cols_x as i64,
+                                            y: clipboard.origin.y + *cols_y as i64,
                                             sheet_id: clipboard.origin.sheet_id,
                                         };
+
                                         code_cell.adjust_references(
                                             new_default_sheet_id,
                                             self.a1_context(),

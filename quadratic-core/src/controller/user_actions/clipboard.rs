@@ -816,7 +816,7 @@ mod test {
             .sheet(sheet_id)
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
-        let paste_rect = SheetRect::new(2, 2, 2, 3, sheet_id);
+        let paste_rect = SheetRect::new(2, 2, 3, 3, sheet_id);
 
         // paste as html
         let paste_selection = A1Selection::from_rect(paste_rect);
@@ -825,6 +825,8 @@ mod test {
         print_table(&gc, sheet_id, Rect::new_span(pos, paste_rect.max));
         assert_code_cell_value(&gc, sheet_id, 2, 2, "A2 + 1");
         assert_code_cell_value(&gc, sheet_id, 2, 3, "A3 + 1");
+        assert_code_cell_value(&gc, sheet_id, 3, 2, "B2 + 1");
+        assert_code_cell_value(&gc, sheet_id, 3, 3, "B3 + 1");
     }
 
     #[test]
