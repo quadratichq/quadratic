@@ -442,4 +442,8 @@ export class SheetCursor {
       return Array.from(response);
     }
   };
+
+  isTableColumnSelected = (tableName: string, column: number): boolean => {
+    return this.jsSelection.isTableColumnSelected(tableName, column);
+  };
 }
