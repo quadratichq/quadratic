@@ -26,8 +26,11 @@ use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
+    // paste normal
     None,
+    // paste only values
     Values,
+    // paste only formatting/borders
     Formats,
 }
 
@@ -122,6 +125,7 @@ impl GridController {
             ClipboardOperation::Cut,
             include_plain_text,
         )?;
+
         let operations = self.delete_values_and_formatting_operations(selection, true);
 
         Ok((operations, js_clipboard))
@@ -324,6 +328,7 @@ impl GridController {
 
                         matches!(data_table.kind, DataTableKind::Import(_))
                     });
+
                 if paste_in_import {
                     let message = "Cannot place table within a table";
                     crate::wasm_bindings::js::jsClientMessage(
@@ -446,8 +451,11 @@ impl GridController {
         }
     }
 
+    /// Collect the operations to paste the clipboard cells
+    /// For cell values, formats and borders, we just add to the data structurs to avoid extra operations
     fn set_clipboard_cells(
         &self,
+        mut start_pos: Pos,
         cell_value_pos: Pos,
         cell_values: &mut CellValues,
         formats: &mut SheetFormatUpdates,
@@ -455,10 +463,8 @@ impl GridController {
         selection: &A1Selection,
         clipboard: &Clipboard,
         special: PasteSpecial,
-        mut start_pos: Pos,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
-
         let mut cursor_translate_x = start_pos.x - clipboard.origin.x;
         let mut cursor_translate_y = start_pos.y - clipboard.origin.y;
 
@@ -578,18 +584,20 @@ impl GridController {
         Ok(ops)
     }
 
+    /// Collect the operations to paste the clipboard cells from plain text
     pub fn paste_plain_text_operations(
         &mut self,
         start_pos: SheetPos,
+        end_pos: Pos,
         selection: &A1Selection,
         plain_text: String,
         special: PasteSpecial,
-        end_pos: Pos,
     ) -> Result<Vec<Operation>> {
         // nothing to paste from plain text for formats
         if matches!(special, PasteSpecial::Formats) {
             return Ok(vec![]);
         }
+
         let lines: Vec<&str> = plain_text.split('\n').collect();
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
@@ -601,16 +609,20 @@ impl GridController {
             .unwrap_or(0);
         let h = lines.len();
 
+        // If the clipboard is larger than the selection, we need to paste multiple times.
+        // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
         let (max_x, max_y, cell_value_width, cell_value_height) =
             Self::get_max_paste_area(start_pos.into(), end_pos, w as u32, h as u32);
+
+        // collect all cell values, values and sheet format updates for a a single operation
         let mut cell_values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
         let mut values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
         let mut sheet_format_updates = SheetFormatUpdates::default();
 
+        // collect the plain text clipboard cells
         lines.iter().enumerate().for_each(|(y, line)| {
             line.split('\t').enumerate().for_each(|(x, value)| {
                 let (cell_value, format_update) = self.string_to_cell_value(value, true);
-
                 let is_code = matches!(cell_value, CellValue::Code(_));
 
                 if cell_value != CellValue::Blank {
@@ -634,22 +646,20 @@ impl GridController {
             });
         });
 
+        // loop through the paste area and collect the operations
         for (start_x, x) in (start_pos.x..=max_x).step_by(w as usize).enumerate() {
             for (start_y, y) in (start_pos.y..=max_y).step_by(h as usize).enumerate() {
-                let cell_value_pos = Pos {
-                    x: start_x as i64,
-                    y: start_y as i64,
-                };
+                let cell_value_pos = Pos::from((start_x, start_y));
                 let sheet_pos = SheetPos::new(start_pos.sheet_id, x, y);
-                let cell_value_ops = self.clipboard_cell_values_operations(
+
+                ops.extend(self.clipboard_cell_values_operations(
                     &mut cell_values,
                     cell_value_pos,
                     sheet_pos,
-                    values.to_owned(),
+                    values.to_owned(), // we need to copy the values for each paste block
                     None,
                     None,
-                )?;
-                ops.extend(cell_value_ops);
+                )?);
             }
         }
 
@@ -661,12 +671,12 @@ impl GridController {
         if !sheet_format_updates.is_default() {
             let formats_rect =
                 Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
-            let formats_ops = self.clipboard_formats_operations(
+
+            ops.extend(self.clipboard_formats_operations(
                 start_pos.sheet_id,
                 &mut sheet_format_updates,
                 formats_rect,
-            );
-            ops.extend(formats_ops);
+            ));
 
             ops.push(Operation::SetCellFormatsA1 {
                 sheet_id: start_pos.sheet_id,
@@ -687,10 +697,10 @@ impl GridController {
     pub fn paste_html_operations(
         &mut self,
         insert_at: Pos,
+        end_pos: Pos,
         selection: &A1Selection,
         html: String,
         special: PasteSpecial,
-        end_pos: Pos,
     ) -> Result<Vec<Operation>> {
         let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
 
@@ -723,20 +733,13 @@ impl GridController {
                 let (max_x, max_y, cell_value_width, cell_value_height) =
                     Self::get_max_paste_area(insert_at, end_pos, clipboard.w, clipboard.h);
 
-                // collect all cell values for a a single operation
+                // collect all cell values, values and sheet format updates for a a single operation
                 let mut cell_values =
                     CellValues::new(cell_value_width as u32, cell_value_height as u32);
+                let mut formats = clipboard.formats.to_owned().unwrap_or_default();
+                let mut borders = clipboard.borders.to_owned().unwrap_or_default();
 
-                let mut formats = clipboard
-                    .formats
-                    .to_owned()
-                    .unwrap_or_else(SheetFormatUpdates::default);
-
-                let mut borders = clipboard
-                    .borders
-                    .to_owned()
-                    .unwrap_or_else(BordersUpdates::default);
-
+                // loop through the clipboard and replace cell references in formulas and other languages
                 for (start_x, x) in (insert_at.x..=max_x)
                     .step_by(clipboard.w as usize)
                     .enumerate()
@@ -746,9 +749,6 @@ impl GridController {
                         .enumerate()
                     {
                         let pos = Pos { x, y };
-
-                        // loop through the clipboard and replace cell references in
-                        // formulas and other languages
                         let adjust = match clipboard.operation {
                             ClipboardOperation::Cut => RefAdjust::NO_OP,
                             ClipboardOperation::Copy => RefAdjust {
@@ -787,6 +787,7 @@ impl GridController {
                         }
 
                         compute_code_ops.extend(self.set_clipboard_cells(
+                            pos,
                             Pos::new(start_x as i64, start_y as i64),
                             &mut cell_values,
                             &mut formats,
@@ -794,7 +795,6 @@ impl GridController {
                             selection,
                             &clipboard,
                             special,
-                            pos,
                         )?);
                     }
                 }
@@ -924,7 +924,7 @@ mod test {
         let selection = A1Selection::test_a1("E");
         let insert_at = Pos::from(selection.cursor);
         let operations = gc
-            .paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at)
+            .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -949,7 +949,7 @@ mod test {
         let selection = A1Selection::test_a1("5");
         let insert_at = Pos::from(selection.cursor);
         let operations = gc
-            .paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at)
+            .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -981,10 +981,10 @@ mod test {
         let operations = gc
             .paste_html_operations(
                 insert_at,
+                insert_at,
                 &A1Selection::all(sheet_id),
                 html,
                 PasteSpecial::None,
-                insert_at,
             )
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
@@ -1241,13 +1241,8 @@ mod test {
 
         let (mut gc, sheet_id, _, _) = simple_csv();
         let paste = |gc: &mut GridController, x, y, html| {
-            gc.paste_from_clipboard(
-                &A1Selection::from_xy(x, y, sheet_id),
-                None,
-                Some(html),
-                PasteSpecial::None,
-                None,
-            );
+            let selection = A1Selection::from_xy(x, y, sheet_id);
+            gc.paste_from_clipboard(&selection, None, Some(html), PasteSpecial::None, None);
         };
 
         let table_ref = TableRef::new("simple.csv");
@@ -1479,7 +1474,7 @@ mod test {
         let insert_at = Pos::from(selection.cursor);
 
         assert!(
-            gc.paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at,)
+            gc.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
                 .is_err()
         );
 

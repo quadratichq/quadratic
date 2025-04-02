@@ -150,6 +150,14 @@ impl From<(u32, u32)> for Pos {
         }
     }
 }
+impl From<(usize, usize)> for Pos {
+    fn from(pos: (usize, usize)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
 impl From<[i64; 2]> for Pos {
     fn from(pos: [i64; 2]) -> Self {
         Pos {

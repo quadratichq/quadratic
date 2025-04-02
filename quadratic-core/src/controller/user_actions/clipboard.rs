@@ -9,6 +9,7 @@ use crate::{Pos, Rect, SheetPos, SheetRect, a1::A1Selection};
 // To decode the html, use https://codebeautify.org/html-decode-string
 
 impl GridController {
+    /// using a selection, cut the contents on the grid to the clipboard
     pub fn cut_to_clipboard(
         &mut self,
         selection: &A1Selection,
@@ -20,6 +21,7 @@ impl GridController {
         Ok(js_clipboard)
     }
 
+    /// using a selection, paste the contents from the clipboard on the grid
     pub fn paste_from_clipboard(
         &mut self,
         selection: &A1Selection,
@@ -45,7 +47,7 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) =
-                self.paste_html_operations(insert_at.into(), selection, html, special, end_pos)
+                self.paste_html_operations(insert_at_pos, end_pos, selection, html, special)
             {
                 self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
                 return;
@@ -55,13 +57,15 @@ impl GridController {
         // if not quadratic html, then use the plain text
         if let Some(plain_text) = plain_text {
             if let Ok(ops) =
-                self.paste_plain_text_operations(insert_at, selection, plain_text, special, end_pos)
+                self.paste_plain_text_operations(insert_at, end_pos, selection, plain_text, special)
             {
                 self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
             }
         }
     }
 
+    /// move cells from source to dest
+    /// columns and rows are optional, if true, then the cells will be moved horizontally or vertically
     pub fn move_cells(
         &mut self,
         source: SheetRect,
@@ -74,6 +78,9 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
     }
 
+    /// move a code cell vertically
+    /// sheet_end is true if the code cell is at the end of the sheet
+    /// reverse is true if the code cell should be moved up
     pub fn move_code_cell_vertically(
         &mut self,
         sheet_id: SheetId,
@@ -116,6 +123,9 @@ impl GridController {
         Some(dest.into())
     }
 
+    /// move a code cell horizontally
+    /// sheet_end is true if the code cell is at the end of the sheet
+    /// reverse is true if the code cell should be moved left
     pub fn move_code_cell_horizontally(
         &mut self,
         sheet_id: SheetId,
@@ -762,39 +772,31 @@ mod test {
             .sheet(sheet_id)
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
-
         let paste_rect = SheetRect::new(pos.x, pos.y + 1, pos.x + 1, pos.y + 3, sheet_id);
-        gc.paste_from_clipboard(
-            &A1Selection::from_rect(paste_rect),
-            None,
-            Some(html),
-            PasteSpecial::None,
-            None,
-        );
 
         let assert_range_paste = |gc: &GridController| {
-            print_table(
-                &gc,
-                sheet_id,
-                Rect::new(pos.x, pos.y, paste_rect.max.x, paste_rect.max.y),
-            );
+            print_table(&gc, sheet_id, Rect::new_span(pos, paste_rect.max));
 
+            // all values in the paste_rect should be 1
             paste_rect.iter().for_each(|pos| {
                 assert_cell_value(&gc, sheet_id, pos.x, pos.y, 1.into());
             });
         };
 
+        // paste as html
+        let paste_selection = A1Selection::from_rect(paste_rect);
+        gc.paste_from_clipboard(&paste_selection, None, Some(html), PasteSpecial::None, None);
         assert_range_paste(&gc);
 
+        // undo the paste and paste again as plain text
         gc.undo(None);
         gc.paste_from_clipboard(
-            &A1Selection::from_rect(paste_rect),
+            &paste_selection,
             Some(plain_text),
             None,
             PasteSpecial::None,
             None,
         );
-
         assert_range_paste(&gc);
     }
 

@@ -77,7 +77,7 @@ impl GridController {
         let insert_at = Pos::from(selection.cursor);
 
         if let Ok(ops) =
-            self.paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at)
+            self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
         {
             transaction.operations.extend(ops);
         }
@@ -150,7 +150,7 @@ impl GridController {
         let insert_at = Pos::from(selection.cursor);
 
         if let Ok(ops) =
-            self.paste_html_operations(insert_at, &selection, html, PasteSpecial::None, insert_at)
+            self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
         {
             transaction.operations.extend(ops);
         }
