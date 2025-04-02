@@ -11,7 +11,7 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [
   validateRequestSchema(
@@ -29,7 +29,7 @@ export default [
 async function handler(req: Request, res: Response) {
   const {
     params: { uuid },
-    user: { id: userId, auth0Id },
+    user: { id: userId },
   } = req as RequestWithUser;
 
   // If the billing limit is not set, we don't need to check if the user has exceeded it
