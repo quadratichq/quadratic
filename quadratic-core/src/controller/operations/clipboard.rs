@@ -451,6 +451,7 @@ impl GridController {
         cell_value_pos: Pos,
         cell_values: &mut CellValues,
         formats: &mut SheetFormatUpdates,
+        borders: &mut BordersUpdates,
         selection: &A1Selection,
         clipboard: &Clipboard,
         special: PasteSpecial,
@@ -569,16 +570,10 @@ impl GridController {
                 ops.extend(formats_ops);
             }
 
-            if let Some(mut borders) = clipboard.borders.to_owned() {
+            if !borders.is_empty() {
                 borders.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
-                ops.push(Operation::SetBordersA1 {
-                    sheet_id: selection.sheet_id,
-                    borders,
-                });
             }
         }
-
-        ops.push(Operation::SetCursorA1 { selection: cursor });
 
         Ok(ops)
     }
@@ -734,6 +729,11 @@ impl GridController {
                     .to_owned()
                     .unwrap_or_else(SheetFormatUpdates::default);
 
+                let mut borders = clipboard
+                    .borders
+                    .to_owned()
+                    .unwrap_or_else(BordersUpdates::default);
+
                 for (start_x, x) in (insert_at.x..=max_x)
                     .step_by(clipboard.w as usize)
                     .enumerate()
@@ -787,6 +787,7 @@ impl GridController {
                             Pos::new(start_x as i64, start_y as i64),
                             &mut cell_values,
                             &mut formats,
+                            &mut borders,
                             selection,
                             &clipboard,
                             special,
@@ -807,6 +808,17 @@ impl GridController {
                         formats,
                     });
                 }
+
+                if !borders.is_empty() {
+                    ops.push(Operation::SetBordersA1 {
+                        sheet_id: selection.sheet_id,
+                        borders,
+                    });
+                }
+
+                ops.push(Operation::SetCursorA1 {
+                    selection: selection.to_owned(),
+                });
 
                 ops.extend(compute_code_ops);
 
