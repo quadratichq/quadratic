@@ -153,7 +153,7 @@ Note: All this data is only for your reference to data on the sheet. This data c
 - Tables can be referenced using \`q.cells("Table_Name")\` to reference the entire table.\n
 - In Formulas and JavaScript use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header. This does not work in Python.\n
 - In all languages use \`q.cells("Table_Name[#HEADERS]")\` to reference the headers of the table.\n
-- In Formulas and JavaScript use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table. This does not work in Python.\n`
+- In Formulas and JavaScript use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table. This does not work in Python.\n`,
           },
         ],
         contextType: 'tables',
