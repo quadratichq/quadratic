@@ -7,7 +7,6 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        js_types::JsSnackbarSeverity,
     },
 };
 
