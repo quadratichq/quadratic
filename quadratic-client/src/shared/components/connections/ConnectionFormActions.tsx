@@ -115,7 +115,17 @@ export function ConnectionFormActions({
           )}
         </div>
         {connectionState === 'error' && (
-          <div className="mt-2 font-mono text-xs text-destructive">{connectionError}</div>
+          <div className="mt-2 font-mono text-xs text-destructive">
+            {connectionError} Need help?{' '}
+            <a
+              href="https://www.quadratichq.com/contact"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline hover:text-blue-700"
+            >
+              Contact us.
+            </a>
+          </div>
         )}
       </div>
 
