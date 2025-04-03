@@ -3,12 +3,92 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetRect } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { authClient } from '@/auth/auth';
+import { apiClient } from '@/shared/api/apiClient';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { z } from 'zod';
+
+// Direct API call without using hooks
+async function generateCodeCellName(language: CodeCellLanguage, code: string): Promise<string | null> {
+  try {
+    // Get the current file UUID
+    const fileUuid = pixiAppSettings.editorInteractionState.fileUuid;
+    if (!fileUuid) {
+      return null;
+    }
+
+    // Call the existing AI chat API
+    const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
+    const token = await authClient.getTokenOrRedirect();
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        chatId: crypto.randomUUID(),
+        fileUuid: fileUuid,
+        source: 'GetCodeCellName',
+        modelKey: 'vertexai:gemini-2.0-flash-001',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Generate a descriptive name for this ${language} code cell. 
+The name should be concise (maximum 20 characters), descriptive of what the code does, and should use camelCase (no spaces).
+Don't use generic names like "Python1" or "JavaScript2". Instead, focus on the purpose of the code.
+
+Here's the code:
+\`\`\`
+${code}
+\`\`\`
+
+Just respond with the name only, no explanation needed.`,
+              },
+            ],
+            contextType: 'userPrompt',
+          },
+        ],
+        useStream: false,
+        useToolsPrompt: false,
+        useQuadraticContext: false,
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    // Extract the text from the response content
+    let name = '';
+    if (data.content && data.content.length > 0) {
+      const textContent = data.content.find((c: { type: string; text?: string }) => c.type === 'text');
+      if (textContent && textContent.text) {
+        name = textContent.text.trim().split('\n')[0].replace(/[`'"]/g, '');
+        // If name is too long, truncate it
+        if (name.length > 20) {
+          name = name.substring(0, 20);
+        }
+      }
+    }
+
+    return name || null;
+  } catch (error) {
+    console.error('[generateCodeCellName]', error);
+    // Return null to let the system use its default naming
+    return null;
+  }
+}
 
 const waitForSetCodeCellValue = (transactionId: string) => {
   return new Promise((resolve) => {
@@ -141,6 +221,14 @@ export const aiToolsActions: AIToolActionsRecord = {
         code_string = code_string.slice(1);
       }
 
+      // Generate a name for the code cell using our new direct API call
+      let codeCellName: string | null = null;
+      try {
+        codeCellName = await generateCodeCellName(code_cell_language, code_string);
+      } catch (e) {
+        console.error('[aiToolsActions] Failed to get code cell name:', e);
+      }
+
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
         x,
@@ -159,6 +247,19 @@ export const aiToolsActions: AIToolActionsRecord = {
           const width = table.codeCell.w;
           const height = table.codeCell.h;
           ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+
+          // Only set the name if we have a valid AI-generated name and the cell has no name yet
+          if (codeCellName && !table.name) {
+            await quadraticCore.dataTableMeta(
+              sheetId,
+              x,
+              y,
+              {
+                name: codeCellName,
+              },
+              sheets.getCursorPosition()
+            );
+          }
         }
 
         const result = await setCodeCellResult(sheetId, x, y);
