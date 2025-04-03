@@ -65,7 +65,7 @@ export const apiClient = {
 
         // Send to mixpanel
         if (data.exceededBillingLimit) {
-          mixpanel.track('[AIAnalyst].hasHitBillableLimit', {
+          mixpanel.track('[AI].hasHitBillableLimit', {
             exceededBillingLimit: data.exceededBillingLimit,
             billingLimit: data.billingLimit,
             currentPeriodUsage: data.currentPeriodUsage,
