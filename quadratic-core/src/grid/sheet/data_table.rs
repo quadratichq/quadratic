@@ -2,14 +2,13 @@ use super::Sheet;
 use crate::{
     Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
+    api::ErrorLevel,
     cell_values::CellValues,
     grid::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        js_types::JsSnackbarSeverity,
     },
-    wasm_bindings::js::jsClientMessage,
 };
 
 use anyhow::{Result, anyhow, bail};
@@ -473,7 +472,7 @@ impl Sheet {
 
         if contains_data_table {
             let message = "Tables cannot be created over tables, code, or formulas.";
-            jsClientMessage(message.to_owned(), JsSnackbarSeverity::Error.to_string());
+            message(message.to_owned(), ErrorLevel::Error);
         }
 
         !contains_data_table
