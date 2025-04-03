@@ -32,10 +32,8 @@ export const AIAnalystUserMessageForm = memo(
 
     const handleSubmit = useCallback(
       ({ content, onSubmit }: SubmitPromptArgs) => {
-        mixpanel.track('[AIAnalyst].submitPrompt', {
-          freeTierExceeded: delaySeconds > 0,
-          delaySeconds,
-        });
+        console.log('delaySeconds', delaySeconds);
+        mixpanel.track('[AIAnalyst].submitPrompt');
         submitPrompt({
           content,
           context,
