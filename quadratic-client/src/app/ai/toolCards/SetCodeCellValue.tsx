@@ -2,7 +2,6 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -21,37 +20,6 @@ type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellV
 type SetCodeCellValueProps = {
   args: string;
   loading: boolean;
-};
-
-// Find a unique table name that doesn't already exist in the sheet
-const findUniqueName = (baseName: string): string => {
-  // Start with the base name and incrementally try different names until
-  // we find one that doesn't exist in the current sheet
-
-  try {
-    // Try the base name first
-    return baseName;
-  } catch (e) {
-    // If there's an error, likely due to duplicate name, try with numbers
-    console.log(`[SetCodeCellValue] Name ${baseName} already exists, trying with suffix`);
-
-    let counter = 1;
-    let newName = `${baseName}${counter}`;
-
-    // Try a few times with increasing numbers
-    while (counter < 100) {
-      try {
-        return newName;
-      } catch (e) {
-        counter++;
-        newName = `${baseName}${counter}`;
-      }
-    }
-
-    // If we reach here, return the original with a timestamp
-    const timestamp = Date.now().toString().slice(-4);
-    return `${baseName}_${timestamp}`;
-  }
 };
 
 export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
@@ -136,17 +104,13 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   const saveAndRun = useRecoilCallback(
     () => async (toolArgs: SetCodeCellValueResponse) => {
       if (!codeCellPos) {
-        console.error('[SetCodeCellValue] Cannot save - no code cell position');
         return;
       }
 
-      console.log('[SetCodeCellValue] Saving code cell with args:', {
-        ...toolArgs,
-        position: codeCellPos,
-        cell_name: toolArgs.cell_name,
-      });
+      // First try using provided cell_name, then fall back to language-based name
+      const cellName = toolArgs.cell_name ? toolArgs.cell_name : `${toolArgs.code_cell_language}Code`;
 
-      // Create the code cell
+      // Create the code cell - first transaction
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId: sheets.current,
         x: codeCellPos.x,
@@ -156,69 +120,47 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
         cursor: sheets.getCursorPosition(),
       });
 
-      console.log('[SetCodeCellValue] Created code cell, transaction ID:', transactionId);
-
       if (transactionId) {
-        // Wait for the transaction to complete before setting the name
+        // Wait for the transaction to complete
         await waitForSetCodeCellValue(transactionId);
-        console.log('[SetCodeCellValue] Transaction completed');
 
-        // Always set the name after creating the code cell
-        // First try using provided cell_name, then fall back to language-based name
-        const cellName = toolArgs.cell_name ? toolArgs.cell_name : `${toolArgs.code_cell_language}Code`;
-        console.log('[SetCodeCellValue] DIRECT NAME VALUE IN COMPONENT:', {
-          providedCellName: toolArgs.cell_name,
-          finalNameToSet: cellName,
-          toolArgsData: toolArgs,
-        });
+        // Set the name as a single additional transaction
+        try {
+          await quadraticCore.dataTableMeta(
+            sheets.current,
+            codeCellPos.x,
+            codeCellPos.y,
+            {
+              name: cellName,
+              showName: true,
+            },
+            sheets.getCursorPosition()
+          );
+        } catch (error) {
+          // If there's an error (likely a duplicate name), try with incremental suffix
+          let counter = 1;
+          let success = false;
 
-        // This is an important cell to find and name after creation
-        const checkAndNameCell = async () => {
-          try {
-            // Get a reference to the table after creation
-            const table = pixiApp.cellsSheets
-              .getById(sheets.current)
-              ?.tables.getTableFromTableCell(codeCellPos.x, codeCellPos.y);
-            console.log('[SetCodeCellValue] COMPONENT Found table after create:', {
-              exists: !!table,
-              name: table?.name,
-              hasName: !!table?.name,
-            });
+          while (!success && counter < 100) {
+            try {
+              const incrementalName = `${cellName}${counter}`;
 
-            if (table) {
-              // Generate a unique name based on the requested name
-              const uniqueName = findUniqueName(cellName);
-
-              // Set the name directly using dataTableMeta
               await quadraticCore.dataTableMeta(
                 sheets.current,
                 codeCellPos.x,
                 codeCellPos.y,
                 {
-                  name: uniqueName,
+                  name: incrementalName,
                   showName: true,
                 },
                 sheets.getCursorPosition()
               );
-              console.log('[SetCodeCellValue] COMPONENT Successfully set cell name to:', uniqueName);
+              success = true;
+            } catch (e) {
+              counter++;
             }
-          } catch (error) {
-            console.error('[SetCodeCellValue] COMPONENT Error setting cell name:', error);
           }
-        };
-
-        // Call immediately and then with increasing delays to ensure it's set
-        checkAndNameCell();
-
-        // Try again after short delay
-        setTimeout(() => {
-          checkAndNameCell();
-
-          // And again after a longer delay
-          setTimeout(checkAndNameCell, 500);
-        }, 200);
-      } else {
-        console.error('[SetCodeCellValue] Failed to create code cell - no transaction ID');
+        }
       }
     },
     [codeCellPos]

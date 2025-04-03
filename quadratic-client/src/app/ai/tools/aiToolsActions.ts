@@ -129,7 +129,6 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetCodeCellValue]: async (args) => {
     let { code_cell_language, code_string, code_cell_position, cell_name } = args;
-    console.log('[SetCodeCellValue] Tool args:', { code_cell_language, code_cell_position, cell_name });
 
     try {
       const sheetId = sheets.current;
@@ -143,7 +142,10 @@ export const aiToolsActions: AIToolActionsRecord = {
         code_string = code_string.slice(1);
       }
 
-      console.log('[SetCodeCellValue] Creating code cell at position:', { x, y, sheetId });
+      // Determine the cell name - use provided cell_name or fallback to language-based name
+      const cellName = cell_name ? cell_name : `${code_cell_language}Code`;
+
+      // Create the code cell - first transaction
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
         x,
@@ -154,84 +156,61 @@ export const aiToolsActions: AIToolActionsRecord = {
       });
 
       if (transactionId) {
-        console.log('[SetCodeCellValue] Created cell, waiting for transaction:', transactionId);
         await waitForSetCodeCellValue(transactionId);
-        console.log('[SetCodeCellValue] Transaction completed');
 
         // After execution, adjust viewport to show full output if it exists
         const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
-        console.log('[SetCodeCellValue] Found table:', {
-          exists: !!table,
-          name: table?.name,
-          hasName: !!table?.name,
-        });
-
         if (table) {
           const width = table.codeCell.w;
           const height = table.codeCell.h;
           ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
         }
 
-        // Always set the cell name regardless of whether table exists
-        // First try using provided cell_name, then fall back to language-based name
-        const cellName = cell_name ? cell_name : `${code_cell_language}Code`;
-        console.log('[SetCodeCellValue] DIRECT NAME VALUE:', {
-          providedCellName: cell_name,
-          finalNameToSet: cellName,
-        });
+        // Set the name as a single additional transaction
+        try {
+          await quadraticCore.dataTableMeta(
+            sheetId,
+            x,
+            y,
+            {
+              name: cellName,
+              showName: true,
+            },
+            sheets.getCursorPosition()
+          );
+        } catch (error) {
+          // If there's an error (likely a duplicate name), try with incremental suffix
+          let counter = 1;
+          let success = false;
 
-        // This is an important cell to find and name after creation
-        const checkAndNameCell = async () => {
-          try {
-            // Get a reference to the table after creation
-            const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
-            console.log('[SetCodeCellValue] Found table after create:', {
-              exists: !!table,
-              name: table?.name,
-              hasName: !!table?.name,
-            });
+          while (!success && counter < 100) {
+            try {
+              const incrementalName = `${cellName}${counter}`;
 
-            if (table) {
-              // Generate a unique name based on the requested name
-              const uniqueName = findUniqueName(cellName);
-
-              // Set the name directly using dataTableMeta
               await quadraticCore.dataTableMeta(
                 sheetId,
                 x,
                 y,
                 {
-                  name: uniqueName,
+                  name: incrementalName,
                   showName: true,
                 },
                 sheets.getCursorPosition()
               );
-              console.log('[SetCodeCellValue] Successfully set cell name to:', uniqueName);
+              success = true;
+            } catch (e) {
+              counter++;
             }
-          } catch (error) {
-            console.error('[SetCodeCellValue] Error setting cell name:', error);
           }
-        };
+        }
 
-        // Call immediately and then with increasing delays to ensure it's set
-        checkAndNameCell();
-
-        // Try again after short delay
-        setTimeout(() => {
-          checkAndNameCell();
-
-          // And again after a longer delay
-          setTimeout(checkAndNameCell, 500);
-        }, 200);
-
+        // Return result immediately - no additional transactions
         const result = await setCodeCellResult(sheetId, x, y);
         return result;
       } else {
-        console.error('[SetCodeCellValue] Failed to create code cell - no transaction ID');
         return 'Error executing set code cell value tool';
       }
     } catch (e) {
-      console.error('[SetCodeCellValue] Error:', e);
       return `Error executing set code cell value tool: ${e}`;
     }
   },
@@ -338,34 +317,3 @@ export const aiToolsActions: AIToolActionsRecord = {
     return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
   },
 } as const;
-
-// Find a unique table name that doesn't already exist in the sheet
-const findUniqueName = (baseName: string): string => {
-  // Start with the base name and incrementally try different names until
-  // we find one that doesn't exist in the current sheet
-
-  try {
-    // Try the base name first
-    return baseName;
-  } catch (e) {
-    // If there's an error, likely due to duplicate name, try with numbers
-    console.log(`[SetCodeCellValue] Name ${baseName} already exists, trying with suffix`);
-
-    let counter = 1;
-    let newName = `${baseName}${counter}`;
-
-    // Try a few times with increasing numbers
-    while (counter < 100) {
-      try {
-        return newName;
-      } catch (e) {
-        counter++;
-        newName = `${baseName}${counter}`;
-      }
-    }
-
-    // If we reach here, return the original with a timestamp
-    const timestamp = Date.now().toString().slice(-4);
-    return `${baseName}_${timestamp}`;
-  }
-};
