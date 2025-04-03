@@ -30,7 +30,6 @@ VERSION=$(cat VERSION)
 TYPE=$1
 
 RUST=(
-  "Cargo.toml"
   "quadratic-connection/Cargo.toml"
   "quadratic-core/Cargo.toml"
   "quadratic-files/Cargo.toml"
@@ -83,7 +82,7 @@ bump_version() {
       ;;
   esac
 
-  echo "$major.$minor.$patch" 
+  echo "$major.$minor.$patch"
 }
 
 verify_versions() {
@@ -138,9 +137,9 @@ for file in ${JAVASCRIPT[@]}; do
   fi
   PACKAGE_JSON_VERSION=$(jq -r .version "$file")
   echo "Current $file version is $PACKAGE_JSON_VERSION"
-  
+
   jq --arg new_version "$NEW_VERSION" '.version = $new_version' "$file" > tmp.json && mv tmp.json "$file"
-  
+
   echo "Updated $file version to $NEW_VERSION"
 done
 
@@ -152,7 +151,7 @@ for file in ${RUST[@]}; do
   fi
   CARGO_TOML_VERSION=$(grep '^version' "$file" | sed 's/version = "\(.*\)"/\1/')
   echo "Current $file version is $CARGO_TOML_VERSION"
-  
+
   sed -i.bak "s/^version = \".*\"/version = \"$NEW_VERSION\"/" "$file" && rm "${file}.bak"
 
   echo "Updated $file version to $NEW_VERSION"
