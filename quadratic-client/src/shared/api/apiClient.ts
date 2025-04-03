@@ -56,12 +56,23 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
       },
-      aiUsage(uuid: string) {
-        return fetchFromApi(
+      async aiUsage(uuid: string) {
+        const data = await fetchFromApi(
           `/v0/teams/${uuid}/billing/ai/usage`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/ai/usage.GET.response']
         );
+
+        // Send to mixpanel
+        if (data.exceededBillingLimit) {
+          mixpanel.track('[AIAnalyst].hasHitBillableLimit', {
+            exceededBillingLimit: data.exceededBillingLimit,
+            billingLimit: data.billingLimit,
+            currentPeriodUsage: data.currentPeriodUsage,
+          });
+        }
+
+        return data;
       },
     },
     invites: {

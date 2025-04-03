@@ -4,7 +4,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
-import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageForm';
+import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystEffects } from '@/app/ui/menus/AIAnalyst/AIAnalystEffects';
