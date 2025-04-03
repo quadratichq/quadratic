@@ -1,8 +1,8 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -145,7 +145,11 @@ export const AIUserMessageForm = memo(
 
     return (
       <form
-        className={cn('group relative h-min rounded-lg bg-accent', ctx && 'pt-1.5', editing ? '' : 'select-none')}
+        className={cn(
+          'group relative h-min rounded-lg bg-accent',
+          (ctx || !!files.length) && 'pt-1.5',
+          editing ? '' : 'select-none'
+        )}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) {
@@ -173,18 +177,16 @@ export const AIUserMessageForm = memo(
           </TooltipPopover>
         )}
 
-        {ctx && (
-          <AIAnalystContext
-            initialContext={ctx.initialContext}
-            context={ctx.context}
-            setContext={ctx.setContext}
-            files={files}
-            setFiles={setFiles}
-            editing={editing}
-            disabled={waitingOnMessageIndex !== undefined || !editing}
-            textAreaRef={textareaRef}
-          />
-        )}
+        <AIContext
+          initialContext={ctx?.initialContext}
+          context={ctx?.context}
+          setContext={ctx?.setContext}
+          files={files}
+          setFiles={setFiles}
+          editing={editing}
+          disabled={waitingOnMessageIndex !== undefined || !editing}
+          textAreaRef={textareaRef}
+        />
 
         {editing ? (
           <>

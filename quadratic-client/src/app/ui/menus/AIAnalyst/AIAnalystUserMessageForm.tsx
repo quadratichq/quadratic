@@ -66,9 +66,9 @@ export const AIAnalystUserMessageForm = memo(
         submitPrompt={handleSubmit}
         formOnKeyDown={formOnKeyDown}
         ctx={{
+          initialContext,
           context,
           setContext,
-          initialContext,
         }}
         waitingOnMessageIndex={waitingOnMessageIndex}
         delaySeconds={delaySeconds}

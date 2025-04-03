@@ -15,10 +15,10 @@ import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/t
 import { memo, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-type AIAnalystContextProps = {
+type AIContextProps = {
   initialContext?: Context;
-  context: Context;
-  setContext: React.Dispatch<React.SetStateAction<Context>>;
+  context?: Context;
+  setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
   editing: boolean;
@@ -26,8 +26,8 @@ type AIAnalystContextProps = {
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export const AIAnalystContext = memo(
-  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textAreaRef }: AIAnalystContextProps) => {
+export const AIContext = memo(
+  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textAreaRef }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
@@ -35,8 +35,9 @@ export const AIAnalystContext = memo(
 
     useEffect(() => {
       if (!editing) return;
+
       const updateSelection = () => {
-        setContext((prev) => ({
+        setContext?.((prev) => ({
           ...prev,
           selection: sheets.sheet.cursor.save(),
         }));
@@ -54,7 +55,7 @@ export const AIAnalystContext = memo(
     useEffect(() => {
       const updateCurrentSheet = () => {
         if (editing) {
-          setContext((prev) => ({
+          setContext?.((prev) => ({
             ...prev,
             currentSheet: sheets.sheet.name,
           }));
@@ -72,7 +73,7 @@ export const AIAnalystContext = memo(
 
     // use last user message context as initial context in the bottom user message form
     useEffect(() => {
-      if (initialContext === undefined && messagesCount > 0) {
+      if (initialContext === undefined && !!setContext && messagesCount > 0) {
         const lastUserMessage = messages
           .filter(
             (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
@@ -92,7 +93,7 @@ export const AIAnalystContext = memo(
           loading && 'select-none opacity-60'
         )}
       >
-        {editing && (
+        {editing && context && setContext && (
           <AIAnalystSelectContextMenu
             context={context}
             setContext={setContext}
@@ -111,19 +112,21 @@ export const AIAnalystContext = memo(
           />
         ))}
 
-        <ContextPill
-          key="cursor"
-          primary={
-            context.selection
-              ? A1SelectionStringToSelection(context.selection, sheets.a1Context).toA1String(sheets.current)
-              : sheets.sheet.cursor.toCursorA1()
-          }
-          secondary="Cursor"
-          onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
-          disabled={disabled || !context.selection}
-        />
+        {setContext && context && (
+          <ContextPill
+            key="cursor"
+            primary={
+              context.selection
+                ? A1SelectionStringToSelection(context.selection, sheets.a1Context).toA1String(sheets.current)
+                : sheets.sheet.cursor.toCursorA1()
+            }
+            secondary="Cursor"
+            onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
+            disabled={disabled || !context.selection}
+          />
+        )}
 
-        {!!context.currentSheet && (
+        {!!setContext && !!context?.currentSheet && (
           <ContextPill
             key={context.currentSheet}
             primary={context.currentSheet}
@@ -139,23 +142,24 @@ export const AIAnalystContext = memo(
           />
         )}
 
-        {context.sheets
-          .filter((sheet) => sheet !== context.currentSheet)
-          .map((sheet) => (
-            <ContextPill
-              key={sheet}
-              primary={sheet}
-              secondary={'Sheet'}
-              disabled={disabled}
-              onClick={() =>
-                setContext((prev) => ({
-                  ...prev,
-                  sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
-                  currentSheet: prev.currentSheet === sheet ? '' : prev.currentSheet,
-                }))
-              }
-            />
-          ))}
+        {setContext &&
+          context?.sheets
+            .filter((sheet) => sheet !== context.currentSheet)
+            .map((sheet) => (
+              <ContextPill
+                key={sheet}
+                primary={sheet}
+                secondary={'Sheet'}
+                disabled={disabled}
+                onClick={() =>
+                  setContext((prev) => ({
+                    ...prev,
+                    sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
+                    currentSheet: prev.currentSheet === sheet ? '' : prev.currentSheet,
+                  }))
+                }
+              />
+            ))}
       </div>
     );
   }
