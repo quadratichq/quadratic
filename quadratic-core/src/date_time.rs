@@ -218,6 +218,16 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 
 /// Parses a date string using a list of possible formats.
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
+    // Handle "4/10" for April 10th of the current year. chrono doesn't have a
+    // specifier for 1-digit month number, so we have to do this manually.
+    if let Some(result) = value.split_once('/').and_then(|(m, d)| {
+        let month = m.parse().ok()?;
+        let day = d.parse().ok()?;
+        NaiveDate::from_ymd_opt(Utc::now().year(), month, day)
+    }) {
+        return Some(result);
+    }
+
     // chrono's parsing API doesn't support patterns without a specified day, so
     // we use a workaround from https://github.com/chronotope/chrono/issues/191
 
@@ -226,8 +236,6 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         "%d %B", // Day and full month name (assumes current year)
         "%b %d", // Abbreviated month name and day (assumes current year)
         "%B %d", // Full month name and day (assumes current year)
-        "%m/%Y", // 12/2024
-        "%Y/%m", // 2024/12
         "%B %Y", // December 2024
         "%b %Y", // Dec 2024
         "%Y %B", // 2024 December
@@ -374,6 +382,20 @@ mod tests {
             NaiveDate::from_ymd_opt(2024, 1, 1)
         );
         assert_eq!(parse_date("Jan 2024"), NaiveDate::from_ymd_opt(2024, 1, 1));
+        assert_eq!(
+            parse_date("4/10"),
+            NaiveDate::from_ymd_opt(Utc::now().year(), 4, 10),
+        );
+        assert_eq!(
+            parse_date("4/6"),
+            NaiveDate::from_ymd_opt(Utc::now().year(), 4, 6),
+        );
+        assert_eq!(parse_date("4/99"), None);
+        assert_eq!(
+            parse_date("4/10/2024"),
+            NaiveDate::from_ymd_opt(2024, 4, 10),
+        );
+        assert_eq!(parse_date("4/6/2024"), NaiveDate::from_ymd_opt(2024, 4, 6));
     }
 
     #[test]
