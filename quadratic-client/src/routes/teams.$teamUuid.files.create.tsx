@@ -1,4 +1,4 @@
-import { authClient } from '@/auth/auth';
+import { authClient, requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -15,7 +15,13 @@ const getFailUrl = (path: string = '/') => {
   return path + '?' + params.toString();
 };
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const shouldRevalidate = () => false;
+
+export const loader = async (loaderArgs: LoaderFunctionArgs) => {
+  await requireAuth(loaderArgs);
+
+  const { request, params } = loaderArgs;
+
   // We initialize mixpanel here (again, as we do it in the root loader) because
   // it helps us prevent the app from failing because all the loaders run in parallel
   // and we can't guarantee this loader finishes before the root one

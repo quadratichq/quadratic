@@ -30,8 +30,12 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/che
   } = req as RequestWithUser;
 
   const {
-    file: { id, name },
-    userMakingRequest: { filePermissions, teamPermissions },
+    file: {
+      id,
+      name,
+      ownerTeam: { uuid: teamUuid },
+    },
+    userMakingRequest: { filePermissions, teamPermissions, fileRole, teamRole },
   } = await getFile({ uuid, userId });
 
   /**
@@ -65,7 +69,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/che
   );
 
   return res.status(200).json({
-    name,
+    file: { name },
+    team: {
+      uuid: teamUuid,
+    },
     checkpoints: checkpointsWithDataUrls.map(({ timestamp, version, dataUrl, id }) => ({
       id,
       dataUrl,

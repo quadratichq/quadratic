@@ -1,27 +1,26 @@
 import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
-import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
+import { requireAuth, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { Empty } from '@/shared/components/Empty';
 import { MenuIcon } from '@/shared/components/Icons';
-import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { determineAndSetActiveTeam, setActiveTeam } from '@/shared/utils/getActiveTeam';
+import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
-import { isMobile } from 'react-device-detect';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
+  isRouteErrorResponse,
   Link,
   Outlet,
-  isRouteErrorResponse,
   redirect,
   useLocation,
   useNavigation,
@@ -56,7 +55,20 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
+  const { activeTeamUuid } = await requireAuth(loaderArgs);
+  const { params, request } = loaderArgs;
+
+  // Check the URL for a team UUID. If there's one, use that as it’s what the
+  // user is explicitly looking at. Otherwise, fallback to the one in localstorage
+  const teamUuid = params.teamUuid ? params.teamUuid : activeTeamUuid;
+
+  // If this was a request to the root of the app, re-route to the active team
+  const url = new URL(request.url);
+  if (url.pathname === '/') {
+    throw redirect(ROUTES.TEAM(teamUuid) + url.search);
+  }
+
   /**
    * Get the initial data
    */
@@ -64,24 +76,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     apiClient.teams.list(),
     apiClient.education.get(),
   ]);
-
-  /**
-   * Handle a few cases
-   */
-  let { teamUuid, teamCreated } = await determineAndSetActiveTeam(teams, params.teamUuid);
-
-  // If a team was created, it was probably a first time user so send them to
-  // the team dashboard if mobile, otherwise to a new file
-  if (teamCreated) {
-    return isMobile ? redirect(ROUTES.TEAM(teamUuid)) : redirect(ROUTES.CREATE_FILE(teamUuid));
-  }
-
-  // If this was a request to the root of the app, re-route to the active team
-  const url = new URL(request.url);
-  if (url.pathname === '/') {
-    // If there are search params, keep 'em
-    return redirect(ROUTES.TEAM(teamUuid) + url.search);
-  }
 
   /**
    * Get data for the active team
@@ -99,6 +93,9 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
         // Leave the order as is for others
         return 0;
       });
+
+      // We accessed the team successfully, so set it as the active team
+      setActiveTeam(teamUuid);
 
       return data;
     })

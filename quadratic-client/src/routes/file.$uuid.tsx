@@ -17,14 +17,13 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { determineAndSetActiveTeam, getActiveTeam } from '@/shared/utils/getActiveTeam';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { useEffect } from 'react';
-import type { LoaderFunctionArgs } from 'react-router-dom';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
   Link,
   Outlet,
@@ -41,6 +40,9 @@ import { RecoilRoot } from 'recoil';
 import { Empty } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
+
+export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
+  currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
@@ -67,13 +69,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     console.log(
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
-
-  // If the user is logged in and we don't know what their currently active team
-  // is, figure it out and set it.
-  if (data.userMakingRequest.id && !getActiveTeam()) {
-    const { teams } = await apiClient.teams.list();
-    await determineAndSetActiveTeam(teams, undefined);
-  }
 
   // initialize all workers
   initWorkers();

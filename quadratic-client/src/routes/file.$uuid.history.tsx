@@ -1,4 +1,4 @@
-import { authClient } from '@/auth/auth';
+import { requireAuth } from '@/auth/auth';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { Empty } from '@/shared/components/Empty';
@@ -10,14 +10,12 @@ import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getActiveTeam } from '@/shared/utils/getActiveTeam';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import {
   Link,
-  redirect,
   useFetcher,
   useLoaderData,
   useParams,
@@ -28,12 +26,10 @@ import {
 
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'];
 
-export const loader = async ({ params }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
-  const isLoggedIn = await authClient.isAuthenticated();
-  if (!isLoggedIn) {
-    return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
-  }
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData> => {
+  await requireAuth(loaderArgs);
 
+  const { params } = loaderArgs;
   const { uuid } = params as { uuid: string };
   const data = await apiClient.files.checkpoints.list(uuid);
   return data;
@@ -46,7 +42,7 @@ export const Component = () => {
   const [activeCheckpointId, setActiveCheckpointId] = useState<number | null>(null);
   const activeCheckpoint = data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId);
   const iframeUrl = activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : '';
-  const teamUuid = getActiveTeam();
+  const teamUuid = data.team.uuid;
 
   const checkpointsByDay = data.checkpoints.reduce((acc, version) => {
     const date = new Date(version.timestamp);

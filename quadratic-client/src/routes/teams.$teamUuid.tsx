@@ -1,7 +1,7 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { Empty } from '@/shared/components/Empty';
 import { Button } from '@/shared/shadcn/ui/button';
-import { setActiveTeam } from '@/shared/utils/getActiveTeam';
+import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';

@@ -1,8 +1,7 @@
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { VERSION } from '@/shared/constants/appConstants';
-import { getActiveTeam } from '@/shared/utils/getActiveTeam';
 import { useRecoilValue } from 'recoil';
-import { debugShowActiveTeam, debugShowFPS } from '../../../debugFlags';
+import { debugShowFPS } from '../../../debugFlags';
 import BottomBarItem from './BottomBarItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
@@ -47,12 +46,6 @@ export const BottomBar = () => {
               &nbsp;
             </div>
             <span className="debug-show-FPS">--</span> FPS
-          </BottomBarItem>
-        )}
-
-        {debugShowActiveTeam && (
-          <BottomBarItem>
-            <span>Team: {getActiveTeam()}</span>
           </BottomBarItem>
         )}
       </div>
