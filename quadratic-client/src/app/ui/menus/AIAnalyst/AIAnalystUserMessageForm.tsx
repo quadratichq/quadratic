@@ -1,16 +1,12 @@
 import { Action } from '@/app/actions/actions';
-import {
-  aiAnalystAbortControllerAtom,
-  aiAnalystFilesAtom,
-  aiAnalystLoadingAtom,
-  showAIAnalystAtom,
-} from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import mixpanel from 'mixpanel-browser';
+import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, memo, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
@@ -24,7 +20,6 @@ export const AIAnalystUserMessageForm = memo(
     const { initialContext, ...rest } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
-    const [files, setFiles] = useRecoilState(aiAnalystFilesAtom);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
@@ -46,8 +41,7 @@ export const AIAnalystUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        files={files}
-        setFiles={setFiles}
+        isFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
         submitPrompt={(content) => {
           mixpanel.track('[AIAnalyst].submitPrompt');
           submitPrompt({ content, context, messageIndex: props.messageIndex });

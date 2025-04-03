@@ -41,9 +41,8 @@ type AIUserMessageFormProps = Omit<AIUserMessageFormWrapperProps, 'messageIndex'
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
-  files?: FileContent[];
-  setFiles?: SetterOrUpdater<FileContent[]>;
-  submitPrompt: (content: Content, files?: FileContent[]) => void;
+  submitPrompt: (content: Content) => void;
+  isFileSupported: (mimeType: string) => boolean;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   ctx?: {
@@ -63,14 +62,16 @@ export const AIUserMessageForm = memo(
       abortController,
       loading,
       setLoading,
-      files,
-      setFiles,
+      isFileSupported,
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
+
+    const initialFiles = useMemo(() => initialContent?.filter((item) => item.type === 'data'), [initialContent]);
+    const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
 
     const initialPrompt = useMemo(
       () =>
@@ -83,8 +84,8 @@ export const AIUserMessageForm = memo(
     const [prompt, setPrompt] = useState<string>(initialPrompt ?? '');
 
     const submit = useCallback(() => {
-      submitPrompt([{ type: 'text', text: prompt }]);
-    }, [prompt, submitPrompt]);
+      submitPrompt([...files, { type: 'text', text: prompt }]);
+    }, [files, prompt, submitPrompt]);
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
@@ -93,17 +94,13 @@ export const AIUserMessageForm = memo(
 
     const handleFiles = useCallback(
       (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
-        if (!setFiles) {
-          return;
-        }
-
         const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
         if (files && files.length > 0) {
           e.preventDefault();
 
           for (const file of files) {
             const mimeType = file.type;
-            if (isSupportedMimeType(mimeType)) {
+            if (isSupportedMimeType(mimeType) && isFileSupported(mimeType)) {
               const reader = new FileReader();
               reader.onloadend = (e) => {
                 const dataUrl = e.target?.result as string;
@@ -115,7 +112,7 @@ export const AIUserMessageForm = memo(
           }
         }
       },
-      [setFiles]
+      [isFileSupported]
     );
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -169,7 +166,7 @@ export const AIUserMessageForm = memo(
             initialContext={ctx.initialContext}
             context={ctx.context}
             setContext={ctx.setContext}
-            files={editing ? files : []}
+            files={files}
             setFiles={setFiles}
             editing={editing}
             disabled={!editing}
@@ -198,6 +195,7 @@ export const AIUserMessageForm = memo(
 
                 if (initialPrompt === undefined) {
                   setPrompt('');
+                  setFiles([]);
                   textareaRef.current?.focus();
                 } else {
                   setEditing(false);

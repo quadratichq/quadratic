@@ -3,6 +3,7 @@ import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMe
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import mixpanel from 'mixpanel-browser';
+import { isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { forwardRef, memo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -22,6 +23,7 @@ export const AIAssistantUserMessageForm = memo(
           mixpanel.track('[AIAssistant].submitPrompt');
           submitPrompt({ content, messageIndex: props.messageIndex });
         }}
+        isFileSupported={isSupportedImageMimeType}
       />
     );
   })

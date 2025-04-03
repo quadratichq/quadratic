@@ -5,7 +5,8 @@ import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextM
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
-import { aiAnalystFilesAtom, aiAnalystPDFImportAtom, aiAnalystPDFImportMessagesAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystPDFImportAtom, aiAnalystPDFImportMessagesAtom } from '@/app/atoms/aiAnalystAtom';
+import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -24,13 +25,20 @@ export const useAnalystPDFImport = () => {
   const { getSelectionContext } = useSelectionContextMessages();
 
   const importPDF = useRecoilCallback(
-    ({ set, snapshot }) =>
-      async ({ pdfImportArgs, context }: { pdfImportArgs: PDFImportResponse; context: Context }): Promise<string> => {
+    ({ set }) =>
+      async ({
+        pdfImportArgs,
+        context,
+        chatMessages,
+      }: {
+        pdfImportArgs: PDFImportResponse;
+        context: Context;
+        chatMessages: ChatMessage[];
+      }): Promise<string> => {
         let importPDFResult = '';
         try {
           const { file_name, prompt } = pdfImportArgs;
-          const files = await snapshot.getPromise(aiAnalystFilesAtom);
-          const file = files.find((file) => file.fileName === file_name);
+          const file = getPdfFileFromChatMessages(file_name, chatMessages);
           if (!file) {
             return `File with name ${file_name} not found`;
           }
@@ -44,7 +52,7 @@ export const useAnalystPDFImport = () => {
               getSelectionContext({ selection: context.selection }),
             ]);
 
-          const messages: ChatMessage[] = [
+          const messagesWithContext: ChatMessage[] = [
             {
               role: 'user',
               content: [
@@ -58,7 +66,7 @@ Use multiple add_data_table tool calls in reply to extract the required data fro
 You only have a single reply to extract all the required data tables, include add_data_table for all data in a single reply.\n
 When adding data tables, space them out sufficiently on the sheet so that they don't overlap and create a spill over each other or over other data on the sheet.\n
 Keep additional 3 rows and 3 columns of space between each data table, group related tables together while always ensuring they don't overlap.\n
-Think and check about the space each table would take on the sheet and place them so that they have atleast 3 rows and 3 columns of space between them.\n
+Think and check about the space each table would take on the sheet and place them so that they have at least 3 rows and 3 columns of space between them.\n
 Always prefer adding data tables vertically on the sheet, each 3 rows below the previous one. Place tables horizontally only when there is strong correlation between those two tables and is how they appear on the PDF, add each 3 columns to the right of previous one.\n
 Always retain any column headers and row labels from the original PDF file when creating data tables, add a column name if some columns are missing headers.\n
 `,
@@ -104,7 +112,7 @@ How can I help you?`,
             chatId: v4(),
             source: 'PDFImport',
             modelKey: DEFAULT_PDF_IMPORT_MODEL,
-            messages,
+            messages: messagesWithContext,
             useStream: false,
             toolName: AITool.AddDataTable,
             useToolsPrompt: true,

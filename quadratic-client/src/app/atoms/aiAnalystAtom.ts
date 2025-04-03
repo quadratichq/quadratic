@@ -8,7 +8,7 @@ import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { Chat, ChatMessage, FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -20,7 +20,6 @@ export interface AIAnalystState {
   loading: boolean;
   chats: Chat[];
   currentChat: Chat;
-  files: FileContent[];
   promptSuggestions: {
     abortController: AbortController | undefined;
     suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
@@ -44,7 +43,6 @@ export const defaultAIAnalystState: AIAnalystState = {
     lastUpdated: Date.now(),
     messages: [],
   },
-  files: [],
   promptSuggestions: {
     abortController: undefined,
     suggestions: [],
@@ -114,7 +112,6 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
 export const showAIAnalystAtom = createSelector('showAIAnalyst');
 export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
-export const aiAnalystFilesAtom = createSelector('files');
 
 export const aiAnalystLoadingAtom = selector<boolean>({
   key: 'aiAnalystLoadingAtom',
