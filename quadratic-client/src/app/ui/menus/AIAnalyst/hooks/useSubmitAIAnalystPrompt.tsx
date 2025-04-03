@@ -1,5 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { AI_FREE_TIER_WAIT_TIME_SECONDS, useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
@@ -20,9 +20,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { FREE_TIER_WAIT_TIME_SECONDS } from '@/app/ui/components/AIUserMessageForm';
 import { apiClient } from '@/shared/api/apiClient';
-import mixpanel from 'mixpanel-browser';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -31,22 +29,6 @@ import { useRef } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
-
-// Simulate API check - will be replaced with actual API call later
-const hasHitBillableLimit = async (teamUuid: string) => {
-  const data = await apiClient.teams.billing.aiUsage(teamUuid);
-
-  // Send to mixpanel
-  if (data.exceededBillingLimit) {
-    mixpanel.track('[AIAnalyst].hasHitBillableLimit', {
-      exceededBillingLimit: data.exceededBillingLimit,
-      billingLimit: data.billingLimit,
-      currentPeriodUsage: data.currentPeriodUsage,
-    });
-  }
-
-  return data;
-};
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
@@ -204,19 +186,19 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, abortController);
 
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage } = await hasHitBillableLimit(teamUuid);
+        const { exceededBillingLimit, currentPeriodUsage } = await apiClient.teams.billing.aiUsage(teamUuid);
         if (exceededBillingLimit) {
           set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
 
-          let localDelaySeconds = FREE_TIER_WAIT_TIME_SECONDS + Math.ceil(currentPeriodUsage * 0.25);
+          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil(currentPeriodUsage * 0.25);
           set(aiAnalystDelaySecondsAtom, localDelaySeconds);
 
           await new Promise<void>((resolve) => {
             const resolveAfterDelay = () => {
+              localDelaySeconds -= 1;
               if (localDelaySeconds <= 0) {
                 resolve();
               } else {
-                localDelaySeconds -= 1;
                 set(aiAnalystDelaySecondsAtom, localDelaySeconds);
                 clearTimeout(delayTimerRef.current);
                 delayTimerRef.current = setTimeout(resolveAfterDelay, 1000);

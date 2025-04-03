@@ -11,6 +11,8 @@ import {
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilCallback } from 'recoil';
 
+export const AI_FREE_TIER_WAIT_TIME_SECONDS = 5;
+
 type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
   setMessages?: SetterOrUpdater<ChatMessage[]> | ((value: React.SetStateAction<ChatMessage[]>) => void);
   signal: AbortSignal;

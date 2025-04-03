@@ -31,8 +31,6 @@ import {
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilValue } from 'recoil';
 
-export const FREE_TIER_WAIT_TIME_SECONDS = 6;
-
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   autoFocusRef?: React.RefObject<boolean>;
