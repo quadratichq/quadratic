@@ -11,7 +11,6 @@ use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
 use crate::Pos;
-use crate::api::ErrorLevel;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
@@ -432,6 +431,14 @@ pub enum JsSnackbarSeverity {
     Error,
     Warning,
     Success,
+}
+
+impl From<ErrorLevel> for JsSnackbarSeverity {
+
+impl fmt::Display for JsSnackbarSeverity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
+    }
 }
 
 #[cfg(test)]
