@@ -188,10 +188,9 @@ export function useSubmitAIAnalystPrompt() {
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
         const { exceededBillingLimit, currentPeriodUsage } = await apiClient.teams.billing.aiUsage(teamUuid);
         if (exceededBillingLimit) {
-          set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
-
           let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil(currentPeriodUsage * 0.25);
           set(aiAnalystDelaySecondsAtom, localDelaySeconds);
+          set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
 
           await new Promise<void>((resolve) => {
             const resolveAfterDelay = () => {

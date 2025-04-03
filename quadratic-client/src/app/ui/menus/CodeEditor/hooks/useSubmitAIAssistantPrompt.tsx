@@ -1,26 +1,32 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { AI_FREE_TIER_WAIT_TIME_SECONDS, useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAssistantAbortControllerAtom,
+  aiAssistantCurrentChatMessagesCountAtom,
+  aiAssistantDelaySecondsAtom,
   aiAssistantIdAtom,
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
+  aiAssistantWaitingOnMessageIndexAtom,
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorWaitingForEditorClose,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { CodeCell } from '@/app/shared/types/codeCell';
+import { apiClient } from '@/shared/api/apiClient';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { useRef } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -31,6 +37,7 @@ export type SubmitAIAssistantPromptArgs = {
   messageIndex?: number;
   clearMessages?: boolean;
   codeCell?: CodeCell;
+  onSubmit?: () => void;
 };
 
 export function useSubmitAIAssistantPrompt() {
@@ -62,44 +69,15 @@ export function useSubmitAIAssistantPrompt() {
     [getCurrentSheetContext, getVisibleContext, getCodeCellContext]
   );
 
+  const delayTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, messageIndex, clearMessages, codeCell }: SubmitAIAssistantPromptArgs) => {
+      async ({ content, messageIndex, clearMessages, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
         if (previousLoading) return;
-        set(aiAssistantLoadingAtom, true);
-
-        const abortController = new AbortController();
-        abortController.signal.addEventListener('abort', () => {
-          set(aiAssistantMessagesAtom, (prevMessages) => {
-            const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
-              const newLastMessage = { ...lastMessage };
-              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
-              if (currentContent?.type !== 'text') {
-                currentContent = { type: 'text', text: '' };
-              }
-              currentContent.text += '\n\nRequest aborted by the user.';
-              currentContent.text = currentContent.text.trim();
-              newLastMessage.toolCalls = [];
-              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
-              return [...prevMessages.slice(0, -1), newLastMessage];
-            } else if (lastMessage?.role === 'user') {
-              const newLastMessage: AIMessage = {
-                role: 'assistant',
-                content: [{ type: 'text', text: 'Request aborted by the user.' }],
-                contextType: 'userPrompt',
-                toolCalls: [],
-                model: getModelFromModelKey(modelKey),
-              };
-              return [...prevMessages, newLastMessage];
-            }
-            return prevMessages;
-          });
-        });
-        set(aiAssistantAbortControllerAtom, abortController);
 
         if (clearMessages) {
           set(aiAssistantIdAtom, v4());
@@ -110,6 +88,8 @@ export function useSubmitAIAssistantPrompt() {
         if (messageIndex !== undefined) {
           set(aiAssistantIdAtom, v4());
           set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
+        } else {
+          messageIndex = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
         }
 
         set(codeEditorDiffEditorContentAtom, undefined);
@@ -124,14 +104,101 @@ export function useSubmitAIAssistantPrompt() {
           codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         }
 
-        set(aiAssistantMessagesAtom, (prevMessages) => [
-          ...prevMessages,
-          {
-            role: 'user' as const,
-            content,
-            contextType: 'userPrompt' as const,
-          },
-        ]);
+        if (!onSubmit) {
+          set(aiAssistantMessagesAtom, (prevMessages) => [
+            ...prevMessages,
+            {
+              role: 'user' as const,
+              content,
+              contextType: 'userPrompt' as const,
+            },
+          ]);
+        }
+
+        const abortController = new AbortController();
+        abortController.signal.addEventListener('abort', () => {
+          set(aiAssistantMessagesAtom, (prevMessages) => {
+            let prevWaitingOnMessageIndex: number | undefined = undefined;
+            clearTimeout(delayTimerRef.current);
+            set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
+              prevWaitingOnMessageIndex = prev;
+              return undefined;
+            });
+
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nRequest aborted by the user.';
+              currentContent.text = currentContent.text.trim();
+              newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              if (prevWaitingOnMessageIndex !== undefined) {
+                return prevMessages;
+              }
+
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: [{ type: 'text', text: 'Request aborted by the user.' }],
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model: getModelFromModelKey(modelKey),
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+        });
+        set(aiAssistantAbortControllerAtom, abortController);
+
+        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
+        const { exceededBillingLimit, currentPeriodUsage } = await apiClient.teams.billing.aiUsage(teamUuid);
+        if (exceededBillingLimit) {
+          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil(currentPeriodUsage * 0.25);
+          set(aiAssistantDelaySecondsAtom, localDelaySeconds);
+          set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
+
+          await new Promise<void>((resolve) => {
+            const resolveAfterDelay = () => {
+              localDelaySeconds -= 1;
+              if (localDelaySeconds <= 0) {
+                resolve();
+              } else {
+                set(aiAssistantDelaySecondsAtom, localDelaySeconds);
+                clearTimeout(delayTimerRef.current);
+                delayTimerRef.current = setTimeout(resolveAfterDelay, 1000);
+              }
+            };
+
+            resolveAfterDelay();
+          });
+        }
+        set(aiAssistantWaitingOnMessageIndexAtom, undefined);
+
+        if (abortController.signal.aborted) {
+          set(aiAssistantAbortControllerAtom, undefined);
+          set(aiAssistantLoadingAtom, false);
+          return;
+        }
+
+        if (onSubmit) {
+          onSubmit();
+          set(aiAssistantMessagesAtom, (prevMessages) => [
+            ...prevMessages,
+            {
+              role: 'user' as const,
+              content,
+              contextType: 'userPrompt' as const,
+            },
+          ]);
+        }
+
+        set(aiAssistantLoadingAtom, true);
 
         let chatId = '';
         set(aiAssistantIdAtom, (prev) => {
