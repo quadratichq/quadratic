@@ -16,7 +16,6 @@ use crate::grid::formats::Format;
 use crate::grid::formats::FormatUpdate;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
-use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::unique_data_table_name;
@@ -220,10 +219,16 @@ impl GridController {
                             _ => "unknown",
                         };
                         let message = format!("Cannot place {} within a table", cell_type);
-                        crate::wasm_bindings::js::jsClientMessage(
-                            message.to_owned(),
-                            JsSnackbarSeverity::Error.to_string(),
-                        );
+
+                        #[cfg(any(target_family = "wasm", test))]
+                        {
+                            let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+                            crate::wasm_bindings::js::jsClientMessage(
+                                message.to_owned(),
+                                error.to_string(),
+                            );
+                        }
+
                         return Err(Error::msg(message));
                     }
 
@@ -317,12 +322,19 @@ impl GridController {
 
                         matches!(data_table.kind, DataTableKind::Import(_))
                     });
+
                 if paste_in_import {
                     let message = "Cannot place table within a table";
-                    crate::wasm_bindings::js::jsClientMessage(
-                        message.to_owned(),
-                        JsSnackbarSeverity::Error.to_string(),
-                    );
+
+                    #[cfg(any(target_family = "wasm", test))]
+                    {
+                        let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+                        crate::wasm_bindings::js::jsClientMessage(
+                            message.to_owned(),
+                            error.to_string(),
+                        );
+                    }
+
                     return Err(Error::msg(message));
                 }
 
@@ -742,7 +754,7 @@ mod test {
     use crate::a1::{A1Context, A1Selection, CellRefRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
-    use crate::grid::js_types::JsClipboard;
+    use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
     use crate::test_util::gc::{
