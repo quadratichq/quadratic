@@ -1,10 +1,10 @@
 import { aiAssistantAbortControllerAtom, aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
-import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import mixpanel from 'mixpanel-browser';
 import { isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import { forwardRef, memo } from 'react';
+import { forwardRef, memo, useCallback } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const AIAssistantUserMessageForm = memo(
@@ -13,17 +13,23 @@ export const AIAssistantUserMessageForm = memo(
     const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
     const { submitPrompt } = useSubmitAIAssistantPrompt();
 
+    const handleSubmit = useCallback(
+      ({ content, onSubmit }: SubmitPromptArgs) => {
+        mixpanel.track('[AIAssistant].submitPrompt');
+        submitPrompt({ content, messageIndex: props.messageIndex });
+        onSubmit?.();
+      },
+      [props.messageIndex, submitPrompt]
+    );
+
     return (
       <AIUserMessageForm
         {...props}
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        submitPrompt={(content) => {
-          mixpanel.track('[AIAssistant].submitPrompt');
-          submitPrompt({ content, messageIndex: props.messageIndex });
-        }}
         isFileSupported={isSupportedImageMimeType}
+        submitPrompt={handleSubmit}
       />
     );
   })

@@ -87,8 +87,8 @@ export const AIAnalystContext = memo(
     return (
       <div
         className={cn(
-          `z-10 flex select-none flex-wrap items-center gap-1 px-2 text-xs`,
-          disabled && 'select-none',
+          `z-10 ml-2 flex select-none flex-wrap items-center gap-1 text-xs`,
+          disabled && 'select-none opacity-60',
           loading && 'select-none opacity-60'
         )}
       >

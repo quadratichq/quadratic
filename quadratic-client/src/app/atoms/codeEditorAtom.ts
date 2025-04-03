@@ -122,7 +122,13 @@ const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant'
 export const aiAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
 export const aiAssistantLoadingAtom = createAIAssistantSelector('loading');
 export const aiAssistantIdAtom = createAIAssistantSelector('id');
+
 export const aiAssistantMessagesAtom = createAIAssistantSelector('messages');
+export const aiAssistantMessagesCountAtom = selector<number>({
+  key: 'aiAssistantMessagesCountAtom',
+  get: ({ get }) => get(aiAssistantMessagesAtom).length,
+});
+
 export const aiAssistantCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAssistantCurrentChatMessagesCountAtom',
   get: ({ get }) => getPromptMessages(get(aiAssistantMessagesAtom)).length,
