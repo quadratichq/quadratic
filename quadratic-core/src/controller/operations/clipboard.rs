@@ -220,10 +220,16 @@ impl GridController {
                             _ => "unknown",
                         };
                         let message = format!("Cannot place {} within a table", cell_type);
-                        crate::wasm_bindings::js::jsClientMessage(
-                            message.to_owned(),
-                            JsSnackbarSeverity::Error.to_string(),
-                        );
+
+                        #[cfg(any(target_family = "wasm", test))]
+                        {
+                            let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+                            crate::wasm_bindings::js::jsClientMessage(
+                                message.to_owned(),
+                                error.to_string(),
+                            );
+                        }
+
                         return Err(Error::msg(message));
                     }
 
@@ -317,12 +323,19 @@ impl GridController {
 
                         matches!(data_table.kind, DataTableKind::Import(_))
                     });
+
                 if paste_in_import {
                     let message = "Cannot place table within a table";
-                    crate::wasm_bindings::js::jsClientMessage(
-                        message.to_owned(),
-                        JsSnackbarSeverity::Error.to_string(),
-                    );
+
+                    #[cfg(any(target_family = "wasm", test))]
+                    {
+                        let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+                        crate::wasm_bindings::js::jsClientMessage(
+                            message.to_owned(),
+                            error.to_string(),
+                        );
+                    }
+
                     return Err(Error::msg(message));
                 }
 

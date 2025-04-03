@@ -473,7 +473,7 @@ impl Sheet {
         if contains_data_table {
             let message = "Tables cannot be created over tables, code, or formulas.";
             let error = crate::grid::js_types::JsSnackbarSeverity::Error;
-            crate::wasm_bindings::js::jsClientMessage(message.to_owned(), error.to_string());
+            crate::wasm_bindings::js::jsClientMessage(message.into(), error.to_string());
         }
 
         !contains_data_table
