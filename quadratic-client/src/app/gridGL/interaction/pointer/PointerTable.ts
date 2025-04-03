@@ -47,6 +47,8 @@ export class PointerTable {
             loading: false,
             id: '',
             messages: [],
+            waitingOnMessageIndex: undefined,
+            delaySeconds: 0,
           },
           diffEditorContent: undefined,
           waitingForEditorClose: {
@@ -121,6 +123,8 @@ export class PointerTable {
             loading: false,
             id: '',
             messages: [],
+            waitingOnMessageIndex: undefined,
+            delaySeconds: 0,
           },
           diffEditorContent: undefined,
           waitingForEditorClose: {
