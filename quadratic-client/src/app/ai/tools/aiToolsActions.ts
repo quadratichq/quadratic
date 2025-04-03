@@ -10,22 +10,25 @@ import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { z } from 'zod';
 
-const waitForSetCodeCellValue = (transactionId: string) => {
-  return new Promise((resolve) => {
-    const isTransactionRunning = pixiAppSettings.editorInteractionState.transactionsInfo.some(
-      (t) => t.transactionId === transactionId
-    );
-    if (!isTransactionRunning) {
-      resolve(undefined);
-    } else {
-      events.once('transactionEnd', (transactionEnd) => {
-        if (transactionEnd.transactionId === transactionId) {
-          resolve(undefined);
-        } else {
-          waitForSetCodeCellValue(transactionId).then(resolve);
-        }
-      });
-    }
+export const waitForSetCodeCellValue = (transactionId: string) => {
+  return new Promise<void>((resolve) => {
+    const checkTransactionStatus = () => {
+      const isRunning = pixiAppSettings.editorInteractionState.transactionsInfo.some(
+        (t: { transactionId: string }) => t.transactionId === transactionId
+      );
+      if (!isRunning) {
+        resolve();
+      } else {
+        events.once('transactionEnd', (transactionEnd) => {
+          if (transactionEnd.transactionId === transactionId) {
+            resolve();
+          } else {
+            waitForSetCodeCellValue(transactionId).then(resolve);
+          }
+        });
+      }
+    };
+    checkTransactionStatus();
   });
 };
 
@@ -66,7 +69,7 @@ ${
 };
 
 // Helper function to set code cell value and name in an optimized way
-const setCodeCellValueAndName = async (
+export const setCodeCellValueAndName = async (
   sheetId: string,
   x: number,
   y: number,
@@ -75,22 +78,22 @@ const setCodeCellValueAndName = async (
   cellName: string,
   cursor?: string
 ): Promise<string | undefined> => {
-  // First create the code cell
-  const transactionId = await quadraticCore.setCodeCellValue({
-    sheetId,
-    x,
-    y,
-    codeString,
-    language,
-    cursor,
-  });
+  try {
+    // Create the code cell first
+    const transactionId = await quadraticCore.setCodeCellValue({
+      sheetId,
+      x,
+      y,
+      codeString,
+      language,
+      cursor,
+    });
 
-  if (transactionId) {
-    // Wait for the code cell transaction to complete
-    await waitForSetCodeCellValue(transactionId);
+    if (transactionId) {
+      // Wait for the code cell to be fully created
+      await waitForSetCodeCellValue(transactionId);
 
-    // Set the name in a single batch right after the code execution
-    try {
+      // Then set the name
       await quadraticCore.dataTableMeta(
         sheetId,
         x,
@@ -101,34 +104,13 @@ const setCodeCellValueAndName = async (
         },
         cursor
       );
-    } catch (error) {
-      // If there's an error (likely a duplicate name), try with incremental suffix
-      let counter = 1;
-      let success = false;
-
-      while (!success && counter < 100) {
-        try {
-          const incrementalName = `${cellName}${counter}`;
-
-          await quadraticCore.dataTableMeta(
-            sheetId,
-            x,
-            y,
-            {
-              name: incrementalName,
-              showName: true,
-            },
-            cursor
-          );
-          success = true;
-        } catch (e) {
-          counter++;
-        }
-      }
     }
-  }
 
-  return transactionId;
+    return transactionId;
+  } catch (error) {
+    console.error('Error in setCodeCellValueAndName:', error);
+    return undefined;
+  }
 };
 
 export type AIToolActionsRecord = {

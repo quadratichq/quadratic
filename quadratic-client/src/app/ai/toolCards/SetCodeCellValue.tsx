@@ -1,12 +1,10 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
+import { setCodeCellValueAndName } from '@/app/ai/tools/aiToolsActions';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
-import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -78,29 +76,6 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     [codeCellPos]
   );
 
-  // Wait for a transaction to complete
-  const waitForSetCodeCellValue = (transactionId: string) => {
-    return new Promise<void>((resolve) => {
-      const checkTransactionStatus = () => {
-        const isRunning = pixiAppSettings.editorInteractionState.transactionsInfo.some(
-          (t: { transactionId: string }) => t.transactionId === transactionId
-        );
-        if (!isRunning) {
-          resolve();
-        } else {
-          events.once('transactionEnd', (transactionEnd) => {
-            if (transactionEnd.transactionId === transactionId) {
-              resolve();
-            } else {
-              waitForSetCodeCellValue(transactionId).then(resolve);
-            }
-          });
-        }
-      };
-      checkTransactionStatus();
-    });
-  };
-
   const saveAndRun = useRecoilCallback(
     () => async (toolArgs: SetCodeCellValueResponse) => {
       if (!codeCellPos) {
@@ -110,58 +85,16 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       // First try using provided cell_name, then fall back to language-based name
       const cellName = toolArgs.cell_name ? toolArgs.cell_name : `${toolArgs.code_cell_language}Code`;
 
-      // Create the code cell - first transaction
-      const transactionId = await quadraticCore.setCodeCellValue({
-        sheetId: sheets.current,
-        x: codeCellPos.x,
-        y: codeCellPos.y,
-        codeString: toolArgs.code_string,
-        language: toolArgs.code_cell_language,
-        cursor: sheets.getCursorPosition(),
-      });
-
-      if (transactionId) {
-        // Wait for the transaction to complete
-        await waitForSetCodeCellValue(transactionId);
-
-        // Set the name as a single additional transaction
-        try {
-          await quadraticCore.dataTableMeta(
-            sheets.current,
-            codeCellPos.x,
-            codeCellPos.y,
-            {
-              name: cellName,
-              showName: true,
-            },
-            sheets.getCursorPosition()
-          );
-        } catch (error) {
-          // If there's an error (likely a duplicate name), try with incremental suffix
-          let counter = 1;
-          let success = false;
-
-          while (!success && counter < 100) {
-            try {
-              const incrementalName = `${cellName}${counter}`;
-
-              await quadraticCore.dataTableMeta(
-                sheets.current,
-                codeCellPos.x,
-                codeCellPos.y,
-                {
-                  name: incrementalName,
-                  showName: true,
-                },
-                sheets.getCursorPosition()
-              );
-              success = true;
-            } catch (e) {
-              counter++;
-            }
-          }
-        }
-      }
+      // Use the helper function to set code cell value and name in one transaction
+      await setCodeCellValueAndName(
+        sheets.current,
+        codeCellPos.x,
+        codeCellPos.y,
+        toolArgs.code_string,
+        toolArgs.code_cell_language,
+        cellName,
+        sheets.getCursorPosition()
+      );
     },
     [codeCellPos]
   );

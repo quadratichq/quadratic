@@ -257,7 +257,7 @@ Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
-You MUST provide a descriptive name in cell_name for any new code cell, using PascalCase (e.g., "DataCleaning" or "PlotRevenue") that reflects the purpose of the code. Avoid generic names like "PythonCode1" and keep it under 30 characters.\n
+Provide a descriptive name in cell_name for any new code cell, using PascalCase (e.g., "DataCleaning" or "PlotRevenue") that reflects the purpose of the code. Avoid generic names like "PythonCode1" and keep it under 30 characters. Always use a unique name for the code cell.\n
 `,
     parameters: {
       type: 'object',
