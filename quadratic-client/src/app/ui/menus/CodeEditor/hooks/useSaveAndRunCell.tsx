@@ -1,9 +1,12 @@
 import {
   codeEditorCodeCellAtom,
+  codeEditorCodeStringAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
@@ -20,17 +23,66 @@ export const useSaveAndRunCell = () => {
         const { sheetId, pos, language } = codeCell;
         if (!sheetId) return;
 
+        const codeString = editorContent ?? '';
         quadraticCore.setCodeCellValue({
           sheetId,
           x: pos.x,
           y: pos.y,
-          codeString: editorContent ?? '',
+          codeString,
           language,
           cursor: sheets.getCursorPosition(),
         });
 
+        set(codeEditorEditorContentAtom, codeString);
+        set(codeEditorCodeStringAtom, codeString);
         set(codeEditorDiffEditorContentAtom, undefined);
 
+        // we need to add the unsaved codeCell to the client since it does not
+        // yet exist in the grid
+        const tables = pixiApp.cellsSheets.getById(sheetId)?.tables;
+        if (tables) {
+          if (!tables.isTable(pos.x, pos.y)) {
+            events.emit('updateCodeCell', {
+              sheetId,
+              x: pos.x,
+              y: pos.y,
+              codeCell: {
+                x: BigInt(pos.x),
+                y: BigInt(pos.y),
+                code_string: codeString,
+                language,
+                std_out: null,
+                std_err: null,
+                evaluation_result: null,
+                spill_error: null,
+                return_info: null,
+                cells_accessed: null,
+              },
+              renderCodeCell: {
+                x: pos.x,
+                y: pos.y,
+                w: 1,
+                h: 1,
+                language,
+                state: 'NotYetRun',
+                spill_error: null,
+                name: '',
+                columns: [],
+                first_row_header: false,
+                sort: null,
+                sort_dirty: false,
+                alternating_colors: false,
+                readonly: true,
+                is_html: false,
+                is_html_image: false,
+                show_ui: false,
+                show_name: false,
+                show_columns: false,
+              },
+            });
+            console.log('adding unsaved codeCell to client');
+          }
+        }
         mixpanel.track('[CodeEditor].cellRun', {
           type: getLanguage(codeCell.language),
         });
