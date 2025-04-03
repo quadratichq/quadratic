@@ -3,7 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetRect } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -63,6 +63,72 @@ ${
     : `Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.`
 }
 `;
+};
+
+// Helper function to set code cell value and name in an optimized way
+const setCodeCellValueAndName = async (
+  sheetId: string,
+  x: number,
+  y: number,
+  codeString: string,
+  language: CodeCellLanguage,
+  cellName: string,
+  cursor?: string
+): Promise<string | undefined> => {
+  // First create the code cell
+  const transactionId = await quadraticCore.setCodeCellValue({
+    sheetId,
+    x,
+    y,
+    codeString,
+    language,
+    cursor,
+  });
+
+  if (transactionId) {
+    // Wait for the code cell transaction to complete
+    await waitForSetCodeCellValue(transactionId);
+
+    // Set the name in a single batch right after the code execution
+    try {
+      await quadraticCore.dataTableMeta(
+        sheetId,
+        x,
+        y,
+        {
+          name: cellName,
+          showName: true,
+        },
+        cursor
+      );
+    } catch (error) {
+      // If there's an error (likely a duplicate name), try with incremental suffix
+      let counter = 1;
+      let success = false;
+
+      while (!success && counter < 100) {
+        try {
+          const incrementalName = `${cellName}${counter}`;
+
+          await quadraticCore.dataTableMeta(
+            sheetId,
+            x,
+            y,
+            {
+              name: incrementalName,
+              showName: true,
+            },
+            cursor
+          );
+          success = true;
+        } catch (e) {
+          counter++;
+        }
+      }
+    }
+  }
+
+  return transactionId;
 };
 
 export type AIToolActionsRecord = {
@@ -145,19 +211,18 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Determine the cell name - use provided cell_name or fallback to language-based name
       const cellName = cell_name ? cell_name : `${code_cell_language}Code`;
 
-      // Create the code cell - first transaction
-      const transactionId = await quadraticCore.setCodeCellValue({
+      // Create the code cell and set name in an optimized way
+      const transactionId = await setCodeCellValueAndName(
         sheetId,
         x,
         y,
-        codeString: code_string,
-        language: code_cell_language,
-        cursor: sheets.getCursorPosition(),
-      });
+        code_string,
+        code_cell_language,
+        cellName,
+        sheets.getCursorPosition()
+      );
 
       if (transactionId) {
-        await waitForSetCodeCellValue(transactionId);
-
         // After execution, adjust viewport to show full output if it exists
         const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
         if (table) {
@@ -166,45 +231,7 @@ export const aiToolsActions: AIToolActionsRecord = {
           ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
         }
 
-        // Set the name as a single additional transaction
-        try {
-          await quadraticCore.dataTableMeta(
-            sheetId,
-            x,
-            y,
-            {
-              name: cellName,
-              showName: true,
-            },
-            sheets.getCursorPosition()
-          );
-        } catch (error) {
-          // If there's an error (likely a duplicate name), try with incremental suffix
-          let counter = 1;
-          let success = false;
-
-          while (!success && counter < 100) {
-            try {
-              const incrementalName = `${cellName}${counter}`;
-
-              await quadraticCore.dataTableMeta(
-                sheetId,
-                x,
-                y,
-                {
-                  name: incrementalName,
-                  showName: true,
-                },
-                sheets.getCursorPosition()
-              );
-              success = true;
-            } catch (e) {
-              counter++;
-            }
-          }
-        }
-
-        // Return result immediately - no additional transactions
+        // Return result immediately
         const result = await setCodeCellResult(sheetId, x, y);
         return result;
       } else {
