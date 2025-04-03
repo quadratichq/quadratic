@@ -36,6 +36,7 @@
     "dearmor",
     "demangle",
     "dgraph",
+    "docgen",
     "dotenv",
     "dpkg",
     "elif",
