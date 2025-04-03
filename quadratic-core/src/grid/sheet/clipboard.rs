@@ -27,7 +27,7 @@ impl Sheet {
         let mut data_tables = IndexMap::new();
         let mut sheet_bounds: Option<Rect> = None;
 
-        if let Some(bounds) = self.selection_bounds(selection, true, a1_context) {
+        if let Some(bounds) = self.selection_bounds(selection, true, true, a1_context) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);

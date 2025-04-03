@@ -1262,6 +1262,57 @@ mod test {
         // expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     }
 
+    // TODO(ddimaria): implement once we decide to take on the work
+    // we currently copy a single rectangle, so copying two non-touching columns captures the gap
+    // #[test]
+    // fn copy_paste_clipboard_2_non_touching_columns_of_data_table() {
+    //     clear_js_calls();
+
+    //     let (mut gc, sheet_id, _, _) = simple_csv();
+
+    //     let context = A1Context::test(
+    //         &[("Sheet1", sheet_id)],
+    //         &[(
+    //             "simple.csv",
+    //             &["city", "region", "country", "population"],
+    //             Rect::test_a1("A1:D11"),
+    //         )],
+    //     );
+
+    //     let mut range = TableRef {
+    //         table_name: "simple.csv".to_string(),
+    //         data: true,
+    //         headers: false,
+    //         totals: false,
+    //         col_range: ColRange::Col("city".to_string()),
+    //     };
+    //     let cell_ref_range_1 = CellRefRange::Table {
+    //         range: range.clone(),
+    //     };
+    //     range.col_range = ColRange::Col("country".to_string());
+    //     let cell_ref_range_2 = CellRefRange::Table { range };
+
+    //     let selection =
+    //         A1Selection::from_ranges(vec![cell_ref_range_1, cell_ref_range_2], sheet_id, &context)
+    //             .unwrap();
+    //     let JsClipboard { html, .. } = gc
+    //         .sheet(sheet_id)
+    //         .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, false)
+    //         .unwrap();
+
+    //     let expected_header_row = vec!["city", "country"];
+    //     let expected_first_data = vec!["Southborough", "United States"];
+
+    //     // paste side by side
+    //     paste(&mut gc, sheet_id, 10, 1, html.clone());
+    //     print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+    //     assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
+    //     assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
+
+    //     // let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+    //     // expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
+    // }
+
     #[test]
     fn update_code_cell_references_python() {
         let mut gc = GridController::test();
