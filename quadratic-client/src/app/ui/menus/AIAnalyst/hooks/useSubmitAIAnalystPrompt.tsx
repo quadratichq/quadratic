@@ -337,7 +337,12 @@ export function useSubmitAIAnalystPrompt() {
               });
             }
 
-            set(aiAnalystCurrentChatMessagesAtom, (prev) => [...prev, toolResultMessage]);
+            let nextChatMessages: ChatMessage[] = [];
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => {
+              nextChatMessages = [...prev, toolResultMessage];
+              return nextChatMessages;
+            });
+            chatMessages = nextChatMessages;
 
             // prompt suggestion requires user input, break the loop
             if (promptSuggestions.length > 0) {

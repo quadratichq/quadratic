@@ -34,7 +34,7 @@ export const ToolCard = ({
           <span className="flex h-5 items-center truncate font-bold">
             {label ? label : isLoading ? <Skeleton className="h-3 w-64 bg-accent" /> : null}
           </span>
-          <span className="-mt-0.5 flex h-4 items-center text-xs text-muted-foreground">
+          <span className="-mt-0.5 flex h-4 items-center truncate text-xs text-muted-foreground">
             {hasError ? (
               <span className="text-destructive">Something went wrong (try again)</span>
             ) : description ? (
