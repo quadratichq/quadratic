@@ -280,8 +280,9 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a vertical edge of a table.
     pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_at(pos) {
-            // we handle charts separately in find_next_*
-            if dt.is_html_or_image() {
+            // we handle charts separately in find_next_*; 
+            // we ignore single_value tables
+            if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
             }
             let bounds = dt.output_rect(dt_pos, false);
@@ -295,8 +296,9 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
     pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_at(pos) {
-            // we handle charts separately in find_next_*
-            if dt.is_html_or_image() {
+            // we handle charts separately in find_next_*; 
+            // we ignore single_value tables
+            if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
             }
             let bounds = dt.output_rect(dt_pos, false);
