@@ -5,7 +5,7 @@ import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextM
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
-import { aiAnalystPDFImportAtom, aiAnalystPDFImportMessagesAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -106,7 +106,7 @@ How can I help you?`,
           ];
 
           const abortController = new AbortController();
-          set(aiAnalystPDFImportAtom, { abortController, loading: true, messages: [] });
+          set(aiAnalystPDFImportAtom, { abortController, loading: true });
 
           const response = await handleAIRequestToAPI({
             chatId: v4(),
@@ -118,11 +118,10 @@ How can I help you?`,
             useToolsPrompt: true,
             language: undefined,
             useQuadraticContext: false,
-            setMessages: (updater) => set(aiAnalystPDFImportMessagesAtom, updater),
             signal: abortController.signal,
           });
 
-          set(aiAnalystPDFImportAtom, { abortController: undefined, loading: false, messages: [] });
+          set(aiAnalystPDFImportAtom, { abortController: undefined, loading: false });
 
           const addDataTableToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.AddDataTable);
           for (const toolCall of addDataTableToolCalls) {
@@ -140,7 +139,7 @@ How can I help you?`,
           importPDFResult = `Error importing PDF file: ${JSON.stringify(error)}`;
         }
         if (!importPDFResult) {
-          set(aiAnalystPDFImportAtom, { abortController: undefined, loading: false, messages: [] });
+          set(aiAnalystPDFImportAtom, { abortController: undefined, loading: false });
           importPDFResult = 'Unable to add any data table from the PDF';
         }
         return importPDFResult;

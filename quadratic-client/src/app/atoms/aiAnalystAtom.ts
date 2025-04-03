@@ -27,7 +27,6 @@ export interface AIAnalystState {
   pdfImport: {
     abortController: AbortController | undefined;
     loading: boolean;
-    messages: ChatMessage[];
   };
 }
 
@@ -50,7 +49,6 @@ export const defaultAIAnalystState: AIAnalystState = {
   pdfImport: {
     abortController: undefined,
     loading: false,
-    messages: [],
   },
 };
 
@@ -319,20 +317,4 @@ export const aiAnalystPDFImportAtom = createSelector('pdfImport');
 export const aiAnalystPDFImportLoadingAtom = selector<boolean>({
   key: 'aiAnalystPDFImportLoadingAtom',
   get: ({ get }) => get(aiAnalystPDFImportAtom).loading,
-});
-export const aiAnalystPDFImportMessagesAtom = selector<ChatMessage[]>({
-  key: 'aiAnalystPDFImportMessagesAtom',
-  get: ({ get }) => get(aiAnalystPDFImportAtom).messages,
-  set: ({ set }, newValue) => {
-    set(aiAnalystAtom, (prev) => {
-      if (newValue instanceof DefaultValue) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        messages: newValue,
-      };
-    });
-  },
 });

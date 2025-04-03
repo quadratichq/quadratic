@@ -238,7 +238,7 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    text: `Error parsing tool arguments: ${error}`,
+                    text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
                   });
                 }
               } else {

@@ -19,8 +19,8 @@ type AIAnalystContextProps = {
   initialContext?: Context;
   context: Context;
   setContext: React.Dispatch<React.SetStateAction<Context>>;
-  files?: FileContent[];
-  setFiles?: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  files: FileContent[];
+  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
   editing: boolean;
   disabled: boolean;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
@@ -101,7 +101,7 @@ export const AIAnalystContext = memo(
           />
         )}
 
-        {files?.map((file, index) => (
+        {files.map((file, index) => (
           <ContextPill
             key={`${index}-${file.fileName}`}
             primary={file.fileName}
