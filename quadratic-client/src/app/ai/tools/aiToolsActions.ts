@@ -43,8 +43,8 @@ async function generateCodeCellName(language: CodeCellLanguage, code: string): P
               {
                 type: 'text',
                 text: `Generate a descriptive name for this ${language} code cell. 
-The name should be concise (maximum 20 characters), descriptive of what the code does, and should use camelCase (no spaces).
-Don't use generic names like "Python1" or "JavaScript2". Instead, focus on the purpose of the code.
+The name should be concise (preferably under 20 characters, but up to 30 characters are allowed), descriptive of what the code does, and should use PascalCase (no spaces).
+Don't use generic names like "Python1" or "JavaScript2". Instead, focus on the purpose of the code. Focus on what the code does, not the libraries it uses nor locations it references.
 
 Here's the code:
 \`\`\`
@@ -76,8 +76,8 @@ Just respond with the name only, no explanation needed.`,
       if (textContent && textContent.text) {
         name = textContent.text.trim().split('\n')[0].replace(/[`'"]/g, '');
         // If name is too long, truncate it
-        if (name.length > 20) {
-          name = name.substring(0, 20);
+        if (name.length > 30) {
+          name = name.substring(0, 30);
         }
       }
     }
