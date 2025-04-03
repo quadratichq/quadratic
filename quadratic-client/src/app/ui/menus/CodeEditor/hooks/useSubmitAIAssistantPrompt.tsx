@@ -117,14 +117,14 @@ export function useSubmitAIAssistantPrompt() {
 
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
-          set(aiAssistantMessagesAtom, (prevMessages) => {
-            let prevWaitingOnMessageIndex: number | undefined = undefined;
-            clearTimeout(delayTimerRef.current);
-            set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
-              prevWaitingOnMessageIndex = prev;
-              return undefined;
-            });
+          let prevWaitingOnMessageIndex: number | undefined = undefined;
+          clearTimeout(delayTimerRef.current);
+          set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
+            prevWaitingOnMessageIndex = prev;
+            return undefined;
+          });
 
+          set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
