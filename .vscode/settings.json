@@ -72,6 +72,7 @@
     "jwks",
     "keepalive",
     "keyrings",
+    "kratos",
     "linkify",
     "localstack",
     "mailslurper",
