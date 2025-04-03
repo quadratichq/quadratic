@@ -92,7 +92,12 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         }
 
         if (oldValue.showAIAnalyst && !newValue.showAIAnalyst) {
+          oldValue.abortController?.abort();
           focusGrid();
+        }
+
+        if (!oldValue.showChatHistory && newValue.showChatHistory) {
+          oldValue.abortController?.abort();
         }
       });
     },
