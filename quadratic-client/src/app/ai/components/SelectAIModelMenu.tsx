@@ -58,53 +58,55 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          disabled={loading}
-          className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
-        >
-          {selectedModelConfig.displayName}
-          <CaretDownIcon />
-        </DropdownMenuTrigger>
+      {debug && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={loading}
+            className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
+          >
+            {selectedModelConfig.displayName}
+            <CaretDownIcon />
+          </DropdownMenuTrigger>
 
-        <DropdownMenuContent
-          align="start"
-          alignOffset={-4}
-          onCloseAutoFocus={(e) => {
-            e.preventDefault();
-            textAreaRef.current?.focus();
-          }}
-        >
-          {modelConfigs
-            .filter(
-              ([, modelConfig]) =>
-                modelConfig.thinkingToggle === undefined ||
-                (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
-                selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
-            )
-            .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1))
-            .map(([key, modelConfig]) => {
-              const { model, displayName, provider } = modelConfig;
+          <DropdownMenuContent
+            align="start"
+            alignOffset={-4}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              textAreaRef.current?.focus();
+            }}
+          >
+            {modelConfigs
+              .filter(
+                ([, modelConfig]) =>
+                  modelConfig.thinkingToggle === undefined ||
+                  (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
+                  selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
+              )
+              .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1))
+              .map(([key, modelConfig]) => {
+                const { model, displayName, provider } = modelConfig;
 
-              return (
-                <DropdownMenuCheckboxItem
-                  key={key}
-                  checked={selectedModel === key}
-                  onCheckedChange={() => {
-                    mixpanel.track('[AI].model.change', { model });
-                    setSelectedModel(key);
-                  }}
-                >
-                  <div className="flex w-full items-center justify-between text-xs">
-                    <span className="pr-4">
-                      {(debug ? `${modelConfig.enabled ? '' : 'dbg-'}${provider} - ` : '') + displayName}
-                    </span>
-                  </div>
-                </DropdownMenuCheckboxItem>
-              );
-            })}
-        </DropdownMenuContent>
-      </DropdownMenu>
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={selectedModel === key}
+                    onCheckedChange={() => {
+                      mixpanel.track('[AI].model.change', { model });
+                      setSelectedModel(key);
+                    }}
+                  >
+                    <div className="flex w-full items-center justify-between text-xs">
+                      <span className="pr-4">
+                        {(debug ? `${modelConfig.enabled ? '' : 'dbg-'}${provider} - ` : '') + displayName}
+                      </span>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {canToggleThinking && (
         <TooltipPopover label="Extended thinking for complex prompts">
