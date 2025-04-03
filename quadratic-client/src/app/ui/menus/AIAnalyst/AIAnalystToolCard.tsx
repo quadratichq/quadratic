@@ -1,7 +1,7 @@
 import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
-import { PDFImportLoading } from '@/app/ai/toolCards/PDFImportLoading';
+import { PDFImport } from '@/app/ai/toolCards/PDFImport';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
@@ -36,7 +36,7 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
     case AITool.UserPromptSuggestions:
       return <UserPromptSuggestionsSkeleton args={args} loading={loading} />;
     case AITool.PDFImport:
-      return <PDFImportLoading args={args} loading={loading} />;
+      return <PDFImport args={args} loading={loading} />;
     default:
       console.error(`Unknown tool: ${name}`);
       return null;
