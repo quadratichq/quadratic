@@ -1,5 +1,6 @@
 import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import {
   BillingAIUsageForCurrentMonth,
@@ -53,5 +54,11 @@ async function handler(req: Request, res: Response) {
   // Check if the user has exceeded the billing limit
   const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
 
-  return res.status(200).json({ exceededBillingLimit, billingLimit: BILLING_AI_USAGE_LIMIT, currentPeriodUsage });
+  const data: ApiTypes['/v0/teams/:uuid/billing/ai/usage.GET.response'] = {
+    exceededBillingLimit,
+    billingLimit: BILLING_AI_USAGE_LIMIT,
+    currentPeriodUsage,
+  };
+
+  return res.status(200).json(data);
 }
