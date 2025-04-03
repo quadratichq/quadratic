@@ -473,10 +473,8 @@ impl Sheet {
         #[cfg(any(target_family = "wasm", test))]
         if contains_data_table {
             let message = "Tables cannot be created over tables, code, or formulas.";
-            crate::wasm_bindings::js::jsClientMessage(
-                message.to_owned(),
-                JsSnackbarSeverity::Error.to_string(),
-            );
+            let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+            crate::wasm_bindings::js::jsClientMessage(message.to_owned(), error.to_string());
         }
 
         !contains_data_table
