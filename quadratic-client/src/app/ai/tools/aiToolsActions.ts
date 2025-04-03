@@ -3,92 +3,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
+import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { authClient } from '@/auth/auth';
-import { apiClient } from '@/shared/api/apiClient';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { z } from 'zod';
-
-// Direct API call without using hooks
-async function generateCodeCellName(language: CodeCellLanguage, code: string): Promise<string | null> {
-  try {
-    // Get the current file UUID
-    const fileUuid = pixiAppSettings.editorInteractionState.fileUuid;
-    if (!fileUuid) {
-      return null;
-    }
-
-    // Call the existing AI chat API
-    const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
-    const token = await authClient.getTokenOrRedirect();
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        chatId: crypto.randomUUID(),
-        fileUuid: fileUuid,
-        source: 'GetCodeCellName',
-        modelKey: 'vertexai:gemini-2.0-flash-001',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Generate a descriptive name for this ${language} code cell. 
-The name should be concise (preferably under 20 characters, but up to 30 characters are allowed), descriptive of what the code does, and should use PascalCase (no spaces).
-Don't use generic names like "Python1" or "JavaScript2". Instead, focus on the purpose of the code. Focus on what the code does, not the libraries it uses nor locations it references.
-
-Here's the code:
-\`\`\`
-${code}
-\`\`\`
-
-Just respond with the name only, no explanation needed.`,
-              },
-            ],
-            contextType: 'userPrompt',
-          },
-        ],
-        useStream: false,
-        useToolsPrompt: false,
-        useQuadraticContext: false,
-      }),
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-
-    // Extract the text from the response content
-    let name = '';
-    if (data.content && data.content.length > 0) {
-      const textContent = data.content.find((c: { type: string; text?: string }) => c.type === 'text');
-      if (textContent && textContent.text) {
-        name = textContent.text.trim().split('\n')[0].replace(/[`'"]/g, '');
-        // If name is too long, truncate it
-        if (name.length > 30) {
-          name = name.substring(0, 30);
-        }
-      }
-    }
-
-    return name || null;
-  } catch (error) {
-    console.error('[generateCodeCellName]', error);
-    // Return null to let the system use its default naming
-    return null;
-  }
-}
 
 const waitForSetCodeCellValue = (transactionId: string) => {
   return new Promise((resolve) => {
@@ -208,7 +128,9 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetCodeCellValue]: async (args) => {
-    let { code_cell_language, code_string, code_cell_position } = args;
+    let { code_cell_language, code_string, code_cell_position, cell_name } = args;
+    console.log('[SetCodeCellValue] Tool args:', { code_cell_language, code_cell_position, cell_name });
+
     try {
       const sheetId = sheets.current;
       const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
@@ -221,14 +143,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         code_string = code_string.slice(1);
       }
 
-      // Generate a name for the code cell using our new direct API call
-      let codeCellName: string | null = null;
-      try {
-        codeCellName = await generateCodeCellName(code_cell_language, code_string);
-      } catch (e) {
-        console.error('[aiToolsActions] Failed to get code cell name:', e);
-      }
-
+      console.log('[SetCodeCellValue] Creating code cell at position:', { x, y, sheetId });
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
         x,
@@ -239,35 +154,84 @@ export const aiToolsActions: AIToolActionsRecord = {
       });
 
       if (transactionId) {
+        console.log('[SetCodeCellValue] Created cell, waiting for transaction:', transactionId);
         await waitForSetCodeCellValue(transactionId);
+        console.log('[SetCodeCellValue] Transaction completed');
 
         // After execution, adjust viewport to show full output if it exists
         const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
+        console.log('[SetCodeCellValue] Found table:', {
+          exists: !!table,
+          name: table?.name,
+          hasName: !!table?.name,
+        });
+
         if (table) {
           const width = table.codeCell.w;
           const height = table.codeCell.h;
           ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
-
-          // Only set the name if we have a valid AI-generated name and the cell has no name yet
-          if (codeCellName && !table.name) {
-            await quadraticCore.dataTableMeta(
-              sheetId,
-              x,
-              y,
-              {
-                name: codeCellName,
-              },
-              sheets.getCursorPosition()
-            );
-          }
         }
+
+        // Always set the cell name regardless of whether table exists
+        // First try using provided cell_name, then fall back to language-based name
+        const cellName = cell_name ? cell_name : `${code_cell_language}Code`;
+        console.log('[SetCodeCellValue] DIRECT NAME VALUE:', {
+          providedCellName: cell_name,
+          finalNameToSet: cellName,
+        });
+
+        // This is an important cell to find and name after creation
+        const checkAndNameCell = async () => {
+          try {
+            // Get a reference to the table after creation
+            const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
+            console.log('[SetCodeCellValue] Found table after create:', {
+              exists: !!table,
+              name: table?.name,
+              hasName: !!table?.name,
+            });
+
+            if (table) {
+              // Generate a unique name based on the requested name
+              const uniqueName = findUniqueName(cellName);
+
+              // Set the name directly using dataTableMeta
+              await quadraticCore.dataTableMeta(
+                sheetId,
+                x,
+                y,
+                {
+                  name: uniqueName,
+                  showName: true,
+                },
+                sheets.getCursorPosition()
+              );
+              console.log('[SetCodeCellValue] Successfully set cell name to:', uniqueName);
+            }
+          } catch (error) {
+            console.error('[SetCodeCellValue] Error setting cell name:', error);
+          }
+        };
+
+        // Call immediately and then with increasing delays to ensure it's set
+        checkAndNameCell();
+
+        // Try again after short delay
+        setTimeout(() => {
+          checkAndNameCell();
+
+          // And again after a longer delay
+          setTimeout(checkAndNameCell, 500);
+        }, 200);
 
         const result = await setCodeCellResult(sheetId, x, y);
         return result;
       } else {
+        console.error('[SetCodeCellValue] Failed to create code cell - no transaction ID');
         return 'Error executing set code cell value tool';
       }
     } catch (e) {
+      console.error('[SetCodeCellValue] Error:', e);
       return `Error executing set code cell value tool: ${e}`;
     }
   },
@@ -374,3 +338,34 @@ export const aiToolsActions: AIToolActionsRecord = {
     return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
   },
 } as const;
+
+// Find a unique table name that doesn't already exist in the sheet
+const findUniqueName = (baseName: string): string => {
+  // Start with the base name and incrementally try different names until
+  // we find one that doesn't exist in the current sheet
+
+  try {
+    // Try the base name first
+    return baseName;
+  } catch (e) {
+    // If there's an error, likely due to duplicate name, try with numbers
+    console.log(`[SetCodeCellValue] Name ${baseName} already exists, trying with suffix`);
+
+    let counter = 1;
+    let newName = `${baseName}${counter}`;
+
+    // Try a few times with increasing numbers
+    while (counter < 100) {
+      try {
+        return newName;
+      } catch (e) {
+        counter++;
+        newName = `${baseName}${counter}`;
+      }
+    }
+
+    // If we reach here, return the original with a timestamp
+    const timestamp = Date.now().toString().slice(-4);
+    return `${baseName}_${timestamp}`;
+  }
+};

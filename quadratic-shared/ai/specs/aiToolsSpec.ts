@@ -98,6 +98,7 @@ export const AIToolsArgsSchema = {
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
+    cell_name: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
     top_left_position: z.string(),
@@ -251,11 +252,12 @@ To clear the values of a cell, set the value to an empty string.\n
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the value of a code cell and runs it in the current open sheet, requires the language, cell position (in a1 notation), and code string.\n
+Sets the value of a code cell and runs it in the current open sheet, requires the language, cell position (in a1 notation), code string, and a descriptive name for the cell.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+You MUST provide a descriptive name in cell_name for any new code cell, using PascalCase (e.g., "DataCleaning" or "PlotRevenue") that reflects the purpose of the code. Avoid generic names like "PythonCode1" and keep it under 30 characters.\n
 `,
     parameters: {
       type: 'object',
@@ -274,15 +276,21 @@ Always refer to the data from cell by its position in a1 notation from respectiv
           type: 'string',
           description: 'The code which will run in the cell',
         },
+        cell_name: {
+          type: 'string',
+          description:
+            'A descriptive name for the code cell in PascalCase, under 30 characters, reflecting what the code does (e.g., "DataCleaning", "VisualizeSales"). This is REQUIRED for all code cells.',
+        },
       },
-      required: ['code_cell_language', 'code_cell_position', 'code_string'],
+      required: ['code_cell_language', 'code_cell_position', 'code_string', 'cell_name'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
-set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
+set_code_cell_value function requires language, codeString, the cell position (single cell in a1 notation), and a descriptive cell_name.\n
+You MUST ALWAYS provide a descriptive cell_name in PascalCase (no spaces) that reflects the purpose of the code (e.g., "DataCleaning", "VisualizeSales", "CalculateMetrics"). The name should be concise (under 30 characters) and avoid generic names like "PythonCode" or "JavaScript1". Cell name is required for all code cells.\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
 The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
  - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
