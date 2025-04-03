@@ -1,15 +1,10 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import {
-  editorInteractionStateSettingsAtom,
-  editorInteractionStateTeamUuidAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
 import { debug } from '@/app/debugFlags';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
-import { DOCUMENTATION_ANALYTICS_AI } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -29,7 +24,6 @@ import {
   type DragEvent,
 } from 'react';
 import type { SetterOrUpdater } from 'recoil';
-import { useRecoilValue } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -233,45 +227,21 @@ export const AIUserMessageForm = memo(
               disabled={waitingOnMessageIndex !== undefined}
             />
 
-            {waitingOnMessageIndex === props.messageIndex && (
-              <div className="mx-2 my-1 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50">
-                Exceeded free tier AI usage. Wait {delaySeconds} seconds or{' '}
-                <a
-                  href="/team/settings"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-semibold text-primary hover:underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  upgrade to Quadratic Pro
-                </a>
-              </div>
-            )}
+            {waitingOnMessageIndex === props.messageIndex && <AIUsageExceeded delaySeconds={delaySeconds ?? 0} />}
           </>
         ) : (
-          <div
-            className={cn(
-              'pointer-events-none whitespace-pre-wrap p-2 text-sm',
-              waitingOnMessageIndex === props.messageIndex && 'opacity-50'
-            )}
-          >
-            {prompt}
+          <>
+            <div
+              className={cn(
+                'pointer-events-none whitespace-pre-wrap p-2 text-sm',
+                waitingOnMessageIndex === props.messageIndex && 'opacity-50'
+              )}
+            >
+              {prompt}
+            </div>
 
-            {waitingOnMessageIndex === props.messageIndex && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Exceeded free tier AI usage. Wait {delaySeconds} seconds or{' '}
-                <a
-                  href="/pricing"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary hover:underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  upgrade to Quadratic Pro
-                </a>
-              </div>
-            )}
-          </div>
+            {waitingOnMessageIndex === props.messageIndex && <AIUsageExceeded delaySeconds={delaySeconds ?? 0} />}
+          </>
         )}
 
         {editing && (
@@ -335,23 +305,3 @@ export const AIUserMessageForm = memo(
     );
   })
 );
-
-export const AIUserMessageFormDisclaimer = memo(() => {
-  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
-  const teamSettings = useRecoilValue(editorInteractionStateSettingsAtom);
-  return (
-    <p className="py-0.5 text-center text-xs text-muted-foreground">
-      {teamSettings.analyticsAi
-        ? 'Your data can be used to improve Quadratic. '
-        : 'Some sheet data is sent to the AI model. '}
-      <a
-        href={teamSettings.analyticsAi ? ROUTES.TEAM_SETTINGS(teamUuid) : DOCUMENTATION_ANALYTICS_AI}
-        target="_blank"
-        rel="noreferrer"
-        className="underline hover:text-foreground"
-      >
-        Learn more.
-      </a>
-    </p>
-  );
-});

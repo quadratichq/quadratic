@@ -1,5 +1,5 @@
 import { aiAssistantMessagesCountAtom } from '@/app/atoms/codeEditorAtom';
-import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageForm';
+import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { AIAssistantMessages } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantMessages';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { memo, useRef } from 'react';
