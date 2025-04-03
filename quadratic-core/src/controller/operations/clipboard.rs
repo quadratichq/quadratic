@@ -762,7 +762,7 @@ mod test {
             Some(html),
             PasteSpecial::None,
             None,
-        )
+        );
     }
 
     fn simple_csv_selection(
