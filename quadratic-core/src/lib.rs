@@ -12,6 +12,7 @@ pub mod util;
 #[macro_use]
 mod error_run;
 pub mod a1;
+mod api;
 mod clear_option;
 pub mod color;
 pub mod compression;
