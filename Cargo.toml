@@ -11,7 +11,6 @@ members = [
     "quadratic-rust-shared/proc_macros/function-timer",
 ]
 
-
 [workspace.package]
 authors = ["Quadratic"]
 edition = "2024"
@@ -23,3 +22,11 @@ version = "0.6.9"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+# patch for breaking changes in zip-rs/zip2 v2.6.0
+# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
+[patch.crates-io]
+zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
+
+[patch.'https://github.com/zip-rs/zip']
+zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }

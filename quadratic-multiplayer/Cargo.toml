@@ -48,6 +48,8 @@ default = ["files"]
 multiplayer = []
 files = []
 
+# patch for breaking changes in zip-rs/zip2 v2.6.0
+# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
 [patch.crates-io]
 zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
 
