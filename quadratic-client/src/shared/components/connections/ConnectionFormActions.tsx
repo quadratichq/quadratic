@@ -75,6 +75,7 @@ export function ConnectionFormActions({
             <Button
               type="button"
               disabled={connectionState === 'loading'}
+              variant={connectionState === 'error' ? 'destructive' : 'default'}
               onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
                 const success = await testConnection(values);
                 if (success) {
@@ -85,7 +86,7 @@ export function ConnectionFormActions({
               {connectionState === 'loading' ? (
                 <SpinnerIcon className="mr-1 text-primary" />
               ) : connectionState === 'error' ? (
-                'Test Failed'
+                <>Failed. Try again.</>
               ) : (
                 'Test and Save'
               )}
@@ -95,6 +96,7 @@ export function ConnectionFormActions({
             <Button
               type="button"
               disabled={connectionState === 'loading'}
+              variant={connectionState === 'error' ? 'destructive' : 'default'}
               onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
                 const success = await testConnection(values);
                 if (success) {
@@ -105,7 +107,7 @@ export function ConnectionFormActions({
               {connectionState === 'loading' ? (
                 <SpinnerIcon className="mr-1 text-primary" />
               ) : connectionState === 'error' ? (
-                'Test Failed'
+                <>Failed. Try again.</>
               ) : (
                 'Test and Create'
               )}
