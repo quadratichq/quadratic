@@ -3,7 +3,6 @@ import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { type FileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { getActiveTeam } from '@/shared/utils/getActiveTeam';
 import mixpanel from 'mixpanel-browser';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
@@ -78,12 +77,17 @@ export const createNewFileAction = {
 
 export const duplicateFileAction = {
   label: 'Duplicate',
+  // File must be publicly shared and the user has access, OR
+  // They're logged in and have access to the team its on
+  // If, for example, they've been invited to the file via email,
+  // they can't duplicate it because they don't have access to the team and its not public.
   isAvailable: isAvailableBecauseLoggedIn,
   async run({
     fileRouteLoaderData,
     submit,
     addGlobalSnackbar,
   }: {
+    // activeTeamUuid: string; - the active team UUID
     fileRouteLoaderData: FileRouteLoaderData;
     submit: SubmitFunction;
     addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
@@ -96,16 +100,20 @@ export const duplicateFileAction = {
 
     mixpanel.track('[Files].duplicateFile', { id: fileUuid });
 
+    // 1. Figure out what teams they have access to
+    // 2. If it's only 1, duplicate to that team
+    // 3. Otherwise, show them a team picker
+    // 4. Duplicate to that team
+
     // By default, duplicate the file to the user's currently active team
     // But if the user doesn't have permission to edit that team, duplicate it to
     // the team they _do_ have access to
     let teamUuidWhereWeDuplicateFileTo = teamUuid;
     if (!(teamPermissions && teamPermissions.includes('TEAM_EDIT'))) {
-      let teamUuidFromLocalStorage = getActiveTeam();
-      if (!teamUuidFromLocalStorage) {
-        throw new Error('No team UUID found');
-      }
-      teamUuidWhereWeDuplicateFileTo = teamUuidFromLocalStorage;
+      // if (!teamUuidFromLocalStorage) {
+      //   throw new Error('No team UUID found');
+      // }
+      // teamUuidWhereWeDuplicateFileTo = teamUuidFromLocalStorage;
     }
 
     try {
