@@ -23,6 +23,7 @@ import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractio
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
+import mixpanel from 'mixpanel-browser';
 import { getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -196,11 +197,21 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, abortController);
 
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage } = await apiClient.teams.billing.aiUsage(teamUuid);
+        const { exceededBillingLimit, currentPeriodUsage, billingLimit } = await apiClient.teams.billing.aiUsage(
+          teamUuid
+        );
         if (exceededBillingLimit) {
-          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil(currentPeriodUsage * 0.25);
+          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
           set(aiAnalystDelaySecondsAtom, localDelaySeconds);
           set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
+
+          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+            exceededBillingLimit: exceededBillingLimit,
+            billingLimit: billingLimit,
+            currentPeriodUsage: currentPeriodUsage,
+            localDelaySeconds: localDelaySeconds,
+            location: 'AIAnalyst',
+          });
 
           await new Promise<void>((resolve) => {
             const resolveAfterDelay = () => {

@@ -1,3 +1,5 @@
+use bigdecimal::BigDecimal;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -249,9 +251,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// `ROUND(50, -2)` rounds to `100`.
             #[examples("ROUND(6.553, 2)")]
             #[zip_map]
-            fn ROUND([number]: f64, [digits]: (Option<i64>)) {
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
-                (number * q).round() / q // `f64::round()` ties away from zero
+            fn ROUND([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::HalfUp)
             }
         ),
         formula_fn!(
@@ -268,11 +269,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   a multiple of 100.
             #[examples("ROUNDUP(6.553, 2)")]
             #[zip_map]
-            fn ROUNDUP([number]: f64, [digits]: (Option<i64>)) {
-                // If `number` is negative, call `f64::floor()` on it.
-                // If `number` is positive, call `f64::floor()` on its negative.
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64) * -number.signum();
-                (number * q).floor() / q
+            fn ROUNDUP([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Up)
             }
         ),
         formula_fn!(
@@ -290,9 +288,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   to a multiple of 100.
             #[examples("ROUNDDOWN(6.553, 2)")]
             #[zip_map]
-            fn ROUNDDOWN([number]: f64, [digits]: (Option<i64>)) {
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
-                (number * q).trunc() / q
+            fn ROUNDDOWN([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Down)
             }
         ),
         formula_fn!(
@@ -310,9 +307,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   multiple of 100.
             #[examples("TRUNC(6.553, 2)")]
             #[zip_map]
-            fn TRUNC([number]: f64, [digits]: (Option<i64>)) {
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
-                (number * q).trunc() / q
+            fn TRUNC([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Down)
             }
         ),
         // Other operators
@@ -795,6 +791,12 @@ mod tests {
                 assert_f64_eval(&g, expected_output, &format!("TRUNC({input}, {digits})"));
             }
         }
+
+        // Test string printing
+        assert_eq!("44999.55", eval_to_string(&g, "ROUND(44999.553294, 2)"));
+        assert_eq!("44999.55", eval_to_string(&g, "TRUNC(44999.553294, 2)"));
+        assert_eq!("44999.55", eval_to_string(&g, "ROUNDDOWN(44999.553294, 2)"));
+        assert_eq!("44999.56", eval_to_string(&g, "ROUNDUP(44999.553294, 2)"));
     }
 
     #[test]
