@@ -47,6 +47,8 @@ fn main() {
         output.push('\n');
     }
 
+    output.push_str(include_str!("docs_end.md"));
+
     std::fs::write(OUT_FILENAME, output).expect("failed to write to output file");
 
     println!("Docs were written to {OUT_FILENAME}. No need to check this file into git.")
