@@ -32,15 +32,17 @@ export function ConnectionFormActions({
 
   const formData = form.watch();
 
-  // If the user changed some data, reset the state of the connection so they
-  // know it's not valid anymore
+  // If the user changed some data, update the snapshot but keep error state
   useEffect(() => {
     const hasChanges = Object.keys(formData).some((key) => formData[key] !== formDataSnapshot[key]);
     if (hasChanges) {
-      setConnectionState('idle');
+      // Only reset to idle if not in error state
+      if (connectionState !== 'error') {
+        setConnectionState('idle');
+      }
       setFormDataSnapshot(formData);
     }
-  }, [formData, formDataSnapshot]);
+  }, [formData, formDataSnapshot, connectionState]);
 
   const testConnection = async (values: ConnectionFormValues) => {
     const { name, type, ...typeDetails } = values;
@@ -86,7 +88,7 @@ export function ConnectionFormActions({
               {connectionState === 'loading' ? (
                 <SpinnerIcon className="mr-1 text-primary" />
               ) : connectionState === 'error' ? (
-                <>Failed. Try again.</>
+                <>Try again.</>
               ) : (
                 'Test and Save'
               )}
