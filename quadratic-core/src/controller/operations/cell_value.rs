@@ -199,6 +199,8 @@ impl GridController {
                         columns: columns.into_iter().map(|c| (c, None, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -210,6 +212,8 @@ impl GridController {
                         rows: rows.into_iter().map(|r| (r, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -248,10 +252,8 @@ impl GridController {
 
                         let is_full_table_selected = rect.contains_rect(&data_table_rect);
                         let can_delete_table = is_full_table_selected || data_table.readonly;
-                        let table_column_selection = selection.table_column_selection(
-                            data_table.name(),
-                            self.a1_context(),
-                        );
+                        let table_column_selection =
+                            selection.table_column_selection(data_table.name(), self.a1_context());
                         can_delete_column = !is_full_table_selected
                             && table_column_selection.is_some()
                             && !data_table.readonly;
@@ -338,7 +340,7 @@ mod test {
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::test_util::gc::print_table;
+    use crate::test_util::print_table_in_rect;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
     #[test]
@@ -566,6 +568,6 @@ mod test {
         let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
         println!("{:?}", ops);
         println!("{:?}", data_table_ops);
-        print_table(&gc, sheet_id, Rect::from_numbers(1, 1, 2, 2));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(1, 1, 2, 2));
     }
 }

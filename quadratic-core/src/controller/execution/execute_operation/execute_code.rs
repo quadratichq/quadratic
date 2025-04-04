@@ -130,12 +130,12 @@ impl GridController {
                     h: original.map(|(_, h)| h).unwrap_or(h),
                 });
 
-            transaction.add_code_cell(sheet_pos.sheet_id, sheet_pos.into());
-            if data_table.is_html() {
-                transaction.add_html_cell(sheet_pos.sheet_id, sheet_pos.into());
-            } else if data_table.is_image() {
-                transaction.add_image_cell(sheet_pos.sheet_id, sheet_pos.into());
-            }
+            transaction.add_from_code_run(
+                sheet_pos.sheet_id,
+                sheet_pos.into(),
+                data_table.is_image(),
+                data_table.is_html(),
+            );
         }
 
         Ok(())

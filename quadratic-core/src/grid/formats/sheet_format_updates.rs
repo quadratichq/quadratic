@@ -92,19 +92,34 @@ impl SheetFormatUpdates {
 
     /// Returns whether the format update is empty.
     pub fn is_default(&self) -> bool {
-        self.align.is_none()
-            && self.vertical_align.is_none()
-            && self.wrap.is_none()
-            && self.numeric_format.is_none()
-            && self.numeric_decimals.is_none()
-            && self.numeric_commas.is_none()
-            && self.bold.is_none()
-            && self.italic.is_none()
-            && self.text_color.is_none()
-            && self.fill_color.is_none()
-            && self.date_time.is_none()
-            && self.underline.is_none()
-            && self.strike_through.is_none()
+        self.align.as_ref().is_none_or(|a| a.is_all_default())
+            && self
+                .vertical_align
+                .as_ref()
+                .is_none_or(|a| a.is_all_default())
+            && self.wrap.as_ref().is_none_or(|a| a.is_all_default())
+            && self
+                .numeric_format
+                .as_ref()
+                .is_none_or(|a| a.is_all_default())
+            && self
+                .numeric_decimals
+                .as_ref()
+                .is_none_or(|a| a.is_all_default())
+            && self
+                .numeric_commas
+                .as_ref()
+                .is_none_or(|a| a.is_all_default())
+            && self.bold.as_ref().is_none_or(|a| a.is_all_default())
+            && self.italic.as_ref().is_none_or(|a| a.is_all_default())
+            && self.text_color.as_ref().is_none_or(|a| a.is_all_default())
+            && self.fill_color.as_ref().is_none_or(|a| a.is_all_default())
+            && self.date_time.as_ref().is_none_or(|a| a.is_all_default())
+            && self.underline.as_ref().is_none_or(|a| a.is_all_default())
+            && self
+                .strike_through
+                .as_ref()
+                .is_none_or(|a| a.is_all_default())
     }
 
     fn set_format_cell_item<T>(

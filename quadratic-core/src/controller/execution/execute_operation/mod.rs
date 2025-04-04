@@ -54,6 +54,7 @@ impl GridController {
 
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
+                Operation::MoveCellValue { .. } => self.execute_move_cell_value(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
                     self.execute_set_chart_size(transaction, op),
@@ -63,6 +64,9 @@ impl GridController {
                 ),
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
+                ),
+                Operation::MoveDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_move_data_table(transaction, op),
                 ),
                 Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table(transaction, op),

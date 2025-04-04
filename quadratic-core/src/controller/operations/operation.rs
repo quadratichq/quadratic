@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, CopyFormats, SheetPos, SheetRect,
+    CellValue, CopyFormats, Pos, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -58,6 +58,22 @@ pub enum Operation {
         sheet_pos: SheetPos,
         pixel_width: f32,
         pixel_height: f32,
+    },
+    /// Moves a cell value from one place on a sheet to another. This op
+    /// purposefully does not check if the cell value is a data table. This
+    /// should be used to move only the CellValue without impacting any
+    /// other data in the sheet.
+    MoveCellValue {
+        sheet_id: SheetId,
+        from: Pos,
+        to: Pos,
+    },
+    /// Moves the location of the data table to a new position. This op does not
+    /// move the corresponding CellValue.
+    MoveDataTable {
+        sheet_id: SheetId,
+        from: Pos,
+        to: Pos,
     },
     SetChartCellSize {
         sheet_pos: SheetPos,
@@ -118,6 +134,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableColumns {
         sheet_pos: SheetPos,
@@ -144,6 +166,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableRows {
         sheet_pos: SheetPos,
@@ -152,10 +180,10 @@ pub enum Operation {
         // the row index is the display index, not the actual index
         rows: Vec<u32>,
 
-        /// Inserts the removed row into sheet at the same position.
+        // Inserts the removed row into sheet at the same position.
         flatten: bool,
 
-        /// select the table after the operation
+        // select the table after the operation
         select_table: bool,
     },
     SetCodeRun {
@@ -317,11 +345,19 @@ pub enum Operation {
     DeleteColumn {
         sheet_id: SheetId,
         column: i64,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     /// Deletes a row.
     DeleteRow {
         sheet_id: SheetId,
         row: i64,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     /// Inserts a column.
     InsertColumn {
@@ -351,9 +387,17 @@ pub enum Operation {
     DeleteColumns {
         sheet_id: SheetId,
         columns: Vec<i64>,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     DeleteRows {
         sheet_id: SheetId,
         rows: Vec<i64>,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
 }
