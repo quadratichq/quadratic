@@ -354,5 +354,5 @@ const PDFImportLoading = memo(() => {
     return null;
   }
 
-  return <div className="px-2 text-xs text-muted-foreground">Reading file...</div>;
+  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
 });
