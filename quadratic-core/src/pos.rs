@@ -205,6 +205,12 @@ pub struct SheetPos {
 }
 
 impl SheetPos {
+    /// Replace the pos with a new pos
+    pub fn replace_pos(&mut self, pos: Pos) {
+        self.x = pos.x;
+        self.y = pos.y;
+    }
+
     #[cfg(test)]
     pub fn test() -> Self {
         Self {

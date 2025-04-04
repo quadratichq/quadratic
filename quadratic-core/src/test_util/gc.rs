@@ -373,10 +373,15 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let columns = (rect.x_range())
         .map(|i| i.to_string())
         .collect::<Vec<String>>();
-    let mut blank = vec!["".to_string()];
-    blank.extend(columns.clone());
-    builder.set_header(blank);
+    let mut corner = vec!["y\\x".to_string()];
+    corner.extend(columns.clone());
     let mut bolds = vec![];
+    bolds.extend(
+        corner
+            .iter()
+            .map(|c| (0, c.parse::<usize>().unwrap_or_default())),
+    );
+    builder.set_header(corner);
     let mut fill_colors = vec![];
     let mut count_x = 0;
     let mut count_y = 0;

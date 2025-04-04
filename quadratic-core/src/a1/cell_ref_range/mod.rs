@@ -29,8 +29,18 @@ impl CellRefRange {
     pub const ALL: Self = Self::Sheet {
         range: RefRangeBounds::ALL,
     };
-}
 
+    pub fn normalize(&mut self) -> &Self {
+        match self {
+            Self::Sheet { range } => {
+                range.normalize_in_place();
+            }
+            _ => {}
+        };
+
+        self
+    }
+}
 impl CellRefRange {
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {

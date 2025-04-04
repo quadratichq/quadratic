@@ -31,15 +31,24 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let is_multi_cursor = selection.is_multi_cursor(self.a1_context());
-        let insert_at = selection.to_cursor_sheet_pos();
-        let insert_at_pos = Pos::from(insert_at);
+        let mut insert_at = selection.to_cursor_sheet_pos();
+        let mut insert_at_pos = Pos::from(insert_at);
         let mut end_pos = insert_at_pos;
 
         if is_multi_cursor {
             if let Some(range) = selection.ranges.first() {
                 end_pos = range
                     .to_rect(self.a1_context())
-                    .map_or_else(|| None, |rect| Some(rect.max))
+                    .map_or_else(
+                        || None,
+                        |rect| {
+                            // update the insert_at to the min of the range
+                            // b/c the cursor could be in the upper left corner
+                            insert_at.replace_pos(rect.min);
+                            insert_at_pos = rect.min;
+                            Some(rect.max)
+                        },
+                    )
                     .unwrap_or(insert_at_pos);
             }
         }
@@ -784,10 +793,14 @@ mod test {
         let assert_range_paste = |gc: &GridController| {
             print_table(gc, sheet_id, Rect::new_span(pos, paste_rect.max));
 
-            // all values in the paste_rect should be 1
-            paste_rect.iter().for_each(|pos| {
-                assert_cell_value(gc, sheet_id, pos.x, pos.y, 1.into());
-            });
+            assert_cell_value(gc, sheet_id, 2, 1, 1.into());
+            assert_cell_value(gc, sheet_id, 2, 2, 2.into());
+            assert_cell_value(gc, sheet_id, 2, 3, 1.into());
+            assert_cell_value(gc, sheet_id, 2, 4, 2.into());
+            assert_cell_value(gc, sheet_id, 3, 1, 1.into());
+            assert_cell_value(gc, sheet_id, 3, 2, 2.into());
+            assert_cell_value(gc, sheet_id, 3, 3, 1.into());
+            assert_cell_value(gc, sheet_id, 3, 4, 2.into());
         };
 
         // paste as html
