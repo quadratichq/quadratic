@@ -72,6 +72,10 @@ const CommandList = React.forwardRef<
   <CommandPrimitive.List
     ref={ref}
     className={cn('max-h-[350px] overflow-y-auto overflow-x-hidden', className)}
+    onPointerDown={(e) => {
+      // Prevent the dialog from closing when interacting with the scrollbar
+      e.stopPropagation();
+    }}
     {...props}
   />
 ));
