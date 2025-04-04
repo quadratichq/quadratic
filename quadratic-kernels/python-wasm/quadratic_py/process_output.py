@@ -94,7 +94,7 @@ def process_output_value(output_value):
                 col_length_2d = len(array_output[row])
                 for col in range(0, length_2d):
                     if col > col_length_2d - 1:
-                        typed_array_output[row][col] = ("", "blank")
+                        typed_array_output[row][col] = ("", 0)
                     else:
                         typed_array_output[row][col] = to_quadratic_type(
                             array_output[row][col]
