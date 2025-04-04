@@ -62,7 +62,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
-            className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
+            className={cn(`flex items-center text-xs text-muted-foreground mr-1 `, !loading && 'hover:text-foreground')}
           >
             {selectedModelConfig.displayName}
             <CaretDownIcon />
@@ -118,7 +118,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
             className={cn(
               thinking && '!bg-border !text-primary',
               !thinking && 'text-muted-foreground hover:text-foreground',
-              'ml-1 mr-auto flex h-6 items-center !gap-0 px-1.5 py-1 text-xs font-normal'
+              'mr-auto flex h-6 items-center !gap-0 px-1.5 py-1 text-xs font-normal'
             )}
           >
             <LightbulbIcon className={cn('mr-0.5 !flex !h-4 !w-4 items-center !text-base')} />
