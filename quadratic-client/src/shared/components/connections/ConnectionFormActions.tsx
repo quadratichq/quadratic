@@ -103,7 +103,7 @@ export function ConnectionFormActions({
             >
               {connectionState === 'loading' ? (
                 <>
-                  <SpinnerIcon className="mr-1 text-primary" />
+                  <SpinnerIcon className="mr-1 text-white" />
                   Test and Save
                 </>
               ) : connectionState === 'success' ? (
@@ -134,7 +134,7 @@ export function ConnectionFormActions({
             >
               {connectionState === 'loading' ? (
                 <>
-                  <SpinnerIcon className="mr-1 text-primary" />
+                  <SpinnerIcon className="mr-1 text-white" />
                   Test and Create
                 </>
               ) : connectionState === 'success' ? (
