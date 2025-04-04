@@ -15,7 +15,7 @@ impl Sheet {
     pub fn copy_to_clipboard(
         &self,
         selection: &A1Selection,
-        context: &A1Context,
+        a1_context: &A1Context,
         clipboard_operation: ClipboardOperation,
         include_plain_text: bool,
     ) -> Result<JsClipboard, String> {
@@ -27,7 +27,7 @@ impl Sheet {
         let mut data_tables = IndexMap::new();
         let mut sheet_bounds: Option<Rect> = None;
 
-        if let Some(bounds) = self.selection_bounds(selection, true) {
+        if let Some(bounds) = self.selection_bounds(selection, true, true, a1_context) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);
@@ -52,7 +52,7 @@ impl Sheet {
 
                     let pos = Pos { x, y };
 
-                    if !selection.might_contain_pos(pos, context) {
+                    if !selection.might_contain_pos(pos, a1_context) {
                         continue;
                     }
 
@@ -62,22 +62,17 @@ impl Sheet {
                     // the CellValue at the cell (ignoring code_runs)
                     let real_value = self.cell_value(pos);
 
+                    let new_x = (x - bounds.min.x) as u32;
+                    let new_y = (y - bounds.min.y) as u32;
+
                     // create quadratic clipboard values
                     if let Some(real_value) = real_value {
-                        cells.set(
-                            (x - bounds.min.x) as u32,
-                            (y - bounds.min.y) as u32,
-                            real_value,
-                        );
+                        cells.set(new_x, new_y, real_value);
                     }
 
                     // create quadratic clipboard value-only
                     if let Some(simple_value) = &simple_value {
-                        values.set(
-                            (x - bounds.min.x) as u32,
-                            (y - bounds.min.y) as u32,
-                            simple_value.clone(),
-                        );
+                        values.set(new_x, new_y, simple_value.clone());
                     }
 
                     // add styling for html (only used for pasting to other spreadsheets)
@@ -214,7 +209,7 @@ impl Sheet {
                 &bounds,
                 &mut cells,
                 &mut values,
-                context,
+                a1_context,
                 selection,
                 include_code_table_values,
             );
@@ -226,7 +221,7 @@ impl Sheet {
         let borders = self.borders.to_clipboard(selection);
         let validations = self
             .validations
-            .to_clipboard(selection, &clipboard_origin, context);
+            .to_clipboard(selection, &clipboard_origin, a1_context);
 
         let clipboard = Clipboard {
             cells,

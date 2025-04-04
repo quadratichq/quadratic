@@ -118,7 +118,7 @@ impl CellsAccessed {
     }
 
     /// Whether the CellsAccessed intersects the SheetRect.
-    pub fn intersects(&self, sheet_rect: &SheetRect, context: &A1Context) -> bool {
+    pub fn intersects(&self, sheet_rect: &SheetRect, a1_context: &A1Context) -> bool {
         let rect: Rect = (*sheet_rect).into();
         self.cells
             .iter()
@@ -132,12 +132,12 @@ impl CellsAccessed {
             .any(|ranges| {
                 ranges
                     .iter()
-                    .any(|range| range.might_intersect_rect(rect, context))
+                    .any(|range| range.might_intersect_rect(rect, a1_context))
             })
     }
 
     /// Whether this CellsAccessed contains the SheetPos.
-    pub fn contains(&self, pos: SheetPos, context: &A1Context) -> bool {
+    pub fn contains(&self, pos: SheetPos, a1_context: &A1Context) -> bool {
         self.cells
             .iter()
             .filter_map(|(sheet_id, ranges)| {
@@ -150,7 +150,7 @@ impl CellsAccessed {
             .any(|ranges| {
                 ranges
                     .iter()
-                    .any(|range| range.might_contain_pos(pos.into(), context))
+                    .any(|range| range.might_contain_pos(pos.into(), a1_context))
             })
     }
 

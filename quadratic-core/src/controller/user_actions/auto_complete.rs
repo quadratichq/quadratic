@@ -35,7 +35,7 @@ mod tests {
             CodeCellLanguage, CodeCellValue,
             sheet::borders::{BorderSelection, BorderStyle},
         },
-        test_util::{
+        test_util::gc::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },

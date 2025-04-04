@@ -1,10 +1,15 @@
+#[cfg(test)]
 use crate::{
     CellValue, Pos, Rect,
     controller::GridController,
     formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
 };
+
+#[cfg(test)]
 use std::collections::HashMap;
+
+#[cfg(test)]
 use tabled::{
     builder::Builder,
     settings::{Color, themes::Colorization},
@@ -99,7 +104,9 @@ pub fn assert_code_cell_value(
     value: &str,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let cell_value = sheet.edit_code_value(Pos { x, y }).unwrap();
+    let cell_value = sheet
+        .edit_code_value(Pos { x, y }, grid_controller.a1_context())
+        .unwrap();
 
     assert_eq!(
         value, cell_value.code_string,
@@ -305,6 +312,7 @@ pub fn assert_cell_format_fill_color(
 
 // Util to print a simple grid to assist in TDD
 #[track_caller]
+#[cfg(test)]
 pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
     let Some(sheet) = grid_controller.try_sheet(sheet_id) else {
         println!("Sheet not found");
@@ -335,6 +343,7 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
 
 /// Util to print the entire sheet from the gc
 #[track_caller]
+#[cfg(test)]
 pub fn print_first_sheet(gc: &GridController) {
     if let Some(sheet) = gc.try_sheet(gc.sheet_ids()[0]) {
         print_sheet(sheet);
@@ -345,6 +354,7 @@ pub fn print_first_sheet(gc: &GridController) {
 
 /// Util to print the entire sheet
 #[track_caller]
+#[cfg(test)]
 pub fn print_sheet(sheet: &Sheet) {
     let bounds = sheet.bounds(true);
     if let GridBounds::NonEmpty(rect) = bounds {
@@ -356,6 +366,7 @@ pub fn print_sheet(sheet: &Sheet) {
 
 /// Util to print a simple grid to assist in TDD
 #[track_caller]
+#[cfg(test)]
 pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let mut vals = vec![];
     let mut builder = Builder::default();
@@ -370,7 +381,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let mut count_x = 0;
     let mut count_y = 0;
     // `self.a1_context()` is unaware of other sheets, which might cause issues?
-    let parse_ctx = sheet.a1_context();
+    let parse_ctx = sheet.make_a1_context();
 
     // convert the selected range in the sheet to tabled
     rect.y_range().for_each(|y| {
@@ -456,6 +467,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
 }
 
 /// Prints the order of the data_tables to the console.
+#[cfg(test)]
 pub fn print_data_table_order(sheet: &Sheet) {
     dbgjs!(
         sheet
@@ -467,6 +479,7 @@ pub fn print_data_table_order(sheet: &Sheet) {
 }
 
 // prints formatting for table
+#[cfg(test)]
 pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
     let mut builder = Builder::default();
     let columns = (rect.x_range())

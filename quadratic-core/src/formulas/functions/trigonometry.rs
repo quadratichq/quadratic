@@ -132,11 +132,11 @@ fn arc_cotangent(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
     use crate::util::assert_f64_approx_eq;
+    use crate::{controller::GridController, formulas::tests::*};
 
     fn test_trig_fn(name: &str, input_output_pairs: &[(f64, f64)]) {
-        let g = Grid::new();
+        let g = GridController::new();
         for &(input, expected_output) in input_output_pairs {
             println!("Testing that {name}({input}) = {expected_output}");
             assert_f64_approx_eq(
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn test_formula_radian_degree_conversion() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_f64_approx_eq(
             -4.0,
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_formula_trigonometry() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         let test_cases = &[
             (-2.0 * PI, 0.0),
@@ -497,7 +497,7 @@ mod tests {
 
     #[test]
     fn test_atan2() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_eq!("0", eval_to_string(&g, "ATAN2(1, 0)"));
         assert!(eval_to_string(&g, "ATAN2(0, 1)").starts_with("1.57"));

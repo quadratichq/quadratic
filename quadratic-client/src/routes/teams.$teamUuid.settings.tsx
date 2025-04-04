@@ -243,7 +243,7 @@ export const Component = () => {
                         Team members{' '}
                         <span className="text-muted-foreground">
                           (
-                          <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className=" underline">
+                          <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
                             manage
                           </Link>
                           )
@@ -296,7 +296,7 @@ export const Component = () => {
 
               <p className="pt-4 text-sm text-muted-foreground">
                 Learn more on our{' '}
-                <a href={PRICING_URL} target="_blank" className="  underline hover:text-primary">
+                <a href={PRICING_URL} target="_blank" className="underline hover:text-primary">
                   pricing page
                   <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
                 </a>
@@ -332,7 +332,7 @@ export const Component = () => {
                   When using AI features your data is sent to our AI providers:
                 </p>
                 <ul className="mt-2 space-y-2">
-                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                  {['OpenAI', 'Anthropic', 'AWS Bedrock', 'Google Cloud'].map((item, i) => (
                     <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
                       <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
                       retention

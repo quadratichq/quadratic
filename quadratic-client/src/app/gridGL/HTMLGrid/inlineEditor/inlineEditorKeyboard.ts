@@ -183,6 +183,7 @@ class InlineEditorKeyboard {
     // Shift+Enter key
     else if (matchShortcut(Action.SaveInlineEditorMoveUp, e)) {
       e.stopPropagation();
+      e.preventDefault();
       if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, -1, false);
       }

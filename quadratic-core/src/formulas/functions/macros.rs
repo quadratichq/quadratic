@@ -10,7 +10,7 @@
 /// This is a macro instead of a constant so that it can be used with `concat!`
 /// or `#[doc]`.
 macro_rules! see_docs_for_more_about_criteria {
-    () => { " See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas." };
+    () => { " See [the documentation](https://docs.quadratichq.com/formulas/criteria) for more details about how criteria work in formulas." };
 }
 
 /// Outputs a string containing a sentence linking to the documentation for
@@ -21,7 +21,7 @@ macro_rules! see_docs_for_more_about_criteria {
 /// or `#[doc]`.
 macro_rules! see_docs_for_more_about_wildcards {
     () => {
-        " See [the documentation](https://docs.quadratichq.com/formulas#31e708d41a1a497f8677ff01dddff38b) for more details about how wildcards work in formulas."
+        " See [the documentation](https://docs.quadratichq.com/formulas/wildcards) for more details about how wildcards work in formulas."
     };
 }
 

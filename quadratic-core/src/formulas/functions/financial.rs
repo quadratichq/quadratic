@@ -53,12 +53,13 @@ fn get_functions() -> Vec<FormulaFunction> {
 }
 #[cfg(test)]
 mod tests {
+    use crate::controller::GridController;
     use crate::formulas::tests::*;
     use crate::util::assert_f64_approx_eq;
 
     #[test]
     fn test_pmt() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         // Test basic loan payment calculation
         assert_f64_approx_eq(

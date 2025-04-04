@@ -186,7 +186,7 @@ impl GridController {
             return ops;
         }
 
-        let width = values[0].len();
+        let width = values.iter().map(|row| row.len()).max().unwrap_or(0);
         if width == 0 {
             dbgjs!("[set_cell_values] Empty values");
             return ops;
@@ -257,7 +257,7 @@ mod test {
             operations::operation::Operation,
         },
         grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-        test_util::{assert_cell_value, assert_display_cell_value, print_table},
+        test_util::gc::{assert_cell_value, assert_display_cell_value, print_table},
     };
 
     #[test]

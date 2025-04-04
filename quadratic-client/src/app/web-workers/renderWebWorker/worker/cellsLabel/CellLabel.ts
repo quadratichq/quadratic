@@ -213,7 +213,7 @@ export class CellLabel {
     this.updateFontName();
     this.align = cell.align ?? 'left';
     this.verticalAlign = cell.verticalAlign ?? 'top';
-    this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : cell.wrap ?? 'overflow';
+    this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : (cell.wrap ?? 'overflow');
     this.underline = cell.underline ?? this.link;
     this.strikeThrough = !!cell.strikeThrough;
     this.columnHeader = !!cell.columnHeader;

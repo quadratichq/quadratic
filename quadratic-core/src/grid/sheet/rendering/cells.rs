@@ -1,5 +1,6 @@
 use crate::{
     CellValue, Pos, Rect, RunError, RunErrorMsg,
+    a1::A1Context,
     grid::{
         CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
         js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
@@ -198,7 +199,7 @@ impl Sheet {
 
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
-    pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
+    pub fn get_render_cells(&self, rect: Rect, a1_context: &A1Context) -> Vec<JsRenderCell> {
         let mut render_cells = vec![];
 
         // Fetch ordinary value cells.
@@ -208,10 +209,9 @@ impl Sheet {
                 column.values.range(rect.y_range()).for_each(|(&y, value)| {
                     // ignore code cells when rendering since they will be taken care in the next part
                     if !matches!(value, CellValue::Code(_) | CellValue::Import(_)) {
-                        let context = self.a1_context();
                         let special = self
                             .validations
-                            .render_special_pos(Pos { x, y }, &context)
+                            .render_special_pos(Pos { x, y }, a1_context)
                             .or({
                                 if matches!(value, CellValue::Logical(_)) {
                                     Some(JsRenderCellSpecial::Logical)
@@ -244,13 +244,9 @@ impl Sheet {
                 }
             });
 
-        // need a sheet-specific table map to get validations (since
-        // validation.selection may have a reference to table w/in the sheet)
-        let context = self.a1_context();
-
         // Populate validations for cells that are not yet in the render_cells
         self.validations
-            .in_rect(rect, &context)
+            .in_rect(rect, a1_context)
             .iter()
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {
@@ -260,7 +256,7 @@ impl Sheet {
                         .ranges
                         .iter()
                         .for_each(|validations_range| {
-                            if let Some(validation_rect) = validations_range.to_rect(&context) {
+                            if let Some(validation_rect) = validations_range.to_rect(a1_context) {
                                 validation_rect
                                     .iter()
                                     .filter(|pos| rect.contains(*pos))
@@ -391,10 +387,14 @@ mod tests {
             })),
         );
 
-        let render = sheet.get_render_cells(Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 10, y: 10 },
-        });
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 10, y: 10 },
+            },
+            gc.a1_context(),
+        );
         assert_eq!(render.len(), 6);
 
         let get = |x: i64, y: i64| -> Option<&JsRenderCell> {
@@ -484,7 +484,7 @@ mod tests {
         );
         assert_eq!(
             gc.sheet(sheet_id)
-                .get_render_cells(Rect::from_numbers(1, 2, 1, 1)),
+                .get_render_cells(Rect::from_numbers(1, 2, 1, 1), gc.a1_context()),
             vec![JsRenderCell {
                 x: 1,
                 y: 2,
@@ -510,10 +510,13 @@ mod tests {
         gc.set_cell_value((5, 5, sheet_id).into(), "fALSE".to_string(), None);
 
         let sheet = gc.sheet(sheet_id);
-        let rendering = sheet.get_render_cells(Rect {
-            min: (0, 0).into(),
-            max: (5, 5).into(),
-        });
+        let rendering = sheet.get_render_cells(
+            Rect {
+                min: (0, 0).into(),
+                max: (5, 5).into(),
+            },
+            gc.a1_context(),
+        );
         for (i, rendering) in rendering.iter().enumerate().take(5 + 1) {
             if i % 2 == 0 {
                 assert_eq!(rendering.value, "true".to_string());
@@ -534,10 +537,13 @@ mod tests {
         gc.set_cell_value((0, 3, sheet_id).into(), "0.2 millisecond".to_string(), None);
 
         let sheet = gc.sheet(sheet_id);
-        let rendering = sheet.get_render_cells(Rect {
-            min: (0, 0).into(),
-            max: (0, 3).into(),
-        });
+        let rendering = sheet.get_render_cells(
+            Rect {
+                min: (0, 0).into(),
+                max: (0, 3).into(),
+            },
+            gc.a1_context(),
+        );
         assert_eq!(rendering[0].value, "10d");
         assert_eq!(rendering[1].value, "3y 0d 0h 0m 0.5s");
         assert_eq!(rendering[2].value, "1m 0.01s");
@@ -585,7 +591,7 @@ mod tests {
             },
         ];
         let sheet = gc.sheet(sheet_id);
-        let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1));
+        let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1), gc.a1_context());
 
         println!("{:?}", cells);
         println!("{:?}", expected);

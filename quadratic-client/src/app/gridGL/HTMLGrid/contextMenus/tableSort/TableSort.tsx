@@ -189,7 +189,7 @@ export const TableSort = () => {
       <div className="mb-4 text-lg font-semibold">Sort</div>
       <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
         {sort.map((entry, index) => {
-          const name = entry.column_index === -1 ? '' : contextMenu.table?.columns[entry.column_index]?.name ?? '';
+          const name = entry.column_index === -1 ? '' : (contextMenu.table?.columns[entry.column_index]?.name ?? '');
           const columns = name ? [name, ...availableColumns] : availableColumns;
           return (
             <TableSortEntry

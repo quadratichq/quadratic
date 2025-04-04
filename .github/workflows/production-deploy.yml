@@ -63,7 +63,6 @@ jobs:
           key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-
 
       - name: Build using Docker
         uses: docker/build-push-action@v6

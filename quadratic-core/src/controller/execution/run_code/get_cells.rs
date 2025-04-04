@@ -111,7 +111,8 @@ impl GridController {
             CodeCellLanguage::Python | CodeCellLanguage::Javascript
         );
 
-        let rects = selection_sheet.selection_to_rects(&selection, force_columns, false);
+        let rects =
+            selection_sheet.selection_to_rects(&selection, force_columns, false, &self.a1_context);
         if rects.len() > 1 {
             return map_error(CoreError::A1Error(
                 "Multiple rects not supported".to_string(),
@@ -300,7 +301,7 @@ mod test {
         assert!(result.error.is_none());
 
         let sheet = gc.sheet(sheet_id);
-        let code = sheet.get_render_cells(Rect::from_numbers(2, 1, 1, 1));
+        let code = sheet.get_render_cells(Rect::from_numbers(2, 1, 1, 1), gc.a1_context());
         assert_eq!(code.len(), 0);
         // assert_eq!(code[0].special, Some(JsRenderCellSpecial::RunError));
         // let sheet = gc.sheet(sheet_id);

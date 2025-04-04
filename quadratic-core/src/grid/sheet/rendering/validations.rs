@@ -116,7 +116,8 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         });
-        let render = sheet.get_render_cells(Rect::single_pos((1, 1).into()));
+        let a1_context = sheet.make_a1_context();
+        let render = sheet.get_render_cells(Rect::single_pos((1, 1).into()), &a1_context);
         assert_eq!(render.len(), 1);
     }
 

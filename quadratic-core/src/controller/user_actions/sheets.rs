@@ -287,7 +287,7 @@ mod test {
         };
         let code_cell = gc
             .sheet(duplicated_sheet_id)
-            .edit_code_value(sheet_pos.into())
+            .edit_code_value(sheet_pos.into(), gc.a1_context())
             .unwrap();
         let render_code_cell = gc
             .sheet(duplicated_sheet_id)
@@ -363,22 +363,22 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(
+        gc.set_cell_values(
             SheetPos {
                 sheet_id,
                 x: 1,
                 y: 1,
             },
-            "1".to_string(),
+            vec![vec!["1".to_string()]],
             None,
         );
-        gc.set_cell_value(
+        gc.set_cell_values(
             SheetPos {
                 sheet_id,
                 x: 1,
                 y: 2,
             },
-            "1".to_string(),
+            vec![vec!["1".to_string()]],
             None,
         );
         gc.set_code_cell(
@@ -409,13 +409,13 @@ mod test {
 
         // update dependent cell value in original sheet
         // only the original sheet's code result should update
-        gc.set_cell_value(
+        gc.set_cell_values(
             SheetPos {
                 sheet_id,
                 x: 1,
                 y: 1,
             },
-            "2".to_string(),
+            vec![vec!["2".to_string()]],
             None,
         );
         assert_eq!(
@@ -430,13 +430,13 @@ mod test {
 
         // update dependent cell value in duplicate sheet
         // only the duplicate sheet's code result should update
-        gc.set_cell_value(
+        gc.set_cell_values(
             SheetPos {
                 sheet_id: duplicated_sheet_id,
                 x: 1,
                 y: 1,
             },
-            "3".to_string(),
+            vec![vec!["3".to_string()]],
             None,
         );
         assert_eq!(

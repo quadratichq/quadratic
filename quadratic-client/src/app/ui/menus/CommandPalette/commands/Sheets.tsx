@@ -76,7 +76,7 @@ const ListItems = () => {
                   />
                 );
               },
-            } as CommandGroup['commands'][0])
+            }) as CommandGroup['commands'][0]
         ),
       ],
     };

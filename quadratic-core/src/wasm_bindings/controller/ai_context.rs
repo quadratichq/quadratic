@@ -35,6 +35,7 @@ impl GridController {
                 include_errored_code_cells,
                 include_tables_summary,
                 include_charts_summary,
+                self.a1_context(),
             );
             selection_contexts.push(selection_context);
         }

@@ -4,16 +4,16 @@ use super::*;
 
 impl TableRef {
     /// Returns true if the table intersects the rectangle.
-    pub fn intersect_rect(&self, rect: Rect, context: &A1Context) -> bool {
-        let Some(table) = context.try_table(&self.table_name) else {
+    pub fn intersect_rect(&self, rect: Rect, a1_context: &A1Context) -> bool {
+        let Some(table) = a1_context.try_table(&self.table_name) else {
             return false;
         };
         table.bounds.intersects(rect)
     }
 
     /// Returns whether the table contains the position.
-    pub fn contains(&self, pos: Pos, context: &A1Context) -> bool {
-        let Some(table) = context.try_table(&self.table_name) else {
+    pub fn contains(&self, pos: Pos, a1_context: &A1Context) -> bool {
+        let Some(table) = a1_context.try_table(&self.table_name) else {
             return false;
         };
         table.bounds.contains(pos) && self.col_range.has_col(pos.x - table.bounds.min.x, table)

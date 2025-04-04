@@ -50,7 +50,7 @@ lazy_static! {
 }
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
-    let parse_ctx = grid.a1_context();
+    let parse_ctx = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         let sheet_id = sheet.id;
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {

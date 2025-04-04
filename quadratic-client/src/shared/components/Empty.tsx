@@ -42,6 +42,7 @@ export function Empty({
       mixpanel.track('[Empty].error', {
         title: sourceTitle,
         description,
+        error: JSON.stringify(error),
       });
       Sentry.captureException(new Error('error-page'), {
         extra: {

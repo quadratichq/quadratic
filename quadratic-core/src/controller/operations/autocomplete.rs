@@ -684,7 +684,7 @@ impl GridController {
                         // collecte SetDataTable operations for any data tables in the source_pos
                         if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
                             let mut data_table = data_table.to_owned();
-                            let old_name = data_table.name.to_display();
+                            let old_name = data_table.name().to_string();
                             let new_name = unique_data_table_name(&old_name, false, None, context);
                             data_table.name = new_name.into();
 

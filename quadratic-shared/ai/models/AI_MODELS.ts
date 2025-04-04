@@ -8,8 +8,10 @@ export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: ModelKey = 'vertexai:gemini-
 
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
+export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-exp-03-25';
+
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 7;
+export const DEFAULT_MODEL_VERSION = 9;
 
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
@@ -86,6 +88,17 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai-anthropic',
     promptCaching: true,
   },
+  'vertexai:gemini-2.5-pro-exp-03-25': {
+    model: 'gemini-2.5-pro-exp-03-25',
+    displayName: 'gemini 2.5 pro exp',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: false,
+  },
   'vertexai:gemini-2.0-flash-001': {
     model: 'gemini-2.0-flash-001',
     displayName: 'gemini 2.0 flash',
@@ -96,39 +109,6 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai',
     promptCaching: false,
-  },
-  'vertexai:gemini-2.0-flash-lite-001': {
-    model: 'gemini-2.0-flash-lite-001',
-    displayName: 'gemini 2.0 flash lite',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai',
-    promptCaching: true,
-  },
-  'vertexai:gemini-1.5-pro-002': {
-    model: 'gemini-1.5-pro-002',
-    displayName: 'gemini 1.5 pro',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai',
-    promptCaching: true,
-  },
-  'vertexai:gemini-1.5-flash-002': {
-    model: 'gemini-1.5-flash-002',
-    displayName: 'gemini 1.5 flash',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai',
-    promptCaching: true,
   },
   'bedrock-anthropic:claude:thinking-toggle-off': {
     model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
@@ -151,7 +131,7 @@ export const MODELS_CONFIGURATION: {
     canStreamWithToolCalls: true,
     enabled: true,
     provider: 'bedrock-anthropic',
-    promptCaching: false,
+    promptCaching: true,
     thinking: true,
     thinkingTemperature: 1,
     thinkingToggle: true,
@@ -163,9 +143,9 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
-    promptCaching: false,
+    promptCaching: true,
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -174,9 +154,9 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
-    promptCaching: false,
+    promptCaching: true,
     thinking: true,
     thinkingTemperature: 1,
   },
@@ -187,7 +167,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: false,
   },
@@ -200,7 +180,7 @@ export const MODELS_CONFIGURATION: {
     canStreamWithToolCalls: true,
     enabled: false,
     provider: 'bedrock-anthropic',
-    promptCaching: false,
+    promptCaching: true,
   },
   'bedrock:us.deepseek.r1-v1:0': {
     model: 'us.deepseek.r1-v1:0',
@@ -326,7 +306,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -350,7 +330,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,

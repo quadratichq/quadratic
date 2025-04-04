@@ -1,4 +1,4 @@
-import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
+import { aiAssistantLoadingAtom, aiAssistantWaitingOnMessageIndexAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -234,7 +234,8 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
     [codeCellCore.language, x, y]
   );
 
-  const loading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiAssistantWaitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
 
   const { submitPrompt } = useSubmitAIAssistantPrompt();
 
@@ -257,7 +258,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
             }).catch(console.error);
             onClick();
           }}
-          disabled={loading}
+          disabled={aiAssistantLoading || aiAssistantWaitingOnMessageIndex !== undefined}
         >
           Fix with AI
         </Button>

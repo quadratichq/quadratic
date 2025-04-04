@@ -30,6 +30,21 @@ export const getPromptMessages = (
   );
 };
 
+export const getPromptMessagesWithoutPDF = (
+  messages: ChatMessage[]
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+  return getPromptMessages(messages).map((message) => {
+    if (message.role !== 'user' || message.contextType === 'toolResult') {
+      return message;
+    }
+
+    return {
+      ...message,
+      content: message.content.filter((content) => !isContentPdfFile(content)),
+    };
+  });
+};
+
 export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
   return getPromptMessages(messages).filter(
     (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'
@@ -77,4 +92,22 @@ export const isContentPdfFile = (content: Content[number]): content is PdfFileCo
 
 export const isContentTextFile = (content: Content[number]): content is TextFileContent => {
   return content.type === 'data' && content.mimeType === 'text/plain';
+};
+
+export const filterImageFilesInChatMessages = (messages: ChatMessage[]): ImageContent[] => {
+  return getUserPromptMessages(messages)
+    .filter((message) => message.contextType === 'userPrompt')
+    .flatMap((message) => message.content)
+    .filter(isContentImage);
+};
+
+export const filterPdfFilesInChatMessages = (messages: ChatMessage[]): PdfFileContent[] => {
+  return getUserPromptMessages(messages)
+    .filter((message) => message.contextType === 'userPrompt')
+    .flatMap((message) => message.content)
+    .filter(isContentPdfFile);
+};
+
+export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessage[]): PdfFileContent | undefined => {
+  return filterPdfFilesInChatMessages(messages).find((content) => content.fileName === fileName);
 };

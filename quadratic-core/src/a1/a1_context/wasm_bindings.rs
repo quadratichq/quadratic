@@ -20,7 +20,7 @@ pub fn get_table_from_pos(context: &str, sheet_id: &str, col: u32, row: u32) -> 
     let pos = Pos::new(col as i64, row as i64);
     let context = serde_json::from_str::<A1Context>(context).unwrap();
     let table = context.table_from_pos(pos.to_sheet_pos(sheet_id));
-    table.map(|t| t.table_name.clone())
+    table.map(|t| t.table_name.to_string())
 }
 
 /// Converts a table reference to an A1 range.

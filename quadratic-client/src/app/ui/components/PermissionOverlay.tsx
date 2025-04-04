@@ -4,7 +4,6 @@ import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Stack, useTheme } from '@mui/material';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
@@ -16,7 +15,6 @@ const { FILE_EDIT } = FilePermissionSchema.enum;
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
 
   // This component assumes that the file can be viewed in some way, either by
@@ -30,14 +28,14 @@ export function PermissionOverlay() {
         <Type>
           <strong>Welcome to Quadratic.</strong>
         </Type>
-        <Stack direction="row" gap={theme.spacing(1)} flexShrink={'0'}>
+        <div className="flex flex-shrink-0 gap-2">
           <Button asChild variant="outline" size="sm">
             <Link to={ROUTES.LOGIN_WITH_REDIRECT()}>Log in</Link>
           </Button>
           <Button size="sm">
             <Link to={ROUTES.SIGNUP_WITH_REDIRECT()}>Sign up</Link>
           </Button>
-        </Stack>
+        </div>
       </FixedBottomAlert>
     );
   }

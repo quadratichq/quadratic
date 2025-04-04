@@ -153,12 +153,12 @@ class RenderText {
       Atomics.load(int32Array, 0) === 0 // first slice is dirty
         ? 0
         : Atomics.load(int32Array, 14) === 0 // second slice is dirty
-        ? 14
-        : Atomics.compareExchange(int32Array, 0, 1, 0) === 1 // first slice is not locked, this is to avoid race condition
-        ? 0
-        : Atomics.compareExchange(int32Array, 14, 1, 0) === 1 // second slice is not locked, this is to avoid race condition
-        ? 14
-        : -1;
+          ? 14
+          : Atomics.compareExchange(int32Array, 0, 1, 0) === 1 // first slice is not locked, this is to avoid race condition
+            ? 0
+            : Atomics.compareExchange(int32Array, 14, 1, 0) === 1 // second slice is not locked, this is to avoid race condition
+              ? 14
+              : -1;
     if (writerStart === -1) {
       console.error('[RenderText] updateViewportBuffer: invalid flag state in viewport buffer');
       return;

@@ -335,7 +335,7 @@ df = q.cells('A:B'), first_row_header=True)
 
 # Charts/visualizations
 
-Plotly is the only charting library supported in Quadratic. Do not try to use other libraries like Seaborn or Matplotlib. 
+Plotly is the only charting library supported in Quadratic. Do not try to use other libraries like Seaborn or Matplotlib. Matplotlib DOES NOT WORK in Quadratic. 
 
 To return a chart to the sheet, put fig.show() as the last line of code. 
 

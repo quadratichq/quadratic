@@ -15,7 +15,8 @@ impl GridController {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let selection_summary = sheet.summarize_selection(selection, max_decimals);
+            let selection_summary =
+                sheet.summarize_selection(selection, max_decimals, self.a1_context());
             Ok(serde_wasm_bindgen::to_value(&selection_summary).map_err(|e| e.to_string())?)
         } else {
             Ok(JsValue::null())

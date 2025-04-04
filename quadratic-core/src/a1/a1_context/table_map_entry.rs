@@ -30,7 +30,7 @@ impl TableMapEntry {
         if table.spill_error || table.has_error() {
             Self {
                 sheet_id,
-                table_name: table.name.to_display(),
+                table_name: table.name().to_string(),
                 visible_columns: table.columns_map(false),
                 all_columns: table.columns_map(true),
                 bounds: table.output_rect(pos, false),
@@ -44,7 +44,7 @@ impl TableMapEntry {
         } else {
             Self {
                 sheet_id,
-                table_name: table.name.to_display(),
+                table_name: table.name().to_string(),
                 visible_columns: table.columns_map(false),
                 all_columns: table.columns_map(true),
                 bounds: table.output_rect(pos, false),

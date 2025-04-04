@@ -154,6 +154,11 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         self.0.is_all_default()
     }
 
+    /// Returns whether the values in a rectangle are all default.
+    pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
+        self.is_all_default_in_range(RefRangeBounds::new_relative_rect(rect))
+    }
+
     /// Returns whether the values in a range are all default.
     pub fn is_all_default_in_range(&self, range: RefRangeBounds) -> bool {
         let [x1, x2, y1, y2] = range_to_rect(range);
@@ -173,6 +178,32 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
             .flat_map(move |columns_block| columns_block.value.blocks_touching_range(y1, y2))
             .map(|y_block| y_block.value.clone())
             .collect()
+    }
+
+    /// Returns a list of rectangles containing non-default values.
+    pub fn nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, T)> {
+        let [x1, x2, y1, y2] = range_to_rect(RefRangeBounds::new_relative_rect(rect));
+        let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
+        self.0
+            .blocks_for_range(x1, x2)
+            .flat_map(move |columns_block| {
+                let default = T::default();
+                columns_block
+                    .value
+                    .blocks_for_range(y1, y2)
+                    .filter(move |y_block| *y_block.value != default)
+                    .map(move |y_block| {
+                        // Rectangle is guaranteed to be finite because input is
+                        // also a finite rectangle.
+                        let rect = Rect::new(
+                            u64_to_i64(columns_block.start),
+                            u64_to_i64(y_block.start),
+                            u64_to_i64(columns_block.end.saturating_sub(1)),
+                            u64_to_i64(y_block.end.saturating_sub(1)),
+                        );
+                        (rect, y_block.value.clone())
+                    })
+            })
     }
 
     /// Returns a single value. Returns `T::default()` if `pos` is invalid.
@@ -731,6 +762,8 @@ fn range_to_rect(range: RefRangeBounds) -> [u64; 4] {
 /// than 1. Returns `None` if there is no part of the rectangle that intersects
 /// the valid region. `u64::MAX` represents infinity.
 ///
+/// Returns `(x1, y1, x2, y2)`.
+///
 /// TODO: when doing `i64 -> u64` refactor, consider making `Rect` do this
 ///       validation on construction. this means we'd need to handle infinity
 ///       everywhere.
@@ -1131,6 +1164,8 @@ mod tests {
         assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 2)));
         assert!(c.is_all_default_in_range(RefRangeBounds::new_relative(5, 4, 5, 4)));
         assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)));
+        assert!(c.is_all_default_in_rect(Rect::new(5, 4, 5, 4)));
+        assert!(!c.is_all_default_in_rect(Rect::new(8, 3, 8, 3)));
     }
 
     #[test]
@@ -1161,6 +1196,23 @@ mod tests {
         assert_eq!(
             HashSet::from_iter([99]),
             c.unique_values_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)),
+        );
+    }
+
+    #[test]
+    fn test_nondefault_rects_in_rect() {
+        let mut c = Contiguous2D::<u8>::new();
+        let r = Rect::new(5, 5, 10, 10);
+        assert_eq!(HashSet::from([]), c.nondefault_rects_in_rect(r).collect());
+        c.set_rect(1, 1, Some(8), Some(6), 42);
+        c.set_rect(8, 3, None, None, 99);
+        assert_eq!(
+            HashSet::from([
+                (Rect::new(5, 5, 7, 6), 42),
+                (Rect::new(8, 5, 8, 10), 99),
+                (Rect::new(9, 5, 10, 10), 99),
+            ]),
+            c.nondefault_rects_in_rect(r).collect()
         );
     }
 }

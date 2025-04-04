@@ -41,7 +41,8 @@ impl Sheet {
                 }
             }
         }
-        self.recalculate_bounds();
+        let a1_context = self.make_a1_context();
+        self.recalculate_bounds(&a1_context);
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
@@ -135,7 +136,8 @@ impl Sheet {
                 None,
             )),
         );
-        self.recalculate_bounds();
+        let a1_context = self.make_a1_context();
+        self.recalculate_bounds(&a1_context);
     }
 
     pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {

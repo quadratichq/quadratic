@@ -1,4 +1,4 @@
-use bigdecimal::{BigDecimal, ToPrimitive, Zero};
+use bigdecimal::{BigDecimal, One, ToPrimitive, Zero};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use itertools::Itertools;
 
@@ -37,6 +37,11 @@ impl From<String> for CellValue {
 impl From<&str> for CellValue {
     fn from(value: &str) -> Self {
         CellValue::Text(value.to_string())
+    }
+}
+impl From<BigDecimal> for CellValue {
+    fn from(value: BigDecimal) -> Self {
+        CellValue::Number(value)
     }
 }
 impl From<f64> for CellValue {
@@ -137,17 +142,16 @@ impl<'a> TryFrom<&'a CellValue> for String {
         }
     }
 }
-impl<'a> TryFrom<&'a CellValue> for f64 {
+impl<'a> TryFrom<&'a CellValue> for BigDecimal {
     type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
-        // TODO: maybe remove string conversions once we have a stricter type system?
         match value {
-            CellValue::Blank => Ok(0.0),
+            CellValue::Blank => Ok(BigDecimal::zero()),
             CellValue::Text(s) => {
                 let mut s = s.trim();
                 if s.is_empty() {
-                    return Ok(0.0);
+                    return Ok(BigDecimal::zero());
                 }
                 if let Some(rest) = s.strip_prefix(CURRENCY_PREFIXES) {
                     s = rest;
@@ -158,9 +162,9 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
                 })
             }
             // todo: this may be wrong
-            CellValue::Number(n) => Ok(n.to_f64().unwrap()),
-            CellValue::Logical(true) => Ok(1.0),
-            CellValue::Logical(false) => Ok(0.0),
+            CellValue::Number(n) => Ok(n.clone()),
+            CellValue::Logical(true) => Ok(BigDecimal::one()),
+            CellValue::Logical(false) => Ok(BigDecimal::zero()),
             CellValue::Instant(_) | CellValue::Duration(_) => Err(RunErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some(value.type_name().into()),
@@ -174,11 +178,22 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
                 got: Some(value.type_name().into()),
             }),
             CellValue::Error(e) => Err(e.msg.clone()),
-            CellValue::Html(_) => Ok(0.0),
-            CellValue::Code(_) => Ok(0.0),
-            CellValue::Image(_) => Ok(0.0),
-            CellValue::Import(_) => Ok(0.0),
+            CellValue::Html(_) => Ok(BigDecimal::zero()),
+            CellValue::Code(_) => Ok(BigDecimal::zero()),
+            CellValue::Image(_) => Ok(BigDecimal::zero()),
+            CellValue::Import(_) => Ok(BigDecimal::zero()),
         }
+    }
+}
+impl<'a> TryFrom<&'a CellValue> for f64 {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
+        BigDecimal::try_from(value)?
+            .to_f64()
+            .ok_or(RunErrorMsg::InternalError(
+                "error converting bigdecimal to f64".into(),
+            ))
     }
 }
 
