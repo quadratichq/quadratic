@@ -56,13 +56,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 changed = true;
                 let insert = bounds.min.x - 1;
                 for _ in bounds.min.x..=0 {
-                    sheet.insert_column(
-                        &mut transaction,
-                        insert,
-                        CopyFormats::None,
-                        false,
-                        &a1_context,
-                    );
+                    sheet.insert_column(&mut transaction, insert, CopyFormats::None, &a1_context);
                     sheet.recalculate_bounds(&a1_context);
                     x_shift += 1;
                 }

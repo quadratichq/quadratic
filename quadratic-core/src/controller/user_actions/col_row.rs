@@ -9,7 +9,11 @@ use crate::{
 
 impl GridController {
     pub fn delete_columns(&mut self, sheet_id: SheetId, columns: Vec<i64>, cursor: Option<String>) {
-        let ops = vec![Operation::DeleteColumns { sheet_id, columns }];
+        let ops = vec![Operation::DeleteColumns {
+            sheet_id,
+            columns,
+            copy_formats: None,
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -33,7 +37,11 @@ impl GridController {
     }
 
     pub fn delete_rows(&mut self, sheet_id: SheetId, rows: Vec<i64>, cursor: Option<String>) {
-        let ops = vec![Operation::DeleteRows { sheet_id, rows }];
+        let ops = vec![Operation::DeleteRows {
+            sheet_id,
+            rows,
+            copy_formats: None,
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 

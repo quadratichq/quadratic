@@ -23,55 +23,55 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         columns: &Vec<i64>,
     ) {
-        // Undo is handled by the reverse_operations (we can't rely on the
-        // delete tables logic for undo or redo).
-        if transaction.is_undo_redo() {
-            // signal the client that the data tables have changed
-            let mut dt_to_move = Vec::new();
-            self.data_tables.iter().for_each(|(pos, table)| {
-                let output_rect = table.output_rect(*pos, false);
-                let mut shift_table = 0;
-                for col in columns.iter() {
-                    if col > &output_rect.min.x {
-                        break;
-                    }
-                    shift_table += 1;
-                }
-                if shift_table > 0 {
-                    dt_to_move.push((*pos, output_rect, shift_table));
-                }
-            });
-            dt_to_move
-                .iter()
-                .for_each(|(pos, output_rect, shift_table)| {
-                    let dt = self.data_tables.shift_remove(pos);
-                    if let Some(dt) = dt {
-                        let adjusted_pos = Pos {
-                            x: pos.x - *shift_table as i64,
-                            y: pos.y,
-                        };
-                        transaction
-                            .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
-                        transaction.add_dirty_hashes_from_sheet_rect(SheetRect {
-                            sheet_id: self.id,
-                            min: adjusted_pos,
-                            max: Pos {
-                                x: adjusted_pos.x + dt.width() as i64,
-                                y: pos.y,
-                            },
-                        });
-                        transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
-                        transaction.add_from_code_run(
-                            self.id,
-                            adjusted_pos,
-                            dt.is_image(),
-                            dt.is_html(),
-                        );
-                        self.data_tables.insert(adjusted_pos, dt);
-                    }
-                });
-            return;
-        }
+        // // Undo is handled by the reverse_operations (we can't rely on the
+        // // delete tables logic for undo or redo).
+        // if transaction.is_undo_redo() {
+        //     // signal the client that the data tables have changed
+        //     let mut dt_to_move = Vec::new();
+        //     self.data_tables.iter().for_each(|(pos, table)| {
+        //         let output_rect = table.output_rect(*pos, false);
+        //         let mut shift_table = 0;
+        //         for col in columns.iter() {
+        //             if col > &output_rect.min.x {
+        //                 break;
+        //             }
+        //             shift_table += 1;
+        //         }
+        //         if shift_table > 0 {
+        //             dt_to_move.push((*pos, output_rect, shift_table));
+        //         }
+        //     });
+        //     dt_to_move
+        //         .iter()
+        //         .for_each(|(pos, output_rect, shift_table)| {
+        //             let dt = self.data_tables.shift_remove(pos);
+        //             if let Some(dt) = dt {
+        //                 let adjusted_pos = Pos {
+        //                     x: pos.x - *shift_table as i64,
+        //                     y: pos.y,
+        //                 };
+        //                 transaction
+        //                     .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
+        //                 transaction.add_dirty_hashes_from_sheet_rect(SheetRect {
+        //                     sheet_id: self.id,
+        //                     min: adjusted_pos,
+        //                     max: Pos {
+        //                         x: adjusted_pos.x + dt.width() as i64,
+        //                         y: pos.y,
+        //                     },
+        //                 });
+        //                 transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
+        //                 transaction.add_from_code_run(
+        //                     self.id,
+        //                     adjusted_pos,
+        //                     dt.is_image(),
+        //                     dt.is_html(),
+        //                 );
+        //                 self.data_tables.insert(adjusted_pos, dt);
+        //             }
+        //         });
+        //     return;
+        // }
 
         // move the dt to the left so it matches with the adjusted anchor cell
         let mut dt_to_shift_left = Vec::new();

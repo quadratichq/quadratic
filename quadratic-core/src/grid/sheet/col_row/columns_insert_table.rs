@@ -23,11 +23,6 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
-        // undo and redo are handled by the reverse_operations (we can't rely on
-        // the insert tables logic for undo or redo)
-        if transaction.is_undo_redo() {
-            return;
-        }
         let source_column = match copy_formats {
             CopyFormats::After => column - 1,
             _ => column,
@@ -86,14 +81,14 @@ impl Sheet {
                 }
                 if dt.insert_column(display_index as usize, None, None).is_ok() {
                     transaction.add_code_cell(self.id, *pos);
-                    transaction
-                        .reverse_operations
-                        .push(Operation::DeleteDataTableColumns {
-                            sheet_pos: pos.to_sheet_pos(self.id),
-                            columns: vec![display_index as u32],
-                            flatten: false,
-                            select_table: false,
-                        });
+                    // transaction
+                    //     .reverse_operations
+                    //     .push(Operation::DeleteDataTableColumns {
+                    //         sheet_pos: pos.to_sheet_pos(self.id),
+                    //         columns: vec![display_index as u32],
+                    //         flatten: false,
+                    //         select_table: false,
+                    //     });
                 }
             }
         });
@@ -105,34 +100,31 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         column: i64,
         copy_formats: CopyFormats,
-        send_client: bool,
     ) {
-        // undo and redo are handled by the reverse_operations (we can't rely on
-        // the insert tables logic for undo or redo)
-        if transaction.is_undo_redo() {
-            return;
-        }
-        // update the indices of all data_tables impacted by the insertion
+        // these are tables that were moved to the right by the insertion
         let mut data_tables_to_move_right = Vec::new();
-        let mut data_tables_to_move_left = Vec::new();
+
+        // these are tables that were moved but should have stayed in place (ie,
+        // a column was inserted instead of moving the table over)
+        let mut data_tables_to_move_back = Vec::new();
+
         for (pos, dt) in self.data_tables.iter() {
-            // We need to catch the special case of inserting before at the
-            // first column. That should insert a table column and not push the
-            // table over. data_tables_to_move_left handles this case. Note: we
-            // treat charts differently and they are moved over.
             if (copy_formats == CopyFormats::Before && pos.x > column)
                 || (copy_formats == CopyFormats::After && pos.x >= column)
             {
                 data_tables_to_move_right.push(*pos);
             }
+            // We need to catch the special case of inserting before at the
+            // first column. That should insert a table column and not push the
+            // table over. data_tables_to_move_left handles this case. Note: we
+            // treat charts differently and they are moved over.
             if (!dt.readonly || dt.is_html_or_image())
                 && copy_formats == CopyFormats::Before
                 && pos.x == column
             {
-                data_tables_to_move_left.push(*pos);
+                data_tables_to_move_back.push(*pos);
             }
         }
-
         // move the data tables to the right to match with their new anchor positions
         data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in data_tables_to_move_right {
@@ -141,50 +133,33 @@ impl Sheet {
                 y: old_pos.y,
             };
             if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
-                // signal html and image cells to update
-                if send_client {
-                    if code_run.is_html() {
-                        transaction.add_html_cell(self.id, old_pos);
-                        transaction.add_html_cell(self.id, new_pos);
-                    } else if code_run.is_image() {
-                        transaction.add_image_cell(self.id, old_pos);
-                        transaction.add_image_cell(self.id, new_pos);
-                    }
-                }
-
-                self.data_tables.insert_sorted(new_pos, code_run);
-
                 // signal the client to updates to the code cells (to draw the code arrays)
-                transaction.add_code_cell(self.id, old_pos);
-                transaction.add_code_cell(self.id, new_pos);
+                transaction.add_from_code_run(
+                    self.id,
+                    old_pos,
+                    code_run.is_html(),
+                    code_run.is_image(),
+                );
+                transaction.add_from_code_run(
+                    self.id,
+                    new_pos,
+                    code_run.is_html(),
+                    code_run.is_image(),
+                );
+                self.data_tables.insert_sorted(new_pos, code_run);
             }
         }
 
         // In the special case of CopyFormats::Before and column == pos.x, we
         // need to move it back.
-        for old_pos in data_tables_to_move_left {
+        for to in data_tables_to_move_back {
             let from = Pos {
-                x: old_pos.x + 1,
-                y: old_pos.y,
+                x: to.x + 1,
+                y: to.y,
             };
-            self.move_cell_value(from, old_pos);
-            transaction
-                .reverse_operations
-                .push(Operation::MoveCellValue {
-                    sheet_id: self.id,
-                    from: old_pos,
-                    to: from,
-                });
-            // need to move the data table back to its original position
-            transaction
-                .reverse_operations
-                .push(Operation::MoveDataTable {
-                    sheet_id: self.id,
-                    from: old_pos,
-                    to: from,
-                });
+            self.move_cell_value(from, to);
+            transaction.add_code_cell(self.id, to);
             transaction.add_code_cell(self.id, from);
-            transaction.add_code_cell(self.id, old_pos);
         }
     }
 }
@@ -216,6 +191,10 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 3, "0");
         expect_js_call_count("jsUpdateCodeCell", 2, true);
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 4, 3, "0");
     }
 
     #[test]
@@ -277,26 +256,20 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
         gc.undo(None);
-        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
         gc.insert_column(sheet_id, 2, false, None);
-        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
 
-        crate::test_util::print_last_undo_transaction_names(&gc);
-
         gc.undo(None);
-        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         gc.redo(None);
-        print_first_sheet!(&gc);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
     }
@@ -335,6 +308,8 @@ mod tests {
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
+
+        crate::test_util::print_last_redo_transaction_names(&gc);
 
         gc.redo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);

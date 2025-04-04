@@ -41,6 +41,7 @@ impl GridController {
         sheet.delete_columns(
             transaction,
             (col_start..=col_end).collect(),
+            None,
             &self.a1_context,
         );
 
@@ -68,7 +69,7 @@ impl GridController {
         // insert new columns at the adjusted location
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for col in adjusted_to..=adjusted_to + col_end - col_start {
-                sheet.insert_column(transaction, col, CopyFormats::None, false, &self.a1_context);
+                sheet.insert_column(transaction, col, CopyFormats::None, &self.a1_context);
             }
         }
 

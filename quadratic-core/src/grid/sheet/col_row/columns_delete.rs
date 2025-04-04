@@ -111,6 +111,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
+        copy_formats: Option<CopyFormats>,
         a1_context: &A1Context,
     ) {
         // create undo operations for the deleted column (only when needed since
@@ -177,7 +178,7 @@ impl Sheet {
                 .push(Operation::InsertColumn {
                     sheet_id: self.id,
                     column,
-                    copy_formats: CopyFormats::None,
+                    copy_formats: copy_formats.unwrap_or(CopyFormats::Before),
                 });
         }
     }
@@ -188,6 +189,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         columns: Vec<i64>,
+        copy_formats: Option<CopyFormats>,
         context: &A1Context,
     ) {
         if columns.is_empty() {
@@ -203,7 +205,7 @@ impl Sheet {
         columns.reverse();
 
         for column in columns {
-            self.delete_column(transaction, column, context);
+            self.delete_column(transaction, column, copy_formats, context);
         }
         self.recalculate_bounds(context);
     }
@@ -279,7 +281,7 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
         let a1_context = sheet.make_a1_context();
-        sheet.delete_column(&mut transaction, 2, &a1_context);
+        sheet.delete_column(&mut transaction, 2, None, &a1_context);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
         assert_eq!(sheet.offsets.column_width(3), 400.0);

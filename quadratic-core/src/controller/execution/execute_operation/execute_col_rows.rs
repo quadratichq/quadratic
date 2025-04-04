@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    CellValue, RefAdjust,
+    CellValue, CopyFormats, RefAdjust,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -44,11 +44,12 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         columns: Vec<i64>,
+        copy_formats: Option<CopyFormats>,
     ) {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
             let mut columns_to_adjust = columns.clone();
-            sheet.delete_columns(transaction, columns, &self.a1_context);
+            sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
 
             if transaction.is_user() {
                 columns_to_adjust.sort_unstable();
@@ -79,17 +80,27 @@ impl GridController {
     }
 
     pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteColumn { sheet_id, column } = op.clone() {
+        if let Operation::DeleteColumn {
+            sheet_id,
+            column,
+            copy_formats,
+        } = op.clone()
+        {
             transaction.forward_operations.push(op);
-            self.handle_delete_columns(transaction, sheet_id, vec![column]);
+            self.handle_delete_columns(transaction, sheet_id, vec![column], copy_formats);
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
     pub fn execute_delete_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteColumns { sheet_id, columns } = op.clone() {
+        if let Operation::DeleteColumns {
+            sheet_id,
+            columns,
+            copy_formats,
+        } = op.clone()
+        {
             transaction.forward_operations.push(op);
-            self.handle_delete_columns(transaction, sheet_id, columns);
+            self.handle_delete_columns(transaction, sheet_id, columns, copy_formats);
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
@@ -100,6 +111,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
+        _copy_formats: Option<CopyFormats>,
     ) -> Result<(), ()> {
         let context = &self.a1_context;
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
@@ -142,10 +154,15 @@ impl GridController {
     }
 
     pub fn execute_delete_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteRow { sheet_id, row } = op.clone() {
+        if let Operation::DeleteRow {
+            sheet_id,
+            row,
+            copy_formats,
+        } = op.clone()
+        {
             transaction.forward_operations.push(op);
             if self
-                .handle_delete_rows(transaction, sheet_id, vec![row])
+                .handle_delete_rows(transaction, sheet_id, vec![row], copy_formats)
                 .is_err()
             {
                 return;
@@ -155,10 +172,15 @@ impl GridController {
     }
 
     pub fn execute_delete_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteRows { sheet_id, rows } = op.clone() {
+        if let Operation::DeleteRows {
+            sheet_id,
+            rows,
+            copy_formats,
+        } = op.clone()
+        {
             transaction.forward_operations.push(op);
             if self
-                .handle_delete_rows(transaction, sheet_id, rows)
+                .handle_delete_rows(transaction, sheet_id, rows, copy_formats)
                 .is_err()
             {
                 return;
@@ -176,7 +198,7 @@ impl GridController {
         {
             let context = &self.a1_context;
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats, true, &context);
+                sheet.insert_column(transaction, column, copy_formats, &context);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds(&self.a1_context);

@@ -345,11 +345,19 @@ pub enum Operation {
     DeleteColumn {
         sheet_id: SheetId,
         column: i64,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     /// Deletes a row.
     DeleteRow {
         sheet_id: SheetId,
         row: i64,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     /// Inserts a column.
     InsertColumn {
@@ -379,9 +387,17 @@ pub enum Operation {
     DeleteColumns {
         sheet_id: SheetId,
         columns: Vec<i64>,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteRows {
         sheet_id: SheetId,
         rows: Vec<i64>,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
 }
