@@ -28,7 +28,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const fileUuid = loaderArgs.params.uuid as string;
   const data = await apiClient.teams.list();
 
-  // If there's only one team, duplicate the file
+  // If the user only has access to one team, just duplicate the file and
+  // send them on their way.
   if (data.teams.length === 1) {
     const { uuid: newFileUuid } = await apiClient.files.duplicate(fileUuid, {
       teamUuid: data.teams[0].team.uuid,
