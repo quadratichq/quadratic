@@ -28,6 +28,7 @@ export function ConnectionFormActions({
 }) {
   const submit = useSubmit();
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
+  const [previousState, setPreviousState] = useState<ConnectionState>('idle');
   const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
 
@@ -48,6 +49,9 @@ export function ConnectionFormActions({
   const testConnection = async (values: ConnectionFormValues) => {
     const { name, type, ...typeDetails } = values;
     mixpanel.track('[Connections].test', { type });
+
+    // Save the current state before changing to loading
+    setPreviousState(connectionState);
     setConnectionState('loading');
 
     try {
@@ -65,6 +69,14 @@ export function ConnectionFormActions({
     }
   };
 
+  // Determine button variant based on state
+  const getButtonVariant = () => {
+    if (connectionState === 'success') return 'success';
+    if (connectionState === 'error') return 'destructive';
+    if (connectionState === 'loading' && previousState === 'error') return 'destructive';
+    return 'default';
+  };
+
   return (
     <div className="flex flex-col gap-4 pt-4">
       <div className="flex flex-col gap-1">
@@ -78,9 +90,7 @@ export function ConnectionFormActions({
             <Button
               type="button"
               disabled={connectionState === 'loading'}
-              variant={
-                connectionState === 'success' ? 'success' : connectionState === 'error' ? 'destructive' : 'default'
-              }
+              variant={getButtonVariant()}
               onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
                 const success = await testConnection(values);
                 if (success) {
@@ -101,9 +111,9 @@ export function ConnectionFormActions({
                   <CheckCircledIcon className="mr-1" /> Success
                 </>
               ) : connectionState === 'error' ? (
-                <>Try again.</>
+                <>Failed. Try again.</>
               ) : (
-                'Test and save'
+                'Test and Save'
               )}
             </Button>
           ) : (
@@ -111,9 +121,7 @@ export function ConnectionFormActions({
             <Button
               type="button"
               disabled={connectionState === 'loading'}
-              variant={
-                connectionState === 'success' ? 'success' : connectionState === 'error' ? 'destructive' : 'default'
-              }
+              variant={getButtonVariant()}
               onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
                 const success = await testConnection(values);
                 if (success) {
@@ -134,7 +142,7 @@ export function ConnectionFormActions({
                   <CheckCircledIcon className="mr-1" /> Success
                 </>
               ) : connectionState === 'error' ? (
-                <>Failed. Try again.</>
+                <>Try again.</>
               ) : (
                 'Test and Create'
               )}
@@ -143,14 +151,14 @@ export function ConnectionFormActions({
         </div>
         {connectionState === 'error' && (
           <div className="mt-2 font-mono text-xs text-destructive">
-            {connectionError} Need help?{' '}
+            {connectionError}{' '}
             <a
               href="https://www.quadratichq.com/contact"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 underline hover:text-blue-700"
             >
-              Contact us.
+              Need help? Contact us.
             </a>
           </div>
         )}
