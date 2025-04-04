@@ -32,9 +32,7 @@ export const router = createBrowserRouter(
          */}
         <Route path="file" Component={File.Component}>
           <Route index element={<Navigate to="/" replace />} />
-          <Route path=":uuid" lazy={() => import('./routes/file.$uuid')} id={ROUTE_LOADER_IDS.FILE}>
-            {/* <Route path="duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} /> */}
-          </Route>
+          <Route path=":uuid" lazy={() => import('./routes/file.$uuid')} id={ROUTE_LOADER_IDS.FILE} />
         </Route>
 
         {/**
