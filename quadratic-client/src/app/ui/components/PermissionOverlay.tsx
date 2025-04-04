@@ -2,7 +2,6 @@ import { duplicateFileAction } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
@@ -11,17 +10,17 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useSubmit } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const { addGlobalSnackbar } = useGlobalSnackbar();
   const { isAuthenticated } = useRootRouteLoaderData();
-  const fileRouteLoaderData = useFileRouteLoaderData();
-  const submit = useSubmit();
+  const {
+    file: { uuid: fileUuid },
+  } = useFileRouteLoaderData();
 
   // This component assumes that the file can be viewed in some way, either by
   // a logged in user or a logged out user where the file's link is public.
@@ -42,7 +41,7 @@ export function PermissionOverlay() {
             <Link to={ROUTES.SIGNUP_WITH_REDIRECT()}>Sign up</Link>
           </Button>
           <Button size="sm">
-            <Link to={ROUTES.LOGIN_WITH_REDIRECT_TO_DUPLICATE()}>Duplicate file</Link>
+            <Link to={ROUTES.FILE_DUPLICATE(fileUuid)}>Duplicate file</Link>
           </Button>
         </div>
       </FixedBottomAlert>
@@ -56,9 +55,7 @@ export function PermissionOverlay() {
         <Type>
           <strong>Read-only.</strong> Duplicate or ask the owner for permission to edit.
         </Type>
-        <Button onClick={() => duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar })}>
-          {duplicateFileAction.label}
-        </Button>
+        <Button onClick={() => duplicateFileAction.run({ fileUuid })}>{duplicateFileAction.label}</Button>
       </FixedBottomAlert>
     );
   }

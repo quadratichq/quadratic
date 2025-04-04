@@ -1,9 +1,7 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
+import { getActionFileDelete } from '@/routes/api.files.$uuid';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { type FileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import mixpanel from 'mixpanel-browser';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import type { SubmitFunction } from 'react-router-dom';
@@ -82,50 +80,10 @@ export const duplicateFileAction = {
   // If, for example, they've been invited to the file via email,
   // they can't duplicate it because they don't have access to the team and its not public.
   isAvailable: isAvailableBecauseLoggedIn,
-  async run({
-    fileRouteLoaderData,
-    submit,
-    addGlobalSnackbar,
-  }: {
-    // activeTeamUuid: string; - the active team UUID
-    fileRouteLoaderData: FileRouteLoaderData;
-    submit: SubmitFunction;
-    addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
-  }) {
-    const {
-      file: { uuid: fileUuid },
-      team: { uuid: teamUuid },
-      userMakingRequest: { teamPermissions },
-    } = fileRouteLoaderData;
-
-    mixpanel.track('[Files].duplicateFile', { id: fileUuid });
-
-    // 1. Figure out what teams they have access to
-    // 2. If it's only 1, duplicate to that team
-    // 3. Otherwise, show them a team picker
-    // 4. Duplicate to that team
-
-    // By default, duplicate the file to the user's currently active team
-    // But if the user doesn't have permission to edit that team, duplicate it to
-    // the team they _do_ have access to
-    let teamUuidWhereWeDuplicateFileTo = teamUuid;
-    if (!(teamPermissions && teamPermissions.includes('TEAM_EDIT'))) {
-      // if (!teamUuidFromLocalStorage) {
-      //   throw new Error('No team UUID found');
-      // }
-      // teamUuidWhereWeDuplicateFileTo = teamUuidFromLocalStorage;
-    }
-
-    try {
-      const data = getActionFileDuplicate({
-        redirect: true,
-        isPrivate: true,
-        teamUuid: teamUuidWhereWeDuplicateFileTo,
-      });
-      submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
-    } catch (e) {
-      addGlobalSnackbar('Failed to duplicate file. Try again.', { severity: 'error' });
-    }
+  async run({ fileUuid }: { fileUuid: string }) {
+    // We don't use `navigate` here because it crashes the app for some reason?
+    // But this works too
+    window.location.href = ROUTES.FILE_DUPLICATE(fileUuid);
   },
 };
 

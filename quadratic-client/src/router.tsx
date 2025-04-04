@@ -32,7 +32,9 @@ export const router = createBrowserRouter(
          */}
         <Route path="file" Component={File.Component}>
           <Route index element={<Navigate to="/" replace />} />
-          <Route path=":uuid" lazy={() => import('./routes/file.$uuid')} id={ROUTE_LOADER_IDS.FILE} />
+          <Route path=":uuid" lazy={() => import('./routes/file.$uuid')} id={ROUTE_LOADER_IDS.FILE}>
+            {/* <Route path="duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} /> */}
+          </Route>
         </Route>
 
         {/**
@@ -80,6 +82,7 @@ export const router = createBrowserRouter(
          * All the user-facing routes.
          */}
         <Route path="file/:uuid/history" lazy={() => import('./routes/file.$uuid.history')} />
+        <Route path="file/:uuid/duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} />
         <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
           <Route
             path={ROUTES.FILES_SHARED_WITH_ME}

@@ -1,4 +1,3 @@
-import { duplicateFileAction } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowFileIO, debugShowMultiplayer } from '@/app/debugFlags';
 import { loadAssets } from '@/app/gridGL/loadAssets';
@@ -12,17 +11,14 @@ import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
-import { useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
   Link,
@@ -32,8 +28,6 @@ import {
   useLoaderData,
   useParams,
   useRouteError,
-  useSearchParams,
-  useSubmit,
 } from 'react-router-dom';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
@@ -141,19 +135,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 };
 
 export const Component = () => {
-  // If the search params has a `duplicate` flag in it, duplicate the file
-  const [searchParams] = useSearchParams();
-  const fileRouteLoaderData = useFileRouteLoaderData();
-  const submit = useSubmit();
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-  useEffect(() => {
-    const duplicate = searchParams.get(SEARCH_PARAMS.DUPLICATE.KEY);
-    if (duplicate === SEARCH_PARAMS.DUPLICATE.VALUE) {
-      duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {

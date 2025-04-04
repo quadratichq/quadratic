@@ -2,6 +2,7 @@ import { sidebarItemClasses } from '@/dashboard/components/DashboardSidebar';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { AddIcon, ArrowDropDownIcon, CheckIcon, RefreshIcon } from '@/shared/components/Icons';
+import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import {
@@ -41,8 +42,8 @@ export function TeamSwitcher({ appIsLoading }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}>
-        <div className="mx-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-foreground capitalize text-background">
-          {activeTeamName.slice(0, 1)}
+        <div className="mx-0.5">
+          <TeamAvatar name={optimisticActiveTeamName} />
         </div>
         <div className="select-none truncate">{optimisticActiveTeamName}</div>
         <div className="relative ml-auto mr-0.5 flex items-center">

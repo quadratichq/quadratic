@@ -12,7 +12,6 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
   MenubarContent,
@@ -36,9 +35,7 @@ import { useRecoilValue } from 'recoil';
 export const FileMenubarMenu = () => {
   const { name } = useFileContext();
   const submit = useSubmit();
-
   const { isAuthenticated } = useRootRouteLoaderData();
-  const fileRouteLoaderData = useFileRouteLoaderData();
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const user = useRecoilValue(editorInteractionStateUserAtom);
@@ -90,7 +87,7 @@ export const FileMenubarMenu = () => {
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar })}>
+          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid })}>
             <FileCopyIcon />
             Duplicate
           </MenubarItem>
