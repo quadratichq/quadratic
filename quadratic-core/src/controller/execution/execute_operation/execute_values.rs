@@ -89,7 +89,10 @@ impl GridController {
         }
     }
 
-    /// Moves a cell value from one position on a sheet to another position on the same sheet.
+    /// Moves a cell value from one position on a sheet to another position on
+    /// the same sheet. Note: this purposefully does not check if the cell value
+    /// is a data table. This should only be used to move only the CellValue
+    /// without impacting any other data in the sheet.
     pub(crate) fn execute_move_cell_value(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -119,8 +122,20 @@ impl GridController {
                     });
                 if let Some(cell_value) = sheet.cell_value_ref(to.into()) {
                     if matches!(cell_value, CellValue::Code(_) | CellValue::Import(_)) {
-                        transaction.add_code_cell(sheet_id, to.into());
-                        transaction.add_code_cell(sheet_id, from.into());
+                        if let Some(table) = sheet.data_tables.get(&to) {
+                            transaction.add_from_code_run(
+                                sheet_id,
+                                to.into(),
+                                table.is_html(),
+                                table.is_image(),
+                            );
+                            transaction.add_from_code_run(
+                                sheet_id,
+                                from.into(),
+                                table.is_html(),
+                                table.is_image(),
+                            );
+                        }
                     }
                 }
             }

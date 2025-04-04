@@ -153,12 +153,6 @@ impl Sheet {
                 }
 
                 self.data_tables.insert_sorted(new_pos, code_run);
-                transaction
-                    .reverse_operations
-                    .push(Operation::MoveDataTableEntryPosition {
-                        from: new_pos.to_sheet_pos(self.id),
-                        to: old_pos.to_sheet_pos(self.id),
-                    });
 
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_code_cell(self.id, old_pos);
@@ -181,6 +175,14 @@ impl Sheet {
                     from: old_pos,
                     to: from,
                 });
+            // need to move the data table back to its original position
+            transaction
+                .reverse_operations
+                .push(Operation::MoveDataTable {
+                    sheet_id: self.id,
+                    from: old_pos,
+                    to: from,
+                });
             transaction.add_code_cell(self.id, from);
             transaction.add_code_cell(self.id, old_pos);
         }
@@ -196,10 +198,28 @@ mod tests {
             assert_chart_size, assert_data_table_size, assert_display_cell_value, first_sheet_id,
             test_create_data_table, test_create_html_chart, test_create_js_chart,
         },
+        wasm_bindings::js::{clear_js_calls, expect_js_call_count},
     };
 
     #[test]
     fn test_insert_column_before_table() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
+
+        gc.insert_column(sheet_id, 1, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 4, 3, "0");
+
+        clear_js_calls();
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 3, 3, "0");
+        expect_js_call_count("jsUpdateCodeCell", 2, true);
+    }
+
+    #[test]
+    fn test_insert_column_before_two_table() {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
 
@@ -217,6 +237,10 @@ mod tests {
         gc.redo(None);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
     }
 
     #[test]
@@ -253,20 +277,26 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
         gc.undo(None);
+        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
         gc.insert_column(sheet_id, 2, false, None);
+        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
 
+        crate::test_util::print_last_undo_transaction_names(&gc);
+
         gc.undo(None);
+        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         gc.redo(None);
+        print_first_sheet!(&gc);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
     }

@@ -59,13 +59,18 @@ pub enum Operation {
         pixel_width: f32,
         pixel_height: f32,
     },
-    // used to move the data_table entry's position without changing the anchor
-    // cell (used by delete_columns)
-    MoveDataTableEntryPosition {
-        from: SheetPos,
-        to: SheetPos,
-    },
+    /// Moves a cell value from one place on a sheet to another. This op
+    /// purposefully does not check if the cell value is a data table. This
+    /// should be used to move only the CellValue without impacting any
+    /// other data in the sheet.
     MoveCellValue {
+        sheet_id: SheetId,
+        from: Pos,
+        to: Pos,
+    },
+    /// Moves the location of the data table to a new position. This op does not
+    /// move the corresponding CellValue.
+    MoveDataTable {
         sheet_id: SheetId,
         from: Pos,
         to: Pos,
