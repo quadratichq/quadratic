@@ -1,24 +1,24 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
-import { GridActionIcon } from '@/shared/components/Icons';
+import { PDFIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type DeleteCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.DeleteCells]['responseSchema']>;
+type PDFImportResponse = z.infer<(typeof aiToolsSpec)[AITool.PDFImport]['responseSchema']>;
 
-type DeleteCellsProps = {
+type PDFImportProps = {
   args: string;
   loading: boolean;
 };
 
-export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<DeleteCellsResponse, DeleteCellsResponse>>();
+export const PDFImport = ({ args, loading }: PDFImportProps) => {
+  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<PDFImportResponse, PDFImportResponse>>();
 
   useEffect(() => {
     if (!loading) {
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.DeleteCells].responseSchema.safeParse(json));
+        setToolArgs(aiToolsSpec[AITool.PDFImport].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[MoveCells] Failed to parse args: ', error);
@@ -28,8 +28,8 @@ export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
     }
   }, [args, loading]);
 
-  const icon = <GridActionIcon />;
-  const label = 'Action: delete';
+  const icon = <PDFIcon />;
+  const label = 'Action: PDF import';
 
   if (loading) {
     return <ToolCard icon={icon} label={label} isLoading />;
@@ -41,5 +41,5 @@ export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return <ToolCard icon={icon} label={label} description={`${toolArgs.data.selection}`} />;
+  return <ToolCard icon={icon} label={label} description={`${toolArgs.data.file_name}`} />;
 };

@@ -96,8 +96,8 @@ export const CodeEditor = () => {
                   codeEditorPanelData.panelPosition === 'left'
                     ? '100%'
                     : codeEditorPanelData.bottomHidden
-                    ? 'auto'
-                    : 100 - codeEditorPanelData.editorHeightPercentage + '%',
+                      ? 'auto'
+                      : 100 - codeEditorPanelData.editorHeightPercentage + '%',
               }}
             >
               <CodeEditorPanel editorInst={editorInst} codeEditorRef={codeEditorRef} />
