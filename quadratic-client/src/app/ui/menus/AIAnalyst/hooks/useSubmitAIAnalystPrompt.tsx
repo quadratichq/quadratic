@@ -14,6 +14,7 @@ import {
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystDelaySecondsAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPDFImportAtom,
   aiAnalystPromptSuggestionsAtom,
   aiAnalystShowChatHistoryAtom,
   aiAnalystWaitingOnMessageIndexAtom,
@@ -159,6 +160,10 @@ export function useSubmitAIAnalystPrompt() {
           set(aiAnalystWaitingOnMessageIndexAtom, (prev) => {
             prevWaitingOnMessageIndex = prev;
             return undefined;
+          });
+          set(aiAnalystPDFImportAtom, (prev) => {
+            prev.abortController?.abort();
+            return { abortController: undefined, loading: false };
           });
 
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {

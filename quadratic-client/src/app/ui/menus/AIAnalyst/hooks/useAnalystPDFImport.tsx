@@ -121,6 +121,10 @@ How can I help you?`,
             signal: abortController.signal,
           });
 
+          if (abortController.signal.aborted) {
+            return 'Request aborted by the user.';
+          }
+
           set(aiAnalystPDFImportAtom, { abortController: undefined, loading: false });
 
           const addDataTableToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.AddDataTable);
