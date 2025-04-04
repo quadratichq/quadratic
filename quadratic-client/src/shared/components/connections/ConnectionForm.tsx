@@ -115,6 +115,7 @@ function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: C
         handleNavigateToListView={props.handleNavigateToListView}
         connectionUuid={props.connection?.uuid}
         connectionType={type}
+        handleSubmitForm={props.handleSubmitForm}
       />
     </ConnectionForm>
   );

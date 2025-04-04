@@ -4,7 +4,7 @@ import type { ConnectionFormValues } from '@/shared/components/connections/conne
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { CheckCircledIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
@@ -18,81 +18,149 @@ export function ConnectionFormActions({
   connectionUuid,
   form,
   handleNavigateToListView,
+  handleSubmitForm,
 }: {
   connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
   handleNavigateToListView: () => void;
+  handleSubmitForm: (formValues: ConnectionFormValues) => void;
 }) {
   const submit = useSubmit();
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
+  const [previousState, setPreviousState] = useState<ConnectionState>('idle');
   const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
 
   const formData = form.watch();
 
-  // If the user changed some data, reset the state of the connection so they
-  // know it's not valid anymore
+  // If the user changed some data, update the snapshot but keep error state
   useEffect(() => {
     const hasChanges = Object.keys(formData).some((key) => formData[key] !== formDataSnapshot[key]);
     if (hasChanges) {
-      setConnectionState('idle');
+      // Only reset to idle if not in error state
+      if (connectionState !== 'error') {
+        setConnectionState('idle');
+      }
       setFormDataSnapshot(formData);
     }
-  }, [formData, formDataSnapshot]);
+  }, [formData, formDataSnapshot, connectionState]);
+
+  const testConnection = async (values: ConnectionFormValues) => {
+    const { name, type, ...typeDetails } = values;
+    mixpanel.track('[Connections].test', { type });
+
+    // Save the current state before changing to loading
+    setPreviousState(connectionState);
+    setConnectionState('loading');
+
+    try {
+      const { connected, message } = await connectionClient.test.run({
+        type,
+        typeDetails,
+      });
+      setConnectionError(connected === false && message ? message : '');
+      setConnectionState(connected ? 'success' : 'error');
+      return connected;
+    } catch (e) {
+      setConnectionError('Network error: failed to make connection.');
+      setConnectionState('error');
+      return false;
+    }
+  };
+
+  // Determine button variant based on state
+  const getButtonVariant = () => {
+    if (connectionState === 'success') return 'success';
+    if (connectionState === 'error') return 'destructive';
+    if (connectionState === 'loading' && previousState === 'error') return 'destructive';
+    return 'default';
+  };
 
   return (
     <div className="flex flex-col gap-4 pt-4">
       <div className="flex flex-col gap-1">
         <div className="flex w-full justify-end gap-2">
-          <div className="mr-auto flex items-center gap-2">
-            <Button
-              type="button"
-              className="w-32"
-              variant={connectionState === 'success' ? 'success' : 'secondary'}
-              disabled={connectionState === 'loading'}
-              onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
-                const { name, type, ...typeDetails } = values;
-                mixpanel.track('[Connections].test', { type });
-                setConnectionState('loading');
-
-                try {
-                  const { connected, message } = await connectionClient.test.run({
-                    type,
-                    typeDetails,
-                  });
-                  setConnectionError(connected === false && message ? message : '');
-                  setConnectionState(connected ? 'success' : 'error');
-                } catch (e) {
-                  setConnectionError('Network error: failed to make connection.');
-                  setConnectionState('error');
-                }
-              })}
-            >
-              {connectionState === 'success' ? (
-                <>
-                  <CheckCircledIcon className="mr-1" /> Connected
-                </>
-              ) : connectionState === 'loading' ? (
-                <SpinnerIcon className="text-primary" />
-              ) : (
-                'Test'
-              )}
-            </Button>
-            {connectionState === 'error' && (
-              <div className={`ml-auto flex items-center gap-1 pr-1 font-medium text-destructive`}>
-                <ExclamationTriangleIcon />
-              </div>
-            )}
-          </div>
-
           <Button variant="outline" onClick={handleNavigateToListView} type="button">
             Cancel
           </Button>
-          <Button type="submit">{connectionUuid ? 'Save changes' : 'Create'}</Button>
+
+          {connectionUuid ? (
+            // For existing connections: Test and Save
+            <Button
+              type="button"
+              disabled={connectionState === 'loading'}
+              variant={getButtonVariant()}
+              onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
+                const success = await testConnection(values);
+                if (success) {
+                  // Brief delay to show success state before submitting
+                  setTimeout(() => {
+                    handleSubmitForm(values);
+                  }, 200);
+                }
+              })}
+            >
+              {connectionState === 'loading' ? (
+                <>
+                  <SpinnerIcon className="mr-1 text-white" />
+                  Test and Save
+                </>
+              ) : connectionState === 'success' ? (
+                <>
+                  <CheckCircledIcon className="mr-1" /> Success
+                </>
+              ) : connectionState === 'error' ? (
+                <>Failed. Try again.</>
+              ) : (
+                'Test and Save'
+              )}
+            </Button>
+          ) : (
+            // For new connections: Test and Create
+            <Button
+              type="button"
+              disabled={connectionState === 'loading'}
+              variant={getButtonVariant()}
+              onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
+                const success = await testConnection(values);
+                if (success) {
+                  // Brief delay to show success state before submitting
+                  setTimeout(() => {
+                    handleSubmitForm(values);
+                  }, 200);
+                }
+              })}
+            >
+              {connectionState === 'loading' ? (
+                <>
+                  <SpinnerIcon className="mr-1 text-white" />
+                  Test and Create
+                </>
+              ) : connectionState === 'success' ? (
+                <>
+                  <CheckCircledIcon className="mr-1" /> Success
+                </>
+              ) : connectionState === 'error' ? (
+                <>Try again.</>
+              ) : (
+                'Test and Create'
+              )}
+            </Button>
+          )}
         </div>
         {connectionState === 'error' && (
-          <div className="mt-2 font-mono text-xs text-destructive">{connectionError}</div>
+          <div className="mt-2 font-mono text-xs text-destructive">
+            {connectionError}{' '}
+            <a
+              href="https://www.quadratichq.com/contact"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline hover:text-blue-700"
+            >
+              Need help? Contact us.
+            </a>
+          </div>
         )}
       </div>
 
