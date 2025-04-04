@@ -62,7 +62,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
-            className={cn(`flex items-center text-xs text-muted-foreground mr-1 `, !loading && 'hover:text-foreground')}
+            className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
           >
             {selectedModelConfig.displayName}
             <CaretDownIcon />
