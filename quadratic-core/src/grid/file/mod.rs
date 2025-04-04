@@ -111,9 +111,9 @@ pub fn import(file_contents: Vec<u8>) -> Result<Grid> {
 /// Imports a binary file.
 fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     let (header, data) = remove_header(&file_contents)?;
-
     let file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
     let mut check_for_negative_offsets = false;
+
     let mut grid = match file_version.version.as_str() {
         "1.6" => {
             check_for_negative_offsets = true;

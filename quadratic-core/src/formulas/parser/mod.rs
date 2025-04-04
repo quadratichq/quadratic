@@ -456,6 +456,46 @@ mod tests {
     }
 
     #[test]
+    fn test_replace_xy_no_shift() {
+        let ctx = A1Context::test(&[], &[]);
+        let pos = pos![A1].to_sheet_pos(SheetId::new());
+        let src: &str = "A1 + 1";
+        let adj_base = RefAdjust {
+            sheet_id: None,
+            relative_only: true,
+            dx: 0,
+            dy: 0,
+            x_start: 0,
+            y_start: 0,
+        };
+
+        let mut adj = adj_base;
+        adj.dy = 1;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "A2 + 1";
+        assert_eq!(replaced, expected);
+
+        let mut adj = adj_base;
+        adj.dy = 2;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "A3 + 1";
+        assert_eq!(replaced, expected);
+
+        let mut adj = adj_base;
+        adj.dx = 1;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "B1 + 1";
+        assert_eq!(replaced, expected);
+
+        let mut adj = adj_base;
+        adj.dx = 1;
+        adj.dy = 1;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "B2 + 1";
+        assert_eq!(replaced, expected);
+    }
+
+    #[test]
     fn test_replace_xy_shift() {
         let ctx = A1Context::test(&[], &[]);
         let pos = pos![C6].to_sheet_pos(SheetId::new());
