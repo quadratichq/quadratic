@@ -11,6 +11,7 @@ import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultA
 import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { getFileTypeLabel } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -106,7 +107,7 @@ export const AIContext = memo(
           <ContextPill
             key={`${index}-${file.fileName}`}
             primary={file.fileName}
-            secondary=""
+            secondary={getFileTypeLabel(file.mimeType)}
             disabled={disabled}
             onClick={() => setFiles?.(files.filter((f) => f !== file))}
           />
