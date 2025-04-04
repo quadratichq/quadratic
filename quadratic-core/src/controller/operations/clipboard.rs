@@ -327,8 +327,6 @@ impl GridController {
                     return Err(Error::msg(message));
                 }
 
-                println!("source_pos: {:?}", source_pos);
-
                 if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
                     if matches!(clipboard_operation, ClipboardOperation::Copy) {
                         let old_name = data_table.name().to_string();
