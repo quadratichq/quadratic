@@ -90,7 +90,7 @@ export const CodeSnippet = memo(({ code, language = 'plaintext' }: CodeSnippetPr
           }}
         >
           <Editor
-            className=" pt-2"
+            className="pt-2"
             language={syntax}
             value={code}
             height="100%"
