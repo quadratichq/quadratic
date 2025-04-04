@@ -60,6 +60,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -89,6 +91,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -118,6 +122,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -147,6 +153,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -176,6 +184,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -198,6 +208,10 @@ export const insertActionsSpec: InsertActionSpec = {
       const el = document.getElementById(FILE_INPUT_ID) as HTMLInputElement;
       if (el) {
         el.click();
+
+        // clear the file input to trigger the onChange event for subsequent
+        // file imports
+        el.value = '';
       }
     },
   },
@@ -215,6 +229,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -244,6 +260,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {

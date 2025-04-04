@@ -237,7 +237,7 @@ pub(crate) mod tests {
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(&file, "basic.xlsx", None);
+        let _ = gc.import_excel(&file, "basic.xlsx", Some("".to_string()));
         let sheet_id = gc.grid.sheets()[0].id;
 
         assert_cell_value_row(
@@ -310,6 +310,9 @@ pub(crate) mod tests {
             sheet.cell_value((11, 2).into()).unwrap(),
             CellValue::Text("Hello Red".into())
         );
+
+        expect_js_call_count("jsTransactionStart", 2, false);
+        expect_js_call_count("jsTransactionEnd", 2, false);
 
         // doesn't appear to import the bold or red formatting yet
         // assert_eq!(

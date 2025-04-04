@@ -1,16 +1,35 @@
-import { aiAssistantAbortControllerAtom, aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
-import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import {
+  aiAssistantAbortControllerAtom,
+  aiAssistantDelaySecondsAtom,
+  aiAssistantLoadingAtom,
+  aiAssistantWaitingOnMessageIndexAtom,
+} from '@/app/atoms/codeEditorAtom';
+import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import mixpanel from 'mixpanel-browser';
-import { forwardRef, memo } from 'react';
+import { forwardRef, memo, useCallback } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const AIAssistantUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
     const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
+    const waitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
+    const delaySeconds = useRecoilValue(aiAssistantDelaySecondsAtom);
     const { submitPrompt } = useSubmitAIAssistantPrompt();
+
+    const handleSubmit = useCallback(
+      ({ content, onSubmit }: SubmitPromptArgs) => {
+        mixpanel.track('[AIAssistant].submitPrompt');
+        submitPrompt({
+          content,
+          messageIndex: props.messageIndex,
+          onSubmit,
+        });
+      },
+      [props.messageIndex, submitPrompt]
+    );
 
     return (
       <AIUserMessageForm
@@ -18,10 +37,9 @@ export const AIAssistantUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        submitPrompt={(content) => {
-          mixpanel.track('[AIAssistant].submitPrompt');
-          submitPrompt({ content, messageIndex: props.messageIndex });
-        }}
+        submitPrompt={handleSubmit}
+        waitingOnMessageIndex={waitingOnMessageIndex}
+        delaySeconds={delaySeconds}
       />
     );
   })
