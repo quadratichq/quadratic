@@ -35,7 +35,7 @@ export const AIContext = memo(
     const [, setCurrentSheet] = useState(sheets.sheet.name);
 
     useEffect(() => {
-      if (!editing) return;
+      if (loading || !editing) return;
 
       const updateSelection = () => {
         setContext?.((prev) => ({
@@ -51,11 +51,11 @@ export const AIContext = memo(
         events.off('cursorPosition', updateSelection);
         events.off('changeSheet', updateSelection);
       };
-    }, [editing, setContext]);
+    }, [editing, loading, setContext]);
 
     useEffect(() => {
       const updateCurrentSheet = () => {
-        if (editing) {
+        if (!loading && editing) {
           setContext?.((prev) => ({
             ...prev,
             currentSheet: sheets.sheet.name,
@@ -70,11 +70,11 @@ export const AIContext = memo(
       return () => {
         events.off('changeSheet', updateCurrentSheet);
       };
-    }, [editing, setContext]);
+    }, [editing, loading, setContext]);
 
     // use last user message context as initial context in the bottom user message form
     useEffect(() => {
-      if (initialContext === undefined && !!setContext && messagesCount > 0) {
+      if (!loading && initialContext === undefined && !!setContext && messagesCount > 0) {
         const lastUserMessage = messages
           .filter(
             (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
@@ -84,7 +84,7 @@ export const AIContext = memo(
           setContext(lastUserMessage.context ?? defaultAIAnalystContext);
         }
       }
-    }, [initialContext, messages, messagesCount, setContext]);
+    }, [initialContext, loading, messages, messagesCount, setContext]);
 
     return (
       <div
