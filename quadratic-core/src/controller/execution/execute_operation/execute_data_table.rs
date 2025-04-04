@@ -26,8 +26,7 @@ impl GridController {
     ) {
         if transaction.is_user_undo_redo() {
             let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
-            transaction
-                .add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
         }
     }
 
@@ -168,14 +167,14 @@ impl GridController {
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: old_value.unwrap_or(CellValue::Blank).into(),
+                },
                 Operation::SetDataTable {
                     sheet_pos,
                     data_table: old_data_table,
                     index: old_index,
-                },
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_value.unwrap_or(CellValue::Blank).into(),
                 },
             ];
 
