@@ -70,7 +70,9 @@ const array2DSchema = z
     })
   )
   .transform((array) => {
-    const maxColumns = Math.max(...array.map((row) => row.length));
+    const maxColumns = array.length > 0
+      ? Math.max(...array.map((row) => row.length))
+      : 0;
     return array.map((row) => (row.length === maxColumns ? row : row.concat(Array(maxColumns - row.length).fill(''))));
   });
 
@@ -471,7 +473,7 @@ This tool extracts data from the attached PDF files and converts it into a struc
 This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
 Forward the actual user prompt as much as possible that is related to the PDF file.\n
 Always capture user intention exactly and give a clear and explicit prompt to extract data from PDF files.\n
-Use this only there is a PDF file that needs to be extracted. If there is no PDF file, do not use this tool.\n
+Use this tool only if there is a PDF file that needs to be extracted. If there is no PDF file, do not use this tool.\n
 Never extract data from PDF files that are not relevant to the user's prompt. Never try to extract data from PDF files on your own. Always use the pdf_import tool when dealing with PDF files.\n
 Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
@@ -498,7 +500,7 @@ This tool extracts data from the attached PDF files and converts it into a struc
 This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
 Forward the actual user prompt as much as possible that is related to the PDF file.\n
 Always capture user intention exactly and give a clear and explicit prompt to extract data from PDF files.\n
-Use this only there is a PDF file that needs to be extracted. If there is no PDF file, do not use this tool.\n
+Use this tool only if there is a PDF file that needs to be extracted. If there is no PDF file, do not use this tool.\n
 Never extract data from PDF files that are not relevant to the user's prompt. Never try to extract data from PDF files on your own. Always use the pdf_import tool when dealing with PDF files.\n
 Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
