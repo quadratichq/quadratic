@@ -459,6 +459,11 @@ export const ApiSchemas = {
   '/v0/ai/feedback.PATCH.response': z.object({
     message: z.string(),
   }),
+  '/v0/teams/:uuid/billing/ai/usage.GET.response': z.object({
+    exceededBillingLimit: z.boolean(),
+    billingLimit: z.number().optional(),
+    currentPeriodUsage: z.number().optional(),
+  }),
 };
 
 /**

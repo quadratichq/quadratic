@@ -6,7 +6,6 @@ import {
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -24,6 +23,8 @@ export interface AIAnalystState {
     abortController: AbortController | undefined;
     suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
   };
+  waitingOnMessageIndex?: number;
+  delaySeconds: number;
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -42,6 +43,8 @@ export const defaultAIAnalystState: AIAnalystState = {
     abortController: undefined,
     suggestions: [],
   },
+  waitingOnMessageIndex: undefined,
+  delaySeconds: 0,
 };
 
 export const aiAnalystAtom = atom<AIAnalystState>({
@@ -300,11 +303,45 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
 
 export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAnalystCurrentChatMessagesCountAtom',
-  get: ({ get }) => getPromptMessages(get(aiAnalystCurrentChatAtom).messages).length,
+  get: ({ get }) => get(aiAnalystCurrentChatAtom).messages.length,
 });
 
 export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions');
 export const aiAnalystPromptSuggestionsCountAtom = selector<number>({
   key: 'aiAnalystPromptSuggestionsCountAtom',
   get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).suggestions.length,
+});
+
+export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
+  key: 'aiAnalystWaitingOnMessageIndexAtom',
+  get: ({ get }) => get(aiAnalystAtom).waitingOnMessageIndex,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        waitingOnMessageIndex: newValue,
+      };
+    });
+  },
+});
+
+export const aiAnalystDelaySecondsAtom = selector<number>({
+  key: 'aiAnalystDelaySecondsAtom',
+  get: ({ get }) => get(aiAnalystAtom).delaySeconds,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        delaySeconds: newValue,
+      };
+    });
+  },
 });
