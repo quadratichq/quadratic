@@ -1,4 +1,5 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import { debug } from '@/app/debugFlags';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
@@ -252,19 +253,23 @@ export const AIUserMessageForm = memo(
           <>
             <div
               className={cn(
-                'flex w-full select-none items-center justify-between px-2 pb-1 @container',
+                'flex w-full select-none items-center justify-between px-2 pb-1',
                 waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
               )}
             >
               <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="hidden @sm:block">
-                  {KeyboardSymbols.Shift}
-                  {KeyboardSymbols.Enter} new line
-                </span>
+                {!debug && (
+                  <>
+                    <span>
+                      {KeyboardSymbols.Shift}
+                      {KeyboardSymbols.Enter} new line
+                    </span>
 
-                <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
+                    <span>{KeyboardSymbols.Enter} submit</span>
+                  </>
+                )}
 
                 <ConditionalWrapper
                   condition={prompt.length !== 0}
