@@ -861,14 +861,16 @@ impl GridController {
         let max_x = {
             let width = (end_pos.x - insert_at.x + 1) as f64;
             let multiples = ((width / clipboard_width as f64).floor() as i64).max(0);
+            let max_x = insert_at.x + (multiples * clipboard_width as i64) - 1;
 
-            insert_at.x + (multiples * clipboard_width as i64) - 1
+            max_x.max(insert_at.x)
         };
         let max_y = {
             let height = (end_pos.y - insert_at.y + 1) as f64;
             let multiples = ((height / clipboard_height as f64).floor() - 1.0).max(0.0) as i64;
+            let max_y = insert_at.y + (multiples * clipboard_height as i64);
 
-            insert_at.y + (multiples * clipboard_height as i64)
+            max_y.max(insert_at.y)
         };
 
         let cell_value_width = max_x - insert_at.x + 1;

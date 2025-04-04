@@ -281,6 +281,8 @@ mod test {
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
+
         // paste using plain_text
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -291,6 +293,8 @@ mod test {
             PasteSpecial::None,
             None,
         );
+
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
