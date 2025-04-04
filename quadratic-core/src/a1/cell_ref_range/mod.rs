@@ -31,11 +31,8 @@ impl CellRefRange {
     };
 
     pub fn normalize(&mut self) -> &Self {
-        match self {
-            Self::Sheet { range } => {
-                range.normalize_in_place();
-            }
-            _ => {}
+        if let Self::Sheet { range } = self {
+            range.normalize_in_place();
         };
 
         self
