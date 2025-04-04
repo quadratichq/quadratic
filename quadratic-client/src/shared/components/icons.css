@@ -23,16 +23,16 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.material-symbols-24 {
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
-  font-variation-settings: 'OPSZ' 24;
-}
-
 .material-symbols-20 {
   width: 20px;
   height: 20px;
   font-size: 20px;
+  font-variation-settings: 'OPSZ' 20;
+}
+
+.material-symbols-64 {
+  width: 64px;
+  height: 64px;
+  font-size: 64px;
   font-variation-settings: 'OPSZ' 20;
 }

@@ -1,15 +1,10 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import {
-  editorInteractionStateSettingsAtom,
-  editorInteractionStateTeamUuidAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
 import { debug } from '@/app/debugFlags';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
-import { DOCUMENTATION_ANALYTICS_AI } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -29,20 +24,24 @@ import {
   type DragEvent,
 } from 'react';
 import type { SetterOrUpdater } from 'recoil';
-import { useRecoilValue } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
-  messageIndex?: number;
+  messageIndex: number;
 };
 
-type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
+export type SubmitPromptArgs = {
+  content: Content;
+  onSubmit?: () => void;
+};
+
+type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
-  submitPrompt: (content: Content) => void;
+  submitPrompt: (args: SubmitPromptArgs) => void;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   ctx?: {
@@ -50,13 +49,17 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
     setContext: React.Dispatch<React.SetStateAction<Context>>;
     initialContext?: Context;
   };
+  waitingOnMessageIndex?: number;
+  delaySeconds?: number;
 };
 
 export const AIUserMessageForm = memo(
-  forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
+  forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
     const {
       initialContent,
       ctx,
+      waitingOnMessageIndex,
+      delaySeconds,
       autoFocusRef,
       textareaRef: bottomTextareaRef,
       abortController,
@@ -66,7 +69,6 @@ export const AIUserMessageForm = memo(
       formOnKeyDown,
       maxHeight = '120px',
     } = props;
-
     const [editing, setEditing] = useState(!initialContent?.length);
 
     const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
@@ -82,9 +84,19 @@ export const AIUserMessageForm = memo(
     );
     const [prompt, setPrompt] = useState<string>(initialPrompt ?? '');
 
+    const onSubmit = useCallback(() => {
+      if (initialPrompt === undefined) {
+        setPrompt('');
+        setFiles([]);
+      }
+    }, [initialPrompt]);
+
     const submit = useCallback(() => {
-      submitPrompt([...files, { type: 'text', text: prompt }]);
-    }, [files, prompt, submitPrompt]);
+      submitPrompt({
+        content: [...files, { type: 'text', text: prompt }],
+        onSubmit: initialPrompt === undefined ? onSubmit : undefined,
+      });
+    }, [files, initialPrompt, onSubmit, prompt, submitPrompt]);
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
@@ -141,11 +153,11 @@ export const AIUserMessageForm = memo(
         onPaste={handleFiles}
         onDrop={handleFiles}
       >
-        {!editing && !loading && (
+        {!editing && !loading && waitingOnMessageIndex === undefined && (
           <TooltipPopover label="Edit">
             <Button
               variant="ghost"
-              className="pointer-events-auto absolute right-0.5 top-0.5 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+              className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
               size="icon-sm"
               onClick={(e) => {
                 if (loading) return;
@@ -167,58 +179,79 @@ export const AIUserMessageForm = memo(
             files={files}
             setFiles={setFiles}
             editing={editing}
-            disabled={!editing}
+            disabled={waitingOnMessageIndex !== undefined || !editing}
             textAreaRef={textareaRef}
           />
         )}
+
         {editing ? (
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
-            )}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              event.stopPropagation();
+          <>
+            <Textarea
+              ref={textareaRef}
+              value={prompt}
+              className={cn(
+                'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+                editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit',
+                waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
+              )}
+              onChange={(event) => setPrompt(event.target.value)}
+              onKeyDown={(event) => {
+                event.stopPropagation();
 
-              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-                event.preventDefault();
-                if (loading) return;
+                if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+                  event.preventDefault();
+                  if (loading || waitingOnMessageIndex !== undefined) return;
 
-                if (prompt.trim().length === 0) return;
+                  if (prompt.trim().length === 0) return;
 
-                submit();
+                  submit();
 
-                if (initialPrompt === undefined) {
-                  setFiles([]);
-                  setPrompt('');
-                  textareaRef.current?.focus();
-                } else {
-                  setEditing(false);
-                  bottomTextareaRef.current?.focus();
+                  if (initialPrompt === undefined) {
+                    textareaRef.current?.focus();
+                  } else {
+                    setEditing(false);
+                    bottomTextareaRef.current?.focus();
+                  }
                 }
-              }
 
-              if (loading) return;
+                if (loading || waitingOnMessageIndex !== undefined) return;
 
-              if (formOnKeyDown) {
-                formOnKeyDown(event);
-              }
-            }}
-            autoComplete="off"
-            placeholder="Ask a question..."
-            autoHeight={true}
-            maxHeight={maxHeight}
-          />
+                if (formOnKeyDown) {
+                  formOnKeyDown(event);
+                }
+              }}
+              autoComplete="off"
+              placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
+              autoHeight={true}
+              maxHeight={maxHeight}
+              disabled={waitingOnMessageIndex !== undefined}
+            />
+
+            {waitingOnMessageIndex === props.messageIndex && <AIUsageExceeded delaySeconds={delaySeconds ?? 0} />}
+          </>
         ) : (
-          <div className="pointer-events-none whitespace-pre-wrap p-2 text-sm">{prompt}</div>
+          <>
+            <div
+              className={cn(
+                'pointer-events-none whitespace-pre-wrap p-2 text-sm',
+                waitingOnMessageIndex === props.messageIndex && 'opacity-50'
+              )}
+            >
+              {prompt}
+            </div>
+
+            {waitingOnMessageIndex === props.messageIndex && <AIUsageExceeded delaySeconds={delaySeconds ?? 0} />}
+          </>
         )}
 
         {editing && (
           <>
-            <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
+            <div
+              className={cn(
+                'flex w-full select-none items-center justify-between px-2 pb-1 @container',
+                waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
+              )}
+            >
               <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -244,7 +277,7 @@ export const AIUserMessageForm = memo(
                       e.stopPropagation();
                       submit();
                     }}
-                    disabled={prompt.length === 0 || loading}
+                    disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
                   >
                     <ArrowUpwardIcon />
                   </Button>
@@ -252,7 +285,7 @@ export const AIUserMessageForm = memo(
               </div>
             </div>
 
-            {loading && (
+            {(loading || waitingOnMessageIndex !== undefined) && (
               <Button
                 size="sm"
                 variant="outline"
@@ -262,7 +295,8 @@ export const AIUserMessageForm = memo(
                   abortPrompt();
                 }}
               >
-                <BackspaceIcon className="mr-1" /> Cancel generating
+                <BackspaceIcon className="mr-1" /> Cancel{' '}
+                {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}
               </Button>
             )}
           </>
@@ -271,23 +305,3 @@ export const AIUserMessageForm = memo(
     );
   })
 );
-
-export const AIUserMessageFormDisclaimer = memo(() => {
-  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
-  const teamSettings = useRecoilValue(editorInteractionStateSettingsAtom);
-  return (
-    <p className="py-0.5 text-center text-xs text-muted-foreground">
-      {teamSettings.analyticsAi
-        ? 'Your data can be used to improve Quadratic. '
-        : 'Some sheet data is sent to the AI model. '}
-      <a
-        href={teamSettings.analyticsAi ? ROUTES.TEAM_SETTINGS(teamUuid) : DOCUMENTATION_ANALYTICS_AI}
-        target="_blank"
-        rel="noreferrer"
-        className="underline hover:text-foreground"
-      >
-        Learn more.
-      </a>
-    </p>
-  );
-});

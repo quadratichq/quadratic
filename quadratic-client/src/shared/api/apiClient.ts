@@ -56,6 +56,15 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
       },
+      async aiUsage(uuid: string) {
+        const data = await fetchFromApi(
+          `/v0/teams/${uuid}/billing/ai/usage`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/ai/usage.GET.response']
+        );
+
+        return data;
+      },
     },
     invites: {
       create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
