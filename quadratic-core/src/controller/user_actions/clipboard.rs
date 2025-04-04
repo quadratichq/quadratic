@@ -766,13 +766,20 @@ mod test {
         let pos = Pos::new(1, 1);
 
         set_cell_value(&mut gc, sheet_id, "1", pos.x, pos.y);
+        set_cell_value(&mut gc, sheet_id, "2", pos.x, pos.y + 1);
 
-        let selection = A1Selection::from_xy(pos.x, pos.y, sheet_id);
+        let selection = A1Selection::from_rect(SheetRect::from_numbers(
+            pos.x,
+            pos.y,
+            pos.x,
+            pos.y + 1,
+            sheet_id,
+        ));
         let JsClipboard { plain_text, html } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
-        let paste_rect = SheetRect::new(pos.x, pos.y + 1, pos.x + 1, pos.y + 3, sheet_id);
+        let paste_rect = SheetRect::new(pos.x + 1, pos.y, pos.x + 2, pos.y + 4, sheet_id);
 
         let assert_range_paste = |gc: &GridController| {
             print_table(gc, sheet_id, Rect::new_span(pos, paste_rect.max));

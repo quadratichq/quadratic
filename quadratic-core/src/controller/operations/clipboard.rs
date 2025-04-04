@@ -659,8 +659,8 @@ impl GridController {
         });
 
         // loop through the paste area and collect the operations
-        for (start_x, x) in (start_pos.x..=max_x).step_by(w).enumerate() {
-            for (start_y, y) in (start_pos.y..=max_y).step_by(h).enumerate() {
+        for (start_x, x) in (start_pos.x..=max_x).enumerate().step_by(w) {
+            for (start_y, y) in (start_pos.y..=max_y).enumerate().step_by(h) {
                 let cell_value_pos = Pos::from((start_x, start_y));
                 let sheet_pos = SheetPos::new(start_pos.sheet_id, x, y);
 
@@ -754,14 +754,14 @@ impl GridController {
 
                 // loop through the clipboard and replace cell references in formulas and other languages
                 for (start_x, x) in (insert_at.x..=max_x)
-                    .step_by(clipboard.w as usize)
                     .enumerate()
+                    .step_by(clipboard.w as usize)
                 {
                     for (start_y, y) in (insert_at.y..=max_y)
-                        .step_by(clipboard.h as usize)
                         .enumerate()
+                        .step_by(clipboard.h as usize)
                     {
-                        let pos = Pos { x, y };
+                        let pos: Pos = Pos { x, y };
                         let dx = insert_at.x - clipboard.origin.x + start_x as i64;
                         let dy = insert_at.y - clipboard.origin.y + start_y as i64;
 
@@ -860,13 +860,13 @@ impl GridController {
     ) -> (i64, i64, i64, i64) {
         let max_x = {
             let width = (end_pos.x - insert_at.x + 1) as f64;
-            let multiples = ((width / clipboard_width as f64).floor() as i64 - 1).max(0);
+            let multiples = ((width / clipboard_width as f64).floor() as i64).max(0);
 
-            insert_at.x + (multiples * clipboard_width as i64)
+            insert_at.x + (multiples * clipboard_width as i64) - 1
         };
         let max_y = {
             let height = (end_pos.y - insert_at.y + 1) as f64;
-            let multiples = ((height / clipboard_height as f64).floor() as i64 - 1).max(0);
+            let multiples = ((height / clipboard_height as f64).floor() - 1.0).max(0.0) as i64;
 
             insert_at.y + (multiples * clipboard_height as i64)
         };
