@@ -22,6 +22,8 @@ export function PermissionOverlay() {
     file: { uuid: fileUuid },
   } = useFileRouteLoaderData();
 
+  const handleDuplicate = () => duplicateFileAction.run({ fileUuid });
+
   // This component assumes that the file can be viewed in some way, either by
   // a logged in user or a logged out user where the file's link is public.
   // This render path will never be reached if the user doesn't have access to the file.
@@ -40,8 +42,8 @@ export function PermissionOverlay() {
           <Button asChild variant="outline" size="sm">
             <Link to={ROUTES.SIGNUP_WITH_REDIRECT()}>Sign up</Link>
           </Button>
-          <Button size="sm">
-            <Link to={ROUTES.FILE_DUPLICATE(fileUuid)}>Duplicate file</Link>
+          <Button size="sm" onClick={handleDuplicate}>
+            Duplicate file
           </Button>
         </div>
       </FixedBottomAlert>
@@ -55,7 +57,7 @@ export function PermissionOverlay() {
         <Type>
           <strong>Read-only.</strong> Duplicate or ask the owner for permission to edit.
         </Type>
-        <Button onClick={() => duplicateFileAction.run({ fileUuid })}>{duplicateFileAction.label}</Button>
+        <Button onClick={handleDuplicate}>{duplicateFileAction.label}</Button>
       </FixedBottomAlert>
     );
   }
