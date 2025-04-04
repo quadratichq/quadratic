@@ -4,6 +4,7 @@ import type { ConnectionFormValues } from '@/shared/components/connections/conne
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
+import { CheckCircledIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
@@ -77,20 +78,32 @@ export function ConnectionFormActions({
             <Button
               type="button"
               disabled={connectionState === 'loading'}
-              variant={connectionState === 'error' ? 'destructive' : 'default'}
+              variant={
+                connectionState === 'success' ? 'success' : connectionState === 'error' ? 'destructive' : 'default'
+              }
               onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
                 const success = await testConnection(values);
                 if (success) {
-                  handleSubmitForm(values);
+                  // Brief delay to show success state before submitting
+                  setTimeout(() => {
+                    handleSubmitForm(values);
+                  }, 200);
                 }
               })}
             >
               {connectionState === 'loading' ? (
-                <SpinnerIcon className="mr-1 text-primary" />
+                <>
+                  <SpinnerIcon className="mr-1 text-primary" />
+                  Test and Save
+                </>
+              ) : connectionState === 'success' ? (
+                <>
+                  <CheckCircledIcon className="mr-1" /> Success
+                </>
               ) : connectionState === 'error' ? (
                 <>Try again.</>
               ) : (
-                'Test and Save'
+                'Test and save'
               )}
             </Button>
           ) : (
@@ -98,16 +111,28 @@ export function ConnectionFormActions({
             <Button
               type="button"
               disabled={connectionState === 'loading'}
-              variant={connectionState === 'error' ? 'destructive' : 'default'}
+              variant={
+                connectionState === 'success' ? 'success' : connectionState === 'error' ? 'destructive' : 'default'
+              }
               onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
                 const success = await testConnection(values);
                 if (success) {
-                  handleSubmitForm(values);
+                  // Brief delay to show success state before submitting
+                  setTimeout(() => {
+                    handleSubmitForm(values);
+                  }, 200);
                 }
               })}
             >
               {connectionState === 'loading' ? (
-                <SpinnerIcon className="mr-1 text-primary" />
+                <>
+                  <SpinnerIcon className="mr-1 text-primary" />
+                  Test and Create
+                </>
+              ) : connectionState === 'success' ? (
+                <>
+                  <CheckCircledIcon className="mr-1" /> Success
+                </>
               ) : connectionState === 'error' ? (
                 <>Failed. Try again.</>
               ) : (
