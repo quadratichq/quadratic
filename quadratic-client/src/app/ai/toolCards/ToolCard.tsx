@@ -26,15 +26,15 @@ export const ToolCard = ({
       )}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <div className="flex h-6 w-6 select-none items-center justify-center">
+        <div className="flex h-6 w-6 shrink-0 select-none items-center justify-center">
           {icon ? icon : isLoading ? <Skeleton className="h-6 w-6 bg-accent" /> : null}
         </div>
 
-        <div className="flex min-w-0 flex-col">
-          <span className="flex h-5 items-center truncate font-bold">
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-bold">
             {label ? label : isLoading ? <Skeleton className="h-3 w-64 bg-accent" /> : null}
-          </span>
-          <span className="-mt-0.5 flex h-4 items-center truncate text-xs text-muted-foreground">
+          </div>
+          <div className="truncate text-xs text-muted-foreground">
             {hasError ? (
               <span className="text-destructive">Something went wrong (try again)</span>
             ) : description ? (
@@ -42,11 +42,11 @@ export const ToolCard = ({
             ) : isLoading ? (
               <Skeleton className="h-2 w-24 bg-accent" />
             ) : null}
-          </span>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center pr-1 text-xs">{actions}</div>
+      <div className="flex shrink-0 items-center pr-1 text-xs">{actions}</div>
     </div>
   );
 };
