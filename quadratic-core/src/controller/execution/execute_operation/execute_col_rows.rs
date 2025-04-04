@@ -44,7 +44,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         columns: Vec<i64>,
-        copy_formats: Option<CopyFormats>,
+        copy_formats: CopyFormats,
     ) {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
@@ -111,14 +111,17 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
-        _copy_formats: Option<CopyFormats>,
+        copy_formats: CopyFormats,
     ) -> Result<(), ()> {
         let context = &self.a1_context;
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
 
-            if sheet.delete_rows(transaction, rows, context).is_err() {
+            if sheet
+                .delete_rows(transaction, rows, copy_formats, context)
+                .is_err()
+            {
                 // nothing more to be done since the operation was aborted
                 return Err(());
             }

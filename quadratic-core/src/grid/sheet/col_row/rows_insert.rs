@@ -85,7 +85,7 @@ impl Sheet {
             transaction.reverse_operations.push(Operation::DeleteRow {
                 sheet_id: self.id,
                 row,
-                copy_formats: Some(copy_formats),
+                copy_formats,
             });
         }
     }

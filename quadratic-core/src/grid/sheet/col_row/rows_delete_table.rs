@@ -1,5 +1,5 @@
 use crate::{
-    SheetRect,
+    CopyFormats, SheetRect,
     a1::A1Context,
     cell_values::CellValues,
     controller::{
@@ -180,6 +180,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         rows: Vec<i64>,
+        _copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) -> Result<(), ()> {
         if rows.is_empty() {
@@ -202,7 +203,6 @@ impl Sheet {
         }
 
         self.delete_tables_with_all_rows(transaction, &rows);
-
         self.delete_table_rows(transaction, &rows);
 
         for row in rows {
@@ -250,7 +250,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![2, 3], &context)
+                .delete_rows(&mut transaction, vec![2, 3], Default::default(), &context)
                 .is_ok()
         );
 
@@ -287,7 +287,7 @@ mod tests {
         // Attempt to delete rows that contain table UI
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1], &context)
+                .delete_rows(&mut transaction, vec![1], Default::default(), &context)
                 .is_err()
         );
     }
@@ -303,7 +303,7 @@ mod tests {
         // Empty vector should return Ok
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![], &context)
+                .delete_rows(&mut transaction, vec![], Default::default(), &context)
                 .is_ok()
         );
     }
@@ -328,7 +328,12 @@ mod tests {
         // Test with unsorted and duplicate rows
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![2, 1, 2, 3], &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![2, 1, 2, 3],
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -361,7 +366,12 @@ mod tests {
         // Delete all rows that contain the table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1, 2, 3, 4, 5], &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![1, 2, 3, 4, 5],
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -391,7 +401,7 @@ mod tests {
         // Delete some rows from the middle of the table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4], &context)
+                .delete_rows(&mut transaction, vec![3, 4], Default::default(), &context)
                 .is_ok()
         );
 
@@ -427,7 +437,7 @@ mod tests {
         // Try to delete rows containing the readonly table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1, 2], &context)
+                .delete_rows(&mut transaction, vec![1, 2], Default::default(), &context)
                 .is_err()
         );
 
@@ -467,7 +477,7 @@ mod tests {
         // Delete row that intersects both tables
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![4], &context)
+                .delete_rows(&mut transaction, vec![4], Default::default(), &context)
                 .is_ok()
         );
 
@@ -493,7 +503,7 @@ mod tests {
         // Delete rows that contain the chart
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4], &context)
+                .delete_rows(&mut transaction, vec![3, 4], Default::default(), &context)
                 .is_ok()
         );
 
@@ -515,7 +525,12 @@ mod tests {
         // Delete all rows (except UI) that contain the chart
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4, 5, 6], &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![3, 4, 5, 6],
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 

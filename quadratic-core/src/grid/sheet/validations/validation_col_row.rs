@@ -344,7 +344,7 @@ mod tests {
             vec![Operation::DeleteColumn {
                 sheet_id,
                 column: 2,
-                copy_formats: None,
+                copy_formats: Default::default(),
             }],
             None,
             TransactionName::Validation,
@@ -499,7 +499,7 @@ mod tests {
             vec![Operation::DeleteRow {
                 sheet_id,
                 row: 2,
-                copy_formats: None,
+                copy_formats: Default::default(),
             }],
             None,
             TransactionName::Validation,

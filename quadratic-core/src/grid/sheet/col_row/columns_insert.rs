@@ -58,7 +58,7 @@ impl Sheet {
                 .push(Operation::DeleteColumn {
                     sheet_id: self.id,
                     column,
-                    copy_formats: Some(copy_formats),
+                    copy_formats,
                 });
         }
 

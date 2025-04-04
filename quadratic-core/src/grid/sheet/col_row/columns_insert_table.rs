@@ -47,7 +47,11 @@ impl Sheet {
             }
             // Adds columns to data tables if the column is inserted inside the
             // table. Code is not impacted by this change.
-            if !dt.readonly && source_column >= pos.x && source_column <= pos.x + dt.width() as i64
+            if !dt.readonly
+                && source_column >= pos.x
+                && (column < pos.x + dt.width() as i64
+                    || (CopyFormats::Before == copy_formats
+                        && column < pos.x + dt.width() as i64 + 1))
             {
                 let column = column - pos.x;
                 // the table overlaps the inserted column
@@ -110,7 +114,8 @@ impl Sheet {
 
         for (pos, dt) in self.data_tables.iter() {
             if (copy_formats == CopyFormats::Before && pos.x > column)
-                || (copy_formats == CopyFormats::After && pos.x >= column)
+                || ((copy_formats == CopyFormats::After || copy_formats == CopyFormats::None)
+                    && pos.x >= column)
             {
                 data_tables_to_move_right.push(*pos);
             }
@@ -198,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn test_insert_column_before_two_table() {
+    fn test_insert_column_before_two_tables() {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
 
@@ -297,10 +302,11 @@ mod tests {
     fn test_insert_column_end_table() {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
-
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
+        print_first_sheet!(&gc);
 
         gc.insert_column(sheet_id, 5, false, None);
+        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");
@@ -308,8 +314,6 @@ mod tests {
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
-
-        crate::test_util::print_last_redo_transaction_names(&gc);
 
         gc.redo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);

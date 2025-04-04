@@ -12,7 +12,7 @@ impl GridController {
         let ops = vec![Operation::DeleteColumns {
             sheet_id,
             columns,
-            copy_formats: None,
+            copy_formats: CopyFormats::None,
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
@@ -40,7 +40,7 @@ impl GridController {
         let ops = vec![Operation::DeleteRows {
             sheet_id,
             rows,
-            copy_formats: None,
+            copy_formats: CopyFormats::None,
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }

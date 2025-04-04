@@ -41,7 +41,7 @@ impl GridController {
         sheet.delete_columns(
             transaction,
             (col_start..=col_end).collect(),
-            None,
+            Default::default(),
             &self.a1_context,
         );
 
@@ -112,6 +112,7 @@ impl GridController {
             .delete_rows(
                 transaction,
                 (row_start..=row_end).collect(),
+                Default::default(),
                 &self.a1_context,
             )
             .is_err()
