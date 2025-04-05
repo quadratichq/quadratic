@@ -17,7 +17,9 @@
     "quadratic-rust-client",
     "quadratic-core",
     "quadratic-client",
-    "quadratic-kernels/python-wasm"
+    "quadratic-kernels/python-wasm",
+    "quadratic-rust-shared",
+    "quadratic-connection"
   ],
   "type": "module",
   "scripts": {
@@ -27,7 +29,7 @@
     "dev:services-local": "node dev -l -L",
     "dev:docker": "node dev -l -D",
     "api:start": "npm start --workspace=quadratic-api",
-    "clean": "npx rimraf node_modules dist build target && npm cache clean --force && npm exec --workspaces -- npm run clean",
+    "clean": "npm i -g rimraf && npm exec --workspaces -- npm run clean && npx rimraf node_modules dist build target && npm cache clean --force",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
     "client:download:pyodide": "npm run download:pyodide --workspace=quadratic-client",
     "build:wasm:types": "cd quadratic-core && CC=clang AR=llvm-ar cargo run --bin export_types --features js --target-dir=target/quadratic-core-types",
