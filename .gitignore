@@ -64,6 +64,9 @@ quadratic-multiplayer/coverage
 quadratic-kernels/python-wasm/dist/
 quadratic-client/public/*.whl
 
+# Pyodide public folder
+quadratic-client/public/pyodide
+
 # Docker Data Volumes
 docker/localstack/data
 docker/mysql/data

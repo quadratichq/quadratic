@@ -62,6 +62,7 @@
     "partial-json": "^0.1.7",
     "pixi-viewport": "5.0.3",
     "pixi.js": "^7.4.3",
+    "pyodide": "^0.27.5",
     "react": "^18.2.0",
     "react-avatar-editor": "^14.0.0-beta.5",
     "react-color": "^2.19.3",
@@ -116,7 +117,9 @@
     "coverage:wasm:html": "cd .. && cd quadratic-core && grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
     "build:javascript:worker": "cd ./src/app/web-workers/javascriptWebWorker/worker/javascript/runner/ && node compileJavascriptRunner.mjs",
-    "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/"
+    "download:pyodide": "chmod +x ./download-pyodide.sh && ./download-pyodide.sh",
+    "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/",
+    "clean": "npx rimraf node_modules dist build target"
   },
   "browserslist": {
     "production": [
@@ -159,7 +162,6 @@
     "postcss": "^8.4.31",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
-    "pyodide": "^0.27.4",
     "sass": "^1.69.5",
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",

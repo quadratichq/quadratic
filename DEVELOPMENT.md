@@ -29,6 +29,9 @@ rustup target add wasm32-unknown-unknown
 cargo install cargo-watch
 ```
 
+Download pyodide
+`npm run client:download:pyodide`
+
 ## Local Environment Setup
 
 1. Create .env files using the template .env.example files
