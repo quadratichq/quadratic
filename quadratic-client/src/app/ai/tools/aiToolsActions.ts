@@ -305,4 +305,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.UserPromptSuggestions]: async () => {
     return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
   },
+  [AITool.PDFImport]: async () => {
+    return `PDF import tool executed successfully.`;
+  },
 } as const;

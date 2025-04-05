@@ -89,7 +89,7 @@ jobs:
           grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ../target/debug/ \
+            --binary-path ./target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
@@ -110,7 +110,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-            lfs: true
+          lfs: true
 
       - name: Install build-essential, llvm, and clang
         run: |

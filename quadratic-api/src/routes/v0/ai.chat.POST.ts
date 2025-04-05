@@ -42,13 +42,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
-  // TODO: Enforce usage limit
-  // const usage = await getAIMessageUsageForUser(userId);
-  // const exceededUsageLimit = await userExceededUsageLimit(usage);
+  // const usage = await BillingAIUsageMonthlyForUser(userId);
+  // const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
 
-  // if (exceededUsageLimit) {
+  // if (exceededBillingLimit) {
   //   //@ts-expect-error
-  //   return res.status(402).json({ error: 'Usage limit exceeded' });
+  //   return res.status(402).json({ error: 'Billing limit exceeded' });
   // }
 
   const { body } = parseRequest(req, schema);

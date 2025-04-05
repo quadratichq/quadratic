@@ -60,7 +60,7 @@ export const Component = () => {
                 <div
                   className={cn(
                     sharedAvatarClasses,
-                    ' flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground text-sm text-foreground '
+                    'flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground text-sm text-foreground'
                   )}
                 >
                   <AddIcon className="text-background" />

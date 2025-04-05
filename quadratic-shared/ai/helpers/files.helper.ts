@@ -24,3 +24,10 @@ export const isSupportedMimeType = (
 ): mimeType is ImageContent['mimeType'] | PdfFileContent['mimeType'] | TextFileContent['mimeType'] => {
   return isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType) || isSupportedTextMimeType(mimeType);
 };
+
+export const getFileTypeLabel = (mimeType: string): string => {
+  if (isSupportedImageMimeType(mimeType)) return 'Image';
+  if (isSupportedPdfMimeType(mimeType)) return 'PDF';
+  if (isSupportedTextMimeType(mimeType)) return 'Text';
+  return 'Unknown';
+};
