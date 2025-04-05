@@ -123,8 +123,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Cache Pyodide
+        id: cache-pyodide
+        uses: useblacksmith/cache@v5
         with:
-          lfs: true
+          path: quadratic-client/public/pyodide
+          key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
+
+      - name: Download pyodide
+        if: steps.cache-pyodide.outputs.cache-hit != 'true'
+        run: |
+          npm run client:download:pyodide
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4

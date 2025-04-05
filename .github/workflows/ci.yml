@@ -122,8 +122,7 @@ jobs:
       - name: Download pyodide
         if: steps.cache-pyodide.outputs.cache-hit != 'true'
         run: |
-          chmod +x ./quadratic-client/download-pyodide.sh
-          ./quadratic-client/download-pyodide.sh
+          npm run client:download:pyodide
 
       - name: Install build-essential, llvm, and clang
         run: |
