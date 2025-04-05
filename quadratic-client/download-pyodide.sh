@@ -3,9 +3,9 @@
 set -e
 
 # Configuration
-PYODIDE_VERSION="0.27.4"
+PYODIDE_VERSION="0.27.5"
 PYODIDE_URL="https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
-EXPECTED_CHECKSUM="27fe60bc11308a25ef5800848b7e7fd160716f77852e681e1fbea0d8f9dd7531"
+EXPECTED_CHECKSUM="5a866e8f40d5ef46fb1258b4488ac3edc177c7e7884ad042426bbdfb2a56dd64"
 TARGET_DIR="public"
 
 # Cleanup existing files
