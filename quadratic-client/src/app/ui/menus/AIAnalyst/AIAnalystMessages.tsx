@@ -3,6 +3,7 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
@@ -223,6 +224,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
 
+      <PDFImportLoading />
+
       <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
         <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
@@ -342,4 +345,14 @@ const PromptSuggestions = memo(() => {
       ))}
     </div>
   );
+});
+
+const PDFImportLoading = memo(() => {
+  const pdfImportLoading = useRecoilValue(aiAnalystPDFImportLoadingAtom);
+
+  if (!pdfImportLoading) {
+    return null;
+  }
+
+  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
 });

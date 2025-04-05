@@ -1,9 +1,9 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { debug } from '@/app/debugFlags';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -42,6 +42,7 @@ type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
   submitPrompt: (args: SubmitPromptArgs) => void;
+  isFileSupported: (mimeType: string) => boolean;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   ctx?: {
@@ -65,13 +66,14 @@ export const AIUserMessageForm = memo(
       abortController,
       loading,
       setLoading,
+      isFileSupported,
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
 
-    const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
+    const initialFiles = useMemo(() => initialContent?.filter((item) => item.type === 'data'), [initialContent]);
     const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
 
     const initialPrompt = useMemo(
@@ -103,27 +105,28 @@ export const AIUserMessageForm = memo(
       setLoading(false);
     }, [abortController, setLoading]);
 
-    const handleFiles = useCallback((e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
-      if (!debug) return;
+    const handleFiles = useCallback(
+      (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
+        const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
+        if (files && files.length > 0) {
+          e.preventDefault();
 
-      const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
-      if (files && files.length > 0) {
-        e.preventDefault();
-
-        for (const file of files) {
-          const mimeType = file.type;
-          if (isSupportedMimeType(mimeType)) {
-            const reader = new FileReader();
-            reader.onloadend = (e) => {
-              const dataUrl = e.target?.result as string;
-              const base64 = dataUrl.split(',')[1];
-              setFiles((prev) => [...prev, { type: 'data', data: base64, mimeType, fileName: file.name }]);
-            };
-            reader.readAsDataURL(file);
+          for (const file of files) {
+            const mimeType = file.type;
+            if (isSupportedMimeType(mimeType) && isFileSupported(mimeType)) {
+              const reader = new FileReader();
+              reader.onloadend = (e) => {
+                const dataUrl = e.target?.result as string;
+                const base64 = dataUrl.split(',')[1];
+                setFiles((prev) => [...prev, { type: 'data', data: base64, mimeType, fileName: file.name }]);
+              };
+              reader.readAsDataURL(file);
+            }
           }
         }
-      }
-    }, []);
+      },
+      [isFileSupported]
+    );
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
@@ -143,7 +146,11 @@ export const AIUserMessageForm = memo(
 
     return (
       <form
-        className={cn('group relative h-min rounded-lg bg-accent', ctx && 'pt-1.5', editing ? '' : 'select-none')}
+        className={cn(
+          'group relative h-min rounded-lg bg-accent',
+          (ctx || !!files.length) && 'pt-1.5',
+          editing ? '' : 'select-none'
+        )}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) {
@@ -171,18 +178,16 @@ export const AIUserMessageForm = memo(
           </TooltipPopover>
         )}
 
-        {ctx && (
-          <AIAnalystContext
-            initialContext={ctx.initialContext}
-            context={ctx.context}
-            setContext={ctx.setContext}
-            files={files}
-            setFiles={setFiles}
-            editing={editing}
-            disabled={waitingOnMessageIndex !== undefined || !editing}
-            textAreaRef={textareaRef}
-          />
-        )}
+        <AIContext
+          initialContext={ctx?.initialContext}
+          context={ctx?.context}
+          setContext={ctx?.setContext}
+          files={files}
+          setFiles={setFiles}
+          editing={editing}
+          disabled={waitingOnMessageIndex !== undefined || !editing}
+          textAreaRef={textareaRef}
+        />
 
         {editing ? (
           <>
@@ -248,19 +253,23 @@ export const AIUserMessageForm = memo(
           <>
             <div
               className={cn(
-                'flex w-full select-none items-center justify-between px-2 pb-1 @container',
+                'flex w-full select-none items-center justify-between px-2 pb-1',
                 waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
               )}
             >
               <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="hidden @sm:block">
-                  {KeyboardSymbols.Shift}
-                  {KeyboardSymbols.Enter} new line
-                </span>
+                {!debug && (
+                  <>
+                    <span>
+                      {KeyboardSymbols.Shift}
+                      {KeyboardSymbols.Enter} new line
+                    </span>
 
-                <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
+                    <span>{KeyboardSymbols.Enter} submit</span>
+                  </>
+                )}
 
                 <ConditionalWrapper
                   condition={prompt.length !== 0}

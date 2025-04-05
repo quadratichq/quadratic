@@ -34,6 +34,7 @@
     "dcell",
     "ddimaria",
     "dearmor",
+    "deepseek",
     "demangle",
     "dgraph",
     "docgen",
@@ -150,6 +151,7 @@
     "usermod",
     "vals",
     "vcpu",
+    "vertexai",
     "VITE",
     "VLOOKUP",
     "websockets",
@@ -206,7 +208,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[html]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "vscode.html-language-features"
   },
   "[markdown]": {
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"

@@ -23,7 +23,7 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -49,23 +49,23 @@ export function useSubmitAIAssistantPrompt() {
   const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
-    ({ set }) =>
+    ({ snapshot }) =>
       async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
-        const [currentSheetContext, visibleContext, codeContext] = await Promise.all([
+        const [currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
           getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
           getVisibleContext(),
           getCodeCellContext({ codeCell }),
+          snapshot.getPromise(aiAssistantMessagesAtom),
         ]);
-        let updatedMessages: ChatMessage[] = [];
-        set(aiAssistantMessagesAtom, (prevMessages) => {
-          prevMessages = getPromptMessages(prevMessages);
 
-          updatedMessages = [...currentSheetContext, ...visibleContext, ...codeContext, ...prevMessages];
+        const messagesWithContext: ChatMessage[] = [
+          ...currentSheetContext,
+          ...visibleContext,
+          ...codeContext,
+          ...getPromptMessagesWithoutPDF(prevMessages),
+        ];
 
-          return updatedMessages;
-        });
-
-        return updatedMessages;
+        return messagesWithContext;
       },
     [getCurrentSheetContext, getVisibleContext, getCodeCellContext]
   );
@@ -118,14 +118,14 @@ export function useSubmitAIAssistantPrompt() {
 
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
-          set(aiAssistantMessagesAtom, (prevMessages) => {
-            let prevWaitingOnMessageIndex: number | undefined = undefined;
-            clearTimeout(delayTimerRef.current);
-            set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
-              prevWaitingOnMessageIndex = prev;
-              return undefined;
-            });
+          let prevWaitingOnMessageIndex: number | undefined = undefined;
+          clearTimeout(delayTimerRef.current);
+          set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
+            prevWaitingOnMessageIndex = prev;
+            return undefined;
+          });
 
+          set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
@@ -158,9 +158,8 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, abortController);
 
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage, billingLimit } = await apiClient.teams.billing.aiUsage(
-          teamUuid
-        );
+        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
+          await apiClient.teams.billing.aiUsage(teamUuid);
         if (exceededBillingLimit) {
           let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
           set(aiAssistantDelaySecondsAtom, localDelaySeconds);
@@ -222,12 +221,12 @@ export function useSubmitAIAssistantPrompt() {
           let toolCallIterations = 0;
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
-            const updatedMessages = await updateInternalContext({ codeCell });
+            const messagesWithContext = await updateInternalContext({ codeCell });
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAssistant',
               modelKey,
-              messages: updatedMessages,
+              messages: messagesWithContext,
               useStream: true,
               toolName: undefined,
               useToolsPrompt: true,
