@@ -1,7 +1,6 @@
 import type { GenericAction } from '@/app/actions';
 import type { Action } from '@/app/actions/actions';
 import { CommandItem, CommandShortcut } from '@/shared/shadcn/ui/command';
-import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 
 export type CommandGroup = {
@@ -44,7 +43,7 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   let displayText: string | (string | JSX.Element)[] | null = label;
   // Highlight the text, but only if it's an exact match on the original label
   if (fuzzysortResult && fuzzysortResult.target === label) {
-    displayText = fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>);
+    displayText = fuzzysortResult.highlight((m, i) => <b key={i}>{m}</b>);
   }
 
   return (

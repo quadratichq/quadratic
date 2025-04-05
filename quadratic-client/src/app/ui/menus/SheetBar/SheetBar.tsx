@@ -26,7 +26,7 @@ export const SheetBar = (): JSX.Element => {
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = useMemo(() => hasPermissionToEditFile(permissions) && !isMobile, [permissions]);
-  const dragTimeOut = useRef<number | undefined>();
+  const dragTimeOut = useRef<number | undefined>(undefined);
 
   // Use useRef to store the initial active sheet ID
   const [activeSheet, setActiveSheet] = useState(sheets.current);
@@ -137,8 +137,8 @@ export const SheetBar = (): JSX.Element => {
         scrollWidth: number;
       }
     | undefined
-  >();
-  const scrolling = useRef<undefined | number>();
+  >(undefined);
+  const scrolling = useRef<number | undefined>(undefined);
 
   // finds the index * 2 for a new order string
   const getOrderIndex = useCallback((order: string): number => {
@@ -319,7 +319,7 @@ export const SheetBar = (): JSX.Element => {
     [getOrderIndex, sheetTabs]
   );
 
-  const scrollInterval = useRef<number | undefined>();
+  const scrollInterval = useRef<number | undefined>(undefined);
   const handleArrowDown = useCallback(
     (direction: number) => {
       if (scrollInterval.current) {

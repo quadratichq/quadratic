@@ -79,13 +79,13 @@
     "@types/node": "^22.13.10",
     "@types/pg": "^8.10.7",
     "@types/supertest": "^2.0.12",
-    "@typescript-eslint/eslint-plugin": "^6.13.1",
-    "@typescript-eslint/parser": "^6.13.1",
+    "@typescript-eslint/eslint-plugin": "^8.27.0",
+    "@typescript-eslint/parser": "^8.27.0",
     "dotenv-cli": "^7.1.0",
     "prisma": "^5.5.2",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.8.2"
   },
   "engines": {
     "node": "23.x"

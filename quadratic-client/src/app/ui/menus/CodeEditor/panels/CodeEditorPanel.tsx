@@ -13,7 +13,7 @@ import { useRecoilValue } from 'recoil';
 
 type CodeEditorPanelProps = {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
-  codeEditorRef: React.RefObject<HTMLDivElement>;
+  codeEditorRef: React.RefObject<HTMLDivElement | null>;
 };
 
 export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPanelProps) => {

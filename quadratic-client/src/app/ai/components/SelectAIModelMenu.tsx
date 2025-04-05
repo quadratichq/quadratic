@@ -18,7 +18,7 @@ import { memo, useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
-  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+  textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMenuProps) => {

@@ -64,8 +64,8 @@ ${
   source === 'AIAnalyst' || source === 'PDFImport'
     ? 'Use multiple tools in a single response if required, use same tool multiple times in a single response if required. Try to reduce tool call iterations.\n'
     : source === 'AIAssistant'
-    ? 'Use only one tool in a single response.\n'
-    : ''
+      ? 'Use only one tool in a single response.\n'
+      : ''
 }
 
 ${Object.entries(aiToolsSpec)

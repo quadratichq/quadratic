@@ -31,7 +31,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 // Update the KernelMenu component to accept a custom trigger
-export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) => {
+export const KernelMenu = ({ triggerIcon }: { triggerIcon: JSX.Element }) => {
   const [transactionsInfo, setTransactionsInfo] = useRecoilState(editorInteractionStateTransactionsInfoAtom);
   useEffect(() => {
     const handleTransactionStart = (transaction: TransactionInfo) => {

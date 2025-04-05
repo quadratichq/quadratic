@@ -15,7 +15,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAssistantMessagesProps = {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {

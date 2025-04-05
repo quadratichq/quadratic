@@ -26,7 +26,7 @@ export const HtmlValidationList = (props: Props) => {
 
   const [list, setList] = useState<string[] | undefined>();
 
-  const listCoordinate = useRef<JsCoordinate | undefined>();
+  const listCoordinate = useRef<JsCoordinate | undefined>(undefined);
 
   const inlineEditorStatus = useInlineEditorStatus();
   useEffect(() => {
