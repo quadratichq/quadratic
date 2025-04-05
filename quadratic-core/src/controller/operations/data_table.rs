@@ -290,6 +290,7 @@ impl GridController {
             sheet_pos,
             data_table,
             cell_value: CellValue::Import(import),
+            index: None,
         });
 
         ops

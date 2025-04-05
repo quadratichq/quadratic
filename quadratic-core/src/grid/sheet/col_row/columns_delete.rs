@@ -200,9 +200,13 @@ impl Sheet {
         columns.sort_unstable();
         columns.dedup();
 
-        self.check_delete_tables_columns(transaction, &columns);
+        self.check_delete_all_table_columns(transaction, &columns);
+        self.check_delete_chart_columns(transaction, &columns);
 
         columns.reverse();
+
+        self.check_delete_tables_columns(transaction, &columns);
+        self.move_tables_to_left(transaction, &columns);
 
         for column in columns {
             self.delete_column(transaction, column, copy_formats, context);

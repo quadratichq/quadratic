@@ -45,10 +45,16 @@ pub enum Operation {
         data_table: Option<DataTable>,
         index: usize,
     },
+    /// Adds or replaces a data table at a specific SheetPos.
     AddDataTable {
         sheet_pos: SheetPos,
         data_table: DataTable,
         cell_value: CellValue,
+
+        // Used to insert a data table at a specific index (usually after an
+        // undo action)
+        #[serde(default)]
+        index: Option<usize>,
     },
     DeleteDataTable {
         sheet_pos: SheetPos,

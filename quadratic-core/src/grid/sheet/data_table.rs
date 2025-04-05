@@ -34,6 +34,23 @@ impl Sheet {
         self.data_tables.get(&pos)
     }
 
+    /// Gets the index of the data table
+    pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
+        self.data_tables
+            .iter()
+            .position(|(search_pos, _)| *search_pos == pos)
+    }
+
+    /// Returns the index of the data table as a result.
+    pub fn data_table_index_result(&self, pos: Pos) -> Result<usize> {
+        self.data_table_index(pos).ok_or_else(|| {
+            anyhow!(
+                "Data table not found at {:?} in data_table_index_result()",
+                pos
+            )
+        })
+    }
+
     /// Returns a DataTable by name
     pub fn data_table_by_name(&self, name: String) -> Option<(&Pos, &DataTable)> {
         self.data_tables
@@ -491,7 +508,9 @@ mod test {
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
         },
+        first_sheet_id,
         grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
+        test_create_code_table, test_create_data_table,
     };
     use bigdecimal::BigDecimal;
 
@@ -641,5 +660,25 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
 
         assert!(sheet.is_source_cell(pos![A1]));
+    }
+
+    #[test]
+    fn test_data_table_index() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        test_create_code_table(&mut gc, sheet_id, pos![E2], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Test that the data table index is 0 for the first data table
+        assert_eq!(sheet.data_table_index(pos![A1]), Some(0));
+
+        // Test that a non-existent data table returns None
+        assert_eq!(sheet.data_table_index(pos![B2]), None);
+
+        // The second data table should have index 1
+        assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
     }
 }

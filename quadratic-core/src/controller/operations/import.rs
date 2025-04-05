@@ -231,6 +231,7 @@ impl GridController {
             sheet_pos,
             data_table,
             cell_value: CellValue::Import(import),
+            index: None,
         }];
 
         Ok(ops)
@@ -487,6 +488,7 @@ impl GridController {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
             data_table,
             cell_value: CellValue::Import(import),
+            index: None,
         }];
 
         Ok(ops)
@@ -627,6 +629,7 @@ mod test {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
             data_table: expected_data_table,
             cell_value,
+            index: None,
         };
 
         assert_eq!(ops.len(), 1);

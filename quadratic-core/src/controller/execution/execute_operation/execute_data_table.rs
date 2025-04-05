@@ -134,6 +134,7 @@ impl GridController {
         }
     }
 
+    /// Adds or replaces a data table at a specific position.
     pub(super) fn execute_add_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -143,6 +144,7 @@ impl GridController {
             sheet_pos,
             data_table,
             cell_value,
+            index,
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
@@ -153,9 +155,20 @@ impl GridController {
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
+            // update the CellValue
             let old_value = sheet.set_cell_value(data_table_pos, cell_value);
-            let (old_index, old_data_table) =
-                sheet.data_tables.insert_sorted(data_table_pos, data_table);
+
+            // insert the data table into the sheet
+            let (old_index, old_data_table) = if let Some(index) = index {
+                // if the index is provided, insert the data table at the index
+                let (index, old_data_table) =
+                    sheet
+                        .data_tables
+                        .insert_before(index, data_table_pos, data_table);
+                (index, old_data_table)
+            } else {
+                sheet.data_tables.insert_sorted(data_table_pos, data_table)
+            };
 
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
@@ -208,6 +221,8 @@ impl GridController {
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
+
+            let index = sheet.data_table_index_result(data_table_pos)?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, false)
@@ -223,6 +238,7 @@ impl GridController {
                 sheet_pos,
                 data_table,
                 cell_value: old_cell_value,
+                index: Some(index),
             }];
             self.data_table_operations(
                 transaction,
@@ -407,6 +423,11 @@ impl GridController {
 
             // Pull out the data table via a swap, removing it from the sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let index = sheet
+                .data_tables
+                .iter()
+                .position(|(pos, _)| *pos == data_table_pos)
+                .ok_or_else(|| anyhow::anyhow!("Data table not found"))?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
             let cell_value = sheet.cell_value_result(data_table_pos)?;
             let data_table_rect = data_table
@@ -477,6 +498,7 @@ impl GridController {
                 sheet_pos,
                 data_table,
                 cell_value,
+                index: Some(index),
             });
             reverse_operations.push(Operation::SetCellValues {
                 sheet_pos: data_table_pos.to_sheet_pos(sheet_id),

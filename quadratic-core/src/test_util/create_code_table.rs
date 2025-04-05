@@ -80,6 +80,7 @@ pub fn test_create_code_table_with_values(
         sheet_pos: pos.to_sheet_pos(sheet_id),
         data_table,
         cell_value,
+        index: None,
     };
     gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
 }

@@ -303,10 +303,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
-        print_first_sheet!(&gc);
 
         gc.insert_column(sheet_id, 5, false, None);
-        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");
