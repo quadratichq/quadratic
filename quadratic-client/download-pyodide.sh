@@ -1,17 +1,20 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 # Configuration
 PYODIDE_VERSION="0.27.5"
 PYODIDE_URL="https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
 EXPECTED_TARBALL_CHECKSUM="5a866e8f40d5ef46fb1258b4488ac3edc177c7e7884ad042426bbdfb2a56dd64"
 TARGET_DIR="public"
-EXPECTED_DIRECTORY_CHECKSUM="b8c695c1d56891d18df08af2e6b7eb9480aff45daef0aa81b04b8043541bcc68"
+EXPECTED_DIRECTORY_CHECKSUM="0185013a7704f5e48893ebca543c7c5803c1a421a0692c1f0a4b895f526afcc8"
 
 # Function to calculate pyodide directory hash
 calculate_pyodide_directory_hash() {
-    find "$TARGET_DIR/pyodide" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1
+    tar --sort=name \
+        --mtime='1970-01-01 00:00:00' \
+        --owner=0 --group=0 --numeric-owner \
+        -cf - -C "$TARGET_DIR" pyodide | sha256sum | cut -d' ' -f1
 }
 
 # Check existing pyodide directory checksum
