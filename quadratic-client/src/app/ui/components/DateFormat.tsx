@@ -239,7 +239,7 @@ export const DateFormat = (props: DateFormatProps) => {
                 e.stopPropagation();
               }}
             />
-            <p className="text-xs text-muted-foreground ">
+            <p className="text-xs text-muted-foreground">
               Learn custom date and time formatting{' '}
               <a
                 href={DOCUMENTATION_DATE_TIME_FORMATTING}

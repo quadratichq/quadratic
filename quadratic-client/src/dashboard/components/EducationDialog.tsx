@@ -1,6 +1,7 @@
 import { authClient } from '@/auth/auth';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { EducationIcon } from '@/shared/components/Icons';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -13,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
-import { SchoolOutlined } from '@mui/icons-material';
 import { Link, useSearchParams } from 'react-router-dom';
 
 export function EducationDialog() {
@@ -37,7 +37,7 @@ export function EducationDialog() {
       <DialogContent className="max-w-sm">
         <DialogHeader className="text-center sm:text-center">
           <div className="flex flex-col items-center gap-2 py-4">
-            <SchoolOutlined sx={{ fontSize: '64px' }} className="text-primary" />
+            <EducationIcon className="text-primary" size="2xl" />
             <Badge variant={isEnrolled ? 'secondary' : 'destructive-secondary'}>
               {isEnrolled ? 'Enrolled' : 'Ineligible'}
             </Badge>

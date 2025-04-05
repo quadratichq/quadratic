@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.6.9"
+version = "0.6.10"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -36,15 +36,15 @@ path = "src/bin/upgrade_file.rs"
 default = ["console_error_panic_hook", "js", "dbgjs"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = [
-  "js-sys",
-  "serde-wasm-bindgen",
-  "ts-rs",
-  "wasm-bindgen",
-  "wasm-bindgen-futures",
+    "js-sys",
+    "serde-wasm-bindgen",
+    "ts-rs",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
 ]
 show-operations = []
 dbgjs = []
-function-timer = []
+function-timer = ["function-timer/enabled"]
 
 [dependencies]
 anyhow = "1.0"
@@ -76,8 +76,8 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 js-sys = { version = "0.3.60", optional = true }
 serde-wasm-bindgen = { version = "0.6.0", optional = true }
 ts-rs = { git = "https://github.com/quadratichq/ts-rs/", rev = "812c1a8", optional = true, features = [
-  "uuid-impl",
-  "smallvec-impl",
+    "uuid-impl",
+    "smallvec-impl",
 ] }
 wasm-bindgen = { version = "0.2.100", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
@@ -89,10 +89,10 @@ indexmap = { version = "2.8.0", features = ["serde"] }
 thiserror = "2.0.12"
 lazy_static = "1.4.0"
 parquet = { version = "54.2.1", default-features = false, features = [
-  "arrow",
-  "arrow-array",
-  "flate2",
-  "snap",
+    "arrow",
+    "arrow-array",
+    "flate2",
+    "snap",
 ] }
 bytes = "1.5.0"
 arrow-array = "54.2.1"
@@ -109,10 +109,15 @@ fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
+    "test",
+] }
+
 [dev-dependencies]
 criterion = { version = "0.5", default-features = false }
-tokio-test = "0.4.3"
 memory-stats = "1.2.0"
+tokio-test = "0.4.3"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
@@ -121,6 +126,11 @@ proptest-derive = "0.5.0"
 [[bench]]
 name = "grid_benchmark"
 harness = false
+
+[[bench]]
+name = "import_excel"
+harness = false
+required-features = ["function-timer"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem
@@ -145,3 +155,11 @@ wasm-opt = ['-O0', '-g']
 debug-js-glue = false
 demangle-name-section = true
 dwarf-debug-info = true
+
+# patch for breaking changes in zip-rs/zip2 v2.6.0
+# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
+[patch.crates-io]
+zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
+
+[patch.'https://github.com/zip-rs/zip2']
+zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }

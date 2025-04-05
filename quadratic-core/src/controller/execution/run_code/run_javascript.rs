@@ -281,7 +281,7 @@ mod tests {
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let cells = sheet.get_render_cells(Rect::from_numbers(1, 2, 1, 3));
+        let cells = sheet.get_render_cells(Rect::from_numbers(1, 2, 1, 3), gc.a1_context());
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],

@@ -41,5 +41,5 @@ export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return <ToolCard icon={<GridActionIcon />} label={'Action: delete'} description={`${toolArgs.data.selection}`} />;
+  return <ToolCard icon={icon} label={label} description={`${toolArgs.data.selection}`} />;
 };

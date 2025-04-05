@@ -23,7 +23,7 @@ export class PointerCursor {
 
     let foundCodeCell = false;
     const codeCell = pixiApp.cellsSheets.current.tables.intersectsCodeInfo(world);
-    if (codeCell) {
+    if (codeCell && codeCell.language !== 'Import') {
       if (this.lastInfo?.x !== codeCell.x || this.lastInfo?.y !== codeCell.y) {
         events.emit('hoverCell', codeCell);
         this.lastInfo = codeCell;

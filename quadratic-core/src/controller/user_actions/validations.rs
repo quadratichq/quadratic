@@ -73,7 +73,7 @@ impl GridController {
         self.try_sheet(sheet_id).and_then(|sheet| {
             sheet
                 .validations
-                .get_validation_from_pos(pos, &sheet.a1_context())
+                .get_validation_from_pos(pos, &self.a1_context)
         })
     }
 
@@ -82,9 +82,9 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations
-            .get_validation_from_pos(Pos { x, y }, &sheet.a1_context())?;
+            .get_validation_from_pos(Pos { x, y }, &self.a1_context)?;
         match validation.rule {
-            ValidationRule::List(ref list) => list.to_drop_down(sheet),
+            ValidationRule::List(ref list) => list.to_drop_down(sheet, &self.a1_context),
             _ => None,
         }
     }
@@ -96,12 +96,15 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations
-            .get_validation_from_pos(pos, &sheet.a1_context())?;
+            .get_validation_from_pos(pos, &self.a1_context)?;
         if validation.error.style != ValidationStyle::Stop {
             return None;
         }
         let cell_value = CellValue::parse_from_str(input);
-        if validation.rule.validate(sheet, Some(&cell_value)) {
+        if validation
+            .rule
+            .validate(sheet, Some(&cell_value), &self.a1_context)
+        {
             None
         } else {
             Some(validation.id)
