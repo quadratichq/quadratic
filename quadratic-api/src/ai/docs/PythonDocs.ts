@@ -245,7 +245,7 @@ else:
 y
 \'\'\'
 
-Do NOT try to use try catch blocks unless the user asks for them. It is much more useful to simply return the output to the sheet and let the error surface in the console. 
+Do NOT try to use try-except blocks. It is much more useful to simply return the output to the sheet and let the error surface in the sheet and the console. 
 
 # Packages
 
