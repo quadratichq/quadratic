@@ -117,7 +117,8 @@
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
     "build:javascript:worker": "cd ./src/app/web-workers/javascriptWebWorker/worker/javascript/runner/ && node compileJavascriptRunner.mjs",
     "download:pyodide": "chmod +x ./download-pyodide.sh && ./download-pyodide.sh",
-    "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/"
+    "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/",
+    "clean": "npx rimraf node_modules dist build target"
   },
   "browserslist": {
     "production": [
