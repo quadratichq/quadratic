@@ -225,7 +225,8 @@ export const ApiSchemas = {
    * File checkpoints
    */
   '/v0/files/:uuid/checkpoints.GET.response': z.object({
-    name: FileSchema.shape.name,
+    file: FileSchema.pick({ name: true }),
+    team: TeamSchema.pick({ uuid: true }),
     checkpoints: z.array(
       z.object({
         dataUrl: z.string().url(),

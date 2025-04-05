@@ -172,11 +172,13 @@ export const apiClient = {
       downloadQuadraticFile(name, new Uint8Array(checkpointData));
     },
 
-    async duplicate(uuid: string, args: { isPrivate: boolean; checkpoint?: { dataUrl: string; version: string } }) {
+    async duplicate(
+      uuid: string,
+      args: { teamUuid: string; isPrivate: boolean; checkpoint?: { dataUrl: string; version: string } }
+    ) {
       // Get the file we want to duplicate
       const {
         file: { name, lastCheckpointDataUrl, lastCheckpointVersion, thumbnail },
-        team,
       } = await apiClient.files.get(uuid);
 
       // Get the file checkpoint we’re downloading (the latest if not specified)
@@ -195,7 +197,7 @@ export const apiClient = {
           version: checkpointVersion,
           contents,
         },
-        teamUuid: team.uuid,
+        teamUuid: args.teamUuid,
         isPrivate: args.isPrivate,
       });
 

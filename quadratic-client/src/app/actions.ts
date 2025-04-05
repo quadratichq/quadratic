@@ -1,8 +1,7 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
+import { getActionFileDelete } from '@/routes/api.files.$uuid';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import mixpanel from 'mixpanel-browser';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import type { SubmitFunction } from 'react-router-dom';
@@ -76,11 +75,15 @@ export const createNewFileAction = {
 
 export const duplicateFileAction = {
   label: 'Duplicate',
-  isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  async run({ fileUuid, submit }: { fileUuid: string; submit: SubmitFunction }) {
-    mixpanel.track('[Files].duplicateFile', { id: fileUuid });
-    const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
-    submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
+  // File must be publicly shared and the user has access, OR
+  // They're logged in and have access to the team its on
+  // If, for example, they've been invited to the file via email,
+  // they can't duplicate it because they don't have access to the team and its not public.
+  isAvailable: isAvailableBecauseLoggedIn,
+  async run({ fileUuid }: { fileUuid: string }) {
+    // We don't use `navigate` here because it crashes the app for some reason?
+    // But this works too
+    window.location.href = ROUTES.FILE_DUPLICATE(fileUuid);
   },
 };
 

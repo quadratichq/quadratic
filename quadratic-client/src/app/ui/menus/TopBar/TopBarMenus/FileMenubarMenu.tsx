@@ -35,7 +35,6 @@ import { useRecoilValue } from 'recoil';
 export const FileMenubarMenu = () => {
   const { name } = useFileContext();
   const submit = useSubmit();
-
   const { isAuthenticated } = useRootRouteLoaderData();
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
@@ -88,7 +87,7 @@ export const FileMenubarMenu = () => {
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid, submit })}>
+          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid })}>
             <FileCopyIcon />
             Duplicate
           </MenubarItem>

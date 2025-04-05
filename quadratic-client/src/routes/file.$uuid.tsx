@@ -17,8 +17,9 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import type { LoaderFunctionArgs } from 'react-router-dom';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
   Link,
   Outlet,
@@ -33,6 +34,9 @@ import { RecoilRoot } from 'recoil';
 import { Empty } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
+
+export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
+  currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
