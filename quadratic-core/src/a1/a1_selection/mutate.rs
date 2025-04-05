@@ -10,15 +10,15 @@ use super::A1Selection;
 
 impl A1Selection {
     /// Updates the cursor position to the position of the last range.
-    pub fn update_cursor(&mut self, context: &A1Context) {
+    pub fn update_cursor(&mut self, a1_context: &A1Context) {
         if let Some(last) = self.ranges.last() {
-            self.cursor = Self::cursor_pos_from_last_range(last, context);
+            self.cursor = Self::cursor_pos_from_last_range(last, a1_context);
         }
     }
 
     /// Potentially shrinks a selection after the removal of a column.
     /// A1Selection may have no ranges after the removal.
-    pub fn removed_column(&mut self, column: i64, context: &A1Context) -> bool {
+    pub fn removed_column(&mut self, column: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
@@ -33,14 +33,14 @@ impl A1Selection {
             }
         });
 
-        self.update_cursor(context);
+        self.update_cursor(a1_context);
 
         changed
     }
 
     /// Potentially shrinks a selection after the removal of a row.
     /// A1Selection may have no ranges after the removal.///
-    pub fn removed_row(&mut self, row: i64, context: &A1Context) -> bool {
+    pub fn removed_row(&mut self, row: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
@@ -55,33 +55,33 @@ impl A1Selection {
             }
         });
 
-        self.update_cursor(context);
+        self.update_cursor(a1_context);
 
         changed
     }
 
     /// Potentially shifts / grows a selection after the insertion of a column.
-    pub fn inserted_column(&mut self, column: i64, context: &A1Context) -> bool {
+    pub fn inserted_column(&mut self, column: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.iter_mut().for_each(|range| {
             changed |= range.inserted_column(column);
         });
 
-        self.update_cursor(context);
+        self.update_cursor(a1_context);
 
         changed
     }
 
     /// Potentially shifts / grows a selection after the insertion of a row.
-    pub fn inserted_row(&mut self, row: i64, context: &A1Context) -> bool {
+    pub fn inserted_row(&mut self, row: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.iter_mut().for_each(|range| {
             changed |= range.inserted_row(row);
         });
 
-        self.update_cursor(context);
+        self.update_cursor(a1_context);
 
         changed
     }

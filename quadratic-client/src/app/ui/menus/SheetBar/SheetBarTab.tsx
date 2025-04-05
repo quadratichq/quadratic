@@ -11,7 +11,7 @@ import { validateSheetName } from '@/app/quadratic-rust-client/quadratic_rust_cl
 import { SheetBarTabDropdownMenu } from '@/app/ui/menus/SheetBar/SheetBarTabDropdownMenu';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
-import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
+import { Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import type { PointerEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -250,12 +250,12 @@ function TabName({
       }}
       onInput={() => setErrorMessage(undefined)}
       onBlur={(event) => {
+        if (!contentEditableRef.current) return;
         if (Date.now() - isRenamingTimeRef.current < HACK_TO_NOT_BLUR_ON_RENAME) {
           contentEditableRef.current?.focus();
           return;
         }
-        const div = event.currentTarget;
-        if (!(div instanceof HTMLInputElement)) return false;
+        const div = contentEditableRef.current;
         const value = div.innerText.trim();
         if (!div) return false;
         if (!isRenaming) return;
@@ -282,25 +282,17 @@ function TabName({
       dangerouslySetInnerHTML={{ __html: sheet.name }}
     />
   ) : (
-    <Box
+    <div
       data-title={sheet.name}
-      sx={{
+      className={cn(
+        active && 'font-bold',
         // Little trick to bold the text without making the content of
         // the tab change in width
-        '&::after': {
-          content: 'attr(data-title)',
-          display: 'block',
-          fontWeight: '700',
-          height: '1px',
-          color: 'transparent',
-          overflow: 'hidden',
-          visibility: 'hidden',
-        },
-        ...(active ? { fontWeight: '700' } : {}),
-      }}
+        'after:visibility-hidden after:block after:h-[1px] after:overflow-hidden after:font-bold after:text-transparent after:content-[attr(data-title)]'
+      )}
     >
       {sheet.name}
-    </Box>
+    </div>
   );
 }
 

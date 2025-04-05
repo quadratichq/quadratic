@@ -16,8 +16,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Cache Pyodide
+        id: cache-pyodide
+        uses: useblacksmith/cache@v5
         with:
-          lfs: true
+          path: quadratic-client/public/pyodide
+          key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
+
+      - name: Download pyodide
+        if: steps.cache-pyodide.outputs.cache-hit != 'true'
+        run: |
+          npm run client:download:pyodide
 
       - name: Pull Pulumi ESC Environment Variables
         id: pull-pulumi-esc-env-vars
@@ -63,7 +73,6 @@ jobs:
           key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-
 
       - name: Build using Docker
         uses: docker/build-push-action@v6

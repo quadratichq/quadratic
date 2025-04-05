@@ -3,8 +3,10 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
+  aiAnalystWaitingOnMessageIndexAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
@@ -32,6 +34,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
@@ -155,7 +158,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
           return null;
         }
 
-        const isCurrentMessage = index === messages.length - 1;
+        const isCurrentMessage = index === messagesCount - 1;
 
         return (
           <div
@@ -172,8 +175,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 <AIAnalystUserMessageForm
                   initialContent={message.content}
                   initialContext={message.context}
-                  messageIndex={index}
                   textareaRef={textareaRef}
+                  messageIndex={index}
                 />
               ) : Array.isArray(message.content) ? (
                 message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
@@ -217,9 +220,11 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         );
       })}
 
-      {messages.length > 0 && !loading && <FeedbackButtons />}
+      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
 
-      {messages.length > 0 && !loading && <PromptSuggestions />}
+      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
+
+      <PDFImportLoading />
 
       <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
@@ -340,4 +345,14 @@ const PromptSuggestions = memo(() => {
       ))}
     </div>
   );
+});
+
+const PDFImportLoading = memo(() => {
+  const pdfImportLoading = useRecoilValue(aiAnalystPDFImportLoadingAtom);
+
+  if (!pdfImportLoading) {
+    return null;
+  }
+
+  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
 });

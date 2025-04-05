@@ -411,7 +411,9 @@ mod tests {
         );
 
         // code cells should rerun and send updated code cell
-        let code_cell = sheet.edit_code_value(sheet_pos.into()).unwrap();
+        let code_cell = sheet
+            .edit_code_value(sheet_pos.into(), gc.a1_context())
+            .unwrap();
         let render_code_cell = sheet.get_render_code_cell(sheet_pos.into()).unwrap();
         expect_js_call(
             "jsUpdateCodeCell",

@@ -337,7 +337,7 @@ export const Component = () => {
                   When using AI features your data is sent to our AI providers:
                 </p>
                 <ul className="mt-2 space-y-2">
-                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                  {['OpenAI', 'Anthropic', 'AWS Bedrock', 'Google Cloud'].map((item, i) => (
                     <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
                       <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
                       retention

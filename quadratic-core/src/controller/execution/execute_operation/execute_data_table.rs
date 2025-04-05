@@ -26,8 +26,7 @@ impl GridController {
     ) {
         if transaction.is_user_undo_redo() {
             let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
-            transaction
-                .add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
         }
     }
 
@@ -168,14 +167,14 @@ impl GridController {
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: old_value.unwrap_or(CellValue::Blank).into(),
+                },
                 Operation::SetDataTable {
                     sheet_pos,
                     data_table: old_data_table,
                     index: old_index,
-                },
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_value.unwrap_or(CellValue::Blank).into(),
                 },
             ];
 
@@ -1169,14 +1168,17 @@ impl GridController {
                 reverse_columns.push((index, old_column_header, Some(old_values)));
             }
 
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.data_table_mut(data_table_pos)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
+            let data_table = sheet.data_table_result(data_table_pos)?;
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             // delete table formats
             if let Some(formats_selection) =
-                A1Selection::from_rects(data_table_formats_rects, sheet_id)
+                A1Selection::from_rects(data_table_formats_rects, sheet_id, &self.a1_context)
             {
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                let data_table = sheet.data_table_mut(data_table_pos)?;
+
                 let data_table_reverse_format =
                     data_table
                         .formats
@@ -1191,6 +1193,9 @@ impl GridController {
                     });
                 }
             }
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
 
             // delete columns
             for index in columns.iter() {
@@ -1478,14 +1483,17 @@ impl GridController {
                 data_table_formats_rects.push(formats_rect);
             }
 
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.data_table_mut(data_table_pos)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
+            let data_table = sheet.data_table_result(data_table_pos)?;
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             // delete table formats
             if let Some(formats_selection) =
-                A1Selection::from_rects(data_table_formats_rects, sheet_id)
+                A1Selection::from_rects(data_table_formats_rects, sheet_id, &self.a1_context)
             {
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                let data_table = sheet.data_table_mut(data_table_pos)?;
+
                 let data_table_reverse_format =
                     data_table
                         .formats
@@ -1500,6 +1508,9 @@ impl GridController {
                     });
                 }
             }
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
 
             // sort and display buffer
             if data_table.display_buffer.is_some() {
@@ -1709,7 +1720,7 @@ mod tests {
             column_header::DataTableColumnHeader,
             data_table::sort::{DataTableSort, SortDirection},
         },
-        test_util::{
+        test_util::gc::{
             assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
             print_data_table, print_table,
         },
@@ -2308,7 +2319,7 @@ mod tests {
         assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values.clone());
 
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.edit_code_value(pos!(B9)).is_some());
+        assert!(sheet.edit_code_value(pos!(B9), &gc.a1_context).is_some());
     }
 
     #[test]
