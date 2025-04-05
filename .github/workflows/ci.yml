@@ -117,13 +117,13 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: quadratic-client/public/pyodide
-          key: pyodide-${{ hashFiles('quadratic-client/download_pyodide.sh') }}
+          key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
 
       - name: Download pyodide
         if: steps.cache-pyodide.outputs.cache-hit != 'true'
         run: |
-          chmod +x ./quadratic-client/download_pyodide.sh
-          ./quadratic-client/download_pyodide.sh
+          chmod +x ./quadratic-client/download-pyodide.sh
+          ./quadratic-client/download-pyodide.sh
 
       - name: Install build-essential, llvm, and clang
         run: |
