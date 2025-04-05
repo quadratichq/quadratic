@@ -1,3 +1,4 @@
+import type { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import {
   editorInteractionStateAnnotationStateAtom,
@@ -10,7 +11,7 @@ import type { Command, CommandPaletteListItemDynamicProps } from '@/app/ui/menus
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
 import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
-import columnRowCommandGroup from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
+import columnRowCommandGroups from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
 import connectionsCommandGroup from '@/app/ui/menus/CommandPalette/commands/Connections';
 import editCommandGroup from '@/app/ui/menus/CommandPalette/commands/Edit';
 import fileCommandGroup from '@/app/ui/menus/CommandPalette/commands/File';
@@ -70,7 +71,7 @@ export const CommandPalette = () => {
       sheetsCommandGroup,
       helpCommandGroup,
       codeCommandGroup,
-      columnRowCommandGroup,
+      ...(Array.isArray(columnRowCommandGroups) ? columnRowCommandGroups : [columnRowCommandGroups]),
       dataTableCommandGroup,
       validationCommandGroup,
     ],
@@ -104,7 +105,7 @@ export const CommandPalette = () => {
       <CommandList>
         {commandGroups.map(({ heading, commands }) => {
           let filteredCommands: Array<Command & { fuzzysortResult: any }> = [];
-          commands.forEach((commandOrAction, i) => {
+          commands.forEach((commandOrAction: Command | string, i: number) => {
             // Right now, we are in the process of centralizing all actions.
             // That means for each command palette item will either be:
             // 1) a `Command` type (the OLD way)
@@ -114,20 +115,24 @@ export const CommandPalette = () => {
             // just expect that they'll all be `Action` types.
             let command;
             if (typeof commandOrAction === 'string') {
-              const actionSpec = defaultActionSpec[commandOrAction];
+              const actionSpec = defaultActionSpec[commandOrAction as keyof typeof defaultActionSpec];
               command = {
                 ...actionSpec,
                 label: actionSpec.labelVerbose ? actionSpec.labelVerbose : actionSpec.label,
                 Component: (props: CommandPaletteListItemDynamicProps) => (
                   <CommandPaletteListItem
                     {...props}
-                    // This works fine for `run` functions that don't require anything
-                    // But how will we handle the case where we want some actions require
-                    // different args to the `run` function?
-                    // @ts-expect-error
-                    action={actionSpec.run}
+                    action={() => {
+                      if (actionSpec.run.length === 0) {
+                        // @ts-expect-error - Some actions expect args but can run without them
+                        actionSpec.run();
+                      } else {
+                        // @ts-expect-error - Pass empty object as args if args are required
+                        actionSpec.run({});
+                      }
+                    }}
                     icon={'Icon' in actionSpec && actionSpec.Icon ? <actionSpec.Icon /> : null}
-                    shortcut={keyboardShortcutEnumToDisplay(commandOrAction)}
+                    shortcut={keyboardShortcutEnumToDisplay(commandOrAction as Action)}
                   />
                 ),
               };
