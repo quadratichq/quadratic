@@ -44,17 +44,6 @@ export const router = createBrowserRouter(
          */}
 
         {/**
-         * --- Resource routes
-         * These are user-accessible via the URL bar, but have no UI.
-         * Putting these outside the nested tree lets you hit them directly
-         * without having to load other data
-         */}
-        <Route path="education/enroll" lazy={() => import('./routes/education.enroll')} />
-        <Route path="files/create" lazy={() => import('./routes/files.create')} />
-        <Route path="teams/:teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
-        <Route path="team/*" lazy={() => import('./routes/team.$')} />
-
-        {/**
          * --- Client-side API routes
          * These are used internally by fetchers. They have no UI.
          * They don’t really need to be protected, but we do it anyway to
@@ -71,8 +60,19 @@ export const router = createBrowserRouter(
         </Route>
 
         {/**
+         * --- User URL routes
+         * These are user-accessible via the URL bar, but have no UI.
+         * Putting these outside the dashboard route `/` lets you hit them directly
+         * without having to run the dashboard loader (which these don't need).
+         */}
+        <Route path="education/enroll" lazy={() => import('./routes/education.enroll')} />
+        <Route path="files/create" lazy={() => import('./routes/files.create')} />
+        <Route path="teams/:teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
+        <Route path="team/*" lazy={() => import('./routes/team.$')} />
+
+        {/**
          * --- UI routes
-         * All the user-facing routes.
+         * All the routes which render UI of some kind or another.
          */}
         <Route path="file/:uuid/history" lazy={() => import('./routes/file.$uuid.history')} />
         <Route path="file/:uuid/duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} />
