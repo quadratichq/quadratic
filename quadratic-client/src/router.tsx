@@ -38,14 +38,9 @@ export const router = createBrowserRouter(
         {/**
          * ----------------------------------------------------------------
          * Protected routes (auth required)
-         * ----------------------------------------------------------------
-         *
          * Note: each lazy route needs to be protected with `requireUser()`
          * in its respective loader.
-         *
-         * Also: they use lazy, which guarantees that the root loaders
-         * will run before we fetch and run any loaders in these routes.
-         * Which we need, because it ensures we get the active team
+         * ----------------------------------------------------------------
          */}
 
         {/**
