@@ -10,6 +10,7 @@ import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import mixpanel from 'mixpanel-browser';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';

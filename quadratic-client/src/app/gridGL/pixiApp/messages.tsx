@@ -1,4 +1,5 @@
 import { DOCUMENTATION_NEGATIVE_OFFSETS } from '@/shared/constants/urls';
+import type { JSX } from 'react';
 
 export const messages: Record<string, JSX.Element | string> = {
   negative_offsets: (

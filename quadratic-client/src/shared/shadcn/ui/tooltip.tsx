@@ -1,6 +1,7 @@
 import { cn } from '@/shared/shadcn/utils';
 import type { PopoverContentProps } from '@radix-ui/react-popover';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import type { JSX } from 'react';
 import * as React from 'react';
 
 const TooltipProvider = TooltipPrimitive.Provider;

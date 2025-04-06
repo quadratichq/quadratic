@@ -13,6 +13,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import WarningIcon from '@mui/icons-material/Warning';
 import { IconButton, Tooltip } from '@mui/material';
 import type { Rectangle } from 'pixi.js';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 

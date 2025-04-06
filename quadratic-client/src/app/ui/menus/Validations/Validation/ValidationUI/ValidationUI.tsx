@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Close } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import type { FocusEvent } from 'react';
+import type { FocusEvent, JSX } from 'react';
 import { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 interface CheckboxProps {

@@ -21,6 +21,7 @@ import type { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/u
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { JSX } from 'react';
 import type { SetterOrUpdater } from 'recoil';
 
 interface Input {

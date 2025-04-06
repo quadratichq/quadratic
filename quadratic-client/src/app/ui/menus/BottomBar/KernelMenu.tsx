@@ -27,6 +27,7 @@ import {
 import { Tooltip, TooltipContent } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 

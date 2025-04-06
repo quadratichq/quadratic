@@ -12,7 +12,7 @@ import { SheetBarTabDropdownMenu } from '@/app/ui/menus/SheetBar/SheetBarTabDrop
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
 import { Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
-import type { PointerEvent } from 'react';
+import type { JSX, PointerEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';

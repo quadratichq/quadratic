@@ -2,6 +2,7 @@ import type { GenericAction } from '@/app/actions';
 import type { Action } from '@/app/actions/actions';
 import { CommandItem, CommandShortcut } from '@/shared/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
+import type { JSX } from 'react';
 
 export type CommandGroup = {
   heading: string;
