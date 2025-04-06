@@ -26,7 +26,7 @@ interface CommandDialogProps {
   commandProps: React.ComponentPropsWithoutRef<typeof Command>;
   overlayProps?: React.ComponentPropsWithoutRef<typeof DialogOverlay>;
 }
-interface CommandDialogProps extends DialogProps {}
+interface CommandDialogProps extends DialogProps { }
 
 const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: CommandDialogProps) => {
   return (
@@ -72,10 +72,6 @@ const CommandList = React.forwardRef<
   <CommandPrimitive.List
     ref={ref}
     className={cn('max-h-[350px] overflow-y-auto overflow-x-hidden', className)}
-    onPointerDown={(e) => {
-      // Prevent the dialog from closing when interacting with the scrollbar
-      e.stopPropagation();
-    }}
     {...props}
   />
 ));
@@ -143,5 +139,5 @@ export {
   CommandItem,
   CommandList,
   CommandSeparator,
-  CommandShortcut,
+  CommandShortcut
 };

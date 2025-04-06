@@ -104,23 +104,10 @@ export default function CellTypeMenu() {
     <CommandDialog
       dialogProps={{ open: true, onOpenChange: close }}
       commandProps={{}}
-      overlayProps={{
-        onPointerDown: (e) => {
-          if (e.target === e.currentTarget) {
-            e.preventDefault();
-            e.stopPropagation();
-            close();
-          }
-        },
-      }}
+      overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
-      <CommandList
-        id="CellTypeMenuID"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-        }}
-      >
+      <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Languages">
           {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
