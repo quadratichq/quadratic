@@ -494,6 +494,10 @@ export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
 };
 
+export const PDFIcon: IconComponent = (props) => {
+  return <Icon {...props}>picture_as_pdf</Icon>;
+};
+
 export const PercentIcon: IconComponent = (props) => {
   return <Icon {...props}>percent</Icon>;
 };

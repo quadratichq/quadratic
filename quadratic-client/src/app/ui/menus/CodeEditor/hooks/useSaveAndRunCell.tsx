@@ -80,7 +80,6 @@ export const useSaveAndRunCell = () => {
                 show_columns: false,
               },
             });
-            console.log('adding unsaved codeCell to client');
           }
         }
         mixpanel.track('[CodeEditor].cellRun', {
