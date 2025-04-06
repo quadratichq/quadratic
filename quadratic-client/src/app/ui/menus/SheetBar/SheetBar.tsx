@@ -11,7 +11,7 @@ import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import mixpanel from 'mixpanel-browser';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 
@@ -20,7 +20,7 @@ const HOVER_SCROLL_AMOUNT = 5;
 const SCROLLING_INTERVAL = 17;
 const ARROW_REPEAT_INTERVAL = 17;
 
-export const SheetBar = (): JSX.Element => {
+export const SheetBar = memo((): JSX.Element => {
   // used to trigger state change (eg, when sheets change)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
@@ -51,51 +51,52 @@ export const SheetBar = (): JSX.Element => {
     };
   }, []);
 
-  // handle disabling left arrow and right arrow
-  const [sheetTabs, setSheetTabs] = useState<HTMLDivElement | undefined>();
-  const [leftArrow, setLeftArrow] = useState<HTMLButtonElement | undefined>();
-  const [rightArrow, setRightArrow] = useState<HTMLButtonElement | undefined>();
-  const leftRef = useCallback(
-    (node: HTMLButtonElement) => {
-      setLeftArrow(node);
-      if (!sheetTabs || !node) return;
-      const hide = sheetTabs.scrollLeft === 0 || sheetTabs.offsetWidth === sheetTabs.scrollWidth;
-      node.disabled = hide;
-    },
-    [sheetTabs]
-  );
+  useEffect(() => {
+    if (activeSheet !== sheets.current) {
+      sheets.current = activeSheet;
+    }
+  }, [activeSheet]);
 
-  const rightRef = useCallback(
-    (node: HTMLButtonElement) => {
-      setRightArrow(node);
-      if (!sheetTabs || !node) return;
-      const hide =
-        sheetTabs.offsetWidth === sheetTabs.scrollWidth ||
-        Math.round(sheetTabs.scrollLeft) === Math.round(sheetTabs.scrollWidth - sheetTabs.offsetWidth);
-      node.disabled = hide;
-    },
-    [sheetTabs]
-  );
-  const sheetTabsRef = useCallback(
-    (node: HTMLDivElement) => {
-      setSheetTabs(node);
-      if (!node) return;
-      node.addEventListener('scroll', () => {
-        if (leftArrow) {
-          const hide = node.scrollLeft === 0 || node.offsetWidth === node.scrollWidth;
-          leftArrow.disabled = hide;
-        }
-        if (rightArrow) {
-          const hide =
-            node.offsetWidth === node.scrollWidth ||
-            Math.round(node.scrollLeft) === Math.round(node.scrollWidth - node.offsetWidth);
-          rightArrow.disabled = hide;
-        }
-      });
-    },
-    [leftArrow, rightArrow]
-  );
+  // handle disabling left arrow and right arrow
   const sheetBarRef = useRef<HTMLDivElement>(null);
+  const sheetTabRef = useRef<HTMLDivElement | null>(null);
+  const leftArrowRef = useRef<HTMLButtonElement | null>(null);
+  const rightArrowRef = useRef<HTMLButtonElement | null>(null);
+
+  const leftRef = useCallback((node: HTMLButtonElement) => {
+    leftArrowRef.current = node;
+    if (!sheetTabRef.current || !node) return;
+    const hide =
+      sheetTabRef.current.scrollLeft === 0 || sheetTabRef.current.offsetWidth === sheetTabRef.current.scrollWidth;
+    node.disabled = hide;
+  }, []);
+
+  const rightRef = useCallback((node: HTMLButtonElement) => {
+    rightArrowRef.current = node;
+    if (!sheetTabRef.current || !node) return;
+    const hide =
+      sheetTabRef.current.offsetWidth === sheetTabRef.current.scrollWidth ||
+      Math.round(sheetTabRef.current.scrollLeft) ===
+        Math.round(sheetTabRef.current.scrollWidth - sheetTabRef.current.offsetWidth);
+    node.disabled = hide;
+  }, []);
+
+  const sheetTabsRef = useCallback((node: HTMLDivElement) => {
+    sheetTabRef.current = node;
+    if (!node) return;
+    node.addEventListener('scroll', () => {
+      if (leftArrowRef.current) {
+        const hide = node.scrollLeft === 0 || node.offsetWidth === node.scrollWidth;
+        leftArrowRef.current.disabled = hide;
+      }
+      if (rightArrowRef.current) {
+        const hide =
+          node.offsetWidth === node.scrollWidth ||
+          Math.round(node.scrollLeft) === Math.round(node.scrollWidth - node.offsetWidth);
+        rightArrowRef.current.disabled = hide;
+      }
+    });
+  }, []);
 
   // return tab to original spot when pressing Escape
   useEffect(() => {
@@ -159,16 +160,9 @@ export const SheetBar = (): JSX.Element => {
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
       const { event, sheet } = options;
 
-      if (!sheetTabs) return;
+      if (!sheetTabRef.current) return;
 
-      setActiveSheet((prevState: string) => {
-        if (prevState !== sheet.id) {
-          sheets.current = sheet.id;
-          setActiveSheet(sheet.id);
-          return sheet.id;
-        }
-        return prevState;
-      });
+      setActiveSheet(sheet.id);
 
       // don't drag on context menu via right click or ctrl+click
       if (event.button === 2 || (event.ctrlKey === true && event.button === 0)) return;
@@ -186,7 +180,7 @@ export const SheetBar = (): JSX.Element => {
           tab,
           offset: event.clientX - rect.left,
           id: sheet.id,
-          scrollWidth: sheetTabs.scrollWidth,
+          scrollWidth: sheetTabRef.current.scrollWidth,
           originalOrder: sheet.order,
           originalOrderIndex,
           actualOrderIndex: originalOrderIndex,
@@ -200,13 +194,13 @@ export const SheetBar = (): JSX.Element => {
       }
       focusGrid();
     },
-    [getOrderIndex, sheetTabs, hasPermission]
+    [getOrderIndex, hasPermission]
   );
 
   const handlePointerMove = useCallback(
     (event: PointerEvent) => {
       const tab = down.current?.tab;
-      if (!tab || !sheetTabs) return;
+      if (!tab || !sheetTabRef.current) return;
 
       // clears scrolling interval
       const clearScrollingInterval = () => {
@@ -218,8 +212,8 @@ export const SheetBar = (): JSX.Element => {
 
       // positions dragging div
       const positionTab = () => {
-        if (!down.current) return;
-        const left = event.clientX - tab.offsetLeft + sheetTabs.scrollLeft - down.current.offset;
+        if (!down.current || !sheetTabRef.current) return;
+        const left = event.clientX - tab.offsetLeft + sheetTabRef.current.scrollLeft - down.current.offset;
         tab.style.transform = `translateX(${left}px)`;
       };
 
@@ -275,21 +269,24 @@ export const SheetBar = (): JSX.Element => {
         checkPosition(event.clientX);
 
         // when dragging, scroll the sheets div if necessary
-        if (sheetTabs.offsetWidth !== down.current.scrollWidth) {
-          const sheetTabsLeft = sheetTabs.getBoundingClientRect().left;
+        if (sheetTabRef.current.offsetWidth !== down.current.scrollWidth) {
+          const sheetTabsLeft = sheetTabRef.current.getBoundingClientRect().left;
           // scroll to the right if necessary
           if (
-            event.clientX > sheetTabsLeft + sheetTabs.offsetWidth &&
-            sheetTabs.scrollLeft < down.current.scrollWidth - sheetTabs.offsetWidth
+            event.clientX > sheetTabsLeft + sheetTabRef.current.offsetWidth &&
+            sheetTabRef.current.scrollLeft < down.current.scrollWidth - sheetTabRef.current.offsetWidth
           ) {
             if (scrolling.current) return;
             clearScrollingInterval();
             scrolling.current = window.setInterval(() => {
-              if (!down.current) return;
-              if (sheetTabs.scrollLeft < down.current.scrollWidth - sheetTabs.offsetWidth + tab.offsetWidth) {
-                sheetTabs.scrollLeft += HOVER_SCROLL_AMOUNT;
+              if (!down.current || !sheetTabRef.current) return;
+              if (
+                sheetTabRef.current.scrollLeft <
+                down.current.scrollWidth - sheetTabRef.current.offsetWidth + tab.offsetWidth
+              ) {
+                sheetTabRef.current.scrollLeft += HOVER_SCROLL_AMOUNT;
               } else {
-                sheetTabs.scrollLeft = down.current.scrollWidth - sheetTabs.offsetWidth;
+                sheetTabRef.current.scrollLeft = down.current.scrollWidth - sheetTabRef.current.offsetWidth;
                 clearScrollingInterval();
               }
               checkPosition(event.clientX);
@@ -298,14 +295,14 @@ export const SheetBar = (): JSX.Element => {
           }
 
           // scroll to the left
-          else if (event.clientX < sheetTabsLeft && sheetTabs.scrollLeft !== 0) {
+          else if (event.clientX < sheetTabsLeft && sheetTabRef.current.scrollLeft !== 0) {
             clearScrollingInterval();
             scrolling.current = window.setInterval(() => {
-              if (!down.current) return;
-              if (sheetTabs.scrollLeft !== 0) {
-                sheetTabs.scrollLeft -= HOVER_SCROLL_AMOUNT;
+              if (!down.current || !sheetTabRef.current) return;
+              if (sheetTabRef.current.scrollLeft !== 0) {
+                sheetTabRef.current.scrollLeft -= HOVER_SCROLL_AMOUNT;
               } else {
-                sheetTabs.scrollLeft = 0;
+                sheetTabRef.current.scrollLeft = 0;
                 clearScrollingInterval();
               }
               checkPosition(event.clientX);
@@ -317,25 +314,23 @@ export const SheetBar = (): JSX.Element => {
         }
       }
     },
-    [getOrderIndex, sheetTabs]
+    [getOrderIndex]
   );
 
   const scrollInterval = useRef<number | undefined>(undefined);
-  const handleArrowDown = useCallback(
-    (direction: number) => {
-      if (scrollInterval.current) {
-        window.clearInterval(scrollInterval.current);
-      }
-      if (sheetTabs) {
-        sheetTabs.scrollLeft += ARROW_SCROLL_AMOUNT * direction;
-        scrollInterval.current = window.setInterval(
-          () => (sheetTabs.scrollLeft += ARROW_SCROLL_AMOUNT * direction),
-          ARROW_REPEAT_INTERVAL
-        );
-      }
-    },
-    [sheetTabs]
-  );
+  const handleArrowDown = useCallback((direction: number) => {
+    if (scrollInterval.current) {
+      window.clearInterval(scrollInterval.current);
+    }
+    if (sheetTabRef.current) {
+      sheetTabRef.current.scrollLeft += ARROW_SCROLL_AMOUNT * direction;
+      scrollInterval.current = window.setInterval(() => {
+        if (sheetTabRef.current) {
+          sheetTabRef.current.scrollLeft += ARROW_SCROLL_AMOUNT * direction;
+        }
+      }, ARROW_REPEAT_INTERVAL);
+    }
+  }, []);
   const handleArrowUp = useCallback(() => {
     if (scrollInterval.current) {
       window.clearInterval(scrollInterval.current);
@@ -422,9 +417,8 @@ export const SheetBar = (): JSX.Element => {
         ref={sheetTabsRef}
         className="-ml-[1px] flex flex-shrink flex-grow flex-row overflow-hidden pt-[1px] shadow-[inset_0_1px_0_hsl(var(--border))]"
         onWheel={(e) => {
-          if (!sheetTabs) return;
-          if (e.deltaX) {
-            sheetTabs.scrollLeft += e.deltaX;
+          if (sheetTabRef.current && e.deltaX) {
+            sheetTabRef.current.scrollLeft += e.deltaX;
           }
         }}
       >
@@ -462,4 +456,4 @@ export const SheetBar = (): JSX.Element => {
       </div>
     </div>
   );
-};
+});
