@@ -20,6 +20,6 @@
     "bench:watch:bench": "./benches.sh bench",
     "bench:watch:src": "./benches.sh src",
     "docs": "cargo doc --no-deps --open --document-private-items",
-    "clean": "npx rimraf node_modules dist build target && cargo clean"
+    "clean": "cargo clean && npx rimraf node_modules dist build target"
   }
 }
