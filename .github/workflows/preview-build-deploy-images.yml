@@ -190,8 +190,8 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          cache-from: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:cache-pr-${{ github.event.pull_request.number }}
-          cache-to: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:cache-pr-${{ github.event.pull_request.number }},mode=max
+          cache-from: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:cache
+          cache-to: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:cache,mode=max
 
       - name: Find Build & Deploy Images Comment
         if: failure()
