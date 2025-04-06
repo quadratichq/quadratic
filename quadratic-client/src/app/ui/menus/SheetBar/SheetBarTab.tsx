@@ -24,7 +24,7 @@ const SHEET_NAME_MAX_LENGTH = 50;
 // much rendering of components.
 const HACK_TO_NOT_BLUR_ON_RENAME = 250;
 
-interface Props {
+interface SheetBarTabProps {
   sheet: Sheet;
   order: string;
   active: boolean;
@@ -33,12 +33,12 @@ interface Props {
   clearRename: () => void;
 }
 
-export const SheetBarTab = (props: Props): JSX.Element => {
-  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
+export const SheetBarTab = (props: SheetBarTabProps): JSX.Element => {
   const { sheet, order, active, onPointerDown, forceRename, clearRename } = props;
+
+  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [isRenaming, setIsRenaming] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
@@ -49,17 +49,19 @@ export const SheetBarTab = (props: Props): JSX.Element => {
     }
   }, [forceRename]);
 
-  if (containerRef.current) {
-    containerRef.current.style.order = order;
-  }
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    setDiv(node);
+  }, []);
+
   return (
     <div
+      ref={ref}
       className={cn(
         'group relative hover:bg-accent',
         active &&
           'sticky left-0 right-0 z-[1] -mt-[1px] !bg-background shadow-[inset_1px_0_0_hsl(var(--border)),inset_-1px_0_0_hsl(var(--border))]'
       )}
-      ref={containerRef}
       style={{
         order,
       }}
@@ -100,7 +102,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             />
           )}
         </div>
-        <Popper open={!!errorMessage} anchorEl={containerRef.current} transition>
+        <Popper open={!!errorMessage} anchorEl={div} transition>
           {({ TransitionProps }) => (
             <Fade {...TransitionProps} timeout={350}>
               <Paper
@@ -170,12 +172,12 @@ function TabName({
   setIsRenaming,
   sheet,
 }: {
-  active: Props['active'];
-  clearRename: Props['clearRename'];
+  active: SheetBarTabProps['active'];
+  clearRename: SheetBarTabProps['clearRename'];
   isRenaming: boolean;
   setIsRenaming: React.Dispatch<React.SetStateAction<boolean>>;
   setErrorMessage: React.Dispatch<React.SetStateAction<string | undefined>>;
-  sheet: Props['sheet'];
+  sheet: SheetBarTabProps['sheet'];
 }) {
   const contentEditableRef = useRef<HTMLDivElement | null>(null);
   const isRenamingTimeRef = useRef(0);
