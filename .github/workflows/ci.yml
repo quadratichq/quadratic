@@ -113,14 +113,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Cache Pyodide
-        id: cache-pyodide
         uses: useblacksmith/cache@v5
         with:
           path: quadratic-client/public/pyodide
           key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
 
-      - name: Download pyodide
-        if: steps.cache-pyodide.outputs.cache-hit != 'true'
+      - name: Download & Verify Pyodide
         run: |
           npm run client:download:pyodide
 
