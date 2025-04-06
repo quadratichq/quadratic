@@ -24,7 +24,7 @@ jobs:
           path: quadratic-client/public/pyodide
           key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
 
-      - name: Download & Verify pyodide
+      - name: Download & Verify Pyodide
         run: |
           npm run client:download:pyodide
 

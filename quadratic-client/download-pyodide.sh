@@ -7,13 +7,14 @@ PYODIDE_VERSION="0.27.5"
 PYODIDE_URL="https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
 EXPECTED_TARBALL_CHECKSUM="5a866e8f40d5ef46fb1258b4488ac3edc177c7e7884ad042426bbdfb2a56dd64"
 TARGET_DIR="public"
-EXPECTED_DIRECTORY_CHECKSUM="0185013a7704f5e48893ebca543c7c5803c1a421a0692c1f0a4b895f526afcc8"
+EXPECTED_DIRECTORY_CHECKSUM="6dda678a745e53e4d8ec2b069c8dcee9cc521e9ab5b2b25c632e951ec2875cca"
 
 # Function to calculate pyodide directory hash
 calculate_pyodide_directory_hash() {
     tar --sort=name \
-        --mtime='1970-01-01 00:00:00' \
-        --owner=0 --group=0 --numeric-owner \
+        --owner=root --group=root \
+        --mode=644 \
+        --mtime='2024-01-01 00:00:00' \
         -cf - -C "$TARGET_DIR" pyodide | sha256sum | cut -d' ' -f1
 }
 
@@ -28,10 +29,8 @@ if [ -d "$TARGET_DIR/pyodide" ]; then
     echo "Error: Checksum mismatch for existing pyodide directory" >&2
     echo "Expected: $EXPECTED_DIRECTORY_CHECKSUM" >&2
     echo "Got:      $computed_checksum" >&2
+    rm -rf "$TARGET_DIR/pyodide"
 fi
-
-# Cleanup existing files
-rm -rf "$TARGET_DIR/pyodide"
 
 # Download pyodide tarball
 echo "Downloading pyodide-${PYODIDE_VERSION}.tar.bz2..."
@@ -60,11 +59,14 @@ echo "✓ Tarball checksum verified"
 
 # Unpack pyodide tarball to the target directory
 echo "Unpacking to $TARGET_DIR folder..."
-if ! tar -xjf "./pyodide-${PYODIDE_VERSION}.tar.bz2" -C "$TARGET_DIR"; then
+if ! tar -xjf "./pyodide-${PYODIDE_VERSION}.tar.bz2" --no-same-owner --no-same-permissions -C "$TARGET_DIR"; then
     echo "Error: Failed to extract archive" >&2
     rm -f "./pyodide-${PYODIDE_VERSION}.tar.bz2"
     exit 1
 fi
+
+# Set consistent permissions
+chmod -R u=rwX,go=rX "$TARGET_DIR/pyodide"
 
 # Cleanup pyodide tarball
 echo "Cleaning up downloaded file..."
