@@ -27,7 +27,7 @@ pub fn print_sheet(sheet: &Sheet) {
     if let GridBounds::NonEmpty(rect) = bounds {
         print_table_sheet(sheet, rect, true);
     } else {
-        println!("Sheet is empty");
+        println!("\n{}\nSheet is empty", sheet.name);
     }
 }
 

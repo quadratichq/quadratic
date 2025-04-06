@@ -134,7 +134,7 @@ pub fn assert_table_count(gc: &GridController, sheet_id: SheetId, count: usize) 
         sheet.data_tables.len(),
         count,
         "Data table count at {} is not {}",
-        sheet_id,
+        sheet.name,
         count
     );
 }

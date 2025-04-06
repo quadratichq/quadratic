@@ -74,8 +74,6 @@ pub enum Operation {
         from: Pos,
         to: Pos,
     },
-    /// Moves the location of the data table to a new position. This op does not
-    /// move the corresponding CellValue.
     MoveDataTable {
         sheet_id: SheetId,
         from: Pos,

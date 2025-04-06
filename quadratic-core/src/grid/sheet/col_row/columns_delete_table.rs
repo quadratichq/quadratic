@@ -99,36 +99,94 @@ impl Sheet {
         columns: &Vec<i64>,
     ) {
         let mut dt_to_delete = Vec::new();
+
+        // we need to shift the anchor if the first column is deleted
+        let mut dt_to_shift_anchor = Vec::new();
+
         for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
             if dt.readonly || dt.spill_error {
                 continue;
             }
             let output_rect = dt.output_rect(*pos, false);
             let mut old_dt: Option<DataTable> = None;
+            let mut new_x = None;
             for col in columns {
                 if *col >= output_rect.min.x && *col <= output_rect.max.x {
+                    if *col == output_rect.min.x {
+                        if let Some(first_surviving_col) =
+                            output_rect.x_range().find(|col| !columns.contains(col))
+                        {
+                            new_x = Some(first_surviving_col);
+                        } else {
+                            // this should never happen
+                            dbgjs!(
+                                "Unexpected error in check_delete_tables_columns: no surviving column found"
+                            );
+                        }
+                    };
                     // delete the column
                     if old_dt.is_none() {
                         old_dt = Some(dt.clone());
                     }
-                    let _ = dt.delete_column(*col as usize);
+                    // we use the entire table as the reverse operation (which
+                    // is not super efficient, but easiest given the current
+                    // design. if we remove the anchors, we can use the
+                    // DataTableInsertColumn op instead)
+                    let col_to_delete = *col - output_rect.min.x;
+
+                    // mark sort dirty if the column is sorted
+                    if dt.is_column_sorted(col_to_delete as usize) {
+                        dt.sort_dirty = true;
+                    }
+                    let _ = dt.delete_column(col_to_delete as usize);
                 }
             }
-            dt_to_delete.push((*pos, old_dt, index));
+            if let Some(new_x) = new_x {
+                dt_to_shift_anchor.push((*pos, old_dt, index, new_x));
+            } else {
+                dt_to_delete.push((*pos, old_dt, index));
+            }
         }
+
+        // create undo and signal client of changes
         for (pos, old_dt, index) in dt_to_delete {
-            if let (Some(old_dt), Some(cell_value)) = (old_dt, self.cell_value(pos)) {
+            if let (Some(old_dt), Some(_cell_value)) = (old_dt, self.cell_value(pos)) {
                 transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_sheet_rect(
                     old_dt.output_rect(pos, false).to_sheet_rect(self.id),
                 );
                 transaction
                     .reverse_operations
-                    .push(Operation::AddDataTable {
+                    .push(Operation::SetDataTable {
                         sheet_pos: pos.to_sheet_pos(self.id),
-                        data_table: old_dt,
-                        cell_value,
-                        index: Some(index),
+                        data_table: Some(old_dt),
+                        index,
+                    });
+            }
+        }
+
+        // ensure anchor cell survives by shifting it to the right of the deleted columns
+        for (pos, old_dt, index, first_surviving_col) in dt_to_shift_anchor {
+            if let (Some(old_dt), Some(_cell_value)) = (old_dt, self.cell_value(pos)) {
+                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                transaction.add_dirty_hashes_from_sheet_rect(
+                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+                );
+                let new_pos = Pos::new(first_surviving_col, pos.y);
+                self.move_cell_value(pos, new_pos);
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetDataTable {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        data_table: Some(old_dt),
+                        index,
+                    });
+                transaction
+                    .reverse_operations
+                    .push(Operation::MoveDataTable {
+                        sheet_id: self.id,
+                        from: new_pos,
+                        to: pos,
                     });
             }
         }
@@ -147,11 +205,11 @@ impl Sheet {
             // check how many deleted columns are before the table
             let mut shift_table = 0;
             for col in columns.iter() {
-                if output_rect.x_range().contains(col) {
-                    break;
+                if *col < output_rect.min.x {
+                    shift_table += 1;
                 }
-                shift_table += 1;
             }
+            dbg!(&shift_table);
             if shift_table > 0 {
                 transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                 let adjusted_pos = Pos {
@@ -191,214 +249,6 @@ impl Sheet {
             self.data_tables.insert(new_pos, old_dt);
         }
     }
-
-    // pub(crate) fn check_delete_tables_column2(
-    //     &mut self,
-    //     transaction: &mut PendingTransaction,
-    //     column: i64,
-    // ) {
-    //     // adjust the data table anchor cell so it's not deleted when the column
-    //     // is deleted
-    //     let mut anchor_to_shift_right = Vec::new();
-
-    //     let mut set_dirty_hash_rects = Vec::new();
-
-    //     for (index, (pos, table)) in self.data_tables.iter_mut().enumerate() {
-    //         let output_rect = table.output_rect(*pos, false);
-
-    //         // if the table is greater than the deletion range, then nothing
-    //         // more needs to be done
-    //         if column > output_rect.max.x {
-    //             continue;
-    //         }
-
-    //         if !table.readonly {
-    //             // the data table may need to remove columns
-    //             let mut new_dt = table.clone();
-    //             let mut deleted_count = 0; // Track number of columns already deleted
-
-    //             for column in columns {
-    //                 // Adjust the column index based on previously deleted columns
-    //                 let adjusted_column = column - output_rect.min.x - deleted_count;
-
-    //                 // ensure we're not outside the table's bounds
-    //                 if adjusted_column < 0 || adjusted_column >= table.width() as i64 {
-    //                     continue;
-    //                 }
-
-    //                 let column_index =
-    //                     new_dt.get_column_index_from_display_index(adjusted_column as u32, true);
-    //                 if new_dt.is_column_sorted(column_index as usize) {
-    //                     new_dt.sort_dirty = true;
-    //                 }
-
-    //                 // add reverse ops for formats and borders, if necessary
-    //                 // (note, formats and borders are 1-indexed)
-    //                 if let Some(reverse_format_updates) =
-    //                     new_dt.formats.copy_column(column_index as i64 + 1)
-    //                 {
-    //                     if reverse_format_updates.has_fills() {
-    //                         transaction.add_fill_cells(self.id);
-    //                     }
-    //                     transaction
-    //                         .reverse_operations
-    //                         .push(Operation::DataTableFormats {
-    //                             sheet_pos: pos.to_sheet_pos(self.id),
-    //                             formats: reverse_format_updates,
-    //                         });
-    //                 }
-    //                 if let Some(reverse_borders_updates) =
-    //                     new_dt.borders.copy_column(column_index as i64 + 1)
-    //                 {
-    //                     transaction
-    //                         .reverse_operations
-    //                         .push(Operation::DataTableBorders {
-    //                             sheet_pos: pos.to_sheet_pos(self.id),
-    //                             borders: reverse_borders_updates,
-    //                         });
-    //                 }
-
-    //                 if let Err(e) = new_dt.delete_column_sorted(column_index as usize) {
-    //                     dbgjs!(format!(
-    //                         "Error in check_delete_tables_columns: cannot delete column\n{:?}",
-    //                         e
-    //                     ));
-    //                     continue;
-    //                 }
-    //                 deleted_count += 1;
-    //             }
-
-    //             // if the first column is inside the deletion range, then we need to
-    //             // move the anchor cell to the first available column (display
-    //             // column doesn't matter here since this is absolute columns
-    //             // compared to the grid)
-    //             let mut new_pos = *pos;
-    //             if columns.contains(&output_rect.min.x) {
-    //                 if let Some(change_column) = (output_rect.min.x + 1..=output_rect.max.x)
-    //                     .find(|col| !columns.contains(col))
-    //                 {
-    //                     new_pos = Pos {
-    //                         x: change_column as i64,
-    //                         y: pos.y,
-    //                     };
-    //                     anchor_to_shift_right.push((*pos, change_column - pos.x));
-    //                     transaction.add_from_code_run(
-    //                         self.id,
-    //                         *pos,
-    //                         table.is_image(),
-    //                         table.is_html(),
-    //                     );
-    //                     let mut new_output_rect = output_rect;
-    //                     set_dirty_hash_rects.push(output_rect);
-    //                     new_output_rect.translate(change_column - output_rect.min.x, 0);
-    //                     set_dirty_hash_rects.push(new_output_rect);
-    //                     transaction.add_from_code_run(
-    //                         self.id,
-    //                         new_pos,
-    //                         table.is_image(),
-    //                         table.is_html(),
-    //                     );
-    //                 } else {
-    //                     // this should never happen because of the (*) check above
-    //                     dbgjs!("Unexpectedly could not find column in check_delete_table_column");
-    //                 }
-    //             } else if deleted_count > 0 {
-    //                 set_dirty_hash_rects.push(output_rect);
-    //                 transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
-    //             }
-    //             let old_dt = std::mem::replace(table, new_dt);
-    //             transaction
-    //                 .reverse_operations
-    //                 .push(Operation::SetDataTable {
-    //                     sheet_pos: pos.to_sheet_pos(self.id),
-    //                     index,
-    //                     data_table: Some(old_dt),
-    //                 });
-    //             if *pos != new_pos {
-    //                 transaction
-    //                     .reverse_operations
-    //                     .push(Operation::DeleteDataTable {
-    //                         sheet_pos: new_pos.to_sheet_pos(self.id),
-    //                     });
-    //             }
-    //         }
-
-    //         // check how many deleted columns are before the table
-    //         let mut shift_table = 0;
-    //         for col in columns.iter() {
-    //             if output_rect.x_range().contains(col) {
-    //                 break;
-    //             }
-    //             shift_table += 1;
-    //         }
-    //         if shift_table > 0 {
-    //             transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
-    //             let adjusted_pos = Pos {
-    //                 x: pos.x - shift_table as i64,
-    //                 y: pos.y,
-    //             };
-    //             transaction.add_dirty_hashes_from_sheet_rect(SheetRect {
-    //                 sheet_id: self.id,
-    //                 min: adjusted_pos,
-    //                 max: Pos {
-    //                     x: adjusted_pos.x + table.width() as i64,
-    //                     y: pos.y,
-    //                 },
-    //             });
-    //             transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
-    //             transaction.add_from_code_run(
-    //                 self.id,
-    //                 adjusted_pos,
-    //                 table.is_image(),
-    //                 table.is_html(),
-    //             );
-    //             dt_to_shift_left.push((*pos, shift_table));
-    //         }
-    //     }
-
-    //     for (pos, shift_table) in dt_to_shift_left {
-    //         let Some((_, old_dt)) = self.data_tables.shift_remove_entry(&pos) else {
-    //             dbgjs!(format!(
-    //                 "Error in check_delete_tables_columns: cannot shift left data table\n{:?}",
-    //                 pos
-    //             ));
-    //             continue;
-    //         };
-    //         let new_pos = Pos {
-    //             x: pos.x - shift_table as i64,
-    //             y: pos.y,
-    //         };
-    //         self.data_tables.insert(new_pos, old_dt);
-    //     }
-
-    //     for (pos, anchor_shift) in anchor_to_shift_right {
-    //         let new_pos = Pos {
-    //             x: pos.x + anchor_shift,
-    //             y: pos.y,
-    //         };
-    //         self.move_cell_value(pos, new_pos);
-    //         transaction
-    //             .reverse_operations
-    //             .push(Operation::MoveCellValue {
-    //                 sheet_id: self.id,
-    //                 from: new_pos,
-    //                 to: pos,
-    //             });
-    //     }
-
-    //     for rect in set_dirty_hash_rects {
-    //         transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(self.id));
-    //         let sheet_rows = self.get_rows_with_wrap_in_rect(&rect, true);
-
-    //         let table_rows = self.formats.get_rows_with_wrap_in_rect(&rect);
-
-    //         if !sheet_rows.is_empty() || !table_rows.is_empty() {
-    //             let resize_rows = transaction.resize_rows.entry(self.id).or_default();
-    //             resize_rows.extend(sheet_rows);
-    //             resize_rows.extend(table_rows);
-    //         }
-    //     }
-    // }
 }
 
 #[cfg(test)]
@@ -425,12 +275,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        print_first_sheet!(&gc);
-
-        // TODO: START HERE ***
 
         gc.delete_columns(sheet_id, vec![4, 5], None);
-        print_first_sheet!(&gc);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
         gc.undo(None);
@@ -512,7 +358,7 @@ mod tests {
     fn test_delete_columns_code() {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
-        test_create_code_table(&mut gc, SheetId::TEST, pos![B1], 3, 1);
+        test_create_code_table(&mut gc, sheet_id, pos![B1], 3, 1);
 
         // Readonly table should not be modified
         gc.delete_columns(sheet_id, vec![3], None);
@@ -572,23 +418,19 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
-        print_first_sheet!(&gc);
 
-        // Delete first column
+        // Delete first column (which contains the data table anchor cell)
         gc.delete_columns(sheet_id, vec![1], None);
-        print_first_sheet!(&gc);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 2, false);
 
         gc.undo(None);
-        print_first_sheet!(&gc);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
         assert_table_count(&gc, sheet_id, 1);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
 
         gc.redo(None);
-        print_first_sheet!(&gc);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 1, 2, false);
         assert_table_count(&gc, sheet_id, 1);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 1, 2, false);
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
@@ -774,20 +616,40 @@ mod tests {
     }
 
     #[test]
-    fn test_delete_data_table_first_column() {
+    fn test_delete_data_table_first_column_and_left_of_anchor() {
         let mut gc = GridController::test();
-        test_create_data_table(&mut gc, SheetId::TEST, pos![B2], 3, 3);
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.delete_columns(SheetId::TEST, vec![2], None);
-        assert_data_table_size(&gc, SheetId::TEST, pos![B2], 2, 3, false);
+        gc.delete_columns(sheet_id, vec![1, 2], None);
+        assert_data_table_size(&gc, sheet_id, pos![A2], 2, 3, false);
 
         gc.undo(None);
-        assert_data_table_size(&gc, SheetId::TEST, pos![B2], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
         gc.redo(None);
-        assert_data_table_size(&gc, SheetId::TEST, pos![B2], 2, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![A2], 2, 3, false);
 
         gc.undo(None);
-        assert_data_table_size(&gc, SheetId::TEST, pos![B2], 3, 3, false);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+    }
+
+    #[test]
+    fn test_delete_data_table_first_few_columns() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 5, 3);
+
+        gc.delete_columns(sheet_id, vec![2, 3, 4], None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 5, 3, false);
+
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 5, 3, false);
     }
 }

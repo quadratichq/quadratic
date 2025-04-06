@@ -52,6 +52,12 @@ impl GridController {
             #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {:?}", &op));
 
+            #[cfg(feature = "show-first-sheet-operations")]
+            println!(
+                "{}",
+                format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+            );
+
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::MoveCellValue { .. } => self.execute_move_cell_value(transaction, op),
@@ -187,6 +193,8 @@ impl GridController {
                 Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
             }
         }
+        #[cfg(feature = "show-first-sheet-operations")]
+        print_first_sheet!(&self);
     }
 }
 

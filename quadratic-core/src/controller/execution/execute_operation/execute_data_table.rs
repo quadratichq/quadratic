@@ -1762,6 +1762,20 @@ impl GridController {
                     data_table.is_html(),
                 );
                 sheet.data_tables.insert(to.into(), data_table);
+
+                sheet.move_cell_value(from, to);
+                self.send_updated_bounds(transaction, sheet_id);
+
+                if transaction.is_user_undo_redo() {
+                    transaction
+                        .reverse_operations
+                        .push(Operation::MoveDataTable {
+                            sheet_id,
+                            from: to,
+                            to: from,
+                        });
+                    transaction.forward_operations.push(op.clone());
+                }
             }
             return Ok(());
         }

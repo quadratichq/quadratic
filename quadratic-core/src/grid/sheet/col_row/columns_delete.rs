@@ -67,26 +67,6 @@ impl Sheet {
         }
     }
 
-    // /// Creates reverse operations for code runs within the column.
-    // fn reverse_code_runs_ops_for_column(&self, column: i64) -> Vec<Operation> {
-    //     let mut reverse_operations = Vec::new();
-
-    //     self.data_tables
-    //         .iter()
-    //         .enumerate()
-    //         .for_each(|(index, (pos, data_table))| {
-    //             if pos.x == column {
-    //                 reverse_operations.push(Operation::SetDataTable {
-    //                     sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
-    //                     data_table: Some(data_table.clone()),
-    //                     index,
-    //                 });
-    //             }
-    //         });
-
-    //     reverse_operations
-    // }
-
     fn delete_column_offset(&mut self, transaction: &mut PendingTransaction, column: i64) {
         let (changed, new_size) = self.offsets.delete_column(column);
         if let Some(new_size) = new_size {

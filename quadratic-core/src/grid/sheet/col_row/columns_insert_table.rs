@@ -23,6 +23,7 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
+        dbg!(&copy_formats);
         let source_column = match copy_formats {
             CopyFormats::After => column - 1,
             _ => column,
@@ -154,7 +155,6 @@ impl Sheet {
                 self.data_tables.insert_sorted(new_pos, code_run);
             }
         }
-
         // In the special case of CopyFormats::Before and column == pos.x, we
         // need to move it back.
         for to in data_tables_to_move_back {
