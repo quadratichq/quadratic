@@ -5,7 +5,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
-const columnCommandGroup: CommandGroup = {
+export const columnCommandGroup: CommandGroup = {
   heading: 'Column',
   commands: [
     {
@@ -26,10 +26,7 @@ const columnCommandGroup: CommandGroup = {
   ],
 };
 
-const rowCommandGroup: CommandGroup = {
+export const rowCommandGroup: CommandGroup = {
   heading: 'Row',
   commands: [Action.InsertRowAbove, Action.InsertRowBelow, Action.DeleteRow],
 };
-
-const columnRowCommandGroups = [columnCommandGroup, rowCommandGroup];
-export default columnRowCommandGroups;
