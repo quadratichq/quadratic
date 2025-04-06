@@ -123,7 +123,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Cache Pyodide
         id: cache-pyodide
         uses: useblacksmith/cache@v5
@@ -190,8 +190,8 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
-          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-from: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}:buildcache
+          cache-to: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}:buildcache,mode=max
 
       - name: Find Build & Deploy Images Comment
         if: failure()
