@@ -7,6 +7,6 @@
     "dev": "cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'",
     "dev:perf": "cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'",
     "test": "cargo test",
-    "clean": "npx rimraf node_modules dist build target && cargo clean"
+    "clean": "cargo clean && npx rimraf node_modules dist build target"
   }
 }

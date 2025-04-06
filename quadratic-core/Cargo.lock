@@ -3927,7 +3927,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.6.9"
+version = "0.6.10"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -3985,7 +3985,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.9"
+version = "0.6.10"
 dependencies = [
  "aes",
  "arrow",
