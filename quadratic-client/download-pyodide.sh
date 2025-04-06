@@ -7,20 +7,20 @@ PYODIDE_VERSION="0.27.5"
 PYODIDE_URL="https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
 EXPECTED_TARBALL_CHECKSUM="5a866e8f40d5ef46fb1258b4488ac3edc177c7e7884ad042426bbdfb2a56dd64"
 TARGET_DIR="public"
-EXPECTED_DIRECTORY_CHECKSUM="6dda678a745e53e4d8ec2b069c8dcee9cc521e9ab5b2b25c632e951ec2875cca"
+EXPECTED_DIRECTORY_CHECKSUM="72b56b07e39e07a516f2abd79a86ef502e4791bc6ce8c0b86b2c424435225a3c"
 
-# Function to calculate pyodide directory hash
-calculate_pyodide_directory_hash() {
-    tar --sort=name \
-        --owner=root --group=root \
-        --mode=644 \
-        --mtime='2024-01-01 00:00:00' \
-        -cf - -C "$TARGET_DIR" pyodide | sha256sum | cut -d' ' -f1
+# Function to calculate pyodide directory checksum
+calculate_pyodide_directory_checksum() {
+    find "$TARGET_DIR/pyodide" -type f -print0 | \
+    LC_ALL=C sort -z | \
+    xargs -0 sha256sum | \
+    sha256sum | \
+    cut -d' ' -f1
 }
 
 # Check existing pyodide directory checksum
 if [ -d "$TARGET_DIR/pyodide" ]; then
-    computed_checksum=$(calculate_pyodide_directory_hash)
+    computed_checksum=$(calculate_pyodide_directory_checksum)
     if [ "$computed_checksum" == "$EXPECTED_DIRECTORY_CHECKSUM" ]; then
         echo "Checksum matches for existing pyodide directory"
         exit 0
@@ -59,14 +59,11 @@ echo "✓ Tarball checksum verified"
 
 # Unpack pyodide tarball to the target directory
 echo "Unpacking to $TARGET_DIR folder..."
-if ! tar -xjf "./pyodide-${PYODIDE_VERSION}.tar.bz2" --no-same-owner --no-same-permissions -C "$TARGET_DIR"; then
+if ! tar -xjf "./pyodide-${PYODIDE_VERSION}.tar.bz2" -C "$TARGET_DIR"; then
     echo "Error: Failed to extract archive" >&2
     rm -f "./pyodide-${PYODIDE_VERSION}.tar.bz2"
     exit 1
 fi
-
-# Set consistent permissions
-chmod -R u=rwX,go=rX "$TARGET_DIR/pyodide"
 
 # Cleanup pyodide tarball
 echo "Cleaning up downloaded file..."
@@ -74,7 +71,7 @@ rm -f "./pyodide-${PYODIDE_VERSION}.tar.bz2"
 
 # Check created pyodide directory checksum
 if [ -d "$TARGET_DIR/pyodide" ]; then
-    computed_checksum=$(calculate_pyodide_directory_hash)
+    computed_checksum=$(calculate_pyodide_directory_checksum)
     if [ "$computed_checksum" != "$EXPECTED_DIRECTORY_CHECKSUM" ]; then
         echo "Checksum mismatch for pyodide directory" >&2
         echo "Expected: $EXPECTED_DIRECTORY_CHECKSUM" >&2
