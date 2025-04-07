@@ -30,7 +30,7 @@ impl Sheet {
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
             if dt.is_html_or_image() {
                 if let Some((width, height)) = dt.chart_output {
-                    if source_column >= pos.x as i64 && source_column < pos.x + width as i64 {
+                    if source_column >= pos.x && source_column < pos.x + width as i64 {
                         // if html or image, then we need to change the width
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());

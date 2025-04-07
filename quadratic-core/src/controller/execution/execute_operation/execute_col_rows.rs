@@ -201,7 +201,7 @@ impl GridController {
         {
             let context = &self.a1_context;
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats, &context);
+                sheet.insert_column(transaction, column, copy_formats, context);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds(&self.a1_context);

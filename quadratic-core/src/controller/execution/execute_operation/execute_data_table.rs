@@ -1761,7 +1761,7 @@ impl GridController {
                     data_table.is_image(),
                     data_table.is_html(),
                 );
-                sheet.data_tables.insert(to.into(), data_table);
+                sheet.data_tables.insert(to, data_table);
 
                 sheet.move_cell_value(from, to);
                 self.send_updated_bounds(transaction, sheet_id);

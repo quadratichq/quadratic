@@ -150,7 +150,7 @@ pub fn assert_data_table_sort_dirty(
     let sheet = gc.sheet(sheet_id);
     let data_table = sheet
         .data_table(pos)
-        .expect(&format!("Data table at {} not found", pos));
+        .unwrap_or_else(|| panic!("Data table at {} not found", pos));
     assert_eq!(
         data_table.sort_dirty, sort_dirty,
         "Sort data table at {} is not {}",

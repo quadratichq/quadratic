@@ -14,7 +14,7 @@ impl Sheet {
     pub(crate) fn check_delete_all_table_columns(
         &mut self,
         transaction: &mut PendingTransaction,
-        columns: &Vec<i64>,
+        columns: &[i64],
     ) {
         let mut dt_to_delete = Vec::new();
         for (index, (pos, table)) in self.data_tables.iter().enumerate() {
@@ -55,7 +55,7 @@ impl Sheet {
     pub(crate) fn check_delete_chart_columns(
         &mut self,
         transaction: &mut PendingTransaction,
-        columns: &Vec<i64>,
+        columns: &[i64],
     ) {
         for (pos, table) in self.data_tables.iter_mut() {
             if !table.spill_error && table.is_html_or_image() {
@@ -196,7 +196,7 @@ impl Sheet {
     pub(crate) fn move_tables_to_left(
         &mut self,
         transaction: &mut PendingTransaction,
-        columns: &Vec<i64>,
+        columns: &[i64],
     ) {
         let mut dt_to_shift_left = Vec::new();
         for (pos, table) in self.data_tables.iter() {

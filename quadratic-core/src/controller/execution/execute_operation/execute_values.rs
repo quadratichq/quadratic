@@ -112,7 +112,7 @@ impl GridController {
                 },
             };
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.move_cell_value(from.into(), to.into());
+                sheet.move_cell_value(from, to);
                 transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                 transaction
                     .reverse_operations
@@ -121,18 +121,18 @@ impl GridController {
                         from: to,
                         to: from,
                     });
-                if let Some(cell_value) = sheet.cell_value_ref(to.into()) {
+                if let Some(cell_value) = sheet.cell_value_ref(to) {
                     if matches!(cell_value, CellValue::Code(_) | CellValue::Import(_)) {
                         if let Some(table) = sheet.data_tables.get(&to) {
                             transaction.add_from_code_run(
                                 sheet_id,
-                                to.into(),
+                                to,
                                 table.is_html(),
                                 table.is_image(),
                             );
                             transaction.add_from_code_run(
                                 sheet_id,
-                                from.into(),
+                                from,
                                 table.is_html(),
                                 table.is_image(),
                             );

@@ -103,7 +103,7 @@ impl Sheet {
                         .push(Operation::SetChartCellSize {
                             sheet_pos: pos.to_sheet_pos(self.id),
                             w: width,
-                            h: original_height as u32,
+                            h: original_height,
                         });
                 }
             }
@@ -159,7 +159,7 @@ impl Sheet {
                 for (row, reverse_row) in rows {
                     if let Some(reverse_row) = reverse_row {
                         for (col, value) in reverse_row.into_iter().enumerate() {
-                            values.set(col as u32, row as u32, value);
+                            values.set(col as u32, row, value);
                         }
                     }
                 }

@@ -17,7 +17,7 @@ use tabled::{
 /// Util to print the first sheet
 pub fn print_first_sheet(gc: &GridController) {
     let sheet = gc.try_sheet(gc.sheet_ids()[0]).unwrap();
-    print_sheet(&sheet);
+    print_sheet(sheet);
 }
 
 /// Util to print the entire sheet
@@ -36,9 +36,7 @@ pub fn print_sheet(sheet: &Sheet) {
 pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let mut vals = vec![];
     let mut builder = Builder::default();
-    let columns = (rect.x_range())
-        .map(|i| column_name(i))
-        .collect::<Vec<String>>();
+    let columns = (rect.x_range()).map(column_name).collect::<Vec<String>>();
     let mut blank = vec!["".to_string()];
     blank.extend(columns.clone());
     builder.set_header(blank);
@@ -86,7 +84,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
                     };
                     let value = sheet
                         .display_value(pos)
-                        .unwrap_or_else(|| CellValue::Blank)
+                        .unwrap_or(CellValue::Blank)
                         .to_string();
                     format!("{:?} ({})", code_cell.language, value)
                 }
