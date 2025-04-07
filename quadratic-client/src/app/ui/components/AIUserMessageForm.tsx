@@ -77,11 +77,13 @@ export const AIUserMessageForm = memo(
     const [prompt, setPrompt] = useState<string>('');
     useEffect(() => {
       setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
-      setPrompt(initialContent
-        ?.filter((item) => item.type === 'text')
-        .map((item) => item.text)
-        .join('\n') ?? "");
-    }, [initialContent])
+      setPrompt(
+        initialContent
+          ?.filter((item) => item.type === 'text')
+          .map((item) => item.text)
+          .join('\n') ?? ''
+      );
+    }, [initialContent]);
 
     const onSubmit = useCallback(() => {
       if (initialContent === undefined) {
@@ -95,14 +97,17 @@ export const AIUserMessageForm = memo(
       [delaySeconds, props.messageIndex, waitingOnMessageIndex]
     );
 
-    const submit = useCallback((prompt: string) => {
-      if (prompt.trim().length === 0) return;
+    const submit = useCallback(
+      (prompt: string) => {
+        if (prompt.trim().length === 0) return;
 
-      submitPrompt({
-        content: [...files, { type: 'text', text: prompt }],
-        onSubmit: initialContent === undefined ? onSubmit : undefined,
-      });
-    }, [files, initialContent, onSubmit, submitPrompt]);
+        submitPrompt({
+          content: [...files, { type: 'text', text: prompt }],
+          onSubmit: initialContent === undefined ? onSubmit : undefined,
+        });
+      },
+      [files, initialContent, onSubmit, submitPrompt]
+    );
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
@@ -164,7 +169,12 @@ export const AIUserMessageForm = memo(
         onPaste={handleFiles}
         onDrop={handleFiles}
       >
-        <EditButton show={!editing && !loading && waitingOnMessageIndex === undefined} loading={loading} setEditing={setEditing} textareaRef={textareaRef} />
+        <EditButton
+          show={!editing && !loading && waitingOnMessageIndex === undefined}
+          loading={loading}
+          setEditing={setEditing}
+          textareaRef={textareaRef}
+        />
 
         <AIContext
           initialContext={ctx?.initialContext}
@@ -216,7 +226,6 @@ export const AIUserMessageForm = memo(
             maxHeight={maxHeight}
             disabled={waitingOnMessageIndex !== undefined}
           />
-
         ) : (
           <div
             className={cn('pointer-events-none whitespace-pre-wrap p-2 text-sm', showAIUsageExceeded && 'opacity-50')}
@@ -227,7 +236,14 @@ export const AIUserMessageForm = memo(
 
         <AIUsageExceeded show={showAIUsageExceeded} delaySeconds={delaySeconds} />
 
-        <AIUserMessageFormFooter show={editing} loading={loading} waitingOnMessageIndex={waitingOnMessageIndex} textareaRef={textareaRef} submitPrompt={() => submit(prompt)} abortPrompt={abortPrompt} />
+        <AIUserMessageFormFooter
+          show={editing}
+          loading={loading}
+          waitingOnMessageIndex={waitingOnMessageIndex}
+          textareaRef={textareaRef}
+          submitPrompt={() => submit(prompt)}
+          abortPrompt={abortPrompt}
+        />
       </form>
     );
   })
@@ -238,28 +254,30 @@ type EditButtonProps = {
   loading: boolean;
   setEditing: (editing: boolean) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
-}
+};
 
 const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonProps) => {
   if (!show) {
     return null;
   }
 
-  return <TooltipPopover label="Edit">
-    <Button
-      variant="ghost"
-      className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-      size="icon-sm"
-      onClick={(e) => {
-        if (loading) return;
-        e.stopPropagation();
-        setEditing(true);
-        textareaRef.current?.focus();
-      }}
-    >
-      <EditIcon />
-    </Button>
-  </TooltipPopover>
+  return (
+    <TooltipPopover label="Edit">
+      <Button
+        variant="ghost"
+        className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+        size="icon-sm"
+        onClick={(e) => {
+          if (loading) return;
+          e.stopPropagation();
+          setEditing(true);
+          textareaRef.current?.focus();
+        }}
+      >
+        <EditIcon />
+      </Button>
+    </TooltipPopover>
+  );
 });
 
 type CancelButtonProps = {
@@ -273,18 +291,19 @@ const CancelButton = memo(({ show, waitingOnMessageIndex, abortPrompt }: CancelB
     return null;
   }
 
-  return <Button
-    size="sm"
-    variant="outline"
-    className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
-    onClick={(e) => {
-      e.stopPropagation();
-      abortPrompt();
-    }}
-  >
-    <BackspaceIcon className="mr-1" /> Cancel{' '}
-    {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}
-  </Button>
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
+      onClick={(e) => {
+        e.stopPropagation();
+        abortPrompt();
+      }}
+    >
+      <BackspaceIcon className="mr-1" /> Cancel {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}
+    </Button>
+  );
 });
 
 type AIUserMessageFormFooterProps = {
@@ -296,59 +315,63 @@ type AIUserMessageFormFooterProps = {
   abortPrompt: () => void;
 };
 
-const AIUserMessageFormFooter = memo(({ show, loading, waitingOnMessageIndex, textareaRef, submitPrompt, abortPrompt }: AIUserMessageFormFooterProps) => {
-  if (!show) {
-    return null;
-  }
+const AIUserMessageFormFooter = memo(
+  ({ show, loading, waitingOnMessageIndex, textareaRef, submitPrompt, abortPrompt }: AIUserMessageFormFooterProps) => {
+    if (!show) {
+      return null;
+    }
 
-  return <>
-    <div
-      className={cn(
-        'flex w-full select-none items-center justify-between px-2 pb-1',
-        waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
-      )}
-    >
-      <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
-
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        {!debug && (
-          <>
-            <span>
-              {KeyboardSymbols.Shift}
-              {KeyboardSymbols.Enter} new line
-            </span>
-
-            <span>{KeyboardSymbols.Enter} submit</span>
-          </>
-        )}
-
-        <ConditionalWrapper
-          condition={prompt.length !== 0}
-          Wrapper={({ children }) => (
-            <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-              {children as React.ReactElement}
-            </TooltipPopover>
+    return (
+      <>
+        <div
+          className={cn(
+            'flex w-full select-none items-center justify-between px-2 pb-1',
+            waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
-          <Button
-            size="icon-sm"
-            className="rounded-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              submitPrompt();
-            }}
-            disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
-          >
-            <ArrowUpwardIcon />
-          </Button>
-        </ConditionalWrapper>
-      </div>
-    </div>
+          <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
-    <CancelButton
-      show={loading || waitingOnMessageIndex !== undefined}
-      waitingOnMessageIndex={waitingOnMessageIndex}
-      abortPrompt={abortPrompt}
-    />
-  </>
-});
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {!debug && (
+              <>
+                <span>
+                  {KeyboardSymbols.Shift}
+                  {KeyboardSymbols.Enter} new line
+                </span>
+
+                <span>{KeyboardSymbols.Enter} submit</span>
+              </>
+            )}
+
+            <ConditionalWrapper
+              condition={prompt.length !== 0}
+              Wrapper={({ children }) => (
+                <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                  {children as React.ReactElement}
+                </TooltipPopover>
+              )}
+            >
+              <Button
+                size="icon-sm"
+                className="rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  submitPrompt();
+                }}
+                disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
+              >
+                <ArrowUpwardIcon />
+              </Button>
+            </ConditionalWrapper>
+          </div>
+        </div>
+
+        <CancelButton
+          show={loading || waitingOnMessageIndex !== undefined}
+          waitingOnMessageIndex={waitingOnMessageIndex}
+          abortPrompt={abortPrompt}
+        />
+      </>
+    );
+  }
+);

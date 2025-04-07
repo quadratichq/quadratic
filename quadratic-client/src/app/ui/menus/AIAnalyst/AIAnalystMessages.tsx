@@ -179,7 +179,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                   textareaRef={textareaRef}
                   messageIndex={index}
                 />
-              ) : message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
+              ) : (
+                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
+              )
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>

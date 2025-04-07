@@ -121,7 +121,9 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                 messageIndex={index}
               />
             ) : isToolResultMessage(message) ? (
-              message.content.map(({ text }) => <Markdown key={`${index}-${message.role}-${message.contextType}`}>{text}</Markdown>)
+              message.content.map(({ text }) => (
+                <Markdown key={`${index}-${message.role}-${message.contextType}`}>{text}</Markdown>
+              ))
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
