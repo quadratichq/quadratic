@@ -327,8 +327,8 @@ export class MultiplayerServer {
     const protoMessage: SendTransaction = {
       type: 'Transaction',
       id: transactionMessage.transaction_id,
-      session_id: this.sessionId!,
-      file_id: this.fileId!,
+      sessionId: this.sessionId!,
+      fileId: this.fileId!,
       operations: new Uint8Array(transactionMessage.operations),
     };
 

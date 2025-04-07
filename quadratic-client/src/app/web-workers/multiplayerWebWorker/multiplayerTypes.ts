@@ -107,8 +107,8 @@ export interface ReceiveBinaryTransaction {
 export interface SendTransaction {
   type: 'Transaction';
   id: string;
-  session_id: string;
-  file_id: string;
+  sessionId: string;
+  fileId: string;
   operations: Uint8Array<ArrayBufferLike>;
 }
 
