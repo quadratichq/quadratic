@@ -142,6 +142,7 @@ export const Connections = ({
             connectionUuid={activeConnectionState.uuid}
             connectionType={activeConnectionType}
             handleNavigateToListView={handleNavigateToListView}
+            teamUuid={teamUuid}
           />
         ) : (
           <ConnectionDetails

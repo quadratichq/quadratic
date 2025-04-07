@@ -18,11 +18,13 @@ export function ConnectionFormActions({
   connectionUuid,
   form,
   handleNavigateToListView,
+  teamUuid,
 }: {
   connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
   handleNavigateToListView: () => void;
+  teamUuid: string;
 }) {
   const submit = useSubmit();
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -112,9 +114,9 @@ export function ConnectionFormActions({
               const doDelete = window.confirm('Please confirm you want delete this connection. This cannot be undone.');
               if (doDelete) {
                 mixpanel.track('[Connections].delete', { type: connectionType });
-                const data = getDeleteConnectionAction(connectionUuid);
+                const data = getDeleteConnectionAction(connectionUuid, teamUuid);
                 submit(data, {
-                  action: ROUTES.API.CONNECTIONS,
+                  action: ROUTES.API.CONNECTIONS.POST,
                   method: 'POST',
                   encType: 'application/json',
                   navigate: false,

@@ -421,18 +421,16 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
 
   /**
+   * Connections (whcih are all under `/v0/teams/:uuid/connections/*`)
+   */
+  ...ApiSchemasConnections,
+
+  /**
    * ===========================================================================
    * Users
    * ===========================================================================
    */
   '/v0/users/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
-
-  /**
-   * ===========================================================================
-   * Connections
-   * ===========================================================================
-   */
-  ...ApiSchemasConnections,
 
   /**
    *

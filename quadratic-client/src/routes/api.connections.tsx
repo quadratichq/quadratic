@@ -6,23 +6,24 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 /**
  *
  * Loader
- *
+ * /?team-uuid=x - list connections in a team
+ * /?team-uuid=x&connection-uuid=y - get a specific connection in a team
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
+  const teamUuid = searchParams.get('team-uuid');
+  const connectionUuid = searchParams.get('connection-uuid');
 
   // Load connections in a team
-  const teamUuid = searchParams.get('team-uuid');
-  if (teamUuid) {
+  if (teamUuid && !connectionUuid) {
     const data = await getTeamConnections(teamUuid);
     return data;
   }
 
-  // Load a connection
-  const connectionUuid = searchParams.get('connection-uuid');
-  if (connectionUuid) {
-    const data = await getConnection(connectionUuid);
+  // Load a specific team connection
+  if (teamUuid && connectionUuid) {
+    const data = await getConnection(teamUuid, connectionUuid);
     return data;
   }
 
@@ -41,8 +42,8 @@ async function getTeamConnections(teamUuid: string) {
 }
 
 export type GetConnection = Awaited<ReturnType<typeof getConnection>>;
-async function getConnection(connectionUuid: string) {
-  const connection = await apiClient.connections.get(connectionUuid);
+async function getConnection(teamUuid: string, connectionUuid: string) {
+  const connection = await apiClient.connections.get({ connectionUuid, teamUuid });
   return { ok: true, connection };
 }
 
@@ -60,7 +61,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (data.action === 'create-connection') {
     const { teamUuid, body } = data as CreateConnectionAction;
     try {
-      const result = await apiClient.connections.create(body, teamUuid);
+      const result = await apiClient.connections.create({ teamUuid, body });
       return { ok: true, connectionUuid: result.uuid };
     } catch (e) {
       console.error(e);
@@ -70,8 +71,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (data.action === 'update-connection') {
     try {
-      const { connectionUuid, body } = data as UpdateConnectionAction;
-      await apiClient.connections.update(connectionUuid, body);
+      const { connectionUuid, teamUuid, body } = data as UpdateConnectionAction;
+      await apiClient.connections.update({ teamUuid, connectionUuid, body });
       return { ok: true };
     } catch (e) {
       console.error(e);
@@ -81,8 +82,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (data.action === 'delete-connection') {
     try {
-      const { connectionUuid } = data as DeleteConnectionAction;
-      await apiClient.connections.delete(connectionUuid);
+      const { connectionUuid, teamUuid } = data as DeleteConnectionAction;
+      await apiClient.connections.delete({ teamUuid, connectionUuid });
       return { ok: true };
     } catch (e) {
       console.error(e);
@@ -95,7 +96,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 export type CreateConnectionAction = ReturnType<typeof getCreateConnectionAction>;
 export const getCreateConnectionAction = (
-  body: ApiTypes['/v0/team/:uuid/connections.POST.request'],
+  body: ApiTypes['/v0/teams/:uuid/connections.POST.request'],
   teamUuid: string
 ) => {
   return {
@@ -108,19 +109,22 @@ export const getCreateConnectionAction = (
 export type UpdateConnectionAction = ReturnType<typeof getUpdateConnectionAction>;
 export const getUpdateConnectionAction = (
   connectionUuid: string,
-  body: ApiTypes['/v0/connections/:uuid.PUT.request']
+  teamUuid: string,
+  body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request']
 ) => {
   return {
     action: 'update-connection',
     connectionUuid,
+    teamUuid,
     body,
   };
 };
 
 export type DeleteConnectionAction = ReturnType<typeof getDeleteConnectionAction>;
-export const getDeleteConnectionAction = (connectionUuid: string) => {
+export const getDeleteConnectionAction = (connectionUuid: string, teamUuid: string) => {
   return {
     action: 'delete-connection',
     connectionUuid,
+    teamUuid,
   };
 };

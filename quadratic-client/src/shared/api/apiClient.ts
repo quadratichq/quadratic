@@ -66,6 +66,7 @@ export const apiClient = {
         return data;
       },
     },
+    
     invites: {
       create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
@@ -364,32 +365,32 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections.GET.response']
       );
     },
-    get(uuid: string) {
+    get({ connectionUuid, teamUuid }: { connectionUuid: string, teamUuid: string, }) {
       return fetchFromApi(
-        `/v0/connections/${uuid}`,
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'GET' },
-        ApiSchemas['/v0/connections/:uuid.GET.response']
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response']
       );
     },
-    create(body: ApiTypes['/v0/team/:uuid/connections.POST.request'], teamUuid: string) {
+    create({ body, teamUuid }: { body: ApiTypes['/v0/teams/:uuid/connections.POST.request'], teamUuid: string, }) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections`,
         { method: 'POST', body: JSON.stringify(body) },
-        ApiSchemas['/v0/connections.POST.response']
+        ApiSchemas['/v0/teams/:uuid/connections.POST.response']
       );
     },
-    update(uuid: string, body: ApiTypes['/v0/connections/:uuid.PUT.request']) {
+    update({ connectionUuid, body, teamUuid }: { connectionUuid: string, body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request'],  teamUuid: string, }) {
       return fetchFromApi(
-        `/v0/connections/${uuid}`,
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'PUT', body: JSON.stringify(body) },
-        ApiSchemas['/v0/connections/:uuid.PUT.response']
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.PUT.response']
       );
     },
-    delete(uuid: string) {
+    delete({ connectionUuid, teamUuid }: { connectionUuid: string, teamUuid: string, }) {
       return fetchFromApi(
-        `/v0/connections/${uuid}`,
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'DELETE' },
-        ApiSchemas['/v0/connections/:uuid.DELETE.response']
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.DELETE.response']
       );
     },
   },
