@@ -58,6 +58,7 @@
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:rust": "cargo clippy --all-targets --all-features -- -D warnings",
     "lint:ts": "npm run lint:ts --workspace=quadratic-client",
+    "lint:ts:write": "npm run lint:ts:write --workspace=quadratic-client",
     "lint:prettier": "npm run lint:prettier --workspace=quadratic-client",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
     "lint:clippy:fix": "cd quadratic-core && cargo clippy --all-targets --all-features --fix -- -D warnings",

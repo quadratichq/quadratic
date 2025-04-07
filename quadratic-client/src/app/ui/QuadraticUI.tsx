@@ -1,6 +1,8 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
   editorInteractionStatePermissionsAtom,
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -47,6 +49,8 @@ export default function QuadraticUI() {
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
+  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
+  const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
@@ -135,8 +139,8 @@ export default function QuadraticUI() {
       <FeedbackMenu />
       {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
       {presentationMode && <PresentationModeHint />}
-      <CellTypeMenu />
-      <CommandPalette />
+      {showCellTypeMenu && <CellTypeMenu />}
+      {showCommandPalette && <CommandPalette />}
       {showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"

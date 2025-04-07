@@ -103,6 +103,7 @@
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
     "electron": "electron .",
     "lint:ts": "tsc --noemit",
+    "lint:ts:write": "npm run lint:prettier:write && tsc --noemit && npm run lint:eslint:write",
     "lint:eslint": "eslint --ext .ts,.tsx src",
     "lint:eslint:write": "eslint --ext .ts,.tsx src --fix",
     "lint:prettier": "prettier --check src",
