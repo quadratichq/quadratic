@@ -75,11 +75,9 @@ export const createNewFileAction = {
 
 export const duplicateFileAction = {
   label: 'Duplicate',
-  // File must be publicly shared and the user has access, OR
-  // They're logged in and have access to the team its on
-  // If, for example, they've been invited to the file via email,
-  // they can't duplicate it because they don't have access to the team and its not public.
-  isAvailable: isAvailableBecauseLoggedIn,
+  // If you're logged in and you can see the file, you can duplicate it
+  isAvailable: ({ isAuthenticated, filePermissions }: IsAvailableArgs) =>
+    isAuthenticated && filePermissions.includes('FILE_VIEW'),
   async run({ fileUuid }: { fileUuid: string }) {
     window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
   },
