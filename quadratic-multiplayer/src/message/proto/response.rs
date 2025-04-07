@@ -23,14 +23,12 @@ impl TryFrom<MessageResponse> for ReceiveTransaction {
                 file_id,
                 sequence_num,
                 operations,
-            } => {
-                let mut transaction = ReceiveTransaction::default();
-                transaction.id = id.to_string();
-                transaction.file_id = file_id.to_string();
-                transaction.sequence_num = sequence_num;
-                transaction.operations = operations;
-                transaction
-            }
+            } => ReceiveTransaction {
+                id: id.to_string(),
+                file_id: file_id.to_string(),
+                sequence_num,
+                operations,
+            },
             _ => {
                 return Err(MpError::Unknown(format!(
                     "Invalid message response: {:?}",

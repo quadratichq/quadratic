@@ -207,11 +207,7 @@ impl State {
                     if follow.is_empty() {
                         user.state.follow = None;
                     } else {
-                        user.state.follow = if let Ok(uuid) = Uuid::parse_str(&follow) {
-                            Some(uuid)
-                        } else {
-                            None
-                        };
+                        user.state.follow = Uuid::parse_str(&follow).ok();
                     }
                 }
 
