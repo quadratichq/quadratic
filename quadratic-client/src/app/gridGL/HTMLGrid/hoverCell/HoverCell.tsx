@@ -253,7 +253,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
             });
             submitPrompt({
               content: [{ type: 'text', text: 'Fix the error in the code cell' }],
-              clearMessages: true,
+              messageIndex: 0,
               codeCell,
             }).catch(console.error);
             onClick();

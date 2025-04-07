@@ -18,11 +18,11 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import type { JSX, ReactNode } from 'react';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
-export function ReturnTypeInspector() {
+export const ReturnTypeInspector = memo(() => {
   const loading = useRecoilValue(codeEditorLoadingAtom);
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const mode = useMemo(() => getLanguage(language), [language]);
@@ -61,7 +61,7 @@ export function ReturnTypeInspector() {
           });
           submitPrompt({
             content: [{ type: 'text', text: 'Fix the error in the code cell' }],
-            clearMessages: true,
+            messageIndex: 0,
             codeCell: codeCellRecoil,
           }).catch(console.error);
         }}
@@ -82,7 +82,9 @@ export function ReturnTypeInspector() {
     message = show ? (
       <>
         {evaluationResult.line_number ? `Line ${evaluationResult.line_number} returned ` : 'Returned '}
+
         <ReturnType>{evaluationResult?.output_type}</ReturnType>
+
         {evaluationResult?.output_type === 'NoneType' && (
           <>
             {' '}
@@ -149,16 +151,18 @@ export function ReturnTypeInspector() {
       }}
     >
       <span style={{ transform: 'scaleX(-1)', display: 'inline-block', fontSize: '10px' }}>⮐</span>
+
       <span className="leading-snug">{message}</span>
+
       {action && <span className="ml-auto font-sans">{action}</span>}
     </div>
   );
-}
+});
 
-function ReturnType({ children, isError }: { children: ReactNode; isError?: boolean }) {
+const ReturnType = memo(({ children, isError }: { children: ReactNode; isError?: boolean }) => {
   return (
     <span className={cn('rounded-md px-1 py-0.5', isError ? 'bg-destructive-foreground' : 'bg-accent')}>
       {children}
     </span>
   );
-}
+});

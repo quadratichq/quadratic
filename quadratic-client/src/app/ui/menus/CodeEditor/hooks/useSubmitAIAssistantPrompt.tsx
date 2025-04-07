@@ -20,10 +20,10 @@ import {
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import type { CodeCell } from '@/app/shared/types/codeCell';
+import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -35,8 +35,7 @@ const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAssistantPromptArgs = {
   content: Content;
-  messageIndex?: number;
-  clearMessages?: boolean;
+  messageIndex: number;
   codeCell?: CodeCell;
   onSubmit?: () => void;
 };
@@ -74,43 +73,30 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, messageIndex, clearMessages, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
+      async ({ content, messageIndex, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
         if (previousLoading) return;
 
-        if (clearMessages) {
-          set(aiAssistantIdAtom, v4());
-          set(aiAssistantMessagesAtom, []);
-        }
-
         // fork chat, if we are editing an existing chat
-        if (messageIndex !== undefined) {
+        const currentMessageCount = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
+        if (messageIndex < currentMessageCount) {
           set(aiAssistantIdAtom, v4());
           set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
-        } else {
-          messageIndex = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
         }
 
         set(codeEditorDiffEditorContentAtom, undefined);
-        const currentCodeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
-        if (codeCell) {
-          if (
-            codeCell.sheetId !== currentCodeCell.sheetId ||
-            codeCell.pos.x !== currentCodeCell.pos.x ||
-            codeCell.pos.y !== currentCodeCell.pos.y ||
-            codeCell.language !== currentCodeCell.language
-          ) {
-            set(codeEditorWaitingForEditorClose, {
-              codeCell,
-              showCellTypeMenu: false,
-              initialCode: '',
-              inlineEditor: false,
-            });
-          }
-        } else {
-          codeCell = { ...currentCodeCell };
+        const currentCodeCellInEditor = await snapshot.getPromise(codeEditorCodeCellAtom);
+        if (codeCell && !isSameCodeCell(codeCell, currentCodeCellInEditor)) {
+          set(codeEditorWaitingForEditorClose, {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: false,
+          });
+        } else if (!codeCell) {
+          codeCell = currentCodeCellInEditor;
         }
 
         if (!onSubmit) {
@@ -218,6 +204,7 @@ export function useSubmitAIAssistantPrompt() {
 
         set(aiAssistantLoadingAtom, true);
 
+        let lastMessageIndex = -1;
         let chatId = '';
         set(aiAssistantIdAtom, (prev) => {
           chatId = prev ? prev : v4();
@@ -230,6 +217,7 @@ export function useSubmitAIAssistantPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ codeCell });
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAssistant',
@@ -262,7 +250,11 @@ export function useSubmitAIAssistantPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any);
+                const result = await aiToolsActions[aiTool](args as any, {
+                  source: 'AIAssistant',
+                  chatId,
+                  messageIndex: lastMessageIndex + 1,
+                });
                 toolResultMessage.content.push({
                   id: toolCall.id,
                   text: result,
