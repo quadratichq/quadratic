@@ -95,12 +95,12 @@ export class Pointer {
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
     // do not interfere with pointerImages when its resizing.
-    (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
+    this.pointerHeading.pointerDown(world, e) ||
+      (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
       this.pointerImages.pointerDown(world) ||
       this.pointerCellMoving.pointerDown(e) ||
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerTable.pointerDown(world, e) ||
-      this.pointerHeading.pointerDown(world, e) ||
       this.pointerLink.pointerDown(world, e) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerTableResize.pointerDown(world) ||
