@@ -253,7 +253,7 @@ type EditButtonProps = {
   show: boolean;
   loading: boolean;
   setEditing: (editing: boolean) => void;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonProps) => {
@@ -310,7 +310,7 @@ type AIUserMessageFormFooterProps = {
   show: boolean;
   loading: boolean;
   waitingOnMessageIndex?: number;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   submitPrompt: () => void;
   abortPrompt: () => void;
 };
