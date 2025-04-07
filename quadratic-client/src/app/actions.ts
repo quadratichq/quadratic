@@ -69,7 +69,7 @@ export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   run({ teamUuid }: { teamUuid: string }) {
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
+    window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
   },
 };
 
@@ -81,9 +81,7 @@ export const duplicateFileAction = {
   // they can't duplicate it because they don't have access to the team and its not public.
   isAvailable: isAvailableBecauseLoggedIn,
   async run({ fileUuid }: { fileUuid: string }) {
-    // We don't use `navigate` here because it crashes the app for some reason?
-    // But this works too
-    window.location.href = ROUTES.FILE_DUPLICATE(fileUuid);
+    window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
   },
 };
 

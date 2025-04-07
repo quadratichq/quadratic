@@ -10,7 +10,7 @@ import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { DeleteIcon, DraftIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
+import { DeleteIcon, DraftIcon, ExternalLinkIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
@@ -84,12 +84,14 @@ export const FileMenubarMenu = () => {
           <MenubarItem onClick={() => createNewFileAction.run({ teamUuid })}>
             <DraftIcon />
             {createNewFileAction.label}
+            <ExternalLinkIcon className="ml-auto !h-4 !w-4 text-center !text-xs text-muted-foreground opacity-50" />
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
           <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid })}>
             <FileCopyIcon />
             Duplicate
+            <ExternalLinkIcon className="ml-auto !h-4 !w-4 text-center !text-xs text-muted-foreground opacity-50" />
           </MenubarItem>
         )}
         <MenubarItemAction action={Action.FileVersionHistory} actionArgs={{ uuid: fileUuid }} />
