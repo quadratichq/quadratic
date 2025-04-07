@@ -23,7 +23,6 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
-        dbg!(&copy_formats);
         let source_column = match copy_formats {
             CopyFormats::After => column - 1,
             _ => column,

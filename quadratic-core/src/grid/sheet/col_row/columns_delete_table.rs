@@ -209,7 +209,6 @@ impl Sheet {
                     shift_table += 1;
                 }
             }
-            dbg!(&shift_table);
             if shift_table > 0 {
                 transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                 let adjusted_pos = Pos {
