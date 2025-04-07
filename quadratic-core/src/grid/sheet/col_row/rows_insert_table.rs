@@ -14,7 +14,6 @@ impl Sheet {
         row: i64,
     ) {
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
-            dbg!(row, pos.y, pos.y + dt.height(false) as i64);
             if (!dt.readonly || dt.is_html_or_image())
                 && row >= pos.y
                 && row <= pos.y + dt.height(false) as i64
