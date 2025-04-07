@@ -59,7 +59,7 @@ export const ROUTES = {
     CONNECTIONS: {
       POST: `/api/connections`,
       LIST: (teamUuid: string) => `/api/connections?team-uuid=${teamUuid}`,
-      GET: (teamUuid: string, connectionUuid: string) =>
+      GET: ({ teamUuid, connectionUuid }: { teamUuid: string; connectionUuid: string }) =>
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
     },
   },

@@ -67,7 +67,7 @@ export function ConnectionFormEdit({
 
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data === undefined) {
-      fetcher.load(`${ROUTES.API.CONNECTIONS.GET(teamUuid, connectionUuid)}`);
+      fetcher.load(ROUTES.API.CONNECTIONS.GET({ teamUuid, connectionUuid }));
     }
   }, [fetcher, connectionUuid, teamUuid]);
 
