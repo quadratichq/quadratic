@@ -84,15 +84,7 @@ impl Sheet {
                     }
                 }
                 if dt.insert_column(display_index as usize, None, None).is_ok() {
-                    transaction.add_code_cell(self.id, *pos);
-                    // transaction
-                    //     .reverse_operations
-                    //     .push(Operation::DeleteDataTableColumns {
-                    //         sheet_pos: pos.to_sheet_pos(self.id),
-                    //         columns: vec![display_index as u32],
-                    //         flatten: false,
-                    //         select_table: false,
-                    //     });
+                    transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                 }
             }
         });
@@ -142,14 +134,14 @@ impl Sheet {
                 transaction.add_from_code_run(
                     self.id,
                     old_pos,
-                    code_run.is_html(),
                     code_run.is_image(),
+                    code_run.is_html(),
                 );
                 transaction.add_from_code_run(
                     self.id,
                     new_pos,
-                    code_run.is_html(),
                     code_run.is_image(),
+                    code_run.is_html(),
                 );
                 self.data_tables.insert_sorted(new_pos, code_run);
             }
@@ -171,13 +163,7 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController,
-        test_create_code_table,
-        test_util::{
-            assert_chart_size, assert_data_table_size, assert_display_cell_value, first_sheet_id,
-            test_create_data_table, test_create_html_chart, test_create_js_chart,
-        },
-        wasm_bindings::js::{clear_js_calls, expect_js_call_count},
+        controller::GridController, test_create_code_table, test_util::*, wasm_bindings::js::*,
     };
 
     #[test]
@@ -352,5 +338,18 @@ mod tests {
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_front_of_image() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
+
+        clear_js_calls();
+        gc.insert_column(sheet_id, 1, true, None);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
+        expect_js_call_count("jsUpdateCodeCell", 2, false);
+        expect_js_call_count("jsSendImage", 2, true);
     }
 }

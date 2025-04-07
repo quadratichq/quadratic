@@ -58,7 +58,7 @@ impl Sheet {
         }
 
         self.check_insert_tables_rows(transaction, row);
-        self.adjust_insert_tables_rows(transaction, row, send_client);
+        self.adjust_insert_tables_rows(transaction, row);
 
         // mark hashes of new rows dirty
         if send_client {
