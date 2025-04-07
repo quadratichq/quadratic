@@ -1,5 +1,6 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { debug } from '@/app/debugFlags';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
@@ -208,6 +209,13 @@ export const AIUserMessageForm = memo(
 
                 if (initialContent === undefined) {
                   textareaRef.current?.focus();
+                } else {
+                  setEditing(false);
+                  bottomTextareaRef.current?.focus();
+                }
+              } else if (event.key === 'Escape') {
+                if (initialContent === undefined) {
+                  focusGrid();
                 } else {
                   setEditing(false);
                   bottomTextareaRef.current?.focus();
