@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use crate::error::{ErrorLevel, MpError, Result};
 use crate::get_mut_room;
+use crate::message::broadcast_binary;
 use crate::message::response::Transaction;
 use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
@@ -247,7 +248,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
 
-            broadcast(vec![], file_id, Arc::clone(&state), response);
+            broadcast_binary(vec![], file_id, Arc::clone(&state), response);
 
             Ok(None)
         }
