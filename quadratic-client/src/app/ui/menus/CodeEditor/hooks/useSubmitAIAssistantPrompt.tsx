@@ -20,7 +20,7 @@ import {
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import type { CodeCell } from '@/app/shared/types/codeCell';
+import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
@@ -87,15 +87,16 @@ export function useSubmitAIAssistantPrompt() {
         }
 
         set(codeEditorDiffEditorContentAtom, undefined);
-        if (codeCell) {
+        const currentCodeCellInEditor = await snapshot.getPromise(codeEditorCodeCellAtom);
+        if (codeCell && (!currentCodeCellInEditor || !isSameCodeCell(codeCell, currentCodeCellInEditor))) {
           set(codeEditorWaitingForEditorClose, {
             codeCell,
             showCellTypeMenu: false,
             initialCode: '',
             inlineEditor: false,
           });
-        } else {
-          codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+        } else if (!codeCell) {
+          codeCell = currentCodeCellInEditor;
         }
 
         if (!onSubmit) {
