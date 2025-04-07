@@ -35,8 +35,7 @@ const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAssistantPromptArgs = {
   content: Content;
-  messageIndex?: number;
-  clearMessages?: boolean;
+  messageIndex: number;
   codeCell?: CodeCell;
   onSubmit?: () => void;
 };
@@ -74,23 +73,17 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, messageIndex, clearMessages, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
+      async ({ content, messageIndex, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
         if (previousLoading) return;
 
-        if (clearMessages) {
-          set(aiAssistantIdAtom, v4());
-          set(aiAssistantMessagesAtom, []);
-        }
-
         // fork chat, if we are editing an existing chat
-        if (messageIndex !== undefined) {
+        const currentMessageCount = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
+        if (messageIndex < currentMessageCount) {
           set(aiAssistantIdAtom, v4());
           set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
-        } else {
-          messageIndex = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
         }
 
         set(codeEditorDiffEditorContentAtom, undefined);

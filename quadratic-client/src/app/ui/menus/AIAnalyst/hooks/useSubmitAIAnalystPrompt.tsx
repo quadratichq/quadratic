@@ -40,8 +40,7 @@ const MAX_TOOL_CALL_ITERATIONS = 25;
 export type SubmitAIAnalystPromptArgs = {
   content: Content;
   context: Context;
-  messageIndex?: number;
-  clearMessages?: boolean;
+  messageIndex: number;
   onSubmit?: () => void;
 };
 
@@ -95,7 +94,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, context, messageIndex, clearMessages, onSubmit }: SubmitAIAnalystPromptArgs) => {
+      async ({ content, context, messageIndex, onSubmit }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -111,7 +110,8 @@ export function useSubmitAIAnalystPrompt() {
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;
 
-        if (clearMessages) {
+        const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
+        if (messageIndex === 0) {
           set(aiAnalystCurrentChatAtom, {
             id: v4(),
             name: '',
@@ -119,9 +119,8 @@ export function useSubmitAIAnalystPrompt() {
             messages: [],
           });
         }
-
         // fork chat, if we are editing an existing chat
-        if (messageIndex !== undefined) {
+        else if (messageIndex < currentMessageCount) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
               id: v4(),
@@ -130,8 +129,6 @@ export function useSubmitAIAnalystPrompt() {
               messages: prev.messages.slice(0, messageIndex),
             };
           });
-        } else {
-          messageIndex = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         }
 
         let chatMessages: ChatMessage[] = [];

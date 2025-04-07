@@ -9,6 +9,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
@@ -178,31 +179,21 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                   textareaRef={textareaRef}
                   messageIndex={index}
                 />
-              ) : Array.isArray(message.content) ? (
-                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
-              ) : (
-                <Markdown key={message.content}>{message.content}</Markdown>
-              )
+              ) : message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
             ) : (
               <>
-                {message.content && Array.isArray(message.content) ? (
-                  <>
-                    {message.content.map((item, contentIndex) =>
-                      item.type === 'anthropic_thinking' ? (
-                        <ThinkingBlock
-                          key={item.text}
-                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
-                          isLoading={loading}
-                          thinkingContent={item}
-                          expandedDefault={true}
-                        />
-                      ) : item.type === 'text' ? (
-                        <Markdown key={item.text}>{item.text}</Markdown>
-                      ) : null
-                    )}
-                  </>
-                ) : (
-                  <Markdown key={message.content}>{message.content}</Markdown>
+                {message.content.map((item, contentIndex) =>
+                  item.type === 'anthropic_thinking' ? (
+                    <ThinkingBlock
+                      key={item.text}
+                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                      isLoading={loading}
+                      thinkingContent={item}
+                      expandedDefault={true}
+                    />
+                  ) : item.type === 'text' ? (
+                    <Markdown key={item.text}>{item.text}</Markdown>
+                  ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
@@ -226,11 +217,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       <PDFImportLoading />
 
-      <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
-        <span className="h-2 w-2 animate-bounce bg-primary" />
-        <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
-        <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
-      </div>
+      <AILoading loading={loading} />
     </div>
   );
 });
@@ -337,6 +324,7 @@ const PromptSuggestions = memo(() => {
               context: {
                 ...(lastContext ?? defaultAIAnalystContext),
               },
+              messageIndex: messages.length,
             })
           }
         >
