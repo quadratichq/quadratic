@@ -235,7 +235,7 @@ impl GridController {
             return ops;
         }
 
-        let width = values[0].len();
+        let width = values.iter().map(|row| row.len()).max().unwrap_or(0);
         if width == 0 {
             dbgjs!("[set_cell_values] Empty values");
             return ops;

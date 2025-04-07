@@ -120,10 +120,15 @@ impl DataTable {
             });
         }
 
+        // if the position is the first cell and the name and ui are shown, return the name
         if pos.x == 0 && pos.y == 0 && self.show_ui && self.show_name {
             return Ok(self.name.as_ref());
         }
-        if pos.y == (if self.show_name { 1 } else { 0 }) && self.show_ui && self.show_columns {
+
+        let header_y = if self.show_name { 1 } else { 0 };
+
+        // if the position is the first cell and the header is shown, return the header
+        if pos.y == header_y && self.show_ui && self.show_columns {
             if let Some(header) = self.display_header_at(pos.x as u32) {
                 return Ok(header.name.as_ref());
             }

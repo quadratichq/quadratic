@@ -3769,7 +3769,11 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
+<<<<<<< HEAD
 version = "0.6.9"
+=======
+version = "0.6.10"
+>>>>>>> origin/qa
 dependencies = [
  "aes",
  "arrow",

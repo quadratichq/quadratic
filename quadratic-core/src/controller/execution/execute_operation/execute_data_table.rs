@@ -182,14 +182,14 @@ impl GridController {
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: old_value.unwrap_or(CellValue::Blank).into(),
+                },
                 Operation::SetDataTable {
                     sheet_pos,
                     data_table: old_data_table,
                     index: old_index,
-                },
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_value.unwrap_or(CellValue::Blank).into(),
                 },
             ];
 

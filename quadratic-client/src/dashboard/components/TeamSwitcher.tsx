@@ -49,7 +49,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
           <ArrowDropDownIcon />
           <RefreshIcon
             className={`absolute left-0 top-0 ml-auto animate-spin bg-accent text-primary transition-opacity ${
-              appIsLoading ? '' : ' opacity-0'
+              appIsLoading ? '' : 'opacity-0'
             }`}
           />
         </div>

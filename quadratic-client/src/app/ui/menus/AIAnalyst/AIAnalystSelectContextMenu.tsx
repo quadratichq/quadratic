@@ -68,8 +68,8 @@ export const AIAnalystSelectContextMenu = memo(
                   const nextSheets = isCurrentSheet
                     ? prev.sheets
                     : prev.sheets.includes(sheetName)
-                    ? prev.sheets.filter((prevSheet) => prevSheet !== sheetName)
-                    : [...prev.sheets, sheetName];
+                      ? prev.sheets.filter((prevSheet) => prevSheet !== sheetName)
+                      : [...prev.sheets, sheetName];
                   return {
                     ...prev,
                     sheets: nextSheets,
