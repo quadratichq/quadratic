@@ -88,7 +88,7 @@ export function useSubmitAIAssistantPrompt() {
 
         set(codeEditorDiffEditorContentAtom, undefined);
         const currentCodeCellInEditor = await snapshot.getPromise(codeEditorCodeCellAtom);
-        if (codeCell && (!currentCodeCellInEditor || !isSameCodeCell(codeCell, currentCodeCellInEditor))) {
+        if (codeCell && !isSameCodeCell(codeCell, currentCodeCellInEditor)) {
           set(codeEditorWaitingForEditorClose, {
             codeCell,
             showCellTypeMenu: false,
