@@ -2,7 +2,6 @@ import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { SpinnerIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
@@ -114,11 +113,9 @@ export function ConnectionFormActions({
               const doDelete = window.confirm('Please confirm you want delete this connection. This cannot be undone.');
               if (doDelete) {
                 mixpanel.track('[Connections].delete', { type: connectionType });
-                const data = getDeleteConnectionAction(connectionUuid, teamUuid);
-                submit(data, {
-                  action: ROUTES.API.CONNECTIONS.POST,
-                  method: 'POST',
-                  encType: 'application/json',
+                const { json, options} = getDeleteConnectionAction(connectionUuid, teamUuid);
+                submit(json, {
+                 ...options,
                   navigate: false,
                 });
                 handleNavigateToListView();

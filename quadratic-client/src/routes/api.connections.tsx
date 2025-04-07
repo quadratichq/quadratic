@@ -1,5 +1,6 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 
@@ -94,37 +95,58 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   return { ok: false };
 };
 
-export type CreateConnectionAction = ReturnType<typeof getCreateConnectionAction>;
+export type CreateConnectionAction = ReturnType<typeof getCreateConnectionAction>['json'];
 export const getCreateConnectionAction = (
   body: ApiTypes['/v0/teams/:uuid/connections.POST.request'],
   teamUuid: string
 ) => {
   return {
-    action: 'create-connection',
-    teamUuid,
-    body,
-  };
+    json: {
+      action: 'create-connection',
+      teamUuid,
+      body,
+    },
+    options: {
+      action: ROUTES.API.CONNECTIONS.POST,
+      method: 'POST',
+      encType: 'application/json',
+    },
+  } as const;
 };
 
-export type UpdateConnectionAction = ReturnType<typeof getUpdateConnectionAction>;
+export type UpdateConnectionAction = ReturnType<typeof getUpdateConnectionAction>['json'];
 export const getUpdateConnectionAction = (
   connectionUuid: string,
   teamUuid: string,
   body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request']
 ) => {
   return {
-    action: 'update-connection',
-    connectionUuid,
-    teamUuid,
-    body,
-  };
+    json: {
+      action: 'update-connection',
+      connectionUuid,
+      teamUuid,
+      body,
+    },
+    options: {
+      action: ROUTES.API.CONNECTIONS.POST,
+      method: 'POST',
+      encType: 'application/json',
+    },
+  } as const;
 };
 
-export type DeleteConnectionAction = ReturnType<typeof getDeleteConnectionAction>;
+export type DeleteConnectionAction = ReturnType<typeof getDeleteConnectionAction>['json'];
 export const getDeleteConnectionAction = (connectionUuid: string, teamUuid: string) => {
   return {
-    action: 'delete-connection',
-    connectionUuid,
-    teamUuid,
-  };
+    json: {
+      action: 'delete-connection',
+      connectionUuid,
+      teamUuid,
+    },
+    options: {
+      action: ROUTES.API.CONNECTIONS.POST,
+      method: 'POST',
+      encType: 'application/json',
+    },
+  } as const;
 };

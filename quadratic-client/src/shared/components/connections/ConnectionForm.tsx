@@ -31,8 +31,8 @@ export function ConnectionFormCreate({
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, ...typeDetails } = formValues;
     mixpanel.track('[Connections].create', { type });
-    const data = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
-    submit(data, { action: ROUTES.API.CONNECTIONS.POST, method: 'POST', encType: 'application/json', navigate: false });
+    const { json, options } = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
+    submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
 
@@ -75,8 +75,8 @@ export function ConnectionFormEdit({
     // Enhancement: if nothing changed, don't submit. Just navigate back
     const { name, type, ...typeDetails } = formValues;
     mixpanel.track('[Connections].edit', { type });
-    const data = getUpdateConnectionAction(connectionUuid, teamUuid, { name, typeDetails });
-    submit(data, { action: ROUTES.API.CONNECTIONS.POST, method: 'POST', encType: 'application/json', navigate: false });
+    const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, { name, typeDetails });
+    submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
 
