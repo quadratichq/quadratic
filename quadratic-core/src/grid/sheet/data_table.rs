@@ -7,9 +7,7 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        js_types::JsSnackbarSeverity,
     },
-    wasm_bindings::js::jsClientMessage,
 };
 
 use anyhow::{Result, anyhow, bail};
@@ -471,9 +469,11 @@ impl Sheet {
     pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
         let contains_data_table = self.contains_data_table_within_rect(rect);
 
+        #[cfg(any(target_family = "wasm", test))]
         if contains_data_table {
             let message = "Tables cannot be created over tables, code, or formulas.";
-            jsClientMessage(message.to_owned(), JsSnackbarSeverity::Error.to_string());
+            let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+            crate::wasm_bindings::js::jsClientMessage(message.into(), error.to_string());
         }
 
         !contains_data_table

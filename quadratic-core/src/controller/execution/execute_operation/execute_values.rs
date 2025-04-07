@@ -21,6 +21,7 @@ impl GridController {
                         !transaction.is_server(),
                         &self.a1_context,
                     );
+
                     if old_values == values {
                         return;
                     }

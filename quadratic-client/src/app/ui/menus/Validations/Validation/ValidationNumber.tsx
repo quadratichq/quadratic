@@ -349,7 +349,7 @@ export const ValidationNumber = (props: Props) => {
               const min = r[0]?.toString() ?? '';
               const max = r[1]?.toString() ?? '';
               return (
-                <div className="mb-2 flex w-full flex-col gap-1 " key={i}>
+                <div className="mb-2 flex w-full flex-col gap-1" key={i}>
                   <div className="flex items-center gap-1">
                     <ValidationInput
                       type="number"

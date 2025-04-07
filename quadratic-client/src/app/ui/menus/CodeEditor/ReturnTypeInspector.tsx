@@ -1,5 +1,6 @@
 import {
   aiAssistantLoadingAtom,
+  aiAssistantWaitingOnMessageIndexAtom,
   codeEditorCodeCellAtom,
   codeEditorConsoleOutputAtom,
   codeEditorEditorContentAtom,
@@ -32,6 +33,7 @@ export function ReturnTypeInspector() {
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const codeCellRecoil = useRecoilValue(codeEditorCodeCellAtom);
   const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiAssistantWaitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
 
   const { submitPrompt } = useSubmitAIAssistantPrompt();
 
@@ -63,7 +65,7 @@ export function ReturnTypeInspector() {
             codeCell: codeCellRecoil,
           }).catch(console.error);
         }}
-        disabled={aiAssistantLoading}
+        disabled={aiAssistantLoading || aiAssistantWaitingOnMessageIndex !== undefined}
       >
         Fix in AI chat
       </Button>
