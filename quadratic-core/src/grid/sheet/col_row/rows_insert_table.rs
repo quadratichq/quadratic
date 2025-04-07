@@ -14,9 +14,10 @@ impl Sheet {
         row: i64,
     ) {
         self.data_tables.iter_mut().for_each(|(pos, dt)| {
+            dbg!(row, pos.y, pos.y + dt.height(false) as i64);
             if (!dt.readonly || dt.is_html_or_image())
                 && row >= pos.y
-                && row <= pos.y + dt.height(true) as i64
+                && row <= pos.y + dt.height(false) as i64
             {
                 if dt.is_html_or_image() {
                     // if html or image, then we need to change the height
@@ -36,7 +37,6 @@ impl Sheet {
 
                     let table_row = (row - pos.y) as u32;
                     let display_index = dt.get_row_index_from_display_index(table_row as u64);
-
                     if dt.insert_row(display_index as usize, None).is_err() {
                         return;
                     }
@@ -100,7 +100,7 @@ mod tests {
     use crate::test_util::*;
 
     #[test]
-    fn test_table_insert_row() {
+    fn test_table_insert_row_top() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
@@ -114,6 +114,21 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_table_count(&gc, sheet_id, 1);
 
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "");
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
+    }
+
+    #[test]
+    fn test_table_insert_row_middle() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
+
         gc.insert_row(sheet_id, 4, true, None);
         // this is wrong?
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
@@ -123,8 +138,46 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
 
+        gc.redo(None);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "");
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
+
+        gc.undo(None);
+        assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+    }
+
+    #[test]
+    fn test_table_insert_row_bottom() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
+
         gc.insert_row(sheet_id, 5, false, None);
         assert_display_cell_value(&gc, sheet_id, 2, 5, "");
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
+
+        gc.undo(None);
+        assert_display_cell_value(&gc, sheet_id, 2, 5, "2");
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_row(sheet_id, 5, true, None);
+        assert_display_cell_value(&gc, sheet_id, 2, 5, "");
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
+
+        gc.undo(None);
+        assert_display_cell_value(&gc, sheet_id, 2, 5, "2");
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+    }
+
+    #[test]
+    fn test_chart_insert_row() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_row(sheet_id, 4, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
     }
 }

@@ -406,16 +406,24 @@ impl DataTable {
     /// If false, it includes the array height, which may contain the column
     /// header row if header_is_first_row is true.
     pub fn height(&self, force_table_bounds: bool) -> usize {
-        match &self.value {
-            Value::Single(_) => 1,
-            Value::Array(array) => {
-                if force_table_bounds {
-                    array.height() as usize
-                } else {
-                    (array.height() as i64 + self.y_adjustment(true)) as usize
-                }
+        if self.is_html_or_image() {
+            if let Some((_, h)) = self.chart_output {
+                (h + (if force_table_bounds { 0 } else { 1 })) as usize
+            } else {
+                1
             }
-            Value::Tuple(_) => 0,
+        } else {
+            match &self.value {
+                Value::Single(_) => 1,
+                Value::Array(array) => {
+                    if force_table_bounds {
+                        array.height() as usize
+                    } else {
+                        (array.height() as i64 + self.y_adjustment(true)) as usize
+                    }
+                }
+                Value::Tuple(_) => 0,
+            }
         }
     }
 
