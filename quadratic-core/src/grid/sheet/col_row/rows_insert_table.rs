@@ -68,10 +68,6 @@ impl Sheet {
         }
         data_tables_to_move.sort_by(|(a, _, _), (b, _, _)| b.y.cmp(&a.y));
         for (old_pos, is_image, is_html) in data_tables_to_move {
-            dbgjs!(format!(
-                "old_pos: {:?}, is_image: {:?}, is_html: {:?}",
-                old_pos, is_image, is_html
-            ));
             let new_pos = Pos {
                 x: old_pos.x,
                 y: old_pos.y + 1,
