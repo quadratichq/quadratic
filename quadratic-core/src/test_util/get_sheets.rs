@@ -3,6 +3,11 @@ use crate::controller::GridController;
 #[cfg(test)]
 use crate::grid::{Sheet, SheetId};
 
+#[cfg(test)]
+pub fn test_create_gc() -> GridController {
+    GridController::test()
+}
+
 /// Gets the first sheet from a grid controller
 #[cfg(test)]
 pub fn first_sheet(gc: &GridController) -> &Sheet {

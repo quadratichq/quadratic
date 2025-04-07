@@ -1144,7 +1144,7 @@ mod test {
 
         // paste side by side
         paste(&mut gc, sheet_id, 10, 1, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_row1);
 
         let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
@@ -1164,7 +1164,7 @@ mod test {
 
         // paste side by side
         paste(&mut gc, sheet_id, 10, 1, js_clipboard.html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_row1);
     }
 
@@ -1194,7 +1194,7 @@ mod test {
 
         // paste side by side
         paste(&mut gc, sheet_id, 10, 1, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
 
@@ -1228,7 +1228,7 @@ mod test {
 
         // paste side by side
         paste(&mut gc, sheet_id, 10, 1, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
 
@@ -1262,7 +1262,7 @@ mod test {
 
         // paste side by side
         paste(&mut gc, sheet_id, 10, 1, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
 
