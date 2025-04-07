@@ -62,7 +62,7 @@ describe('GET /v0/files/:uuid/checkpoints', () => {
       .expect(200)
       .expect((res) => {
         ApiSchemas['/v0/files/:uuid/checkpoints.GET.response'].parse(res.body);
-        expect(res.body.name).toEqual('public_file');
+        expect(res.body.file.name).toEqual('public_file');
         expect(res.body.checkpoints.length).toEqual(1);
       });
   });
@@ -73,7 +73,7 @@ describe('GET /v0/files/:uuid/checkpoints', () => {
       .expect(200)
       .expect((res) => {
         ApiSchemas['/v0/files/:uuid/checkpoints.GET.response'].parse(res.body);
-        expect(res.body.name).toEqual('private_file');
+        expect(res.body.file.name).toEqual('private_file');
         expect(res.body.checkpoints.length).toEqual(1);
       });
   });
