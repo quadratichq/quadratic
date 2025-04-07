@@ -24,11 +24,11 @@ type AIContextProps = {
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
   editing: boolean;
   disabled: boolean;
-  textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIContext = memo(
-  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textAreaRef }: AIContextProps) => {
+  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textareaRef }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
@@ -99,7 +99,7 @@ export const AIContext = memo(
             context={context}
             setContext={setContext}
             disabled={disabled}
-            onClose={() => textAreaRef.current?.focus()}
+            onClose={() => textareaRef.current?.focus()}
           />
         )}
 

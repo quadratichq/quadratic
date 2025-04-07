@@ -185,7 +185,7 @@ export const AIUserMessageForm = memo(
           setFiles={setFiles}
           editing={editing}
           disabled={waitingOnMessageIndex !== undefined || !editing}
-          textAreaRef={textareaRef}
+          textareaRef={textareaRef}
         />
 
         {editing ? (
@@ -337,7 +337,7 @@ const AIUserMessageFormFooter = memo(
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
-          <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+          <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             {!debug && (
