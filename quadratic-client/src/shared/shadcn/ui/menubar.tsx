@@ -2,6 +2,7 @@ import { CheckIcon, ChevronRightIcon, DotFilledIcon } from '@radix-ui/react-icon
 import * as MenubarPrimitive from '@radix-ui/react-menubar';
 import * as React from 'react';
 
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { cn } from '@/shared/shadcn/utils';
 
@@ -17,24 +18,14 @@ const MenubarRadioGroup = MenubarPrimitive.RadioGroup;
 
 const Menubar = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root> & {
-    disableFocusGridRef?: React.MutableRefObject<boolean>;
-  }
->(({ className, disableFocusGridRef, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>
+>(({ className, ...props }, ref) => {
   return (
     <MenubarPrimitive.Root
       ref={ref}
       onValueChange={(value) => {
         if (!value) {
-          // focus grid if it's not disabled
-          if (!disableFocusGridRef?.current) {
-            setTimeout(() => focusGrid(), 100);
-          }
-
-          // enable focus grid after menu closes, this is the default behavior
-          if (disableFocusGridRef) {
-            disableFocusGridRef.current = false;
-          }
+          setTimeout(() => focusGrid(pixiAppSettings), 100);
         }
       }}
       className={cn('flex h-9 items-center gap-[1px] rounded-md bg-background p-1', className)}

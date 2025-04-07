@@ -34,7 +34,7 @@ interface Input {
   sheetId?: string;
 }
 
-class PixiAppSettings {
+export class PixiAppSettings {
   private settings: GridSettings;
   private lastSettings: GridSettings;
   private _panMode: PanMode;
