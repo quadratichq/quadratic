@@ -140,7 +140,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
 
   const message =
     typeof activeMessage?.message === 'string'
-      ? DEFINED_MESSAGES[activeMessage.message] ?? activeMessage.message
+      ? (DEFINED_MESSAGES[activeMessage.message] ?? activeMessage.message)
       : activeMessage?.message;
 
   // If we have the `severity`, we'll make it look like an Alert. Otherwise,
