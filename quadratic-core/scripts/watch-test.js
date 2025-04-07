@@ -21,8 +21,10 @@ if (!testName) {
 }
 
 // Construct the cargo watch command
-const command = `cargo watch --clear --exec "test ${testName} --features show-first-sheet-operations -- --nocapture"`;
+// Using the module path to limit tests to only lib.rs
+const command = `cargo watch --clear --exec "test ${testName} --lib --features show-first-sheet-operations -- --nocapture"`;
 console.log(command);
+
 // Execute the command
 const child = exec(command, { cwd: path.resolve(__dirname, '..') });
 
