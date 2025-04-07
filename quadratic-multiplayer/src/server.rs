@@ -30,7 +30,8 @@ use crate::{
     config::config,
     error::{ErrorLevel, MpError, Result},
     message::{
-        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
+        broadcast, handle::handle_message, proto::request::decode_transaction,
+        proto::response::encode_transaction, request::MessageRequest, response::MessageResponse,
     },
     state::{State, connection::PreConnection},
 };
@@ -296,18 +297,28 @@ async fn process_message(
 
             if let Some(message_response) = message_response {
                 let response_text = serde_json::to_string(&message_response)?;
+
                 (*sender.lock().await)
                     .send(Message::Text(response_text.into()))
                     .await
                     .map_err(|e| MpError::SendingMessage(e.to_string()))?;
             }
         }
-        Message::Binary(d) => {
-            tracing::info!(
-                "Binary messages are not yet supported.  {} bytes: {:?}",
-                d.len(),
-                d
-            );
+        // binary messages are protocol buffers
+        Message::Binary(b) => {
+            let transaction = decode_transaction(&b)?;
+            let message_request = MessageRequest::try_from(transaction)?;
+            let message_response =
+                handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
+
+            if let Some(message_response) = message_response {
+                let binary_response = encode_transaction(&message_response.try_into()?)?;
+
+                (*sender.lock().await)
+                    .send(Message::Binary(binary_response.into()))
+                    .await
+                    .map_err(|e| MpError::SendingMessage(e.to_string()))?;
+            }
         }
         Message::Close(c) => {
             if let Some(cf) = c {

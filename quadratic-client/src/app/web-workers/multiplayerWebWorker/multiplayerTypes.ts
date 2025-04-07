@@ -96,13 +96,23 @@ export interface ReceiveTransaction {
   sequence_num: number;
 }
 
+export interface ReceiveBinaryTransaction {
+  type: 'BinaryTransaction';
+  id: string;
+  file_id: string;
+  operations: Buffer;
+  sequence_num: number;
+}
+
 export interface SendTransaction {
   type: 'Transaction';
   id: string;
   session_id: string;
   file_id: string;
-  operations: string;
+  operations: Uint8Array<ArrayBufferLike>;
 }
+
+export type SendBinaryTransaction = Uint8Array<ArrayBufferLike>;
 
 export interface SendGetTransactions {
   type: 'GetTransactions';
@@ -141,6 +151,7 @@ export type ReceiveMessages =
   | ReceiveRoom
   | MessageUserUpdate
   | ReceiveTransaction
+  | ReceiveBinaryTransaction
   | ReceiveEmpty
   | ReceiveTransactions
   | ReceiveEnterRoom
@@ -148,3 +159,4 @@ export type ReceiveMessages =
   | ReceiveCurrentTransaction;
 
 export type MultiplayerServerMessage = SendTransaction | SendEnterRoom | SendGetTransactions;
+export type MultiplayerServerBinaryMessage = SendBinaryTransaction;

@@ -20,6 +20,7 @@ futures-util = { version = "0.3.29", default-features = false, features = [
 ] }
 headers = "0.4.0"
 jsonwebtoken = "9.2.0"
+prost = "0.13.5"
 quadratic-core = { path = "../quadratic-core", default-features = false, features = [
     "console_error_panic_hook",
     "js",
@@ -55,3 +56,6 @@ zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
 
 [patch.'https://github.com/zip-rs/zip2']
 zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }
+
+[build-dependencies]
+prost-build = "0.13.5"

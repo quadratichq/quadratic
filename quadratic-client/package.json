@@ -22,6 +22,7 @@
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
     "@ory/kratos-client": "^1.2.1",
+    "@protobuf-ts/plugin": "^2.9.6",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -116,7 +117,8 @@
     "coverage:wasm:html": "cd .. && cd quadratic-core && grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
     "build:javascript:worker": "cd ./src/app/web-workers/javascriptWebWorker/worker/javascript/runner/ && node compileJavascriptRunner.mjs",
-    "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/"
+    "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/",
+    "gen:proto": "npx protoc --ts_out=./src/app/web-workers/multiplayerWebWorker/proto -I=./src/app/web-workers/multiplayerWebWorker/proto ./src/app/web-workers/multiplayerWebWorker/proto/*.proto"
   },
   "browserslist": {
     "production": [

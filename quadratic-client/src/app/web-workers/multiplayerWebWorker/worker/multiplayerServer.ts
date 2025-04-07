@@ -12,20 +12,22 @@ import type {
   CellEdit,
   Heartbeat,
   MessageUserUpdate,
+  MultiplayerServerBinaryMessage,
   MultiplayerServerMessage,
   ReceiveMessages,
   ReceiveRoom,
+  ReceiveTransaction,
   SendEnterRoom,
   SendGetTransactions,
   SendTransaction,
   UserUpdate,
   Version,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { SendTransaction as SendProtoTransaction } from '@/app/web-workers/multiplayerWebWorker/proto/transaction';
 import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
 import type { User } from '@/auth/auth';
 import * as Sentry from '@sentry/react';
-import { Buffer } from 'buffer';
 import sharedConstants from '../../../../../../updateAlertVersion.json';
 
 const UPDATE_TIME_MS = 1000 / 60;
@@ -237,6 +239,7 @@ export class MultiplayerServer {
 
   private handleMessage = (e: MessageEvent<string>) => {
     const data: ReceiveMessages = JSON.parse(e.data);
+
     switch (data.type) {
       case 'UsersInRoom':
         this.receiveUsersInRoom(data);
@@ -248,6 +251,14 @@ export class MultiplayerServer {
 
       case 'Transaction':
         multiplayerCore.receiveTransaction(data);
+        break;
+
+      case 'BinaryTransaction':
+        const transaction = {
+          ...data,
+          type: 'Transaction',
+        } as ReceiveTransaction;
+        multiplayerCore.receiveTransaction(transaction);
         break;
 
       case 'Transactions':
@@ -296,8 +307,13 @@ export class MultiplayerServer {
   }
 
   private send(message: MultiplayerServerMessage) {
-    if (!this.websocket) throw new Error('Expected websocket to be defined in sendTransaction');
+    if (!this.websocket) throw new Error('Expected websocket to be defined in send');
     this.websocket.send(JSON.stringify(message));
+  }
+
+  private sendBinary(message: MultiplayerServerBinaryMessage) {
+    if (!this.websocket) throw new Error('Expected websocket to be defined in sendBinary');
+    this.websocket.send(message);
   }
 
   sendTransaction(transactionMessage: CoreMultiplayerTransaction) {
@@ -307,14 +323,18 @@ export class MultiplayerServer {
     }
 
     multiplayerClient.sendState('syncing');
-    const message: SendTransaction = {
+
+    const protoMessage: SendTransaction = {
       type: 'Transaction',
       id: transactionMessage.transaction_id,
       session_id: this.sessionId!,
       file_id: this.fileId!,
-      operations: Buffer.from(transactionMessage.operations).toString('base64'),
+      operations: new Uint8Array(transactionMessage.operations),
     };
-    this.send(message);
+
+    const encodedMessage = SendProtoTransaction.toBinary(protoMessage);
+
+    this.sendBinary(encodedMessage);
   }
 
   requestTransactions(sequenceNum: number) {

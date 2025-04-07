@@ -211,6 +211,47 @@ pub(crate) async fn handle_message(
             Ok(None)
         }
 
+        // User sends binarytransactions
+        MessageRequest::BinaryTransaction {
+            id,
+            session_id,
+            file_id,
+            operations,
+        } => {
+            validate_user_can_edit_file(Arc::clone(&state), file_id, session_id).await?;
+
+            // update the heartbeat
+            state.update_user_heartbeat(file_id, &session_id).await?;
+
+            tracing::trace!(
+                "Transaction received for room {} from user {}, operations: {:?}",
+                file_id,
+                session_id,
+                &operations
+            );
+
+            // get and increment the room's sequence_num
+            let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+
+            // add the transaction to the transaction queue
+            // we need to clone operations since we broadcast it later
+            let sequence_num = state
+                .push_pubsub(id, file_id, operations.to_owned(), room_sequence_num)
+                .await?;
+
+            // broadcast the transaction to all users in the room
+            let response = MessageResponse::BinaryTransaction {
+                id,
+                file_id,
+                operations,
+                sequence_num,
+            };
+
+            broadcast(vec![], file_id, Arc::clone(&state), response);
+
+            Ok(None)
+        }
+
         // User sends transactions
         MessageRequest::GetTransactions {
             file_id,

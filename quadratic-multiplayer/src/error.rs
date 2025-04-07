@@ -140,6 +140,12 @@ impl From<jsonwebtoken::errors::Error> for MpError {
     }
 }
 
+impl From<prost::DecodeError> for MpError {
+    fn from(error: prost::DecodeError) -> Self {
+        MpError::Serialization(error.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
 

@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.6.9",
+  "version": "0.6.6",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -62,6 +62,7 @@
     "kill": "kill-port 3000 && kill-port 8000 && kill-port 3001 && kill-port 3002 && kill-port 3003 && kill-port 6379 && kill-port 8001 && kill-port 5432 && kill-port 4566 && kill-port 80 && kill-port 443",
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",
+    "gen:proto": "npm run gen:proto --workspace=quadratic-client",
     "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "docker:base": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile base --env-file .env.docker up",
