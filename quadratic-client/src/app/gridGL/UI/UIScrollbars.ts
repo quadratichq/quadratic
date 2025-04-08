@@ -8,7 +8,7 @@ import { Container, Sprite, Texture } from 'pixi.js';
 const SCROLLBAR_SIZE = 6;
 const SCROLLBAR_PADDING = 6;
 const SCROLLBAR_COLOR = 0x000000;
-const SCROLLBAR_ALPHA = 0.2;
+const SCROLLBAR_ALPHA = 0.18;
 
 export class UIScrollbars extends Container {
   private dirty = true;
@@ -68,7 +68,6 @@ export class UIScrollbars extends Container {
 
     // If the content is smaller than the viewport, and the viewport is at the
     // start of the content, then the scrollbar is not visible.
-    console.log(viewportTotal, contentSize, viewportStart);
     if (viewportTotal >= contentSize && viewportStart === -headingSize / pixiApp.viewport.scaled) {
       return undefined;
     }
@@ -77,7 +76,12 @@ export class UIScrollbars extends Container {
     // the scrollbar size
     const adjustedContentSize = Math.max(contentSize, viewportEnd);
     const start = viewportStart / adjustedContentSize;
-    const size = contentSize / viewportTotal;
+    let size: number;
+    if (contentSize < viewportTotal) {
+      size = contentSize / viewportTotal;
+    } else {
+      size = viewportTotal / contentSize;
+    }
     return { start, size };
   }
 
@@ -115,9 +119,9 @@ export class UIScrollbars extends Container {
     this.vertical.visible = !!vertical;
     if (vertical) {
       const start = headingSize.height;
-      const actualHeight = screenHeight - start - SCROLLBAR_PADDING * 2;
+      const actualHeight = screenHeight - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       this.vertical.y = Math.max(start, start + vertical.start * actualHeight);
-      const bottomClamp = screenHeight - this.vertical.y - SCROLLBAR_PADDING * 2 - SCROLLBAR_SIZE;
+      const bottomClamp = screenHeight - this.vertical.y - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       this.vertical.height = Math.min(bottomClamp, vertical.size * actualHeight);
       this.vertical.x = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
     }
