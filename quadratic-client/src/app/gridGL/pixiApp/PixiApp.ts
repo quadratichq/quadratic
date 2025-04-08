@@ -15,6 +15,7 @@ import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
+import { UIScrollbars } from '@/app/gridGL/UI/UIScrollbars';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
@@ -75,6 +76,7 @@ export class PixiApp {
   cellImages!: UICellImages;
   validations: UIValidations;
   copy: UICopy;
+  scrollbars: UIScrollbars;
 
   renderer: Renderer;
   momentumDetector: MomentumScrollDetector;
@@ -101,6 +103,7 @@ export class PixiApp {
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
     this.hoverTableColumnsSelection = new Graphics();
+    this.scrollbars = new UIScrollbars();
 
     this.canvas = document.createElement('canvas');
     this.renderer = new Renderer({
@@ -156,6 +159,7 @@ export class PixiApp {
     observer.observe(this.canvas);
 
     this.stage.addChild(this.viewport);
+    this.stage.addChild(this.scrollbars);
 
     // this holds the viewport's contents
     this.viewportContents = this.viewport.addChild(new Container());

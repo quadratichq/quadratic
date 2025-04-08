@@ -108,6 +108,8 @@ export class Update {
     debugTimeCheck('[Update] backgrounds');
     pixiApp.copy.update();
     debugTimeCheck('[Update] copy');
+    pixiApp.scrollbars.update();
+    debugTimeCheck('[Update] scrollbars');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
