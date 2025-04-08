@@ -17,32 +17,32 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
         size === 'xs'
           ? '20px'
           : size === 'small'
-          ? '24px'
-          : size === 'medium'
-          ? '32px'
-          : size === 'large'
-          ? '40px'
-          : '24px',
+            ? '24px'
+            : size === 'medium'
+              ? '32px'
+              : size === 'large'
+                ? '40px'
+                : '24px',
       height:
         size === 'xs'
           ? '20px'
           : size === 'small'
-          ? '24px'
-          : size === 'medium'
-          ? '32px'
-          : size === 'large'
-          ? '40px'
-          : '24px',
+            ? '24px'
+            : size === 'medium'
+              ? '32px'
+              : size === 'large'
+                ? '40px'
+                : '24px',
       fontSize:
         size === 'xs'
           ? '0.625rem'
           : size === 'small'
-          ? '0.75rem'
-          : size === 'medium'
-          ? '1rem'
-          : size === 'large'
-          ? '1.125rem'
-          : '0.8125rem',
+            ? '0.75rem'
+            : size === 'medium'
+              ? '1rem'
+              : size === 'large'
+                ? '1.125rem'
+                : '0.8125rem',
       borderRadius: '50%',
       display: 'flex',
       alignItems: 'center',
