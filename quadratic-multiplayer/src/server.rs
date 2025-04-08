@@ -16,7 +16,6 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use futures_util::stream::SplitSink;
 use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
@@ -30,10 +29,13 @@ use crate::{
     config::config,
     error::{ErrorLevel, MpError, Result},
     message::{
-        broadcast, handle::handle_message, proto::request::decode_transaction,
-        proto::response::encode_transaction, request::MessageRequest, response::MessageResponse,
+        broadcast,
+        handle::handle_message,
+        proto::{request::decode_transaction, response::encode_message},
+        request::MessageRequest,
+        response::MessageResponse,
     },
-    state::{State, connection::PreConnection},
+    state::{State, connection::PreConnection, user::UserSocket},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -284,7 +286,7 @@ async fn handle_socket(
 #[tracing::instrument(level = "trace")]
 async fn process_message(
     msg: Message,
-    sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
+    sender: UserSocket,
     state: Arc<State>,
     pre_connection: PreConnection,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
@@ -295,14 +297,7 @@ async fn process_message(
                 handle_message(messsage_request, state, Arc::clone(&sender), pre_connection)
                     .await?;
 
-            if let Some(message_response) = message_response {
-                let response_text = serde_json::to_string(&message_response)?;
-
-                (*sender.lock().await)
-                    .send(Message::Text(response_text.into()))
-                    .await
-                    .map_err(|e| MpError::SendingMessage(e.to_string()))?;
-            }
+            send_response(sender, message_response).await?;
         }
         // binary messages are protocol buffers
         Message::Binary(b) => {
@@ -311,14 +306,7 @@ async fn process_message(
             let message_response =
                 handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
 
-            if let Some(message_response) = message_response {
-                let binary_response = encode_transaction(&message_response.try_into()?)?;
-
-                (*sender.lock().await)
-                    .send(Message::Binary(binary_response.into()))
-                    .await
-                    .map_err(|e| MpError::SendingMessage(e.to_string()))?;
-            }
+            send_response(sender, message_response).await?;
         }
         Message::Close(c) => {
             if let Some(cf) = c {
@@ -334,6 +322,38 @@ async fn process_message(
     }
 
     Ok(ControlFlow::Continue(()))
+}
+
+pub(crate) async fn send_text(sender: UserSocket, message: MessageResponse) -> Result<()> {
+    let text = serde_json::to_string(&message)?;
+
+    (*sender.lock().await)
+        .send(Message::Text(text.into()))
+        .await
+        .map_err(|e| MpError::SendingMessage(e.to_string()))
+}
+
+pub(crate) async fn send_binary(sender: UserSocket, message: MessageResponse) -> Result<()> {
+    let binary = encode_message(message)?;
+
+    (*sender.lock().await)
+        .send(Message::Binary(binary.into()))
+        .await
+        .map_err(|e| MpError::SendingMessage(e.to_string()))
+}
+
+pub(crate) async fn send_response(
+    sender: UserSocket,
+    message: Option<MessageResponse>,
+) -> Result<()> {
+    if let Some(message) = message {
+        return match message.is_binary() {
+            true => send_binary(sender, message).await,
+            false => send_text(sender, message).await,
+        };
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn healthcheck() -> impl IntoResponse {

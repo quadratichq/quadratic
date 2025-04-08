@@ -5,12 +5,9 @@
 //! socket information is stored in the global state, we can broadcast
 //! to all users in a room.
 
-use axum::extract::ws::{Message, WebSocket};
 use base64::{Engine, engine::general_purpose::STANDARD};
-use futures_util::stream::SplitSink;
 use quadratic_rust_shared::quadratic_api::{FilePermRole, get_file_perms};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::error::{ErrorLevel, MpError, Result};
@@ -24,6 +21,7 @@ use crate::permissions::{
     validate_can_edit_or_view_file, validate_user_can_edit_file,
     validate_user_can_edit_or_view_file,
 };
+use crate::state::user::UserSocket;
 use crate::state::{
     State,
     connection::PreConnection,
@@ -36,7 +34,7 @@ use crate::state::{
 pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,
-    sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
+    sender: UserSocket,
     pre_connection: PreConnection,
 ) -> Result<Option<MessageResponse>> {
     tracing::trace!("Handling message {:?}", request);
@@ -399,6 +397,7 @@ pub(crate) mod tests {
     use quadratic_core::controller::transaction::Transaction as CoreTransaction;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
+    use tokio::sync::Mutex;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
 

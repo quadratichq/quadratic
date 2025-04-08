@@ -1,6 +1,6 @@
 use axum::extract::ws::Message;
 use futures_util::SinkExt;
-use proto::response::encode_transaction;
+use proto::response::encode_message;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -141,7 +141,7 @@ pub(crate) fn broadcast_binary(
                     return Ok::<_, MpError>(());
                 }
 
-                let binary_response = encode_transaction(&message.try_into()?)?;
+                let binary_response = encode_message(message)?;
 
                 for user in included_users {
                     if let Some(sender) = &user.socket {

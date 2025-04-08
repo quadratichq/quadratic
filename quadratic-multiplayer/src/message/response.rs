@@ -73,6 +73,15 @@ pub(crate) enum MessageResponse {
     },
 }
 
+impl MessageResponse {
+    pub(crate) fn is_binary(&self) -> bool {
+        matches!(
+            self,
+            MessageResponse::BinaryTransaction { .. } | MessageResponse::BinaryTransactions { .. }
+        )
+    }
+}
+
 impl From<TransactionServer> for Transaction {
     fn from(transaction_server: TransactionServer) -> Self {
         Transaction {
@@ -98,6 +107,7 @@ impl From<TransactionServer> for BinaryTransaction {
 impl From<TransactionServer> for ReceiveTransaction {
     fn from(transaction_server: TransactionServer) -> Self {
         ReceiveTransaction {
+            r#type: "BinaryTransaction".to_string(),
             id: transaction_server.id.to_string(),
             file_id: transaction_server.file_id.to_string(),
             sequence_num: transaction_server.sequence_num,
