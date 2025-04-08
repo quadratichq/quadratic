@@ -14,7 +14,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getFileTypeLabel } from 'quadratic-shared/ai/helpers/files.helper';
+import { getFileTypeLabel, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -122,7 +122,10 @@ export const AIContext = memo(
         <AttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
 
         {files.map((file, index) => (
-          <HoverCard key={`${index}-${file.fileName}`}>
+          <HoverCard
+            key={`${index}-${file.fileName}`}
+            open={isSupportedImageMimeType(file.mimeType) ? undefined : false}
+          >
             <HoverCardTrigger>
               <ContextPill
                 primary={file.fileName}
@@ -132,8 +135,7 @@ export const AIContext = memo(
               />
             </HoverCardTrigger>
             <HoverCardContent className="w-48" side="top">
-              {/* TODO:(ayush) add the preview image for a file here */}
-              <img src="https://picsum.photos/600/400" alt="preview" crossOrigin="anonymous" />
+              <img src={`data:${file.mimeType};base64,${file.data}`} alt="preview" crossOrigin="anonymous" />
             </HoverCardContent>
           </HoverCard>
         ))}
