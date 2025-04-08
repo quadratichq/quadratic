@@ -10,6 +10,7 @@ import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSe
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { getFileTypeLabel } from 'quadratic-shared/ai/helpers/files.helper';
@@ -118,13 +119,20 @@ export const AIContext = memo(
         <AttachmentTrigger handleFiles={handleFiles} disabled={disabled} isAnalyst={context !== undefined} />
 
         {files.map((file, index) => (
-          <ContextPill
-            key={`${index}-${file.fileName}`}
-            primary={file.fileName}
-            secondary={getFileTypeLabel(file.mimeType)}
-            disabled={disabled}
-            onClick={() => setFiles?.(files.filter((f) => f !== file))}
-          />
+          <HoverCard key={`${index}-${file.fileName}`}>
+            <HoverCardTrigger>
+              <ContextPill
+                primary={file.fileName}
+                secondary={getFileTypeLabel(file.mimeType)}
+                disabled={disabled}
+                onClick={() => setFiles?.(files.filter((f) => f !== file))}
+              />
+            </HoverCardTrigger>
+            <HoverCardContent className="w-48" side="top">
+              {/* TODO:(ayush) add the preview image for a file here */}
+              <img src="https://picsum.photos/600/400" alt="preview" crossOrigin="anonymous" />
+            </HoverCardContent>
+          </HoverCard>
         ))}
 
         {setContext && context && (
