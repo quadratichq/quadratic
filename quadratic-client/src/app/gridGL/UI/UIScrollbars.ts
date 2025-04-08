@@ -5,8 +5,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Container, Sprite, Texture } from 'pixi.js';
 
-const SCROLLBAR_SIZE = 8;
-const SCROLLBAR_PADDING = 8;
+const SCROLLBAR_SIZE = 6;
+const SCROLLBAR_PADDING = 6;
 const SCROLLBAR_COLOR = 0x000000;
 const SCROLLBAR_ALPHA = 0.2;
 
@@ -15,9 +15,6 @@ export class UIScrollbars extends Container {
 
   private horizontal = new Sprite(Texture.WHITE);
   private vertical = new Sprite(Texture.WHITE);
-
-  private horizontalShow = false;
-  private verticalShow = false;
 
   constructor() {
     super();
@@ -29,30 +26,29 @@ export class UIScrollbars extends Container {
     this.vertical.tint = SCROLLBAR_COLOR;
     this.addChild(this.horizontal);
     this.addChild(this.vertical);
+
     events.on('viewportChanged', this.setDirty);
+    events.on('sheetInfo', this.setDirty);
+    events.on('sheetInfoUpdate', this.setDirty);
+    events.on('headingSize', this.setDirty);
+    events.on('changeSheet', this.setDirty);
     window.addEventListener('resize', this.setDirty);
   }
 
   destroy() {
     events.off('viewportChanged', this.setDirty);
+    events.off('sheetInfo', this.setDirty);
+    events.off('sheetInfoUpdate', this.setDirty);
+    events.off('headingSize', this.setDirty);
+    events.off('changeSheet', this.setDirty);
     window.removeEventListener('resize', this.setDirty);
   }
 
   private setDirty = () => (this.dirty = true);
 
-  /*
-        this.scrollbarTop = (this.content.top / height) * this.boxHeight
-        this.scrollbarTop = this.scrollbarTop < 0 ? 0 : this.scrollbarTop
-        this.scrollbarHeight = (this.boxHeight / height) * this.boxHeight
-        this.scrollbarHeight = this.scrollbarTop + this.scrollbarHeight > this.boxHeight ? this.boxHeight - this.scrollbarTop : this.scrollbarHeight
-        this.scrollbarLeft = (this.content.left / width) * this.boxWidth
-        this.scrollbarLeft = this.scrollbarLeft < 0 ? 0 : this.scrollbarLeft
-        this.scrollbarWidth = (this.boxWidth / width) * this.boxWidth
-*/
-
   /**
    * Calculates the start and size of the scrollbar. All parameters are in
-   * viewport coordinates.
+   * viewport coordinates. Works for both horizontal and vertical scrollbars.
    *
    * @param contentSize - total size of the content
    * @param viewportStart - visible start of the viewport
@@ -65,21 +61,23 @@ export class UIScrollbars extends Container {
   private calculateSize(
     contentSize: number,
     viewportStart: number,
-    viewportEnd: number
+    viewportEnd: number,
+    headingSize: number
   ): { start: number; size: number } | undefined {
     const viewportTotal = viewportEnd - viewportStart;
 
     // If the content is smaller than the viewport, and the viewport is at the
     // start of the content, then the scrollbar is not visible.
-    if (contentSize <= viewportTotal && viewportStart === 0) {
+    console.log(viewportTotal, contentSize, viewportStart);
+    if (viewportTotal >= contentSize && viewportStart === -headingSize / pixiApp.viewport.scaled) {
       return undefined;
     }
 
     // we use the largest of the content size or the viewport size to calculate
     // the scrollbar size
-    const adjustedContentSize = Math.max(contentSize, viewportTotal);
+    const adjustedContentSize = Math.max(contentSize, viewportEnd);
     const start = viewportStart / adjustedContentSize;
-    const size = viewportTotal / adjustedContentSize;
+    const size = contentSize / viewportTotal;
     return { start, size };
   }
 
@@ -92,29 +90,36 @@ export class UIScrollbars extends Container {
     const contentBounds = sheets.sheet.getScrollbarBounds();
     if (!contentBounds) return;
 
-    const horizontal = this.calculateSize(contentBounds.width, viewportBounds.left, viewportBounds.right);
+    const horizontal = this.calculateSize(
+      contentBounds.width,
+      viewportBounds.left,
+      viewportBounds.right,
+      headingSize.width
+    );
+    this.horizontal.visible = !!horizontal;
     if (horizontal) {
       const start = headingSize.width;
-      const actualWidth = screenWidth - start - SCROLLBAR_PADDING;
-      this.horizontal.visible = true;
+      const actualWidth = screenWidth - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       this.horizontal.x = Math.max(start, start + horizontal.start * actualWidth);
-      const rightClamp = screenWidth - start - SCROLLBAR_PADDING * 2 - this.horizontal.x;
+      const rightClamp = screenWidth - this.horizontal.x - SCROLLBAR_PADDING * 2 - SCROLLBAR_SIZE;
       this.horizontal.width = Math.min(rightClamp, horizontal.size * actualWidth);
       this.horizontal.y = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
-    } else {
-      this.horizontal.visible = false;
     }
 
-    const vertical = this.calculateSize(contentBounds.height, viewportBounds.top, viewportBounds.bottom);
+    const vertical = this.calculateSize(
+      contentBounds.height,
+      viewportBounds.top,
+      viewportBounds.bottom,
+      headingSize.height
+    );
+    this.vertical.visible = !!vertical;
     if (vertical) {
-      const start = headingSize.height + SCROLLBAR_PADDING;
+      const start = headingSize.height;
       const actualHeight = screenHeight - start - SCROLLBAR_PADDING * 2;
-      this.vertical.visible = true;
-      this.vertical.x = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
       this.vertical.y = Math.max(start, start + vertical.start * actualHeight);
-      this.vertical.height = Math.min(actualHeight - start - SCROLLBAR_PADDING * 3, vertical.size * actualHeight);
-    } else {
-      this.vertical.visible = false;
+      const bottomClamp = screenHeight - this.vertical.y - SCROLLBAR_PADDING * 2 - SCROLLBAR_SIZE;
+      this.vertical.height = Math.min(bottomClamp, vertical.size * actualHeight);
+      this.vertical.x = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
     }
   }
 
