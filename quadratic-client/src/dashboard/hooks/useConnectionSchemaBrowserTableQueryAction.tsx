@@ -5,7 +5,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';
 import type * as monaco from 'monaco-editor';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 /**
  * This is only done on the dashboard-side, not the app-side
@@ -36,7 +36,7 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
                 mixpanel.track('[Connections].schemaViewer.newFileFromTable');
               }}
             >
-              {children}
+              <>{children}</>
             </Link>
           )}
         >

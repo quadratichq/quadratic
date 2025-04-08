@@ -9,7 +9,7 @@ import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
-import { useFetcher, useSubmit } from 'react-router-dom';
+import { useFetcher, useSubmit } from 'react-router';
 
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;
@@ -105,8 +105,8 @@ export function ConnectionFormEdit({
 }
 
 function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: ConnectionFormProps }) {
-  const { ConnectionForm, useConnectionForm } = connectionsByType[type];
-  const { form } = useConnectionForm(props.connection);
+  const { ConnectionForm } = connectionsByType[type];
+  const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
   return (
     <ConnectionForm handleSubmitForm={props.handleSubmitForm} form={form}>

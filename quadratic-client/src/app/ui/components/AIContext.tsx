@@ -13,7 +13,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { getFileTypeLabel } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIContextProps = {
@@ -24,7 +24,7 @@ type AIContextProps = {
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
   editing: boolean;
   disabled: boolean;
-  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+  textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIContext = memo(
@@ -86,6 +86,29 @@ export const AIContext = memo(
       }
     }, [initialContext, loading, messages, messagesCount, setContext]);
 
+    const handleOnCloseSelectContextMenu = useCallback(() => {
+      textAreaRef.current?.focus();
+    }, [textAreaRef]);
+
+    const handleOnFileCursorCursor = useCallback(
+      (file: FileContent) => {
+        setFiles?.((prev) => prev.filter((f) => f !== file));
+      },
+      [setFiles]
+    );
+
+    const handleOnClickCursorCursor = useCallback(() => {
+      setContext?.((prev) => ({ ...prev, selection: undefined }));
+    }, [setContext]);
+
+    const handleOnClickSheetCursor = useCallback(() => {
+      setContext?.((prev) => ({
+        ...prev,
+        sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
+        currentSheet: '',
+      }));
+    }, [setContext]);
+
     return (
       <div
         className={cn(
@@ -99,7 +122,7 @@ export const AIContext = memo(
             context={context}
             setContext={setContext}
             disabled={disabled}
-            onClose={() => textAreaRef.current?.focus()}
+            onClose={handleOnCloseSelectContextMenu}
           />
         )}
 
@@ -109,11 +132,11 @@ export const AIContext = memo(
             primary={file.fileName}
             secondary={getFileTypeLabel(file.mimeType)}
             disabled={disabled}
-            onClick={() => setFiles?.(files.filter((f) => f !== file))}
+            onClick={() => handleOnFileCursorCursor(file)}
           />
         ))}
 
-        {setContext && context && (
+        {!!setContext && context && (
           <ContextPill
             key="cursor"
             primary={
@@ -122,7 +145,7 @@ export const AIContext = memo(
                 : sheets.sheet.cursor.toCursorA1()
             }
             secondary="Cursor"
-            onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
+            onClick={handleOnClickCursorCursor}
             disabled={disabled || !context.selection}
           />
         )}
@@ -132,18 +155,12 @@ export const AIContext = memo(
             key={context.currentSheet}
             primary={context.currentSheet}
             secondary={'Sheet'}
-            onClick={() =>
-              setContext((prev) => ({
-                ...prev,
-                sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
-                currentSheet: '',
-              }))
-            }
+            onClick={handleOnClickSheetCursor}
             disabled={disabled}
           />
         )}
 
-        {setContext &&
+        {!!setContext &&
           context?.sheets
             .filter((sheet) => sheet !== context.currentSheet)
             .map((sheet) => (

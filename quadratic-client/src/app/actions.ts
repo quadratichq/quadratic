@@ -5,7 +5,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import mixpanel from 'mixpanel-browser';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
-import type { SubmitFunction } from 'react-router-dom';
+import type { SubmitFunction } from 'react-router';
 import type { SetterOrUpdater } from 'recoil';
 
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;

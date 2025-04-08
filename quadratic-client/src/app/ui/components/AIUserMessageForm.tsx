@@ -26,7 +26,7 @@ import {
 import type { SetterOrUpdater } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
   messageIndex: number;
@@ -73,32 +73,41 @@ export const AIUserMessageForm = memo(
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
 
-    const initialFiles = useMemo(() => initialContent?.filter((item) => item.type === 'data'), [initialContent]);
-    const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
-
-    const initialPrompt = useMemo(
-      () =>
+    const [files, setFiles] = useState<FileContent[]>([]);
+    const [prompt, setPrompt] = useState<string>('');
+    useEffect(() => {
+      setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
+      setPrompt(
         initialContent
           ?.filter((item) => item.type === 'text')
           .map((item) => item.text)
-          .join('\n'),
-      [initialContent]
-    );
-    const [prompt, setPrompt] = useState<string>(initialPrompt ?? '');
+          .join('\n') ?? ''
+      );
+    }, [initialContent]);
 
     const onSubmit = useCallback(() => {
-      if (initialPrompt === undefined) {
+      if (initialContent === undefined) {
         setPrompt('');
         setFiles([]);
       }
-    }, [initialPrompt]);
+    }, [initialContent]);
 
-    const submit = useCallback(() => {
-      submitPrompt({
-        content: [...files, { type: 'text', text: prompt }],
-        onSubmit: initialPrompt === undefined ? onSubmit : undefined,
-      });
-    }, [files, initialPrompt, onSubmit, prompt, submitPrompt]);
+    const showAIUsageExceeded = useMemo(
+      () => waitingOnMessageIndex === props.messageIndex && !!delaySeconds,
+      [delaySeconds, props.messageIndex, waitingOnMessageIndex]
+    );
+
+    const submit = useCallback(
+      (prompt: string) => {
+        if (prompt.trim().length === 0) return;
+
+        submitPrompt({
+          content: [...files, { type: 'text', text: prompt }],
+          onSubmit: initialContent === undefined ? onSubmit : undefined,
+        });
+      },
+      [files, initialContent, onSubmit, submitPrompt]
+    );
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
@@ -128,7 +137,7 @@ export const AIUserMessageForm = memo(
       [isFileSupported]
     );
 
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
 
     // Focus the input when relevant & the tab comes into focus
@@ -160,23 +169,12 @@ export const AIUserMessageForm = memo(
         onPaste={handleFiles}
         onDrop={handleFiles}
       >
-        {!editing && !loading && waitingOnMessageIndex === undefined && (
-          <TooltipPopover label="Edit">
-            <Button
-              variant="ghost"
-              className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-              size="icon-sm"
-              onClick={(e) => {
-                if (loading) return;
-                e.stopPropagation();
-                setEditing(true);
-                textareaRef.current?.focus();
-              }}
-            >
-              <EditIcon />
-            </Button>
-          </TooltipPopover>
-        )}
+        <EditButton
+          show={!editing && !loading && waitingOnMessageIndex === undefined}
+          loading={loading}
+          setEditing={setEditing}
+          textareaRef={textareaRef}
+        />
 
         <AIContext
           initialContext={ctx?.initialContext}
@@ -190,127 +188,190 @@ export const AIUserMessageForm = memo(
         />
 
         {editing ? (
-          <>
-            <Textarea
-              ref={textareaRef}
-              value={prompt}
-              className={cn(
-                'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-                editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit',
-                waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
-              )}
-              onChange={(event) => setPrompt(event.target.value)}
-              onKeyDown={(event) => {
-                event.stopPropagation();
+          <Textarea
+            ref={textareaRef}
+            value={prompt}
+            className={cn(
+              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit',
+              waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
+            )}
+            onChange={(event) => setPrompt(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
 
-                if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-                  event.preventDefault();
-                  if (loading || waitingOnMessageIndex !== undefined) return;
-
-                  if (prompt.trim().length === 0) return;
-
-                  submit();
-
-                  if (initialPrompt === undefined) {
-                    textareaRef.current?.focus();
-                  } else {
-                    setEditing(false);
-                    bottomTextareaRef.current?.focus();
-                  }
-                }
-
+              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+                event.preventDefault();
                 if (loading || waitingOnMessageIndex !== undefined) return;
 
-                if (formOnKeyDown) {
-                  formOnKeyDown(event);
+                submit(prompt);
+
+                if (initialContent === undefined) {
+                  textareaRef.current?.focus();
+                } else {
+                  setEditing(false);
+                  bottomTextareaRef.current?.focus();
                 }
-              }}
-              autoComplete="off"
-              placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-              autoHeight={true}
-              maxHeight={maxHeight}
-              disabled={waitingOnMessageIndex !== undefined}
-            />
+              }
 
-            {waitingOnMessageIndex === props.messageIndex && <AIUsageExceeded delaySeconds={delaySeconds ?? 0} />}
-          </>
+              if (loading || waitingOnMessageIndex !== undefined) return;
+
+              if (formOnKeyDown) {
+                formOnKeyDown(event);
+              }
+            }}
+            autoComplete="off"
+            placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
+            autoHeight={true}
+            maxHeight={maxHeight}
+            disabled={waitingOnMessageIndex !== undefined}
+          />
         ) : (
-          <>
-            <div
-              className={cn(
-                'pointer-events-none whitespace-pre-wrap p-2 text-sm',
-                waitingOnMessageIndex === props.messageIndex && 'opacity-50'
-              )}
-            >
-              {prompt}
-            </div>
-
-            {waitingOnMessageIndex === props.messageIndex && <AIUsageExceeded delaySeconds={delaySeconds ?? 0} />}
-          </>
+          <div
+            className={cn('pointer-events-none whitespace-pre-wrap p-2 text-sm', showAIUsageExceeded && 'opacity-50')}
+          >
+            {prompt}
+          </div>
         )}
 
-        {editing && (
-          <>
-            <div
-              className={cn(
-                'flex w-full select-none items-center justify-between px-2 pb-1',
-                waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
-              )}
-            >
-              <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+        <AIUsageExceeded show={showAIUsageExceeded} delaySeconds={delaySeconds} />
 
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                {!debug && (
-                  <>
-                    <span>
-                      {KeyboardSymbols.Shift}
-                      {KeyboardSymbols.Enter} new line
-                    </span>
-
-                    <span>{KeyboardSymbols.Enter} submit</span>
-                  </>
-                )}
-
-                <ConditionalWrapper
-                  condition={prompt.length !== 0}
-                  Wrapper={({ children }) => (
-                    <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                      {children as React.ReactElement}
-                    </TooltipPopover>
-                  )}
-                >
-                  <Button
-                    size="icon-sm"
-                    className="rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      submit();
-                    }}
-                    disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
-                  >
-                    <ArrowUpwardIcon />
-                  </Button>
-                </ConditionalWrapper>
-              </div>
-            </div>
-
-            {(loading || waitingOnMessageIndex !== undefined) && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  abortPrompt();
-                }}
-              >
-                <BackspaceIcon className="mr-1" /> Cancel{' '}
-                {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}
-              </Button>
-            )}
-          </>
-        )}
+        <AIUserMessageFormFooter
+          show={editing}
+          loading={loading}
+          waitingOnMessageIndex={waitingOnMessageIndex}
+          textareaRef={textareaRef}
+          submitPrompt={() => submit(prompt)}
+          abortPrompt={abortPrompt}
+        />
       </form>
     );
   })
+);
+
+type EditButtonProps = {
+  show: boolean;
+  loading: boolean;
+  setEditing: (editing: boolean) => void;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+};
+
+const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonProps) => {
+  if (!show) {
+    return null;
+  }
+
+  return (
+    <TooltipPopover label="Edit">
+      <Button
+        variant="ghost"
+        className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+        size="icon-sm"
+        onClick={(e) => {
+          if (loading) return;
+          e.stopPropagation();
+          setEditing(true);
+          textareaRef.current?.focus();
+        }}
+      >
+        <EditIcon />
+      </Button>
+    </TooltipPopover>
+  );
+});
+
+type CancelButtonProps = {
+  show: boolean;
+  waitingOnMessageIndex?: number;
+  abortPrompt: () => void;
+};
+
+const CancelButton = memo(({ show, waitingOnMessageIndex, abortPrompt }: CancelButtonProps) => {
+  if (!show) {
+    return null;
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
+      onClick={(e) => {
+        e.stopPropagation();
+        abortPrompt();
+      }}
+    >
+      <BackspaceIcon className="mr-1" /> Cancel {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}
+    </Button>
+  );
+});
+
+type AIUserMessageFormFooterProps = {
+  show: boolean;
+  loading: boolean;
+  waitingOnMessageIndex?: number;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  submitPrompt: () => void;
+  abortPrompt: () => void;
+};
+
+const AIUserMessageFormFooter = memo(
+  ({ show, loading, waitingOnMessageIndex, textareaRef, submitPrompt, abortPrompt }: AIUserMessageFormFooterProps) => {
+    if (!show) {
+      return null;
+    }
+
+    return (
+      <>
+        <div
+          className={cn(
+            'flex w-full select-none items-center justify-between px-2 pb-1',
+            waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
+          )}
+        >
+          <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {!debug && (
+              <>
+                <span>
+                  {KeyboardSymbols.Shift}
+                  {KeyboardSymbols.Enter} new line
+                </span>
+
+                <span>{KeyboardSymbols.Enter} submit</span>
+              </>
+            )}
+
+            <ConditionalWrapper
+              condition={prompt.length !== 0}
+              Wrapper={({ children }) => (
+                <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                  {children as React.ReactElement}
+                </TooltipPopover>
+              )}
+            >
+              <Button
+                size="icon-sm"
+                className="rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  submitPrompt();
+                }}
+                disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
+              >
+                <ArrowUpwardIcon />
+              </Button>
+            </ConditionalWrapper>
+          </div>
+        </div>
+
+        <CancelButton
+          show={loading || waitingOnMessageIndex !== undefined}
+          waitingOnMessageIndex={waitingOnMessageIndex}
+          abortPrompt={abortPrompt}
+        />
+      </>
+    );
+  }
 );

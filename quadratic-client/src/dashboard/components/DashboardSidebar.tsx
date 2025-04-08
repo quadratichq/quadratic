@@ -1,11 +1,13 @@
-import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
+import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
+  ArrowDropDownIcon,
+  CheckIcon,
   DatabaseIcon,
   DraftIcon,
   EducationIcon,
@@ -15,6 +17,7 @@ import {
   FileSharedWithMeIcon,
   GroupIcon,
   LabsIcon,
+  RefreshIcon,
   SettingsIcon,
 } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
@@ -23,13 +26,31 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Link, NavLink, useLocation, useMatch, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
+import {
+  Link,
+  NavLink,
+  useFetcher,
+  useLocation,
+  useMatch,
+  useNavigate,
+  useNavigation,
+  useSearchParams,
+  useSubmit,
+} from 'react-router';
 
 const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
 
@@ -230,12 +251,14 @@ function SidebarNavLinkCreateButton({
           </Link>
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{children}</TooltipContent>
+      <TooltipContent>
+        <>{children}</>
+      </TooltipContent>
     </Tooltip>
   );
 }
 
-export const sidebarItemClasses = {
+const sidebarItemClasses = {
   base: `dark:hover:brightness-125 hover:brightness-95 hover:saturate-150 dark:hover:saturate-100 bg-accent relative flex items-center gap-2 p-2 no-underline rounded`,
   active: `bg-accent dark:brightness-125 brightness-95 saturate-150 dark:saturate-100`,
   dragging: `bg-primary text-primary-foreground`,
@@ -317,7 +340,108 @@ function SidebarNavLink({
       {...(target ? { target } : {})}
       {...dropProps}
     >
-      {children}
+      <>{children}</>
     </NavLink>
   );
+}
+
+type TeamSwitcherProps = {
+  appIsLoading: boolean;
+};
+
+function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
+  const { teams } = useDashboardRouteLoaderData();
+  const {
+    activeTeam: {
+      team: { name: activeTeamName, uuid: activeTeamUuid },
+    },
+  } = useDashboardRouteLoaderData();
+  const fetcher = useFetcher({ key: 'update-team' });
+  const navigate = useNavigate();
+
+  let optimisticActiveTeamName = activeTeamName;
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    const optimisticData = fetcher.json as TeamAction['request.update-team'];
+    if (optimisticData.name) {
+      optimisticActiveTeamName = optimisticData.name;
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}>
+        <div className="mx-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-foreground capitalize text-background">
+          {activeTeamName.slice(0, 1)}
+        </div>
+        <div className="select-none truncate">{optimisticActiveTeamName}</div>
+        <div className="relative ml-auto mr-0.5 flex items-center">
+          <ArrowDropDownIcon />
+          <RefreshIcon
+            className={`absolute left-0 top-0 ml-auto animate-spin bg-accent text-primary transition-opacity ${
+              appIsLoading ? '' : 'opacity-0'
+            }`}
+          />
+        </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-72" align="start" alignOffset={-4}>
+        {teams.map(({ team: { uuid, name }, users }) => {
+          const isActive = activeTeamUuid === uuid;
+          return (
+            <DropdownMenuItem key={uuid} asChild>
+              <Link
+                to={ROUTES.TEAM(uuid)}
+                className={`flex gap-3`}
+                onClick={(e) => {
+                  // If this is being opened in a new tab, don't bother changing
+                  // because we're not switching the active team in the current app
+                  const isNewTabOrWindow = e.ctrlKey || e.shiftKey || e.metaKey;
+                  if (isNewTabOrWindow) {
+                    return;
+                  }
+                }}
+              >
+                {/* <IconWrapper>
+                  {isPaid ? <DotFilledIcon className="text-success" /> : <DotIcon className="text-warning" />}
+                </IconWrapper> */}
+
+                <IconWrapper
+                  className={cn(
+                    'h-5 w-5 rounded border border-border capitalize',
+                    isActive && 'border-foreground bg-foreground text-background'
+                  )}
+                >
+                  {name.slice(0, 1)}
+                </IconWrapper>
+                <div className="flex flex-col">
+                  <div>{name}</div>
+                  <Type variant="caption">
+                    {users} member{users === 1 ? '' : 's'}
+                  </Type>
+                </div>
+                <div className="ml-auto flex h-6 w-6 items-center justify-center">{isActive && <CheckIcon />}</div>
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          className="flex gap-3 text-muted-foreground"
+          onClick={() => {
+            navigate(ROUTES.TEAMS_CREATE);
+          }}
+        >
+          <IconWrapper>
+            <AddIcon />
+          </IconWrapper>
+          Create team
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function IconWrapper({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn('flex h-6 w-6 items-center justify-center', className)}>{children}</div>;
 }

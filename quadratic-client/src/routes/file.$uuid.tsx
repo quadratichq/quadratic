@@ -18,16 +18,8 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import {
-  Link,
-  Outlet,
-  isRouteErrorResponse,
-  redirect,
-  useLoaderData,
-  useParams,
-  useRouteError,
-} from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../shared/components/Empty';

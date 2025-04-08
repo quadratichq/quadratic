@@ -27,8 +27,8 @@ import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
-import type { SubmitOptions } from 'react-router-dom';
-import { Link, useFetcher, useMatch, useSubmit } from 'react-router-dom';
+import type { SubmitOptions } from 'react-router';
+import { Link, useFetcher, useMatch, useSubmit } from 'react-router';
 
 export function FilesListItems({
   children,

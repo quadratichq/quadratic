@@ -3,11 +3,10 @@ import '@/index.css';
 import '@/shared/shadcn/styles.css';
 
 import { router } from '@/router';
-import { RootLoadingIndicator } from '@/shared/components/RootLoadingIndicator';
 import * as Sentry from '@sentry/react';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none')
@@ -29,6 +28,6 @@ const container = document.getElementById('root');
 const root = createRoot(container as HTMLElement);
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} future={{ v7_startTransition: true }} fallbackElement={<RootLoadingIndicator />} />
+    <RouterProvider router={router} />
   </React.StrictMode>
 );

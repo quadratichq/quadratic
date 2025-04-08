@@ -9,8 +9,8 @@ import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMod
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import { Outlet, useRouteError, useRouteLoaderData } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
