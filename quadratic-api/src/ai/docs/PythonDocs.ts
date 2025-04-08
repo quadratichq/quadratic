@@ -229,19 +229,19 @@ do_some_math(5)
 Note that conditionals will not return the value to the sheet if the last line is a conditional. The following is an example that will return nothing to the sheet:
 
 Negative example: 
-\'\'\'python
+\`\`\`python
 x = 3
 y = 0 
 if x == 3: 
     y = True
 else: 
     y = False
-\'\'\'
+\`\`\`
 
 The following is how you would return the result of that conditional to the sheet.
 
 Positive example: 
-\'\'\'python
+\`\`\`python
 x = 3
 y = 0 
 if x == 3: 
@@ -249,30 +249,30 @@ if x == 3:
 else: 
     y = False
 y
-\'\'\'
+\`\`\`
 
 Do NOT try to use try-except blocks. It is much more useful to simply return the output to the sheet and let the error surface in the sheet and the console. 
 
 If you create an error and need to see the data, a print statement (e.g. print(df.head(3)) of the data can allow you to see the data to continue with a more useful result. 
 
 Negative example: 
-\'\'\'python
+\`\`\`python
 x = 3
 
 try: 
     x += 1 
 except: 
     print('error')
-\'\'\'
+\`\`\`
 
 Instead, simply return the output to the sheet. If an error occurs it will surface to the sheet and the console correctly. Never use try-except blocks.
 Positive example: 
-\'\'\'python
+\`\`\`python
 x = 3
 
 # since this is the last line of code, it returns the result of x + 1, which in this case is 4 
 x += 1
-\'\'\'
+\`\`\`
 
 ## Packages
 
