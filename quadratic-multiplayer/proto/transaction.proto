@@ -10,9 +10,21 @@ message SendTransaction {
   bytes operations = 5;
 }
 
+message SendGetTransactions {
+  string type = 1;
+  string session_id = 2;
+  string file_id = 3;
+  uint64 min_sequence_num = 4;
+}
+
 message ReceiveTransaction {
   string id = 1;
   string file_id = 2;
   uint64 sequence_num = 3;
   bytes operations = 4;
+}
+
+message ReceiveTransactions {
+  string type = 1;
+  repeated ReceiveTransaction transactions = 2;
 }

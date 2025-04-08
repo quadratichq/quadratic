@@ -12,18 +12,20 @@ import type {
   CellEdit,
   Heartbeat,
   MessageUserUpdate,
-  MultiplayerServerBinaryMessage,
   MultiplayerServerMessage,
   ReceiveMessages,
   ReceiveRoom,
   ReceiveTransaction,
   SendEnterRoom,
-  SendGetTransactions,
+  SendGetBinaryTransactions,
   SendTransaction,
   UserUpdate,
   Version,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { SendTransaction as SendProtoTransaction } from '@/app/web-workers/multiplayerWebWorker/proto/transaction';
+import {
+  SendGetTransactions,
+  SendTransaction as SendProtoTransaction,
+} from '@/app/web-workers/multiplayerWebWorker/proto/transaction';
 import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
 import type { User } from '@/auth/auth';
@@ -265,6 +267,10 @@ export class MultiplayerServer {
         multiplayerCore.receiveTransactions(data);
         break;
 
+      case 'BinaryTransactions':
+        multiplayerCore.receiveTransactions(data);
+        break;
+
       case 'EnterRoom':
         if (data.file_id !== this.fileId) throw new Error('Expected file_id to match in EnterRoom');
         multiplayerCore.receiveCurrentTransaction(data.sequence_num);
@@ -311,7 +317,7 @@ export class MultiplayerServer {
     this.websocket.send(JSON.stringify(message));
   }
 
-  private sendBinary(message: MultiplayerServerBinaryMessage) {
+  private sendBinary(message: Uint8Array) {
     if (!this.websocket) throw new Error('Expected websocket to be defined in sendBinary');
     this.websocket.send(message);
   }
@@ -341,13 +347,16 @@ export class MultiplayerServer {
     if (!this.sessionId) throw new Error('Expected sessionId to be defined in requestTransactions');
     if (!this.fileId) throw new Error('Expected fileId to be defined in requestTransactions');
     multiplayerClient.sendState('syncing');
-    const message: SendGetTransactions = {
-      type: 'GetTransactions',
-      session_id: this.sessionId,
-      file_id: this.fileId,
-      min_sequence_num: sequenceNum,
+    const message: SendGetBinaryTransactions = {
+      type: 'GetBinaryTransactions',
+      sessionId: this.sessionId,
+      fileId: this.fileId,
+      minSequenceNum: BigInt(sequenceNum),
     };
-    this.send(message);
+
+    const encodedMessage = SendGetTransactions.toBinary(message);
+
+    this.sendBinary(encodedMessage);
   }
 }
 

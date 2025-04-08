@@ -16,7 +16,7 @@ use uuid::Uuid;
 use crate::error::{ErrorLevel, MpError, Result};
 use crate::get_mut_room;
 use crate::message::broadcast_binary;
-use crate::message::response::Transaction;
+use crate::message::response::{BinaryTransaction, Transaction};
 use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
 };
@@ -299,6 +299,56 @@ pub(crate) async fn handle_message(
             }
 
             let response = MessageResponse::Transactions { transactions };
+
+            Ok(Some(response))
+        }
+
+        // User sends binary transactions
+        MessageRequest::GetBinaryTransactions {
+            file_id,
+            session_id,
+            min_sequence_num,
+        } => {
+            validate_user_can_edit_or_view_file(Arc::clone(&state), file_id, session_id).await?;
+
+            // update the heartbeat
+            state.update_user_heartbeat(file_id, &session_id).await?;
+
+            let sequence_num = state.get_sequence_num(&file_id).await?;
+
+            // calculate the expected number of transactions to get from redis
+            // add 1 to include the min_sequence_num (inclusive range)
+            let expected_num_transactions = sequence_num
+                .checked_sub(min_sequence_num)
+                .unwrap_or_default()
+                + 1;
+
+            tracing::trace!("min_sequence_num: {}", min_sequence_num);
+            tracing::trace!("sequence_num: {}", sequence_num);
+            tracing::trace!("expected_num_transactions: {}", expected_num_transactions);
+
+            let transactions = state
+                .get_messages_from_pubsub(&file_id, min_sequence_num)
+                .await?
+                .into_iter()
+                .map(|transaction| transaction.into())
+                .collect::<Vec<BinaryTransaction>>();
+
+            tracing::trace!("got: {}", transactions.len());
+
+            // we don't have the expected number of transactions
+            // send an error to the client so they can reload
+            if transactions.len() < expected_num_transactions as usize {
+                return Ok(Some(MessageResponse::Error {
+                    error: MpError::MissingTransactions(
+                        expected_num_transactions.to_string(),
+                        transactions.len().to_string(),
+                    ),
+                    error_level: ErrorLevel::Error,
+                }));
+            }
+
+            let response = MessageResponse::BinaryTransactions { transactions };
 
             Ok(Some(response))
         }

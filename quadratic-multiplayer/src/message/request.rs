@@ -51,6 +51,11 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         min_sequence_num: u64,
     },
+    GetBinaryTransactions {
+        file_id: Uuid,
+        session_id: Uuid,
+        min_sequence_num: u64,
+    },
     Heartbeat {
         session_id: Uuid,
         file_id: Uuid,

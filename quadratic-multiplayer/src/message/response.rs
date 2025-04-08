@@ -11,12 +11,22 @@ use quadratic_core::controller::transaction::TransactionServer;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::proto::multiplayer::transaction::ReceiveTransaction;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct Transaction {
     pub(crate) id: Uuid,
     pub(crate) file_id: Uuid,
     pub(crate) sequence_num: u64,
     pub(crate) operations: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub(crate) struct BinaryTransaction {
+    pub(crate) id: Uuid,
+    pub(crate) file_id: Uuid,
+    pub(crate) sequence_num: u64,
+    pub(crate) operations: Vec<u8>,
 }
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
@@ -47,6 +57,9 @@ pub(crate) enum MessageResponse {
     Transactions {
         transactions: Vec<Transaction>,
     },
+    BinaryTransactions {
+        transactions: Vec<BinaryTransaction>,
+    },
     EnterRoom {
         file_id: Uuid,
         sequence_num: u64,
@@ -67,6 +80,28 @@ impl From<TransactionServer> for Transaction {
             file_id: transaction_server.file_id,
             sequence_num: transaction_server.sequence_num,
             operations: STANDARD.encode(&transaction_server.operations),
+        }
+    }
+}
+
+impl From<TransactionServer> for BinaryTransaction {
+    fn from(transaction_server: TransactionServer) -> Self {
+        BinaryTransaction {
+            id: transaction_server.id,
+            file_id: transaction_server.file_id,
+            sequence_num: transaction_server.sequence_num,
+            operations: transaction_server.operations,
+        }
+    }
+}
+
+impl From<TransactionServer> for ReceiveTransaction {
+    fn from(transaction_server: TransactionServer) -> Self {
+        ReceiveTransaction {
+            id: transaction_server.id.to_string(),
+            file_id: transaction_server.file_id.to_string(),
+            sequence_num: transaction_server.sequence_num,
+            operations: transaction_server.operations,
         }
     }
 }

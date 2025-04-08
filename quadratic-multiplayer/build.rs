@@ -13,6 +13,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::copy(source_path, dest_path).unwrap();
 
     println!("cargo:rerun-if-changed=build.rs");
-
+    println!("cargo:rerun-if-changed=proto/transaction.proto");
     Ok(())
 }

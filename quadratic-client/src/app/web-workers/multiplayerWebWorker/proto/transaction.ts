@@ -36,6 +36,27 @@ export interface SendTransaction {
     operations: Uint8Array;
 }
 /**
+ * @generated from protobuf message multiplayer.SendGetTransactions
+ */
+export interface SendGetTransactions {
+    /**
+     * @generated from protobuf field: string type = 1;
+     */
+    type: string;
+    /**
+     * @generated from protobuf field: string session_id = 2;
+     */
+    sessionId: string;
+    /**
+     * @generated from protobuf field: string file_id = 3;
+     */
+    fileId: string;
+    /**
+     * @generated from protobuf field: uint64 min_sequence_num = 4;
+     */
+    minSequenceNum: bigint;
+}
+/**
  * @generated from protobuf message multiplayer.ReceiveTransaction
  */
 export interface ReceiveTransaction {
@@ -55,6 +76,19 @@ export interface ReceiveTransaction {
      * @generated from protobuf field: bytes operations = 4;
      */
     operations: Uint8Array;
+}
+/**
+ * @generated from protobuf message multiplayer.ReceiveTransactions
+ */
+export interface ReceiveTransactions {
+    /**
+     * @generated from protobuf field: string type = 1;
+     */
+    type: string;
+    /**
+     * @generated from protobuf field: repeated multiplayer.ReceiveTransaction transactions = 2;
+     */
+    transactions: ReceiveTransaction[];
 }
 // @generated message type with reflection information, may provide speed optimized methods
 class SendTransaction$Type extends MessageType<SendTransaction> {
@@ -136,6 +170,77 @@ class SendTransaction$Type extends MessageType<SendTransaction> {
  */
 export const SendTransaction = new SendTransaction$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class SendGetTransactions$Type extends MessageType<SendGetTransactions> {
+    constructor() {
+        super("multiplayer.SendGetTransactions", [
+            { no: 1, name: "type", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "session_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "file_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "min_sequence_num", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<SendGetTransactions>): SendGetTransactions {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.type = "";
+        message.sessionId = "";
+        message.fileId = "";
+        message.minSequenceNum = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<SendGetTransactions>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SendGetTransactions): SendGetTransactions {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string type */ 1:
+                    message.type = reader.string();
+                    break;
+                case /* string session_id */ 2:
+                    message.sessionId = reader.string();
+                    break;
+                case /* string file_id */ 3:
+                    message.fileId = reader.string();
+                    break;
+                case /* uint64 min_sequence_num */ 4:
+                    message.minSequenceNum = reader.uint64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: SendGetTransactions, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string type = 1; */
+        if (message.type !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.type);
+        /* string session_id = 2; */
+        if (message.sessionId !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.sessionId);
+        /* string file_id = 3; */
+        if (message.fileId !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.fileId);
+        /* uint64 min_sequence_num = 4; */
+        if (message.minSequenceNum !== 0n)
+            writer.tag(4, WireType.Varint).uint64(message.minSequenceNum);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message multiplayer.SendGetTransactions
+ */
+export const SendGetTransactions = new SendGetTransactions$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class ReceiveTransaction$Type extends MessageType<ReceiveTransaction> {
     constructor() {
         super("multiplayer.ReceiveTransaction", [
@@ -206,3 +311,58 @@ class ReceiveTransaction$Type extends MessageType<ReceiveTransaction> {
  * @generated MessageType for protobuf message multiplayer.ReceiveTransaction
  */
 export const ReceiveTransaction = new ReceiveTransaction$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ReceiveTransactions$Type extends MessageType<ReceiveTransactions> {
+    constructor() {
+        super("multiplayer.ReceiveTransactions", [
+            { no: 1, name: "type", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "transactions", kind: "message", repeat: 1 /*RepeatType.PACKED*/, T: () => ReceiveTransaction }
+        ]);
+    }
+    create(value?: PartialMessage<ReceiveTransactions>): ReceiveTransactions {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.type = "";
+        message.transactions = [];
+        if (value !== undefined)
+            reflectionMergePartial<ReceiveTransactions>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ReceiveTransactions): ReceiveTransactions {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string type */ 1:
+                    message.type = reader.string();
+                    break;
+                case /* repeated multiplayer.ReceiveTransaction transactions */ 2:
+                    message.transactions.push(ReceiveTransaction.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ReceiveTransactions, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string type = 1; */
+        if (message.type !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.type);
+        /* repeated multiplayer.ReceiveTransaction transactions = 2; */
+        for (let i = 0; i < message.transactions.length; i++)
+            ReceiveTransaction.internalBinaryWrite(message.transactions[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message multiplayer.ReceiveTransactions
+ */
+export const ReceiveTransactions = new ReceiveTransactions$Type();

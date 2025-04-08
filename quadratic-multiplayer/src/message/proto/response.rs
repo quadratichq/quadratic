@@ -1,4 +1,4 @@
-use super::multiplayer::transaction::ReceiveTransaction;
+use super::multiplayer::transaction::{ReceiveTransaction, ReceiveTransactions};
 use crate::error::{MpError, Result};
 use crate::message::response::MessageResponse;
 
@@ -12,6 +12,18 @@ pub(crate) fn encode_transaction(transaction: &ReceiveTransaction) -> Result<Vec
 
     Ok(buffer)
 }
+
+// pub(crate) fn encode_transactions(transactions: &[ReceiveTransaction]) -> Result<Vec<u8>> {
+//     let mut buffer = Vec::new();
+
+//     for transaction in transactions.iter() {
+//         transaction
+//             .encode(&mut buffer)
+//             .map_err(|e| MpError::Unknown(e.to_string()))?;
+//     }
+
+//     Ok(buffer)
+// }
 
 impl TryFrom<MessageResponse> for ReceiveTransaction {
     type Error = MpError;
