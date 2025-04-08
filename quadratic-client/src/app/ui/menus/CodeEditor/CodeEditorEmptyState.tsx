@@ -7,7 +7,7 @@ import {
   codeEditorShowSnippetsPopoverAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { BoxIcon, SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
+import { SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
 import {
   SNIPPET_JS_API,
   SNIPPET_JS_CHART,
@@ -22,8 +22,8 @@ import {
   SNIPPET_PY_READ,
   SNIPPET_PY_RETURN,
 } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { ApiIcon, DependencyIcon, InsertChartIcon, SnippetsIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import mixpanel from 'mixpanel-browser';
 import type * as monaco from 'monaco-editor';
 import { useCallback, useMemo } from 'react';
@@ -62,7 +62,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
   const buttons = [
     {
       label: 'Read from sheet',
-      Icon: SheetGoToIcon,
+      Icon: () => <SheetGoToIcon className="text-primary" style={{ width: '20px', height: '20px' }} />,
       onClick: () => {
         if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_READ);
         else fillWithSnippet(SNIPPET_PY_READ);
@@ -70,7 +70,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
     },
     {
       label: 'Output to sheet',
-      Icon: SheetComeFromIcon,
+      Icon: () => <SheetComeFromIcon className="text-primary" style={{ width: '20px', height: '20px' }} />,
       onClick: () => {
         if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_RETURN);
         else fillWithSnippet(SNIPPET_PY_RETURN);
@@ -78,7 +78,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
     },
     {
       label: 'Fetch API data',
-      Icon: ApiOutlined,
+      Icon: ApiIcon,
       onClick: () => {
         if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_API);
         else fillWithSnippet(SNIPPET_PY_API);
@@ -86,7 +86,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
     },
     {
       label: 'Create chart',
-      Icon: BarChartOutlined,
+      Icon: InsertChartIcon,
       onClick: () => {
         if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_CHART);
         else fillWithSnippet(SNIPPET_PY_CHART);
@@ -95,7 +95,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
     {
       // Use language-specific terms
       label: codeCell.id === 'Javascript' ? 'Import module' : 'Install package',
-      Icon: BoxIcon,
+      Icon: DependencyIcon,
       onClick: () => {
         if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_PACKAGE);
         else fillWithSnippet(SNIPPET_PY_PACKAGE);
@@ -103,7 +103,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
     },
     {
       label: 'More snippets',
-      Icon: IntegrationInstructionsOutlined,
+      Icon: SnippetsIcon,
       onClick: () => {
         setShowSnippetsPopover(true);
       },
@@ -116,14 +116,14 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
         {buttons.map(({ label, Icon, onClick }) => (
           <Button
             key={label}
-            className="flex h-auto flex-col gap-1 bg-background pb-3 pt-3"
+            className="flex h-auto flex-col gap-0.5 bg-background pb-3 pt-3"
             variant="outline"
             onClick={() => {
               mixpanel.track('[SnippetsEmpty].selected', { label, language: codeCell.id });
               onClick();
             }}
           >
-            <Icon fontSize="medium" color="primary" />
+            <Icon className="text-primary" />
             {label}
           </Button>
         ))}

@@ -245,6 +245,10 @@ else:
 y
 \'\'\'
 
+Do NOT try to use try-except blocks. It is much more useful to simply return the output to the sheet and let the error surface in the sheet and the console. 
+
+If you create an error and need to see the data, a print statement (e.g. print(df.head(3)) of the data can allow you to see the data to continue with a more useful result. 
+
 # Packages
 
 Using and installing Python packages.
@@ -335,7 +339,7 @@ df = q.cells('A:B'), first_row_header=True)
 
 # Charts/visualizations
 
-Plotly is the only charting library supported in Quadratic. Do not try to use other libraries like Seaborn or Matplotlib. 
+Plotly is the only charting library supported in Quadratic. Do not try to use other libraries like Seaborn or Matplotlib. Matplotlib DOES NOT WORK in Quadratic. 
 
 To return a chart to the sheet, put fig.show() as the last line of code. 
 

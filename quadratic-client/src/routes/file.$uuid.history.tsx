@@ -46,12 +46,15 @@ export const Component = () => {
   const activeCheckpoint = data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId);
   const iframeUrl = activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : '';
 
-  const checkpointsByDay = data.checkpoints.reduce((acc, version) => {
-    const date = new Date(version.timestamp);
-    const day = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    acc[day] = [...(acc[day] || []), version];
-    return acc;
-  }, {} as Record<string, LoaderData['checkpoints']>);
+  const checkpointsByDay = data.checkpoints.reduce(
+    (acc, version) => {
+      const date = new Date(version.timestamp);
+      const day = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      acc[day] = [...(acc[day] || []), version];
+      return acc;
+    },
+    {} as Record<string, LoaderData['checkpoints']>
+  );
 
   const fetcher = useFetcher();
   const isLoading = fetcher.state !== 'idle' || revalidator.state === 'loading';
@@ -152,7 +155,7 @@ export const Component = () => {
                         <button
                           disabled={isLoading}
                           className={cn(
-                            'flex w-full items-center justify-between rounded px-2 py-2 ',
+                            'flex w-full items-center justify-between rounded px-2 py-2',
                             isSelected ? 'bg-primary text-background' : 'hover:bg-accent',
                             isLoading && 'cursor-not-allowed'
                           )}

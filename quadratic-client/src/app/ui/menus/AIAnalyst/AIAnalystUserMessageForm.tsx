@@ -1,13 +1,20 @@
 import { Action } from '@/app/actions/actions';
-import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import {
+  aiAnalystAbortControllerAtom,
+  aiAnalystDelaySecondsAtom,
+  aiAnalystLoadingAtom,
+  aiAnalystWaitingOnMessageIndexAtom,
+  showAIAnalystAtom,
+} from '@/app/atoms/aiAnalystAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
-import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import mixpanel from 'mixpanel-browser';
+import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useState } from 'react';
+import { forwardRef, memo, useCallback, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 type Props = AIUserMessageFormWrapperProps & {
@@ -20,7 +27,22 @@ export const AIAnalystUserMessageForm = memo(
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
+    const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
+    const delaySeconds = useRecoilValue(aiAnalystDelaySecondsAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
+
+    const handleSubmit = useCallback(
+      ({ content, onSubmit }: SubmitPromptArgs) => {
+        mixpanel.track('[AIAnalyst].submitPrompt');
+        submitPrompt({
+          content,
+          context,
+          messageIndex: props.messageIndex,
+          onSubmit,
+        });
+      },
+      [context, props.messageIndex, submitPrompt]
+    );
 
     const formOnKeyDown = useRecoilCallback(
       ({ set }) =>
@@ -40,16 +62,16 @@ export const AIAnalystUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        submitPrompt={(content) => {
-          mixpanel.track('[AIAnalyst].submitPrompt');
-          submitPrompt({ content, context, messageIndex: props.messageIndex });
-        }}
+        isFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
+        submitPrompt={handleSubmit}
         formOnKeyDown={formOnKeyDown}
         ctx={{
+          initialContext,
           context,
           setContext,
-          initialContext,
         }}
+        waitingOnMessageIndex={waitingOnMessageIndex}
+        delaySeconds={delaySeconds}
         maxHeight="275px"
       />
     );

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.6.9"
+version = "0.6.10"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -18,8 +18,11 @@ futures-util = { version = "0.3.29", default-features = false, features = [
 ] }
 headers = "0.4.0"
 jsonwebtoken = "9.2.0"
-openssl = { version = "0.10.66", features = ["vendored"] }
-quadratic-core = { path = "../quadratic-core", default-features = false, features = ["console_error_panic_hook", "js"] }
+openssl = { version = "0.10.72", features = ["vendored"] }
+quadratic-core = { path = "../quadratic-core", default-features = false, features = [
+    "console_error_panic_hook",
+    "js",
+] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared" }
 rayon = "1.8.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
@@ -48,3 +51,11 @@ fake = { version = "4.0.0", features = ["derive"] }
 default = ["files"]
 multiplayer = []
 files = []
+
+# patch for breaking changes in zip-rs/zip2 v2.6.0
+# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
+[patch.crates-io]
+zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
+
+[patch.'https://github.com/zip-rs/zip2']
+zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }
