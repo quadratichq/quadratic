@@ -11,5 +11,5 @@ E.g. "this changes the core functionality of tables, all the basic table functio
 
 Please notify here if you'd like a test created in QA Wolf to accompany this PR.
 
-## (Optional) Any dependent docs, links, etc.? 
+## (Optional) Dependent docs, links, etc. 
 E.g. "@xyzperson need docs link to security page for link in-app" 
