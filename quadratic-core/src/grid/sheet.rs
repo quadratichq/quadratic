@@ -108,11 +108,12 @@ impl Sheet {
         Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
     }
 
+    /// Returns an error if a sheet name would be invalid to add.
     pub fn validate_sheet_name(
         name: &str,
         sheet_id: SheetId,
         a1_context: &A1Context,
-    ) -> Result<bool, String> {
+    ) -> Result<(), String> {
         // Check length limit
         if name.is_empty() || name.len() > 31 {
             return Err("Sheet name must be between 1 and 31 characters".to_string());
@@ -124,14 +125,13 @@ impl Sheet {
         }
 
         // Check if sheet name already exists
-
         if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name) {
             if existing_sheet_id != sheet_id {
                 return Err("Sheet name must be unique".to_string());
             }
         }
 
-        Ok(true)
+        Ok(())
     }
 
     /// Replaces a sheet name when referenced in code cells.
@@ -280,7 +280,7 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a vertical edge of a table.
     pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_at(pos) {
-            // we handle charts separately in find_next_*; 
+            // we handle charts separately in find_next_*;
             // we ignore single_value tables
             if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
@@ -296,7 +296,7 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
     pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_at(pos) {
-            // we handle charts separately in find_next_*; 
+            // we handle charts separately in find_next_*;
             // we ignore single_value tables
             if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
@@ -1351,12 +1351,11 @@ mod test {
 
         // Test duplicate sheet name
         let result = Sheet::validate_sheet_name("ExistingSheet", SheetId::new(), &context);
-        assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Sheet name must be unique");
 
         // Test same sheet name with different case
         let result = Sheet::validate_sheet_name("EXISTINGSHEET", SheetId::TEST, &context);
-        assert!(result.is_ok());
+        result.unwrap();
     }
 
     #[test]

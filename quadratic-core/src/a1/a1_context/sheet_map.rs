@@ -9,56 +9,56 @@ use crate::{
     util::case_fold,
 };
 
+/// Map between sheet names and IDs.
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct SheetMap {
-    sheet_map: HashMap<String, SheetId>,
+    /// Map from case-folded name to sheet ID.
+    name_to_id: HashMap<String, SheetId>,
+    /// Map from sheet ID to name (not case-folded).
+    id_to_name: HashMap<SheetId, String>,
 }
 
 impl SheetMap {
+    /// Adds a sheet to the map.
     pub fn insert(&mut self, sheet: &Sheet) {
-        self.sheet_map.insert(sheet.name.to_string(), sheet.id);
+        self.insert_parts(&sheet.name, sheet.id);
     }
-
+    /// Adds a sheet to the map given just its name and ID.
     pub fn insert_parts(&mut self, sheet_name: &str, sheet_id: SheetId) {
-        self.sheet_map.insert(sheet_name.to_string(), sheet_id);
+        self.name_to_id.insert(case_fold(sheet_name), sheet_id);
+        self.id_to_name.insert(sheet_id, sheet_name.to_string());
     }
 
+    /// Returns a sheet ID from its name. The name will be automatically
+    /// case-folded.
     pub fn try_sheet_name(&self, sheet_name: &str) -> Option<SheetId> {
-        let folded_name = case_fold(sheet_name);
-        self.sheet_map
-            .iter()
-            .find(|(name, _)| case_fold(name) == folded_name)
-            .map(|(_, id)| *id)
+        self.name_to_id.get(&case_fold(sheet_name)).copied()
     }
-
+    /// Returns a sheet name from its ID.
     pub fn try_sheet_id(&self, sheet_id: SheetId) -> Option<&String> {
-        // TODO(ajf): optimize this by making the hashmap go both ways
-        self.sheet_map
-            .iter()
-            .find(|(_, id)| **id == sheet_id)
-            .map(|(name, _)| name)
+        self.id_to_name.get(&sheet_id)
     }
 
+    /// Removes the sheet with the given name and returns its ID.
     pub fn remove_name(&mut self, name: &str) -> Option<SheetId> {
-        self.sheet_map.remove(name)
+        self.name_to_id.remove(&case_fold(name)).map(|sheet_id| {
+            self.id_to_name.remove(&sheet_id);
+            sheet_id
+        })
+    }
+    /// Removes the sheet with the given ID and returns its name.
+    pub fn remove_sheet_id(&mut self, sheet_id: SheetId) -> Option<String> {
+        self.id_to_name.remove(&sheet_id).map(|name| {
+            self.name_to_id.remove(&case_fold(&name));
+            name
+        })
     }
 
-    pub fn remove_sheet_id(&mut self, sheet_id: SheetId) {
-        if let Some(name) = self.try_sheet_id(sheet_id) {
-            self.sheet_map.remove(&name.to_owned());
-        }
-    }
-
+    /// Changes the name of a sheet. `old_name` will be automatically
+    /// case-folded.
     pub fn replace_sheet_name(&mut self, old_name: &str, new_name: &str) {
-        if let Some(sheet_id) = self.sheet_map.remove(old_name) {
-            self.sheet_map.insert(new_name.to_string(), sheet_id);
+        if let Some(sheet_id) = self.remove_name(old_name) {
+            self.insert_parts(new_name, sheet_id);
         }
-    }
-}
-
-#[cfg(test)]
-impl SheetMap {
-    pub fn insert_test(&mut self, name: &str, id: SheetId) {
-        self.sheet_map.insert(name.to_string(), id);
     }
 }
