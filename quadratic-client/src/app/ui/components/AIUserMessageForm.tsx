@@ -9,7 +9,6 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import AttachFile from '@mui/icons-material/AttachFile';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
@@ -139,7 +138,6 @@ export const AIUserMessageForm = memo(
     );
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
 
     // Focus the input when relevant & the tab comes into focus
@@ -157,11 +155,7 @@ export const AIUserMessageForm = memo(
 
     return (
       <form
-        className={cn(
-          'group relative h-min rounded-lg bg-accent',
-          (ctx || !!files.length) && 'pt-1.5',
-          editing ? '' : 'select-none'
-        )}
+        className={cn('group relative h-min rounded-lg bg-accent pt-1.5', editing ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) {
@@ -189,22 +183,13 @@ export const AIUserMessageForm = memo(
           </TooltipPopover>
         )}
 
-        {/* Hidden file input */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          multiple
-          accept="image/*,.pdf"
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-
         <AIContext
           initialContext={ctx?.initialContext}
           context={ctx?.context}
           setContext={ctx?.setContext}
           files={files}
           setFiles={setFiles}
+          handleFiles={handleFiles}
           editing={editing}
           disabled={waitingOnMessageIndex !== undefined || !editing}
           textAreaRef={textareaRef}
@@ -278,26 +263,8 @@ export const AIUserMessageForm = memo(
                 waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
               )}
             >
-              {/* Left side: Attach + Model menu */}
-              <div className="flex items-center gap-0.5">
-                {/* Select Model Menu - Moved first */}
-                <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+              <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
-                {/* Attach file button - Moved second */}
-                <TooltipPopover label="Attach files (image or pdf)">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={waitingOnMessageIndex !== undefined}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <AttachFile sx={{ fontSize: '1rem' }} />
-                  </Button>
-                </TooltipPopover>
-              </div>
-
-              {/* Right side: Submit hints + button */}
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 {!debug && (
                   <>

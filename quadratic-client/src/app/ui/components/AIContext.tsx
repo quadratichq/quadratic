@@ -8,12 +8,13 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { A1SelectionStringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
-import { CloseIcon } from '@/shared/components/Icons';
+import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { getFileTypeLabel } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIContextProps = {
@@ -22,13 +23,24 @@ type AIContextProps = {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  handleFiles: (files: FileList | null) => void;
   editing: boolean;
   disabled: boolean;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
 export const AIContext = memo(
-  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textAreaRef }: AIContextProps) => {
+  ({
+    initialContext,
+    context,
+    setContext,
+    files,
+    setFiles,
+    handleFiles,
+    editing,
+    disabled,
+    textAreaRef,
+  }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
@@ -102,6 +114,8 @@ export const AIContext = memo(
             onClose={() => textAreaRef.current?.focus()}
           />
         )}
+
+        <AttachmentTrigger handleFiles={handleFiles} disabled={disabled} />
 
         {files.map((file, index) => (
           <ContextPill
@@ -198,3 +212,36 @@ const ContextPill = memo(
     );
   }
 );
+
+function AttachmentTrigger({
+  handleFiles,
+  disabled,
+}: {
+  handleFiles: (files: FileList | null) => void;
+  disabled: boolean;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <input
+        type="file"
+        ref={fileInputRef}
+        multiple
+        accept="image/*,.pdf"
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+      />
+      <TooltipPopover label="Attach image or PDF">
+        <Button
+          size="icon-sm"
+          className="h-5 w-5 shadow-none"
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled}
+        >
+          <AttachFileIcon className="!h-5 !w-5 !text-sm" />
+        </Button>
+      </TooltipPopover>
+    </>
+  );
+}
