@@ -113,9 +113,9 @@ export function ConnectionFormActions({
               const doDelete = window.confirm('Please confirm you want delete this connection. This cannot be undone.');
               if (doDelete) {
                 mixpanel.track('[Connections].delete', { type: connectionType });
-                const { json, options} = getDeleteConnectionAction(connectionUuid, teamUuid);
+                const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
                 submit(json, {
-                 ...options,
+                  ...options,
                   navigate: false,
                 });
                 handleNavigateToListView();

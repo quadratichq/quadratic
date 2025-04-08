@@ -66,7 +66,7 @@ export const apiClient = {
         return data;
       },
     },
-    
+
     invites: {
       create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
@@ -365,28 +365,36 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections.GET.response']
       );
     },
-    get({ connectionUuid, teamUuid }: { connectionUuid: string, teamUuid: string, }) {
+    get({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'GET' },
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response']
       );
     },
-    create({ body, teamUuid }: { body: ApiTypes['/v0/teams/:uuid/connections.POST.request'], teamUuid: string, }) {
+    create({ body, teamUuid }: { body: ApiTypes['/v0/teams/:uuid/connections.POST.request']; teamUuid: string }) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections`,
         { method: 'POST', body: JSON.stringify(body) },
         ApiSchemas['/v0/teams/:uuid/connections.POST.response']
       );
     },
-    update({ connectionUuid, body, teamUuid }: { connectionUuid: string, body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request'],  teamUuid: string, }) {
+    update({
+      connectionUuid,
+      body,
+      teamUuid,
+    }: {
+      connectionUuid: string;
+      body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request'];
+      teamUuid: string;
+    }) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'PUT', body: JSON.stringify(body) },
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.PUT.response']
       );
     },
-    delete({ connectionUuid, teamUuid }: { connectionUuid: string, teamUuid: string, }) {
+    delete({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'DELETE' },

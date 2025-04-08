@@ -107,8 +107,16 @@ export function ConnectionFormEdit({
   );
 }
 
-function ConnectionFormWrapper({ teamUuid, type, props }: { teamUuid: string; type: ConnectionType; props: ConnectionFormProps }) {
-  const { ConnectionForm, useConnectionForm } = connectionsByType[type];  
+function ConnectionFormWrapper({
+  teamUuid,
+  type,
+  props,
+}: {
+  teamUuid: string;
+  type: ConnectionType;
+  props: ConnectionFormProps;
+}) {
+  const { ConnectionForm, useConnectionForm } = connectionsByType[type];
   const { form } = useConnectionForm(props.connection);
 
   return (
