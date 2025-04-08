@@ -9,7 +9,7 @@ Python does not support conditional returns in Quadratic. Only the last line of 
 Single cell references are placed in a variable of corresponding type. Multi-line references are placed in a DataFrame.
 
 Essential Python basics in Quadratic: 
-1. Cell references - use q.cells() toread data from the sheet into Python with table references and A1 notation
+1. Cell references - use q.cells() to read data from the sheet into Python with table references and A1 notation
 2. Return data to the sheet - return Python outputs from code to the sheet; the last line is what gets returned 
 3. Import Python packages - supporting some built-in libraries and others via micropip
 4. Make API requests - use the Requests library to query APIs
@@ -222,7 +222,7 @@ Here is an example of using a Python function to return data to the sheet.
 def do_some_math(x): 
     return x+1
 
-# since this is the last line of code, itreturns the result of do_some_math(), which in this case is 6 
+# since this is the last line of code, it returns the result of do_some_math(), which in this case is 6 
 do_some_math(5)
 \`\`\`
 
