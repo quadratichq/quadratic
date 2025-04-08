@@ -16,6 +16,7 @@ use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Respons
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Value;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Values;
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
+use quadratic_core::controller::transaction_types::JsCellValueResult;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
@@ -23,6 +24,7 @@ use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
 use quadratic_core::grid::js_types::JsTablesContext;
 use quadratic_core::grid::js_types::{
@@ -103,6 +105,7 @@ fn main() {
         JsCellsA1Response,
         JsCellsA1Value,
         JsCellsA1Values,
+        JsCellValueResult,
         CellAlign,
         CellBorderLine,
         CellFormatSummary,
@@ -144,6 +147,7 @@ fn main() {
         JsRenderCodeCell,
         JsRenderCodeCellState,
         JsRenderFill,
+        JsResponse,
         JsReturnInfo,
         JsRowHeight,
         JsSelectionContext,

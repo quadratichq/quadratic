@@ -21,8 +21,8 @@ impl SheetCellRefRange {
     /// Ranges without an explicit sheet use `pos.sheet_id`.
     ///
     /// This is a wrapper around [`Self::parse()`] that takes a [`SheetPos`].
-    pub fn parse_at(a1: &str, pos: SheetPos, context: &A1Context) -> Result<Self, A1Error> {
-        Self::parse(a1, pos.sheet_id, context, Some(pos.into()))
+    pub fn parse_at(a1: &str, pos: SheetPos, a1_context: &A1Context) -> Result<Self, A1Error> {
+        Self::parse(a1, pos.sheet_id, a1_context, Some(pos.into()))
     }
     /// Parses a cell range reference using A1 notation.
     ///
@@ -32,9 +32,9 @@ impl SheetCellRefRange {
     pub fn parse_a1(
         a1: &str,
         default_sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Result<Self, A1Error> {
-        Self::parse(a1, default_sheet_id, context, None)
+        Self::parse(a1, default_sheet_id, a1_context, None)
     }
     /// Parses a cell range reference using A1 or RC notation.
     ///
@@ -42,11 +42,11 @@ impl SheetCellRefRange {
     pub fn parse(
         a1: &str,
         default_sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
         base_pos: Option<Pos>,
     ) -> Result<Self, A1Error> {
-        let (sheet, cells_str) = parse_optional_sheet_name_to_id(a1, context)?;
-        let (cells, table_sheet_id) = CellRefRange::parse(cells_str, context, base_pos)?;
+        let (sheet, cells_str) = parse_optional_sheet_name_to_id(a1, a1_context)?;
+        let (cells, table_sheet_id) = CellRefRange::parse(cells_str, a1_context, base_pos)?;
         Ok(Self {
             sheet_id: table_sheet_id.or(sheet).unwrap_or(default_sheet_id),
             cells,
@@ -70,9 +70,13 @@ impl SheetCellRefRange {
     /// Returns an A1-style string describing the range. The sheet name is
     /// included in the output only if `default_sheet_id` is `None` or differs
     /// from the ID of the sheet containing the range.
-    pub fn to_a1_string(&self, default_sheet_id: Option<SheetId>, context: &A1Context) -> String {
+    pub fn to_a1_string(
+        &self,
+        default_sheet_id: Option<SheetId>,
+        a1_context: &A1Context,
+    ) -> String {
         if self.needs_sheet_name(default_sheet_id) {
-            if let Some(sheet_name) = context.try_sheet_id(self.sheet_id) {
+            if let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
                 return format!(
                     "{}!{}",
                     super::quote_sheet_name(sheet_name),
@@ -89,11 +93,11 @@ impl SheetCellRefRange {
     pub fn to_rc_string(
         &self,
         default_sheet_id: Option<SheetId>,
-        context: &A1Context,
+        a1_context: &A1Context,
         base_pos: Pos,
     ) -> String {
         if self.needs_sheet_name(default_sheet_id) {
-            if let Some(sheet_name) = context.try_sheet_id(self.sheet_id) {
+            if let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
                 return format!(
                     "{}!{}",
                     super::quote_sheet_name(sheet_name),

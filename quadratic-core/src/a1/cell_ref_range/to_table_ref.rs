@@ -1,7 +1,7 @@
 use crate::{
+    SheetPos,
     a1::ColRange,
     grid::{CodeCellLanguage, SheetId},
-    SheetPos,
 };
 
 use super::*;
@@ -12,7 +12,7 @@ impl CellRefRange {
     pub fn check_for_table_ref(
         &self,
         sheet_id: SheetId,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<CellRefRange> {
         if let CellRefRange::Sheet { range } = self {
             // if the range is unbounded, then it's not a table ref
@@ -31,7 +31,7 @@ impl CellRefRange {
                 y: range.end.row().max(range.start.row()),
             };
 
-            if let Some(table) = context.table_from_pos(start) {
+            if let Some(table) = a1_context.table_from_pos(start) {
                 // We don't change to TableRef if the table is a formula. This
                 // is a hack since we don't show table UI for formulas. if this
                 // changes, we can remove this check.
@@ -60,7 +60,7 @@ impl CellRefRange {
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range: ColRange::All,
                             data: true,
                             headers: false,
@@ -72,7 +72,7 @@ impl CellRefRange {
                 if table.is_html_image && b.contains(start.into()) && b.contains(end.into()) {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range: ColRange::All,
                             data: true,
                             headers: false,
@@ -107,7 +107,7 @@ impl CellRefRange {
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range,
                             data: true,
                             headers: false,
@@ -120,7 +120,7 @@ impl CellRefRange {
                 if start.y == b.min.y + adjust_for_name + adjust_for_columns && end.y == b.max.y {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range,
                             data: true,
                             headers: false,
@@ -136,7 +136,7 @@ impl CellRefRange {
                 if full_table || data_and_headers {
                     return Some(CellRefRange::Table {
                         range: TableRef {
-                            table_name: table.table_name.clone(),
+                            table_name: table.table_name.to_string(),
                             col_range,
                             data: true,
                             headers: true,

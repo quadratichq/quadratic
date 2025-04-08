@@ -1,7 +1,7 @@
 //! Data Validation for individual cells. This is held by Sheet and is used to
 //! validate the value of a cell.
 
-use crate::CellValue;
+use crate::{CellValue, a1::A1Context};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -31,9 +31,14 @@ pub enum ValidationRule {
 
 impl ValidationRule {
     /// Validate a CellValue against the validation rule.
-    pub fn validate(&self, sheet: &Sheet, value: Option<&CellValue>) -> bool {
+    pub fn validate(
+        &self,
+        sheet: &Sheet,
+        value: Option<&CellValue>,
+        a1_context: &A1Context,
+    ) -> bool {
         match &self {
-            ValidationRule::List(list) => list.validate(sheet, value),
+            ValidationRule::List(list) => list.validate(sheet, value, a1_context),
             ValidationRule::Logical(logical) => logical.validate(value),
             ValidationRule::Text(text) => text.validate(value),
             ValidationRule::Number(number) => number.validate(value),
@@ -90,10 +95,18 @@ mod tests {
             drop_down: false,
         };
 
-        assert!(ValidationRule::List(list.clone())
-            .validate(&sheet, Some(&CellValue::Text("test".to_string()))));
-        assert!(!ValidationRule::List(list)
-            .validate(&sheet, Some(&CellValue::Text("test2".to_string()))));
+        let a1_context = sheet.make_a1_context();
+
+        assert!(ValidationRule::List(list.clone()).validate(
+            &sheet,
+            Some(&CellValue::Text("test".to_string())),
+            &a1_context
+        ));
+        assert!(!ValidationRule::List(list).validate(
+            &sheet,
+            Some(&CellValue::Text("test2".to_string())),
+            &a1_context
+        ));
     }
 
     #[test]
@@ -109,15 +122,31 @@ mod tests {
         };
         let rule = ValidationRule::List(list);
 
-        assert!(rule.validate(&sheet, Some(&CellValue::Text("test".to_string()))));
-        assert!(!rule.validate(&sheet, Some(&CellValue::Text("test2".to_string()))));
+        let a1_context = sheet.make_a1_context();
+
+        assert!(rule.validate(
+            &sheet,
+            Some(&CellValue::Text("test".to_string())),
+            &a1_context
+        ));
+        assert!(!rule.validate(
+            &sheet,
+            Some(&CellValue::Text("test2".to_string())),
+            &a1_context
+        ));
     }
 
     #[test]
     fn validate_none() {
         let sheet = Sheet::test();
         let rule = ValidationRule::None;
-        assert!(rule.validate(&sheet, Some(&CellValue::Text("test".to_string()))));
+        let a1_context = sheet.make_a1_context();
+
+        assert!(rule.validate(
+            &sheet,
+            Some(&CellValue::Text("test".to_string())),
+            &a1_context
+        ));
     }
 
     #[test]

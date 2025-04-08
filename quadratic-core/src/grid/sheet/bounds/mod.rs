@@ -2,8 +2,9 @@
 //! this value and only recalculate when necessary.
 
 use crate::{
-    grid::{Column, GridBounds},
     CellValue, Pos, Rect,
+    a1::A1Context,
+    grid::{Column, GridBounds},
 };
 use std::cmp::Reverse;
 
@@ -15,7 +16,7 @@ impl Sheet {
     /// Recalculates all bounds of the sheet.
     ///
     /// Returns whether any of the sheet's bounds has changed
-    pub fn recalculate_bounds(&mut self) -> bool {
+    pub fn recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
         let old_data_bounds = self.data_bounds.to_bounds_rect();
         let old_format_bounds = self.format_bounds.to_bounds_rect();
         self.data_bounds.clear();
@@ -42,7 +43,9 @@ impl Sheet {
 
         for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
-                if let Some(rect) = self.selection_bounds(&validation.selection, false) {
+                if let Some(rect) =
+                    self.selection_bounds(&validation.selection, false, false, a1_context)
+                {
                     self.data_bounds.add(rect.min);
                     self.data_bounds.add(rect.max);
                 }
@@ -155,11 +158,7 @@ impl Sheet {
             max = max.max(code_bounds.end - 1);
             found = true;
         }
-        if found {
-            Some((min, max))
-        } else {
-            None
-        }
+        if found { Some((min, max)) } else { None }
     }
 
     /// Returns the lower and upper bounds of a row, or `None` if the column is
@@ -249,11 +248,7 @@ impl Sheet {
             max = max.max(code_bounds.end - 1);
             found = true;
         }
-        if found {
-            Some((min, max))
-        } else {
-            None
-        }
+        if found { Some((min, max)) } else { None }
     }
 
     /// Finds the height of a rectangle that contains data given an (x, y, w).
@@ -458,19 +453,19 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
+        Array, CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{
+            CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
             sheet::{
                 borders::{BorderSelection, BorderStyle},
                 validations::{
                     validation::Validation,
-                    validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+                    validation_rules::{ValidationRule, validation_logical::ValidationLogical},
                 },
             },
-            CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
-        Array, CellValue, Pos, Rect, SheetPos,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -479,15 +474,16 @@ mod test {
     #[test]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
-        assert!(!sheet.recalculate_bounds());
+        let a1_context = sheet.make_a1_context();
+        assert!(!sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        assert!(sheet.recalculate_bounds());
+        assert!(sheet.recalculate_bounds(&a1_context));
         assert!(!sheet.is_empty());
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
-        sheet.recalculate_bounds();
+        sheet.recalculate_bounds(&a1_context);
         assert!(sheet.is_empty());
     }
 
@@ -502,7 +498,8 @@ mod test {
             .formats
             .align
             .set(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
-        assert!(sheet.recalculate_bounds());
+        let a1_context = sheet.make_a1_context();
+        assert!(sheet.recalculate_bounds(&a1_context));
 
         assert_eq!(
             sheet.bounds(true),
@@ -533,7 +530,8 @@ mod test {
             .formats
             .wrap
             .set(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
-        assert!(sheet.recalculate_bounds());
+        let a1_context = sheet.make_a1_context();
+        assert!(sheet.recalculate_bounds(&a1_context));
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
         assert_eq!(sheet.column_bounds(100, false), Some((-50, 200)));
@@ -556,7 +554,8 @@ mod test {
             .formats
             .align
             .set(Pos { x: 200, y: 100 }, Some(CellAlign::Center));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.row_bounds(100, true), Some((1, 80)));
         assert_eq!(sheet.row_bounds(100, false), Some((1, 200)));
@@ -585,7 +584,8 @@ mod test {
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
 
@@ -619,7 +619,8 @@ mod test {
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.rows_bounds(1, 100, true), Some((1, 80)));
         assert_eq!(sheet.rows_bounds(1, 100, false), Some((1, 80)));
@@ -641,7 +642,8 @@ mod test {
             max: Pos { x: 49, y: 49 },
         };
         let mut sheet = Sheet::test();
-        sheet.random_numbers(&rect);
+        let a1_context = sheet.make_a1_context();
+        sheet.random_numbers(&rect, &a1_context);
         assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(true));
         assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(false));
     }
@@ -689,7 +691,8 @@ mod test {
             }
         }
 
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
         assert_eq!(expected_bounds, sheet.bounds(false));
         assert_eq!(expected_bounds, sheet.bounds(true));
     }

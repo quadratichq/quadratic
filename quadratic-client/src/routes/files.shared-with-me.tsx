@@ -5,7 +5,7 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData, useRouteError } from 'react-router';
 import { debugShowUILogs } from '../app/debugFlags';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { Empty } from '../dashboard/components/Empty';
+import { Empty } from '../shared/components/Empty';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClient.files.list({ shared: 'with-me' });

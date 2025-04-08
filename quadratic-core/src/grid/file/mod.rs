@@ -1,10 +1,10 @@
 use crate::compression::{
-    add_header, decompress_and_deserialize, deserialize, remove_header, serialize,
-    serialize_and_compress, CompressionFormat, SerializationFormat,
+    CompressionFormat, SerializationFormat, add_header, decompress_and_deserialize, deserialize,
+    remove_header, serialize, serialize_and_compress,
 };
 
 use super::Grid;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use migrate_code_cell_references::{
     migrate_code_cell_references, replace_formula_a1_references_to_r1c1,
 };
@@ -228,13 +228,13 @@ pub fn export_json(grid: Grid) -> Result<Vec<u8>> {
 mod tests {
     use super::*;
     use crate::{
+        ArraySize, CellValue, Pos,
         a1::A1Selection,
         controller::GridController,
         grid::{
-            sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
+            sheet::borders::{BorderSelection, BorderStyle},
         },
-        ArraySize, CellValue, Pos,
     };
     use bigdecimal::BigDecimal;
 
@@ -262,8 +262,9 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_(Main)_QAWolf_test.grid");
     const V1_5_UPGRADE_CODE_RUNS: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_upgrade_code_runs.grid");
-    const V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_JavaScript_getting_started_(example).grid");
+    const V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE: &[u8] = include_bytes!(
+        "../../../../quadratic-rust-shared/data/grid/v1_5_JavaScript_getting_started_(example).grid"
+    );
 
     #[test]
     fn process_a_number_v1_3_file() {
@@ -299,12 +300,15 @@ mod tests {
     #[test]
     fn process_a_v1_3_single_formula_file() {
         let imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE.to_vec()).unwrap();
-        assert!(imported.sheets[0]
-            .data_tables
-            .get(&Pos { x: 1, y: 3 })
-            .is_some());
+        assert!(
+            imported.sheets[0]
+                .data_tables
+                .get(&Pos { x: 1, y: 3 })
+                .is_some()
+        );
+        let a1_context = imported.make_a1_context();
         let code_cell = imported.sheets[0]
-            .edit_code_value(Pos { x: 1, y: 3 })
+            .edit_code_value(Pos { x: 1, y: 3 }, &a1_context)
             .unwrap();
 
         match code_cell.language {

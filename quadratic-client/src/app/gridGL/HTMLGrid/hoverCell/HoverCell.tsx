@@ -1,4 +1,4 @@
-import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
+import { aiAssistantLoadingAtom, aiAssistantWaitingOnMessageIndexAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -17,6 +17,7 @@ import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useS
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -233,7 +234,8 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
     [codeCellCore.language, x, y]
   );
 
-  const loading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiAssistantWaitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
 
   const { submitPrompt } = useSubmitAIAssistantPrompt();
 
@@ -246,14 +248,17 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
           size="sm"
           variant="destructive"
           onClick={() => {
+            mixpanel.track('[HoverCell].fixWithAI', {
+              language: codeCellCore.language,
+            });
             submitPrompt({
               content: [{ type: 'text', text: 'Fix the error in the code cell' }],
-              clearMessages: true,
+              messageIndex: 0,
               codeCell,
             }).catch(console.error);
             onClick();
           }}
-          disabled={loading}
+          disabled={aiAssistantLoading || aiAssistantWaitingOnMessageIndex !== undefined}
         >
           Fix with AI
         </Button>

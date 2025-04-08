@@ -4,8 +4,8 @@ use super::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::error_core::Result;
-use crate::grid::js_types::JsRowHeight;
 use crate::grid::SheetId;
+use crate::grid::js_types::JsRowHeight;
 
 impl GridController {
     pub fn start_auto_resize_row_heights(
@@ -40,7 +40,9 @@ impl GridController {
                     return true;
                 }
             } else {
-                dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
+                dbgjs!(
+                    "[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows"
+                );
             }
         } else {
             dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
@@ -73,13 +75,14 @@ mod tests {
 
     use bigdecimal::BigDecimal;
 
+    use crate::controller::GridController;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Value;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Values;
     use crate::controller::operations::operation::Operation;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::controller::transaction_types::JsCodeResult;
-    use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::SheetFormatUpdates;
     use crate::grid::formatting::RenderSize;
@@ -92,7 +95,7 @@ mod tests {
     use crate::wasm_bindings::js::{
         clear_js_calls, expect_js_call, expect_js_call_count, expect_js_offsets,
     };
-    use crate::{a1::A1Selection, CellValue, Pos, SheetPos};
+    use crate::{CellValue, Pos, SheetPos, a1::A1Selection};
 
     fn mock_auto_resize_row_heights(
         gc: &mut GridController,
@@ -141,7 +144,7 @@ mod tests {
             .set_cell_values_operations(
                 sheet_pos,
                 vec![vec![
-                    "test_auto_resize_row_heights_on_set_cell_value_1".to_string()
+                    "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
                 ]],
             )
             .unwrap();
@@ -180,7 +183,7 @@ mod tests {
             .set_cell_values_operations(
                 sheet_pos,
                 vec![vec![
-                    "test_auto_resize_row_heights_on_set_cell_value_2".to_string()
+                    "test_auto_resize_row_heights_on_set_cell_value_2".to_string(),
                 ]],
             )
             .unwrap();
@@ -508,8 +511,8 @@ mod tests {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "9".into(),
-                        type_name: "number".into(),
+                        v: "9".into(),
+                        t: 2,
                     }],
                     x: 1,
                     y: 1,
@@ -526,14 +529,15 @@ mod tests {
         let transaction = gc.async_transactions().first().unwrap();
         assert_eq!(transaction.has_async, 1);
 
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["10".into(), "number".into()]),
+                output_value: Some(JsCellValueResult("10".into(), 2)),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),

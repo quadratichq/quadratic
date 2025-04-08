@@ -2,6 +2,7 @@ import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateA
 import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
+import mixpanel from 'mixpanel-browser';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import type { SubmitFunction } from 'react-router';
@@ -77,6 +78,7 @@ export const duplicateFileAction = {
   label: 'Duplicate',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ fileUuid, submit }: { fileUuid: string; submit: SubmitFunction }) {
+    mixpanel.track('[Files].duplicateFile', { id: fileUuid });
     const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
     submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
   },

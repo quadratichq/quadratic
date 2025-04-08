@@ -1,10 +1,10 @@
 use crate::{
+    CopyFormats,
     controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
+        GridController, active_transactions::transaction_name::TransactionName,
+        operations::operation::Operation,
     },
     grid::SheetId,
-    CopyFormats,
 };
 
 impl GridController {
@@ -89,8 +89,8 @@ impl GridController {
 mod tests {
 
     use crate::{
-        grid::{formats::Format, CodeCellLanguage, CodeCellValue},
         CellValue, Pos, SheetPos,
+        grid::{CodeCellLanguage, CodeCellValue, formats::Format},
     };
 
     use super::*;
@@ -198,8 +198,11 @@ mod tests {
             .formats
             .fill_color
             .set(Pos::new(1, 1), Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.fill_color.get(pos![A1]),
             Some("red".to_string())
@@ -256,8 +259,11 @@ mod tests {
             .formats
             .fill_color
             .set(pos![A1], Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
             Format {
@@ -319,8 +325,11 @@ mod tests {
             .formats
             .fill_color
             .set(pos![A1], Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
             Format {
@@ -382,8 +391,11 @@ mod tests {
             .formats
             .fill_color
             .set(Pos::new(1, 1), Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
             Format {

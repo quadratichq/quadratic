@@ -3,17 +3,17 @@ use std::collections::HashSet;
 use itertools::Itertools;
 
 use crate::{
+    Pos, Rect,
     grid::{
-        js_types::{JsHtmlOutput, JsOffset},
         SheetId,
+        js_types::{JsHtmlOutput, JsOffset},
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    Pos, Rect,
 };
 
-use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
+use super::{GridController, active_transactions::pending_transaction::PendingTransaction};
 
 impl GridController {
     pub(crate) fn send_viewport_buffer(&mut self) {
@@ -185,7 +185,7 @@ impl GridController {
             CELL_SHEET_WIDTH as i64,
             CELL_SHEET_HEIGHT as i64,
         );
-        let render_cells = sheet.get_render_cells(rect);
+        let render_cells = sheet.get_render_cells(rect, &self.a1_context);
         if let Ok(cells) = serde_json::to_string(&render_cells) {
             crate::wasm_bindings::js::jsRenderCellSheets(
                 sheet_id.to_string(),
@@ -223,11 +223,10 @@ impl GridController {
         transaction: &PendingTransaction,
         sheet_id: SheetId,
     ) {
-        let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-            sheet.recalculate_bounds()
-        } else {
-            false
-        };
+        let recalculated = self
+            .grid
+            .try_sheet_mut(sheet_id)
+            .is_some_and(|sheet| sheet.recalculate_bounds(&self.a1_context));
 
         if !recalculated {
             return;
@@ -256,6 +255,10 @@ impl GridController {
 
     /// Sends add sheet to the client
     pub(crate) fn send_add_sheet(&mut self, transaction: &PendingTransaction, sheet_id: SheetId) {
+        self.grid
+            .try_sheet_mut(sheet_id)
+            .map(|sheet| sheet.recalculate_bounds(&self.a1_context));
+
         self.update_a1_context_sheet_map(sheet_id);
 
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
@@ -337,7 +340,7 @@ impl GridController {
                 };
 
                 for pos in positions.iter() {
-                    sheet.send_code_cell(*pos);
+                    sheet.send_code_cell(*pos, &self.a1_context);
                 }
             }
         }
@@ -509,18 +512,20 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        ClearOption, Pos, SheetPos,
         a1::A1Selection,
         controller::{
+            GridController,
             active_transactions::pending_transaction::PendingTransaction,
-            execution::TransactionSource, transaction_types::JsCodeResult, GridController,
+            execution::TransactionSource,
+            transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{
+            Contiguous2D, SheetId,
             formats::SheetFormatUpdates,
             js_types::{JsHtmlOutput, JsRenderCell},
-            Contiguous2D, SheetId,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        ClearOption, Pos, SheetPos,
     };
     use std::collections::HashSet;
 
@@ -617,7 +622,7 @@ mod test {
         gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
+            output_value: Some(JsCellValueResult("<html></html>".to_string(), 1)),
             ..Default::default()
         })
         .unwrap();

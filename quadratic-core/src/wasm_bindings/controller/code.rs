@@ -5,10 +5,16 @@ impl GridController {
     /// Called after a external calculation is complete.
     #[wasm_bindgen(js_name = "calculationComplete")]
     pub fn js_calculation_complete(&mut self, result: Vec<u8>) {
-        if let Ok(result) = serde_json::from_slice(&result) {
-            let _ = self.calculation_complete(result);
-        } else {
-            dbgjs!("calculationComplete: Failed to parse calculation result");
+        match serde_json::from_slice(&result) {
+            Ok(result) => {
+                let _ = self.calculation_complete(result);
+            }
+            Err(e) => {
+                dbgjs!(format!(
+                    "calculationComplete: Failed to parse calculation result: {:?}",
+                    e
+                ));
+            }
         }
     }
 
@@ -44,7 +50,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return Ok(JsValue::null());
         };
-        if let Some(edit_code) = sheet.edit_code_value(pos) {
+        if let Some(edit_code) = sheet.edit_code_value(pos, self.a1_context()) {
             Ok(serde_wasm_bindgen::to_value(&edit_code)?)
         } else {
             Ok(JsValue::null())
@@ -62,14 +68,15 @@ impl GridController {
         cursor: Option<String>,
     ) -> Option<String> {
         if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
-            let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-            if let Ok(language) = serde_wasm_bindgen::from_value(language) {
-                return Some(self.set_code_cell(
-                    pos.to_sheet_pos(sheet_id),
-                    language,
-                    code_string,
-                    cursor,
-                ));
+            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+                if let Ok(language) = serde_wasm_bindgen::from_value(language) {
+                    return Some(self.set_code_cell(
+                        pos.to_sheet_pos(sheet_id),
+                        language,
+                        code_string,
+                        cursor,
+                    ));
+                }
             }
         }
         None

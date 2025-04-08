@@ -15,7 +15,7 @@ use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
 impl GridController {
     // loop compute cycle until complete or an async call is made
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if cfg!(target_family = "wasm") {
+        if cfg!(target_family = "wasm") || cfg!(test) {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)
                 .unwrap_or("Unknown".to_string());
             crate::wasm_bindings::js::jsTransactionStart(
@@ -116,7 +116,7 @@ impl GridController {
 
         transaction.send_transaction();
 
-        if cfg!(target_family = "wasm") {
+        if cfg!(target_family = "wasm") || cfg!(test) {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)
                 .unwrap_or("Unknown".to_string());
             crate::wasm_bindings::js::jsTransactionEnd(
@@ -280,6 +280,7 @@ mod tests {
 
     use super::*;
     use crate::cell_values::CellValues;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
     use crate::{CellValue, Pos, Rect, SheetPos};
 
@@ -416,7 +417,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["1".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("1".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());

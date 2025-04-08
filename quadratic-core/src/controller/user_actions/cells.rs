@@ -1,6 +1,6 @@
-use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::{a1::A1Selection, SheetPos};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
@@ -54,14 +54,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
-        grid::{sort::SortDirection, NumericFormat, SheetId},
-        test_util::{
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
+        grid::{NumericFormat, SheetId, sort::SortDirection},
+        test_util::gc::{
             assert_data_table_cell_value_column, assert_data_table_cell_value_row,
             assert_display_cell_value_pos, print_table, str_vec_to_string_vec,
         },
-        CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
 
@@ -238,9 +238,10 @@ mod test {
         let selection = A1Selection::from_single_cell(sheet_pos);
         let _ = gc.set_currency(&selection, "$".to_string(), None);
         gc.clear_formatting(&selection, None);
-        let cells = gc
-            .sheet(sheet_id)
-            .get_render_cells(Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }));
+        let cells = gc.sheet(sheet_id).get_render_cells(
+            Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }),
+            gc.a1_context(),
+        );
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].value, "1.12345678");
 
@@ -262,9 +263,10 @@ mod test {
         let selection = A1Selection::from_single_cell(sheet_pos);
         let _ = gc.set_currency(&selection, "$".to_string(), None);
         gc.delete_values_and_formatting(&selection, None);
-        let cells = gc
-            .sheet(sheet_id)
-            .get_render_cells(Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }));
+        let cells = gc.sheet(sheet_id).get_render_cells(
+            Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }),
+            gc.a1_context(),
+        );
         assert_eq!(cells.len(), 0);
 
         // ensure not found sheet_id fails silently

@@ -45,10 +45,10 @@ impl GridController {
         sheet_id: SheetId,
         columns: Vec<i64>,
     ) {
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
             let mut columns_to_adjust = columns.clone();
-            sheet.delete_columns(transaction, columns);
+            sheet.delete_columns(transaction, columns, &self.a1_context);
 
             if transaction.is_user() {
                 columns_to_adjust.sort_unstable();
@@ -100,10 +100,10 @@ impl GridController {
         sheet_id: SheetId,
         rows: Vec<i64>,
     ) {
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
-            sheet.delete_rows(transaction, rows);
+            sheet.delete_rows(transaction, rows, &self.a1_context);
 
             if transaction.is_user() {
                 rows_to_adjust.sort_unstable();
@@ -157,11 +157,11 @@ impl GridController {
             copy_formats,
         } = op
         {
-            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats, true);
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+                sheet.insert_column(transaction, column, copy_formats, true, &self.a1_context);
                 transaction.forward_operations.push(op);
 
-                sheet.recalculate_bounds();
+                sheet.recalculate_bounds(&self.a1_context);
             } else {
                 // nothing more can be done
                 return;
@@ -202,11 +202,11 @@ impl GridController {
             copy_formats,
         } = op
         {
-            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.insert_row(transaction, row, copy_formats, true);
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+                sheet.insert_row(transaction, row, copy_formats, true, &self.a1_context);
                 transaction.forward_operations.push(op);
 
-                sheet.recalculate_bounds();
+                sheet.recalculate_bounds(&self.a1_context);
             } else {
                 // nothing more can be done
                 return;

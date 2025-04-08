@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { gridToDataTable } from '@/app/actions/dataTableSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { FILE_INPUT_ID } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -13,6 +14,7 @@ import {
   DataValidationsIcon,
   FormatDateTimeIcon,
   SheetIcon,
+  TableConvertIcon,
 } from '@/shared/components/Icons';
 
 type InsertActionSpec = Pick<
@@ -24,6 +26,7 @@ type InsertActionSpec = Pick<
   | Action.InsertChartJavascript
   | Action.InsertApiRequestJavascript
   | Action.InsertApiRequestPython
+  | Action.InsertDataTable
   | Action.InsertSheet
   | Action.InsertCheckbox
   | Action.InsertDropdown
@@ -57,6 +60,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -86,6 +91,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -115,6 +122,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -144,6 +153,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -173,6 +184,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -195,6 +208,10 @@ export const insertActionsSpec: InsertActionSpec = {
       const el = document.getElementById(FILE_INPUT_ID) as HTMLInputElement;
       if (el) {
         el.click();
+
+        // clear the file input to trigger the onChange event for subsequent
+        // file imports
+        el.value = '';
       }
     },
   },
@@ -212,6 +229,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -241,6 +260,8 @@ export const insertActionsSpec: InsertActionSpec = {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -254,6 +275,15 @@ export const insertActionsSpec: InsertActionSpec = {
           initialCode: SNIPPET_PY_API,
         },
       }));
+    },
+  },
+  [Action.InsertDataTable]: {
+    label: 'Table',
+    labelVerbose: 'Insert a table',
+    Icon: TableConvertIcon,
+    isDisabled: () => sheets.sheet.cursor.isSingleSelection(),
+    run: () => {
+      gridToDataTable();
     },
   },
   [Action.InsertSheet]: {

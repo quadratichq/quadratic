@@ -3,10 +3,13 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
+  aiAnalystWaitingOnMessageIndexAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
@@ -20,7 +23,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { getLastUserPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -32,6 +35,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
@@ -155,7 +159,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
           return null;
         }
 
-        const isCurrentMessage = index === messages.length - 1;
+        const isCurrentMessage = index === messagesCount - 1;
 
         return (
           <div
@@ -172,34 +176,26 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 <AIAnalystUserMessageForm
                   initialContent={message.content}
                   initialContext={message.context}
-                  messageIndex={index}
                   textareaRef={textareaRef}
+                  messageIndex={index}
                 />
-              ) : Array.isArray(message.content) ? (
-                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
               ) : (
-                <Markdown key={message.content}>{message.content}</Markdown>
+                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
               )
             ) : (
               <>
-                {message.content && Array.isArray(message.content) ? (
-                  <>
-                    {message.content.map((item, contentIndex) =>
-                      item.type === 'anthropic_thinking' ? (
-                        <ThinkingBlock
-                          key={item.text}
-                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
-                          isLoading={loading}
-                          thinkingContent={item}
-                          expandedDefault={true}
-                        />
-                      ) : item.type === 'text' ? (
-                        <Markdown key={item.text}>{item.text}</Markdown>
-                      ) : null
-                    )}
-                  </>
-                ) : (
-                  <Markdown key={message.content}>{message.content}</Markdown>
+                {message.content.map((item, contentIndex) =>
+                  item.type === 'anthropic_thinking' ? (
+                    <ThinkingBlock
+                      key={item.text}
+                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                      isLoading={loading}
+                      thinkingContent={item}
+                      expandedDefault={true}
+                    />
+                  ) : item.type === 'text' ? (
+                    <Markdown key={item.text}>{item.text}</Markdown>
+                  ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
@@ -217,15 +213,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         );
       })}
 
-      {messages.length > 0 && !loading && <FeedbackButtons />}
+      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
 
-      {messages.length > 0 && !loading && <PromptSuggestions />}
+      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
 
-      <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
-        <span className="h-2 w-2 animate-bounce bg-primary" />
-        <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
-        <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
-      </div>
+      <PDFImportLoading />
+
+      <AILoading loading={loading} />
     </div>
   );
 });
@@ -242,7 +236,7 @@ const FeedbackButtons = memo(() => {
 
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
-        const messageIndex = getLastUserPromptMessageIndex(messages);
+        const messageIndex = getLastAIPromptMessageIndex(messages);
         if (messageIndex < 0) return;
 
         const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
@@ -332,6 +326,7 @@ const PromptSuggestions = memo(() => {
               context: {
                 ...(lastContext ?? defaultAIAnalystContext),
               },
+              messageIndex: messages.length,
             })
           }
         >
@@ -340,4 +335,14 @@ const PromptSuggestions = memo(() => {
       ))}
     </div>
   );
+});
+
+const PDFImportLoading = memo(() => {
+  const pdfImportLoading = useRecoilValue(aiAnalystPDFImportLoadingAtom);
+
+  if (!pdfImportLoading) {
+    return null;
+  }
+
+  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
 });

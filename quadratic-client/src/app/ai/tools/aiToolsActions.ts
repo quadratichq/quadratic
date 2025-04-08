@@ -6,8 +6,10 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { apiClient } from '@/shared/api/apiClient';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AISource } from 'quadratic-shared/typesAndSchemasAI';
 import type { z } from 'zod';
 
 const waitForSetCodeCellValue = (transactionId: string) => {
@@ -29,10 +31,32 @@ const waitForSetCodeCellValue = (transactionId: string) => {
   });
 };
 
-const setCodeCellResult = async (sheetId: string, x: number, y: number): Promise<string> => {
+const setCodeCellResult = async (
+  sheetId: string,
+  x: number,
+  y: number,
+  messageMetaData: AIToolMesageMetaData
+): Promise<string> => {
   const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
   const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
   if (!table || !codeCell) return 'Error executing set code cell value tool';
+
+  if (codeCell.std_err || codeCell.spill_error) {
+    // log code run error in analytics, if enabled
+    const aiAnalyticsSettings = pixiAppSettings.editorInteractionState.settings.analyticsAi;
+    if (aiAnalyticsSettings && !!messageMetaData.chatId && messageMetaData.messageIndex >= 0) {
+      const codeRunError = JSON.stringify({
+        code_string: codeCell.code_string,
+        std_err: codeCell.std_err,
+        spill_error: codeCell.spill_error,
+      });
+      apiClient.ai.codeRunError({
+        chatId: messageMetaData.chatId,
+        messageIndex: messageMetaData.messageIndex,
+        codeRunError,
+      });
+    }
+  }
 
   if (codeCell.std_err) {
     return `
@@ -65,8 +89,17 @@ ${
 `;
 };
 
+type AIToolMesageMetaData = {
+  source: AISource;
+  chatId: string;
+  messageIndex: number;
+};
+
 export type AIToolActionsRecord = {
-  [K in AITool]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<string>;
+  [K in AITool]: (
+    args: z.infer<(typeof AIToolsArgsSchema)[K]>,
+    messageMetaData: AIToolMesageMetaData
+  ) => Promise<string>;
 };
 
 export const aiToolsActions: AIToolActionsRecord = {
@@ -127,8 +160,8 @@ export const aiToolsActions: AIToolActionsRecord = {
       return `Error executing set cell values tool: ${e}`;
     }
   },
-  [AITool.SetCodeCellValue]: async (args) => {
-    let { code_cell_language, code_string, code_cell_position, output_width, output_height } = args;
+  [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
+    let { code_cell_language, code_string, code_cell_position } = args;
     try {
       const sheetId = sheets.current;
       const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
@@ -153,10 +186,15 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
 
-        ensureRectVisible({ x, y }, { x: x + output_width - 1, y: y + output_height - 1 });
+        // After execution, adjust viewport to show full output if it exists
+        const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
+        if (table) {
+          const width = table.codeCell.w;
+          const height = table.codeCell.h;
+          ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+        }
 
-        const result = await setCodeCellResult(sheetId, x, y);
-
+        const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
         return result;
       } else {
         return 'Error executing set code cell value tool';
@@ -212,7 +250,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       return `Error executing delete cells tool: ${e}`;
     }
   },
-  [AITool.UpdateCodeCell]: async (args) => {
+  [AITool.UpdateCodeCell]: async (args, messageMetaData) => {
     const { code_string } = args;
     try {
       if (!pixiAppSettings.setCodeEditorState) {
@@ -248,7 +286,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
 
-        const result = await setCodeCellResult(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
+        const result = await setCodeCellResult(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, messageMetaData);
 
         return (
           result +
@@ -266,5 +304,8 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.UserPromptSuggestions]: async () => {
     return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
+  },
+  [AITool.PDFImport]: async () => {
+    return `PDF import tool executed successfully.`;
   },
 } as const;

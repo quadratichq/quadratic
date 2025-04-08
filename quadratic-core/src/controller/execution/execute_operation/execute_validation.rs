@@ -1,11 +1,11 @@
 use uuid::Uuid;
 
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
+use crate::grid::SheetId;
 use crate::grid::js_types::JsValidationWarning;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::SheetId;
 
 impl GridController {
     // Remove old warnings from the validation. Adds to client_warnings as necessary.
@@ -51,7 +51,9 @@ impl GridController {
         };
         let mut warnings = vec![];
         let context = self.a1_context();
-        if let Some(values) = sheet.selection_values(&validation.selection, None, false, true) {
+        if let Some(values) =
+            sheet.selection_values(&validation.selection, None, false, true, &self.a1_context)
+        {
             values.iter().for_each(|(pos, _)| {
                 if let Some(validation) = sheet.validations.validate(sheet, *pos, context) {
                     warnings.push((*pos, validation.id));
@@ -238,7 +240,7 @@ mod tests {
 
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{a1::A1Selection, CellValue};
+    use crate::{CellValue, a1::A1Selection};
 
     #[test]
     fn execute_set_validation() {

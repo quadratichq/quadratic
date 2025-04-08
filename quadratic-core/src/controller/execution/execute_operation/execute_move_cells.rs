@@ -1,9 +1,9 @@
 use crate::{
     a1::A1Selection,
     controller::{
+        GridController,
         active_transactions::pending_transaction::PendingTransaction,
         operations::{clipboard::PasteSpecial, operation::Operation},
-        GridController,
     },
 };
 
@@ -54,13 +54,13 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, Rect, SheetPos,
         cellvalue::Import,
         controller::{
             active_transactions::transaction_name::TransactionName,
             user_actions::import::tests::{simple_csv, simple_csv_at},
         },
-        test_util::print_table,
-        CellValue, Rect, SheetPos,
+        test_util::gc::print_table,
     };
 
     use super::*;

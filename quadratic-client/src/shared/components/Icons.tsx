@@ -19,26 +19,29 @@ if (document.fonts) {
     });
 }
 
-// const sizes = {
-//   sm: '20',
-//   md: '24',
-//   lg: '40',
-//   xl: '48',
-// };
+const sizes = {
+  sm: '20',
+  // As needed, we can add these as scaled sizes in icons.css
+  // md: '24',
+  // lg: '40',
+  // xl: '48',
+  '2xl': '64',
+} as const;
 
 /**
  * Base icon component, used to render icons from the Material Symbols font.
  */
 interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: string;
-  // TODO: if and when we need to use other sizes, we'll have this as a prop
-  // Note: we'll have to load the additional sizes via the font loader in `index.html`
-  // size?: keyof typeof sizes;
+  // Note: we're not using the fine-tuned optical sizes from material symbols.
+  // Instead we're scaling the base 20px size.
+  // Maybe in the future we can load the additional fonts and use the optical sizes.
+  size?: keyof typeof sizes;
 }
 
 const Icon = (props: BaseIconProps) => {
-  const { children, className, ...rest } = props;
-  const _size = '20'; // size ? sizes[size] : sizes['sm'];
+  const { children, className, size = 'sm', ...rest } = props;
+  const _size = size ? sizes[size] : sizes['sm'];
 
   return (
     <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
@@ -258,6 +261,10 @@ export const DockToLeftIcon: IconComponent = (props) => {
 
 export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
+};
+
+export const DependencyIcon: IconComponent = (props) => {
+  return <Icon {...props}>deployed_code</Icon>;
 };
 
 export const DiffIcon: IconComponent = (props) => {
@@ -487,6 +494,10 @@ export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
 };
 
+export const PDFIcon: IconComponent = (props) => {
+  return <Icon {...props}>picture_as_pdf</Icon>;
+};
+
 export const PercentIcon: IconComponent = (props) => {
   return <Icon {...props}>percent</Icon>;
 };
@@ -652,18 +663,18 @@ export const FileOpenIcon: IconComponent = (props) => {
   return <Icon {...props}>file_open</Icon>;
 };
 
-export const ArrowRight: IconComponent = (props) => {
+export const ArrowRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
 };
 
-export const ArrowDoubleRight: IconComponent = (props) => {
+export const ArrowDoubleRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_right</Icon>;
 };
 
-export const ArrowDown: IconComponent = (props) => {
+export const ArrowDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_down</Icon>;
 };
 
-export const ArrowDoubleDown: IconComponent = (props) => {
+export const ArrowDoubleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_down</Icon>;
 };

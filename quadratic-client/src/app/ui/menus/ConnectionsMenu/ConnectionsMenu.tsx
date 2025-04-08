@@ -13,7 +13,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
@@ -24,15 +24,18 @@ export function ConnectionsMenu() {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
+
   const fetcher = useConnectionsFetcher();
+  const fetcherRef = useRef(fetcher);
+
+  const permissionsHasTeamEdit = useMemo(() => teamPermissions?.includes('TEAM_EDIT'), [teamPermissions]);
 
   // Fetch when this component mounts but only if the user has permission in the current team
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data === undefined && teamPermissions?.includes('TEAM_EDIT')) {
-      fetcher.load(`${ROUTES.API.CONNECTIONS}?team-uuid=${teamUuid}`);
+    if (fetcherRef.current.state === 'idle' && fetcherRef.current.data === undefined && permissionsHasTeamEdit) {
+      fetcherRef.current.load(`${ROUTES.API.CONNECTIONS}?team-uuid=${teamUuid}`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [permissionsHasTeamEdit, teamUuid]);
 
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const openEditor = useCallback(
@@ -63,6 +66,8 @@ export function ConnectionsMenu() {
           loading: false,
           id: '',
           messages: [],
+          waitingOnMessageIndex: undefined,
+          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {

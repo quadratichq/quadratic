@@ -14,6 +14,7 @@ import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javas
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { StopIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,8 +26,8 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import StopIcon from '@mui/icons-material/Stop';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 

@@ -13,7 +13,7 @@ import { events } from '@/app/events/events';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import type { CodeCell } from '@/app/shared/types/codeCell';
+import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
@@ -36,7 +36,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import type { Monaco } from '@monaco-editor/react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 interface CodeEditorBodyProps {
@@ -54,7 +54,7 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Import: false,
 };
 
-export const CodeEditorBody = (props: CodeEditorBodyProps) => {
+export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
   const { editorInst, setEditorInst } = props;
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
@@ -123,12 +123,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     const model = editorInst.getModel();
     if (!model) return;
 
-    if (
-      lastLocation.current &&
-      codeCell.sheetId === lastLocation.current.sheetId &&
-      codeCell.pos.x === lastLocation.current.pos.x &&
-      codeCell.pos.x === lastLocation.current.pos.y
-    ) {
+    if (lastLocation.current && isSameCodeCell(lastLocation.current, codeCell)) {
       return;
     }
     lastLocation.current = codeCell;
@@ -140,8 +135,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     return () => {
       (model as any)?._commandManager?.clear();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y]);
+  }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, codeCell]);
 
   const addCommands = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -453,4 +447,4 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       </div>
     </div>
   );
-};
+});

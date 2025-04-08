@@ -12,7 +12,7 @@
 //! The above checks are always made relative to the original cursor position
 //! (the highlighted cell)
 
-use crate::{grid::Sheet, Pos};
+use crate::{Pos, grid::Sheet};
 
 use super::Direction;
 
@@ -232,8 +232,8 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         CellValue,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     };
 
     use super::*;

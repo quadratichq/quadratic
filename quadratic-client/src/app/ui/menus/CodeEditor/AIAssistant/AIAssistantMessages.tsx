@@ -4,6 +4,7 @@ import {
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
@@ -116,31 +117,27 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAssistantUserMessageForm
                 initialContent={message.content}
-                messageIndex={index}
                 textareaRef={textareaRef}
+                messageIndex={index}
               />
             ) : isToolResultMessage(message) ? (
-              message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
+              message.content.map(({ text }) => (
+                <Markdown key={`${index}-${message.role}-${message.contextType}`}>{text}</Markdown>
+              ))
             ) : (
               <>
-                {message.content && Array.isArray(message.content) ? (
-                  <>
-                    {message.content.map((item, contentIndex) =>
-                      item.type === 'anthropic_thinking' ? (
-                        <ThinkingBlock
-                          key={item.text}
-                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
-                          isLoading={loading}
-                          thinkingContent={item}
-                          expandedDefault={false}
-                        />
-                      ) : item.type === 'text' ? (
-                        <AICodeBlockParser key={item.text} input={item.text} />
-                      ) : null
-                    )}
-                  </>
-                ) : (
-                  <Markdown key={message.content}>{message.content}</Markdown>
+                {message.content.map((item, contentIndex) =>
+                  item.type === 'anthropic_thinking' ? (
+                    <ThinkingBlock
+                      key={item.text}
+                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                      isLoading={loading}
+                      thinkingContent={item}
+                      expandedDefault={false}
+                    />
+                  ) : item.type === 'text' ? (
+                    <AICodeBlockParser key={item.text} input={item.text} />
+                  ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
@@ -157,6 +154,10 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
           </div>
         );
       })}
+
+      <div className="px-2 py-2">
+        <AILoading loading={loading} />
+      </div>
     </div>
   );
 });

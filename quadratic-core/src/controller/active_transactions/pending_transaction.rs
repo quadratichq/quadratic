@@ -9,16 +9,16 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
+    Pos, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        js_types::JsValidationWarning, sheet::validations::validation::Validation, CellsAccessed,
-        CodeCellLanguage, Sheet, SheetId,
+        CellsAccessed, CodeCellLanguage, Sheet, SheetId, js_types::JsValidationWarning,
+        sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;
@@ -553,9 +553,9 @@ impl PendingTransaction {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, Value,
         controller::operations::operation::Operation,
         grid::{CodeRun, DataTable, DataTableKind, Sheet, SheetId},
-        CellValue, Value,
     };
 
     use super::*;
@@ -632,16 +632,20 @@ mod tests {
         transaction.add_dirty_hashes_from_sheet_cell_positions(sheet_id, positions);
         assert_eq!(transaction.dirty_hashes.len(), 1);
         assert_eq!(transaction.dirty_hashes.get(&sheet_id).unwrap().len(), 2);
-        assert!(transaction
-            .dirty_hashes
-            .get(&sheet_id)
-            .unwrap()
-            .contains(&Pos { x: 0, y: 0 }));
-        assert!(transaction
-            .dirty_hashes
-            .get(&sheet_id)
-            .unwrap()
-            .contains(&Pos { x: 1, y: 0 }));
+        assert!(
+            transaction
+                .dirty_hashes
+                .get(&sheet_id)
+                .unwrap()
+                .contains(&Pos { x: 0, y: 0 })
+        );
+        assert!(
+            transaction
+                .dirty_hashes
+                .get(&sheet_id)
+                .unwrap()
+                .contains(&Pos { x: 1, y: 0 })
+        );
     }
 
     #[test]
@@ -658,11 +662,13 @@ mod tests {
                 .len(),
             1
         );
-        assert!(transaction
-            .dirty_hashes
-            .get(&sheet_rect.sheet_id)
-            .unwrap()
-            .contains(&Pos { x: 0, y: 0 }),);
+        assert!(
+            transaction
+                .dirty_hashes
+                .get(&sheet_rect.sheet_id)
+                .unwrap()
+                .contains(&Pos { x: 0, y: 0 }),
+        );
     }
 
     #[test]
@@ -780,7 +786,8 @@ mod tests {
     fn test_add_dirty_hashes_from_sheet_columns() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
         transaction.add_dirty_hashes_from_sheet_columns(&sheet, 1, None);
@@ -794,7 +801,8 @@ mod tests {
     fn test_add_dirty_hashes_from_sheet_rows() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
         transaction.add_dirty_hashes_from_sheet_rows(&sheet, 1, None);

@@ -1,9 +1,9 @@
 use crate::{
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
-    grid::sheet::borders::{borders_old::BorderStyleCellUpdates, BordersUpdates},
+    grid::sheet::borders::{BordersUpdates, borders_old::BorderStyleCellUpdates},
 };
 
 impl GridController {

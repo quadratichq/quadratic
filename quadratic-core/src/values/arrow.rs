@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use arrow_array::{
+    Array, ArrayRef,
     cast::AsArray,
     types::{Date32Type, Date64Type},
-    Array, ArrayRef,
 };
 use arrow_buffer::ArrowNativeType;
 use arrow_data::ArrayData;
@@ -12,7 +12,7 @@ use arrow_schema::{DataType, TimeUnit};
 use bigdecimal::BigDecimal;
 use chrono::{NaiveDate, NaiveTime, TimeDelta, TimeZone, Utc};
 
-use crate::{cell_values::CellValues, CellValue};
+use crate::{CellValue, cell_values::CellValues};
 
 use super::time::map_local_result;
 

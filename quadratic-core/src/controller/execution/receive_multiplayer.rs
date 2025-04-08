@@ -4,12 +4,12 @@ use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
 
 use super::TransactionSource;
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::{Transaction, TransactionServer};
-use crate::controller::GridController;
 
 // seconds to wait before requesting wait_for_transactions
 const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
@@ -92,6 +92,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
     }
 
     /// Server sends us the latest sequence_num to ensure we're in sync. We respond with a request if
@@ -282,7 +283,9 @@ impl GridController {
                         compressed_ops,
                     );
                 } else {
-                    dbgjs!("Unable to serialize and compress operations in apply_offline_unsaved_transaction()");
+                    dbgjs!(
+                        "Unable to serialize and compress operations in apply_offline_unsaved_transaction()"
+                    );
                 }
             }
         } else {
@@ -307,9 +310,9 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::controller::transaction::Transaction;
-    use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
+    use crate::controller::transaction::Transaction;
+    use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, Pos, SheetPos};
@@ -789,7 +792,7 @@ mod tests {
         let result = client.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["async output".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("async output".into(), 1)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -864,7 +867,7 @@ mod tests {
         let result = client.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["async output".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("async output".into(), 1)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -903,7 +906,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["2".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("2".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -928,7 +931,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["3".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("3".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());

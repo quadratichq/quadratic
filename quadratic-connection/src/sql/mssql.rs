@@ -1,7 +1,7 @@
-use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{mssql_connection::MsSqlConnection, Connection},
+    sql::{Connection, mssql_connection::MsSqlConnection},
 };
 use uuid::Uuid;
 
@@ -9,11 +9,11 @@ use crate::{
     auth::Claims,
     connection::get_api_connection,
     error::Result,
-    server::{test_connection, SqlQuery, TestResponse},
+    server::{SqlQuery, TestResponse, test_connection},
     state::State,
 };
 
-use super::{query_generic, Schema};
+use super::{Schema, query_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(Json(connection): Json<MsSqlConnection>) -> Json<TestResponse> {
@@ -336,16 +336,20 @@ mod tests {
             ),
             (
                 DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::from_str("12:34:56.123456700")
-                    .unwrap()
-                    .num_seconds_from_midnight()),
+                num_vec!(
+                    NaiveTime::from_str("12:34:56.123456700")
+                        .unwrap()
+                        .num_seconds_from_midnight()
+                ),
             ),
             (
                 DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:56.123456700")
-                    .unwrap()
-                    .and_utc()
-                    .timestamp_millis()),
+                num_vec!(
+                    NaiveDateTime::from_str("2024-05-28T12:34:56.123456700")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
             ),
             (
                 DataType::Timestamp(TimeUnit::Millisecond, None),
@@ -357,17 +361,21 @@ mod tests {
             ),
             (
                 DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:56")
-                    .unwrap()
-                    .and_utc()
-                    .timestamp_millis()),
+                num_vec!(
+                    NaiveDateTime::from_str("2024-05-28T12:34:56")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
             ),
             (
                 DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:00")
-                    .unwrap()
-                    .and_utc()
-                    .timestamp_millis()),
+                num_vec!(
+                    NaiveDateTime::from_str("2024-05-28T12:34:00")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
             ),
             (DataType::Utf8, str_vec("CHAR      ")),
             (DataType::Utf8, str_vec("VARCHAR")),

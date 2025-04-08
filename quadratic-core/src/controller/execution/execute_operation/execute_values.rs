@@ -1,6 +1,6 @@
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 use crate::{Pos, SheetRect};
 
 impl GridController {
@@ -19,7 +19,9 @@ impl GridController {
                         sheet_pos.into(),
                         &values,
                         !transaction.is_server(),
+                        &self.a1_context,
                     );
+
                     if old_values == values {
                         return;
                     }

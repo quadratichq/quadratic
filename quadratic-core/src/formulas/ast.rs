@@ -6,10 +6,10 @@ use smallvec::smallvec;
 
 use super::*;
 use crate::{
-    a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
-    grid::SheetId,
     Array, ArraySize, CellValue, CodeResult, CoerceInto, Pos, RunErrorMsg, SheetRect, Spanned,
     Value,
+    a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
+    grid::SheetId,
 };
 
 /// Abstract syntax tree of a formula expression.
@@ -301,7 +301,7 @@ impl AstNode {
                     .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
 
                 let sheet = ctx
-                    .grid
+                    .grid_controller
                     .try_sheet(indexed_pos.sheet_id)
                     .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
 

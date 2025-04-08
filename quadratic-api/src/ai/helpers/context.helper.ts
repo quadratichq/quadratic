@@ -61,13 +61,13 @@ Include a concise explanation of the actions you are taking to respond to the us
 Don't include tool details in your response. Reply in layman's terms what actions you are taking.\n
 
 ${
-  source === 'AIAnalyst'
+  source === 'AIAnalyst' || source === 'PDFImport'
     ? 'Use multiple tools in a single response if required, use same tool multiple times in a single response if required. Try to reduce tool call iterations.\n'
     : source === 'AIAssistant'
       ? 'Use only one tool in a single response.\n'
       : ''
 }
-          
+
 ${Object.entries(aiToolsSpec)
   .filter(([_, { sources }]) => sources.includes(source))
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)

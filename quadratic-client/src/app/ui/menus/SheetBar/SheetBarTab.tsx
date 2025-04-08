@@ -11,9 +11,9 @@ import { validateSheetName } from '@/app/quadratic-rust-client/quadratic_rust_cl
 import { SheetBarTabDropdownMenu } from '@/app/ui/menus/SheetBar/SheetBarTabDropdownMenu';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
-import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
-import type { PointerEvent } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
+import type { JSX, PointerEvent } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 
@@ -24,7 +24,7 @@ const SHEET_NAME_MAX_LENGTH = 50;
 // much rendering of components.
 const HACK_TO_NOT_BLUR_ON_RENAME = 250;
 
-interface Props {
+interface SheetBarTabProps {
   sheet: Sheet;
   order: string;
   active: boolean;
@@ -33,12 +33,12 @@ interface Props {
   clearRename: () => void;
 }
 
-export const SheetBarTab = (props: Props): JSX.Element => {
-  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
+export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
   const { sheet, order, active, onPointerDown, forceRename, clearRename } = props;
+
+  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [isRenaming, setIsRenaming] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
@@ -49,17 +49,19 @@ export const SheetBarTab = (props: Props): JSX.Element => {
     }
   }, [forceRename]);
 
-  if (containerRef.current) {
-    containerRef.current.style.order = order;
-  }
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    setDiv(node);
+  }, []);
+
   return (
     <div
+      ref={ref}
       className={cn(
         'group relative hover:bg-accent',
         active &&
           'sticky left-0 right-0 z-[1] -mt-[1px] !bg-background shadow-[inset_1px_0_0_hsl(var(--border)),inset_-1px_0_0_hsl(var(--border))]'
       )}
-      ref={containerRef}
       style={{
         order,
       }}
@@ -100,7 +102,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             />
           )}
         </div>
-        <Popper open={!!errorMessage} anchorEl={containerRef.current} transition>
+        <Popper open={!!errorMessage} anchorEl={div} transition>
           {({ TransitionProps }) => (
             <Fade {...TransitionProps} timeout={350}>
               <Paper
@@ -121,9 +123,9 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       </TabWrapper>
     </div>
   );
-};
+});
 
-function TabWrapper({ children, sheet, active }: any) {
+const TabWrapper = memo(({ children, sheet, active }: any) => {
   const theme = useTheme();
   const follow = useRecoilValue(editorInteractionStateFollowAtom);
   return (
@@ -160,149 +162,143 @@ function TabWrapper({ children, sheet, active }: any) {
       {children}
     </Stack>
   );
-}
+});
 
-function TabName({
-  active,
-  clearRename,
-  isRenaming,
-  setErrorMessage,
-  setIsRenaming,
-  sheet,
-}: {
-  active: Props['active'];
-  clearRename: Props['clearRename'];
-  isRenaming: boolean;
-  setIsRenaming: React.Dispatch<React.SetStateAction<boolean>>;
-  setErrorMessage: React.Dispatch<React.SetStateAction<string | undefined>>;
-  sheet: Props['sheet'];
-}) {
-  const contentEditableRef = useRef<HTMLDivElement | null>(null);
-  const isRenamingTimeRef = useRef(0);
+const TabName = memo(
+  ({
+    active,
+    clearRename,
+    isRenaming,
+    setErrorMessage,
+    setIsRenaming,
+    sheet,
+  }: {
+    active: SheetBarTabProps['active'];
+    clearRename: SheetBarTabProps['clearRename'];
+    isRenaming: boolean;
+    setIsRenaming: React.Dispatch<React.SetStateAction<boolean>>;
+    setErrorMessage: React.Dispatch<React.SetStateAction<string | undefined>>;
+    sheet: SheetBarTabProps['sheet'];
+  }) => {
+    const contentEditableRef = useRef<HTMLDivElement | null>(null);
+    const isRenamingTimeRef = useRef(0);
 
-  const validateName = useCallback(
-    (value: string) => {
-      try {
-        validateSheetName(value, sheet.id, sheets.a1Context);
-        return true;
-      } catch (error) {
-        setErrorMessage(error as string);
-        setTimeout(() => setErrorMessage(undefined), 1500);
-        return false;
+    const validateName = useCallback(
+      (value: string) => {
+        try {
+          validateSheetName(value, sheet.id, sheets.a1Context);
+          return true;
+        } catch (error) {
+          setErrorMessage(error as string);
+          setTimeout(() => setErrorMessage(undefined), 1500);
+          return false;
+        }
+      },
+      [setErrorMessage, sheet.id]
+    );
+
+    // When a rename begins, focus contenteditable and select its contents
+    useEffect(() => {
+      if (isRenaming) {
+        contentEditableRef?.current?.focus();
+        selectElementContents(contentEditableRef.current);
+        isRenamingTimeRef.current = Date.now();
       }
-    },
-    [setErrorMessage, sheet.id]
-  );
+    }, [isRenaming, contentEditableRef]);
 
-  // When a rename begins, focus contenteditable and select its contents
-  useEffect(() => {
-    if (isRenaming) {
-      contentEditableRef?.current?.focus();
-      selectElementContents(contentEditableRef.current);
-      isRenamingTimeRef.current = Date.now();
-    }
-  }, [isRenaming, contentEditableRef]);
-
-  return isRenaming ? (
-    <div
-      contentEditable
-      style={{
-        minWidth: '1rem',
-        fontWeight: 'bold',
-        outline: 0,
-        cursor: 'text',
-      }}
-      ref={contentEditableRef}
-      onKeyDown={(event) => {
-        const div = event.currentTarget as HTMLDivElement;
-        const value = (div.textContent || '').trim();
-        if (event.code === 'Enter') {
-          if (value !== sheet.name) {
-            if (!validateName(value)) {
-              event.preventDefault();
-              div.focus();
-              return;
-            } else {
-              setErrorMessage(undefined);
-              setIsRenaming(false);
+    return isRenaming ? (
+      <div
+        contentEditable
+        style={{
+          minWidth: '1rem',
+          fontWeight: 'bold',
+          outline: 0,
+          cursor: 'text',
+        }}
+        ref={contentEditableRef}
+        onKeyDown={(event) => {
+          const div = event.currentTarget as HTMLDivElement;
+          const value = (div.textContent || '').trim();
+          if (event.code === 'Enter') {
+            if (value !== sheet.name) {
+              if (!validateName(value)) {
+                event.preventDefault();
+                div.focus();
+                return;
+              } else {
+                setErrorMessage(undefined);
+                setIsRenaming(false);
+                sheet.setName(value);
+              }
+            }
+            focusGrid();
+          } else if (event.code === 'Escape') {
+            setIsRenaming(false);
+            setErrorMessage(undefined);
+            focusGrid();
+          } else if (
+            event.key === 'Delete' ||
+            event.key === 'ArrowLeft' ||
+            event.key === 'ArrowRight' ||
+            event.key === 'ArrowUp' ||
+            event.key === 'ArrowDown' ||
+            event.key === 'Backspace' ||
+            event.metaKey ||
+            window.getSelection()?.toString()
+          ) {
+            // Allow these, otherwise we cap the length of the value
+          } else if (value.length > SHEET_NAME_MAX_LENGTH) {
+            event.preventDefault();
+          }
+        }}
+        onInput={() => setErrorMessage(undefined)}
+        onBlur={(event) => {
+          if (!contentEditableRef.current) return;
+          if (Date.now() - isRenamingTimeRef.current < HACK_TO_NOT_BLUR_ON_RENAME) {
+            contentEditableRef.current?.focus();
+            return;
+          }
+          const div = contentEditableRef.current;
+          const value = div.innerText.trim();
+          if (!div) return false;
+          if (!isRenaming) return;
+          setIsRenaming((isRenaming) => {
+            if (!isRenaming) return false;
+            if (!!value && value !== sheet.name && validateName(value)) {
               sheet.setName(value);
             }
-          }
+            return false;
+          });
+          clearRename();
           focusGrid();
-        } else if (event.code === 'Escape') {
-          setIsRenaming(false);
-          setErrorMessage(undefined);
-          focusGrid();
-        } else if (
-          event.key === 'Delete' ||
-          event.key === 'ArrowLeft' ||
-          event.key === 'ArrowRight' ||
-          event.key === 'ArrowUp' ||
-          event.key === 'ArrowDown' ||
-          event.key === 'Backspace' ||
-          event.metaKey ||
-          window.getSelection()?.toString()
-        ) {
-          // Allow these, otherwise we cap the length of the value
-        } else if (value.length > SHEET_NAME_MAX_LENGTH) {
-          event.preventDefault();
-        }
-      }}
-      onInput={() => setErrorMessage(undefined)}
-      onBlur={(event) => {
-        if (Date.now() - isRenamingTimeRef.current < HACK_TO_NOT_BLUR_ON_RENAME) {
-          contentEditableRef.current?.focus();
-          return;
-        }
-        const div = event.currentTarget;
-        if (!(div instanceof HTMLInputElement)) return false;
-        const value = div.innerText.trim();
-        if (!div) return false;
-        if (!isRenaming) return;
-        setIsRenaming((isRenaming) => {
-          if (!isRenaming) return false;
-          if (!!value && value !== sheet.name && validateName(value)) {
-            sheet.setName(value);
-          }
           return false;
-        });
-        clearRename();
-        focusGrid();
-        return false;
-      }}
-      onPaste={(event) => {
-        event.preventDefault();
-        // Constrain the clipboard paste to allowed input only
-        event.currentTarget.innerText = event.clipboardData
-          .getData('text/plain')
-          .trim()
-          .replace(/(\r\n|\n|\r)/gm, '')
-          .slice(0, SHEET_NAME_MAX_LENGTH);
-      }}
-      dangerouslySetInnerHTML={{ __html: sheet.name }}
-    />
-  ) : (
-    <Box
-      data-title={sheet.name}
-      sx={{
-        // Little trick to bold the text without making the content of
-        // the tab change in width
-        '&::after': {
-          content: 'attr(data-title)',
-          display: 'block',
-          fontWeight: '700',
-          height: '1px',
-          color: 'transparent',
-          overflow: 'hidden',
-          visibility: 'hidden',
-        },
-        ...(active ? { fontWeight: '700' } : {}),
-      }}
-    >
-      {sheet.name}
-    </Box>
-  );
-}
+        }}
+        onPaste={(event) => {
+          event.preventDefault();
+          // Constrain the clipboard paste to allowed input only
+          event.currentTarget.innerText = event.clipboardData
+            .getData('text/plain')
+            .trim()
+            .replace(/(\r\n|\n|\r)/gm, '')
+            .slice(0, SHEET_NAME_MAX_LENGTH);
+        }}
+        dangerouslySetInnerHTML={{ __html: sheet.name }}
+      />
+    ) : (
+      <div
+        data-title={sheet.name}
+        className={cn(
+          active && 'font-bold',
+          // Little trick to bold the text without making the content of
+          // the tab change in width
+          'after:visibility-hidden after:block after:h-[1px] after:overflow-hidden after:font-bold after:text-transparent after:content-[attr(data-title)]'
+        )}
+      >
+        {sheet.name}
+      </div>
+    );
+  }
+);
 
 function selectElementContents(el: HTMLDivElement | null) {
   if (!el) return;
@@ -314,7 +310,7 @@ function selectElementContents(el: HTMLDivElement | null) {
   sel?.addRange(range);
 }
 
-function TabMultiplayer({ sheetId }: { sheetId: string }) {
+const TabMultiplayer = memo(({ sheetId }: { sheetId: string }) => {
   const [users, setUsers] = useState<string[]>([]);
 
   useEffect(() => {
@@ -345,4 +341,4 @@ function TabMultiplayer({ sheetId }: { sheetId: string }) {
       ))}
     </div>
   );
-}
+});

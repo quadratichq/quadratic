@@ -2,14 +2,15 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
+    CellValue, Pos, Rect, Value,
+    a1::A1Context,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
     grid::{
+        CodeCellLanguage, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
-        CodeCellLanguage, DataTableKind,
     },
-    CellValue, Pos, Rect, Value,
 };
 
 impl Sheet {
@@ -243,7 +244,7 @@ impl Sheet {
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
-    pub fn edit_code_value(&self, pos: Pos) -> Option<JsCodeCell> {
+    pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         let mut code_pos = pos;
         let cell_value = if let Some(cell_value) = self.cell_value(pos) {
             Some(cell_value)
@@ -268,11 +269,9 @@ impl Sheet {
             Some(mut code_cell_value) => {
                 // replace internal cell references with a1 notation
                 if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-                    // `self.a1_context()` is unaware of other sheets, which might cause issues?
-                    let parse_ctx = self.a1_context();
                     let replaced = convert_rc_to_a1(
                         &code_cell_value.code,
-                        &parse_ctx,
+                        a1_context,
                         code_pos.to_sheet_pos(self.id),
                     );
                     code_cell_value.code = replaced;
@@ -351,9 +350,9 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRun},
         Array, SheetPos, Value,
+        controller::GridController,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
     };
     use std::vec;
 
@@ -388,8 +387,9 @@ mod test {
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 1, y: 1 }),
+            sheet.edit_code_value(Pos { x: 1, y: 1 },gc.a1_context()),
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -404,7 +404,7 @@ mod test {
             })
         );
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 2, y: 1 }),
+            sheet.edit_code_value(Pos { x: 2, y: 1 },gc.a1_context()),
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -418,7 +418,10 @@ mod test {
                 cells_accessed: Some(Default::default())
             })
         );
-        assert_eq!(sheet.edit_code_value(Pos { x: 3, y: 3 }), None);
+        assert_eq!(
+            sheet.edit_code_value(Pos { x: 3, y: 3 }, gc.a1_context()),
+            None
+        );
     }
 
     #[test]
@@ -449,9 +452,11 @@ mod test {
             sheet.cell_value(Pos { x: 1, y: 0 }),
             Some("should cause spill".into())
         );
-        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1));
+        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1), gc.a1_context());
         assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
-        let code = sheet.edit_code_value(Pos { x: 0, y: 0 }).unwrap();
+        let code = sheet
+            .edit_code_value(Pos { x: 0, y: 0 }, gc.a1_context())
+            .unwrap();
         assert_eq!(code.spill_error, Some(vec![Pos { x: 1, y: 0 }]));
     }
 

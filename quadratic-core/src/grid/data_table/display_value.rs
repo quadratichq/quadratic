@@ -11,7 +11,7 @@
 //! DataTable to exist in memory and be used for both display and execution.
 
 use crate::{Array, CellValue, Pos, Value};
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{Ok, Result, anyhow};
 
 use super::DataTable;
 
@@ -120,10 +120,15 @@ impl DataTable {
             });
         }
 
+        // if the position is the first cell and the name and ui are shown, return the name
         if pos.x == 0 && pos.y == 0 && self.show_ui && self.show_name {
             return Ok(self.name.as_ref());
         }
-        if pos.y == (if self.show_name { 1 } else { 0 }) && self.show_ui && self.show_columns {
+
+        let header_y = if self.show_name { 1 } else { 0 };
+
+        // if the position is the first cell and the header is shown, return the header
+        if pos.y == header_y && self.show_ui && self.show_columns {
             if let Some(header) = self.display_header_at(pos.x as u32) {
                 return Ok(header.name.as_ref());
             }
@@ -196,14 +201,17 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
+        CellValue, Pos, SheetPos,
+        controller::{
+            GridController,
+            transaction_types::{JsCellValueResult, JsCodeResult},
+        },
         grid::{
+            CodeCellLanguage, DataTable,
             test::{
                 assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
             },
-            CodeCellLanguage, DataTable,
         },
-        CellValue, Pos, SheetPos,
     };
 
     #[test]
@@ -225,7 +233,7 @@ pub mod test {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
+            output_value: Some(JsCellValueResult("<html></html>".to_string(), 1)),
             ..Default::default()
         })
         .unwrap();

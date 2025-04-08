@@ -11,13 +11,15 @@ impl Validations {
         &self,
         selection: &A1Selection,
         clipboard_origin: &ClipboardOrigin,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<ClipboardValidations> {
         let validations = self
             .validations
             .iter()
             .filter_map(|validation| {
-                if let Some(intersection) = selection.intersection(&validation.selection, context) {
+                if let Some(intersection) =
+                    selection.intersection(&validation.selection, a1_context)
+                {
                     let mut v = validation.clone();
                     v.selection = intersection
                         .saturating_translate(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)?;
@@ -41,15 +43,15 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        SheetRect,
         a1::{A1Context, A1Selection},
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
-            sheet::validations::{
-                validation::Validation, validation_rules::ValidationRule, Validations,
-            },
             SheetId,
+            sheet::validations::{
+                Validations, validation::Validation, validation_rules::ValidationRule,
+            },
         },
-        SheetRect,
     };
 
     #[test]

@@ -1,8 +1,8 @@
 // Handles all spill checking for the sheet
 
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 use crate::grid::SheetId;
 use crate::{ArraySize, Pos, Rect};
 
@@ -104,9 +104,9 @@ impl GridController {
 #[cfg(test)]
 mod tests {
 
-    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
-    use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
+    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+    use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
@@ -278,7 +278,8 @@ mod tests {
         assert!(code_run.spill_error);
 
         // should be a spill caused by 1,2
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(render_cells, output_spill_error(1, 1));
 
         // remove 'hello' that caused spill
@@ -297,7 +298,8 @@ mod tests {
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().spill_error);
 
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
 
         // should be B0: "1" since spill was removed
         assert_eq!(
@@ -335,12 +337,14 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(
             render_cells,
             output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None)
         );
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
         gc.set_code_cell(
@@ -356,7 +360,8 @@ mod tests {
 
         // should be spilled because of the code_cell
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(render_cells, output_spill_error(1, 1),);
     }
 
@@ -405,7 +410,8 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }), gc.a1_context());
         assert_eq!(render_cells, output_spill_error(12, 10));
 
         // delete the code_cell that caused the spill
@@ -420,7 +426,8 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }), gc.a1_context());
         assert_eq!(
             render_cells,
             output_number(12, 10, "1", Some(CodeCellLanguage::Formula), None)
@@ -482,14 +489,15 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             chart_pixel_output: Some((100.0, 100.0)),
-            output_value: Some(vec!["<html>".to_string(), "text".to_string()]),
+            output_value: Some(JsCellValueResult("<html>".to_string(), 1)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
 
         let sheet = gc.sheet(sheet_id);
 
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        let render_cells =
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
         assert_eq!(
             render_cells,
             vec![JsRenderCell {

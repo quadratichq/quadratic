@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-rust-client"
-version = "0.6.6"
+version = "0.6.10"
 edition = "2024"
 authors = ["David Figatner <david.figatner@quadratichq.com>"]
 
@@ -46,3 +46,11 @@ wasm-opt = ['-O0', '-g']
 debug-js-glue = false
 demangle-name-section = true
 dwarf-debug-info = true
+
+# patch for breaking changes in zip-rs/zip2 v2.6.0
+# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
+[patch.crates-io]
+zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
+
+[patch.'https://github.com/zip-rs/zip2']
+zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }

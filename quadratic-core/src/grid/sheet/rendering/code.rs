@@ -1,11 +1,12 @@
 //! Code and html/image output for client rendering.
 
 use crate::{
-    grid::{
-        js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
-        CodeCellLanguage, DataTable, Sheet,
-    },
     CellValue, Pos, Value,
+    a1::A1Context,
+    grid::{
+        CodeCellLanguage, DataTable, Sheet,
+        js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
+    },
 };
 
 impl Sheet {
@@ -101,7 +102,7 @@ impl Sheet {
             language,
             state,
             spill_error,
-            name: data_table.name.to_display(),
+            name: data_table.name().to_string(),
             columns: data_table.send_columns(),
             first_row_header: data_table.header_is_first_row,
             show_ui: data_table.show_ui,
@@ -156,14 +157,15 @@ impl Sheet {
 
     // Sends an update to a code cell. Sends a message regardless of whether the
     // code cell is still present.
-    pub fn send_code_cell(&self, pos: Pos) {
+    pub fn send_code_cell(&self, pos: Pos, a1_context: &A1Context) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        if let (Some(code_cell), Some(render_code_cell)) =
-            (self.edit_code_value(pos), self.get_render_code_cell(pos))
-        {
+        if let (Some(code_cell), Some(render_code_cell)) = (
+            self.edit_code_value(pos, a1_context),
+            self.get_render_code_cell(pos),
+        ) {
             if let (Ok(code_cell), Ok(render_code_cell)) = (
                 serde_json::to_string(&code_cell),
                 serde_json::to_string(&render_code_cell),
@@ -224,10 +226,13 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
-        grid::{js_types::JsNumber, CodeCellValue, CodeRun, DataTableKind},
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         Rect, SheetPos,
+        controller::{
+            GridController,
+            transaction_types::{JsCellValueResult, JsCodeResult},
+        },
+        grid::{CodeCellValue, CodeRun, DataTableKind, js_types::JsNumber},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
 
     use super::*;
@@ -250,7 +255,7 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["<html></html>".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("<html></html>".into(), 1)),
             ..Default::default()
         })
         .ok();

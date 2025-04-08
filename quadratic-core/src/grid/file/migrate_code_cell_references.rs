@@ -4,10 +4,10 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
+    CellValue, Pos, Rect,
     a1::CellRefRange,
     formulas::convert_a1_to_rc,
     grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
-    CellValue, Pos, Rect,
 };
 
 const PYTHON_C_CELL_GETCELL_REGEX: &str = r#"\b(?:c|cell|getCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*(?:sheet\s*=\s*)?['"`]([^'"`]+)['"`]\s*)?\)"#;
@@ -50,7 +50,7 @@ lazy_static! {
 }
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
-    let parse_ctx = grid.a1_context();
+    let parse_ctx = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         let sheet_id = sheet.id;
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
