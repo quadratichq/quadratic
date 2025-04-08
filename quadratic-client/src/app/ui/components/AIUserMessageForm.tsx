@@ -43,6 +43,7 @@ type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
   setLoading: SetterOrUpdater<boolean>;
   submitPrompt: (args: SubmitPromptArgs) => void;
   isFileSupported: (mimeType: string) => boolean;
+  fileTypes: string[];
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   ctx?: {
@@ -67,6 +68,7 @@ export const AIUserMessageForm = memo(
       loading,
       setLoading,
       isFileSupported,
+      fileTypes,
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
@@ -106,7 +108,7 @@ export const AIUserMessageForm = memo(
     }, [abortController, setLoading]);
 
     const handleFiles = useCallback(
-      (files: FileList | null) => {
+      (files: FileList | File[]) => {
         if (files && files.length > 0) {
           for (const file of files) {
             const mimeType = file.type;
@@ -190,6 +192,7 @@ export const AIUserMessageForm = memo(
           files={files}
           setFiles={setFiles}
           handleFiles={handleFiles}
+          fileTypes={fileTypes}
           editing={editing}
           disabled={waitingOnMessageIndex !== undefined || !editing}
           textAreaRef={textareaRef}

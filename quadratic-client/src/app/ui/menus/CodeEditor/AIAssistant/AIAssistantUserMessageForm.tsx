@@ -12,6 +12,8 @@ import { isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.help
 import { forwardRef, memo, useCallback } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
+const ASSISTANT_FILE_TYPES = ['image/*'];
+
 export const AIAssistantUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
     const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
@@ -39,6 +41,7 @@ export const AIAssistantUserMessageForm = memo(
         loading={loading}
         setLoading={setLoading}
         isFileSupported={isSupportedImageMimeType}
+        fileTypes={ASSISTANT_FILE_TYPES}
         submitPrompt={handleSubmit}
         waitingOnMessageIndex={waitingOnMessageIndex}
         delaySeconds={delaySeconds}
