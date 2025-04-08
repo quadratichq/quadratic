@@ -12,9 +12,11 @@ const SCROLLBAR_ALPHA = 0.18;
 
 export class UIScrollbars extends Container {
   private dirty = true;
-
   private horizontal = new Sprite(Texture.WHITE);
   private vertical = new Sprite(Texture.WHITE);
+
+  private lastWidth = 0;
+  private lastHeight = 0;
 
   constructor() {
     super();
@@ -44,7 +46,7 @@ export class UIScrollbars extends Container {
     window.removeEventListener('resize', this.setDirty);
   }
 
-  private setDirty = () => (this.dirty = true);
+  setDirty = () => (this.dirty = true);
 
   /**
    * Calculates the start and size of the scrollbar. All parameters are in
@@ -94,6 +96,8 @@ export class UIScrollbars extends Container {
     const contentBounds = sheets.sheet.getScrollbarBounds();
     if (!contentBounds) return;
 
+    const dragging = false;
+
     const horizontal = this.calculateSize(
       contentBounds.width,
       viewportBounds.left,
@@ -106,7 +110,12 @@ export class UIScrollbars extends Container {
       const actualWidth = screenWidth - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       this.horizontal.x = Math.max(start, start + horizontal.start * actualWidth);
       const rightClamp = screenWidth - this.horizontal.x - SCROLLBAR_PADDING * 2 - SCROLLBAR_SIZE;
-      this.horizontal.width = Math.min(rightClamp, horizontal.size * actualWidth);
+      if (dragging) {
+        this.horizontal.width = Math.min(rightClamp, this.lastWidth);
+      } else {
+        this.horizontal.width = Math.min(rightClamp, horizontal.size * actualWidth);
+        this.lastWidth = horizontal.size * actualWidth;
+      }
       this.horizontal.y = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
     }
 
@@ -122,7 +131,12 @@ export class UIScrollbars extends Container {
       const actualHeight = screenHeight - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       this.vertical.y = Math.max(start, start + vertical.start * actualHeight);
       const bottomClamp = screenHeight - this.vertical.y - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
-      this.vertical.height = Math.min(bottomClamp, vertical.size * actualHeight);
+      if (dragging) {
+        this.vertical.height = Math.min(bottomClamp, this.lastHeight);
+      } else {
+        this.vertical.height = Math.min(bottomClamp, vertical.size * actualHeight);
+        this.lastHeight = vertical.size * actualHeight;
+      }
       this.vertical.x = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
     }
   }
