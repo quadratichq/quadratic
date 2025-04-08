@@ -2,21 +2,28 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 
 const SCROLLBAR_SIZE = 6;
 const SCROLLBAR_PADDING = 6;
 const SCROLLBAR_COLOR = 0x000000;
 const SCROLLBAR_ALPHA = 0.18;
 
+export type Scrollbar = 'horizontal' | 'vertical' | undefined;
+
 export class UIScrollbars extends Container {
   private dirty = true;
+
   private horizontal = new Sprite(Texture.WHITE);
   private vertical = new Sprite(Texture.WHITE);
 
   private lastWidth = 0;
   private lastHeight = 0;
+
+  horizontalStart = 0;
+  verticalStart = 0;
 
   constructor() {
     super();
@@ -29,7 +36,6 @@ export class UIScrollbars extends Container {
     this.addChild(this.horizontal);
     this.addChild(this.vertical);
 
-    events.on('viewportChanged', this.setDirty);
     events.on('sheetInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('headingSize', this.setDirty);
@@ -38,7 +44,6 @@ export class UIScrollbars extends Container {
   }
 
   destroy() {
-    events.off('viewportChanged', this.setDirty);
     events.off('sheetInfo', this.setDirty);
     events.off('sheetInfoUpdate', this.setDirty);
     events.off('headingSize', this.setDirty);
@@ -109,10 +114,11 @@ export class UIScrollbars extends Container {
       const start = headingSize.width;
       const actualWidth = screenWidth - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       this.horizontal.x = Math.max(start, start + horizontal.start * actualWidth);
-      const rightClamp = screenWidth - this.horizontal.x - SCROLLBAR_PADDING * 2 - SCROLLBAR_SIZE;
+      const rightClamp = screenWidth - this.horizontal.x - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       if (dragging) {
         this.horizontal.width = Math.min(rightClamp, this.lastWidth);
       } else {
+        this.horizontalStart = start + horizontal.start * actualWidth;
         this.horizontal.width = Math.min(rightClamp, horizontal.size * actualWidth);
         this.lastWidth = horizontal.size * actualWidth;
       }
@@ -134,6 +140,7 @@ export class UIScrollbars extends Container {
       if (dragging) {
         this.vertical.height = Math.min(bottomClamp, this.lastHeight);
       } else {
+        this.verticalStart = start + vertical.start * actualHeight;
         this.vertical.height = Math.min(bottomClamp, vertical.size * actualHeight);
         this.lastHeight = vertical.size * actualHeight;
       }
@@ -141,9 +148,34 @@ export class UIScrollbars extends Container {
     }
   }
 
-  update() {
-    if (!this.dirty) return;
+  update(forceDirty: boolean) {
+    if (!this.dirty && !forceDirty) return;
     this.dirty = false;
     this.calculate();
+  }
+
+  /// Returns the scrollbar that the point is over.
+  contains(x: number, y: number): Scrollbar {
+    const canvasBounds = pixiApp.canvas.getBoundingClientRect();
+    const point = new Point(x - canvasBounds.left, y - canvasBounds.top);
+    if (
+      this.horizontal.visible &&
+      intersects.rectanglePoint(
+        new Rectangle(this.horizontal.x, this.horizontal.y, this.horizontal.width, this.horizontal.height),
+        point
+      )
+    ) {
+      return 'horizontal';
+    }
+    if (
+      this.vertical.visible &&
+      intersects.rectanglePoint(
+        new Rectangle(this.vertical.x, this.vertical.y, this.vertical.width, this.vertical.height),
+        point
+      )
+    ) {
+      return 'vertical';
+    }
+    return undefined;
   }
 }

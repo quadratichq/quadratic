@@ -6,6 +6,7 @@ import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading'
 import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
 import { PointerImages } from '@/app/gridGL/interaction/pointer/PointerImages';
 import { PointerLink } from '@/app/gridGL/interaction/pointer/PointerLink';
+import { PointerScrollbar } from '@/app/gridGL/interaction/pointer/PointerScrollbar';
 import { PointerTable } from '@/app/gridGL/interaction/pointer/PointerTable';
 import { PointerTableResize } from '@/app/gridGL/interaction/pointer/PointerTableResize';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -25,6 +26,7 @@ export class Pointer {
   pointerCellMoving: PointerCellMoving;
   private pointerTable: PointerTable;
   private pointerLink: PointerLink;
+  private pointerScrollbar: PointerScrollbar;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
@@ -37,6 +39,7 @@ export class Pointer {
     this.pointerCellMoving = new PointerCellMoving();
     this.pointerTable = new PointerTable();
     this.pointerLink = new PointerLink();
+    this.pointerScrollbar = new PointerScrollbar();
 
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
@@ -95,7 +98,8 @@ export class Pointer {
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
     // do not interfere with pointerImages when its resizing.
-    this.pointerHeading.pointerDown(world, e) ||
+    this.pointerScrollbar.pointerDown(e) ||
+      this.pointerHeading.pointerDown(world, e) ||
       (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
       this.pointerImages.pointerDown(world) ||
       this.pointerCellMoving.pointerDown(e) ||
@@ -120,7 +124,8 @@ export class Pointer {
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
     // do not interfere with pointerImages when its resizing.
-    (!this.pointerImages.resizing && this.pointerHtmlCells.pointerMove(world, e)) ||
+    this.pointerScrollbar.pointerMove(e) ||
+      (!this.pointerImages.resizing && this.pointerHtmlCells.pointerMove(world, e)) ||
       this.pointerImages.pointerMove(world) ||
       this.pointerCellMoving.pointerMove(world, e) ||
       this.pointerHtmlCells.pointerMove(world, e) ||
@@ -141,6 +146,7 @@ export class Pointer {
   // change the cursor based on pointer priority
   private updateCursor() {
     const cursor =
+      this.pointerScrollbar.cursor ??
       this.pointerCellMoving.cursor ??
       this.pointerHtmlCells.cursor ??
       this.pointerImages.cursor ??
@@ -156,7 +162,8 @@ export class Pointer {
   private pointerUp = (e: FederatedPointerEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
 
-    this.pointerHtmlCells.pointerUp(e) ||
+    this.pointerScrollbar.pointerUp() ||
+      this.pointerHtmlCells.pointerUp(e) ||
       this.pointerImages.pointerUp() ||
       this.pointerCellMoving.pointerUp() ||
       this.pointerTable.pointerUp() ||
@@ -178,6 +185,7 @@ export class Pointer {
       return true;
     }
     return (
+      this.pointerScrollbar.handleEscape() ||
       this.pointerCellMoving.handleEscape() ||
       this.pointerHtmlCells.handleEscape() ||
       this.pointerImages.handleEscape() ||

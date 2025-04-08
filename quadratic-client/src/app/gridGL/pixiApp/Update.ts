@@ -49,6 +49,7 @@ export class Update {
       this.raf = requestAnimationFrame(this.update);
       return;
     }
+
     pixiApp.viewport.updateViewport();
 
     let rendererDirty =
@@ -108,7 +109,7 @@ export class Update {
     debugTimeCheck('[Update] backgrounds');
     pixiApp.copy.update();
     debugTimeCheck('[Update] copy');
-    pixiApp.scrollbars.update();
+    pixiApp.scrollbars.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
