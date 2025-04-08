@@ -115,7 +115,7 @@ export const AIContext = memo(
           />
         )}
 
-        <AttachmentTrigger handleFiles={handleFiles} disabled={disabled} />
+        <AttachmentTrigger handleFiles={handleFiles} disabled={disabled} isAnalyst={context !== undefined} />
 
         {files.map((file, index) => (
           <ContextPill
@@ -214,24 +214,29 @@ const ContextPill = memo(
 );
 
 function AttachmentTrigger({
-  handleFiles,
   disabled,
+  handleFiles,
+  isAnalyst,
 }: {
-  handleFiles: (files: FileList | null) => void;
   disabled: boolean;
+  handleFiles: (files: FileList | null) => void;
+  isAnalyst: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const accept = isAnalyst ? 'image/*,.pdf' : 'image/*';
+  const label = isAnalyst ? 'Attach image or PDF' : 'Attach image';
   return (
     <>
       <input
         type="file"
         ref={fileInputRef}
         multiple
-        accept="image/*,.pdf"
+        accept={accept}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
-      <TooltipPopover label="Attach image or PDF">
+      <TooltipPopover label={label}>
         <Button
           size="icon-sm"
           className="h-5 w-5 shadow-none"
