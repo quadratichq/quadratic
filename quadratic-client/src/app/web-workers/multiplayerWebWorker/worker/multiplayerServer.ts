@@ -23,7 +23,8 @@ import type {
   Version,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import {
-  SendGetTransactions,
+  ReceiveTransaction as ReceiveProtoTransaction,
+  ReceiveTransactions as ReceiveProtoTransactions,
   SendTransaction as SendProtoTransaction,
 } from '@/app/web-workers/multiplayerWebWorker/proto/transaction';
 import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
@@ -132,7 +133,7 @@ export class MultiplayerServer {
     }
 
     this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
-    this.websocket.addEventListener('message', this.handleMessage);
+    this.websocket.addEventListener('message', async (e) => await this.handleMessage(e));
 
     this.websocket.addEventListener('close', () => {
       if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
@@ -239,8 +240,25 @@ export class MultiplayerServer {
    * Receive Messages from Multiplayer Server *
    ********************************************/
 
-  private handleMessage = (e: MessageEvent<string>) => {
-    const data: ReceiveMessages = JSON.parse(e.data);
+  private async handleMessage(e: MessageEvent<string | Blob>) {
+    const isBinary = e.data instanceof Blob;
+
+    const parseProtoMessage = async (data: Blob): Promise<ReceiveMessages> => {
+      const buffer = await data.arrayBuffer();
+      const messageTypes = [ReceiveProtoTransaction, ReceiveProtoTransactions];
+
+      for (const messageType of messageTypes) {
+        try {
+          const message = messageType.fromBinary(new Uint8Array(buffer));
+          return message as ReceiveMessages;
+        } catch (e) {
+          continue;
+        }
+      }
+      throw new Error('Unknown message type');
+    };
+
+    const data: ReceiveMessages = isBinary ? await parseProtoMessage(e.data) : JSON.parse(e.data);
 
     switch (data.type) {
       case 'UsersInRoom':
@@ -258,6 +276,7 @@ export class MultiplayerServer {
       case 'BinaryTransaction':
         const transaction = {
           ...data,
+          sequence_num: Number(data.sequence_num),
           type: 'Transaction',
         } as ReceiveTransaction;
         multiplayerCore.receiveTransaction(transaction);
@@ -306,7 +325,7 @@ export class MultiplayerServer {
           console.warn(`Unknown message type: ${data}`);
         }
     }
-  };
+  }
 
   private receiveUsersInRoom(room: ReceiveRoom) {
     multiplayerClient.sendUsersInRoom(room);
@@ -333,8 +352,8 @@ export class MultiplayerServer {
     const protoMessage: SendTransaction = {
       type: 'Transaction',
       id: transactionMessage.transaction_id,
-      sessionId: this.sessionId!,
-      fileId: this.fileId!,
+      session_id: this.sessionId!,
+      file_id: this.fileId!,
       operations: new Uint8Array(transactionMessage.operations),
     };
 
@@ -346,17 +365,17 @@ export class MultiplayerServer {
   requestTransactions(sequenceNum: number) {
     if (!this.sessionId) throw new Error('Expected sessionId to be defined in requestTransactions');
     if (!this.fileId) throw new Error('Expected fileId to be defined in requestTransactions');
+
     multiplayerClient.sendState('syncing');
+
     const message: SendGetBinaryTransactions = {
       type: 'GetBinaryTransactions',
-      sessionId: this.sessionId,
-      fileId: this.fileId,
-      minSequenceNum: BigInt(sequenceNum),
+      session_id: this.sessionId,
+      file_id: this.fileId,
+      min_sequence_num: sequenceNum,
     };
 
-    const encodedMessage = SendGetTransactions.toBinary(message);
-
-    this.sendBinary(encodedMessage);
+    this.send(message);
   }
 }
 

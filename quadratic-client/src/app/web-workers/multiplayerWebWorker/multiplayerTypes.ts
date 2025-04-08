@@ -99,8 +99,8 @@ export interface ReceiveTransaction {
 export interface SendTransaction {
   type: 'Transaction';
   id: string;
-  sessionId: string;
-  fileId: string;
+  session_id: string;
+  file_id: string;
   operations: Uint8Array<ArrayBufferLike>;
 }
 
@@ -108,16 +108,16 @@ export type SendBinaryTransaction = Uint8Array<ArrayBufferLike>;
 
 export interface SendGetTransactions {
   type: 'GetTransactions';
-  sessionId: string;
-  fileId: string;
-  minSequenceNum: number;
+  session_id: string;
+  file_id: string;
+  min_sequence_num: number;
 }
 
 export interface SendGetBinaryTransactions {
   type: 'GetBinaryTransactions';
-  sessionId: string;
-  fileId: string;
-  minSequenceNum: bigint;
+  session_id: string;
+  file_id: string;
+  min_sequence_num: number;
 }
 
 export interface ReceiveTransactions {
@@ -156,5 +156,9 @@ export type ReceiveMessages =
   | ReceiveError
   | ReceiveCurrentTransaction;
 
-export type MultiplayerServerMessage = SendTransaction | SendEnterRoom | SendGetTransactions;
-export type MultiplayerServerBinaryMessage = SendBinaryTransaction | SendGetBinaryTransactions;
+export type MultiplayerServerMessage =
+  | SendTransaction
+  | SendEnterRoom
+  | SendGetTransactions
+  | SendGetBinaryTransactions;
+export type MultiplayerServerBinaryMessage = SendBinaryTransaction;

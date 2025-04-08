@@ -304,19 +304,21 @@ class Core {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
         const data = message.transaction;
+        const operations =
+          typeof data.operations === 'string'
+            ? new Uint8Array(Buffer.from(data.operations, 'base64'))
+            : data.operations;
 
-        if (typeof data.operations === 'string') {
-          data.operations = Buffer.from(data.operations, 'base64');
-        }
-
-        this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
+        this.gridController.multiplayerTransaction(data.id, data.sequence_num, operations);
         offline.markTransactionSent(data.id);
+
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
         } else {
           coreClient.sendMultiplayerState('connected');
         }
       } catch (e) {
+        console.error('error', e);
         this.handleCoreError('receiveTransaction', e);
       }
       resolve(undefined);
