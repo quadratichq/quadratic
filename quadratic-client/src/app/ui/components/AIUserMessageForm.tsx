@@ -9,6 +9,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import AttachFile from '@mui/icons-material/AttachFile';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
@@ -106,11 +107,8 @@ export const AIUserMessageForm = memo(
     }, [abortController, setLoading]);
 
     const handleFiles = useCallback(
-      (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
-        const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
+      (files: FileList | null) => {
         if (files && files.length > 0) {
-          e.preventDefault();
-
           for (const file of files) {
             const mimeType = file.type;
             if (isSupportedMimeType(mimeType) && isFileSupported(mimeType)) {
@@ -128,7 +126,20 @@ export const AIUserMessageForm = memo(
       [isFileSupported]
     );
 
+    const handlePasteOrDrop = useCallback(
+      (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
+        const filesToHandle =
+          'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : null;
+        if (filesToHandle && filesToHandle.length > 0) {
+          e.preventDefault();
+          handleFiles(filesToHandle);
+        }
+      },
+      [handleFiles]
+    );
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
 
     // Focus the input when relevant & the tab comes into focus
@@ -157,8 +168,8 @@ export const AIUserMessageForm = memo(
             textareaRef.current?.focus();
           }
         }}
-        onPaste={handleFiles}
-        onDrop={handleFiles}
+        onPaste={handlePasteOrDrop}
+        onDrop={handlePasteOrDrop}
       >
         {!editing && !loading && waitingOnMessageIndex === undefined && (
           <TooltipPopover label="Edit">
@@ -177,6 +188,16 @@ export const AIUserMessageForm = memo(
             </Button>
           </TooltipPopover>
         )}
+
+        {/* Hidden file input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          multiple
+          accept="image/*,.pdf"
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
 
         <AIContext
           initialContext={ctx?.initialContext}
@@ -257,8 +278,26 @@ export const AIUserMessageForm = memo(
                 waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
               )}
             >
-              <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+              {/* Left side: Attach + Model menu */}
+              <div className="flex items-center gap-0.5">
+                {/* Select Model Menu - Moved first */}
+                <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
+                {/* Attach file button - Moved second */}
+                <TooltipPopover label="Attach files (image or pdf)">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={waitingOnMessageIndex !== undefined}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <AttachFile sx={{ fontSize: '1rem' }} />
+                  </Button>
+                </TooltipPopover>
+              </div>
+
+              {/* Right side: Submit hints + button */}
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 {!debug && (
                   <>
