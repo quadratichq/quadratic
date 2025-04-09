@@ -150,10 +150,28 @@ export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
 export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 
+const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
+  z.object({
+    Connection: z.object({
+      kind: z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']),
+      id: z.string(),
+    }),
+  })
+);
 const ContextSchema = z.object({
   sheets: z.array(z.string()),
   currentSheet: z.string(),
   selection: z.string().optional(),
+  codeCell: z
+    .object({
+      sheetId: z.string(),
+      pos: z.object({
+        x: z.number(),
+        y: z.number(),
+      }),
+      language: CodeCellLanguageSchema,
+    })
+    .optional(),
 });
 export type Context = z.infer<typeof ContextSchema>;
 
