@@ -52,11 +52,38 @@ export class PointerScrollbar {
     return false;
   }
 
+  // Handles pointer moving outside of the scrollbar.
+  pointerMoveOutside(x: number, y: number) {
+    if (this.state === 'horizontal') {
+      if (this.down !== undefined && this.scrollbarStart !== undefined) {
+        const delta = x - this.down.x;
+        this.down.x = x;
+        this.scrollbars.adjustHorizontal(delta);
+      }
+    } else if (this.state === 'vertical') {
+      if (this.down !== undefined && this.scrollbarStart !== undefined) {
+        const delta = y - this.down.y;
+        this.down.y = y;
+        this.scrollbars.adjustVertical(delta);
+      }
+    }
+  }
+
   pointerMove(e: FederatedPointerEvent): boolean {
     if (this.state === 'horizontal') {
+      if (this.down !== undefined && this.scrollbarStart !== undefined) {
+        const delta = e.clientX - this.down.x;
+        this.down.x = e.clientX;
+        this.scrollbars.adjustHorizontal(delta);
+      }
       return true;
     }
     if (this.state === 'vertical') {
+      if (this.down !== undefined && this.scrollbarStart !== undefined) {
+        const delta = e.clientY - this.down.y;
+        this.down.y = e.clientY;
+        this.scrollbars.adjustVertical(delta);
+      }
       return true;
     }
     return this.checkHover(e);

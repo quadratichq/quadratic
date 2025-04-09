@@ -19,8 +19,15 @@ export class UIScrollbars extends Container {
   private horizontal = new Sprite(Texture.WHITE);
   private vertical = new Sprite(Texture.WHITE);
 
+  // we need to cache these values since they don't change when dragging the
+  // scrollbar
+  private actualWidth = 0;
+  private actualHeight = 0;
   private lastWidth = 0;
   private lastHeight = 0;
+  private lastViewportRight = 0;
+  private lastViewportBottom = 0;
+  private lastContentBounds: Rectangle | undefined;
 
   horizontalStart = 0;
   verticalStart = 0;
@@ -75,7 +82,11 @@ export class UIScrollbars extends Container {
 
     // If the content is smaller than the viewport, and the viewport is at the
     // start of the content, then the scrollbar is not visible.
-    if (viewportTotal >= contentSize && viewportStart === -headingSize / pixiApp.viewport.scaled) {
+    if (
+      !pixiApp.pointer.pointerScrollbar.isActive() &&
+      viewportTotal >= contentSize &&
+      viewportStart === -headingSize / pixiApp.viewport.scaled
+    ) {
       return undefined;
     }
 
@@ -98,51 +109,57 @@ export class UIScrollbars extends Container {
     const { screenWidth, screenHeight } = viewport;
     const { headingSize } = pixiApp.headings;
     const viewportBounds = viewport.getVisibleBounds();
-    const contentBounds = sheets.sheet.getScrollbarBounds();
-    if (!contentBounds) return;
+    this.lastContentBounds = sheets.sheet.getScrollbarBounds();
+    if (!this.lastContentBounds) return;
 
-    const dragging = false;
+    const dragging = pixiApp.pointer.pointerScrollbar.isActive();
 
     const horizontal = this.calculateSize(
-      contentBounds.width,
+      this.lastContentBounds.width,
       viewportBounds.left,
-      viewportBounds.right,
+      dragging ? this.lastViewportRight : viewportBounds.right,
       headingSize.width
     );
-    this.horizontal.visible = !!horizontal;
+    // don't change the visibility of the horizontal scrollbar when dragging
+    if (!dragging) this.horizontal.visible = !!horizontal;
+
     if (horizontal) {
       const start = headingSize.width;
-      const actualWidth = screenWidth - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
-      this.horizontal.x = Math.max(start, start + horizontal.start * actualWidth);
-      const rightClamp = screenWidth - this.horizontal.x - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+      this.actualWidth = screenWidth - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+      this.horizontal.x = Math.max(start, start + horizontal.start * this.actualWidth);
       if (dragging) {
-        this.horizontal.width = Math.min(rightClamp, this.lastWidth);
+        this.horizontal.width = this.lastWidth;
       } else {
-        this.horizontalStart = start + horizontal.start * actualWidth;
-        this.horizontal.width = Math.min(rightClamp, horizontal.size * actualWidth);
-        this.lastWidth = horizontal.size * actualWidth;
+        this.horizontalStart = start + horizontal.start * this.actualWidth;
+        const rightClamp = screenWidth - this.horizontal.x - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+        this.horizontal.width = Math.min(rightClamp, horizontal.size * this.actualWidth);
+        this.lastWidth = horizontal.size * this.actualWidth;
+        this.lastViewportRight = viewportBounds.right;
       }
       this.horizontal.y = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
     }
 
     const vertical = this.calculateSize(
-      contentBounds.height,
+      this.lastContentBounds.height,
       viewportBounds.top,
-      viewportBounds.bottom,
+      dragging ? this.lastViewportBottom : viewportBounds.bottom,
       headingSize.height
     );
-    this.vertical.visible = !!vertical;
+    // don't change the visibility of the vertical scrollbar when dragging
+    if (!dragging) this.vertical.visible = !!vertical;
+
     if (vertical) {
       const start = headingSize.height;
-      const actualHeight = screenHeight - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
-      this.vertical.y = Math.max(start, start + vertical.start * actualHeight);
-      const bottomClamp = screenHeight - this.vertical.y - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+      this.actualHeight = screenHeight - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+      this.vertical.y = Math.max(start, start + vertical.start * this.actualHeight);
       if (dragging) {
-        this.vertical.height = Math.min(bottomClamp, this.lastHeight);
+        this.vertical.height = this.lastHeight;
       } else {
-        this.verticalStart = start + vertical.start * actualHeight;
-        this.vertical.height = Math.min(bottomClamp, vertical.size * actualHeight);
-        this.lastHeight = vertical.size * actualHeight;
+        this.verticalStart = start + vertical.start * this.actualHeight;
+        const bottomClamp = screenHeight - this.vertical.y - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+        this.vertical.height = Math.min(bottomClamp, vertical.size * this.actualHeight);
+        this.lastHeight = vertical.size * this.actualHeight;
+        this.lastViewportBottom = viewportBounds.bottom;
       }
       this.vertical.x = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
     }
@@ -177,5 +194,21 @@ export class UIScrollbars extends Container {
       return 'vertical';
     }
     return undefined;
+  }
+
+  adjustHorizontal(delta: number) {
+    if (!delta || !this.lastContentBounds) return;
+    const viewportScale = pixiApp.viewport.scaled;
+    const scaleX = this.actualWidth / this.lastContentBounds.width;
+    pixiApp.viewport.x -= (delta * viewportScale) / scaleX;
+    pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width, pixiApp.viewport.x);
+  }
+
+  adjustVertical(delta: number) {
+    if (!delta || !this.lastContentBounds) return;
+    const viewportScale = pixiApp.viewport.scaled;
+    const scaleY = this.actualHeight / this.lastContentBounds.height;
+    pixiApp.viewport.y -= (delta * viewportScale) / scaleY;
+    pixiApp.viewport.y = Math.min(pixiApp.headings.headingSize.height, pixiApp.viewport.y);
   }
 }

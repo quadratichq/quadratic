@@ -26,7 +26,7 @@ export class Pointer {
   pointerCellMoving: PointerCellMoving;
   private pointerTable: PointerTable;
   private pointerLink: PointerLink;
-  private pointerScrollbar: PointerScrollbar;
+  pointerScrollbar: PointerScrollbar;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
@@ -43,6 +43,7 @@ export class Pointer {
 
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
+    window.addEventListener('pointermove', this.pointerMoveOutside);
     viewport.on('pointerup', this.pointerUp);
     viewport.on('pointerupoutside', this.pointerUp);
 
@@ -73,6 +74,7 @@ export class Pointer {
     pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeave);
     window.removeEventListener('blur', this.pointerLeave);
     window.removeEventListener('visibilitychange', this.visibilityChange);
+    window.removeEventListener('pointermove', this.pointerMoveOutside);
     this.pointerDown.destroy();
     this.pointerHtmlCells.destroy();
   }
@@ -92,7 +94,7 @@ export class Pointer {
     return overCodeEditor;
   }
 
-  private handlePointerDown = (e: FederatedPointerEvent): void => {
+  private handlePointerDown = (e: FederatedPointerEvent) => {
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.global);
 
@@ -113,13 +115,25 @@ export class Pointer {
     this.updateCursor();
   };
 
-  private pointerMove = (e: FederatedPointerEvent): void => {
+  // handler for windows pointermove event (used for scrollbar dragging)
+  private pointerMoveOutside = (e: PointerEvent) => {
+    if (this.pointerScrollbar.isActive()) {
+      // only handle event if pointer is off canvas; otherwise pointerMove will handle it
+      const rect = pixiApp.canvas.getBoundingClientRect();
+      if (e.clientX > rect.right || e.clientX < rect.left || e.clientY > rect.bottom || e.clientY < rect.top) {
+        this.pointerScrollbar.pointerMoveOutside(e.clientX, e.clientY);
+      }
+    }
+  };
+
+  private pointerMove = (e: FederatedPointerEvent) => {
     // ignore pointerMove if the target is a child of an element with class pointer-move-ignore
     const target = e.originalEvent.target;
     const isWithinPointerMoveIgnore = target instanceof HTMLElement && !!target.closest('.pointer-move-ignore');
     if (isWithinPointerMoveIgnore) return;
 
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
+
     const world = pixiApp.viewport.toWorld(e.global);
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
@@ -159,7 +173,7 @@ export class Pointer {
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
 
-  private pointerUp = (e: FederatedPointerEvent): void => {
+  private pointerUp = (e: FederatedPointerEvent) => {
     if (this.isMoreThanOneTouch(e)) return;
 
     this.pointerScrollbar.pointerUp() ||
