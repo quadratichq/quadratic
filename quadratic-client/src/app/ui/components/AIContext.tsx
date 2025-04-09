@@ -6,7 +6,8 @@ import {
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { uploadFile } from '@/app/helpers/files';
-import { A1SelectionStringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionStringToSelection, getTableNameFromPos } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
@@ -21,7 +22,7 @@ import { useRecoilValue } from 'recoil';
 
 type AIContextProps = {
   initialContext?: Context;
-  context?: Context;
+  context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
@@ -114,7 +115,7 @@ export const AIContext = memo(
           <AIAnalystSelectContextMenu
             context={context}
             setContext={setContext}
-            disabled={disabled}
+            disabled={disabled || !setContext}
             onClose={() => textAreaRef.current?.focus()}
           />
         )}
@@ -124,11 +125,13 @@ export const AIContext = memo(
         {files.map((file, index) => (
           <FileContextPill
             key={`${index}-${file.fileName}`}
-            disabled={disabled}
+            disabled={disabled || !setFiles}
             file={file}
             onClick={() => setFiles?.(files.filter((f) => f !== file))}
           />
         ))}
+
+        <CodeCellContextPill codeCell={context.codeCell} />
 
         {setContext && context && (
           <ContextPill
@@ -140,44 +143,43 @@ export const AIContext = memo(
             }
             secondary="Cursor"
             onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
-            disabled={disabled || !context.selection}
+            disabled={disabled || !setContext || !context.selection}
           />
         )}
 
-        {!!setContext && !!context?.currentSheet && (
+        {!!context.currentSheet && (
           <ContextPill
             key={context.currentSheet}
             primary={context.currentSheet}
             secondary={'Sheet'}
             onClick={() =>
-              setContext((prev) => ({
+              setContext?.((prev) => ({
                 ...prev,
                 sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
                 currentSheet: '',
               }))
             }
-            disabled={disabled}
+            disabled={disabled || !setContext}
           />
         )}
 
-        {setContext &&
-          context?.sheets
-            .filter((sheet) => sheet !== context.currentSheet)
-            .map((sheet) => (
-              <ContextPill
-                key={sheet}
-                primary={sheet}
-                secondary={'Sheet'}
-                disabled={disabled}
-                onClick={() =>
-                  setContext((prev) => ({
-                    ...prev,
-                    sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
-                    currentSheet: prev.currentSheet === sheet ? '' : prev.currentSheet,
-                  }))
-                }
-              />
-            ))}
+        {context.sheets
+          .filter((sheet) => sheet !== context.currentSheet)
+          .map((sheet) => (
+            <ContextPill
+              key={sheet}
+              primary={sheet}
+              secondary={'Sheet'}
+              disabled={disabled || !setContext}
+              onClick={() =>
+                setContext?.((prev) => ({
+                  ...prev,
+                  sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
+                  currentSheet: prev.currentSheet === sheet ? '' : prev.currentSheet,
+                }))
+              }
+            />
+          ))}
       </div>
     );
   }
@@ -186,7 +188,7 @@ export const AIContext = memo(
 type ContextPillProps = {
   primary: string;
   secondary: string;
-  onClick: () => void;
+  onClick?: () => void;
   disabled: boolean;
 };
 
@@ -262,4 +264,32 @@ const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileB
       </Button>
     </TooltipPopover>
   );
+});
+
+type CodeCellContextPillProps = {
+  codeCell: CodeCell | undefined;
+};
+
+const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
+  const [tableName, setTableName] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const updateTableName = (a1Context: string) => {
+      if (!codeCell?.sheetId) return;
+      const tableName = getTableNameFromPos(a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
+      setTableName(tableName);
+    };
+
+    updateTableName(sheets.a1Context);
+
+    events.on('a1Context', updateTableName);
+    return () => {
+      events.off('a1Context', updateTableName);
+    };
+  }, [codeCell?.pos.x, codeCell?.pos.y, codeCell?.sheetId]);
+
+  if (!codeCell) {
+    return null;
+  }
+
+  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" disabled={true} />;
 });

@@ -46,9 +46,9 @@ type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
   fileTypes: string[];
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
-  ctx?: {
+  ctx: {
     context: Context;
-    setContext: React.Dispatch<React.SetStateAction<Context>>;
+    setContext?: React.Dispatch<React.SetStateAction<Context>>;
     initialContext?: Context;
   };
   waitingOnMessageIndex?: number;
@@ -219,9 +219,9 @@ export const AIUserMessageForm = memo(
         )}
 
         <AIContext
-          initialContext={ctx?.initialContext}
-          context={ctx?.context}
-          setContext={ctx?.setContext}
+          initialContext={ctx.initialContext}
+          context={ctx.context}
+          setContext={ctx.setContext}
           files={files}
           setFiles={setFiles}
           handleFiles={handleFiles}
