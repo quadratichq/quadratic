@@ -3,8 +3,6 @@ export const PythonDocs = `# Python Docs
 Python is a first-class citizen that integrates seamlessly with Quadratic spreadsheets.
 Below are in-depth details for Python in Quadratic. 
 
-When writing Python, insert it using the set_code_cell_value function. DO NOT respond with code, use this set_code_cell_valuefunction to place code instead.
-
 You can reference cells in the spreadsheet to use in code, and you can return results from your Python code back to the spreadsheet. The last line of code is returned to the spreadsheet.
 Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one type of return from a code cell, data or chart.
 
