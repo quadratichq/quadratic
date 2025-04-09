@@ -20,7 +20,6 @@ beforeAll(async () => {
     ],
   });
 
-  // Create a test files
   await createFile({
     data: {
       creatorUserId: user_2.id,
