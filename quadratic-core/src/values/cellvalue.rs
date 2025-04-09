@@ -395,10 +395,10 @@ impl CellValue {
         let trimmed = value.trim();
         if trimmed.starts_with("(") && trimmed.ends_with(")") {
             let inner_content = &trimmed[1..trimmed.len() - 1].trim();
-            if inner_content.starts_with("-") {
-                inner_content[1..].to_string()
+            if let Some(stripped) = inner_content.strip_prefix("-") {
+                stripped.trim().to_string()
             } else {
-                format!("-{}", inner_content)
+                format!("-{}", inner_content.trim())
             }
         } else {
             value.to_string()
