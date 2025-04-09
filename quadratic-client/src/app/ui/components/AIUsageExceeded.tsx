@@ -6,6 +6,10 @@ type AIUsageExceededProps = {
   delaySeconds?: number;
 };
 
+const divClassName =
+  'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50';
+const linkClassName = 'font-semibold text-primary hover:underline';
+
 export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProps) => {
   if (!show || !delaySeconds) {
     return null;
@@ -16,13 +20,13 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
       name="ai-usage-exceeded"
       probability={0.5}
       control={
-        <div className="mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50">
+        <div className={divClassName}>
           AI free tier exceeded. Wait {delaySeconds} seconds or{' '}
           <a
             href="/team/settings"
             target="_blank"
             rel="noreferrer"
-            className="font-semibold text-primary hover:underline"
+            className={linkClassName}
             onClick={(e) => e.stopPropagation()}
           >
             upgrade to Quadratic Pro
@@ -31,13 +35,13 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
         </div>
       }
       variant={
-        <div className="mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50">
+        <div className={divClassName}>
           Message slowed. Wait {delaySeconds} seconds or{' '}
           <a
             href="/team/settings"
             target="_blank"
             rel="noreferrer"
-            className="font-semibold text-primary hover:underline"
+            className={linkClassName}
             onClick={(e) => e.stopPropagation()}
           >
             upgrade to Quadratic Pro
