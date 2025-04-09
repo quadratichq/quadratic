@@ -633,14 +633,14 @@ mod tests {
 
         gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 10,
-                y: 10,
-            },
+            pos![sheet_id!J10],
             CodeCellLanguage::Python,
             format!("q.cells('{}')", file_name),
             None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).data_table(pos![J10]).unwrap().name(),
+            "Table1"
         );
 
         gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
@@ -650,6 +650,10 @@ mod tests {
             CodeCellLanguage::Python,
             format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).data_table(pos![T20]).unwrap().name(),
+            "Table2"
         );
 
         let ops = gc.duplicate_sheet_operations(sheet_id);
@@ -673,6 +677,21 @@ mod tests {
                 language: CodeCellLanguage::Python,
                 code: format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#),
             })
+        );
+
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .data_table(pos![J10])
+                .unwrap()
+                .name(),
+            "Table3"
+        );
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .data_table(pos![T20])
+                .unwrap()
+                .name(),
+            "Table4"
         );
     }
 }
