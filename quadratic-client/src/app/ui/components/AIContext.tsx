@@ -230,8 +230,9 @@ const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps)
           onClick={onClick}
         />
       </HoverCardTrigger>
-      <HoverCardContent className="w-48" side="top">
+      <HoverCardContent className="w-48 overflow-hidden p-0" side="top">
         <img src={`data:${file.mimeType};base64,${file.data}`} alt={file.fileName} />
+        <span className="block border-t border-border px-1 py-0.5 text-xs">{file.fileName}</span>
       </HoverCardContent>
     </HoverCard>
   );
