@@ -1308,7 +1308,7 @@ mod test {
         let expected_row1 = vec!["city", "region", "country", "population"];
 
         // paste side by side
-        paste(&mut gc, sheet_id, 10, 1, html.clone());
+        paste(&mut gc, 10, 1, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_row1);
 
