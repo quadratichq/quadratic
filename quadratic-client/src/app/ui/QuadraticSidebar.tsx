@@ -48,7 +48,7 @@ export const QuadraticSidebar = () => {
           <Link
             to="/"
             reloadDocument
-            className="group relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-border"
+            className="group relative flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-border"
           >
             <QuadraticLogo />
             {isRunningAsyncAction && (
@@ -115,7 +115,7 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
         {...props}
         ref={ref}
         className={cn(
-          'relative h-8 w-8 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
+          'relative h-9 w-9 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
           props.className
         )}
       >
