@@ -30,7 +30,7 @@ type AIContextProps = {
   fileTypes: string[];
   editing: boolean;
   disabled: boolean;
-  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIContext = memo(
@@ -44,7 +44,7 @@ export const AIContext = memo(
     fileTypes,
     editing,
     disabled,
-    textAreaRef,
+    textareaRef,
   }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
@@ -115,8 +115,8 @@ export const AIContext = memo(
           <AIAnalystSelectContextMenu
             context={context}
             setContext={setContext}
-            disabled={disabled || !setContext}
-            onClose={() => textAreaRef.current?.focus()}
+            disabled={disabled}
+            onClose={() => textareaRef.current?.focus()}
           />
         )}
 
