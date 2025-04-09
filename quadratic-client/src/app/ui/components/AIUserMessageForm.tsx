@@ -76,7 +76,7 @@ export const AIUserMessageForm = memo(
     const [editing, setEditing] = useState(!initialContent?.length);
     const [dragOver, setDragOver] = useState(false);
     const dragOverMessage = useMemo(
-      () => (fileTypes.includes('.pdf') ? 'Drag and drop image or PDF files here' : 'Drag and drop image files here'),
+      () => (fileTypes.includes('.pdf') ? 'Images and PDFs are supported' : 'Images supported'),
       [fileTypes]
     );
 
@@ -187,15 +187,13 @@ export const AIUserMessageForm = memo(
       >
         {editing && dragOver && (
           <div
-            className="absolute left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-background opacity-75"
+            className="absolute bottom-[1px] left-[1px] right-[1px] top-[1px] z-20 flex flex-col items-center justify-center rounded bg-background opacity-90"
             onDragLeave={handleDrag}
           >
-            <div className="pointer-events-none relative z-10 flex h-[90%] w-[90%] select-none flex-col items-center justify-center gap-2 rounded-lg border-4 border-dashed border-border bg-background opacity-90">
-              <span className="text-lg font-bold text-foreground">Drop file here</span>
-
-              <span className="pl-4 pr-4 text-center text-base font-medium text-muted-foreground">
-                {dragOverMessage}
-              </span>
+            <div className="absolute bottom-2 left-2 right-2 top-2 z-20 rounded-md border-4 border-dashed border-primary" />
+            <div className="pointer-events-none relative z-10 flex select-none flex-col items-center justify-center rounded-lg p-4">
+              <span className="text-sm font-bold">Drop files here</span>
+              <span className="pl-4 pr-4 text-center text-base text-xs text-muted-foreground">{dragOverMessage}</span>
             </div>
           </div>
         )}
