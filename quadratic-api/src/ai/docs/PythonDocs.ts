@@ -364,6 +364,8 @@ Plotly is the only charting library supported in Quadratic. Do not try to use ot
 
 To return a chart to the sheet, put fig.show() as the last line of code. 
 
+When creating charts do not try to state the code in the chat, use the set_code_cell_value function to place the code instead.
+
 \`\`\`python
 # Here are some example styling options for prettier charts
 fig.update_layout(
