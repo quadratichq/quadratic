@@ -23,22 +23,24 @@ export const TopBarFileNameAndLocationMenu = () => {
       ) : (
         <div className={`flex flex-row items-center gap-2`}>
           <FileLocation />
+
           <div className={`flex flex-row items-center gap-2`}>
             <Type variant="body2">
               {hasPermissionToEditFile(permissions) ? (
                 <>
                   <button
-                    className={`hidden max-w-[25vw] truncate md:block`}
+                    className={`hidden max-w-[35vw] truncate md:block`}
                     onClick={() => {
                       setIsRenaming(true);
                     }}
                   >
                     {name}
                   </button>
-                  <span className={`block max-w-[25vw] truncate md:hidden`}>{name}</span>
+
+                  <span className={`block max-w-[50vw] truncate md:hidden`}>{name}</span>
                 </>
               ) : (
-                <span className={`block max-w-[25vw] truncate`}>{name}</span>
+                <span className={`block max-w-[50vw] truncate`}>{name}</span>
               )}
             </Type>
           </div>

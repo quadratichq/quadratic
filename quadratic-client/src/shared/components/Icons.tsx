@@ -111,6 +111,10 @@ export const ArrowUpwardIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_upward</Icon>;
 };
 
+export const AttachFileIcon: IconComponent = (props) => {
+  return <Icon {...props}>attach_file</Icon>;
+};
+
 export const BackspaceIcon: IconComponent = (props) => {
   return <Icon {...props}>backspace</Icon>;
 };
