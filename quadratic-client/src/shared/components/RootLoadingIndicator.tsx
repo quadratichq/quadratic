@@ -1,23 +1,9 @@
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useState } from 'react';
 
 export function RootLoadingIndicator({ children }: { children?: React.ReactNode }) {
-  // const mountedRef = useRef<boolean>(false);
-  const [show, setShow] = useState<boolean>(false);
+  const classNames = `animate-[fadeIn_0.5s_ease-in-out_0.5s_forwards] opacity-0 transition-opacity`;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShow(true);
-    }, 1500);
-
-    return () => {
-      console.log('unmounting');
-      clearTimeout(timer);
-    };
-  }, [show]);
-
-  console.log('RootLoadingIndicator');
-  // TODO: this should be the same markup as what you find in index.html
+  // TODO: this should be the same markaup as what you find in index.html
   // so it seamlessly transitions from one to the next
   return (
     <div className="root-loader">
@@ -28,9 +14,9 @@ export function RootLoadingIndicator({ children }: { children?: React.ReactNode 
         <img
           src="/public/images/logo_loading.gif"
           alt="Loading Quadratic Grid"
-          className={cn('absolute left-0 top-0 opacity-0 transition-opacity', show && 'opacity-100')}
+          className={cn('absolute left-0 top-0', classNames)}
         />
-        {show && <div className="absolute left-0 top-full mt-4 w-full">{children}</div>}
+        <div className={cn('absolute left-0 top-full mt-4 w-full', classNames)}>{children}</div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
+import { RootLoadingIndicator } from '@/shared/components/RootLoadingIndicator';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import getActiveTeam from '@/shared/utils/getActiveTeam';
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
@@ -20,10 +21,7 @@ export const router = createBrowserRouter(
         loader={RootRoute.loader}
         Component={RootRoute.Component}
         ErrorBoundary={RootRoute.ErrorBoundary}
-        // HydrateFallback={() => {
-        //   console.warn('HydrateFallback');
-        //   return <div>Loading</div>;
-        // }}
+        HydrateFallback={RootLoadingIndicator}
       >
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}

@@ -6,7 +6,6 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -108,7 +107,7 @@ export function QuadraticApp() {
 
   // Show loading screen until everything is loaded
   if (offlineLoading || multiplayerLoading) {
-    return <QuadraticLoading />;
+    return null; // <QuadraticLoading />;
   }
   return <QuadraticUIContext />;
 }
