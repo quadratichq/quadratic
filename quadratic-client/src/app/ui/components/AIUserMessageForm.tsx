@@ -290,6 +290,7 @@ export const AIUserMessageForm = memo(
           loading={loading}
           waitingOnMessageIndex={waitingOnMessageIndex}
           textareaRef={textareaRef}
+          prompt={prompt}
           submitPrompt={() => submit(prompt)}
           abortPrompt={abortPrompt}
         />
@@ -360,12 +361,21 @@ type AIUserMessageFormFooterProps = {
   loading: boolean;
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  prompt: string;
   submitPrompt: () => void;
   abortPrompt: () => void;
 };
 
 const AIUserMessageFormFooter = memo(
-  ({ show, loading, waitingOnMessageIndex, textareaRef, submitPrompt, abortPrompt }: AIUserMessageFormFooterProps) => {
+  ({
+    show,
+    loading,
+    waitingOnMessageIndex,
+    textareaRef,
+    prompt,
+    submitPrompt,
+    abortPrompt,
+  }: AIUserMessageFormFooterProps) => {
     if (!show) {
       return null;
     }
