@@ -389,16 +389,17 @@ impl CellValue {
     }
 
     fn strip_parentheses(value: &str) -> String {
-        value
-            .trim()
-            .strip_prefix("(")
-            .map_or(value.to_string(), |stripped| {
-                stripped
-                    .strip_suffix(")")
-                    .map_or(value.to_string(), |stripped| {
-                        format!("-{}", stripped.trim())
-                    })
-            })
+        let trimmed = value.trim();
+        if trimmed.starts_with("(") && trimmed.ends_with(")") {
+            let inner_content = &trimmed[1..trimmed.len() - 1].trim();
+            if inner_content.starts_with("-") {
+                inner_content[1..].to_string()
+            } else {
+                format!("-{}", inner_content)
+            }
+        } else {
+            value.to_string()
+        }
     }
 
     fn strip_currency(value: &str) -> String {
