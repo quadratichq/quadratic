@@ -108,8 +108,9 @@ How can I help you?`,
           const abortController = new AbortController();
           set(aiAnalystPDFImportAtom, { abortController, loading: true });
 
+          const chatId = v4();
           const response = await handleAIRequestToAPI({
-            chatId: v4(),
+            chatId,
             source: 'PDFImport',
             modelKey: DEFAULT_PDF_IMPORT_MODEL,
             messages: messagesWithContext,
@@ -132,7 +133,11 @@ How can I help you?`,
             try {
               const argsObject = JSON.parse(toolCall.arguments);
               const args = aiToolsSpec[AITool.AddDataTable].responseSchema.parse(argsObject);
-              await aiToolsActions[AITool.AddDataTable](args);
+              await aiToolsActions[AITool.AddDataTable](args, {
+                source: 'PDFImport',
+                chatId,
+                messageIndex: 0,
+              });
               importPDFResult += `Added data table named ${args.table_name} at ${args.top_left_position}\n`;
             } catch (error) {
               console.error(error);
