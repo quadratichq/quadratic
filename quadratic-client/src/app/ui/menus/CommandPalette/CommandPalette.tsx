@@ -89,13 +89,7 @@ export const CommandPalette = () => {
         onOpenChange: closeCommandPalette,
       }}
       commandProps={{ shouldFilter: false }}
-      overlayProps={{
-        onPointerDown: (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          closeCommandPalette();
-        },
-      }}
+      overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput
         value={activeSearchValue}
