@@ -87,11 +87,6 @@ export const router = createBrowserRouter(
             lazy={() => import('./routes/examples')}
             shouldRevalidate={dontRevalidateDialogs}
           />
-          <Route
-            path={ROUTES.ACCOUNT}
-            lazy={() => import('./routes/account')}
-            shouldRevalidate={dontRevalidateDialogs}
-          />
           <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
 
           <Route path="teams">

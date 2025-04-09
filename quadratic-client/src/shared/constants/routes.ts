@@ -50,7 +50,6 @@ export const ROUTES = {
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   EXAMPLES: '/examples',
-  ACCOUNT: '/account',
   LABS: '/labs',
 
   API: {

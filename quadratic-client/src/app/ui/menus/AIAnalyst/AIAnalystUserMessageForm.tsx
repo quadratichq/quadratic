@@ -17,12 +17,12 @@ import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, memo, useCallback, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
-type Props = AIUserMessageFormWrapperProps & {
+type AIAnalystUserMessageFormProps = AIUserMessageFormWrapperProps & {
   initialContext?: Context;
 };
 
 export const AIAnalystUserMessageForm = memo(
-  forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
+  forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>((props: AIAnalystUserMessageFormProps, ref) => {
     const { initialContext, ...rest } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);

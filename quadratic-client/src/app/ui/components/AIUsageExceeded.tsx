@@ -1,10 +1,15 @@
 import { memo } from 'react';
 
 type AIUsageExceededProps = {
-  delaySeconds: number;
+  show: boolean;
+  delaySeconds?: number;
 };
 
-export const AIUsageExceeded = memo(({ delaySeconds }: AIUsageExceededProps) => {
+export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProps) => {
+  if (!show || !delaySeconds) {
+    return null;
+  }
+
   return (
     <div className="mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50">
       AI free tier exceeded. Wait {delaySeconds} seconds or{' '}
