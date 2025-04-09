@@ -414,10 +414,11 @@ impl CellValue {
             });
 
         if is_negative {
-            format!(
-                "-{}",
-                stripped.trim().strip_prefix("-").unwrap_or(stripped).trim()
-            )
+            if let Some(stripped) = stripped.strip_prefix("-") {
+                stripped.trim().to_string()
+            } else {
+                format!("-{}", stripped.trim())
+            }
         } else {
             stripped.to_string()
         }
