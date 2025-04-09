@@ -5,20 +5,18 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Graphics, Point, Rectangle } from 'pixi.js';
 
 const SCROLLBAR_SIZE = 6;
 const SCROLLBAR_PADDING = 6;
 const SCROLLBAR_COLOR = 0x000000;
 const SCROLLBAR_ALPHA = 0.18;
+const SCROLLBAR_ROUNDED = 3;
 
 export type Scrollbar = 'horizontal' | 'vertical' | undefined;
 
-export class UIScrollbars extends Container {
+export class UIScrollbars extends Graphics {
   private dirty = true;
-
-  private horizontal = new Sprite(Texture.WHITE);
-  private vertical = new Sprite(Texture.WHITE);
 
   // we need to cache these values since they don't change when dragging the
   // scrollbar
@@ -30,19 +28,14 @@ export class UIScrollbars extends Container {
   private lastViewportBottom = 0;
   private contentSize: Rectangle | undefined;
 
+  private horizontal: Rectangle | undefined;
+  private vertical: Rectangle | undefined;
+
   horizontalStart = 0;
   verticalStart = 0;
 
   constructor() {
     super();
-    this.horizontal.height = SCROLLBAR_SIZE;
-    this.vertical.width = SCROLLBAR_SIZE;
-    this.horizontal.alpha = SCROLLBAR_ALPHA;
-    this.vertical.alpha = SCROLLBAR_ALPHA;
-    this.horizontal.tint = SCROLLBAR_COLOR;
-    this.vertical.tint = SCROLLBAR_COLOR;
-    this.addChild(this.horizontal);
-    this.addChild(this.vertical);
 
     events.on('sheetInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
@@ -122,23 +115,29 @@ export class UIScrollbars extends Container {
       dragging ? this.lastViewportRight : viewportBounds.right,
       headingSize.width
     );
-    // don't change the visibility of the horizontal scrollbar when dragging
-    if (!dragging) this.horizontal.visible = !!horizontal;
 
-    if (horizontal) {
+    // don't change the visibility of the horizontal scrollbar when dragging
+    if (horizontal && (!dragging || this.horizontal)) {
       const start = headingSize.width;
       this.actualWidth = screenWidth - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
-      this.horizontal.x = Math.max(start, start + horizontal.start * this.actualWidth);
+      const horizontalX = Math.max(start, start + horizontal.start * this.actualWidth);
+      let horizontalWidth: number;
       if (dragging) {
-        this.horizontal.width = this.lastWidth;
+        horizontalWidth = this.lastWidth;
       } else {
         this.horizontalStart = start + horizontal.start * this.actualWidth;
-        const rightClamp = screenWidth - this.horizontal.x - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
-        this.horizontal.width = Math.min(rightClamp, horizontal.size * this.actualWidth);
+        const rightClamp = screenWidth - horizontalX - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+        horizontalWidth = Math.min(rightClamp, horizontal.size * this.actualWidth);
         this.lastWidth = horizontal.size * this.actualWidth;
         this.lastViewportRight = viewportBounds.right;
       }
-      this.horizontal.y = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
+      const horizontalY = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
+      this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
+      this.drawRoundedRect(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE, SCROLLBAR_ROUNDED);
+      this.endFill();
+      this.horizontal = new Rectangle(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE);
+    } else {
+      this.horizontal = undefined;
     }
 
     const vertical = this.calculateSize(
@@ -147,32 +146,35 @@ export class UIScrollbars extends Container {
       dragging ? this.lastViewportBottom : viewportBounds.bottom,
       headingSize.height
     );
-    // don't change the visibility of the vertical scrollbar when dragging
-    if (!dragging) this.vertical.visible = !!vertical;
 
-    if (vertical) {
+    // don't change the visibility of the vertical scrollbar when dragging
+    if (vertical && (!dragging || this.vertical)) {
       const start = headingSize.height;
       this.actualHeight = screenHeight - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
-      this.vertical.y = Math.max(start, start + vertical.start * this.actualHeight);
+      const verticalY = Math.max(start, start + vertical.start * this.actualHeight);
+      let verticalHeight: number;
       if (dragging) {
-        this.vertical.height = this.lastHeight;
+        verticalHeight = this.lastHeight;
       } else {
         this.verticalStart = start + vertical.start * this.actualHeight;
-        const bottomClamp = screenHeight - this.vertical.y - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
-        this.vertical.height = Math.min(bottomClamp, vertical.size * this.actualHeight);
+        const bottomClamp = screenHeight - verticalY - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
+        verticalHeight = Math.min(bottomClamp, vertical.size * this.actualHeight);
         this.lastHeight = vertical.size * this.actualHeight;
         this.lastViewportBottom = viewportBounds.bottom;
       }
-      this.vertical.x = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
+      const verticalX = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
+      this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
+      this.drawRoundedRect(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight, SCROLLBAR_ROUNDED);
+      this.vertical = new Rectangle(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight);
+      this.endFill();
+    } else {
+      this.vertical = undefined;
     }
   }
 
   update(forceDirty: boolean) {
-    if (pixiAppSettings.gridSettings.hideScrollbars) {
-      this.visible = false;
-      return;
-    }
-    this.visible = true;
+    this.clear();
+    if (pixiAppSettings.gridSettings.hideScrollbars) return;
     if (!this.dirty && !forceDirty) return;
     this.dirty = false;
     this.calculate();
@@ -184,7 +186,7 @@ export class UIScrollbars extends Container {
     const canvasBounds = pixiApp.canvas.getBoundingClientRect();
     const point = new Point(x - canvasBounds.left, y - canvasBounds.top);
     if (
-      this.horizontal.visible &&
+      this.horizontal &&
       intersects.rectanglePoint(
         new Rectangle(this.horizontal.x, this.horizontal.y, this.horizontal.width, this.horizontal.height),
         point
@@ -193,7 +195,7 @@ export class UIScrollbars extends Container {
       return 'horizontal';
     }
     if (
-      this.vertical.visible &&
+      this.vertical &&
       intersects.rectanglePoint(
         new Rectangle(this.vertical.x, this.vertical.y, this.vertical.width, this.vertical.height),
         point
@@ -209,12 +211,12 @@ export class UIScrollbars extends Container {
   adjustHorizontal(delta: number): number {
     if (!delta || !this.contentSize) return 0;
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
-    const viewportScale = pixiApp.viewport.scaled;
     const scaleX = Math.max(this.contentSize.width, viewportBounds.width) / this.actualWidth;
     const last = pixiApp.viewport.x;
-    pixiApp.viewport.x -= delta * viewportScale * scaleX;
-    pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width / viewportScale, pixiApp.viewport.x);
-    return (last - pixiApp.viewport.x) / (scaleX * viewportScale);
+    console.log('change', -delta * scaleX);
+    pixiApp.viewport.x -= delta * scaleX;
+    pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width, pixiApp.viewport.x);
+    return (last - pixiApp.viewport.x) / scaleX;
   }
 
   /// Adjusts vertical scrollbar by the delta. Returns the actual delta that
@@ -222,11 +224,11 @@ export class UIScrollbars extends Container {
   adjustVertical(delta: number): number {
     if (!delta || !this.contentSize) return 0;
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
-    const viewportScale = pixiApp.viewport.scaled;
+    // const viewportScale = pixiApp.viewport.scaled;
     const scaleY = Math.max(this.contentSize.height, viewportBounds.height) / this.actualHeight;
     const last = pixiApp.viewport.y;
-    pixiApp.viewport.y -= delta * viewportScale * scaleY;
+    pixiApp.viewport.y -= delta * scaleY;
     pixiApp.viewport.y = Math.min(pixiApp.headings.headingSize.height, pixiApp.viewport.y);
-    return (last - pixiApp.viewport.y) / (scaleY * viewportScale);
+    return (last - pixiApp.viewport.y) / scaleY;
   }
 }
