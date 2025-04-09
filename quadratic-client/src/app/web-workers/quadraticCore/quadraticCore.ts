@@ -72,11 +72,12 @@ import type {
   CoreClientSearch,
   CoreClientSetCodeCellValue,
   CoreClientSummarizeSelection,
-  CoreClientValidateInput,
+  CoreClientValidateInput
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
 import type { Rectangle } from 'pixi.js';
+
 
 class QuadraticCore {
   private worker?: Worker;
@@ -248,11 +249,13 @@ class QuadraticCore {
   // Loads a Grid file and initializes renderWebWorker upon response
   async load({
     fileId,
+    teamUuid,
     url,
     version,
     sequenceNumber,
   }: {
     fileId: string;
+    teamUuid: string;
     url: string;
     version: string;
     sequenceNumber: number;
@@ -282,6 +285,7 @@ class QuadraticCore {
         sequenceNumber,
         id,
         fileId,
+        teamUuid,
       };
       if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);

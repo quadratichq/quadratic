@@ -86,6 +86,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // initialize Core web worker
   const result = await quadraticCore.load({
     fileId: uuid,
+    teamUuid: data.team.uuid,
     url: checkpoint.url,
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,

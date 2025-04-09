@@ -48,6 +48,7 @@ export interface ClientCoreLoad {
   sequenceNumber: number;
   id: number;
   fileId: string;
+  teamUuid: string;
 }
 
 export interface CoreClientLoad {
@@ -239,6 +240,13 @@ export interface ClientCoreGetJwt {
   id: number;
   jwt: string;
 }
+
+export interface ClientCoreGetTeamUuid {
+  type: 'clientCoreGetTeamUuid';
+  id: number;
+  teamUuid: string;
+}
+
 
 //#endregion
 
@@ -1328,6 +1336,7 @@ export type ClientCoreMessage =
   | ClientCoreInitJavascript
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
+  | ClientCoreGetTeamUuid
   | ClientCoreMoveCells
   | ClientCoreGetFormatCell
   | ClientCoreSetDateTimeFormat

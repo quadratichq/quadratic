@@ -26,7 +26,7 @@ export const ConnectionSchemaBrowser = ({
   type?: ConnectionType;
   uuid?: string;
 }) => {
-  const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid });
+  const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
 
   if (type === undefined || uuid === undefined) return null;

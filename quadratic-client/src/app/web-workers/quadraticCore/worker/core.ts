@@ -71,6 +71,7 @@ import { Rectangle } from 'pixi.js';
 
 class Core {
   gridController?: GridController;
+  teamUuid?: string;
 
   private sendAnalyticsError = (from: string, error: Error | unknown) => {
     console.error(error);
@@ -92,6 +93,7 @@ class Core {
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
+    this.teamUuid = message.teamUuid;
     const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
     try {
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);

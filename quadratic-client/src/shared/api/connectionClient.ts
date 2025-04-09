@@ -42,11 +42,15 @@ export const connectionClient = {
   schemas: {
     get: async (
       connectionType: 'postgres' | 'mysql' | 'mssql' | 'snowflake',
-      connectionId: string
+      connectionId: string,
+      teamUuid: string
     ): Promise<SqlSchemaResponse | null> => {
+      const headers = new Headers(await jwtHeader());
+      headers.set('X-Team-Id', teamUuid);
+
       const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {
         method: 'GET',
-        headers: new Headers(await jwtHeader()),
+        headers,
       });
       if (!res.ok) {
         throw new Error('Failed to get the schema from the connection service');

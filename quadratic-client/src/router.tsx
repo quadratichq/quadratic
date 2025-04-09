@@ -54,8 +54,8 @@ export const router = createBrowserRouter(
           <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
           <Route path="connections" lazy={() => import('./routes/api.connections')} />
           <Route
-            path="connections/:uuid/schema/:type"
-            lazy={() => import('./routes/api.connections.$uuid.schema.$type')}
+            path="teams/:teamUuid/connections/:uuid/schema/:type"
+            lazy={() => import('./routes/api.teams.$teamUuid.connections.$uuid.schema.$type')}
           />
         </Route>
 

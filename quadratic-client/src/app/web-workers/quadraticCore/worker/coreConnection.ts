@@ -14,7 +14,8 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       code: string,
       connector_type: ConnectionKind,
-      connection_id: String
+      connection_id: String,
+      teamUuid: string
     ) => void;
   };
 
@@ -47,7 +48,7 @@ class CoreConnection {
     sheetId: string,
     code: string,
     connector_type: ConnectionKind,
-    connection_id: String
+    connection_id: String,
   ) => {
     const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
     const kind = connector_type.toLocaleLowerCase();
@@ -72,12 +73,14 @@ class CoreConnection {
     try {
       this.sendConnectionState('running', { current: codeRun });
 
+      if (core.teamUuid) {
       const response = await fetch(url, {
         signal,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${jwt}`,
+          'X-Team-Id': core.teamUuid,
         },
         body: JSON.stringify(body),
       });
@@ -91,7 +94,8 @@ class CoreConnection {
         const headers = response.headers;
         const isOverTheLimit = headers.get('over-the-limit') === 'true';
         std_out = isOverTheLimit ? 'Exceeded maximum allowed bytes, not all available records returned.' : '';
-        extra = ` in ${headers.get('elapsed-total-ms')}ms`;
+          extra = ` in ${headers.get('elapsed-total-ms')}ms`;
+        }
       }
 
       // send the parquet bytes to core

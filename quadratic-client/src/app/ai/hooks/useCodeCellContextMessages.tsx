@@ -1,3 +1,4 @@
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { CodeCell } from '@/app/shared/types/codeCell';
@@ -5,8 +6,11 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export function useCodeCellContextMessages() {
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
+  
   const getCodeCellContext = useCallback(async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
     const { sheetId, pos, language: cellLanguage } = codeCell;
     const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
@@ -21,7 +25,8 @@ export function useCodeCellContextMessages() {
     if (connection) {
       schemaData = await connectionClient.schemas.get(
         connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
-        connection.id
+        connection.id,
+        teamUuid
       );
     }
     const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
@@ -98,7 +103,7 @@ ${
         contextType: 'codeCell',
       },
     ];
-  }, []);
+  }, [teamUuid]);
 
   return { getCodeCellContext };
 }
