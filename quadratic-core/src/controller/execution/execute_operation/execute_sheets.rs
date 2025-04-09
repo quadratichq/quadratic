@@ -67,9 +67,11 @@ impl GridController {
                     data_table.name = unique_name.to_owned().into();
 
                     // update table context for replacing table names in code cells
-                    if let Some(mut table_map_entry) = context.table_map.remove(&old_name) {
-                        table_map_entry.sheet_id = sheet_id;
-                        context.table_map.insert(table_map_entry);
+                    if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
+                        let mut new_table_map_entry = old_table_map_entry.to_owned();
+                        new_table_map_entry.sheet_id = sheet_id;
+                        new_table_map_entry.table_name = unique_name.to_owned();
+                        context.table_map.insert(new_table_map_entry);
                     }
 
                     data_tables_pos.push(*pos);
