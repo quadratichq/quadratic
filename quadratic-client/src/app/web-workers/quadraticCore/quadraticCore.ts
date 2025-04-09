@@ -72,12 +72,11 @@ import type {
   CoreClientSearch,
   CoreClientSetCodeCellValue,
   CoreClientSummarizeSelection,
-  CoreClientValidateInput
+  CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
 import type { Rectangle } from 'pixi.js';
-
 
 class QuadraticCore {
   private worker?: Worker;

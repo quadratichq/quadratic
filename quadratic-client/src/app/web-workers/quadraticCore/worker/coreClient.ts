@@ -27,7 +27,7 @@ import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/mu
 import type {
   ClientCoreGetJwt,
   ClientCoreMessage,
-  CoreClientMessage
+  CoreClientMessage,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';

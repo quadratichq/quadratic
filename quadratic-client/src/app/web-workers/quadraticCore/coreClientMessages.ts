@@ -247,7 +247,6 @@ export interface ClientCoreGetTeamUuid {
   teamUuid: string;
 }
 
-
 //#endregion
 
 //#region Render

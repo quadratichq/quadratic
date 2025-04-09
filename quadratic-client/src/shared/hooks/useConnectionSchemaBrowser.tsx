@@ -17,7 +17,15 @@ type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
  * we may be dealing with a cell that is not a connection. Or the connection
  * no longer exists, even though it's in the file.
  */
-export const useConnectionSchemaBrowser = ({ type, uuid, teamUuid }: { uuid: string | undefined; type: string | undefined; teamUuid: string | undefined }) => {
+export const useConnectionSchemaBrowser = ({
+  type,
+  uuid,
+  teamUuid,
+}: {
+  uuid: string | undefined;
+  type: string | undefined;
+  teamUuid: string | undefined;
+}) => {
   const fetcher = useFetcher<{ ok: boolean; data: SchemaData }>({
     key: uuid ? `SCHEMA_FOR_CONNECTION_${uuid}` : undefined,
   });
