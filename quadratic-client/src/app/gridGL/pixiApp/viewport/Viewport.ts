@@ -55,7 +55,7 @@ export class Viewport extends PixiViewport {
         keyToPress: isMobile ? undefined : ['Space'],
       })
     );
-    this.plugins.add('decelerate', new Decelerate(this));
+    this.turnOnDecelerate();
     this.pinch().clampZoom({
       minScale: MINIMUM_VIEWPORT_SCALE,
       maxScale: MAXIMUM_VIEWPORT_SCALE,
@@ -91,6 +91,14 @@ export class Viewport extends PixiViewport {
     this.on('pinch-start', this.handleWaitForZoomEnd);
     this.on('pinch-end', this.handleZoomEnd);
     this.on('snap-end', this.handleSnapEnd);
+  }
+
+  turnOffDecelerate() {
+    this.plugins.remove('decelerate');
+  }
+
+  turnOnDecelerate() {
+    this.plugins.add('decelerate', new Decelerate(this));
   }
 
   private viewportChanged = () => {

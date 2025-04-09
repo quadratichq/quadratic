@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import {
+  hideScrollbarsAtom,
   presentationModeAtom,
   showAIAnalystOnStartupAtom,
   showCellTypeOutlinesAtom,
@@ -34,6 +35,7 @@ export const ViewMenubarMenu = () => {
   const [showGridLines, setShowGridLines] = useRecoilState(showGridLinesAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
+  const [hideScrollbars, setHideScrollbars] = useRecoilState(hideScrollbarsAtom);
   const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
   const setPresentationMode = useSetRecoilState(presentationModeAtom);
 
@@ -59,6 +61,10 @@ export const ViewMenubarMenu = () => {
         <MenubarItem onClick={() => setShowCodePeek((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCodePeek} />
           Show code peek
+        </MenubarItem>
+        <MenubarItem onClick={() => setHideScrollbars((prev) => !prev)}>
+          <MenubarItemCheckbox checked={!hideScrollbars} />
+          Show scrollbars
         </MenubarItem>
         <MenubarSeparator />
         <MenubarSub>

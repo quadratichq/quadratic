@@ -4,6 +4,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 
 const SCROLLBAR_SIZE = 6;
@@ -27,7 +28,7 @@ export class UIScrollbars extends Container {
   private lastHeight = 0;
   private lastViewportRight = 0;
   private lastViewportBottom = 0;
-  private lastContentBounds: Rectangle | undefined;
+  private contentSize: Rectangle | undefined;
 
   horizontalStart = 0;
   verticalStart = 0;
@@ -109,13 +110,14 @@ export class UIScrollbars extends Container {
     const { screenWidth, screenHeight } = viewport;
     const { headingSize } = pixiApp.headings;
     const viewportBounds = viewport.getVisibleBounds();
-    this.lastContentBounds = sheets.sheet.getScrollbarBounds();
-    if (!this.lastContentBounds) return;
+    const contentSize = sheets.sheet.getScrollbarBounds();
+    if (!contentSize) return;
+    this.contentSize = contentSize;
 
     const dragging = pixiApp.pointer.pointerScrollbar.isActive();
 
     const horizontal = this.calculateSize(
-      this.lastContentBounds.width,
+      contentSize.width,
       viewportBounds.left,
       dragging ? this.lastViewportRight : viewportBounds.right,
       headingSize.width
@@ -140,7 +142,7 @@ export class UIScrollbars extends Container {
     }
 
     const vertical = this.calculateSize(
-      this.lastContentBounds.height,
+      contentSize.height,
       viewportBounds.top,
       dragging ? this.lastViewportBottom : viewportBounds.bottom,
       headingSize.height
@@ -166,9 +168,15 @@ export class UIScrollbars extends Container {
   }
 
   update(forceDirty: boolean) {
+    if (pixiAppSettings.gridSettings.hideScrollbars) {
+      this.visible = false;
+      return;
+    }
+    this.visible = true;
     if (!this.dirty && !forceDirty) return;
     this.dirty = false;
     this.calculate();
+    pixiApp.setViewportDirty();
   }
 
   /// Returns the scrollbar that the point is over.
@@ -196,19 +204,29 @@ export class UIScrollbars extends Container {
     return undefined;
   }
 
-  adjustHorizontal(delta: number) {
-    if (!delta || !this.lastContentBounds) return;
+  /// Adjusts horizontal scrollbar by the delta. Returns the actual delta that
+  /// was applied.
+  adjustHorizontal(delta: number): number {
+    if (!delta || !this.contentSize) return 0;
+    const viewportBounds = pixiApp.viewport.getVisibleBounds();
     const viewportScale = pixiApp.viewport.scaled;
-    const scaleX = this.actualWidth / this.lastContentBounds.width;
-    pixiApp.viewport.x -= (delta * viewportScale) / scaleX;
-    pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width, pixiApp.viewport.x);
+    const scaleX = Math.max(this.contentSize.width, viewportBounds.width) / this.actualWidth;
+    const last = pixiApp.viewport.x;
+    pixiApp.viewport.x -= delta * viewportScale * scaleX;
+    pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width / viewportScale, pixiApp.viewport.x);
+    return (last - pixiApp.viewport.x) / (scaleX * viewportScale);
   }
 
-  adjustVertical(delta: number) {
-    if (!delta || !this.lastContentBounds) return;
+  /// Adjusts vertical scrollbar by the delta. Returns the actual delta that
+  /// was applied.
+  adjustVertical(delta: number): number {
+    if (!delta || !this.contentSize) return 0;
+    const viewportBounds = pixiApp.viewport.getVisibleBounds();
     const viewportScale = pixiApp.viewport.scaled;
-    const scaleY = this.actualHeight / this.lastContentBounds.height;
-    pixiApp.viewport.y -= (delta * viewportScale) / scaleY;
+    const scaleY = Math.max(this.contentSize.height, viewportBounds.height) / this.actualHeight;
+    const last = pixiApp.viewport.y;
+    pixiApp.viewport.y -= delta * viewportScale * scaleY;
     pixiApp.viewport.y = Math.min(pixiApp.headings.headingSize.height, pixiApp.viewport.y);
+    return (last - pixiApp.viewport.y) / (scaleY * viewportScale);
   }
 }

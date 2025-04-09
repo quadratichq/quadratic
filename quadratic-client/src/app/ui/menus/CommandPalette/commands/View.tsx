@@ -1,4 +1,5 @@
 import {
+  hideScrollbarsAtom,
   presentationModeAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
@@ -65,6 +66,19 @@ const commands: CommandGroup = {
             {...props}
             icon={<Checkbox checked={showCodePeek} />}
             action={() => setShowCodePeek((prev) => !prev)}
+          />
+        );
+      },
+    },
+    {
+      label: 'Scrollbars',
+      Component: (props) => {
+        const [hideScrollbars, setHideScrollbars] = useRecoilState(hideScrollbarsAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            icon={<Checkbox checked={!hideScrollbars} />}
+            action={() => setHideScrollbars((prev) => !prev)}
           />
         );
       },

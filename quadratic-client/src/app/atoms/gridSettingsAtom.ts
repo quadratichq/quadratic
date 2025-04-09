@@ -14,6 +14,7 @@ export type GridSettings = {
   showCodePeek: boolean;
   presentationMode: boolean;
   showAIAnalystOnStartup: boolean;
+  hideScrollbars: boolean;
 };
 
 export const defaultGridSettings: GridSettings = {
@@ -24,6 +25,7 @@ export const defaultGridSettings: GridSettings = {
   showCodePeek: false,
   presentationMode: false,
   showAIAnalystOnStartup: true,
+  hideScrollbars: false,
 };
 
 // Persist the GridSettings
@@ -80,3 +82,4 @@ export const showA1NotationAtom = createSelector('showA1Notation');
 export const showCodePeekAtom = createSelector('showCodePeek');
 export const presentationModeAtom = createSelector('presentationMode');
 export const showAIAnalystOnStartupAtom = createSelector('showAIAnalystOnStartup');
+export const hideScrollbarsAtom = createSelector('hideScrollbars');

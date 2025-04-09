@@ -29,6 +29,7 @@ export class PointerScrollbar {
     const overlap = this.scrollbars.contains(e.clientX, e.clientY);
     if (overlap) {
       this.state = overlap;
+      pixiApp.viewport.turnOffDecelerate();
       this.down = new Point(e.clientX, e.clientY);
       if (overlap === 'horizontal') {
         this.scrollbarStart = this.scrollbars.horizontalStart;
@@ -73,16 +74,16 @@ export class PointerScrollbar {
     if (this.state === 'horizontal') {
       if (this.down !== undefined && this.scrollbarStart !== undefined) {
         const delta = e.clientX - this.down.x;
-        this.down.x = e.clientX;
-        this.scrollbars.adjustHorizontal(delta);
+        const actualDelta = this.scrollbars.adjustHorizontal(delta);
+        this.down.x = actualDelta + this.down.x;
       }
       return true;
     }
     if (this.state === 'vertical') {
       if (this.down !== undefined && this.scrollbarStart !== undefined) {
         const delta = e.clientY - this.down.y;
-        this.down.y = e.clientY;
-        this.scrollbars.adjustVertical(delta);
+        const actualDelta = this.scrollbars.adjustVertical(delta);
+        this.down.y = actualDelta + this.down.y;
       }
       return true;
     }
@@ -92,6 +93,7 @@ export class PointerScrollbar {
   pointerUp(): boolean {
     if (this.state === 'horizontal' || this.state === 'vertical') {
       this.state = undefined;
+      pixiApp.viewport.turnOnDecelerate();
       this.scrollbars.setDirty();
       return true;
     }
