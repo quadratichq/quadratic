@@ -90,9 +90,13 @@ export class UIScrollbars extends Graphics {
     const adjustedContentSize = Math.max(contentSize, viewportEnd);
     const start = viewportStart / adjustedContentSize;
     let size: number;
-    if (contentSize < viewportTotal) {
+    if (contentSize === 0) {
+      size = viewportTotal / viewportEnd;
+    } else if (contentSize < viewportTotal) {
+      // case where only some of the content would be visible (if on screen)
       size = contentSize / viewportTotal;
     } else {
+      // case where all the content would be visible (if on screen)
       size = viewportTotal / contentSize;
     }
     return { start, size };
@@ -105,24 +109,20 @@ export class UIScrollbars extends Graphics {
     const { headingSize } = pixiApp.headings;
     const viewportBounds = viewport.getVisibleBounds();
     const contentSize = sheets.sheet.getScrollbarBounds();
-    if (!contentSize) return;
-
     const dragging = pixiApp.pointer.pointerScrollbar.isActive();
-
     const horizontal = this.calculateSize(
       contentSize.width,
       viewportBounds.left,
       dragging ? this.lastViewportRight : viewportBounds.right,
       headingSize.width
     );
-
     // don't change the visibility of the horizontal scrollbar when dragging
-    if (horizontal && (!dragging || this.horizontal)) {
+    if (horizontal) {
       const start = headingSize.width;
       this.actualWidth = screenWidth - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       const horizontalX = Math.max(start, start + horizontal.start * this.actualWidth);
       let horizontalWidth: number;
-      if (dragging) {
+      if (dragging === 'horizontal') {
         horizontalWidth = this.lastWidth;
       } else {
         this.horizontalStart = start + horizontal.start * this.actualWidth;
@@ -133,7 +133,7 @@ export class UIScrollbars extends Graphics {
 
         // adjust scale whether the scale is based on total content or partial
         // content vs. viewport
-        if (contentSize.width < viewportBounds.width) {
+        if (contentSize.width !== 0 && contentSize.width < viewportBounds.width) {
           this.scaleX = (contentSize.width / (horizontal.size * this.actualWidth)) * pixiApp.viewport.scaled;
         } else {
           this.scaleX = (viewportBounds.width / (horizontal.size * this.actualWidth)) * pixiApp.viewport.scaled;
@@ -156,12 +156,12 @@ export class UIScrollbars extends Graphics {
     );
 
     // don't change the visibility of the vertical scrollbar when dragging
-    if (vertical && (!dragging || this.vertical)) {
+    if (vertical) {
       const start = headingSize.height;
       this.actualHeight = screenHeight - start - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
       const verticalY = Math.max(start, start + vertical.start * this.actualHeight);
       let verticalHeight: number;
-      if (dragging) {
+      if (dragging === 'vertical') {
         verticalHeight = this.lastHeight;
       } else {
         this.verticalStart = start + vertical.start * this.actualHeight;
@@ -172,7 +172,7 @@ export class UIScrollbars extends Graphics {
 
         // adjust scale whether the scale is based on total content or partial
         // content vs. viewport
-        if (contentSize.height < viewportBounds.height) {
+        if (contentSize.height !== 0 && contentSize.height < viewportBounds.height) {
           this.scaleY = (contentSize.height / (vertical.size * this.actualHeight)) * pixiApp.viewport.scaled;
         } else {
           this.scaleY = (viewportBounds.height / (vertical.size * this.actualHeight)) * pixiApp.viewport.scaled;

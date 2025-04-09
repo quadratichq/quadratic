@@ -21,8 +21,12 @@ export class PointerScrollbar {
   }
 
   /// Returns true if the pointer is down and interacting with the scrollbar.
-  isActive(): boolean {
-    return this.state !== undefined && this.state !== 'hover';
+  isActive(): 'horizontal' | 'vertical' | undefined {
+    if (this.state === undefined || this.state === 'hover') {
+      return undefined;
+    } else {
+      return this.state;
+    }
   }
 
   pointerDown(e: FederatedPointerEvent): boolean {
@@ -58,14 +62,14 @@ export class PointerScrollbar {
     if (this.state === 'horizontal') {
       if (this.down !== undefined && this.scrollbarStart !== undefined) {
         const delta = x - this.down.x;
-        this.down.x = x;
-        this.scrollbars.adjustHorizontal(delta);
+        const actualDelta = this.scrollbars.adjustHorizontal(delta);
+        this.down.x = actualDelta + this.down.x;
       }
     } else if (this.state === 'vertical') {
       if (this.down !== undefined && this.scrollbarStart !== undefined) {
         const delta = y - this.down.y;
-        this.down.y = y;
-        this.scrollbars.adjustVertical(delta);
+        const actualDelta = this.scrollbars.adjustVertical(delta);
+        this.down.y = actualDelta + this.down.y;
       }
     }
   }
