@@ -122,22 +122,12 @@ export const AIContext = memo(
         <AttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
 
         {files.map((file, index) => (
-          <HoverCard
+          <FileContextPill
             key={`${index}-${file.fileName}`}
-            open={isSupportedImageMimeType(file.mimeType) ? undefined : false}
-          >
-            <HoverCardTrigger>
-              <ContextPill
-                primary={file.fileName}
-                secondary={getFileTypeLabel(file.mimeType)}
-                disabled={disabled}
-                onClick={() => setFiles?.(files.filter((f) => f !== file))}
-              />
-            </HoverCardTrigger>
-            <HoverCardContent className="w-48" side="top">
-              <img src={`data:${file.mimeType};base64,${file.data}`} alt="preview" crossOrigin="anonymous" />
-            </HoverCardContent>
-          </HoverCard>
+            disabled={disabled}
+            file={file}
+            onClick={() => setFiles?.(files.filter((f) => f !== file))}
+          />
         ))}
 
         {setContext && context && (
@@ -218,6 +208,30 @@ const ContextPill = memo(({ primary, secondary, onClick, disabled }: ContextPill
         </Button>
       )}
     </div>
+  );
+});
+
+type FileContextPillProps = {
+  disabled: boolean;
+  file: FileContent;
+  onClick: () => void;
+};
+
+const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps) => {
+  return (
+    <HoverCard open={isSupportedImageMimeType(file.mimeType) ? undefined : false}>
+      <HoverCardTrigger>
+        <ContextPill
+          primary={file.fileName}
+          secondary={getFileTypeLabel(file.mimeType)}
+          disabled={disabled}
+          onClick={onClick}
+        />
+      </HoverCardTrigger>
+      <HoverCardContent className="w-48" side="top">
+        <img src={`data:${file.mimeType};base64,${file.data}`} alt={file.fileName} />
+      </HoverCardContent>
+    </HoverCard>
   );
 });
 

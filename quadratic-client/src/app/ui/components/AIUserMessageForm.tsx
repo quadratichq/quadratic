@@ -74,6 +74,11 @@ export const AIUserMessageForm = memo(
       maxHeight = '120px',
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
+    const [dragOver, setDragOver] = useState(false);
+    const dragOverMessage = useMemo(
+      () => (fileTypes.includes('.pdf') ? 'Drag and drop image or PDF files here' : 'Drag and drop image files here'),
+      [fileTypes]
+    );
 
     const initialFiles = useMemo(() => initialContent?.filter((item) => item.type === 'data'), [initialContent]);
     const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
@@ -131,12 +136,23 @@ export const AIUserMessageForm = memo(
       (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
         const filesToHandle =
           'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : null;
-        if (filesToHandle && filesToHandle.length > 0) {
-          e.preventDefault();
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+        if (editing && filesToHandle && filesToHandle.length > 0) {
           handleFiles(filesToHandle);
         }
       },
-      [handleFiles]
+      [editing, handleFiles]
+    );
+
+    const handleDrag = useCallback(
+      (e: DragEvent<HTMLFormElement | HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(editing && e.type !== 'dragleave');
+      },
+      [editing]
     );
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -166,7 +182,24 @@ export const AIUserMessageForm = memo(
         }}
         onPaste={handlePasteOrDrop}
         onDrop={handlePasteOrDrop}
+        onDragEnter={handleDrag}
+        onDragOver={handleDrag}
       >
+        {editing && dragOver && (
+          <div
+            className="absolute left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-background opacity-75"
+            onDragLeave={handleDrag}
+          >
+            <div className="pointer-events-none relative z-10 flex h-[90%] w-[90%] select-none flex-col items-center justify-center gap-2 rounded-lg border-4 border-dashed border-border bg-background opacity-90">
+              <span className="text-lg font-bold text-foreground">Drop file here</span>
+
+              <span className="pl-4 pr-4 text-center text-base font-medium text-muted-foreground">
+                {dragOverMessage}
+              </span>
+            </div>
+          </div>
+        )}
+
         {!editing && !loading && waitingOnMessageIndex === undefined && (
           <TooltipPopover label="Edit">
             <Button
