@@ -362,8 +362,10 @@ impl CellValue {
         if s.is_empty() {
             return None;
         }
-        if let Some(number) = CellValue::strip_parentheses(s).strip_suffix('%') {
-            if let Ok(bd) = BigDecimal::from_str(number) {
+        let without_parentheses = CellValue::strip_parentheses(s);
+        if without_parentheses.ends_with("%") {
+            let without_percentage = CellValue::strip_percentage(&without_parentheses);
+            if let Ok(bd) = BigDecimal::from_str(without_percentage) {
                 return Some(bd / 100.0);
             }
         }
@@ -380,6 +382,7 @@ impl CellValue {
 
     fn strip_percentage(value: &str) -> &str {
         value
+            .trim()
             .strip_suffix(PERCENTAGE_SYMBOL)
             .map_or(value, |stripped| stripped.trim())
     }
