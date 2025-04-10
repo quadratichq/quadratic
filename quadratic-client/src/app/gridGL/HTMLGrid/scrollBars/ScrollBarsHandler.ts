@@ -15,7 +15,7 @@ const SCROLLBAR_PADDING = 6;
 
 export type Scrollbar = 'horizontal' | 'vertical' | undefined;
 
-export class UIScrollbars {
+export class ScrollBarsHandler {
   private dirty = true;
 
   // we need to cache these values since we use the last non-dragged values
