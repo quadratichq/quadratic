@@ -29,13 +29,13 @@ export const handleBedrockRequest = async (
     };
 
     if (options.stream) {
-      const command = new ConverseStreamCommand(apiArgs);
-
-      const chunks = (await bedrock.send(command)).stream ?? [];
-
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
+      response.write(`stream\n\n`);
+
+      const command = new ConverseStreamCommand(apiArgs);
+      const chunks = (await bedrock.send(command)).stream ?? [];
 
       const parsedResponse = await parseBedrockStream(chunks, response, modelKey);
       return parsedResponse;
