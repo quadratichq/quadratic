@@ -85,7 +85,7 @@ export async function getOrInitializeActiveTeam(): Promise<string> {
     if (isMobile) {
       throw redirect(ROUTES.TEAM(newTeamUuid));
     }
-    if (new URL(window.location.href).pathname === '/') {
+    if (window.location.pathname === '/') {
       throw redirect(ROUTES.CREATE_FILE(newTeamUuid));
     }
     return newTeamUuid;
