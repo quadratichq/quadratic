@@ -54,7 +54,6 @@ export const ScrollBars = () => {
       htmlCellsHandler.temporarilyDisable();
       e.preventDefault();
       e.stopPropagation();
-      setDown({ x: e.clientX, y: e.clientY });
     },
     [scrollBarsHandler]
   );

@@ -58,6 +58,7 @@ export class ScrollBarsHandler {
 
   private setDragging = (state: 'horizontal' | 'vertical' | undefined) => {
     this.dragging = state;
+    this.dirty = true;
   };
 
   setDirty = () => (this.dirty = true);
