@@ -107,7 +107,7 @@ export function QuadraticApp() {
 
   // Show loading screen until everything is loaded
   if (offlineLoading || multiplayerLoading) {
-    return null; // <QuadraticLoading />;
+    return null;
   }
   return <QuadraticUIContext />;
 }
