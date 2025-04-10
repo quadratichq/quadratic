@@ -468,6 +468,34 @@ mod test {
             }))
         );
 
+        // currency with a space and -ve outside
+        let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve inside
+        let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
         // currency with parentheses outside
         let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
         assert_eq!(

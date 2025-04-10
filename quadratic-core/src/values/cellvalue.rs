@@ -434,7 +434,9 @@ impl CellValue {
             without_parentheses.starts_with("-"),
             without_parentheses
                 .strip_prefix("-")
-                .unwrap_or(&without_parentheses),
+                .map_or(without_parentheses.as_str(), |absolute_value| {
+                    absolute_value.trim()
+                }),
         );
 
         for char in CURRENCY_SYMBOLS.chars() {
