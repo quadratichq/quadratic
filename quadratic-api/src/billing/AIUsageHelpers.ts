@@ -26,24 +26,22 @@ WITH date_range AS (
       DATE_TRUNC('month', CURRENT_DATE),
       '1 month'::interval
     ) AS month
+),
+filtered_chats AS (
+  SELECT ac.id, DATE_TRUNC('month', ac.created_date) AS month_date
+  FROM "AnalyticsAIChat" ac
+  JOIN "File" f ON f.id = ac.file_id AND f.owner_team_id = ${teamId}
+  WHERE ac.user_id = ${userId}
+  AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
 )
-
 SELECT
   TO_CHAR(d.month, 'YYYY-MM') as month,
   COUNT(acm.id)::integer as ai_messages
 FROM date_range d
-LEFT JOIN "AnalyticsAIChat" ac ON
-  DATE_TRUNC('month', ac.created_date) = d.month
-  AND ac.user_id = ${userId}
-  AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
-LEFT JOIN "File" f ON
-  f.id = ac.file_id
-  AND f.owner_team_id = ${teamId}
+LEFT JOIN filtered_chats fc ON fc.month_date = d.month
 LEFT JOIN "AnalyticsAIChatMessage" acm ON
-  acm.chat_id = ac.id
+  acm.chat_id = fc.id
   AND acm.message_type = 'user_prompt'
-WHERE
-  ac.id IS NULL OR f.id IS NOT NULL
 GROUP BY d.month
 ORDER BY d.month DESC;
 `;
