@@ -1,21 +1,21 @@
-//! Draws scrollbars for the grid.
+//! Adjusts scrollbars for the grid.
+
+// todo: this can be moved near the ScrollBars.tsx component
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Graphics, Point, Rectangle } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 
 const SCROLLBAR_SIZE = 6;
 const SCROLLBAR_PADDING = 6;
-const SCROLLBAR_COLOR = 0x000000;
-const SCROLLBAR_ALPHA = 0.18;
-const SCROLLBAR_ROUNDED = 3;
+// const SCROLLBAR_ROUNDED = 3;
 
 export type Scrollbar = 'horizontal' | 'vertical' | undefined;
 
-export class UIScrollbars extends Graphics {
+export class UIScrollbars {
   private dirty = true;
 
   // we need to cache these values since we use the last non-dragged values
@@ -36,13 +36,14 @@ export class UIScrollbars extends Graphics {
   horizontalStart = 0;
   verticalStart = 0;
 
-  constructor() {
-    super();
+  private dragging: 'horizontal' | 'vertical' | undefined;
 
+  constructor() {
     events.on('sheetInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('headingSize', this.setDirty);
     events.on('changeSheet', this.setDirty);
+    events.on('scrollBar', this.setDragging);
     window.addEventListener('resize', this.setDirty);
   }
 
@@ -51,8 +52,13 @@ export class UIScrollbars extends Graphics {
     events.off('sheetInfoUpdate', this.setDirty);
     events.off('headingSize', this.setDirty);
     events.off('changeSheet', this.setDirty);
+    events.off('scrollBar', this.setDragging);
     window.removeEventListener('resize', this.setDirty);
   }
+
+  private setDragging = (state: 'horizontal' | 'vertical' | undefined) => {
+    this.dragging = state;
+  };
 
   setDirty = () => (this.dirty = true);
 
@@ -78,11 +84,7 @@ export class UIScrollbars extends Graphics {
 
     // If the content is smaller than the viewport, and the viewport is at the
     // start of the content, then the scrollbar is not visible.
-    if (
-      !pixiApp.pointer.pointerScrollbar.isActive() &&
-      viewportSize >= contentSize &&
-      viewportStart <= -headingSize / pixiApp.viewport.scaled
-    ) {
+    if (!this.dragging && viewportSize >= contentSize && viewportStart <= -headingSize / pixiApp.viewport.scaled) {
       return undefined;
     }
 
@@ -111,12 +113,16 @@ export class UIScrollbars extends Graphics {
 
   // Calculates the scrollbar positions and sizes
   private calculate() {
+    const verticalBar = document.querySelector('.grid-scrollbars-vertical') as HTMLDivElement;
+    const horizontalBar = document.querySelector('.grid-scrollbars-horizontal') as HTMLDivElement;
+    if (!verticalBar || !horizontalBar) return;
+
     const viewport = pixiApp.viewport;
     const { screenWidth, screenHeight } = viewport;
     const { headingSize } = pixiApp.headings;
     const viewportBounds = viewport.getVisibleBounds();
     const contentSize = sheets.sheet.getScrollbarBounds();
-    const dragging = pixiApp.pointer.pointerScrollbar.isActive();
+    const dragging = this.dragging;
 
     const horizontal = this.calculateSize(
       contentSize.width,
@@ -148,12 +154,16 @@ export class UIScrollbars extends Graphics {
         }
       }
       const horizontalY = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
-      this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
-      this.drawRoundedRect(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE, SCROLLBAR_ROUNDED);
+      horizontalBar.style.left = `${horizontalX}px`;
+      horizontalBar.style.width = `${horizontalWidth}px`;
+      horizontalBar.style.display = 'block';
+      // this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
+      // this.drawRoundedRect(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE, SCROLLBAR_ROUNDED);
+      // this.endFill();
       this.horizontal = new Rectangle(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE);
-      this.endFill();
     } else {
       this.horizontal = undefined;
+      horizontalBar.style.display = 'none';
     }
 
     const vertical = this.calculateSize(
@@ -189,17 +199,21 @@ export class UIScrollbars extends Graphics {
         }
       }
       const verticalX = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
-      this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
-      this.drawRoundedRect(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight, SCROLLBAR_ROUNDED);
+      verticalBar.style.display = 'block';
+      verticalBar.style.left = `${verticalX}px`;
+      verticalBar.style.top = `${verticalY}px`;
+      verticalBar.style.height = `${verticalHeight}px`;
+      // this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
+      // this.drawRoundedRect(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight, SCROLLBAR_ROUNDED);
+      // this.endFill();
       this.vertical = new Rectangle(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight);
-      this.endFill();
     } else {
       this.vertical = undefined;
+      verticalBar.style.display = 'none';
     }
   }
 
   update(forceDirty: boolean) {
-    this.clear();
     if (pixiAppSettings.gridSettings.hideScrollbars) return;
     if (!this.dirty && !forceDirty) return;
     this.dirty = false;

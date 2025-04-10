@@ -1,7 +1,6 @@
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { UIScrollbars } from '@/app/gridGL/UI/UIScrollbars';
-import type { FederatedPointerEvent } from 'pixi.js';
-import { Point } from 'pixi.js';
+import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 export class PointerScrollbar {
   private state: 'hover' | 'horizontal' | 'vertical' | undefined;
@@ -30,18 +29,18 @@ export class PointerScrollbar {
   }
 
   pointerDown(e: FederatedPointerEvent): boolean {
-    const overlap = this.scrollbars.contains(e.clientX, e.clientY);
-    if (overlap) {
-      this.state = overlap;
-      pixiApp.viewport.turnOffDecelerate();
-      this.down = new Point(e.clientX, e.clientY);
-      if (overlap === 'horizontal') {
-        this.scrollbarStart = this.scrollbars.horizontalStart;
-      } else if (overlap === 'vertical') {
-        this.scrollbarStart = this.scrollbars.verticalStart;
-      }
-      return true;
-    }
+    // const overlap = this.scrollbars.contains(e.clientX, e.clientY);
+    // if (overlap) {
+    //   this.state = overlap;
+    //   pixiApp.viewport.turnOffDecelerate();
+    //   this.down = new Point(e.clientX, e.clientY);
+    //   if (overlap === 'horizontal') {
+    //     this.scrollbarStart = this.scrollbars.horizontalStart;
+    //   } else if (overlap === 'vertical') {
+    //     this.scrollbarStart = this.scrollbars.verticalStart;
+    //   }
+    //   return true;
+    // }
     return false;
   }
 

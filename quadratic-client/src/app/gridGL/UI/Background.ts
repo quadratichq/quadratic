@@ -18,9 +18,9 @@ export class Background extends Graphics {
     const bottom = Math.min(bounds.bottom, clamp.bottom);
 
     // draw normal background
-    this.beginFill(colors.gridBackground);
-    this.drawRect(left, top, right - left, bottom - top);
-    this.endFill();
+    // this.beginFill(colors.gridBackground);
+    // this.drawRect(left, top, right - left, bottom - top);
+    // this.endFill();
 
     // draw out of bounds to the left
     if (left > bounds.left) {

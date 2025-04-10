@@ -153,6 +153,8 @@ interface EventTypes {
   gridLinesDirty: () => void;
 
   coreError: (from: string, error: Error | unknown) => void;
+
+  scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -1,5 +1,6 @@
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
 import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
+import { ScrollBars } from '@/app/gridGL/HTMLGrid/ScrollBars';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
@@ -54,6 +55,7 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
+      <ScrollBars />
       <Search />
       <ImportProgress />
     </div>

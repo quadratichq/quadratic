@@ -110,7 +110,8 @@ export class PixiApp {
       view: this.canvas,
       resolution: Math.max(2, window.devicePixelRatio),
       antialias: true,
-      backgroundColor: 0xffffff,
+      // backgroundColor: 0xffffff,
+      backgroundAlpha: 0,
     });
     this.viewport = new Viewport(this);
     this.background = new Background();
@@ -159,7 +160,7 @@ export class PixiApp {
     observer.observe(this.canvas);
 
     this.stage.addChild(this.viewport);
-    this.stage.addChild(this.scrollbars);
+    // this.stage.addChild(this.scrollbars);
 
     // this holds the viewport's contents
     this.viewportContents = this.viewport.addChild(new Container());
