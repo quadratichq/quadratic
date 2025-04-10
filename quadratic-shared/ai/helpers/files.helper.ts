@@ -31,3 +31,10 @@ export const getFileTypeLabel = (mimeType: string): string => {
   if (isSupportedTextMimeType(mimeType)) return 'Text';
   return 'Unknown';
 };
+
+export const dataUrlToMimeTypeAndData = (dataUrl: string) => {
+  return {
+    mimeType: dataUrl.split(';')?.[0]?.split(':')?.[1],
+    data: dataUrl.split(',')?.[1],
+  };
+};

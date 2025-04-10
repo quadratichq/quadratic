@@ -1,6 +1,12 @@
 import type { Response } from 'express';
 import type OpenAI from 'openai';
-import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionContentPartText,
+  ChatCompletionMessageParam,
+  ChatCompletionTool,
+  ChatCompletionToolChoiceOption,
+} from 'openai/resources';
 import type { Stream } from 'openai/streaming';
 import {
   getSystemPromptMessages,
@@ -16,12 +22,35 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
+  Content,
   ImageContent,
   OpenAIModelKey,
   ParsedAIResponse,
   TextContent,
+  ToolResultContent,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+
+function convertContent(content: Content): Array<ChatCompletionContentPart> {
+  return content
+    .filter((content): content is TextContent | ImageContent => isContentText(content) || isContentImage(content))
+    .map((content) => {
+      if (isContentText(content)) {
+        return content;
+      } else {
+        return {
+          type: 'image_url',
+          image_url: {
+            url: content.data,
+          },
+        };
+      }
+    });
+}
+
+function convertToolResultContent(content: ToolResultContent): Array<ChatCompletionContentPartText> {
+  return content.filter((content): content is TextContent => isContentText(content));
+}
 
 export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
@@ -61,26 +90,13 @@ export function getOpenAIApiArgs(
       const openaiMessages: ChatCompletionMessageParam[] = message.content.map((toolResult) => ({
         role: 'tool' as const,
         tool_call_id: toolResult.id,
-        content: toolResult.text,
+        content: convertToolResultContent(toolResult.content),
       }));
       return [...acc, ...openaiMessages];
     } else if (message.role === 'user') {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
-        content: message.content
-          .filter((content): content is TextContent | ImageContent => isContentText(content) || isContentImage(content))
-          .map((content) => {
-            if (isContentText(content)) {
-              return content;
-            } else {
-              return {
-                type: 'image_url',
-                image_url: {
-                  url: content.data,
-                },
-              };
-            }
-          }),
+        content: convertContent(message.content),
       };
       return [...acc, openaiMessage];
     } else {

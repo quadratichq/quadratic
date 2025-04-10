@@ -196,29 +196,6 @@ const SystemMessageSchema = z.object({
 });
 export type SystemMessage = z.infer<typeof SystemMessageSchema>;
 
-const ToolResultContentSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-});
-export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
-
-const ToolResultSchema = z.object({
-  role: z.literal('user'),
-  content: z.union([
-    z.array(
-      z
-        .object({
-          id: z.string(),
-          content: z.string(),
-        })
-        .transform((old) => ({ id: old.id, text: old.content }))
-    ),
-    z.array(ToolResultContentSchema),
-  ]),
-  contextType: ToolResultContextTypeSchema,
-});
-export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
-
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
   data: z.string(),
@@ -250,6 +227,20 @@ const ContentSchema = z.array(
   TextContentSchema.or(ImageContentSchema).or(PdfFileContentSchema).or(TextFileContentSchema)
 );
 export type Content = z.infer<typeof ContentSchema>;
+
+const ToolResultContentSchema = z.array(TextContentSchema.or(ImageContentSchema));
+export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
+const ToolResultSchema = z.object({
+  role: z.literal('user'),
+  content: z.array(
+    z.object({
+      id: z.string(),
+      content: z.array(TextContentSchema.or(ImageContentSchema)),
+    })
+  ),
+  contextType: ToolResultContextTypeSchema,
+});
+export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
 
 const convertStringToContent = (val: any): Content => {
   // old chat messages are single strings, being migrated to array of text objects

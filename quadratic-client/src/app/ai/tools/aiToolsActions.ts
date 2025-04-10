@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -7,9 +8,10 @@ import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
+import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AISource } from 'quadratic-shared/typesAndSchemasAI';
+import type { AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import type { z } from 'zod';
 
 const waitForSetCodeCellValue = (transactionId: string) => {
@@ -36,10 +38,17 @@ const setCodeCellResult = async (
   x: number,
   y: number,
   messageMetaData: AIToolMesageMetaData
-): Promise<string> => {
+): Promise<ToolResultContent> => {
   const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
   const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
-  if (!table || !codeCell) return 'Error executing set code cell value tool';
+  if (!table || !codeCell) {
+    return [
+      {
+        type: 'text',
+        text: 'Error executing set code cell value tool',
+      },
+    ];
+  }
 
   if (codeCell.std_err || codeCell.spill_error) {
     // log code run error in analytics, if enabled
@@ -59,34 +68,90 @@ const setCodeCellResult = async (
   }
 
   if (codeCell.std_err) {
-    return `
+    return [
+      {
+        type: 'text',
+        text: `
 The code cell run has resulted in an error:
 \`\`\`
 ${codeCell.std_err}
 \`\`\`
 Think and reason about the error and try to fix it.
-`;
+`,
+      },
+    ];
   }
 
   if (codeCell.spill_error) {
-    return `
+    return [
+      {
+        type: 'text',
+        text: `
 The code cell has spilled, because the output overlaps with existing data on the sheet at position:
 \`\`\`json\n
 ${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
 \`\`\`
 Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.
 Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet.
-`;
+`,
+      },
+    ];
   }
 
-  return `
+  if (table.codeCell.is_html) {
+    const htmlCell = htmlCellsHandler.findCodeCell(sheetId, x, y);
+    const dataUrl = (await htmlCell?.getImageDataUrl(320, 240)) ?? '';
+    if (dataUrl) {
+      const { mimeType, data } = dataUrlToMimeTypeAndData(dataUrl);
+      if (isSupportedImageMimeType(mimeType) && !!data) {
+        return [
+          {
+            type: 'data',
+            data,
+            mimeType,
+            fileName: table.codeCell.name,
+          },
+          {
+            type: 'text',
+            text: 'Executed set code cell value tool successfully to create a plotly chart, image of this chart is attached.',
+          },
+        ];
+      }
+    }
+  } else if (table.codeCell.is_html_image) {
+    const image = pixiApp.cellsSheets.getById(sheetId)?.cellsImages.findCodeCell(x, y);
+    if (image?.dataUrl) {
+      const { mimeType, data } = dataUrlToMimeTypeAndData(image.dataUrl);
+      if (isSupportedImageMimeType(mimeType) && !!data) {
+        return [
+          {
+            type: 'data',
+            data,
+            mimeType,
+            fileName: table.codeCell.name,
+          },
+          {
+            type: 'text',
+            text: 'Executed set code cell value tool successfully to create a javascript chart, image of this chart is attached.',
+          },
+        ];
+      }
+    }
+  }
+
+  return [
+    {
+      type: 'text',
+      text: `
 Executed set code cell value tool successfully.
 ${
   table.isSingleValue()
     ? `Output is ${codeCell.evaluation_result}`
     : `Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.`
 }
-`;
+`,
+    },
+  ];
 };
 
 type AIToolMesageMetaData = {
@@ -99,13 +164,13 @@ export type AIToolActionsRecord = {
   [K in AITool]: (
     args: z.infer<(typeof AIToolsArgsSchema)[K]>,
     messageMetaData: AIToolMesageMetaData
-  ) => Promise<string>;
+  ) => Promise<ToolResultContent>;
 };
 
 export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetChatName]: async (args) => {
     // no action as this tool is only meant to get structured data from AI
-    return `Executed set chat name tool successfully with name: ${args.chat_name}`;
+    return [{ type: 'text', text: `Executed set chat name tool successfully with name: ${args.chat_name}` }];
   },
   [AITool.AddDataTable]: async (args) => {
     const { top_left_position, table_name, table_data } = args;
@@ -113,7 +178,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const selection = stringToSelection(top_left_position, sheets.current, sheets.a1Context);
       if (!selection.isSingleSelection()) {
-        return 'Invalid code cell position, this should be a single cell, not a range';
+        return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
 
@@ -130,12 +195,12 @@ export const aiToolsActions: AIToolActionsRecord = {
 
         ensureRectVisible({ x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
 
-        return `Executed add data table tool successfully with name: ${table_name}`;
+        return [{ type: 'text', text: `Executed add data table tool successfully with name: ${table_name}` }];
       } else {
-        return `data_table values are empty, cannot add data table without values`;
+        return [{ type: 'text', text: 'data_table values are empty, cannot add data table without values' }];
       }
     } catch (e) {
-      return `Error executing set cell values tool: ${e}`;
+      return [{ type: 'text', text: `Error executing set cell values tool: ${e}` }];
     }
   },
   [AITool.SetCellValues]: async (args) => {
@@ -143,7 +208,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const selection = stringToSelection(top_left_position, sheets.current, sheets.a1Context);
       if (!selection.isSingleSelection()) {
-        return 'Invalid code cell position, this should be a single cell, not a range';
+        return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
 
@@ -152,12 +217,12 @@ export const aiToolsActions: AIToolActionsRecord = {
 
         ensureRectVisible({ x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
 
-        return 'Executed set cell values tool successfully';
+        return [{ type: 'text', text: 'Executed set cell values tool successfully' }];
       } else {
-        return 'cell_values are empty, cannot set cell values without values';
+        return [{ type: 'text', text: 'cell_values are empty, cannot set cell values without values' }];
       }
     } catch (e) {
-      return `Error executing set cell values tool: ${e}`;
+      return [{ type: 'text', text: `Error executing set cell values tool: ${e}` }];
     }
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
@@ -166,7 +231,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const sheetId = sheets.current;
       const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
-        return 'Invalid code cell position, this should be a single cell, not a range';
+        return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
 
@@ -197,10 +262,10 @@ export const aiToolsActions: AIToolActionsRecord = {
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
         return result;
       } else {
-        return 'Error executing set code cell value tool';
+        return [{ type: 'text', text: 'Error executing set code cell value tool' }];
       }
     } catch (e) {
-      return `Error executing set code cell value tool: ${e}`;
+      return [{ type: 'text', text: `Error executing set code cell value tool: ${e}` }];
     }
   },
   [AITool.MoveCells]: async (args) => {
@@ -209,7 +274,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const sourceSelection = stringToSelection(source_selection_rect, sheets.current, sheets.a1Context);
       const sourceRect = sourceSelection.getSingleRectangleOrCursor();
       if (!sourceRect) {
-        return 'Invalid source selection, this should be a single rectangle, not a range';
+        return [{ type: 'text', text: 'Invalid source selection, this should be a single rectangle, not a range' }];
       }
       const sheetRect: SheetRect = {
         min: {
@@ -227,15 +292,15 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const targetSelection = stringToSelection(target_top_left_position, sheets.current, sheets.a1Context);
       if (!targetSelection.isSingleSelection()) {
-        return 'Invalid code cell position, this should be a single cell, not a range';
+        return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = targetSelection.getCursor();
 
       await quadraticCore.moveCells(sheetRect, x, y, sheets.current, false, false);
 
-      return `Executed move cells tool successfully.`;
+      return [{ type: 'text', text: 'Executed move cells tool successfully.' }];
     } catch (e) {
-      return `Error executing move cells tool: ${e}`;
+      return [{ type: 'text', text: `Error executing move cells tool: ${e}` }];
     }
   },
   [AITool.DeleteCells]: async (args) => {
@@ -245,9 +310,9 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       await quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
 
-      return `Executed delete cells tool successfully.`;
+      return [{ type: 'text', text: 'Executed delete cells tool successfully.' }];
     } catch (e) {
-      return `Error executing delete cells tool: ${e}`;
+      return [{ type: 'text', text: `Error executing delete cells tool: ${e}` }];
     }
   },
   [AITool.UpdateCodeCell]: async (args, messageMetaData) => {
@@ -288,24 +353,53 @@ export const aiToolsActions: AIToolActionsRecord = {
 
         const result = await setCodeCellResult(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, messageMetaData);
 
-        return (
-          result +
-          '\n\nUser is presented with diff editor, with accept and reject buttons, to revert the changes if needed'
-        );
+        return [
+          {
+            type: 'text',
+            text:
+              result +
+              '\n\nUser is presented with diff editor, with accept and reject buttons, to revert the changes if needed',
+          },
+        ];
       } else {
-        return 'Error executing update code cell tool';
+        return [
+          {
+            type: 'text',
+            text: 'Error executing update code cell tool',
+          },
+        ];
       }
     } catch (e) {
-      return `Error executing update code cell tool: ${e}`;
+      return [
+        {
+          type: 'text',
+          text: `Error executing update code cell tool: ${e}`,
+        },
+      ];
     }
   },
   [AITool.CodeEditorCompletions]: async () => {
-    return `Code editor completions tool executed successfully, user is presented with a list of code completions, to choose from.`;
+    return [
+      {
+        type: 'text',
+        text: 'Code editor completions tool executed successfully, user is presented with a list of code completions, to choose from.',
+      },
+    ];
   },
   [AITool.UserPromptSuggestions]: async () => {
-    return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
+    return [
+      {
+        type: 'text',
+        text: 'User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.',
+      },
+    ];
   },
   [AITool.PDFImport]: async () => {
-    return `PDF import tool executed successfully.`;
+    return [
+      {
+        type: 'text',
+        text: 'PDF import tool executed successfully.',
+      },
+    ];
   },
 } as const;

@@ -250,19 +250,24 @@ export function useSubmitAIAssistantPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any, {
+                const toolResultContent = await aiToolsActions[aiTool](args as any, {
                   source: 'AIAssistant',
                   chatId,
                   messageIndex: lastMessageIndex + 1,
                 });
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  text: result,
+                  content: toolResultContent,
                 });
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  text: 'Unknown tool',
+                  content: [
+                    {
+                      type: 'text',
+                      text: 'Unknown tool',
+                    },
+                  ],
                 });
               }
             }

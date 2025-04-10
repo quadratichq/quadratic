@@ -97,7 +97,7 @@ export class HtmlCell {
     if (this.iframe.contentWindow?.document.readyState === 'complete') {
       this.afterLoad();
     } else {
-      this.iframe.addEventListener('load', this.afterLoad);
+      this.iframe.addEventListener('load', this.afterLoad, { once: true });
     }
 
     if (this.sheet.id !== sheets.current) {
@@ -339,4 +339,54 @@ export class HtmlCell {
       this.activate();
     }
   }
+
+  getImageDataUrl = (width = this.width, height = this.height): Promise<string | undefined> => {
+    if (this.iframe.contentWindow?.document.readyState === 'complete') {
+      return this.getImageDataUrlAfterLoaded(width, height);
+    } else {
+      return new Promise((resolve, reject) => {
+        this.iframe.addEventListener(
+          'load',
+          async () => {
+            try {
+              const image = await this.getImageDataUrlAfterLoaded(width, height);
+              resolve(image);
+            } catch (error) {
+              console.error('Error loading image:', error);
+              resolve(undefined);
+            }
+          },
+          { once: true }
+        );
+      });
+    }
+  };
+
+  private getImageDataUrlAfterLoaded = (width: number, height: number): Promise<string | undefined> => {
+    return new Promise((resolve, reject) => {
+      const plotly = (this.iframe.contentWindow as any)?.Plotly;
+      if (!plotly) {
+        return resolve(undefined);
+      }
+
+      const plotElement = this.iframe.contentWindow?.document.querySelector('.js-plotly-plot');
+      if (!plotElement) {
+        return resolve(undefined);
+      }
+
+      plotly
+        .toImage(plotElement, {
+          format: 'png',
+          width,
+          height,
+        })
+        .then((dataUrl: string) => {
+          resolve(dataUrl);
+        })
+        .catch((error: any) => {
+          console.log(error);
+          resolve(undefined);
+        });
+    });
+  };
 }

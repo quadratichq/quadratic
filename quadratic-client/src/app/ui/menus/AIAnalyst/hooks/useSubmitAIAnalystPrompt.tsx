@@ -317,14 +317,14 @@ export function useSubmitAIAnalystPrompt() {
                   const aiTool = toolCall.name as AITool;
                   const argsObject = JSON.parse(toolCall.arguments);
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                  const result = await aiToolsActions[aiTool](args as any, {
+                  const toolResultContent = await aiToolsActions[aiTool](args as any, {
                     source: 'AIAnalyst',
                     chatId,
                     messageIndex: lastMessageIndex + 1,
                   });
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    text: result,
+                    content: toolResultContent,
                   });
 
                   if (aiTool === AITool.UserPromptSuggestions) {
@@ -333,13 +333,23 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                      },
+                    ],
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  text: 'Unknown tool',
+                  content: [
+                    {
+                      type: 'text',
+                      text: 'Unknown tool',
+                    },
+                  ],
                 });
               }
             }
@@ -348,10 +358,10 @@ export function useSubmitAIAnalystPrompt() {
             for (const toolCall of importPDFToolCalls) {
               const argsObject = JSON.parse(toolCall.arguments);
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
-              const result = await importPDF({ pdfImportArgs, context, chatMessages });
+              const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
                 id: toolCall.id,
-                text: result,
+                content: toolResultContent,
               });
             }
 
