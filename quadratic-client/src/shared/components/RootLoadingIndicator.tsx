@@ -8,11 +8,11 @@ export function RootLoadingIndicator({ children }: { children?: React.ReactNode 
   return (
     <div className="root-loader">
       <div>
-        <img src="/public/images/logo_etching.png" alt="Loading Quadratic Grid" />
+        <img src="/images/logo_etching.png" alt="Loading Quadratic Grid" />
 
         {/* This is NEW to this component, we load it in... */}
         <img
-          src="/public/images/logo_loading.gif"
+          src="/images/logo_loading.gif"
           alt="Loading Quadratic Grid"
           className={cn('absolute left-0 top-0', classNames)}
         />
