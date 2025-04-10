@@ -50,7 +50,7 @@ export const connectionClient = {
       // we won't make the request (to prevent the redirect). It'll fail silently
       const loggedIn = await authClient.isAuthenticated();
       if (!loggedIn) {
-        console.log('User is not logged in, so we won’t make a request to the connection service.');
+        console.log("User is not logged in, so we won't make a request to the connection service.");
         return null;
       }
 
