@@ -158,9 +158,6 @@ export class ScrollBarsHandler {
       horizontalBar.style.left = `${horizontalX}px`;
       horizontalBar.style.width = `${horizontalWidth}px`;
       horizontalBar.style.display = 'block';
-      // this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
-      // this.drawRoundedRect(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE, SCROLLBAR_ROUNDED);
-      // this.endFill();
       this.horizontal = new Rectangle(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE);
     } else {
       this.horizontal = undefined;
@@ -188,10 +185,7 @@ export class ScrollBarsHandler {
         verticalHeight = Math.min(bottomClamp, this.verticalBarHeight);
         this.lastViewportBottom = viewportBounds.bottom;
 
-        if (contentSize.height !== 0 && contentSize.height < viewportBounds.height) {
-          // adjusts when content is smaller than viewport
-          this.scrollbarScaleY = (contentSize.height / this.verticalBarHeight) * pixiApp.viewport.scaled;
-        } else if (viewportBounds.bottom < contentSize.height) {
+        if (viewportBounds.bottom < contentSize.height) {
           // adjusts when content is larger than viewport but we are not passed the end of the content
           this.scrollbarScaleY = (viewportBounds.height / this.verticalBarHeight) * pixiApp.viewport.scaled;
         } else {
@@ -204,9 +198,6 @@ export class ScrollBarsHandler {
       verticalBar.style.left = `${verticalX}px`;
       verticalBar.style.top = `${verticalY}px`;
       verticalBar.style.height = `${verticalHeight}px`;
-      // this.beginFill(SCROLLBAR_COLOR, SCROLLBAR_ALPHA);
-      // this.drawRoundedRect(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight, SCROLLBAR_ROUNDED);
-      // this.endFill();
       this.vertical = new Rectangle(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight);
     } else {
       this.vertical = undefined;
