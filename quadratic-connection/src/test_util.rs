@@ -33,6 +33,8 @@ macro_rules! test_connection {
             .unwrap();
         let response = test(axum::Json(mysql_connection)).await;
 
+        println!("response: {:?}", response);
+
         assert_eq!(response.0, TestResponse::new(true, None));
     }};
 }

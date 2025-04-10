@@ -36,11 +36,16 @@ async fn get_connection(
             created_date: "".into(),
             updated_date: "".into(),
             type_details: PostgresConnection {
-                host: "0.0.0.0".into(),
-                port: Some("5433".into()),
-                username: Some("user".into()),
-                password: Some("password".into()),
-                database: "postgres-connection".into(),
+                // host: "0.0.0.0".into(),
+                // port: Some("5433".into()),
+                // username: Some("user".into()),
+                // password: Some("password".into()),
+                // database: "postgres-connection".into(),
+                host: "localhost".into(),
+                port: Some("5432".into()),
+                username: Some("dbuser".into()),
+                password: Some("dbpassword".into()),
+                database: "mydb".into(),
             },
         }
     };
@@ -68,6 +73,14 @@ pub(crate) async fn query(
     query_generic::<PostgresConnection>(connection, state, sql_query).await
 }
 
+pub(crate) async fn query_connection(
+    state: Extension<State>,
+    connection: PostgresConnection,
+    sql_query: Json<SqlQuery>,
+) -> Result<impl IntoResponse> {
+    query_generic::<PostgresConnection>(connection, state, sql_query).await
+}
+
 /// Get the schema of the database
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
@@ -89,10 +102,12 @@ pub(crate) async fn schema(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::{
-        num_vec, test_connection,
+        num_vec,
+        ssh::open_ssh_tunnel,
+        test_connection,
         test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet},
     };
     use arrow::datatypes::Date32Type;
@@ -100,9 +115,29 @@ mod tests {
     use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::{
+        net::ssh::tests::get_ssh_config,
+        sql::schema::{SchemaColumn, SchemaTable},
+    };
     use tracing_test::traced_test;
     use uuid::Uuid;
+
+    pub fn get_ssh_api_connection(port: u16) -> ApiConnection<PostgresConnection> {
+        ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            created_date: "".into(),
+            updated_date: "".into(),
+            type_details: PostgresConnection {
+                host: "localhost".into(),
+                port: Some(port.to_string()),
+                username: Some("dbuser".into()),
+                password: Some("dbpassword".into()),
+                database: "mydb".into(),
+            },
+        }
+    }
 
     #[tokio::test]
     #[traced_test]
@@ -436,5 +471,35 @@ mod tests {
 
         let body = response_bytes(response).await;
         assert_eq!(body, Bytes::new());
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn postgres_test_connection_with_ssh() {
+        let ssh_config = get_ssh_config();
+        let (addr, mut tunnel) = open_ssh_tunnel(ssh_config, "localhost", 5432)
+            .await
+            .unwrap();
+        let connection = get_ssh_api_connection(addr.port());
+
+        // let pg_connection = get_ssh_api_connection().type_details;
+        let result = test_connection(connection.type_details.clone()).await;
+        println!("result: {:?}", result);
+        assert!(result.0.connected);
+
+        let result = query_connection(
+            Extension(new_state().await),
+            connection.type_details,
+            Json(SqlQuery {
+                query: "SELECT * FROM pg_catalog.pg_tables;".into(),
+                connection_id: Uuid::new_v4(),
+            }),
+        )
+        .await
+        .unwrap();
+        println!("result: {:?}", result.into_response());
+
+        // Keep the tunnel alive until the test completes
+        tunnel.close().await.unwrap();
     }
 }

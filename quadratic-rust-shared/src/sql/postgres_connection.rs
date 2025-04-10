@@ -26,7 +26,7 @@ use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
 
 /// PostgreSQL connection
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PostgresConnection {
     pub username: Option<String>,
     pub password: Option<String>,

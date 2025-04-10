@@ -11,7 +11,9 @@ mod header;
 mod proxy;
 mod server;
 mod sql;
+mod ssh;
 mod state;
+
 #[cfg(test)]
 mod test_util;
 
