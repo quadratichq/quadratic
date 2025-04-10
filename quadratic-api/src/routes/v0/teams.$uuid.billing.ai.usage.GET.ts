@@ -67,6 +67,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     }
   }
 
+  // if user is not member of this team or team is not on a paid plan, check if the user has exceeded the free usage limit
+
   // Get usage
   const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
   const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
