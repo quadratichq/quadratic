@@ -1,4 +1,3 @@
-import { requireAuth } from '@/auth/auth';
 import * as Page404 from '@/routes/404';
 import * as RootRoute from '@/routes/_root';
 import * as File from '@/routes/file';
@@ -6,7 +5,7 @@ import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
+import type { ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
 
 export const router = createBrowserRouter(
@@ -46,10 +45,10 @@ export const router = createBrowserRouter(
         {/**
          * --- Client-side API routes
          * These are used internally by fetchers. They have no UI.
-         * They don’t really need to be protected, but we do it anyway to
-         * prevent unnecsary API calls.
+         * They don’t really need to be protected as you have to know them to 
+         * hit them, and they'll return 4xx errors if you do.
          */}
-        <Route path="api" loader={async (loaderArgs: LoaderFunctionArgs) => requireAuth(loaderArgs)}>
+        <Route path="api">
           <Route path="files/:uuid" lazy={() => import('./routes/api.files.$uuid')} />
           <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
           <Route path="connections" lazy={() => import('./routes/api.connections')} />

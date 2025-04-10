@@ -21,7 +21,7 @@ export function useCodeCellContextMessages() {
         std_err: codeCellCore?.std_err ?? '',
       };
 
-      let schemaData;
+      let schemaData: Awaited<ReturnType<typeof connectionClient.schemas.get>> = null;
       const connection = getConnectionInfo(cellLanguage);
       if (connection) {
         schemaData = await connectionClient.schemas.get(
