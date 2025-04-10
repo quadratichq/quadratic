@@ -30,18 +30,20 @@ WITH date_range AS (
 
 SELECT
   TO_CHAR(d.month, 'YYYY-MM') as month,
-  COALESCE(COUNT(acm.id), 0)::integer as ai_messages
+  COUNT(acm.id)::integer as ai_messages
 FROM date_range d
-LEFT JOIN (
-  SELECT ac.*
-  FROM "AnalyticsAIChat" ac
-  INNER JOIN "File" f ON f.id = ac.file_id AND f.owner_team_id = ${teamId}
-  WHERE ac.user_id = ${userId}
+LEFT JOIN "AnalyticsAIChat" ac ON
+  DATE_TRUNC('month', ac.created_date) = d.month
+  AND ac.user_id = ${userId}
   AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
-) ac ON DATE_TRUNC('month', ac.created_date) = d.month
+LEFT JOIN "File" f ON
+  f.id = ac.file_id
+  AND f.owner_team_id = ${teamId}
 LEFT JOIN "AnalyticsAIChatMessage" acm ON
   acm.chat_id = ac.id
   AND acm.message_type = 'user_prompt'
+WHERE
+  ac.id IS NULL OR f.id IS NOT NULL
 GROUP BY d.month
 ORDER BY d.month DESC;
 `;
