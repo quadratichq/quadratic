@@ -365,7 +365,8 @@ impl CellValue {
         let without_parentheses = CellValue::strip_parentheses(s);
         if without_parentheses.ends_with("%") {
             let without_percentage = CellValue::strip_percentage(&without_parentheses);
-            if let Ok(bd) = BigDecimal::from_str(without_percentage) {
+            let without_commas = CellValue::strip_commas(&without_percentage);
+            if let Ok(bd) = BigDecimal::from_str(&without_commas) {
                 return Some(bd / 100.0);
             }
         }
@@ -394,12 +395,7 @@ impl CellValue {
     fn strip_parentheses(value: &str) -> String {
         let trimmed = value.trim();
         if trimmed.starts_with("(") && trimmed.ends_with(")") {
-            let inner_content = &trimmed[1..trimmed.len() - 1].trim();
-            if let Some(stripped) = inner_content.strip_prefix("-") {
-                stripped.trim().to_string()
-            } else {
-                format!("-{}", inner_content.trim())
-            }
+            format!("-{}", trimmed[1..trimmed.len() - 1].trim().to_string())
         } else {
             value.to_string()
         }
