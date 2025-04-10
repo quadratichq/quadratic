@@ -18,6 +18,7 @@
     "coverage:view": "open coverage/html/index.html",
     "docker:up": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose -f ../docker-compose.yml --profile quadratic-connection-db --profile redis --env-file ../.env.docker up -d --wait && sleep 10",
     "docker:down": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose -f ../docker-compose.yml --profile quadratic-connection-db --profile redis --env-file ../.env.docker down",
-    "docker:test": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose kill && npm run docker:up && npm run test && npm run docker:down"
+    "docker:test": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose kill && npm run docker:up && npm run test && npm run docker:down",
+    "clean": "cargo clean && npx rimraf node_modules dist build target"
   }
 }

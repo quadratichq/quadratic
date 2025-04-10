@@ -123,8 +123,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Cache Pyodide
+        id: cache-pyodide
+        uses: useblacksmith/cache@v5
         with:
-          lfs: true
+          path: quadratic-client/public/pyodide
+          key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
+
+      - name: Download & Verify Pyodide
+        run: |
+          npm run client:download:pyodide
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -165,14 +174,6 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Cache Docker layers
-        uses: useblacksmith/cache@v5
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}-
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -180,8 +181,8 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
-          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=registry,mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd,force-compression=true,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-build-cache
+          cache-from: type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-build-cache
 
       - name: Find Build & Deploy Images Comment
         if: failure()
