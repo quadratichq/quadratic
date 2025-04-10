@@ -453,15 +453,27 @@ impl A1Selection {
                     names.push(range.table_name.clone());
                 }
             }
-            CellRefRange::Sheet { range } => {
-                context.tables().for_each(|table| {
-                    if table.sheet_id == self.sheet_id && range.contains_rect(table.bounds) {
-                        names.push(table.table_name.clone());
-                    }
-                });
-            }
+            // DSF: this is correct code for our current implementation; but the one below is what we should work towards
+            CellRefRange::Sheet { range } => context.tables().for_each(|table| {
+                if table.sheet_id == self.sheet_id
+                    && range
+                        .to_rect()
+                        .is_some_and(|rect| rect.contains(table.bounds.min))
+                {
+                    names.push(table.table_name.clone());
+                }
+            }),
         });
         names
+
+        // DF: this is the correct code; but it doesn't work properly with delete
+        // CellRefRange::Sheet { range } => {
+        //     context.tables().for_each(|table| {
+        //         if table.sheet_id == self.sheet_id && range.contains_rect(table.bounds) {
+        //             names.push(table.table_name.clone());
+        //         }
+        //     });
+        // }
     }
 
     /// Returns the columns that are selected in the table.
@@ -987,11 +999,18 @@ mod tests {
 
         // Test mixed selection with tables and regular ranges
         let selection = A1Selection::test_a1_context("D1:E15,Table1,C3", &context);
-        assert_eq!(selection.selected_table_names(&context), vec!["Table1"]);
+        // todo: when code is fixed, this should be changed
+        // assert_eq!(selection.selected_table_names(&context), vec!["Table1"]);
+        assert_eq!(
+            selection.selected_table_names(&context),
+            vec!["Table1", "Table2"]
+        );
 
         // Test selection without tables
         let selection = A1Selection::test_a1_context("D1:E2,C3", &context);
-        assert!(selection.selected_table_names(&context).is_empty());
+        // todo: when code is fixed, this should be changed
+        // assert!(selection.selected_table_names(&context).is_empty());
+        assert_eq!(selection.selected_table_names(&context), vec!["Table2"]);
 
         // Test column selection
         let selection = A1Selection::test_a1_context("Table1[A]", &context);
@@ -1006,11 +1025,24 @@ mod tests {
 
         // Test partially enclosed table
         let selection = A1Selection::test_a1_context("A1:C3", &context);
-        assert_eq!(selection.selected_table_names(&context), vec!["Table1"]);
+        // todo: when code is fixed, this should be changed
+        // assert_eq!(selection.selected_table_names(&context), vec!["Table1"]);
+        assert!(
+            selection
+                .selected_table_names(&context)
+                .contains(&"Table1".to_string())
+        );
+        assert!(
+            selection
+                .selected_table_names(&context)
+                .contains(&"Table2".to_string())
+        );
 
         // Test selection that overlaps but doesn't fully enclose any tables
         let selection = A1Selection::test_a1_context("B2:D3", &context);
-        assert!(selection.selected_table_names(&context).is_empty());
+        // todo: when code is fixed, this should be changed
+        // assert!(selection.selected_table_names(&context).is_empty());
+        assert_eq!(selection.selected_table_names(&context), vec!["Table2"]);
     }
 
     #[test]
