@@ -281,4 +281,9 @@ impl JsSelection {
         self.selection
             .is_table_column_selected(table_name, column as i64, &self.context)
     }
+
+    #[wasm_bindgen(js_name = "getSelectedTableColumnsCount")]
+    pub fn get_selected_table_columns(&self) -> u32 {
+        self.selection.selected_table_columns(&self.context) as u32
+    }
 }

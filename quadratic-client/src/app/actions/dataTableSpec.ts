@@ -564,9 +564,11 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Delete table column(s)',
     Icon: DeleteIcon,
     isAvailable: () => {
-      const length = sheets.sheet.cursor.getSelectedColumnsFinite().length;
+      const length = sheets.sheet.cursor.getSelectedTableColumnsCount();
+      if (length === 0) return false;
+
       const plural = length > 1 ? 's' : '';
-      dataTableSpec[Action.RemoveTableColumn].label = `Delete ${length} column${plural}`;
+      dataTableSpec[Action.RemoveTableColumn].label = `Delete ${length} table column${plural}`;
       return !isReadOnly() && isWithinTable();
     },
     run: () => removeTableColumn(true),

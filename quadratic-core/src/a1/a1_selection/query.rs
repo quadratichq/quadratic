@@ -587,6 +587,21 @@ impl A1Selection {
             _ => false,
         }) && found_column
     }
+
+    /// If a single table is selected, then returns the number of columns that
+    /// are selected.
+    pub fn selected_table_columns(&self, a1_context: &A1Context) -> usize {
+        if self.ranges.len() != 1 {
+            return 0;
+        }
+        let Some(CellRefRange::Table { range }) = self.ranges.first() else {
+            return 0;
+        };
+        let Some(table) = a1_context.try_table(&range.table_name) else {
+            return 0;
+        };
+        range.col_range.col_count(table)
+    }
 }
 
 #[cfg(test)]

@@ -170,6 +170,10 @@ export class SheetCursor {
     return Array.from(this.jsSelection.getSelectedColumnsFinite());
   };
 
+  getSelectedTableColumns = (tableName: string): number[] => {
+    return Array.from(this.jsSelection.getTableColumnSelection(tableName));
+  };
+
   // Returns the rows that are selected.
   getSelectedRowsFinite = (): number[] => {
     return Array.from(this.jsSelection.getSelectedRowsFinite());
@@ -445,5 +449,9 @@ export class SheetCursor {
 
   isTableColumnSelected = (tableName: string, column: number): boolean => {
     return this.jsSelection.isTableColumnSelected(tableName, column);
+  };
+
+  getSelectedTableColumnsCount = (): number => {
+    return this.jsSelection.getSelectedTableColumnsCount();
   };
 }
