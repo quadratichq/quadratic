@@ -45,7 +45,7 @@ export const router = createBrowserRouter(
         {/**
          * --- Client-side API routes
          * These are used internally by fetchers. They have no UI.
-         * They don’t really need to be protected as you have to know them to 
+         * They don’t really need to be protected as you have to know them to
          * hit them, and they'll return 4xx errors if you do.
          */}
         <Route path="api">
