@@ -284,7 +284,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
-You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
+You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
