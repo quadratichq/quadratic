@@ -117,7 +117,7 @@ impl RegionMap {
         let (region_sheet, region_rect) = region;
         match self.region_to_pos.get(&region_sheet) {
             None => HashSet::new(),
-            Some(rtree) => dbg!(rtree)
+            Some(rtree) => rtree
                 .locate_in_envelope_intersecting(&region_rect.envelope())
                 .map(|obj| obj.data)
                 .collect(),
@@ -256,5 +256,39 @@ mod tests {
             m.remove_sheet(sheet2);
             assert!(m.find_all_mentions_of_sheet(sheet2).is_empty());
         }
+    }
+
+    #[test]
+    fn test_region_map_unbounded() {
+        let mut map = RegionMap::new();
+        let sheet1 = SheetId::new();
+
+        let columns = ref_range_bounds![C:E];
+        let rows = ref_range_bounds![10:50];
+        let all = ref_range_bounds![:];
+        let finite = ref_range_bounds![B2:D17];
+
+        map.insert(pos![sheet1!A1], (sheet1, columns.to_rect_unbounded()));
+        map.insert(pos![sheet1!A2], (sheet1, rows.to_rect_unbounded()));
+        map.insert(pos![sheet1!A3], (sheet1, all.to_rect_unbounded()));
+        map.insert(pos![sheet1!A4], (sheet1, finite.to_rect_unbounded()));
+
+        assert_eq!(
+            map.get_positions_associated_with_region((sheet1, rect![D4:F10])),
+            HashSet::from_iter([
+                pos![sheet1!A1],
+                pos![sheet1!A2],
+                pos![sheet1!A3],
+                pos![sheet1!A4],
+            ]),
+        );
+
+        assert_eq!(
+            map.get_positions_associated_with_region((
+                sheet1,
+                ref_range_bounds![F:].to_rect_unbounded(),
+            )),
+            HashSet::from_iter([pos![sheet1!A2], pos![sheet1!A3]]),
+        );
     }
 }

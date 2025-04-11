@@ -139,7 +139,7 @@ macro_rules! pos {
 /// # Examples
 ///
 /// ```
-/// # use quadratic_core::{pos, Pos, Rect};
+/// # use quadratic_core::{rect, Rect};
 /// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
 /// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
 /// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
@@ -147,7 +147,29 @@ macro_rules! pos {
 #[macro_export]
 macro_rules! rect {
     ($corner1:ident : $corner2:ident) => {
-        Rect::new_span(pos![$corner1], pos![$corner2])
+        $crate::Rect::new_span($crate::pos![$corner1], $crate::pos![$corner2])
+    };
+}
+
+/// Parses a cell reference range in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord}};
+/// assert_eq!(ref_range_bounds![:$C], RefRangeBounds {
+///     start: CellRefRangeEnd::new_relative_xy(1, 1),
+///     end: CellRefRangeEnd {
+///         col: CellRefCoord::new_abs(3),
+///         row: CellRefCoord::UNBOUNDED,
+///     },
+/// });
+/// ```
+#[macro_export]
+macro_rules! ref_range_bounds {
+    ($($tok:tt)*) => {
+        $crate::a1::RefRangeBounds::from_str(stringify!($($tok)*), None)
+            .expect("invalid range")
     };
 }
 
