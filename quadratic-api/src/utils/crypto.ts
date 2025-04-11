@@ -52,3 +52,23 @@ export const decrypt = (key: Buffer, encryptedText: string): string => {
 export const decryptFromEnv = (encryptedText: string): string => {
   return decrypt(encryption_key, encryptedText);
 };
+
+// Generates a new SSH key pair and returns the private and public keys.
+export const generateSshKeys = (): { privateKey: string; publicKey: string } => {
+  const privateKey = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 4096,
+    publicKeyEncoding: {
+      type: 'spki',
+      format: 'pem',
+    },
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'pem',
+    },
+  });
+
+  return {
+    privateKey: privateKey.privateKey,
+    publicKey: privateKey.publicKey,
+  };
+};

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { decrypt, encrypt, hash } from './crypto';
+import { decrypt, encrypt, generateSshKeys, hash } from './crypto';
 
 // Convert a hex string to a buffer.
 //
@@ -53,5 +53,17 @@ describe('Encryption and Decryption', () => {
     const tamperedText = encryptedText + 'abc123';
 
     expect(() => decrypt(key, tamperedText)).toThrow();
+  });
+});
+
+describe('SSH Key Generation', () => {
+  it('should generate a new SSH key pair', () => {
+    const { privateKey, publicKey } = generateSshKeys();
+
+    console.log('privateKey', privateKey);
+    console.log('publicKey', publicKey);
+
+    expect(privateKey).toBeDefined();
+    expect(publicKey).toBeDefined();
   });
 });

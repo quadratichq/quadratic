@@ -1,3 +1,4 @@
+import { ConnectionFormSsh } from '@/shared/components/connections/ConnectionFormSsh';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
@@ -33,6 +34,11 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     database: String(connection?.typeDetails?.database || ''),
     username: String(connection?.typeDetails?.username || ''),
     password: String(connection?.typeDetails?.password || ''),
+    useSsh: Boolean(connection?.typeDetails?.useSsh || false),
+    sshHost: String(connection?.typeDetails?.sshHost || ''),
+    sshPort: String(connection?.typeDetails?.sshPort || ''),
+    sshUsername: String(connection?.typeDetails?.sshUsername || ''),
+    sshKey: String(connection?.typeDetails?.sshKey || ''),
   };
 
   const form = useForm<FormValues>({
@@ -130,6 +136,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             )}
           />
         </div>
+        <ConnectionFormSsh form={form} />
+
         {children}
       </form>
     </Form>

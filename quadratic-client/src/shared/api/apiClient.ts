@@ -362,12 +362,16 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections.GET.response']
       );
     },
-    get(uuid: string) {
-      return fetchFromApi(
+    async get(uuid: string) {
+      const connection = await fetchFromApi(
         `/v0/connections/${uuid}`,
         { method: 'GET' },
         ApiSchemas['/v0/connections/:uuid.GET.response']
       );
+
+      connection.typeDetails.sshKey = Buffer.from(connection.typeDetails.sshKey, 'base64').toString('utf-8');
+
+      return connection;
     },
     create(body: ApiTypes['/v0/team/:uuid/connections.POST.request'], teamUuid: string) {
       return fetchFromApi(

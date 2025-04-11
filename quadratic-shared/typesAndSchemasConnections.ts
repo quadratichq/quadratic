@@ -47,10 +47,18 @@ const ConnectionSchema = z.object({
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
 });
+const ConnectionSShSchema = z.object({
+  useSsh: z.boolean(),
+  sshHost: z.string().optional(),
+  sshPort: z.string().optional(),
+  sshUsername: z.string().optional(),
+  sshKey: z.string().optional(),
+});
 
 export type ConnectionTypeDetails = z.infer<typeof ConnectionTypeDetailsSchema>;
 export type ConnectionType = z.infer<typeof ConnectionTypeSchema>;
 export type Connection = z.infer<typeof ConnectionSchema>;
+export type ConnectionSsh = z.infer<typeof ConnectionSShSchema>;
 
 /**
  * =============================================================================
@@ -75,6 +83,11 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   database: z.string().min(1, { message: 'Required' }),
   username: z.string().min(1, { message: 'Required' }),
   password: z.string().optional().transform(transformEmptyStringToUndefined),
+  useSsh: z.boolean(),
+  sshHost: z.string().optional(),
+  sshPort: z.string().optional(),
+  sshUsername: z.string().optional(),
+  sshKey: z.string().optional(),
 });
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
 export const ConnectionTypeDetailsMssqlSchema = z.object({
@@ -95,6 +108,11 @@ export const ConnectionTypeDetailsMssqlSchema = z.object({
   database: z.string().optional(),
   username: z.string().min(1, { message: 'Required' }),
   password: z.string().min(1, { message: 'Required' }),
+  useSsh: z.boolean(),
+  sshHost: z.string().optional(),
+  sshPort: z.string().optional(),
+  sshUsername: z.string().optional(),
+  sshKey: z.string().optional(),
 });
 export const ConnectionTypeDetailsSnowflakeSchema = z.object({
   account_identifier: z.string().min(1, { message: 'Required' }),

@@ -9,7 +9,7 @@ export async function getConnection({ uuid, userId }: { uuid: string; userId: nu
       uuid,
     },
     include: {
-      team: { select: { uuid: true } },
+      team: { select: { uuid: true, sshPublicKey: true, sshPrivateKey: true, id: true } },
     },
   });
   if (!connection || connection.archived !== null) {
