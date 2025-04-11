@@ -18,7 +18,7 @@ import { InfoCircledIcon, PieChartIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useFetcher, useSubmit } from 'react-router-dom';
 
 export const Component = () => {
@@ -35,7 +35,10 @@ export const Component = () => {
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [value, setValue] = useState<string>(team.name);
-  const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
+  const disabled = useMemo(
+    () => value === '' || value === team.name || fetcher.state !== 'idle',
+    [fetcher.state, team.name, value]
+  );
 
   // Optimistic UI
   let optimisticSettings = team.settings;
@@ -47,33 +50,39 @@ export const Component = () => {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
 
-    if (disabled) {
-      return;
-    }
+      if (disabled) {
+        return;
+      }
 
-    const data = getActionUpdateTeam({ name: value });
-    submit(data, {
-      method: 'POST',
-      action: ROUTES.TEAM(team.uuid),
-      encType: 'application/json',
-      fetcherKey: `update-team`,
-      navigate: false,
-    });
-  };
+      const data = getActionUpdateTeam({ name: value });
+      submit(data, {
+        method: 'POST',
+        action: ROUTES.TEAM(team.uuid),
+        encType: 'application/json',
+        fetcherKey: `update-team`,
+        navigate: false,
+      });
+    },
+    [disabled, submit, team.uuid, value]
+  );
 
-  const handleUpdatePreference = (key: keyof TeamSettings, checked: boolean) => {
-    const data = getActionUpdateTeam({ settings: { [key]: checked } });
-    submit(data, {
-      method: 'POST',
-      action: ROUTES.TEAM(team.uuid),
-      encType: 'application/json',
-      fetcherKey: `update-team`,
-      navigate: false,
-    });
-  };
+  const handleUpdatePreference = useCallback(
+    (key: keyof TeamSettings, checked: boolean) => {
+      const data = getActionUpdateTeam({ settings: { [key]: checked } });
+      submit(data, {
+        method: 'POST',
+        action: ROUTES.TEAM(team.uuid),
+        encType: 'application/json',
+        fetcherKey: `update-team`,
+        navigate: false,
+      });
+    },
+    [submit, team.uuid]
+  );
 
   // If for some reason it failed, display an error
   useEffect(() => {
@@ -82,13 +91,13 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
+  const latestUsage = useMemo(() => billing.usage[0] || { ai_messages: 0 }, [billing.usage]);
+  const canManageBilling = useMemo(() => teamPermissions.includes('TEAM_MANAGE'), [teamPermissions]);
+
   // If you don't have permission, you can't see this view
   if (!teamPermissions.includes('TEAM_EDIT')) {
     return <Navigate to={ROUTES.TEAM(team.uuid)} />;
   }
-
-  const latestUsage = billing.usage[0] || { ai_messages: 0 };
-  const canManageBilling = teamPermissions.includes('TEAM_MANAGE');
 
   return (
     <>
@@ -204,25 +213,23 @@ export const Component = () => {
                         Upgrade to Pro
                       </Button>
                     ) : (
-                      billing.status === 'ACTIVE' && (
-                        <Button
-                          disabled={!canManageBilling}
-                          variant="secondary"
-                          className="mt-4 w-full"
-                          onClick={() => {
-                            mixpanel.track('[TeamSettings].manageBillingClicked', {
-                              team_uuid: team.uuid,
-                            });
-                            apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-                              window.location.href = data.url;
-                            });
-                          }}
-                        >
-                          Manage billing
-                        </Button>
-                      )
+                      <Button
+                        disabled={!canManageBilling}
+                        variant="secondary"
+                        className="mt-4 w-full"
+                        onClick={() => {
+                          mixpanel.track('[TeamSettings].manageBillingClicked', {
+                            team_uuid: team.uuid,
+                          });
+                          apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                            window.location.href = data.url;
+                          });
+                        }}
+                      >
+                        Manage billing
+                      </Button>
                     )}
-                    {!teamPermissions.includes('TEAM_MANAGE') && (
+                    {!canManageBilling && (
                       <p className="mt-2 text-center text-xs text-muted-foreground">
                         You cannot edit billing details. Contact{' '}
                         <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">

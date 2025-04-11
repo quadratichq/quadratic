@@ -2,7 +2,7 @@ import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
 import dbClient from '../dbClient';
-import { NODE_ENV, STRIPE_SECRET_KEY } from '../env-vars';
+import { STRIPE_SECRET_KEY } from '../env-vars';
 
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true,
@@ -180,16 +180,7 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
   updateTeamStatus(stripeSubscriptionId, status, customer, new Date(event.current_period_end * 1000));
 };
 
-export const updateBillingIfNecessary = async (team: Team) => {
-  // if not updated in the last 24 hours, update the customer
-  if (NODE_ENV === 'production')
-    if (
-      team.stripeSubscriptionLastUpdated &&
-      Date.now() - team.stripeSubscriptionLastUpdated.getTime() < 24 * 60 * 60 * 1000
-    ) {
-      return;
-    }
-
+export const updateBilling = async (team: Team) => {
   if (!team.stripeCustomerId) {
     return;
   }
