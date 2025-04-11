@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { getLastPromptMessageType, getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getLastPromptMessageType } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   getModelFromModelKey,
   isAnthropicModel,
@@ -95,7 +95,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = await getFile({ uuid: fileUuid, userId });
 
   const model = getModelFromModelKey(modelKey);
-  const messageIndex = getLastUserPromptMessageIndex(args.messages);
+  const messageIndex = getLastAIPromptMessageIndex(args.messages);
   const messageType = getLastPromptMessageType(args.messages);
 
   const chat = await dbClient.analyticsAIChat.upsert({

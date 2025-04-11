@@ -362,8 +362,11 @@ impl CellValue {
         if s.is_empty() {
             return None;
         }
-        if let Some(number) = s.strip_suffix('%') {
-            if let Ok(bd) = BigDecimal::from_str(number) {
+        let without_parentheses = CellValue::strip_parentheses(s);
+        if without_parentheses.ends_with("%") {
+            let without_percentage = CellValue::strip_percentage(&without_parentheses);
+            let without_commas = CellValue::strip_commas(without_percentage);
+            if let Ok(bd) = BigDecimal::from_str(&without_commas) {
                 return Some(bd / 100.0);
             }
         }
@@ -378,12 +381,47 @@ impl CellValue {
         }
     }
 
-    pub fn strip_percentage(value: &str) -> &str {
-        value.strip_suffix(PERCENTAGE_SYMBOL).unwrap_or(value)
+    fn strip_percentage(value: &str) -> &str {
+        value
+            .trim()
+            .strip_suffix(PERCENTAGE_SYMBOL)
+            .map_or(value, |stripped| stripped.trim())
     }
 
-    pub fn strip_commas(value: &str) -> String {
-        value.to_string().replace(',', "")
+    fn strip_commas(value: &str) -> String {
+        value.trim().to_string().replace(',', "")
+    }
+
+    fn strip_parentheses(value: &str) -> String {
+        let trimmed = value.trim();
+        if trimmed.starts_with("(") && trimmed.ends_with(")") {
+            format!("-{}", trimmed[1..trimmed.len() - 1].trim())
+        } else {
+            value.to_string()
+        }
+    }
+
+    fn strip_currency(value: &str) -> String {
+        let (is_negative, absolute_value) = (
+            value.starts_with("-"),
+            value.strip_prefix("-").unwrap_or(value),
+        );
+
+        let stripped = CURRENCY_SYMBOLS
+            .chars()
+            .fold(absolute_value, |acc: &str, char| {
+                acc.strip_prefix(char).unwrap_or(acc)
+            });
+
+        if is_negative {
+            if let Some(stripped) = stripped.strip_prefix("-") {
+                stripped.trim().to_string()
+            } else {
+                format!("-{}", stripped.trim())
+            }
+        } else {
+            stripped.to_string()
+        }
     }
 
     pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
@@ -391,21 +429,30 @@ impl CellValue {
             return None;
         }
 
+        let without_parentheses = CellValue::strip_parentheses(s);
+        let (is_negative, absolute_value) = (
+            without_parentheses.starts_with("-"),
+            without_parentheses
+                .strip_prefix("-")
+                .map_or(without_parentheses.as_str(), |absolute_value| {
+                    absolute_value.trim()
+                }),
+        );
+
         for char in CURRENCY_SYMBOLS.chars() {
-            if let Some(stripped) = s.strip_prefix(char) {
-                let without_commas = CellValue::strip_commas(stripped);
+            if let Some(stripped) = absolute_value
+                .strip_prefix(char)
+                .map(|stripped| stripped.trim())
+            {
+                let without_commas =
+                    CellValue::strip_commas(&CellValue::strip_parentheses(stripped));
                 if let Ok(bd) = BigDecimal::from_str(&without_commas) {
+                    let bd = if is_negative { -bd } else { bd };
                     return Some((char.to_string(), bd));
                 }
             }
         }
         None
-    }
-
-    pub fn strip_currency(value: &str) -> &str {
-        CURRENCY_SYMBOLS.chars().fold(value, |acc: &str, char| {
-            acc.strip_prefix(char).unwrap_or(acc)
-        })
     }
 
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
@@ -563,7 +610,9 @@ impl CellValue {
         }
 
         // check for number
-        let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
+        let without_parentheses = CellValue::strip_parentheses(value);
+        let without_currency = CellValue::strip_currency(&without_parentheses);
+        let parsed = CellValue::strip_percentage(&without_currency);
         let without_commas = CellValue::strip_commas(parsed);
         let number = BigDecimal::from_str(&without_commas);
 
@@ -604,7 +653,9 @@ impl CellValue {
             CellValue::Number(number)
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
-        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
+        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(
+            &CellValue::strip_parentheses(value),
+        )) {
             if (bd.fractional_digit_count().unsigned_abs() as usize) > MAX_BIG_DECIMAL_SIZE {
                 CellValue::Text(value.into())
             } else {

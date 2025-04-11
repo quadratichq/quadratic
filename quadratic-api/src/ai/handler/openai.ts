@@ -30,6 +30,11 @@ export const handleOpenAIRequest = async (
       tool_choice,
     };
     if (options.stream) {
+      response.setHeader('Content-Type', 'text/event-stream');
+      response.setHeader('Cache-Control', 'no-cache');
+      response.setHeader('Connection', 'keep-alive');
+      response.write(`stream\n\n`);
+
       apiArgs = {
         ...apiArgs,
         stream_options: {
@@ -37,10 +42,6 @@ export const handleOpenAIRequest = async (
         },
       };
       const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
-
-      response.setHeader('Content-Type', 'text/event-stream');
-      response.setHeader('Cache-Control', 'no-cache');
-      response.setHeader('Connection', 'keep-alive');
 
       const parsedResponse = await parseOpenAIStream(completion, response, modelKey);
       return parsedResponse;
