@@ -112,7 +112,7 @@ export const CommandPalette = () => {
               const actionSpec = defaultActionSpec[commandOrAction];
               command = {
                 ...actionSpec,
-                label: actionSpec.labelVerbose ? actionSpec.labelVerbose : actionSpec.label,
+                label: actionSpec.labelVerbose ? actionSpec.labelVerbose : actionSpec.label(),
                 Component: (props: CommandPaletteListItemDynamicProps) => (
                   <CommandPaletteListItem
                     {...props}
