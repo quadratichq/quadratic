@@ -20,7 +20,7 @@ export const MenubarItemAction = <T extends Action>({
   const isAvailableArgs = useIsAvailableArgs();
   const actionSpec = defaultActionSpec[action];
 
-  const { label, run } = actionSpec;
+  const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
   const keyboardShortcut = shortcutOverride ? shortcutOverride : keyboardShortcutEnumToDisplay(action);
   const isAvailable = 'isAvailable' in actionSpec ? actionSpec.isAvailable : undefined;
@@ -38,7 +38,7 @@ export const MenubarItemAction = <T extends Action>({
         if (disableFocusGridRef) {
           disableFocusGridRef.current = true;
         }
-        run(actionArgs);
+        actionSpec.run(actionArgs);
       }}
     >
       {Icon && <Icon />} {label}
