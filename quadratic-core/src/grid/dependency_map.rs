@@ -53,7 +53,8 @@ impl DependencyMap {
             .push((region_sheet, region_rect));
     }
 
-    /// Sets the dependencies for a cell, removing any old ones. `Rect`s may be unbounded.
+    /// Removes all dependencies of `pos` and adds new ones. `Rect`s may be
+    /// unbounded.
     pub fn set_regions_for_pos(&mut self, pos: SheetPos, regions: Vec<(SheetId, Rect)>) {
         self.remove_pos(pos);
         for region in regions {
