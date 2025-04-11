@@ -47,13 +47,14 @@ export const ScrollBars = () => {
 
   const pointerDownHorizontal = useCallback(
     (e: ReactPointerEvent<HTMLDivElement> | PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
       setState('horizontal');
-      events.emit('scrollBar', 'horizontal');
       setDown({ x: e.clientX, y: e.clientY });
       setStart(scrollBarsHandler.horizontalStart);
       htmlCellsHandler.temporarilyDisable();
-      e.preventDefault();
-      e.stopPropagation();
+      events.emit('scrollBar', 'horizontal');
     },
     [scrollBarsHandler]
   );
@@ -70,22 +71,23 @@ export const ScrollBars = () => {
   );
 
   const pointerUp = useCallback(() => {
+    setState(undefined);
     setDown(undefined);
     setStart(undefined);
-    setState(undefined);
     htmlCellsHandler.enable();
     events.emit('scrollBar', undefined);
   }, []);
 
   const pointerDownVertical = useCallback(
     (e: ReactPointerEvent<HTMLDivElement> | PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
       setState('vertical');
       setDown({ x: e.clientX, y: e.clientY });
       setStart(scrollBarsHandler.verticalStart);
       htmlCellsHandler.temporarilyDisable();
       events.emit('scrollBar', 'vertical');
-      e.preventDefault();
-      e.stopPropagation();
     },
     [scrollBarsHandler]
   );
@@ -106,12 +108,14 @@ export const ScrollBars = () => {
   return (
     <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
       <div
-        className="grid-scrollbars-horizontal pointer-events-auto absolute bottom-1 rounded-md opacity-15"
+        id="grid-scrollbars-horizontal"
+        className="pointer-events-auto absolute bottom-1 rounded-md opacity-15"
         style={{ height: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 1000 }}
         onPointerDown={pointerDownHorizontal}
       />
       <div
-        className="grid-scrollbars-vertical pointer-events-auto absolute right-1 rounded-md opacity-15"
+        id="grid-scrollbars-vertical"
+        className="pointer-events-auto absolute right-1 rounded-md opacity-15"
         style={{ width: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 1000 }}
         onPointerDown={pointerDownVertical}
       />

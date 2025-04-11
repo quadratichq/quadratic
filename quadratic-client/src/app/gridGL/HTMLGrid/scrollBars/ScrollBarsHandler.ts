@@ -75,12 +75,12 @@ export class ScrollBarsHandler {
    * the scrollbar is not visible--ie, the content is visible and smaller than
    * the viewport
    */
-  private calculateSize(
+  private calculateSize = (
     contentSize: number,
     viewportStart: number,
     viewportEnd: number,
     headingSize: number
-  ): { start: number; size: number } | undefined {
+  ): { start: number; size: number } | undefined => {
     const viewportSize = viewportEnd - viewportStart;
 
     // If the content is smaller than the viewport, and the viewport is at the
@@ -110,12 +110,12 @@ export class ScrollBarsHandler {
       size = viewportSize / contentSize;
     }
     return { start, size };
-  }
+  };
 
   // Calculates the scrollbar positions and sizes
-  private calculate() {
-    const verticalBar = document.querySelector('.grid-scrollbars-vertical') as HTMLDivElement;
-    const horizontalBar = document.querySelector('.grid-scrollbars-horizontal') as HTMLDivElement;
+  private calculate = () => {
+    const verticalBar = document.querySelector('#grid-scrollbars-vertical') as HTMLDivElement;
+    const horizontalBar = document.querySelector('#grid-scrollbars-horizontal') as HTMLDivElement;
     if (!verticalBar || !horizontalBar) return;
 
     const viewport = pixiApp.viewport;
@@ -203,58 +203,46 @@ export class ScrollBarsHandler {
       this.vertical = undefined;
       verticalBar.style.display = 'none';
     }
-  }
+  };
 
-  update(forceDirty: boolean) {
+  update = (forceDirty: boolean) => {
     if (!pixiAppSettings.gridSettings.showScrollbars) return;
     if (!this.dirty && !forceDirty) return;
     this.dirty = false;
     this.calculate();
     pixiApp.setViewportDirty();
-  }
+  };
 
   /// Returns the scrollbar that the point is over.
-  contains(x: number, y: number): Scrollbar {
+  contains = (x: number, y: number): Scrollbar => {
     const canvasBounds = pixiApp.canvas.getBoundingClientRect();
     const point = new Point(x - canvasBounds.left, y - canvasBounds.top);
-    if (
-      this.horizontal &&
-      intersects.rectanglePoint(
-        new Rectangle(this.horizontal.x, this.horizontal.y, this.horizontal.width, this.horizontal.height),
-        point
-      )
-    ) {
+    if (this.horizontal && intersects.rectanglePoint(this.horizontal, point)) {
       return 'horizontal';
     }
-    if (
-      this.vertical &&
-      intersects.rectanglePoint(
-        new Rectangle(this.vertical.x, this.vertical.y, this.vertical.width, this.vertical.height),
-        point
-      )
-    ) {
+    if (this.vertical && intersects.rectanglePoint(this.vertical, point)) {
       return 'vertical';
     }
     return undefined;
-  }
+  };
 
   /// Adjusts horizontal scrollbar by the delta. Returns the actual delta that
   /// was applied.
-  adjustHorizontal(delta: number): number {
+  adjustHorizontal = (delta: number): number => {
     if (!delta) return 0;
     const last = pixiApp.viewport.x;
     pixiApp.viewport.x -= delta * this.scrollbarScaleX;
     pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width, pixiApp.viewport.x);
     return (last - pixiApp.viewport.x) / this.scrollbarScaleX;
-  }
+  };
 
   /// Adjusts vertical scrollbar by the delta. Returns the actual delta that
   /// was applied.
-  adjustVertical(delta: number): number {
+  adjustVertical = (delta: number): number => {
     if (!delta) return 0;
     const last = pixiApp.viewport.y;
     pixiApp.viewport.y -= delta * this.scrollbarScaleY;
     pixiApp.viewport.y = Math.min(pixiApp.headings.headingSize.height, pixiApp.viewport.y);
     return (last - pixiApp.viewport.y) / this.scrollbarScaleY;
-  }
+  };
 }

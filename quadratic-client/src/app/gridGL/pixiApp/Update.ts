@@ -43,6 +43,7 @@ export class Update {
       this.raf = undefined;
     }
     events.off('scrollBarsHandler', this.setScrollBarsHandler);
+    this.scrollBarsHandler = undefined;
   }
 
   // update loop w/debug checks

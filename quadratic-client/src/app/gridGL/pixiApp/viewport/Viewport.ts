@@ -93,13 +93,13 @@ export class Viewport extends PixiViewport {
     this.on('snap-end', this.handleSnapEnd);
   }
 
-  turnOffDecelerate() {
+  private turnOffDecelerate = () => {
     this.plugins.remove('decelerate');
-  }
+  };
 
-  turnOnDecelerate() {
+  private turnOnDecelerate = () => {
     this.plugins.add('decelerate', new Decelerate(this));
-  }
+  };
 
   private viewportChanged = () => {
     events.emit('viewportChanged');
