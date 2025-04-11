@@ -104,6 +104,7 @@ class CoreConnection {
       // send the parquet bytes to core
       core.connectionComplete(transactionId, buffer, std_out, std_err?.replace(/\\/g, '').replace(/"/g, ''), extra);
       this.sendConnectionState('ready');
+      this.lastTransactionId = undefined;
     } catch (e) {
       console.error(`Error fetching ${url}`, e);
     }
@@ -130,6 +131,7 @@ class CoreConnection {
       const extra = undefined;
       core.connectionComplete(this.lastTransactionId, buffer, std_out, std_err, extra);
       this.sendConnectionState('ready');
+      this.lastTransactionId = undefined;
     }
   };
 }
