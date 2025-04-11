@@ -92,6 +92,7 @@ export const Component = () => {
   }, [fetcher.data, addGlobalSnackbar]);
 
   const latestUsage = useMemo(() => billing.usage[0] || { ai_messages: 0 }, [billing.usage]);
+  const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
   const canManageBilling = useMemo(() => teamPermissions.includes('TEAM_MANAGE'), [teamPermissions]);
 
   // If you don't have permission, you can't see this view
@@ -125,15 +126,10 @@ export const Component = () => {
                 {/* Plan Comparison */}
                 <div className="grid grid-cols-2 gap-4">
                   {/* Free Plan */}
-                  <div
-                    className={cn(
-                      'rounded-lg border p-4',
-                      billing.status === undefined ? 'border-foreground' : 'border-border'
-                    )}
-                  >
+                  <div className={cn('rounded-lg border p-4', !isOnPaidPlan ? 'border-foreground' : 'border-border')}>
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-lg font-semibold">Free plan</h3>
-                      {billing.status === undefined && <Badge>Current plan</Badge>}
+                      {!isOnPaidPlan && <Badge>Current plan</Badge>}
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
@@ -153,15 +149,10 @@ export const Component = () => {
                   </div>
 
                   {/* Team AI Plan */}
-                  <div
-                    className={cn(
-                      'rounded-lg border p-4',
-                      billing.status === 'ACTIVE' ? 'border-foreground' : 'border-border'
-                    )}
-                  >
+                  <div className={cn('rounded-lg border p-4', isOnPaidPlan ? 'border-foreground' : 'border-border')}>
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-lg font-semibold">Pro plan</h3>
-                      {billing.status === 'ACTIVE' && <Badge>Current plan</Badge>}
+                      {isOnPaidPlan && <Badge>Current plan</Badge>}
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -197,7 +188,7 @@ export const Component = () => {
                         <span className="text-right text-sm font-medium">Unlimited</span>
                       </div>
                     </div>
-                    {billing.status === undefined ? (
+                    {!isOnPaidPlan ? (
                       <Button
                         disabled={!canManageBilling}
                         onClick={() => {
