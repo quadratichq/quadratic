@@ -41,7 +41,7 @@ const OpenAIModelSchema = z.enum([
   'o1-2024-12-17',
   'o3-mini-2025-01-31',
 ]);
-const XAIModelSchema = z.enum(['grok-2-1212', 'grok-beta']);
+const XAIModelSchema = z.enum(['grok-3-beta', 'grok-3-fast-beta', 'grok-2-1212', 'grok-beta']);
 const AIModelSchema = z.union([
   VertexAnthropicModelSchema,
   VertexAIModelSchema,
@@ -101,7 +101,7 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
-const XAIModelKeySchema = z.enum(['xai:grok-2-1212', 'xai:grok-beta']);
+const XAIModelKeySchema = z.enum(['xai:grok-3-beta', 'xai:grok-3-fast-beta', 'xai:grok-2-1212', 'xai:grok-beta']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
 const ModelKeySchema = z.union([

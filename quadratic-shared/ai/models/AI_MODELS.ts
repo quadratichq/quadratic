@@ -335,6 +335,30 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
   },
+  'xai:grok-3-beta': {
+    model: 'grok-3-beta',
+    displayName: `grok 3 beta`,
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'xai',
+    promptCaching: true, // not used for xai
+    strictParams: false,
+  },
+  'xai:grok-3-fast-beta': {
+    model: 'grok-3-fast-beta',
+    displayName: `grok 3 fast beta`,
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'xai',
+    promptCaching: true, // not used for xai
+    strictParams: false,
+  },
   'xai:grok-2-1212': {
     model: 'grok-2-1212',
     displayName: `grok 2`,
