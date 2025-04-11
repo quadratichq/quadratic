@@ -21,7 +21,7 @@ impl GridController {
         sheet_id: String,
         ignore_formatting: bool,
     ) -> Result<JsValue, JsValue> {
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+        let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return Err(JsValue::from_str("Sheet not found"));
         };
         Ok(serde_wasm_bindgen::to_value(
@@ -38,7 +38,7 @@ impl GridController {
         column_end: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
+        let sheet = self.try_sheet_from_string_id(&sheet_id)?;
         if let Some(bounds) =
             sheet.columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
         {
@@ -61,7 +61,7 @@ impl GridController {
         row_end: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
+        let sheet = self.try_sheet_from_string_id(&sheet_id)?;
         if let Some(bounds) = sheet.rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
         {
             let min_max = MinMax {
@@ -82,7 +82,7 @@ impl GridController {
         direction: String,
     ) -> Result<Pos, JsValue> {
         let sheet = self
-            .try_sheet_from_string_id(sheet_id)
+            .try_sheet_from_string_id(&sheet_id)
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
         let pos: Pos = serde_json::from_str(&pos)
             .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
@@ -100,7 +100,7 @@ impl GridController {
         direction: String,
     ) -> Result<Pos, JsValue> {
         let sheet = self
-            .try_sheet_from_string_id(sheet_id)
+            .try_sheet_from_string_id(&sheet_id)
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
         let pos: Pos = serde_json::from_str(&pos)
             .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
@@ -124,7 +124,7 @@ impl GridController {
         height: i32,
         reverse: bool,
     ) -> i32 {
-        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
+        if let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) {
             let rect =
                 Rect::from_numbers(column_start as i64, row as i64, width as i64, height as i64);
             sheet.find_next_column_for_rect(column_start as i64, row as i64, reverse, rect) as i32
@@ -144,7 +144,7 @@ impl GridController {
         height: i32,
         reverse: bool,
     ) -> i32 {
-        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
+        if let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) {
             let rect =
                 Rect::from_numbers(column as i64, row_start as i64, width as i64, height as i64);
             sheet.find_next_row_for_rect(row_start as i64, column as i64, reverse, rect) as i32

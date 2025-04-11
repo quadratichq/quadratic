@@ -57,7 +57,7 @@ impl Grid {
     /// This runs in O(n) time.
     ///
     /// `name` is automatically case-folded.
-    pub fn try_sheet_from_name(&self, name: String) -> Option<&Sheet> {
+    pub fn try_sheet_from_name(&self, name: &str) -> Option<&Sheet> {
         let name = case_fold(name.trim());
         self.sheets
             .values()
@@ -69,19 +69,19 @@ impl Grid {
     /// This runs in O(n) time.
     ///
     /// `name` is automatically case-folded.
-    pub fn try_sheet_mut_from_name(&mut self, name: String) -> Option<&mut Sheet> {
+    pub fn try_sheet_mut_from_name(&mut self, name: &str) -> Option<&mut Sheet> {
         self.sheets.values_mut().find(|sheet| sheet.name == name)
     }
 
     /// Parses `id` to a `SheetId` and returns the sheet with that ID.
-    pub fn try_sheet_from_string_id(&self, id: String) -> Option<&Sheet> {
-        SheetId::from_str(&id).map_or(None, |sheet_id| self.try_sheet(sheet_id))
+    pub fn try_sheet_from_string_id(&self, id: &str) -> Option<&Sheet> {
+        SheetId::from_str(id).map_or(None, |sheet_id| self.try_sheet(sheet_id))
     }
 
     /// Parses `id` to a `SheetId` and returns a mutable reference to the sheet
     /// with that ID.
-    pub fn try_sheet_mut_from_string_id(&mut self, id: String) -> Option<&mut Sheet> {
-        SheetId::from_str(&id).map_or(None, |sheet_id| self.try_sheet_mut(sheet_id))
+    pub fn try_sheet_mut_from_string_id(&mut self, id: &str) -> Option<&mut Sheet> {
+        SheetId::from_str(id).map_or(None, |sheet_id| self.try_sheet_mut(sheet_id))
     }
 
     /// Sorts sheets according to their `order` fields.

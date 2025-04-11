@@ -277,11 +277,10 @@ impl GridController {
                 new_sheet.order = order;
             };
             let name = format!("{} Copy", sheet.name);
-            let sheet_names = self.sheet_names();
-            if !sheet_names.contains(&name.as_str()) {
-                new_sheet.name = name;
-            } else {
+            if self.try_sheet_from_name(&name).is_some() {
                 new_sheet.name = crate::util::unused_name(&name, &self.sheet_names());
+            } else {
+                new_sheet.name = name;
             }
             self.grid.add_sheet(Some(new_sheet));
 

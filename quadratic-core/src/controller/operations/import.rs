@@ -249,10 +249,9 @@ impl GridController {
         let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
         let sheets = workbook.sheet_names().to_owned();
 
-        let existing_sheet_names = self.sheet_names();
-        for sheet_name in sheets.iter() {
-            if existing_sheet_names.contains(&sheet_name.as_str()) {
-                bail!("Sheet with name {} already exists", sheet_name);
+        for new_sheet_name in sheets.iter() {
+            if self.try_sheet_from_name(new_sheet_name).is_some() {
+                bail!("Sheet with name \"{new_sheet_name}\" already exists");
             }
         }
 
