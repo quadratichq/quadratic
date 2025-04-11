@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { hideScrollbarsAtom } from '@/app/atoms/gridSettingsAtom';
+import { showScrollbarsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
@@ -10,7 +10,7 @@ import { useRecoilValue } from 'recoil';
 const SCROLLBAR_SIZE = 6;
 
 export const ScrollBars = () => {
-  const hideScrollbars = useRecoilValue(hideScrollbarsAtom);
+  const showScrollbars = useRecoilValue(showScrollbarsAtom);
   const [down, setDown] = useState<{ x: number; y: number } | undefined>(undefined);
   const [start, setStart] = useState<number | undefined>(undefined);
   const [state, setState] = useState<'horizontal' | 'vertical' | undefined>(undefined);
@@ -101,7 +101,7 @@ export const ScrollBars = () => {
     [down, start, state, scrollBarsHandler]
   );
 
-  if (hideScrollbars) return null;
+  if (!showScrollbars) return null;
 
   return (
     <div className="pointer-events-none absolute left-0 top-0 h-full w-full">

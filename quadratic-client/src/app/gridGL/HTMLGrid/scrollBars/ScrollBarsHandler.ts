@@ -206,7 +206,7 @@ export class ScrollBarsHandler {
   }
 
   update(forceDirty: boolean) {
-    if (pixiAppSettings.gridSettings.hideScrollbars) return;
+    if (!pixiAppSettings.gridSettings.showScrollbars) return;
     if (!this.dirty && !forceDirty) return;
     this.dirty = false;
     this.calculate();

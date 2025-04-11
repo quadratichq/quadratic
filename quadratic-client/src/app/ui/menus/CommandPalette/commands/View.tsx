@@ -1,10 +1,10 @@
 import {
-  hideScrollbarsAtom,
   presentationModeAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
   showGridLinesAtom,
   showHeadingsAtom,
+  showScrollbarsAtom,
 } from '@/app/atoms/gridSettingsAtom';
 import { zoomIn, zoomOut, zoomReset, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
@@ -73,12 +73,12 @@ const commands: CommandGroup = {
     {
       label: 'Scrollbars',
       Component: (props) => {
-        const [hideScrollbars, setHideScrollbars] = useRecoilState(hideScrollbarsAtom);
+        const [showScrollbars, setShowScrollbars] = useRecoilState(showScrollbarsAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<Checkbox checked={!hideScrollbars} />}
-            action={() => setHideScrollbars((prev) => !prev)}
+            icon={<Checkbox checked={showScrollbars} />}
+            action={() => setShowScrollbars((prev) => !prev)}
           />
         );
       },
