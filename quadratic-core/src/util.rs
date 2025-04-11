@@ -134,6 +134,22 @@ macro_rules! pos {
     }};
 }
 
+/// Parses a cell rectangle in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{pos, Pos, Rect};
+/// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
+/// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
+/// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
+/// ```
+macro_rules! rect {
+    ($corner1:ident : $corner2:ident) => {
+        Rect::new_span(pos![$corner1], pos![$corner2])
+    };
+}
+
 /// Returns a human-friendly list of things, joined at the end by the given
 /// conjunction.
 pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {

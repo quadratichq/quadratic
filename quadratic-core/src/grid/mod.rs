@@ -28,6 +28,7 @@ mod code_run;
 pub mod column;
 pub mod contiguous;
 pub mod data_table;
+mod dependency_map;
 pub mod file;
 pub mod formats;
 pub mod formatting;
