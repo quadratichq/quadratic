@@ -37,6 +37,8 @@ impl GridController {
                 ops.extend(cut_ops);
 
                 match self.paste_html_operations(
+                    dest.into(),
+                    dest.into(),
                     &A1Selection::from_single_cell(dest),
                     js_clipboard.html,
                     PasteSpecial::None,

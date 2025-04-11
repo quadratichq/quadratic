@@ -26,7 +26,7 @@ interface CommandDialogProps {
   commandProps: React.ComponentPropsWithoutRef<typeof Command>;
   overlayProps?: React.ComponentPropsWithoutRef<typeof DialogOverlay>;
 }
-interface CommandDialogProps extends DialogProps {}
+interface CommandDialogProps extends DialogProps { }
 
 const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: CommandDialogProps) => {
   return (
@@ -139,5 +139,5 @@ export {
   CommandItem,
   CommandList,
   CommandSeparator,
-  CommandShortcut,
+  CommandShortcut
 };
