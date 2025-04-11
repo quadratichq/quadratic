@@ -144,6 +144,7 @@ macro_rules! pos {
 /// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
 /// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
 /// ```
+#[macro_export]
 macro_rules! rect {
     ($corner1:ident : $corner2:ident) => {
         Rect::new_span(pos![$corner1], pos![$corner2])

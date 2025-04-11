@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use itertools::Itertools;
 use rstar::{AABB, Point, RTree, RTreeObject, primitives::GeomWithData};
 use serde::{Deserialize, Serialize};
 
@@ -7,36 +8,36 @@ use crate::{Pos, Rect, SheetPos};
 
 use super::SheetId;
 
-/// Structure storing dependencies from cells to regions. These dependencies may
-/// be within one sheet or may span from one sheet to another.
+/// Bidirectional map between positions and (potentially unbounded) rectangular
+/// regions.
 ///
-/// We use the term **arrow** to refer to one of these dependencies. The
-/// **position** is the tail of the arrow (where it's coming from) and the
-/// **region** is the head of the arrow (where it's pointing to).
+/// Positions and regions may be in the same sheet or different sheets. One
+/// position may be associated to multiple regions, and one region may be
+/// associated to multiple positions.
 ///
 /// Sheets are automatically added as needed, but must be manually removed by
-/// calling [`DependencyMap::remove_sheet()`].
+/// calling [`RegionMap::remove_sheet()`].
 #[derive(Debug, Default, Clone)]
-pub struct DependencyMap {
-    /// Arrows organized by region.
+pub struct RegionMap {
+    /// Associations organized by region.
     ///
     /// - Regions are represented by `SheetId` and a possibly-unbounded `Rect`.
     /// - Positions are represented by `SheetPos`.
     region_to_pos: HashMap<SheetId, RTree<GeomWithData<Rect, SheetPos>>>,
 
-    /// Arrows organized by position.
+    /// Associations organized by position.
     ///
     /// - Regions are represented by `(SheetId, Rect)` in the innermost hashmap.
     /// - Positions are represented by `SheetId` and `Pos` in the hashmap keys.
     pos_to_region: HashMap<SheetId, HashMap<Pos, Vec<(SheetId, Rect)>>>,
 }
-impl DependencyMap {
-    /// Constructs a new empty dependency map.
+impl RegionMap {
+    /// Constructs a new empty region map.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Records that `pos` depends on `region`. `Rect` may be unbounded.
+    /// Associates `pos` with `region`. `Rect` may be unbounded.
     pub fn insert(&mut self, pos: SheetPos, region: (SheetId, Rect)) {
         let (region_sheet, region_rect) = region;
 
@@ -53,7 +54,7 @@ impl DependencyMap {
             .push((region_sheet, region_rect));
     }
 
-    /// Removes all dependencies of `pos` and adds new ones. `Rect`s may be
+    /// Removes all associations with `pos` and adds new ones. `Rect`s may be
     /// unbounded.
     pub fn set_regions_for_pos(&mut self, pos: SheetPos, regions: Vec<(SheetId, Rect)>) {
         self.remove_pos(pos);
@@ -62,7 +63,7 @@ impl DependencyMap {
         }
     }
 
-    /// Removes a sheet, including all dependencies it interacts with.
+    /// Removes a sheet, including all associations it interacts with.
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
         // Remove edges that use `sheet_id` in their position.
         let map = self.pos_to_region.remove(&sheet_id).unwrap_or_default();
@@ -92,7 +93,7 @@ impl DependencyMap {
         }
     }
 
-    /// Removes all dependencies of `pos`.
+    /// Removes all associations with `pos`.
     pub fn remove_pos(&mut self, pos: SheetPos) {
         // IIFE to mimic try_block
         (|| {
@@ -107,8 +108,12 @@ impl DependencyMap {
         })();
     }
 
-    /// Returns all cell positions with an arrow pointing toward `region`.
-    pub fn get_positions_dependent_on_region(&self, region: (SheetId, Rect)) -> HashSet<SheetPos> {
+    /// Returns all cell positions associated with anything overlapping
+    /// `region`.
+    pub fn get_positions_associated_with_region(
+        &self,
+        region: (SheetId, Rect),
+    ) -> HashSet<SheetPos> {
         let (region_sheet, region_rect) = region;
         match self.region_to_pos.get(&region_sheet) {
             None => HashSet::new(),
@@ -168,19 +173,27 @@ impl Point for Pos {
     }
 }
 
-impl Serialize for DependencyMap {
+impl Serialize for RegionMap {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        serializer.collect_seq(self.pos_to_region.iter().flat_map(|(sheet_id, map)| {
-            map.iter()
-                .map(|(pos, region)| (pos.to_sheet_pos(*sheet_id), region))
-        }))
+        let associations: Vec<(SheetPos, (SheetId, Rect))> = self
+            .pos_to_region
+            .iter()
+            .flat_map(|(sheet_id, map)| {
+                map.iter().flat_map(|(pos, regions)| {
+                    regions
+                        .iter()
+                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                })
+            })
+            .collect_vec();
+        associations.serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for DependencyMap {
+impl<'de> Deserialize<'de> for RegionMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -198,8 +211,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_dependency_map() {
-        let mut map = DependencyMap::new();
+    fn test_region_map() {
+        let mut map = RegionMap::new();
         let sheet1 = SheetId::new();
         let sheet2 = SheetId::new();
         map.insert(pos![sheet1!A1], (sheet1, rect![B2:B3]));
@@ -207,30 +220,41 @@ mod tests {
         map.insert(pos![sheet1!A2], (sheet2, rect![C1:E4]));
         map.insert(pos![sheet2!Q3], (sheet1, rect![A1:A10]));
         map.insert(pos![sheet2!C3], (sheet2, rect![C4:E4]));
-        assert_eq!(
-            map.get_positions_dependent_on_region((sheet2, rect![D4:F10])),
-            HashSet::from_iter([pos![sheet1!A1], pos![sheet1!A2], pos![sheet2!C3]]),
-        );
-        assert_eq!(
-            map.get_positions_dependent_on_region((sheet1, rect![B4:B4])),
-            HashSet::new(),
-        );
-        assert_eq!(
-            map.get_positions_dependent_on_region((sheet1, rect![B2:B2])),
-            HashSet::from_iter([pos![sheet1!A1]]),
-        );
-        assert_eq!(
-            map.get_positions_dependent_on_region((sheet1, rect![A2:B2])),
-            HashSet::from_iter([pos![sheet1!A1], pos![sheet2!Q3]]),
-        );
 
-        map.remove_pos(pos![sheet1!A2]);
-        assert_eq!(
-            map.get_positions_dependent_on_region((sheet2, rect![D4:F10])),
-            HashSet::from_iter([pos![sheet1!A1], pos![sheet2!C3]]),
-        );
+        // Test serialization
+        let serialized = serde_json::to_string(&map).unwrap();
+        let deserialized: RegionMap = serde_json::from_str(&serialized).unwrap();
 
-        map.remove_sheet(sheet2);
-        assert!(map.find_all_mentions_of_sheet(sheet2).is_empty());
+        for (msg, mut m) in [
+            ("Testing original map ...", map),
+            ("Testing deserialized ...", deserialized),
+        ] {
+            println!("{msg}");
+            assert_eq!(
+                m.get_positions_associated_with_region((sheet2, rect![D4:F10])),
+                HashSet::from_iter([pos![sheet1!A1], pos![sheet1!A2], pos![sheet2!C3]]),
+            );
+            assert_eq!(
+                m.get_positions_associated_with_region((sheet1, rect![B4:B4])),
+                HashSet::new(),
+            );
+            assert_eq!(
+                m.get_positions_associated_with_region((sheet1, rect![B2:B2])),
+                HashSet::from_iter([pos![sheet1!A1]]),
+            );
+            assert_eq!(
+                m.get_positions_associated_with_region((sheet1, rect![A2:B2])),
+                HashSet::from_iter([pos![sheet1!A1], pos![sheet2!Q3]]),
+            );
+
+            m.remove_pos(pos![sheet1!A2]);
+            assert_eq!(
+                m.get_positions_associated_with_region((sheet2, rect![D4:F10])),
+                HashSet::from_iter([pos![sheet1!A1], pos![sheet2!C3]]),
+            );
+
+            m.remove_sheet(sheet2);
+            assert!(m.find_all_mentions_of_sheet(sheet2).is_empty());
+        }
     }
 }
