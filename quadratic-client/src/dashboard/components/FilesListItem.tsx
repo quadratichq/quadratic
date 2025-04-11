@@ -10,6 +10,7 @@ import {
   getActionFileDuplicate,
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
+import { useConfirm } from '@/shared/components/ConfirmProvider';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DraftIcon, MoreVertIcon } from '@/shared/components/Icons';
@@ -71,6 +72,7 @@ export function FilesListItemUserFile({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
+  const confirm = useConfirm();
   const fileDragRef = useRef<HTMLDivElement>(null);
   const { loggedInUser } = useRootRouteLoaderData();
   const {
@@ -128,8 +130,13 @@ export function FilesListItemUserFile({
     fetcherRename.submit(data, fetcherSubmitOpts);
   };
 
-  const handleDelete = () => {
-    if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
+  const handleDelete = async () => {
+    const isConfirmed = await confirm({
+      title: 'Confirm delete',
+      message: `You are going to delete the file “${name}”. This cannot be undone.`,
+      confirmText: 'Delete',
+    });
+    if (isConfirmed) {
       const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
       fetcherDelete.submit(data, fetcherSubmitOpts);
     }

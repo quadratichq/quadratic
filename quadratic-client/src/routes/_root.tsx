@@ -1,6 +1,7 @@
 import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
+import { ConfirmProvider } from '@/shared/components/ConfirmProvider';
 import { Empty } from '@/shared/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
@@ -35,11 +36,13 @@ export const Component = () => {
   return (
     <MuiTheme>
       <GlobalSnackbarProvider>
-        <>
-          <Outlet />
-          <ThemeAppearanceModeEffects />
-          <ThemeAccentColorEffects />
-        </>
+        <ConfirmProvider>
+          <>
+            <Outlet />
+            <ThemeAppearanceModeEffects />
+            <ThemeAccentColorEffects />
+          </>
+        </ConfirmProvider>
       </GlobalSnackbarProvider>
     </MuiTheme>
   );
