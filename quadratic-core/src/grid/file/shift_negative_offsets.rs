@@ -46,7 +46,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     let mut shifted_offsets_sheet_name = HashMap::new(); // for migrating cells to q.cells
     let mut shifted_offsets_sheet_id = HashMap::new(); // for translating code runs's cells_accessed
     let a1_context = grid.make_a1_context();
-    for sheet in grid.sheets.iter_mut() {
+    for sheet in grid.sheets.values_mut() {
         let mut x_shift = 0;
         let mut y_shift = 0;
 
@@ -92,7 +92,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     }
 
     // translate code runs's cells_accessed
-    for sheet in grid.sheets.iter_mut() {
+    for sheet in grid.sheets.values_mut() {
         for (_, code_run) in sheet.iter_code_runs_mut() {
             let cells = &mut code_run.cells_accessed.cells;
             for (sheet_id, ranges) in cells {
@@ -116,7 +116,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     }
 
     // remove the import offset from the formats and borders
-    for sheet in grid.sheets.iter_mut() {
+    for sheet in grid.sheets.values_mut() {
         sheet
             .formats
             .translate_in_place(-IMPORT_OFFSET, -IMPORT_OFFSET);

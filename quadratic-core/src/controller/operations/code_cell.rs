@@ -111,7 +111,7 @@ impl GridController {
         let mut code_cell_positions = self
             .grid()
             .sheets()
-            .iter()
+            .values()
             .flat_map(|sheet| {
                 sheet
                     .data_tables

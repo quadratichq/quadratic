@@ -6,7 +6,7 @@ use anyhow::{Result, anyhow};
 
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {
-        self.grid.sheets().iter().map(|sheet| sheet.id).collect()
+        self.grid.sheet_ids()
     }
 
     pub fn try_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {

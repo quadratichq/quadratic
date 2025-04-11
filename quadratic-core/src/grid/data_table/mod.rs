@@ -98,7 +98,7 @@ impl Grid {
         new_name: &str,
         a1_context: &A1Context,
     ) {
-        for sheet in self.sheets.iter_mut() {
+        for sheet in self.sheets.values_mut() {
             sheet.replace_table_name_in_code_cells(old_name, new_name, a1_context);
         }
     }
@@ -111,7 +111,7 @@ impl Grid {
         new_name: &str,
         a1_context: &A1Context,
     ) {
-        for sheet in self.sheets.iter_mut() {
+        for sheet in self.sheets.values_mut() {
             sheet.replace_table_column_name_in_code_cells(
                 table_name, old_name, new_name, a1_context,
             );

@@ -11,6 +11,7 @@ pub use formatting::{
     NumericDecimals, NumericFormat, NumericFormatKind, StrikeThrough, TextColor, Underline,
 };
 pub use ids::*;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
 pub use sheet_formatting::SheetFormatting;
@@ -43,7 +44,7 @@ pub mod sheets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Grid {
-    pub sheets: Vec<Sheet>,
+    pub sheets: IndexMap<SheetId, Sheet>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -57,7 +58,9 @@ impl Grid {
         ret
     }
     pub fn new_blank() -> Self {
-        Grid { sheets: vec![] }
+        Grid {
+            sheets: IndexMap::new(),
+        }
     }
 
     /// Creates a grid for testing.
@@ -71,7 +74,7 @@ impl Grid {
     #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();
-        let sheet = &mut ret.sheets_mut()[0];
+        let sheet = ret.first_sheet_mut();
         for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
             let x = base_pos.x + x as i64;
             let y = base_pos.y + y as i64;

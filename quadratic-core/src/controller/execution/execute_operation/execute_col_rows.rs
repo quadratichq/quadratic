@@ -17,7 +17,7 @@ impl GridController {
     ) {
         let a1_context = self.a1_context();
 
-        for sheet in self.grid.sheets().iter() {
+        for sheet in self.grid.sheets().values() {
             for (pos, _) in sheet.iter_code_runs() {
                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
