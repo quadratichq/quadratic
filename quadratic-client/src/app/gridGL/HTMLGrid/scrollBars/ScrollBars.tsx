@@ -110,13 +110,13 @@ export const ScrollBars = () => {
       <div
         id="grid-scrollbars-horizontal"
         className="pointer-events-auto absolute bottom-1 rounded-md opacity-15"
-        style={{ height: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 1000 }}
+        style={{ height: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 5 }}
         onPointerDown={pointerDownHorizontal}
       />
       <div
         id="grid-scrollbars-vertical"
         className="pointer-events-auto absolute right-1 rounded-md opacity-15"
-        style={{ width: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 1000 }}
+        style={{ width: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 5 }}
         onPointerDown={pointerDownVertical}
       />
     </div>
