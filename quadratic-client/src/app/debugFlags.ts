@@ -56,7 +56,7 @@ export const debugShowLoadingHashes = debug && false;
 // Misc.
 // --------
 
-export const debugStartupTime = debug && true;
+export const debugStartupTime = debug && false;
 
 export const debugShowFileIO = debug && false;
 
