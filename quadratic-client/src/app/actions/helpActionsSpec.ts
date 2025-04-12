@@ -18,14 +18,14 @@ type HelpActionSpec = Pick<
 
 export const helpActionsSpec: HelpActionSpec = {
   [Action.HelpContactUs]: {
-    label: 'Contact us',
+    label: () => 'Contact us',
     Icon: ExternalLinkIcon,
     run: () => {
       openLink(CONTACT_URL);
     },
   },
   [Action.HelpDocs]: {
-    label: 'Docs',
+    label: () => 'Docs',
     labelVerbose: 'Visit docs',
     Icon: ExternalLinkIcon,
     run: () => {
@@ -33,7 +33,7 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpQuadratic101]: {
-    label: 'Quadratic 101',
+    label: () => 'Quadratic 101',
     labelVerbose: 'Visit Quadratic 101',
     Icon: ExternalLinkIcon,
     run: () => {
@@ -41,7 +41,7 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpCommunity]: {
-    label: 'Community',
+    label: () => 'Community',
     labelVerbose: 'Visit Community',
     Icon: ExternalLinkIcon,
     run: () => {
@@ -49,7 +49,7 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpChangelog]: {
-    label: 'Changelog',
+    label: () => 'Changelog',
     labelVerbose: 'Visit Changelog',
     Icon: ExternalLinkIcon,
     run: () => {
@@ -57,7 +57,7 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpFeedback]: {
-    label: 'Feedback',
+    label: () => 'Feedback',
     labelVerbose: 'Provide feedback',
     Icon: FeedbackIcon,
     isAvailable: isAvailableBecauseLoggedIn,
