@@ -40,7 +40,7 @@ class RenderClient {
         return;
 
       case 'clientRenderInit':
-        renderCore.init(e.ports[0]);
+        renderCore.clientInit(e.ports[0]);
         this.tableColumnHeaderForeground = e.data.tableColumnHeaderForeground;
         return;
 

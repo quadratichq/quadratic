@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { debugShowFileIO, debugStartupTime } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import FontFaceObserver from 'fontfaceobserver';
