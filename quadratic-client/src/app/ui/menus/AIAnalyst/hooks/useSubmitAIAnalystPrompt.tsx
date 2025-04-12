@@ -25,7 +25,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -40,8 +40,7 @@ const MAX_TOOL_CALL_ITERATIONS = 25;
 export type SubmitAIAnalystPromptArgs = {
   content: Content;
   context: Context;
-  messageIndex?: number;
-  clearMessages?: boolean;
+  messageIndex: number;
   onSubmit?: () => void;
 };
 
@@ -95,7 +94,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, context, messageIndex, clearMessages, onSubmit }: SubmitAIAnalystPromptArgs) => {
+      async ({ content, context, messageIndex, onSubmit }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -111,7 +110,8 @@ export function useSubmitAIAnalystPrompt() {
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;
 
-        if (clearMessages) {
+        const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
+        if (messageIndex === 0) {
           set(aiAnalystCurrentChatAtom, {
             id: v4(),
             name: '',
@@ -119,9 +119,8 @@ export function useSubmitAIAnalystPrompt() {
             messages: [],
           });
         }
-
         // fork chat, if we are editing an existing chat
-        if (messageIndex !== undefined) {
+        else if (messageIndex < currentMessageCount) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
               id: v4(),
@@ -130,8 +129,6 @@ export function useSubmitAIAnalystPrompt() {
               messages: prev.messages.slice(0, messageIndex),
             };
           });
-        } else {
-          messageIndex = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         }
 
         let chatMessages: ChatMessage[] = [];
@@ -261,6 +258,7 @@ export function useSubmitAIAnalystPrompt() {
 
         set(aiAnalystLoadingAtom, true);
 
+        let lastMessageIndex = -1;
         let chatId = '';
         set(aiAnalystCurrentChatAtom, (prev) => {
           chatId = prev.id ? prev.id : v4();
@@ -277,6 +275,7 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
@@ -318,7 +317,11 @@ export function useSubmitAIAnalystPrompt() {
                   const aiTool = toolCall.name as AITool;
                   const argsObject = JSON.parse(toolCall.arguments);
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                  const result = await aiToolsActions[aiTool](args as any);
+                  const result = await aiToolsActions[aiTool](args as any, {
+                    source: 'AIAnalyst',
+                    chatId,
+                    messageIndex: lastMessageIndex + 1,
+                  });
                   toolResultMessage.content.push({
                     id: toolCall.id,
                     text: result,

@@ -47,7 +47,7 @@ export const insertCellReference = () => {
 
 export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertCodePython]: {
-    label: 'Python',
+    label: () => 'Python',
     labelVerbose: 'Insert Python code',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
@@ -78,7 +78,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertCodeJavascript]: {
-    label: 'JavaScript',
+    label: () => 'JavaScript',
     labelVerbose: 'Insert JavaScript code',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
@@ -109,7 +109,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertCodeFormula]: {
-    label: 'Formula',
+    label: () => 'Formula',
     labelVerbose: 'Insert Formula',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
@@ -140,7 +140,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertChartPython]: {
-    label: 'Python (Plotly)',
+    label: () => 'Python (Plotly)',
     labelVerbose: 'Insert Python chart (Plotly)',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
@@ -171,7 +171,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertChartJavascript]: {
-    label: 'JavaScript (Chart.js)',
+    label: () => 'JavaScript (Chart.js)',
     labelVerbose: 'Insert JavaScript chart (Chart.js)',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
@@ -202,7 +202,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertFile]: {
-    label: 'From file (CSV, Excel, or Parquet)',
+    label: () => 'From file (CSV, Excel, or Parquet)',
     labelVerbose: 'Insert file (CSV, Excel, or Parquet)',
     run: () => {
       const el = document.getElementById(FILE_INPUT_ID) as HTMLInputElement;
@@ -216,7 +216,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertApiRequestJavascript]: {
-    label: 'From JavaScript API request',
+    label: () => 'From JavaScript API request',
     labelVerbose: 'Insert JavaScript API request',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
@@ -247,7 +247,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertApiRequestPython]: {
-    label: 'From Python API request',
+    label: () => 'From Python API request',
     labelVerbose: 'Insert Python API request',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
@@ -278,7 +278,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertDataTable]: {
-    label: 'Table',
+    label: () => 'Table',
     labelVerbose: 'Insert a table',
     Icon: TableConvertIcon,
     isDisabled: () => sheets.sheet.cursor.isSingleSelection(),
@@ -287,7 +287,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertSheet]: {
-    label: 'Sheet',
+    label: () => 'Sheet',
     labelVerbose: 'Insert Sheet',
     Icon: SheetIcon,
     run: () => {
@@ -295,7 +295,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertCheckbox]: {
-    label: 'Checkbox',
+    label: () => 'Checkbox',
     labelVerbose: 'Insert checkbox',
     Icon: CheckBoxIcon,
     run: () => {
@@ -307,7 +307,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertDropdown]: {
-    label: 'Dropdown',
+    label: () => 'Dropdown',
     labelVerbose: 'Insert dropdown',
     Icon: ArrowDropDownIcon,
     run: () => {
@@ -319,7 +319,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.ToggleDataValidation]: {
-    label: 'Data validation rule',
+    label: () => 'Data validation rule',
     labelVerbose: 'Manage data validation rules',
     Icon: DataValidationsIcon,
     run: () => {
@@ -331,16 +331,16 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertCellReference]: {
-    label: 'Cell reference',
+    label: () => 'Cell reference',
     labelVerbose: 'Insert cell reference',
     run: insertCellReference,
   },
   [Action.RemoveInsertedCells]: {
-    label: 'Remove inserted cells',
+    label: () => 'Remove inserted cells',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.InsertToday]: {
-    label: "Insert today's date",
+    label: () => "Insert today's date",
     Icon: FormatDateTimeIcon,
     run: () => {
       const sheet = sheets.sheet;
@@ -351,7 +351,7 @@ export const insertActionsSpec: InsertActionSpec = {
     },
   },
   [Action.InsertTodayTime]: {
-    label: "Insert today's time",
+    label: () => "Insert today's time",
     Icon: FormatDateTimeIcon,
     run: () => {
       const sheet = sheets.sheet;

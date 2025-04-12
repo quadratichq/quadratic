@@ -21,6 +21,7 @@ export const TopBarMenus = () => {
 
   // This ref is used to prevent the focus grid when menu closes
   const disableFocusGridRef = useRef(false);
+  const label = feedbackAction.label();
 
   return (
     <div className="flex items-center">
@@ -39,7 +40,7 @@ export const TopBarMenus = () => {
           feedbackAction.run();
         }}
       >
-        {feedbackAction.label}
+        {label}
       </Button>
     </div>
   );

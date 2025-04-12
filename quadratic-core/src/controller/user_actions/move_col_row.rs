@@ -75,7 +75,11 @@ impl GridController {
 
         // paste the copied data into the new columns
         let selection = A1Selection::from_single_cell((to, 1, sheet_id).into());
-        if let Ok(ops) = self.paste_html_operations(&selection, html, PasteSpecial::None) {
+        let insert_at = selection.cursor;
+
+        if let Ok(ops) =
+            self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
+        {
             transaction.operations.extend(ops);
         }
     }
@@ -151,7 +155,11 @@ impl GridController {
 
         // paste the copied data into the new rows
         let selection = A1Selection::from_single_cell((1, to, sheet_id).into());
-        if let Ok(ops) = self.paste_html_operations(&selection, html, PasteSpecial::None) {
+        let insert_at = selection.cursor;
+
+        if let Ok(ops) =
+            self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
+        {
             transaction.operations.extend(ops);
         }
     }

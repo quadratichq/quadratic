@@ -48,7 +48,7 @@ export const QuadraticSidebar = () => {
           <Link
             to="/"
             reloadDocument
-            className="group relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-border"
+            className="group relative flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-border"
           >
             <QuadraticLogo />
             {isRunningAsyncAction && (
@@ -64,7 +64,7 @@ export const QuadraticSidebar = () => {
 
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
-          <SidebarTooltip label={toggleAIChat.label} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
+          <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
             <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
               <AIIcon />
             </SidebarToggle>
@@ -73,7 +73,7 @@ export const QuadraticSidebar = () => {
 
         {canEditFile && (
           <SidebarTooltip
-            label={toggleCodeEditor.label}
+            label={toggleCodeEditor.label()}
             shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}
           >
             <SidebarToggle pressed={showCodeEditor} onPressedChange={() => toggleCodeEditor.run()}>
@@ -115,7 +115,7 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
         {...props}
         ref={ref}
         className={cn(
-          'relative h-8 w-8 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
+          'relative h-9 w-9 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
           props.className
         )}
       >

@@ -141,7 +141,7 @@ export const ContextMenuItemAction = (props: {
             {checkbox === true && <CheckIcon />}
           </>
         }
-        text={labelOverride ?? label}
+        text={labelOverride ?? label()}
         textBold={overrideDefaultOption ?? defaultOption}
         shortcut={keyboardShortcut}
       />

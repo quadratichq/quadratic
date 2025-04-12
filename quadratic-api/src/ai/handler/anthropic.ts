@@ -54,11 +54,12 @@ export const handleAnthropicRequest = async (
       };
     }
     if (options.stream) {
-      const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
-
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
+      response.write(`stream\n\n`);
+
+      const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
 
       const parsedResponse = await parseAnthropicStream(chunks, response, modelKey);
       return parsedResponse;
