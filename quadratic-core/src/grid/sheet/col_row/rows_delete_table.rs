@@ -194,9 +194,10 @@ impl Sheet {
 
         if self.ensure_no_table_ui(&rows) {
             if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
+                let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
                 crate::wasm_bindings::js::jsClientMessage(
                     "delete_rows_error".to_string(),
-                    "warning".to_string(),
+                    severity.to_string(),
                 );
             }
             return Err(());

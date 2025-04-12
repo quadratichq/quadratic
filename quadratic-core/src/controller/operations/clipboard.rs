@@ -230,10 +230,10 @@ impl GridController {
 
                         #[cfg(any(target_family = "wasm", test))]
                         {
-                            let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
                             crate::wasm_bindings::js::jsClientMessage(
                                 message.to_owned(),
-                                error.to_string(),
+                                severity.to_string(),
                             );
                         }
 
@@ -339,10 +339,10 @@ impl GridController {
 
                     #[cfg(any(target_family = "wasm", test))]
                     {
-                        let error = crate::grid::js_types::JsSnackbarSeverity::Error;
+                        let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
                         crate::wasm_bindings::js::jsClientMessage(
                             message.to_owned(),
-                            error.to_string(),
+                            severity.to_string(),
                         );
                     }
 
