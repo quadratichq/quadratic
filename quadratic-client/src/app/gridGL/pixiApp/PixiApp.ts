@@ -48,6 +48,9 @@ export class PixiApp {
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
 
+  // Used to track whether the cellsSheets have been created
+  private cellsSheetsReady = false;
+
   // todo: UI should be pulled out and separated into its own class
 
   canvas!: HTMLCanvasElement;
@@ -127,6 +130,10 @@ export class PixiApp {
       this.rebuild();
 
       urlParams.init();
+
+      if (this.cellsSheetsReady) {
+        this.cellsSheetsCreate();
+      }
 
       this.waitingForFirstRender = resolve;
       if (this.alreadyRendered) {
@@ -424,6 +431,14 @@ export class PixiApp {
   changeHoverTableHeaders(hoverTableHeaders: Container) {
     this.hoverTableHeaders.removeChildren();
     this.hoverTableHeaders.addChild(hoverTableHeaders);
+  }
+
+  cellsSheetsCreate() {
+    if (this.initialized) {
+      this.cellsSheets.create();
+    } else {
+      this.cellsSheetsReady = true;
+    }
   }
 }
 
