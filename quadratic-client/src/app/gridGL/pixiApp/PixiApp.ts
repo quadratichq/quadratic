@@ -114,27 +114,25 @@ export class PixiApp {
     this.debug = new Graphics();
   }
 
-  init() {
-    return new Promise((resolve) => this.initPromise(resolve));
-  }
+  init(): Promise<void> {
+    return new Promise((resolve) => {
+      // we cannot initialize pixi until the bitmap fonts are loaded
+      if (!isBitmapFontLoaded()) {
+        events.once('bitmapFontsLoaded', () => this.init());
+        return;
+      }
+      renderWebWorker.sendBitmapFonts();
+      this.initialized = true;
+      this.initCanvas();
+      this.rebuild();
 
-  // called when the app is initialized
-  private initPromise(resolve: Function) {
-    if (!isBitmapFontLoaded()) {
-      setTimeout(() => this.initPromise(resolve));
-      return;
-    }
-    renderWebWorker.sendBitmapFonts();
-    this.initialized = true;
-    this.initCanvas();
-    this.rebuild();
+      urlParams.init();
 
-    urlParams.init();
-
-    this.waitingForFirstRender = resolve;
-    if (this.alreadyRendered) {
-      this.firstRenderComplete();
-    }
+      this.waitingForFirstRender = resolve;
+      if (this.alreadyRendered) {
+        this.firstRenderComplete();
+      }
+    });
   }
 
   // called after RenderText has no more updates to send

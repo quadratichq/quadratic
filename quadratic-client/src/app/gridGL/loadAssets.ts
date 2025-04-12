@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { debugShowFileIO, debugStartupTime } from '@/app/debugFlags';
+import { events } from '@/app/events/events';
 import FontFaceObserver from 'fontfaceobserver';
 import { Assets, BitmapFont } from 'pixi.js';
 import { createBorderTypes } from './generateTextures';
 
-const intervalToCheckBitmapFonts = 100;
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
 const TIMEOUT = 10000;
@@ -18,22 +18,8 @@ export function isBitmapFontLoaded(): boolean {
   return bitmapFonts.every((font) => BitmapFont.available[font]);
 }
 
-function ensureBitmapFontLoaded(resolve: () => void): void {
-  const waitForLoad = () => {
-    if (bitmapFonts.find((font) => !BitmapFont.available[font])) {
-      setTimeout(waitForLoad, intervalToCheckBitmapFonts);
-    } else {
-      if (debugShowFileIO) console.log('[pixiApp] assets loaded.');
-      resolve();
-      if (debugStartupTime) console.timeEnd('loading assets...');
-    }
-  };
-
-  waitForLoad();
-}
-
 export function loadAssets() {
-  if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons...');
+  if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
@@ -69,6 +55,7 @@ export function loadAssets() {
   // Add bundles to Assets
   Assets.addBundle('bundle', bundle);
   Assets.loadBundle('bundle').then(() => {
-    if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons...');
+    if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+    events.emit('bitmapFontsLoaded');
   });
 }

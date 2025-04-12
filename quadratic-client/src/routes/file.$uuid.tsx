@@ -60,17 +60,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
 
-  if (debugStartupTime) console.time('initializing workers...');
-  // initialize all workers
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing workers');
   initWorkers();
-  if (debugStartupTime) console.timeEnd('initializing workers...');
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing workers');
 
-  if (debugStartupTime) console.time('initializing PIXI assets...');
-  // initialize: PIXI assets
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing PIXI assets');
   loadAssets();
-  if (debugStartupTime) console.timeEnd('initializing PIXI assets...');
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
 
-  if (debugStartupTime) console.time('initializing Rust and loading Quadratic file...');
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
   // initialize: Rust metadata
   await initRustClient();
 
@@ -134,7 +132,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (isVersionHistoryPreview) {
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
-  if (debugStartupTime) console.timeEnd('initializing Rust and loading Quadratic file...');
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
   return data;
 };
 
