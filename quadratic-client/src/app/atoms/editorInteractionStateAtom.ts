@@ -4,6 +4,7 @@ import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { User } from '@/auth/auth';
 import type { FilePermission, TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
+import { events } from '../events/events';
 
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
@@ -59,6 +60,68 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
   key: 'editorInteractionState',
   default: defaultEditorInteractionState,
   effects: [
+    ({ setSelf }) => {
+      const handleTransactionStart = (transaction: TransactionInfo) => {
+        setSelf((prev) => {
+          if (prev instanceof DefaultValue) return prev;
+
+          return {
+            ...prev,
+            transactionsInfo: [
+              ...prev.transactionsInfo.filter((t) => t.transactionId !== transaction.transactionId),
+              transaction,
+            ],
+          };
+        });
+      };
+      events.on('transactionStart', handleTransactionStart);
+
+      const handleTransactionEnd = (transaction: TransactionInfo) => {
+        setSelf((prev) => {
+          if (prev instanceof DefaultValue) return prev;
+
+          return {
+            ...prev,
+            transactionsInfo: [...prev.transactionsInfo.filter((t) => t.transactionId !== transaction.transactionId)],
+          };
+        });
+      };
+      events.on('transactionEnd', handleTransactionEnd);
+
+      return () => {
+        events.off('transactionStart', handleTransactionStart);
+        events.off('transactionEnd', handleTransactionEnd);
+      };
+    },
+    // this effect is used to focus the grid when the modal is closed
+    ({ onSet }) => {
+      onSet((newValue, oldValue) => {
+        if (oldValue instanceof DefaultValue) return;
+        const oldModalShow =
+          oldValue.showCellTypeMenu ||
+          oldValue.showCommandPalette ||
+          oldValue.showConnectionsMenu ||
+          oldValue.showGoToMenu ||
+          oldValue.showFeedbackMenu ||
+          oldValue.showRenameFileMenu ||
+          oldValue.showShareFileMenu ||
+          oldValue.showSearch ||
+          oldValue.showContextMenu;
+        const newModelShow =
+          newValue.showCellTypeMenu ||
+          newValue.showCommandPalette ||
+          newValue.showConnectionsMenu ||
+          newValue.showGoToMenu ||
+          newValue.showFeedbackMenu ||
+          newValue.showRenameFileMenu ||
+          newValue.showShareFileMenu ||
+          newValue.showSearch ||
+          newValue.showContextMenu;
+        if (oldModalShow && !newModelShow) {
+          focusGrid();
+        }
+      });
+    },
     // this effect is used to focus the grid when the modal is closed
     ({ onSet }) => {
       onSet((newValue, oldValue) => {
