@@ -34,6 +34,7 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import './pixiApp.css';
@@ -114,17 +115,16 @@ export class PixiApp {
   }
 
   init() {
-    return new Promise((resolve) => {
-      this.initPromise(resolve);
-    });
+    return new Promise((resolve) => this.initPromise(resolve));
   }
 
+  // called when the app is initialized
   private initPromise(resolve: Function) {
     if (!isBitmapFontLoaded()) {
       setTimeout(() => this.initPromise(resolve));
       return;
     }
-    console.log('after loaded...');
+    renderWebWorker.sendBitmapFonts();
     this.initialized = true;
     this.initCanvas();
     this.rebuild();

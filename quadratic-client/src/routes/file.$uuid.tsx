@@ -1,5 +1,5 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debugShowFileIO, debugShowMultiplayer } from '@/app/debugFlags';
+import { debugShowFileIO, debugShowMultiplayer, debugStartupTime } from '@/app/debugFlags';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
@@ -60,11 +60,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
 
+  if (debugStartupTime) console.time('initializing workers...');
   // initialize all workers
   initWorkers();
+  if (debugStartupTime) console.timeEnd('initializing workers...');
 
-  // initialize: Rust metadata and PIXI assets
-  await Promise.all([initRustClient(), loadAssets()]);
+  if (debugStartupTime) console.time('initializing PIXI assets...');
+  // initialize: PIXI assets
+  loadAssets();
+  if (debugStartupTime) console.timeEnd('initializing PIXI assets...');
+
+  if (debugStartupTime) console.time('initializing Rust and loading Quadratic file...');
+  // initialize: Rust metadata
+  await initRustClient();
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
@@ -126,7 +134,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (isVersionHistoryPreview) {
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
-
+  if (debugStartupTime) console.timeEnd('initializing Rust and loading Quadratic file...');
   return data;
 };
 

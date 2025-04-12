@@ -32,51 +32,43 @@ function ensureBitmapFontLoaded(resolve: () => void): void {
   waitForLoad();
 }
 
-export function loadAssets(): Promise<void> {
-  if (debugStartupTime) console.time('loading assets...');
-  return new Promise(async (resolve) => {
-    if (debugShowFileIO) console.log('[pixiApp] Loading assets...');
-    createBorderTypes();
+export function loadAssets() {
+  if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons...');
+  if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
+  createBorderTypes();
 
-    // Load HTML fonts for Input
-    loadFont('OpenSans');
-    loadFont('OpenSans-Bold');
-    loadFont('OpenSans-Italic');
-    loadFont('OpenSans-BoldItalic');
+  // Load HTML fonts for Input
+  loadFont('OpenSans');
+  loadFont('OpenSans-Bold');
+  loadFont('OpenSans-Italic');
+  loadFont('OpenSans-BoldItalic');
 
-    // Load PixiJS fonts for canvas
-    const fontBundle = {
-      OpenSans: '/fonts/opensans/OpenSans.fnt',
-      'OpenSans-Bold': '/fonts/opensans/OpenSans-Bold.fnt',
-      'OpenSans-Italic': '/fonts/opensans/OpenSans-Italic.fnt',
-      'OpenSans-BoldItalic': '/fonts/opensans/OpenSans-BoldItalic.fnt',
-    };
+  // Load PixiJS fonts for canvas
+  const bundle = {
+    OpenSans: '/fonts/opensans/OpenSans.fnt',
+    'OpenSans-Bold': '/fonts/opensans/OpenSans-Bold.fnt',
+    'OpenSans-Italic': '/fonts/opensans/OpenSans-Italic.fnt',
+    'OpenSans-BoldItalic': '/fonts/opensans/OpenSans-BoldItalic.fnt',
 
-    const iconBundle = {
-      'icon-formula': '/images/icon-formula.png',
-      'icon-python': '/images/icon-python.png',
-      'icon-javascript': '/images/icon-javascript.png',
-      'icon-postgres': '/images/icon-postgres.png',
-      'icon-mysql': '/images/icon-mysql.png',
-      'icon-snowflake': '/images/icon-snowflake.png',
-      'icon-mssql': '/images/icon-mssql.png',
-      'checkbox-icon': '/images/checkbox.png',
-      'checkbox-checked-icon': '/images/checkbox-checked.png',
-      'dropdown-icon': '/images/dropdown.png',
-      'dropdown-white-icon': '/images/dropdown-white.png',
-      'chart-placeholder': '/images/chart-placeholder.png',
-      'sort-ascending': '/images/sort-ascending.svg',
-      'sort-descending': '/images/sort-descending.svg',
-    };
+    'icon-formula': '/images/icon-formula.png',
+    'icon-python': '/images/icon-python.png',
+    'icon-javascript': '/images/icon-javascript.png',
+    'icon-postgres': '/images/icon-postgres.png',
+    'icon-mysql': '/images/icon-mysql.png',
+    'icon-snowflake': '/images/icon-snowflake.png',
+    'icon-mssql': '/images/icon-mssql.png',
+    'checkbox-icon': '/images/checkbox.png',
+    'checkbox-checked-icon': '/images/checkbox-checked.png',
+    'dropdown-icon': '/images/dropdown.png',
+    'dropdown-white-icon': '/images/dropdown-white.png',
+    'chart-placeholder': '/images/chart-placeholder.png',
+    'sort-ascending': '/images/sort-ascending.svg',
+    'sort-descending': '/images/sort-descending.svg',
+  };
 
-    // Add bundles to Assets
-    Assets.addBundle('fonts', fontBundle);
-    Assets.loadBundle('fonts');
-
-    Assets.addBundle('icons', iconBundle);
-    Assets.loadBundle('icons');
-
-    // ensureBitmapFontLoaded(resolve);
-    resolve();
+  // Add bundles to Assets
+  Assets.addBundle('bundle', bundle);
+  Assets.loadBundle('bundle').then(() => {
+    if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons...');
   });
 }
