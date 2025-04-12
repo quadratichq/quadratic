@@ -27,7 +27,7 @@ impl DataTable {
         column_index: usize,
         direction: SortDirection,
     ) -> Result<Option<DataTableSort>> {
-        let old = self.prepend_sort(column_index, direction.clone());
+        let old = self.prepend_sort(column_index, direction);
 
         self.sort_all()?;
 

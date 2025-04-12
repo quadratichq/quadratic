@@ -598,10 +598,8 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
         );
-
-        crate::test_util::print_first_sheet(&gc);
         gc.insert_column(sheet_id, 3, true, None);
-        crate::test_util::print_first_sheet(&gc);
+
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.bounds(false),

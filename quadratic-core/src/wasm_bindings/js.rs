@@ -142,7 +142,7 @@ thread_local! {
     ///
     /// This must be cleared at the beginning of each test by using
     /// [`clear_js_calls()`].
-    pub static JS_CALLS: Mutex<Vec<TestFunction>> = const { Mutex::new(vec![]) };
+    static JS_CALLS: Mutex<Vec<TestFunction>> = const { Mutex::new(vec![]) };
 }
 
 #[cfg(test)]
@@ -193,15 +193,13 @@ pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
     JS_CALLS.with(|js_calls| {
         let mut js_calls = js_calls.lock().unwrap();
         let mut found = 0;
-        let mut i = 0;
-        while i < js_calls.len() {
-            if js_calls[i].name == name {
+        js_calls.retain(|x| {
+            if x.name == name {
                 found += 1;
-                js_calls.remove(i);
-            } else {
-                i += 1;
+                return false;
             }
-        }
+            true
+        });
         assert_eq!(found, count);
         if clear {
             js_calls.clear();

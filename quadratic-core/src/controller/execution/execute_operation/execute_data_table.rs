@@ -161,11 +161,9 @@ impl GridController {
             // insert the data table into the sheet
             let (old_index, old_data_table) = if let Some(index) = index {
                 // if the index is provided, insert the data table at the index
-                let (index, old_data_table) =
-                    sheet
-                        .data_tables
-                        .insert_before(index, data_table_pos, data_table);
-                (index, old_data_table)
+                sheet
+                    .data_tables
+                    .insert_before(index, data_table_pos, data_table)
             } else {
                 sheet.data_tables.insert_sorted(data_table_pos, data_table)
             };
