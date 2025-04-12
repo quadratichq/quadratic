@@ -5,6 +5,8 @@ import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpe
 import type { AIRequestHelperArgs, ParsedAIResponse, VertexAIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { getVertexAIApiArgs, parseVertexAIResponse, parseVertexAIStream } from '../helpers/vertexai.helper';
 
+const KEEP_ALIVE_INTERVAL = 25000;
+
 export const handleVertexAIRequest = async (
   modelKey: VertexAIModelKey,
   args: AIRequestHelperArgs,
@@ -14,6 +16,8 @@ export const handleVertexAIRequest = async (
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getVertexAIApiArgs(args);
+
+  let timeout: NodeJS.Timeout | undefined = undefined;
 
   try {
     const generativeModel = vertexai.getGenerativeModel({
@@ -32,11 +36,26 @@ export const handleVertexAIRequest = async (
     };
 
     if (options.stream) {
-      const result = await generativeModel.generateContentStream(apiArgs);
-
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
+      response.write(`stream\n\n`);
+
+      // hack to keep stream alive when response takes longer than heroku's 30s timeout
+      const keepStreamAlive = () => {
+        clearTimeout(timeout);
+        if (response.writableEnded) {
+          return;
+        }
+        response.write(`keep alive\n\n`);
+        timeout = setTimeout(keepStreamAlive, KEEP_ALIVE_INTERVAL);
+      };
+
+      keepStreamAlive();
+
+      const result = await generativeModel.generateContentStream(apiArgs);
+
+      clearTimeout(timeout);
 
       const parsedResponse = await parseVertexAIStream(result, response, modelKey);
       return parsedResponse;
@@ -47,6 +66,8 @@ export const handleVertexAIRequest = async (
       return parsedResponse;
     }
   } catch (error: any) {
+    clearTimeout(timeout);
+
     if (!options.stream || !response.headersSent) {
       if (error instanceof ClientError || error instanceof GoogleApiError || error instanceof GoogleAuthError) {
         const code = 'code' in error ? Number(error.code) : 400;

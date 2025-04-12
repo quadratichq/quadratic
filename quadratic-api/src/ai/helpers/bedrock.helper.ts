@@ -158,6 +158,8 @@ export async function parseBedrockStream(
     model: getModelFromModelKey(modelKey),
   };
 
+  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+
   const usage: AIUsage = {
     inputTokens: 0,
     outputTokens: 0,

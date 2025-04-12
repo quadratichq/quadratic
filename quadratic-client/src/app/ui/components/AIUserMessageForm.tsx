@@ -1,5 +1,6 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { debug } from '@/app/debugFlags';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
@@ -43,11 +44,12 @@ type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
   setLoading: SetterOrUpdater<boolean>;
   submitPrompt: (args: SubmitPromptArgs) => void;
   isFileSupported: (mimeType: string) => boolean;
+  fileTypes: string[];
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
-  ctx?: {
+  ctx: {
     context: Context;
-    setContext: React.Dispatch<React.SetStateAction<Context>>;
+    setContext?: React.Dispatch<React.SetStateAction<Context>>;
     initialContext?: Context;
   };
   waitingOnMessageIndex?: number;
@@ -67,11 +69,17 @@ export const AIUserMessageForm = memo(
       loading,
       setLoading,
       isFileSupported,
+      fileTypes,
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
+    const [dragOver, setDragOver] = useState(false);
+    const dragOverMessage = useMemo(
+      () => (fileTypes.includes('.pdf') ? 'Images and PDFs are supported' : 'Images supported'),
+      [fileTypes]
+    );
 
     const [files, setFiles] = useState<FileContent[]>([]);
     const [prompt, setPrompt] = useState<string>('');
@@ -115,11 +123,8 @@ export const AIUserMessageForm = memo(
     }, [abortController, setLoading]);
 
     const handleFiles = useCallback(
-      (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
-        const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
+      (files: FileList | File[]) => {
         if (files && files.length > 0) {
-          e.preventDefault();
-
           for (const file of files) {
             const mimeType = file.type;
             if (isSupportedMimeType(mimeType) && isFileSupported(mimeType)) {
@@ -135,6 +140,29 @@ export const AIUserMessageForm = memo(
         }
       },
       [isFileSupported]
+    );
+
+    const handlePasteOrDrop = useCallback(
+      (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement> | DragEvent<HTMLDivElement>) => {
+        const filesToHandle =
+          'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : null;
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+        if (editing && filesToHandle && filesToHandle.length > 0) {
+          handleFiles(filesToHandle);
+        }
+      },
+      [editing, handleFiles]
+    );
+
+    const handleDrag = useCallback(
+      (e: DragEvent<HTMLFormElement | HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(editing && e.type !== 'dragleave');
+      },
+      [editing]
     );
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -155,20 +183,32 @@ export const AIUserMessageForm = memo(
 
     return (
       <form
-        className={cn(
-          'group relative h-min rounded-lg bg-accent',
-          (ctx || !!files.length) && 'pt-1.5',
-          editing ? '' : 'select-none'
-        )}
+        className={cn('group relative h-min rounded-lg bg-accent pt-1.5', editing ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) {
             textareaRef.current?.focus();
           }
         }}
-        onPaste={handleFiles}
-        onDrop={handleFiles}
+        onPaste={handlePasteOrDrop}
+        onDrop={handlePasteOrDrop}
+        onDragEnter={handleDrag}
+        onDragOver={handleDrag}
       >
+        {editing && dragOver && (
+          <div
+            className="absolute bottom-[-2px] left-[-2px] right-[-2px] top-[-2px] z-20 flex flex-col items-center justify-center rounded bg-background opacity-90"
+            onDrop={handlePasteOrDrop}
+            onDragLeave={handleDrag}
+          >
+            <div className="absolute bottom-2 left-2 right-2 top-2 z-20 rounded-md border-4 border-dashed border-primary" />
+            <div className="pointer-events-none relative z-10 flex select-none flex-col items-center justify-center rounded-lg p-4">
+              <span className="text-sm font-bold">Drop files here</span>
+              <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
+            </div>
+          </div>
+        )}
+
         <EditButton
           show={!editing && !loading && waitingOnMessageIndex === undefined}
           loading={loading}
@@ -177,14 +217,16 @@ export const AIUserMessageForm = memo(
         />
 
         <AIContext
-          initialContext={ctx?.initialContext}
-          context={ctx?.context}
-          setContext={ctx?.setContext}
+          initialContext={ctx.initialContext}
+          context={ctx.context}
+          setContext={ctx.setContext}
           files={files}
           setFiles={setFiles}
+          handleFiles={handleFiles}
+          fileTypes={fileTypes}
           editing={editing}
           disabled={waitingOnMessageIndex !== undefined || !editing}
-          textAreaRef={textareaRef}
+          textareaRef={textareaRef}
         />
 
         {editing ? (
@@ -208,6 +250,13 @@ export const AIUserMessageForm = memo(
 
                 if (initialContent === undefined) {
                   textareaRef.current?.focus();
+                } else {
+                  setEditing(false);
+                  bottomTextareaRef.current?.focus();
+                }
+              } else if (event.key === 'Escape') {
+                if (initialContent === undefined) {
+                  focusGrid();
                 } else {
                   setEditing(false);
                   bottomTextareaRef.current?.focus();
@@ -241,6 +290,7 @@ export const AIUserMessageForm = memo(
           loading={loading}
           waitingOnMessageIndex={waitingOnMessageIndex}
           textareaRef={textareaRef}
+          prompt={prompt}
           submitPrompt={() => submit(prompt)}
           abortPrompt={abortPrompt}
         />
@@ -311,12 +361,21 @@ type AIUserMessageFormFooterProps = {
   loading: boolean;
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  prompt: string;
   submitPrompt: () => void;
   abortPrompt: () => void;
 };
 
 const AIUserMessageFormFooter = memo(
-  ({ show, loading, waitingOnMessageIndex, textareaRef, submitPrompt, abortPrompt }: AIUserMessageFormFooterProps) => {
+  ({
+    show,
+    loading,
+    waitingOnMessageIndex,
+    textareaRef,
+    prompt,
+    submitPrompt,
+    abortPrompt,
+  }: AIUserMessageFormFooterProps) => {
     if (!show) {
       return null;
     }
@@ -329,7 +388,7 @@ const AIUserMessageFormFooter = memo(
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
-          <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+          <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             {!debug && (

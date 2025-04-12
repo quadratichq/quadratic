@@ -555,8 +555,8 @@ pub(crate) mod tests {
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
 
         assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["issue", " test", " value"]);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 3, vec!["0", " 1", " Invalid"]);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["0", " 2", " Valid"]);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 3, vec!["0", "1", " Invalid"]);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {

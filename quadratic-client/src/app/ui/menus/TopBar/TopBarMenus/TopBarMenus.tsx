@@ -18,6 +18,7 @@ const feedbackAction = defaultActionSpec[Action.HelpFeedback];
 export const TopBarMenus = () => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEdit = useMemo(() => permissions.includes('FILE_EDIT'), [permissions]);
+  const label = feedbackAction.label();
 
   return (
     <div className="flex items-center">
@@ -36,7 +37,7 @@ export const TopBarMenus = () => {
           feedbackAction.run();
         }}
       >
-        {feedbackAction.label}
+        {label}
       </Button>
     </div>
   );

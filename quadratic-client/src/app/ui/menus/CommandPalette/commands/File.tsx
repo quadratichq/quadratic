@@ -45,7 +45,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: openFileVersionHistoryActionSpec.label,
+      label: openFileVersionHistoryActionSpec.label(),
       isAvailable: openFileVersionHistoryActionSpec.isAvailable,
       Component: (props) => {
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
@@ -60,7 +60,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: downloadFileActionSpec.label,
+      label: downloadFileActionSpec.label(),
       isAvailable: downloadFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
@@ -75,7 +75,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: renameFileActionSpec?.label ?? '',
+      label: renameFileActionSpec?.label() ?? '',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (

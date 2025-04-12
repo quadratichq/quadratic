@@ -29,7 +29,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/code
     },
   });
   const message = chat.messages[0];
-  console.log(message);
+
   if (!message) {
     return res.status(404).json({ message: 'Message not found' });
   }

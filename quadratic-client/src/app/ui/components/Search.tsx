@@ -43,7 +43,7 @@ export function Search() {
     }
   }, []);
 
-  const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label : findInSheetActionSpec.label;
+  const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label() : findInSheetActionSpec.label();
 
   useEffect(() => {
     if (cursor) {
