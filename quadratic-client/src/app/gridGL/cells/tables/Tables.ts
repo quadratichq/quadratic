@@ -152,6 +152,7 @@ export class Tables extends Container<Table> {
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
       if (!isBitmapFontLoaded()) {
+        console.log('bitmapFontsLoaded event not received');
         events.once('bitmapFontsLoaded', () => this.completeRenderCodeCells(codeCells));
         return;
       }
