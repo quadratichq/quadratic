@@ -99,6 +99,7 @@ function DropdownMenuItemFromAction<T extends Action>({
 }) {
   const actionSpec = defaultActionSpec[action];
   const shortcutDisplay = keyboardShortcutEnumToDisplay(action);
+  const label = actionSpec.label();
   return (
     <DropdownMenuItem
       onClick={() => {
@@ -106,7 +107,7 @@ function DropdownMenuItemFromAction<T extends Action>({
         actionSpec.run(actionArgs);
       }}
     >
-      {actionSpec.label} {shortcutDisplay && <DropdownMenuShortcut>{shortcutDisplay}</DropdownMenuShortcut>}
+      {label} {shortcutDisplay && <DropdownMenuShortcut>{shortcutDisplay}</DropdownMenuShortcut>}
     </DropdownMenuItem>
   );
 }

@@ -212,7 +212,7 @@ export const insertTableColumnRightAction = {
 };
 
 export const removeTableColumnAction = {
-  label: 'Remove column',
+  label: 'Remove table column(s)',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
@@ -237,7 +237,7 @@ export const insertTableRowBelowAction = {
 };
 
 export const removeTableRowAction = {
-  label: 'Remove row',
+  label: 'Remove table row(s)',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
