@@ -23,45 +23,42 @@ export function drawDashedRectangle(options: {
   const boundedRight = Math.min(selectionRect.right, bounds.right);
   const boundedBottom = Math.min(selectionRect.bottom, bounds.bottom);
 
-  g.lineStyle({
+  g.strokeStyle = {
     width: CURSOR_THICKNESS,
     color,
     alignment: 0.5,
     texture: generatedTextures.dashedHorizontal,
-  });
+  };
   g.moveTo(selectionRect.left, selectionRect.top);
   g.lineTo(boundedRight, selectionRect.top);
   if (selectionRect.bottom <= bounds.bottom) {
     g.moveTo(boundedRight, selectionRect.bottom);
     g.lineTo(selectionRect.left, selectionRect.bottom);
   }
+  g.stroke();
 
-  g.lineStyle({
+  g.strokeStyle = {
     width: CURSOR_THICKNESS,
     color,
     alignment: 0.5,
     texture: generatedTextures.dashedVertical,
-  });
+  };
   g.moveTo(selectionRect.left, boundedBottom);
   g.lineTo(selectionRect.left, selectionRect.top);
   if (selectionRect.right <= bounds.right) {
     g.moveTo(selectionRect.right, boundedBottom);
     g.lineTo(selectionRect.right, selectionRect.top);
   }
+  g.stroke();
 
   if (isSelected) {
-    g.lineStyle({
+    g.strokeStyle = {
       alignment: 0,
-    });
+    };
     g.moveTo(selectionRect.left, selectionRect.top);
-    g.beginFill(color, FILL_SELECTION_ALPHA);
-    g.drawRect(
-      selectionRect.left,
-      selectionRect.top,
-      boundedRight - selectionRect.left,
-      boundedBottom - selectionRect.top
-    );
-    g.endFill();
+    g.rect(selectionRect.left, selectionRect.top, boundedRight - selectionRect.left, boundedBottom - selectionRect.top);
+    g.fill({ color, alpha: FILL_SELECTION_ALPHA });
+    g.stroke();
   }
 }
 
@@ -100,21 +97,20 @@ export function drawDashedRectangleMarching(options: {
     g.clear();
   }
 
-  g.lineStyle({
+  g.strokeStyle = {
     alignment: 0.5,
-  });
+  };
   if (!noFill) {
-    g.beginFill(color, alpha);
-    g.drawRect(minX, minY, boundedRight - minX, boundedBottom - minY);
-    g.endFill();
+    g.rect(minX, minY, boundedRight - minX, boundedBottom - minY);
+    g.fill({ color, alpha });
   }
 
   g.moveTo(minX, minY);
-  g.lineStyle({
+  g.strokeStyle = {
     width: CURSOR_THICKNESS,
     color,
     alignment: 0.5,
-  });
+  };
 
   const clamp = (n: number, min: number, max: number): number => {
     return Math.min(Math.max(n, min), max);
@@ -160,6 +156,7 @@ export function drawDashedRectangleMarching(options: {
     g.moveTo(minX + DASHED_THICKNESS, clamp(y - DASHED / 2, minY, boundedBottom));
     g.lineTo(minX + DASHED_THICKNESS, clamp(y, minY, boundedBottom));
   }
+  g.stroke();
 
   return true;
 }

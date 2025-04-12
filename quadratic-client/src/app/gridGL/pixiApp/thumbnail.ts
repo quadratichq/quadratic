@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { apiClient } from '@/shared/api/apiClient';
-import { Rectangle, Renderer } from 'pixi.js';
+import type { Renderer } from 'pixi.js';
+import { autoDetectRenderer, Rectangle } from 'pixi.js';
 import { debugShowFileIO } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
@@ -69,23 +70,23 @@ class Thumbnail {
   /** returns a dataURL to a copy of the selected cells */
   private async generate(): Promise<Blob | null> {
     if (!this.renderer) {
-      this.renderer = new Renderer({
+      this.renderer = await autoDetectRenderer({
         antialias: true,
         backgroundColor: 0xffffff,
       });
     }
 
     this.renderer.resize(imageWidth, imageHeight);
-    this.renderer.view.width = imageWidth;
-    this.renderer.view.height = imageHeight;
+    this.renderer.view.canvas.width = imageWidth;
+    this.renderer.view.canvas.height = imageHeight;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
     pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
     pixiApp.gridLines.update(rectangle, undefined, true);
-    this.renderer.render(pixiApp.viewportContents);
+    this.renderer.render({ container: pixiApp.viewportContents });
     pixiApp.cleanUpAfterCopying(true);
     pixiApp.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
-      this.renderer!.view.toBlob?.((blob) => resolve(blob));
+      this.renderer!.view.canvas.toBlob?.((blob) => resolve(blob));
     });
   }
 }

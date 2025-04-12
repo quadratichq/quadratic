@@ -32,18 +32,20 @@ export class TableColumnHeadersGridLines extends Graphics {
 
       lines.forEach((line, index) => {
         if (index === 0 || index === lines.length - 1) {
-          this.lineStyle({
+          this.strokeStyle = {
             color: getCSSVariableTint(this.header.table.active ? 'primary' : 'muted-foreground'),
             width: 1,
             alignment: index === lines.length - 1 ? 0 : 1,
-          });
+          };
         } else {
-          this.lineStyle(currentLineStyle);
+          this.strokeStyle = currentLineStyle;
         }
-
+        this.beginPath();
         this.moveTo(line, y0).lineTo(line, y1);
       });
-      this.lineStyle(currentLineStyle);
+      this.stroke();
+      this.beginPath();
+      this.strokeStyle = currentLineStyle;
       this.moveTo(lines[0], y0).lineTo(lines[lines.length - 1], y0);
       this.moveTo(lines[0], y1).lineTo(lines[lines.length - 1], y1);
     }

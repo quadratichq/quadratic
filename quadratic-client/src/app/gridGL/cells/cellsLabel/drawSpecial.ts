@@ -4,7 +4,7 @@ import type {
   RenderCheckbox,
   RenderDropdown,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { Assets, MIPMAP_MODES, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Assets, Rectangle, Sprite, Texture } from 'pixi.js';
 
 export const CHECKBOX_SIZE = 15;
 export const DROPDOWN_SIZE = [8, 6];
@@ -29,7 +29,7 @@ export const drawCheckbox = (options: RenderCheckbox) => {
   const texture = Texture.from(`/images/checkbox${options.value ? '-checked' : ''}.png`);
 
   // this ensures the sprite looks good when zooming all the way out (otherwise it flashes)
-  texture.baseTexture.mipmap = MIPMAP_MODES.ON;
+  texture.source.autoGenerateMipmaps = true;
 
   const sprite = new Sprite(texture) as SpecialSprite;
   sprite.checkbox = options.value;

@@ -37,8 +37,7 @@ import {
   SORT_BUTTON_PADDING,
   SORT_BUTTON_RADIUS,
 } from '@/shared/constants/gridConstants';
-import { removeItems } from '@pixi/utils';
-import { Point, Rectangle } from 'pixi.js';
+import { Point, Rectangle, removeItems } from 'pixi.js';
 
 interface CharRenderData {
   charData: RenderBitmapChar;

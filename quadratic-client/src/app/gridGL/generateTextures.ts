@@ -1,4 +1,4 @@
-import { SCALE_MODES, Texture, WRAP_MODES } from 'pixi.js';
+import { Texture } from 'pixi.js';
 
 export const DASHED_THICKNESS = 2;
 export const DASHED = 8;
@@ -41,7 +41,10 @@ function createDashedLine(horizontal: boolean): Texture {
     context.lineTo(DASHED_THICKNESS / 2, DASHED / 2);
   }
   context.stroke();
-  return Texture.from(canvas, { wrapMode: WRAP_MODES.REPEAT, scaleMode: SCALE_MODES.NEAREST });
+  const texture = Texture.from(canvas);
+  texture.source.wrapMode = 'repeat';
+  texture.source.scaleMode = 'nearest';
+  return texture;
 }
 
 function createDottedLine(horizontal: boolean): Texture {
@@ -63,7 +66,10 @@ function createDottedLine(horizontal: boolean): Texture {
     context.lineTo(DASHED_THICKNESS / 2, DOTTED / 2);
   }
   context.stroke();
-  return Texture.from(canvas, { wrapMode: WRAP_MODES.REPEAT, scaleMode: SCALE_MODES.NEAREST });
+  const texture = Texture.from(canvas);
+  texture.source.wrapMode = 'repeat';
+  texture.source.scaleMode = 'nearest';
+  return texture;
 }
 
 function createTriangle() {

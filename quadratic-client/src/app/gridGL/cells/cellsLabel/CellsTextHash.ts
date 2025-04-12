@@ -80,6 +80,8 @@ export class CellsTextHash extends Container {
     this.newDrawRects = [];
     this.drawRects = this.addChild(new CellsDrawRects());
 
+    this.onRender = this.updateUniforms;
+
     // we track the bounds of both the text and validations
     this.bounds = new Bounds();
     this.updateHashBounds();
@@ -125,26 +127,27 @@ export class CellsTextHash extends Container {
     this.visible = false;
   }
 
-  // overrides container's render function
-  render(renderer: Renderer) {
-    if (this.visible && this.worldAlpha > 0 && this.renderable) {
-      const { a, b, c, d } = this.transform.worldTransform;
+  // updates uniforms for all children before rendering
+  updateUniforms = (renderer: Renderer) => {
+    if (this.visible && this.getGlobalAlpha(true) > 0 && this.renderable) {
+      const { a, b, c, d } = this.worldTransform;
       const dx = Math.sqrt(a * a + b * b);
       const dy = Math.sqrt(c * c + d * d);
       const worldScale = (Math.abs(dx) + Math.abs(dy)) / 2;
       const resolution = renderer.resolution;
       const scale = worldScale * resolution;
       this.entries.children.forEach((child) => child.setUniforms(scale));
-      super.render(renderer);
     }
-  }
+  };
 
   drawDebugBox(g: Graphics, c: Container) {
     const screen = this.textBounds;
-    g.beginFill(this.debugColor, 0.25);
-    g.drawShape(screen);
-    g.endFill();
-    const text = c.addChild(new BitmapText(`${this.hashX},${this.hashY}`, { fontName: 'OpenSans', fontSize: 12 }));
+    g.beginPath();
+    g.rect(screen.x, screen.y, screen.width, screen.height);
+    g.fill();
+    const text = c.addChild(
+      new BitmapText({ text: `${this.hashX},${this.hashY}`, style: { fontFamily: 'OpenSans', fontSize: 12 } })
+    );
     text.tint = 0xff0000;
     text.position.set(screen.x, screen.y);
   }

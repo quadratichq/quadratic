@@ -49,7 +49,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
     if (!zoomContainer || !normalContainer || !parent) return;
     const viewport = pixiApp.viewport;
     const updateTransform = () => {
-      viewport.updateTransform();
+      viewport.updateLocalTransform();
       let worldTransform = viewport.worldTransform;
       const transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${worldTransform.d}, ${
         worldTransform.tx + parent.offsetLeft

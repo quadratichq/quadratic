@@ -38,7 +38,7 @@ export class CellsFills extends Container {
     this.cellsSheet = cellsSheet;
     this.meta = this.addChild(new Graphics());
     this.cellsContainer = this.addChild(
-      new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
+      new ParticleContainer({ dynamicProperties: { vertices: true, tint: true }, texture: Texture.WHITE })
     );
     this.alternatingColorsGraphics = this.addChild(new Graphics());
 

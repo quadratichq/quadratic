@@ -31,7 +31,7 @@ export function drawBorder(options: {
   height: number;
   tint: number;
   alpha: number;
-  getSprite: (tiling?: boolean) => Sprite;
+  getSprite: (tiling?: boolean) => Sprite | TilingSprite;
   top?: boolean;
   left?: boolean;
   bottom?: boolean;
@@ -200,7 +200,7 @@ export function drawCellBorder(options: {
   position: Rectangle;
   horizontal?: { type: CellBorderLine; color?: Rgba };
   vertical?: { type: CellBorderLine; color?: Rgba };
-  getSprite: (tiling?: boolean) => Sprite;
+  getSprite: (tiling?: boolean) => Sprite | TilingSprite;
 }): BorderCull[] {
   const { position, getSprite, horizontal, vertical } = options;
   const borderCull: BorderCull[] = [];

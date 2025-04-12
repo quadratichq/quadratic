@@ -7,19 +7,21 @@
  * are rendered.
  */
 
-import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
-import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { Texture } from 'pixi.js';
-import { Assets, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
+import { Assets, MeshGeometry, MeshSimple } from 'pixi.js';
 
-export class LabelMeshEntry extends Mesh {
+export class LabelMeshEntry extends MeshSimple {
   private fontName: string;
   private fontSize = 14;
 
   constructor(message: RenderClientLabelMeshEntry) {
-    const geometry = new MeshGeometry();
-    const shader = message.hasColor ? shaderTint : shaderNoTint;
+    const geometry = new MeshGeometry({
+      positions: message.vertices,
+      uvs: message.uvs,
+      indices: message.indices,
+    });
+    // const shader = message.hasColor ? shaderTint : shaderNoTint;
 
     // Get the font from Assets
     const font = Assets.get(message.fontName);
@@ -39,22 +41,22 @@ export class LabelMeshEntry extends Mesh {
       throw new Error(`Texture not found for font: ${message.fontName} with uid: ${message.textureUid}`);
     }
 
-    const material = new MeshMaterial(texture, {
-      program: Program.from(shader.msdfVert, shader.msdfFrag),
-      uniforms: { uFWidth: 0 },
-    });
+    // const material = new MeshMaterial(texture, {
+    //   program: Program.from(shader.msdfVert, shader.msdfFrag),
+    //   uniforms: { uFWidth: 0 },
+    // });
 
-    geometry.getBuffer('aVertexPosition').update(message.vertices);
-    geometry.getBuffer('aTextureCoord').update(message.uvs);
-    geometry.getIndex().update(message.indices);
+    // geometry.getBuffer('aVertexPosition').update(message.vertices);
+    // geometry.getBuffer('aTextureCoord').update(message.uvs);
+    // geometry.getIndex().update(message.indices);
 
     if (message.hasColor && message.colors) {
-      geometry.addAttribute('aColors', message.colors, 4);
+      geometry.addAttribute('aColors', { buffer: message.colors, size: 4 });
     }
 
-    super(geometry, material);
+    super({ texture, vertices: message.vertices, uvs: message.uvs, indices: message.indices });
     this.fontName = message.fontName;
-    this.blendMode = BLEND_MODES.NORMAL_NPM;
+    // this.blendMode = BLEND_MODES.NORMAL_NPM;
   }
 
   setUniforms(scale: number) {
@@ -63,8 +65,10 @@ export class LabelMeshEntry extends Mesh {
     if (!font) {
       throw new Error(`Font not found: ${this.fontName}`);
     }
-    const fontScale = this.fontSize / font.size;
-    const ufWidth = font.distanceFieldRange * fontScale * scale;
-    this.shader.uniforms.uFWidth = ufWidth;
+    // const fontScale = this.fontSize / font.size;
+
+    // todo ***
+    // const ufWidth = font.distanceFieldRange * fontScale * scale;
+    // this.shader.uniforms.uFWidth = ufWidth;
   }
 }

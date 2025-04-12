@@ -61,10 +61,13 @@ export class TableColumnHeader extends Container {
 
     const tint = getCSSVariableTint('foreground');
     this.columnName = this.addChild(
-      new BitmapText(name, {
-        fontName: 'OpenSans-Bold',
-        fontSize: FONT_SIZE,
-        tint,
+      new BitmapText({
+        text: name,
+        style: {
+          fontFamily: 'OpenSans-Bold',
+          fontSize: FONT_SIZE,
+          fill: tint,
+        },
       })
     );
     this.clipName(name, width);

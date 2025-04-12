@@ -62,7 +62,7 @@
     "next-themes": "^0.3.0",
     "partial-json": "^0.1.7",
     "pixi-viewport": "5.0.3",
-    "pixi.js": "^7.4.3",
+    "pixi.js": "^8.9.1",
     "pyodide": "^0.27.5",
     "react": "^18.2.0",
     "react-avatar-editor": "^14.0.0-beta.5",

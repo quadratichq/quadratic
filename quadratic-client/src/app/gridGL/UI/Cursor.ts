@@ -129,27 +129,29 @@ export class Cursor extends Container {
       if (tableColumn) {
         g = pixiApp.hoverTableColumnsSelection;
       }
-      g.lineStyle({
+      g.strokeStyle = {
         width: CURSOR_THICKNESS,
         color,
         alignment: 0,
-      });
+      };
       g.moveTo(x, y);
       g.lineTo(x + width, y);
       g.lineTo(x + width, y + height - indicatorOffset);
       g.moveTo(x + width - indicatorOffset, y + height);
       g.lineTo(x, y + height);
       g.lineTo(x, y);
+      g.stroke();
     }
 
     if (showInput && inlineShowing) {
-      this.graphics.lineStyle({
+      this.graphics.strokeStyle = {
         width: CURSOR_THICKNESS * 1.5,
         color,
         alpha: CURSOR_INPUT_ALPHA,
         alignment: 1,
-      });
-      this.graphics.drawRect(x, y, width, height);
+      };
+      this.graphics.rect(x, y, width, height);
+      this.graphics.stroke();
     } else {
       this.drawError(cell, x, y, width, height);
     }
@@ -170,17 +172,15 @@ export class Cursor extends Container {
       return;
 
     const indicatorSize = Math.max(INDICATOR_SIZE / pixiApp.viewport.scaled, INDICATOR_SIZE);
-    this.graphics.lineStyle({
+    this.graphics.strokeStyle = {
       color: getCSSVariableTint('primary'),
       width: 1,
       alignment: 0,
-    });
-    this.graphics.beginFill(getCSSVariableTint('background'));
+    };
     const b = table.tableBounds;
-    this.graphics.drawShape(
-      new Rectangle(b.right - indicatorSize / 2, b.bottom - indicatorSize / 2, indicatorSize, indicatorSize)
-    );
-    this.graphics.endFill();
+    this.graphics.rect(b.right - indicatorSize / 2, b.bottom - indicatorSize / 2, indicatorSize, indicatorSize);
+    this.graphics.fill({ color: getCSSVariableTint('background') });
+    this.graphics.stroke();
   }
 
   private drawFiniteCursor(ranges: RefRangeBounds[]) {
@@ -208,10 +208,10 @@ export class Cursor extends Container {
       const y = this.endCell.y + this.endCell.height;
       this.indicator.x = x - indicatorSize / 2;
       this.indicator.y = y - indicatorSize / 2;
-      this.graphics.lineStyle(0);
 
       const color = pixiApp.accentColor;
-      this.graphics.beginFill(color).drawShape(this.indicator).endFill();
+      this.graphics.rect(this.indicator.x, this.indicator.y, this.indicator.width, this.indicator.height);
+      this.graphics.fill({ color });
     }
   }
 
@@ -228,30 +228,33 @@ export class Cursor extends Container {
         height: Math.max(inlineEditorHandler.height + CURSOR_THICKNESS, height),
       };
 
-      this.graphics.lineStyle({
+      this.graphics.strokeStyle = {
         width: CURSOR_THICKNESS * 1.5,
         color,
         alpha: CURSOR_INPUT_ALPHA,
         alignment: 1,
-      });
-      this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+      };
+      this.graphics.rect(offsets.x, offsets.y, offsets.width, offsets.height);
 
       const indicatorHalfSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE / 2;
       this.graphics.moveTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y);
       this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y);
       this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y + offsets.height);
       this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y + offsets.height);
+
+      this.graphics.stroke();
     } else {
       return;
     }
 
     if (!color || !offsets) return;
-    this.graphics.lineStyle({
+    this.graphics.strokeStyle = {
       width: CURSOR_THICKNESS,
       color,
       alignment: 0,
-    });
-    this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+    };
+    this.graphics.rect(offsets.x, offsets.y, offsets.width, offsets.height);
+    this.graphics.stroke();
   }
 
   private drawInlineCursorModeIndicator() {
@@ -273,29 +276,27 @@ export class Cursor extends Container {
       { x: x - halfSize + 1, y: y + height - halfSize - 1 },
       { x: x + width - halfSize - 1, y: y + height - halfSize - 1 },
     ];
-    this.graphics.lineStyle(0);
-    this.graphics.beginFill(color);
     corners.forEach((corner) => {
-      this.graphics.drawRect(corner.x, corner.y, indicatorSize, indicatorSize);
+      this.graphics.rect(corner.x, corner.y, indicatorSize, indicatorSize);
     });
-    this.graphics.endFill();
+    this.graphics.fill({ color });
   }
 
   private drawUnselectDown() {
     const { unselectDown } = pixiApp.pointer.pointerDown;
     if (!unselectDown) return;
     const foreground = pixiApp.accentColor;
-    this.graphics.lineStyle({ color: foreground, width: 1 });
+    this.graphics.strokeStyle = { color: foreground, width: 1 };
     const background = getCSSVariableTint('background');
-    this.graphics.beginFill(background, 0.5);
     const rectangle = sheets.sheet.getScreenRectangle(
       unselectDown.x,
       unselectDown.y,
       unselectDown.width + 1,
       unselectDown.height + 1
     );
-    this.graphics.drawShape(rectangle);
-    this.graphics.endFill();
+    this.graphics.rect(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+    this.graphics.fill({ color: background, alpha: 0.5 });
+    this.graphics.stroke();
   }
 
   private cursorIsOnSpill() {

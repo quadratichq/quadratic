@@ -39,15 +39,16 @@ export class TableOutline extends Graphics {
     const width = 1;
     const chart = this.table.codeCell.state === 'HTML';
     if (!chart) {
-      this.lineStyle({
+      this.strokeStyle = {
         color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
         width,
         alignment: 0.5,
-      });
+      };
       if (!this.table.active || !this.table.codeCell.spill_error) {
         const width = this.table.tableBounds.width;
         const height = this.table.tableBounds.height;
-        this.drawShape(new Rectangle(0, 0, width, height));
+        this.rect(0, 0, width, height);
+        this.stroke();
       }
     }
 
@@ -93,14 +94,15 @@ export class TableOutline extends Graphics {
       );
 
       // draw outline around where the code cell would spill
-      this.lineStyle({ color: getCSSVariableTint('primary'), width: 1, alignment: 0 });
+      this.strokeStyle = { color: getCSSVariableTint('primary'), width: 1, alignment: 0 };
       const image = this.table.codeCell.state === 'Image';
-      this.drawRect(
+      this.rect(
         0,
         0,
         chart || image ? this.table.codeCell.w : full.width,
         chart || image ? this.table.codeCell.h : full.height
       );
+      this.stroke();
 
       // box and shade what is causing the spill errors
       this.table.codeCell.spill_error.forEach((error) => {
@@ -126,16 +128,15 @@ export class TableOutline extends Graphics {
 
     this.moveTo(minX, minY);
     for (let i = 0; i < path.length; i++) {
-      this.lineStyle({
+      this.strokeStyle = {
         width: SPILL_HIGHLIGHT_THICKNESS,
         color,
         texture: i % 2 === 0 ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical,
-      });
+      };
       this.lineTo(path[i][0], path[i][1]);
+      this.stroke();
     }
-    this.lineStyle();
-    this.beginFill(colors.cellColorError, SPILL_FILL_ALPHA);
-    this.drawRect(minX, minY, maxX - minX, maxY - minY);
-    this.endFill();
+    this.rect(minX, minY, maxX - minX, maxY - minY);
+    this.fill({ color: colors.cellColorError, alpha: SPILL_FILL_ALPHA });
   };
 }
