@@ -65,15 +65,6 @@ pub enum Operation {
         pixel_width: f32,
         pixel_height: f32,
     },
-    /// Moves a cell value from one place on a sheet to another. This op
-    /// purposefully does not check if the cell value is a data table. This
-    /// should be used to move only the CellValue without impacting any
-    /// other data in the sheet.
-    MoveCellValue {
-        sheet_id: SheetId,
-        from: Pos,
-        to: Pos,
-    },
     MoveDataTable {
         sheet_id: SheetId,
         from: Pos,

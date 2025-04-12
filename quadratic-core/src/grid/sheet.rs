@@ -1490,33 +1490,4 @@ mod test {
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 24, y: 20 }));
         assert!(!sheet.has_content_ignore_blank_table(Pos { x: 25, y: 20 }));
     }
-
-    #[test]
-    fn test_move_cell_value() {
-        let mut sheet = Sheet::test();
-
-        // Set up initial cell value
-        let old_pos = Pos { x: 1, y: 1 };
-        let new_pos = Pos { x: 2, y: 2 };
-        sheet.set_cell_value(old_pos, "test");
-
-        // Move the cell value
-        sheet.move_cell_value(old_pos, new_pos);
-
-        // Verify the value was moved correctly
-        assert_eq!(sheet.cell_value(old_pos), None);
-        assert_eq!(
-            sheet.cell_value(new_pos),
-            Some(CellValue::Text("test".to_string()))
-        );
-
-        // Test moving a non-existent cell value
-        let empty_pos = Pos { x: 3, y: 3 };
-        let target_pos = Pos { x: 4, y: 4 };
-        sheet.move_cell_value(empty_pos, target_pos);
-
-        // Verify nothing changed when moving non-existent cell
-        assert_eq!(sheet.cell_value(empty_pos), None);
-        assert_eq!(sheet.cell_value(target_pos), None);
-    }
 }

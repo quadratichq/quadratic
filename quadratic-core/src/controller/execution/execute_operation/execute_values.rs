@@ -1,7 +1,7 @@
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::{CellValue, Pos, SheetRect};
+use crate::{Pos, SheetRect};
 
 impl GridController {
     pub(crate) fn execute_set_cell_values(
@@ -89,68 +89,6 @@ impl GridController {
             }
         }
     }
-
-    /// Moves a cell value from one position on a sheet to another position on
-    /// the same sheet. Note: this purposefully does not check if the cell value
-    /// is a data table. This should only be used to move only the CellValue
-    /// without impacting any other data in the sheet.
-    pub(crate) fn execute_move_cell_value(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) {
-        if let Operation::MoveCellValue { sheet_id, from, to } = op {
-            let sheet_rect = SheetRect {
-                sheet_id,
-                min: Pos {
-                    x: from.x.min(to.x),
-                    y: from.y.min(to.y),
-                },
-                max: Pos {
-                    x: from.x.max(to.x),
-                    y: from.y.max(to.y),
-                },
-            };
-            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.move_cell_value(from, to);
-                transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
-                transaction
-                    .reverse_operations
-                    .push(Operation::MoveCellValue {
-                        sheet_id,
-                        from: to,
-                        to: from,
-                    });
-                if let Some(cell_value) = sheet.cell_value_ref(to) {
-                    if matches!(cell_value, CellValue::Code(_) | CellValue::Import(_)) {
-                        if let Some(table) = sheet.data_tables.get(&to) {
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                to,
-                                table.is_html(),
-                                table.is_image(),
-                            );
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                from,
-                                table.is_html(),
-                                table.is_image(),
-                            );
-                        }
-                    }
-                }
-            }
-            if transaction.is_user() {
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
-                    if !rows.is_empty() {
-                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                        resize_rows.extend(rows);
-                    }
-                }
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -158,10 +96,8 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::GridController;
-    use crate::controller::active_transactions::transaction_name::TransactionName;
-    use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::{CellValue, Pos, SheetPos, assert_display_cell_value};
+    use crate::{CellValue, Pos, SheetPos};
 
     #[test]
     fn test_set_cell_value() {
@@ -311,35 +247,5 @@ mod tests {
             .last()
             .unwrap();
         assert_eq!(last_transaction.forward.operations.len(), 1);
-    }
-
-    #[test]
-    fn test_move_cell_value() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let from_pos = Pos { x: 1, y: 1 };
-        let to_pos = Pos { x: 2, y: 2 };
-
-        // Set initial value
-        gc.set_cell_value(from_pos.to_sheet_pos(sheet_id), "test".to_string(), None);
-
-        // Verify initial value is set
-        assert_display_cell_value(&gc, sheet_id, 1, 1, "test");
-
-        // Move the cell value
-        let ops = vec![Operation::MoveCellValue {
-            sheet_id,
-            from: from_pos,
-            to: to_pos,
-        }];
-        gc.start_user_transaction(ops, None, TransactionName::SetCells);
-
-        // Verify the value was moved correctly
-        assert_display_cell_value(&gc, sheet_id, 2, 2, "test");
-        assert_display_cell_value(&gc, sheet_id, 1, 1, "");
-
-        gc.undo(None);
-        assert_display_cell_value(&gc, sheet_id, 1, 1, "test");
-        assert_display_cell_value(&gc, sheet_id, 2, 2, "");
     }
 }
