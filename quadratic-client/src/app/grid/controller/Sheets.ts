@@ -47,7 +47,7 @@ export class Sheets {
     });
     this.sort();
 
-    // Look for an initial active sheet in the URL. If it's nott there, use the 1st sheet
+    // Look for an initial active sheet in the URL. If it's not there, use the 1st sheet
     const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
     if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
       this._current = initialActiveSheetId;
@@ -55,7 +55,7 @@ export class Sheets {
       this._current = this.sheets[0].id;
     }
 
-    pixiApp.cellsSheets.create();
+    pixiApp.cellsSheetsCreate();
     this.initialized = true;
   };
 

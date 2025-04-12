@@ -48,6 +48,7 @@ export class PixiApp {
   // after init is called, depending on timing).
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
+  private cellsSheetsReady = false;
 
   // todo: UI should be pulled out and separated into its own class
 
@@ -115,8 +116,6 @@ export class PixiApp {
         events.once('bitmapFontsLoaded', () => this.init());
         return;
       }
-      console.log('viewport created...');
-      this.viewport = new Viewport(this);
       renderWebWorker.sendBitmapFonts();
       this.renderer = await autoDetectRenderer({
         view: this.canvas,
@@ -124,12 +123,17 @@ export class PixiApp {
         antialias: true,
         backgroundColor: 0xffffff,
       });
+      this.viewport = new Viewport(this);
 
       this.initialized = true;
       this.initCanvas();
       this.rebuild();
 
       urlParams.init();
+
+      if (this.cellsSheetsReady) {
+        this.cellsSheetsCreate();
+      }
 
       this.waitingForFirstRender = resolve;
       if (this.alreadyRendered) {
@@ -427,6 +431,14 @@ export class PixiApp {
   changeHoverTableHeaders(hoverTableHeaders: Container) {
     this.hoverTableHeaders.removeChildren();
     this.hoverTableHeaders.addChild(hoverTableHeaders);
+  }
+
+  cellsSheetsCreate() {
+    if (this.initialized) {
+      this.cellsSheets.create();
+    } else {
+      this.cellsSheetsReady = true;
+    }
   }
 }
 

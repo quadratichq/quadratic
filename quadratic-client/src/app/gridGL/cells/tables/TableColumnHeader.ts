@@ -123,9 +123,8 @@ export class TableColumnHeader extends Container {
   private drawSortButton = (width: number, height: number, sort?: DataTableSort) => {
     this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS * 2 - SORT_BUTTON_PADDING * 2;
     this.sortButton = this.addChild(new Graphics());
-    this.sortButton.beginFill(0xffffff, SORT_BACKGROUND_ALPHA);
-    this.sortButton.drawCircle(0, 0, SORT_BUTTON_RADIUS);
-    this.sortButton.endFill();
+    this.sortButton.circle(0, 0, SORT_BUTTON_RADIUS);
+    this.sortButton.fill({ color: 0xffffff, alpha: SORT_BACKGROUND_ALPHA });
     this.sortButton.position.set(width - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING, height / 2);
     this.updateSortButtonVisibility(false);
 

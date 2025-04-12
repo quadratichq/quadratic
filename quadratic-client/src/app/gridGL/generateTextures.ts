@@ -67,7 +67,7 @@ function createDottedLine(horizontal: boolean): Texture {
   }
   context.stroke();
   const texture = Texture.from(canvas);
-  texture.source.wrapMode = 'repeat';
+  texture.source.addressMode = 'repeat';
   texture.source.scaleMode = 'nearest';
   return texture;
 }
