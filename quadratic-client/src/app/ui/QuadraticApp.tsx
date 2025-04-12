@@ -47,6 +47,7 @@ export function QuadraticApp() {
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
+        console.log('after init in QuadraticApp...');
         // If we're loading a specific checkpoint (version history), don't load multiplayer
         if (checkpointId) {
           setMultiplayerLoading(false);

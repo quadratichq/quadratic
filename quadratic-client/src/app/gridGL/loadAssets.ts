@@ -1,4 +1,5 @@
-import { debugShowFileIO } from '@/app/debugFlags';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { debugShowFileIO, debugStartupTime } from '@/app/debugFlags';
 import FontFaceObserver from 'fontfaceobserver';
 import { Assets, BitmapFont } from 'pixi.js';
 import { createBorderTypes } from './generateTextures';
@@ -13,6 +14,10 @@ function loadFont(fontName: string): void {
   font.load(undefined, TIMEOUT);
 }
 
+export function isBitmapFontLoaded(): boolean {
+  return bitmapFonts.every((font) => BitmapFont.available[font]);
+}
+
 function ensureBitmapFontLoaded(resolve: () => void): void {
   const waitForLoad = () => {
     if (bitmapFonts.find((font) => !BitmapFont.available[font])) {
@@ -20,6 +25,7 @@ function ensureBitmapFontLoaded(resolve: () => void): void {
     } else {
       if (debugShowFileIO) console.log('[pixiApp] assets loaded.');
       resolve();
+      if (debugStartupTime) console.timeEnd('loading assets...');
     }
   };
 
@@ -27,7 +33,8 @@ function ensureBitmapFontLoaded(resolve: () => void): void {
 }
 
 export function loadAssets(): Promise<void> {
-  return new Promise((resolve) => {
+  if (debugStartupTime) console.time('loading assets...');
+  return new Promise(async (resolve) => {
     if (debugShowFileIO) console.log('[pixiApp] Loading assets...');
     createBorderTypes();
 
@@ -64,11 +71,12 @@ export function loadAssets(): Promise<void> {
 
     // Add bundles to Assets
     Assets.addBundle('fonts', fontBundle);
-    Assets.addBundle('icons', iconBundle);
+    Assets.loadBundle('fonts');
 
-    // Load all assets
-    Promise.all([Assets.loadBundle('fonts'), Assets.loadBundle('icons')]).then(() => {
-      ensureBitmapFontLoaded(resolve);
-    });
+    Assets.addBundle('icons', iconBundle);
+    Assets.loadBundle('icons');
+
+    // ensureBitmapFontLoaded(resolve);
+    resolve();
   });
 }

@@ -56,6 +56,8 @@ export const debugShowLoadingHashes = debug && false;
 // Misc.
 // --------
 
+export const debugStartupTime = debug && true;
+
 export const debugShowFileIO = debug && false;
 
 // shows messages related to offline transaction

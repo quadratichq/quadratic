@@ -23,6 +23,7 @@ import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
@@ -33,7 +34,6 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import './pixiApp.css';
@@ -88,9 +88,6 @@ export class PixiApp {
   // for testing purposes
   debug!: Graphics;
 
-  // used for timing purposes for sheets initialized after first render
-  sheetsCreated = false;
-
   initialized = false;
 
   constructor() {
@@ -117,21 +114,27 @@ export class PixiApp {
   }
 
   init() {
+    return new Promise((resolve) => {
+      this.initPromise(resolve);
+    });
+  }
+
+  private initPromise(resolve: Function) {
+    if (!isBitmapFontLoaded()) {
+      setTimeout(() => this.initPromise(resolve));
+      return;
+    }
+    console.log('after loaded...');
     this.initialized = true;
     this.initCanvas();
     this.rebuild();
 
     urlParams.init();
 
-    if (this.sheetsCreated) {
-      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
+    this.waitingForFirstRender = resolve;
+    if (this.alreadyRendered) {
+      this.firstRenderComplete();
     }
-    return new Promise((resolve) => {
-      this.waitingForFirstRender = resolve;
-      if (this.alreadyRendered) {
-        this.firstRenderComplete();
-      }
-    });
   }
 
   // called after RenderText has no more updates to send
