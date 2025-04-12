@@ -293,7 +293,6 @@ export class Control {
         this.multiplayer = spawn("cargo", this.cli.options.multiplayer
             ? [
                 "watch",
-                "--skip-local-deps",
                 "-x",
                 "run -p quadratic-multiplayer --target-dir=target",
             ]
@@ -386,7 +385,6 @@ export class Control {
         this.connection = spawn("cargo", this.cli.options.connection
             ? [
                 "watch",
-                "--skip-local-deps",
                 "-x",
                 "run -p quadratic-connection --target-dir=target",
             ]
