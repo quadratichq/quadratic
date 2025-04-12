@@ -102,7 +102,6 @@ export class PixiApp {
     this.hoverTableColumnsSelection = new Graphics();
 
     this.canvas = document.createElement('canvas');
-    this.viewport = new Viewport(this);
     this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();
@@ -116,6 +115,8 @@ export class PixiApp {
         events.once('bitmapFontsLoaded', () => this.init());
         return;
       }
+      console.log('viewport created...');
+      this.viewport = new Viewport(this);
       renderWebWorker.sendBitmapFonts();
       this.renderer = await autoDetectRenderer({
         view: this.canvas,

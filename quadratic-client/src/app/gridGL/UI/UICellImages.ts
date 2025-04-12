@@ -78,7 +78,7 @@ export class UICellImages extends Container {
       if (this.active) {
         const hslColorFromCssVar = window.getComputedStyle(document.documentElement).getPropertyValue('--primary');
         const color = convertColorStringToTint(`hsl(${hslColorFromCssVar})`);
-        this.resizing.lineStyle({ color, width: IMAGE_BORDER_WIDTH });
+        this.resizing.strokeStyle = { color, width: IMAGE_BORDER_WIDTH };
 
         const table = this.active.table;
         // vertical line on the right
@@ -94,6 +94,7 @@ export class UICellImages extends Container {
           table.tableBounds.right + IMAGE_BORDER_OFFSET,
           table.tableBounds.bottom + IMAGE_BORDER_OFFSET
         );
+        this.resizing.stroke();
       }
       return true;
     }

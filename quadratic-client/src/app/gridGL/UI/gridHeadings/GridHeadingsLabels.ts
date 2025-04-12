@@ -27,10 +27,13 @@ export class GridHeadingsLabels extends Container {
 
   private addLabelText(): BitmapText {
     const label = this.addChild(
-      new BitmapText('', {
-        fontName: 'OpenSans',
-        fontSize: GRID_HEADER_FONT_SIZE,
-        tint: colors.gridHeadingLabel,
+      new BitmapText({
+        text: '',
+        style: {
+          fontFamily: 'OpenSans',
+          fontSize: GRID_HEADER_FONT_SIZE,
+          fill: colors.gridHeadingLabel,
+        },
       })
     );
     label.anchor.set(0.5);

@@ -5,6 +5,7 @@ import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
 import type { Viewport } from 'pixi-viewport';
 import { Plugin } from 'pixi-viewport';
+import type { WheelStartEvent } from 'pixi-viewport/dist/types';
 import type { PointData } from 'pixi.js';
 import { Point } from 'pixi.js';
 
@@ -362,10 +363,9 @@ export class Wheel extends Plugin {
 
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
       this.parent.emit('wheel-start', {
-        wheel: { dx: e.deltaX, dy: e.deltaY, dz: e.deltaZ },
-        event: e,
+        event: { ...e, dx: e.deltaX, dy: e.deltaY, dz: e.deltaZ },
         viewport: this.parent,
-      });
+      } as WheelStartEvent);
     } else if (e.ctrlKey && this.options.trackpadPinch) {
       this.pinch(e, adjust);
     } else {
