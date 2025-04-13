@@ -40,15 +40,6 @@ export class Sheets {
   };
 
   private create = (sheetInfo: SheetInfo[]) => {
-    // if (!isBitmapFontLoaded()) {
-    //   events.once('bitmapFontsLoaded', () => this.create(sheetInfo));
-    //   return;
-    // }
-    // if (!pixiApp.initialized) {
-    //   events.once('pixiAppReady', () => this.create(sheetInfo));
-    //   return;
-    // }
-
     this.sheets = [];
     sheetInfo.forEach((info) => {
       const sheet = new Sheet(this, info);
@@ -63,7 +54,6 @@ export class Sheets {
     } else {
       this._current = this.sheets[0].id;
     }
-
     this.initialized = true;
   };
 

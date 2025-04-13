@@ -142,9 +142,8 @@ export class CellsTextHash extends Container {
 
   drawDebugBox(g: Graphics, c: Container) {
     const screen = this.textBounds;
-    g.beginPath();
     g.rect(screen.x, screen.y, screen.width, screen.height);
-    g.fill();
+    g.fill({ color: this.debugColor, alpha: 0.25 });
     const text = c.addChild(
       new BitmapText({ text: `${this.hashX},${this.hashY}`, style: { fontFamily: 'OpenSans', fontSize: 12 } })
     );

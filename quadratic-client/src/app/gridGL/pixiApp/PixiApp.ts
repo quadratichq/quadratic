@@ -44,11 +44,6 @@ export class PixiApp {
   private parent?: HTMLDivElement;
   private update!: Update;
 
-  // Used to track whether we're done with the first render (either before or
-  // after init is called, depending on timing).
-  private waitingForFirstRender?: Function;
-  private alreadyRendered = false;
-
   // todo: UI should be pulled out and separated into its own class
 
   canvas!: HTMLCanvasElement;
@@ -108,52 +103,33 @@ export class PixiApp {
     this.debug = new Graphics();
   }
 
-  init(): Promise<void> {
-    return new Promise(async (resolve) => {
-      // we cannot initialize pixi until the bitmap fonts are loaded
-      if (!isBitmapFontLoaded()) {
-        events.once('bitmapFontsLoaded', () => this.init());
-        return;
-      }
-      renderWebWorker.sendBitmapFonts();
-      this.renderer = await autoDetectRenderer({
-        preference: 'webgpu',
-        canvas: this.canvas,
-        resolution: Math.max(2, window.devicePixelRatio),
-        antialias: true,
-        backgroundColor: 0xffffff,
-      });
-      this.viewport = new Viewport(this);
-
-      this.initialized = true;
-      this.initCanvas();
-      this.rebuild();
-
-      urlParams.init();
-
-      this.cellsSheets.create();
-
-      this.waitingForFirstRender = resolve;
-      if (this.alreadyRendered) {
-        this.firstRenderComplete();
-      }
-      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
-      events.emit('pixiAppReady');
-    });
-  }
-
-  // called after RenderText has no more updates to send
-  firstRenderComplete = () => {
-    if (this.waitingForFirstRender) {
-      // perform a render to warm up the GPU
-      this.cellsSheets.showAll(sheets.current);
-      this.renderer.render(this.stage);
-      this.waitingForFirstRender();
-      this.waitingForFirstRender = undefined;
-    } else {
-      this.alreadyRendered = true;
+  async init(): Promise<void> {
+    // we cannot initialize pixi until the bitmap fonts are loaded
+    if (!isBitmapFontLoaded()) {
+      events.once('bitmapFontsLoaded', () => this.init());
+      return;
     }
-  };
+    renderWebWorker.sendBitmapFonts();
+    this.renderer = await autoDetectRenderer({
+      preference: 'webgpu',
+      canvas: this.canvas,
+      resolution: Math.max(2, window.devicePixelRatio),
+      antialias: true,
+      backgroundColor: 0xffffff,
+    });
+    this.viewport = new Viewport(this);
+
+    this.initialized = true;
+    this.initCanvas();
+    this.rebuild();
+
+    urlParams.init();
+
+    this.cellsSheets.create();
+
+    renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
+    events.emit('pixiAppReady');
+  }
 
   private initCanvas() {
     this.canvas.id = 'QuadraticCanvasID';
@@ -245,7 +221,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.setDirty();
-    this.cellsSheets?.cull(this.viewport.getVisibleBounds());
+    this.cellsSheets.cull(this.viewport.getVisibleBounds());
 
     // we only set the viewport if update has completed firstRenderComplete
     // (otherwise we can't get this.headings.headingSize) -- this is a hack

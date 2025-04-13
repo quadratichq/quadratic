@@ -58,7 +58,8 @@ class RenderWebWorker {
         return;
 
       case 'renderClientFirstRenderComplete':
-        pixiApp.firstRenderComplete();
+        // todo: ***
+        // pixiApp.firstRenderComplete();
         return;
 
       case 'renderClientUnload':

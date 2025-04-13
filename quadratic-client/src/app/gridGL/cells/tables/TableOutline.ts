@@ -36,19 +36,17 @@ export class TableOutline extends Graphics {
     if (!pixiAppSettings.showCellTypeOutlines) return;
 
     // draw the table selected outline
-    const width = 1;
     const chart = this.table.codeCell.state === 'HTML';
     if (!chart) {
-      this.strokeStyle = {
-        color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
-        width,
-        alignment: 0.5,
-      };
       if (!this.table.active || !this.table.codeCell.spill_error) {
         const width = this.table.tableBounds.width;
         const height = this.table.tableBounds.height;
         this.rect(0, 0, width, height);
-        this.stroke();
+        this.stroke({
+          color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
+          width: 1,
+          alignment: 0.5,
+        });
       }
     }
 
