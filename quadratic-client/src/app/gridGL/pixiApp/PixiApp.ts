@@ -117,7 +117,7 @@ export class PixiApp {
         preference: 'webgl',
         canvas: this.canvas,
         resolution: Math.max(2, window.devicePixelRatio),
-        antialias: false,
+        antialias: true,
         backgroundColor: 0xffffff,
       });
       this.viewport = new Viewport(this);
