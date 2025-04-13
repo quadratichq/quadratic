@@ -132,13 +132,17 @@ impl Sheet {
                     // is not super efficient, but easiest given the current
                     // design. if we remove the anchors, we can use the
                     // DataTableInsertColumn op instead)
-                    let col_to_delete = *col - output_rect.min.x;
+                    if let Ok(col_to_delete) = u32::try_from(*col - output_rect.min.x) {
+                        let column_index =
+                            dt.get_column_index_from_display_index(col_to_delete, false);
 
-                    // mark sort dirty if the column is sorted
-                    if dt.is_column_sorted(col_to_delete as usize) {
-                        dt.sort_dirty = true;
+                        // mark sort dirty if the column is sorted
+                        if dt.is_column_sorted(column_index as usize) {
+                            dt.sort_dirty = true;
+                        }
+
+                        let _ = dt.delete_column_sorted(column_index as usize);
                     }
-                    let _ = dt.delete_column(col_to_delete as usize);
                 }
             }
             if let Some(new_x) = new_x {
