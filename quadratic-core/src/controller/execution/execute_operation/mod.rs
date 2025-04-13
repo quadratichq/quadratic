@@ -180,8 +180,16 @@ impl GridController {
 
                 Operation::DeleteColumn { .. } => self.execute_delete_column(transaction, op),
                 Operation::DeleteColumns { .. } => self.execute_delete_columns(transaction, op),
-                Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
-                Operation::DeleteRows { .. } => self.execute_delete_rows(transaction, op),
+                Operation::DeleteRow { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_row(transaction, op),
+                    );
+                }
+                Operation::DeleteRows { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_rows(transaction, op),
+                    );
+                }
 
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),

@@ -9,6 +9,8 @@ use crate::{
     grid::Sheet,
 };
 
+use anyhow::{Result, bail};
+
 impl Sheet {
     /// Deletes tables that have all rows in the deletion range.
     fn delete_tables_with_all_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
@@ -182,7 +184,7 @@ impl Sheet {
         rows: Vec<i64>,
         _copy_formats: CopyFormats,
         a1_context: &A1Context,
-    ) -> Result<(), ()> {
+    ) -> Result<()> {
         if rows.is_empty() {
             return Ok(());
         }
@@ -193,14 +195,12 @@ impl Sheet {
         rows.reverse();
 
         if self.ensure_no_table_ui(&rows) {
+            let e = "delete_rows_error".to_string();
             if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
                 let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
-                crate::wasm_bindings::js::jsClientMessage(
-                    "delete_rows_error".to_string(),
-                    severity.to_string(),
-                );
+                crate::wasm_bindings::js::jsClientMessage(e.clone(), severity.to_string());
             }
-            return Err(());
+            bail!(e);
         }
 
         self.delete_tables_with_all_rows(transaction, &rows);

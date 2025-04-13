@@ -9,6 +9,8 @@ use crate::{
     grid::{GridBounds, SheetId},
 };
 
+use anyhow::{Result, bail};
+
 impl GridController {
     fn adjust_code_cell_references(
         &self,
@@ -115,7 +117,7 @@ impl GridController {
         sheet_id: SheetId,
         rows: Vec<i64>,
         copy_formats: CopyFormats,
-    ) -> Result<(), ()> {
+    ) -> Result<()> {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
@@ -152,40 +154,44 @@ impl GridController {
         Ok(())
     }
 
-    pub fn execute_delete_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub fn execute_delete_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
         if let Operation::DeleteRow {
             sheet_id,
             row,
             copy_formats,
         } = op.clone()
         {
-            transaction.forward_operations.push(op);
-            if self
-                .handle_delete_rows(transaction, sheet_id, vec![row], copy_formats)
-                .is_err()
-            {
-                return;
-            }
+            self.handle_delete_rows(transaction, sheet_id, vec![row], copy_formats)?;
             self.send_updated_bounds(transaction, sheet_id);
-        }
+            transaction.forward_operations.push(op);
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DeleteRow in execute_delete_row");
     }
 
-    pub fn execute_delete_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub fn execute_delete_rows(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
         if let Operation::DeleteRows {
             sheet_id,
             rows,
             copy_formats,
         } = op.clone()
         {
-            transaction.forward_operations.push(op);
-            if self
-                .handle_delete_rows(transaction, sheet_id, rows, copy_formats)
-                .is_err()
-            {
-                return;
-            };
+            self.handle_delete_rows(transaction, sheet_id, rows, copy_formats)?;
             self.send_updated_bounds(transaction, sheet_id);
-        }
+            transaction.forward_operations.push(op);
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DeleteRows in execute_delete_rows");
     }
 
     pub fn execute_insert_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
