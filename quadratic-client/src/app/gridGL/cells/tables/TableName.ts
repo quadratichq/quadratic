@@ -35,7 +35,10 @@ export class TableName extends Container {
     this.table = table;
     this.background = this.addChild(new Graphics());
     this.text = this.addChild(
-      new BitmapText({ text: '', style: { fontSize: TABLE_NAME_FONT_SIZE, fontFamily: 'OpenSans-Bold' } })
+      new BitmapText({
+        text: '',
+        style: { fontSize: TABLE_NAME_FONT_SIZE, fontFamily: 'OpenSans-Bold' },
+      })
     );
     this.symbol = this.addChild(new Sprite());
     const dropdownWhiteIconTexture = Assets.get('dropdown-white-icon');

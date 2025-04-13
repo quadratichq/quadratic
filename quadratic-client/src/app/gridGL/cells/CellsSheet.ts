@@ -38,6 +38,7 @@ export class CellsSheet extends Container {
 
   constructor(sheetId: string) {
     super();
+
     this.sheetId = sheetId;
     this.cellsFills = this.addChild(new CellsFills(this));
 

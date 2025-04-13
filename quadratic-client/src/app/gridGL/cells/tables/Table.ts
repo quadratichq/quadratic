@@ -10,7 +10,7 @@ import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandl
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { Point } from 'pixi.js';
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
   private outline: TableOutline;
@@ -32,6 +32,11 @@ export class Table extends Container {
 
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
     super();
+
+    const g = this.addChild(new Graphics());
+    g.rect(0, 0, 100, 100);
+    g.fill({ color: 'red' });
+
     this.codeCell = codeCell;
     this.sheet = sheet;
     this.tableBounds = this.sheet.getScreenRectangle(
@@ -151,11 +156,14 @@ export class Table extends Container {
   };
 
   update(bounds: Rectangle, gridHeading: number) {
+    console.log('hi');
     if (!intersects.rectangleRectangle(this.tableBounds, bounds)) {
+      console.log('not visible');
       this.visible = false;
       this.header.visible = false;
       return;
     }
+    console.log('visible');
     if (
       this.codeCell.show_ui &&
       (this.codeCell.show_name || this.codeCell.show_columns) &&

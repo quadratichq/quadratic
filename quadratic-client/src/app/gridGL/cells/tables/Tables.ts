@@ -46,6 +46,7 @@ export class Tables extends Container<Table> {
 
   constructor(cellsSheet: CellsSheet) {
     super();
+
     this.cellsSheet = cellsSheet;
     this.htmlOrImage = new Set();
     this.hoverTableHeaders = new Container();
