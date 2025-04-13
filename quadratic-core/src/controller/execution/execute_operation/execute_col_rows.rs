@@ -15,15 +15,18 @@ impl GridController {
         transaction: &mut PendingTransaction,
         adjustments: &[RefAdjust],
     ) {
-        let a1_context = self.a1_context();
-
         for sheet in self.grid.sheets().iter() {
             for (pos, _) in sheet.iter_code_runs() {
                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
                     let mut new_code = code.clone();
                     for &adj in adjustments {
-                        new_code.adjust_references(sheet_pos.sheet_id, a1_context, sheet_pos, adj);
+                        new_code.adjust_references(
+                            sheet_pos.sheet_id,
+                            &self.a1_context,
+                            sheet_pos,
+                            adj,
+                        );
                     }
                     if code.code != new_code.code {
                         transaction.operations.push_back(Operation::SetCellValues {
@@ -113,18 +116,11 @@ impl GridController {
         rows: Vec<i64>,
         copy_formats: CopyFormats,
     ) -> Result<(), ()> {
-        let context = &self.a1_context;
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
 
-            if sheet
-                .delete_rows(transaction, rows, copy_formats, context)
-                .is_err()
-            {
-                // nothing more to be done since the operation was aborted
-                return Err(());
-            }
+            sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
 
             if transaction.is_user() {
                 rows_to_adjust.sort_unstable();
@@ -199,12 +195,9 @@ impl GridController {
             copy_formats,
         } = op
         {
-            let context = &self.a1_context;
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats, context);
+                sheet.insert_column(transaction, column, copy_formats, &self.a1_context);
                 transaction.forward_operations.push(op);
-
-                sheet.recalculate_bounds(&self.a1_context);
             } else {
                 // nothing more can be done
                 return;

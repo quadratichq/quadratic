@@ -28,6 +28,9 @@ impl Sheet {
         copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) {
+        // mark hashes of new columns dirty
+        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
+
         self.check_insert_tables_columns(transaction, column, copy_formats);
 
         // update the indices of all columns impacted by the insertion by
@@ -70,9 +73,6 @@ impl Sheet {
         self.borders.insert_column(column, copy_formats);
         transaction.sheet_borders.insert(self.id);
 
-        // mark hashes of new columns dirty
-        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
-
         // update validations
         let changed_selections =
             self.validations
@@ -85,6 +85,11 @@ impl Sheet {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
         }
+
+        self.recalculate_bounds(a1_context);
+
+        // mark hashes of new columns dirty
+        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
     }
 }
 

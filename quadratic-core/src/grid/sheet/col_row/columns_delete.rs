@@ -108,10 +108,10 @@ impl Sheet {
                 .extend(self.reverse_values_ops_for_column(column));
         }
 
-        self.delete_column_offset(transaction, column);
-
         // mark hashes of existing columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
+
+        self.delete_column_offset(transaction, column);
 
         // todo: this can be optimized by adding a fn that checks if there are
         // any fills beyond the deleted column
@@ -143,9 +143,6 @@ impl Sheet {
             }
         }
 
-        // mark hashes of new columns dirty
-        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
-
         let changed_selections =
             self.validations
                 .remove_column(transaction, self.id, column, a1_context);
@@ -161,6 +158,11 @@ impl Sheet {
                     copy_formats,
                 });
         }
+
+        self.recalculate_bounds(a1_context);
+
+        // mark hashes of new columns dirty
+        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
     }
 
     /// Deletes columns. Columns is a vec of all columns to be deleted. This fn
@@ -179,19 +181,16 @@ impl Sheet {
         let mut columns = columns.clone();
         columns.sort_unstable();
         columns.dedup();
-
-        self.check_delete_all_table_columns(transaction, &columns);
-        self.check_delete_chart_columns(transaction, &columns);
-
         columns.reverse();
 
+        self.check_delete_all_table_columns(transaction, &columns);
         self.check_delete_tables_columns(transaction, &columns);
+        self.check_delete_chart_columns(transaction, &columns);
         self.move_tables_to_left(transaction, &columns);
 
         for column in columns {
             self.delete_column(transaction, column, copy_formats, context);
         }
-        self.recalculate_bounds(context);
     }
 }
 

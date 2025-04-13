@@ -34,7 +34,7 @@ impl DataTable {
     }
 
     /// Insert a new column at the given index.
-    pub fn insert_column(
+    fn insert_column(
         &mut self,
         column_index: usize,
         column_header: Option<String>,

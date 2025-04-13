@@ -17,37 +17,36 @@ impl Sheet {
         columns: &[i64],
     ) {
         let mut dt_to_delete = Vec::new();
-        for (index, (pos, table)) in self.data_tables.iter().enumerate() {
+        for (pos, table) in self.data_tables.iter() {
             // delete code tables where the code cell is in the deleted columns
-            if (table.readonly || table.spill_error) && columns.contains(&pos.x) {
-                dt_to_delete.push((*pos, index));
-                transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
-                transaction.add_dirty_hashes_from_sheet_rect(
-                    table.output_rect(*pos, false).to_sheet_rect(self.id),
-                );
-                continue;
+            if ((table.readonly && !table.is_html_or_image()) || table.spill_error)
+                && columns.contains(&pos.x)
+            {
+                dt_to_delete.push(*pos);
             }
-
             // delete any table where all columns in the table are included in the deletion range
-            let output_rect = table.output_rect(*pos, false);
-            let table_cols = output_rect.x_range().collect::<Vec<_>>();
-            if table_cols.iter().all(|col| columns.contains(col)) {
-                dt_to_delete.push((*pos, index));
-                transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
-                transaction.add_dirty_hashes_from_sheet_rect(
-                    table.output_rect(*pos, false).to_sheet_rect(self.id),
-                );
+            else if table
+                .output_rect(*pos, false)
+                .x_range()
+                .all(|col| columns.contains(&col))
+            {
+                dt_to_delete.push(*pos);
             }
         }
-        for (pos, index) in dt_to_delete {
-            let old_dt = self.data_tables.shift_remove(&pos);
-            transaction
-                .reverse_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos: pos.to_sheet_pos(self.id),
-                    data_table: old_dt,
-                    index,
-                });
+        for pos in dt_to_delete.into_iter() {
+            if let Some((index, pos, old_dt)) = self.data_tables.shift_remove_full(&pos) {
+                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                transaction.add_dirty_hashes_from_sheet_rect(
+                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+                );
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetDataTable {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        data_table: Some(old_dt),
+                        index,
+                    });
+            }
         }
     }
 
@@ -69,13 +68,6 @@ impl Sheet {
                         let min = (width - count as u32).max(1);
                         if min != width {
                             table.chart_output = Some((min, height));
-                            transaction
-                                .reverse_operations
-                                .push(Operation::SetChartCellSize {
-                                    sheet_pos: pos.to_sheet_pos(self.id),
-                                    w: width,
-                                    h: height,
-                                });
                             transaction.add_from_code_run(
                                 self.id,
                                 *pos,
@@ -104,7 +96,7 @@ impl Sheet {
         let mut dt_to_shift_anchor = Vec::new();
 
         for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
-            if dt.readonly || dt.spill_error {
+            if (dt.readonly && !dt.is_html_or_image()) || dt.spill_error {
                 continue;
             }
             let output_rect = dt.output_rect(*pos, false);
@@ -134,7 +126,7 @@ impl Sheet {
                     // DataTableInsertColumn op instead)
                     if let Ok(col_to_delete) = u32::try_from(*col - output_rect.min.x) {
                         let column_index =
-                            dt.get_column_index_from_display_index(col_to_delete, false);
+                            dt.get_column_index_from_display_index(col_to_delete, true);
 
                         // mark sort dirty if the column is sorted
                         if dt.is_column_sorted(column_index as usize) {

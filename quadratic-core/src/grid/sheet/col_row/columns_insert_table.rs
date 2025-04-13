@@ -7,11 +7,7 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, Pos,
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation,
-    },
+    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
     grid::Sheet,
 };
 
@@ -27,67 +23,34 @@ impl Sheet {
             CopyFormats::After => column - 1,
             _ => column,
         };
-        self.data_tables.iter_mut().for_each(|(pos, dt)| {
+        for (pos, dt) in self.data_tables.iter_mut() {
             if dt.is_html_or_image() {
                 if let Some((width, height)) = dt.chart_output {
                     if source_column >= pos.x && source_column < pos.x + width as i64 {
                         // if html or image, then we need to change the width
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
-                        transaction
-                            .reverse_operations
-                            .push(Operation::SetChartCellSize {
-                                sheet_pos: pos.to_sheet_pos(self.id),
-                                w: width,
-                                h: height,
-                            });
                     }
                 }
-                return;
-            }
-            // Adds columns to data tables if the column is inserted inside the
-            // table. Code is not impacted by this change.
-            if !dt.readonly
-                && source_column >= pos.x
-                && (column < pos.x + dt.width() as i64
-                    || (CopyFormats::Before == copy_formats
-                        && column < pos.x + dt.width() as i64 + 1))
-            {
-                let column = column - pos.x;
-                // the table overlaps the inserted column
-                let display_index = dt.get_column_index_from_display_index(column as u32, true);
-
-                // add reverse ops for formats and borders, if necessary
-                // (note, formats and borders are 1-indexed)
-                if let Some(reverse_formats) = dt.formats.copy_column(display_index as i64) {
-                    if !reverse_formats.is_default() {
-                        if reverse_formats.has_fills() {
-                            transaction.add_fill_cells(self.id);
-                        }
-                        transaction
-                            .reverse_operations
-                            .push(Operation::DataTableFormats {
-                                sheet_pos: pos.to_sheet_pos(self.id),
-                                formats: reverse_formats,
-                            });
+            } else {
+                // Adds columns to data tables if the column is inserted inside the
+                // table. Code is not impacted by this change.
+                let output_rect = dt.output_rect(*pos, false);
+                if !dt.readonly
+                    && source_column >= pos.x
+                    && (column < pos.x + output_rect.width() as i64
+                        || (CopyFormats::Before == copy_formats
+                            && column < pos.x + output_rect.width() as i64 + 1))
+                {
+                    if let Ok(display_column_index) = u32::try_from(column - pos.x) {
+                        let column_index = dt
+                            .get_column_index_from_display_index(display_column_index as u32, true);
+                        let _ = dt.insert_column_sorted(column_index as usize, None, None);
+                        transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                     }
-                }
-                if let Some(reverse_borders) = dt.borders.copy_column(display_index as i64) {
-                    if !reverse_borders.is_empty() {
-                        transaction.add_borders(self.id);
-                        transaction
-                            .reverse_operations
-                            .push(Operation::DataTableBorders {
-                                sheet_pos: pos.to_sheet_pos(self.id),
-                                borders: reverse_borders,
-                            });
-                    }
-                }
-                if dt.insert_column(display_index as usize, None, None).is_ok() {
-                    transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                 }
             }
-        });
+        }
     }
 
     /// Adjust data tables that overlap the inserted column.
@@ -125,37 +88,32 @@ impl Sheet {
         // move the data tables to the right to match with their new anchor positions
         data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in data_tables_to_move_right {
-            let new_pos = Pos {
-                x: old_pos.x + 1,
-                y: old_pos.y,
-            };
-            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
+            if let Some((index, old_pos, data_table)) = self.data_tables.shift_remove_full(&old_pos)
+            {
+                let new_pos = old_pos.translate(1, 0, 1, 1);
+
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_from_code_run(
                     self.id,
                     old_pos,
-                    code_run.is_image(),
-                    code_run.is_html(),
+                    data_table.is_image(),
+                    data_table.is_html(),
                 );
                 transaction.add_from_code_run(
                     self.id,
                     new_pos,
-                    code_run.is_image(),
-                    code_run.is_html(),
+                    data_table.is_image(),
+                    data_table.is_html(),
                 );
-                self.data_tables.insert_sorted(new_pos, code_run);
+                self.data_tables.insert_before(index, new_pos, data_table);
             }
         }
         // In the special case of CopyFormats::Before and column == pos.x, we
         // need to move it back.
         for to in data_tables_to_move_back {
-            let from = Pos {
-                x: to.x + 1,
-                y: to.y,
-            };
+            let from = to.translate(1, 0, 1, 1);
             self.move_cell_value(from, to);
             transaction.add_code_cell(self.id, to);
-            transaction.add_code_cell(self.id, from);
         }
     }
 }
