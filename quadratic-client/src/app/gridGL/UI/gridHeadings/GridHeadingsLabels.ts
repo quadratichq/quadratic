@@ -26,9 +26,10 @@ export class GridHeadingsLabels extends Container {
   }
 
   private addLabelText(): BitmapText {
-    const label = this.addChild(
+    return this.addChild(
       new BitmapText({
         text: '',
+        anchor: 0.5,
         style: {
           fontFamily: 'OpenSans',
           fontSize: GRID_HEADER_FONT_SIZE,
@@ -36,8 +37,6 @@ export class GridHeadingsLabels extends Container {
         },
       })
     );
-    label.anchor.set(0.5);
-    return label;
   }
 
   // add labels to headings using cached labels

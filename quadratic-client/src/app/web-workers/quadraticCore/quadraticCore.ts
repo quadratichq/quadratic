@@ -7,6 +7,7 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   BorderSelection,
@@ -71,6 +72,7 @@ import type {
   CoreClientNeighborText,
   CoreClientSearch,
   CoreClientSetCodeCellValue,
+  CoreClientSheetCodeCellRender,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -135,7 +137,14 @@ class QuadraticCore {
       events.emit('renderCells', e.data.sheetId, e.data.renderCells);
       return;
     } else if (e.data.type === 'coreClientSheetCodeCellRender') {
-      events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
+      const data = e.data as CoreClientSheetCodeCellRender;
+      if (!pixiApp.initialized) {
+        events.once('pixiAppReady', () => {
+          events.emit('renderCodeCells', data.sheetId, data.codeCells);
+        });
+      } else {
+        events.emit('renderCodeCells', data.sheetId, data.codeCells);
+      }
       return;
     } else if (e.data.type === 'coreClientSheetBoundsUpdate') {
       events.emit('sheetBounds', e.data.sheetBounds);

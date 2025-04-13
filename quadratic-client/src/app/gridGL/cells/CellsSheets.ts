@@ -9,7 +9,6 @@ import type {
   RenderClientFinalizeCellsTextHash,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { Rectangle } from 'pixi.js';
 import { Container } from 'pixi.js';
 
@@ -38,7 +37,6 @@ export class CellsSheets extends Container<CellsSheet> {
         pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
       }
     }
-    renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 
   isReady(): boolean {

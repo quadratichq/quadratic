@@ -10,7 +10,6 @@ import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -146,23 +145,14 @@ export class Tables extends Container<Table> {
     }
   };
 
-  // We cannot start rendering code cells until the bitmap fonts are loaded. We
-  // listen for the bitmapFontsLoaded event and then render the code cells.
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+    console.log('renderCodeCells', sheetId, codeCells);
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
-      if (!isBitmapFontLoaded()) {
-        events.once('bitmapFontsLoaded', () => this.completeRenderCodeCells(codeCells));
-        return;
-      }
-      this.completeRenderCodeCells(codeCells);
+      codeCells.forEach((codeCell) => {
+        this.addChild(new Table(this.sheet, codeCell));
+      });
     }
-  };
-
-  private completeRenderCodeCells = (codeCells: JsRenderCodeCell[]) => {
-    codeCells.forEach((codeCell) => {
-      this.addChild(new Table(this.sheet, codeCell));
-    });
   };
 
   update(dirtyViewport: boolean) {

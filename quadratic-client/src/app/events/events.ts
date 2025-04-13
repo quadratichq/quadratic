@@ -155,6 +155,7 @@ interface EventTypes {
   coreError: (from: string, error: Error | unknown) => void;
 
   bitmapFontsLoaded: () => void;
+  pixiAppReady: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

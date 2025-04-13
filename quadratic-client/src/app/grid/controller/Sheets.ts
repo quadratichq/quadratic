@@ -1,6 +1,5 @@
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
-import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -41,10 +40,14 @@ export class Sheets {
   };
 
   private create = (sheetInfo: SheetInfo[]) => {
-    if (!isBitmapFontLoaded()) {
-      events.once('bitmapFontsLoaded', () => this.create(sheetInfo));
-      return;
-    }
+    // if (!isBitmapFontLoaded()) {
+    //   events.once('bitmapFontsLoaded', () => this.create(sheetInfo));
+    //   return;
+    // }
+    // if (!pixiApp.initialized) {
+    //   events.once('pixiAppReady', () => this.create(sheetInfo));
+    //   return;
+    // }
 
     this.sheets = [];
     sheetInfo.forEach((info) => {
@@ -61,7 +64,6 @@ export class Sheets {
       this._current = this.sheets[0].id;
     }
 
-    pixiApp.cellsSheets.create();
     this.initialized = true;
   };
 

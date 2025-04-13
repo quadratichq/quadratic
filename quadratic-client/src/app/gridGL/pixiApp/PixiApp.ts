@@ -48,7 +48,6 @@ export class PixiApp {
   // after init is called, depending on timing).
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
-  private cellsSheetsReady = false;
 
   // todo: UI should be pulled out and separated into its own class
 
@@ -118,7 +117,8 @@ export class PixiApp {
       }
       renderWebWorker.sendBitmapFonts();
       this.renderer = await autoDetectRenderer({
-        view: this.canvas,
+        preference: 'webgpu',
+        canvas: this.canvas,
         resolution: Math.max(2, window.devicePixelRatio),
         antialias: true,
         backgroundColor: 0xffffff,
@@ -131,14 +131,14 @@ export class PixiApp {
 
       urlParams.init();
 
-      if (this.cellsSheetsReady) {
-        this.cellsSheets.create();
-      }
+      this.cellsSheets.create();
 
       this.waitingForFirstRender = resolve;
       if (this.alreadyRendered) {
         this.firstRenderComplete();
       }
+      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
+      events.emit('pixiAppReady');
     });
   }
 
