@@ -104,31 +104,36 @@ export class PixiApp {
   }
 
   async init(): Promise<void> {
-    // we cannot initialize pixi until the bitmap fonts are loaded
-    if (!isBitmapFontLoaded()) {
-      events.once('bitmapFontsLoaded', () => this.init());
-      return;
-    }
-    renderWebWorker.sendBitmapFonts();
-    this.renderer = await autoDetectRenderer({
-      preference: 'webgpu',
-      canvas: this.canvas,
-      resolution: Math.max(2, window.devicePixelRatio),
-      antialias: true,
-      backgroundColor: 0xffffff,
+    return new Promise(async (resolve) => {
+      if (this.initialized) return;
+
+      // we cannot initialize pixi until the bitmap fonts are loaded
+      if (!isBitmapFontLoaded()) {
+        events.once('bitmapFontsLoaded', () => this.init());
+        return;
+      }
+      renderWebWorker.sendBitmapFonts();
+      this.renderer = await autoDetectRenderer({
+        preference: 'webgl',
+        canvas: this.canvas,
+        resolution: Math.max(2, window.devicePixelRatio),
+        antialias: false,
+        backgroundColor: 0xffffff,
+      });
+      this.viewport = new Viewport(this);
+
+      this.initialized = true;
+      this.initCanvas();
+      this.rebuild();
+
+      urlParams.init();
+
+      this.cellsSheets.create();
+
+      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
+      events.emit('pixiAppReady');
+      resolve();
     });
-    this.viewport = new Viewport(this);
-
-    this.initialized = true;
-    this.initCanvas();
-    this.rebuild();
-
-    urlParams.init();
-
-    this.cellsSheets.create();
-
-    renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
-    events.emit('pixiAppReady');
   }
 
   private initCanvas() {

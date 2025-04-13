@@ -1,5 +1,5 @@
+import { colors } from '@/app/theme/colors';
 import { BitmapText, Container } from 'pixi.js';
-import { colors } from '../../../theme/colors';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { GRID_HEADER_FONT_SIZE } from './GridHeadings';
 
