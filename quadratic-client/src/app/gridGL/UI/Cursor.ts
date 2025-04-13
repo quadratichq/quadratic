@@ -132,7 +132,7 @@ export class Cursor extends Container {
       g.strokeStyle = {
         width: CURSOR_THICKNESS,
         color,
-        alignment: 0,
+        alignment: 1,
       };
       g.moveTo(x, y);
       g.lineTo(x + width, y);

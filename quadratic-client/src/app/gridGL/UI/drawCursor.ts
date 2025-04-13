@@ -33,7 +33,7 @@ export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordina
 export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: RefRangeBounds[]) => {
   if (ranges.length === 0) return;
 
-  g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 0 };
+  g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 0, pixelLine: true };
 
   const sheet = sheets.sheet;
   ranges.forEach((range) => {
@@ -90,7 +90,7 @@ export const drawInfiniteSelection = (options: {
     ) {
       g.rect(bounds.x, bounds.y, bounds.width, bounds.height);
       g.fill({ color, alpha });
-      g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1 };
+      g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: true };
       g.moveTo(0, 0);
       g.lineTo(0, bounds.height);
       g.moveTo(0, 0);
@@ -109,7 +109,7 @@ export const drawInfiniteSelection = (options: {
         g.rect(rect.x, rect.y, rect.width, rect.height);
         g.fill({ color, alpha });
         g.stroke();
-        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1 };
+        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: true };
         g.moveTo(rect.right, rect.top);
         g.lineTo(rect.left, rect.top);
         g.lineTo(rect.left, rect.bottom);
@@ -128,7 +128,7 @@ export const drawInfiniteSelection = (options: {
         g.rect(rect.x, rect.y, rect.width, rect.height);
         g.fill({ color, alpha });
         g.stroke();
-        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1 };
+        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: true };
         g.moveTo(rect.left, 0);
         g.lineTo(rect.right, 0);
         const top = Math.max(0, bounds.top);
@@ -162,7 +162,7 @@ export const drawInfiniteSelection = (options: {
         g.rect(rect.x, rect.y, rect.width, rect.height);
         g.fill({ color, alpha });
         g.stroke();
-        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1 };
+        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: true };
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.right, rect.top);
         g.moveTo(rect.left, rect.top);
@@ -184,7 +184,7 @@ export const drawInfiniteSelection = (options: {
         g.rect(rect.x, rect.y, rect.width, rect.height);
         g.fill({ color, alpha });
         g.stroke();
-        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1 };
+        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: true };
         g.moveTo(0, rect.top);
         g.lineTo(0, rect.bottom);
         g.moveTo(bounds.left, rect.top);
@@ -217,7 +217,7 @@ export const drawInfiniteSelection = (options: {
         g.rect(rect.x, rect.y, rect.width, rect.height);
         g.fill({ color, alpha });
         g.stroke();
-        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1 };
+        g.strokeStyle = { width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: true };
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.left, rect.bottom);
         g.moveTo(rect.left, rect.top);
