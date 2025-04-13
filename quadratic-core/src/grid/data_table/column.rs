@@ -99,7 +99,7 @@ impl DataTable {
     }
 
     /// Remove a column at the given index.
-    pub fn delete_column(&mut self, column_index: usize) -> Result<()> {
+    fn delete_column(&mut self, column_index: usize) -> Result<()> {
         let array = self.mut_value_as_array()?;
         array.delete_column(column_index)?;
 

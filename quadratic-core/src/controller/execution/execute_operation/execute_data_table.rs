@@ -1754,47 +1754,6 @@ impl GridController {
 
         bail!("Expected Operation::DataTableBorders in execute_data_table_borders");
     }
-
-    pub(super) fn execute_move_data_table(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) -> Result<()> {
-        if let Operation::MoveDataTable { sheet_id, from, to } = op.to_owned() {
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
-            if let Some(data_table) = sheet.data_tables.shift_remove(&from) {
-                transaction.add_from_code_run(
-                    sheet_id,
-                    from,
-                    data_table.is_image(),
-                    data_table.is_html(),
-                );
-                transaction.add_from_code_run(
-                    sheet_id,
-                    to,
-                    data_table.is_image(),
-                    data_table.is_html(),
-                );
-                sheet.data_tables.insert(to, data_table);
-
-                sheet.move_cell_value(from, to);
-                self.send_updated_bounds(transaction, sheet_id);
-
-                if transaction.is_user_undo_redo() {
-                    transaction
-                        .reverse_operations
-                        .push(Operation::MoveDataTable {
-                            sheet_id,
-                            from: to,
-                            to: from,
-                        });
-                    transaction.forward_operations.push(op.clone());
-                }
-            }
-            return Ok(());
-        }
-        bail!("Expected Operation::MoveDataTable in execute_move_data_table");
-    }
 }
 
 #[cfg(test)]

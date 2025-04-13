@@ -70,9 +70,7 @@ impl GridController {
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
-                Operation::MoveDataTable { .. } => Self::handle_execution_operation_result(
-                    self.execute_move_data_table(transaction, op),
-                ),
+
                 Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table(transaction, op),
                 ),

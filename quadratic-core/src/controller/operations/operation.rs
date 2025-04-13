@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, CopyFormats, Pos, SheetPos, SheetRect,
+    CellValue, CopyFormats, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -64,11 +64,6 @@ pub enum Operation {
         sheet_pos: SheetPos,
         pixel_width: f32,
         pixel_height: f32,
-    },
-    MoveDataTable {
-        sheet_id: SheetId,
-        from: Pos,
-        to: Pos,
     },
     SetChartCellSize {
         sheet_pos: SheetPos,

@@ -171,7 +171,7 @@ impl Sheet {
 
         // ensure anchor cell survives by shifting it to the right of the deleted columns
         for (pos, old_dt, index, first_surviving_col) in dt_to_shift_anchor {
-            if let (Some(old_dt), Some(_cell_value)) = (old_dt, self.cell_value(pos)) {
+            if let (Some(old_dt), Some(cell_value)) = (old_dt, self.cell_value(pos)) {
                 transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_sheet_rect(
                     old_dt.output_rect(pos, false).to_sheet_rect(self.id),
@@ -180,17 +180,16 @@ impl Sheet {
                 self.move_cell_value(pos, new_pos);
                 transaction
                     .reverse_operations
-                    .push(Operation::SetDataTable {
+                    .push(Operation::AddDataTable {
                         sheet_pos: pos.to_sheet_pos(self.id),
-                        data_table: Some(old_dt),
-                        index,
+                        data_table: old_dt,
+                        cell_value,
+                        index: Some(index),
                     });
                 transaction
                     .reverse_operations
-                    .push(Operation::MoveDataTable {
-                        sheet_id: self.id,
-                        from: new_pos,
-                        to: pos,
+                    .push(Operation::DeleteDataTable {
+                        sheet_pos: new_pos.to_sheet_pos(self.id),
                     });
             }
         }
