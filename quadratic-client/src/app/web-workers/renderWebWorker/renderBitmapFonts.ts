@@ -57,7 +57,7 @@ const copyChars = (chars: Record<string, CharData>): Record<string, RenderBitmap
 // used to shard the BitmapFont information between client and render web worker
 export const prepareBitmapFontInformation = (): RenderBitmapFonts => {
   const fonts: RenderBitmapFonts = {};
-  for (const font in bitmapFonts) {
+  for (const font of bitmapFonts) {
     const fontInfo = Assets.get(font) as BitmapFont;
     fonts[font] = {
       font,

@@ -71,6 +71,7 @@ export class GridLines extends Graphics {
       color: colors.gridLines,
       alpha: 0.2 * gridAlpha,
       alignment: 0.5,
+      pixelLine: true,
     };
     this.strokeStyle = this.currentLineStyle;
     this.gridLinesX = [];
