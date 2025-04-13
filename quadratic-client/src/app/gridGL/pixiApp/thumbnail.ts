@@ -77,8 +77,8 @@ class Thumbnail {
     }
 
     this.renderer.resize(imageWidth, imageHeight);
-    this.renderer.view.canvas.width = imageWidth;
-    this.renderer.view.canvas.height = imageHeight;
+    this.renderer.canvas.width = imageWidth;
+    this.renderer.canvas.height = imageHeight;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
     pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
     pixiApp.gridLines.update(rectangle, undefined, true);
@@ -86,7 +86,7 @@ class Thumbnail {
     pixiApp.cleanUpAfterCopying(true);
     pixiApp.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
-      this.renderer!.view.canvas.toBlob?.((blob) => resolve(blob));
+      this.renderer!.canvas.toBlob?.((blob) => resolve(blob));
     });
   }
 }

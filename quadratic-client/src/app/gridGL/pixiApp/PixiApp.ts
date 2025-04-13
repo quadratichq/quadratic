@@ -132,7 +132,7 @@ export class PixiApp {
       urlParams.init();
 
       if (this.cellsSheetsReady) {
-        this.cellsSheetsCreate();
+        this.cellsSheets.create();
       }
 
       this.waitingForFirstRender = resolve;
@@ -431,14 +431,6 @@ export class PixiApp {
   changeHoverTableHeaders(hoverTableHeaders: Container) {
     this.hoverTableHeaders.removeChildren();
     this.hoverTableHeaders.addChild(hoverTableHeaders);
-  }
-
-  cellsSheetsCreate() {
-    if (this.initialized) {
-      this.cellsSheets.create();
-    } else {
-      this.cellsSheetsReady = true;
-    }
   }
 }
 

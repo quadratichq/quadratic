@@ -163,6 +163,7 @@ export class GridHeadings extends Container {
           color: colors.gridLines,
           alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
           alignment: 0.5,
+          pixelLine: true,
         };
         this.headingsGraphics.moveTo(x, bounds.top);
         this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
@@ -338,6 +339,7 @@ export class GridHeadings extends Container {
           color: colors.gridLines,
           alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
           alignment: 0.5,
+          pixelLine: true,
         };
         this.headingsGraphics.moveTo(bounds.left, y);
         this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
@@ -406,6 +408,7 @@ export class GridHeadings extends Container {
       color: colors.gridLines,
       alpha: colors.headerSelectedRowColumnBackgroundColorAlpha,
       alignment: 0.5,
+      pixelLine: true,
     };
     this.corner.moveTo(bounds.left + this.rowWidth, bounds.top);
     this.corner.lineTo(bounds.left + this.rowWidth, bounds.top + cellHeight);
@@ -423,6 +426,7 @@ export class GridHeadings extends Container {
       color: colors.gridLines,
       alpha: colors.headerSelectedRowColumnBackgroundColorAlpha,
       alignment: 0.5,
+      pixelLine: true,
     };
 
     // draw the left line to the right of the headings

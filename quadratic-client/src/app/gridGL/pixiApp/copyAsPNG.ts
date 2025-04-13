@@ -40,8 +40,8 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     }
   }
   renderer.resize(imageWidth, imageHeight);
-  renderer.view.canvas.width = imageWidth;
-  renderer.view.canvas.height = imageHeight;
+  renderer.canvas.width = imageWidth;
+  renderer.canvas.height = imageHeight;
   pixiApp.prepareForCopying();
 
   const transform = new Matrix();
@@ -51,6 +51,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.render({ container: pixiApp.viewportContents, transform });
   pixiApp.cleanUpAfterCopying();
   return new Promise((resolve) => {
-    renderer!.view.canvas.toBlob?.((blob) => resolve(blob));
+    renderer!.canvas.toBlob?.((blob) => resolve(blob));
   });
 };
