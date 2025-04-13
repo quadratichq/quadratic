@@ -19,17 +19,17 @@ impl Sheet {
         let mut dt_to_delete = Vec::new();
         for (pos, table) in self.data_tables.iter() {
             // delete code tables where the code cell is in the deleted columns
-            if ((table.readonly && !table.is_html_or_image()) || table.spill_error)
-                && columns.contains(&pos.x)
-            {
-                dt_to_delete.push(*pos);
-            }
+            let code_cell_anchor_deleted = ((table.readonly && !table.is_html_or_image())
+                || table.spill_error)
+                && columns.contains(&pos.x);
+
             // delete any table where all columns in the table are included in the deletion range
-            else if table
+            let all_table_columns_deleted = table
                 .output_rect(*pos, false)
                 .x_range()
-                .all(|col| columns.contains(&col))
-            {
+                .all(|col| columns.contains(&col));
+
+            if code_cell_anchor_deleted || all_table_columns_deleted {
                 dt_to_delete.push(*pos);
             }
         }

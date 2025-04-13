@@ -43,8 +43,8 @@ impl Sheet {
                             && column < pos.x + output_rect.width() as i64 + 1))
                 {
                     if let Ok(display_column_index) = u32::try_from(column - pos.x) {
-                        let column_index = dt
-                            .get_column_index_from_display_index(display_column_index as u32, true);
+                        let column_index =
+                            dt.get_column_index_from_display_index(display_column_index, true);
                         let _ = dt.insert_column_sorted(column_index as usize, None, None);
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                     }
