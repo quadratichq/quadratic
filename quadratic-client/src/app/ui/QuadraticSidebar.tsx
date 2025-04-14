@@ -135,7 +135,7 @@ export const SidebarTooltip = React.forwardRef(
           mixpanel.track('[QuadraticSidebar].button', { label });
         }}
       >
-        <>{children}</>
+        {children}
       </TooltipTrigger>
       <TooltipPortal>
         <TooltipContent side="right" className="flex gap-1">

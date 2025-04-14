@@ -133,7 +133,7 @@ function FormatButtonDropdown({
           focusGrid();
         }}
       >
-        <>{children}</>
+        {children}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -174,7 +174,7 @@ function FormatButtonPopover({
           focusGrid();
         }}
       >
-        <>{children}</>
+        {children}
       </PopoverContent>
     </Popover>
   );
