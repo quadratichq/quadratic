@@ -8,23 +8,16 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { DataTableSort, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const TableSort = () => {
-  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const divRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const handleClose = useCallback(() => {
     setContextMenu({});
   }, [setContextMenu]);
-
-  // focus on the first input when the dialog is opened
-  useEffect(() => {
-    if (div && contextMenu.type === ContextMenuType.TableSort) {
-      (div.querySelector('.first-focus')?.children[0] as HTMLElement)?.focus();
-    }
-  }, [contextMenu, div]);
 
   const [sort, setSort] = useState<DataTableSort[]>([]);
   useEffect(() => {
@@ -80,17 +73,17 @@ export const TableSort = () => {
   const [display, setDisplay] = useState('none');
   useLayoutEffect(() => {
     const viewportChanged = () => {
-      if (div) {
-        div.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
+      if (divRef.current) {
+        divRef.current.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
       }
-      changePosition(div);
+      changePosition(divRef.current);
     };
 
     events.on('viewportChanged', viewportChanged);
     return () => {
       events.off('viewportChanged', viewportChanged);
     };
-  }, [changePosition, contextMenu.table, div]);
+  }, [changePosition, contextMenu.table]);
 
   const columnNames = useMemo(() => contextMenu.table?.columns ?? [], [contextMenu.table]);
 
@@ -159,11 +152,22 @@ export const TableSort = () => {
 
   const ref = useCallback(
     (node: HTMLDivElement | null) => {
-      setDiv(node);
+      divRef.current = node;
       changePosition(node);
     },
     [changePosition]
   );
+
+  const focussedRef = useRef<boolean>(false);
+  const dropdownRef = useCallback((node: HTMLDivElement | null) => {
+    if (node && !focussedRef.current) {
+      const child = node.children[0] as HTMLDivElement | undefined;
+      if (child) {
+        child.focus();
+        focussedRef.current = true;
+      }
+    }
+  }, []);
 
   if (contextMenu.type !== ContextMenuType.TableSort) return null;
 
@@ -193,6 +197,7 @@ export const TableSort = () => {
           const columns = name ? [name, ...availableColumns] : availableColumns;
           return (
             <TableSortEntry
+              ref={dropdownRef}
               index={index}
               key={name}
               direction={entry.direction}

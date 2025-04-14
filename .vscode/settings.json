@@ -111,6 +111,7 @@
     "pulumi",
     "pyimport",
     "Pyodide",
+    "Pyright",
     "quadratichq",
     "rects",
     "Referer",

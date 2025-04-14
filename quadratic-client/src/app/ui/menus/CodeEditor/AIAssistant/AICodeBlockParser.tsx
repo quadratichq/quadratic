@@ -1,5 +1,6 @@
 import { Markdown } from '@/app/ui/components/Markdown';
 import { CodeSnippet } from '@/app/ui/menus/CodeEditor/AIAssistant/CodeSnippet';
+import type { JSX } from 'react';
 import { memo } from 'react';
 
 // Regular expression to match code blocks
