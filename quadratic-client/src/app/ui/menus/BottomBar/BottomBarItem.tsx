@@ -1,4 +1,5 @@
 import { cn } from '@/shared/shadcn/utils';
+import type { JSX } from 'react';
 import { forwardRef } from 'react';
 
 type Props = {
