@@ -152,6 +152,7 @@ export class CellsTextHash {
       this.content.clear();
       this.links = [];
       this.drawRects = [];
+      this.labelMeshes.clear();
       this.overflowGridLines = [];
     }
   };
@@ -242,6 +243,7 @@ export class CellsTextHash {
 
     this.dirtyText = false;
 
+    this.labelMeshes.clear();
     this.labels.forEach((label) => label.updateText(this.labelMeshes));
 
     const columnsMax = new Map<number, number>();
