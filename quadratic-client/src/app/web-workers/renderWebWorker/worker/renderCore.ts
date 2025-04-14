@@ -20,7 +20,7 @@ class RenderCore {
   private waitingForResponse: Map<number, Function> = new Map();
   private id = 0;
 
-  init(renderPort: MessagePort) {
+  clientInit(renderPort: MessagePort) {
     this.renderCorePort = renderPort;
     this.renderCorePort.onmessage = this.handleMessage;
     if (debugWebWorkers) console.log('[renderCore] initialized');
