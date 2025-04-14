@@ -437,11 +437,7 @@ impl GridController {
 
             // Pull out the data table via a swap, removing it from the sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let index = sheet
-                .data_tables
-                .iter()
-                .position(|(pos, _)| *pos == data_table_pos)
-                .ok_or_else(|| anyhow::anyhow!("Data table not found"))?;
+            let index = sheet.data_table_index_result(pos)?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
             let cell_value = sheet.cell_value_result(data_table_pos)?;
             let data_table_rect = data_table
