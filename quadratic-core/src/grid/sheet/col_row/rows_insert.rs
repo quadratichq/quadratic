@@ -40,44 +40,33 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         row: i64,
         copy_formats: CopyFormats,
-        send_client: bool,
         a1_context: &A1Context,
     ) {
         self.insert_and_shift_values(row);
 
         // update formatting
         self.formats.insert_row(row, copy_formats);
-        if send_client {
-            transaction.add_fill_cells(self.id);
-        }
+        transaction.add_fill_cells(self.id);
 
         // signal client to update the borders for changed columns
         self.borders.insert_row(row, copy_formats);
-        if send_client {
-            transaction.sheet_borders.insert(self.id);
-        }
+        transaction.sheet_borders.insert(self.id);
 
         self.check_insert_tables_rows(transaction, row);
         self.adjust_insert_tables_rows(transaction, row);
 
         // mark hashes of new rows dirty
-        if send_client {
-            transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
-        }
+        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
         let changed_selections = self
             .validations
             .insert_row(transaction, self.id, row, a1_context);
-        if send_client {
-            transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
-        }
+        transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
         let changes = self.offsets.insert_row(row);
-        if send_client && !changes.is_empty() {
-            changes.iter().for_each(|(index, size)| {
-                transaction.offsets_modified(self.id, None, Some(*index), Some(*size));
-            });
-        }
+        changes.iter().for_each(|(index, size)| {
+            transaction.offsets_modified(self.id, None, Some(*index), Some(*size));
+        });
 
         // create undo operations for the inserted column
         if transaction.is_user_undo_redo() {
@@ -142,7 +131,6 @@ mod test {
             &mut transaction,
             1,
             CopyFormats::None,
-            false,
             &A1Context::default(),
         );
 
@@ -199,7 +187,6 @@ mod test {
             &mut transaction,
             2,
             CopyFormats::None,
-            false,
             &A1Context::default(),
         );
 
@@ -226,7 +213,7 @@ mod test {
         let mut transaction = PendingTransaction::default();
         let context = A1Context::default();
 
-        sheet.insert_row(&mut transaction, 3, CopyFormats::None, false, &context);
+        sheet.insert_row(&mut transaction, 3, CopyFormats::None, &context);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -249,7 +236,7 @@ mod test {
         let mut transaction = PendingTransaction::default();
         let context = A1Context::default();
 
-        sheet.insert_row(&mut transaction, 2, CopyFormats::None, false, &context);
+        sheet.insert_row(&mut transaction, 2, CopyFormats::None, &context);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
         assert_eq!(sheet.offsets.row_height(3), 200.0);

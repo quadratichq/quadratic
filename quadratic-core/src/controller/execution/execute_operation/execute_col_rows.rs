@@ -239,7 +239,7 @@ impl GridController {
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_row(transaction, row, copy_formats, true, &self.a1_context);
+                sheet.insert_row(transaction, row, copy_formats, &self.a1_context);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds(&self.a1_context);

@@ -149,7 +149,7 @@ impl GridController {
         // insert new rows at the adjusted location
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for row in adjusted_to..=adjusted_to + row_end - row_start {
-                sheet.insert_row(transaction, row, CopyFormats::None, false, &self.a1_context);
+                sheet.insert_row(transaction, row, CopyFormats::None, &self.a1_context);
             }
         }
 
