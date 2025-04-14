@@ -111,7 +111,6 @@ function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: C
 
   // This is a middleware that tests the connection before saving
   const handleSubmitMiddleware = async (formValues: ConnectionFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     const { name, type, ...typeDetails } = formValues;
 
     try {

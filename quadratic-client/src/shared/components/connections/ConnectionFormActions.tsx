@@ -42,40 +42,6 @@ export function ConnectionFormActions({
       <div className="flex flex-col gap-1">
         <div className="flex w-full items-center justify-end gap-2">
           <div className="mr-auto flex items-center gap-2">
-            {/* <Button
-              type="button"
-              className="w-32"
-              variant={connectionState === 'success' ? 'success' : 'secondary'}
-              disabled={connectionState === 'loading'}
-              onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
-                const { name, type, ...typeDetails } = values;
-                mixpanel.track('[Connections].test', { type });
-                setConnectionState('loading');
-
-                try {
-                  const { connected, message } = await connectionClient.test.run({
-                    type,
-                    typeDetails,
-                  });
-                  setConnectionError(connected === false && message ? message : '');
-                  setConnectionState(connected ? 'success' : 'error');
-                } catch (e) {
-                  setConnectionError('Network error: failed to make connection.');
-                  setConnectionState('error');
-                }
-              })}
-            >
-              {connectionState === 'success' ? (
-                <>
-                  <CheckCircledIcon className="mr-1" /> Connected
-                </>
-              ) : connectionState === 'loading' ? (
-                <SpinnerIcon className="text-primary" />
-              ) : (
-                'Test'
-              )}
-            </Button>*/}
-
             {connectionUuid && (
               <Button
                 type="button"
@@ -114,13 +80,22 @@ export function ConnectionFormActions({
           <Alert variant="destructive" className="mt-4">
             <ErrorIcon />
             <AlertTitle>Failed to connect</AlertTitle>
-            <AlertDescription>
+            <AlertDescription className="flex flex-col gap-2">
               <span className="mb-2">
                 The connection must be reachable before saving. The server returned the following error.
               </span>
-              <br />
-              <br />
               <span className="font-mono text-xs">{dbConnectionError.message}</span>
+              <span>
+                Need help?{' '}
+                <a
+                  href="https://www.quadratichq.com/contact"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  Contact us.
+                </a>
+              </span>
             </AlertDescription>
           </Alert>
         )}
