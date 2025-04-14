@@ -157,6 +157,8 @@ interface EventTypes {
 
   scrollBarsHandler: (scrollBarsHandler: ScrollBarsHandler) => void;
   scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
+
+  bitmapFontsLoaded: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
