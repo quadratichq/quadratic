@@ -11,6 +11,7 @@ use crate::{
         DataTable, DataTableKind, SheetId,
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
+        unique_data_table_name,
     },
 };
 
@@ -26,8 +27,7 @@ impl GridController {
     ) {
         if transaction.is_user_undo_redo() {
             let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
-            transaction
-                .add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
         }
     }
 
@@ -140,10 +140,18 @@ impl GridController {
     ) -> Result<()> {
         if let Operation::AddDataTable {
             sheet_pos,
-            data_table,
+            mut data_table,
             cell_value,
-        } = op.to_owned()
+        } = op
         {
+            data_table.name = unique_data_table_name(
+                data_table.name(),
+                false,
+                Some(sheet_pos),
+                self.a1_context(),
+            )
+            .into();
+
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = Pos::from(sheet_pos);
@@ -152,9 +160,10 @@ impl GridController {
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
-            let old_value = sheet.set_cell_value(data_table_pos, cell_value);
-            let (old_index, old_data_table) =
-                sheet.data_tables.insert_sorted(data_table_pos, data_table);
+            let old_value = sheet.set_cell_value(data_table_pos, cell_value.to_owned());
+            let (old_index, old_data_table) = sheet
+                .data_tables
+                .insert_sorted(data_table_pos, data_table.to_owned());
 
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
@@ -166,16 +175,20 @@ impl GridController {
                 transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
             }
 
-            let forward_operations = vec![op];
+            let forward_operations = vec![Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+                cell_value,
+            }];
             let reverse_operations = vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: old_value.unwrap_or(CellValue::Blank).into(),
+                },
                 Operation::SetDataTable {
                     sheet_pos,
                     data_table: old_data_table,
                     index: old_index,
-                },
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_value.unwrap_or(CellValue::Blank).into(),
                 },
             ];
 

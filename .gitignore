@@ -43,6 +43,7 @@ quadratic-files/target/
 quadratic-files/storage
 quadratic-multiplayer/target/
 quadratic-rust-client/target/
+quadratic-rust-shared/target/
 
 quadratic-multiplayer/updateAlertVersion.json
 quadratic-rust-shared/src/auto_gen_path.rs
@@ -62,6 +63,9 @@ quadratic-multiplayer/coverage
 # Python Deployment files
 quadratic-kernels/python-wasm/dist/
 quadratic-client/public/*.whl
+
+# Pyodide public folder
+quadratic-client/public/pyodide
 
 # Docker Data Volumes
 docker/localstack/data

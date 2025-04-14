@@ -102,7 +102,7 @@ export function useAIRequestToAPI() {
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
                     responseMessage = newResponseMessage;
                   } catch (error) {
-                    console.error('Error parsing AI response: ', { error, line, lines });
+                    console.warn('Error parsing AI response: ', { error, line });
                   }
                 }
               }

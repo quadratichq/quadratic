@@ -18,10 +18,10 @@ import { memo, useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
-  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMenuProps) => {
+export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const [selectedModel, setSelectedModel, selectedModelConfig, thinkingToggle, setThinkingToggle] = useAIModel();
 
   const modelConfigs = useMemo(() => {
@@ -58,53 +58,55 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          disabled={loading}
-          className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
-        >
-          {selectedModelConfig.displayName}
-          <CaretDownIcon />
-        </DropdownMenuTrigger>
+      {debug && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={loading}
+            className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
+          >
+            {selectedModelConfig.displayName}
+            <CaretDownIcon />
+          </DropdownMenuTrigger>
 
-        <DropdownMenuContent
-          align="start"
-          alignOffset={-4}
-          onCloseAutoFocus={(e) => {
-            e.preventDefault();
-            textAreaRef.current?.focus();
-          }}
-        >
-          {modelConfigs
-            .filter(
-              ([, modelConfig]) =>
-                modelConfig.thinkingToggle === undefined ||
-                (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
-                selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
-            )
-            .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1))
-            .map(([key, modelConfig]) => {
-              const { model, displayName, provider } = modelConfig;
+          <DropdownMenuContent
+            align="start"
+            alignOffset={-4}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              textareaRef.current?.focus();
+            }}
+          >
+            {modelConfigs
+              .filter(
+                ([, modelConfig]) =>
+                  modelConfig.thinkingToggle === undefined ||
+                  (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
+                  selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
+              )
+              .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1))
+              .map(([key, modelConfig]) => {
+                const { model, displayName, provider } = modelConfig;
 
-              return (
-                <DropdownMenuCheckboxItem
-                  key={key}
-                  checked={selectedModel === key}
-                  onCheckedChange={() => {
-                    mixpanel.track('[AI].model.change', { model });
-                    setSelectedModel(key);
-                  }}
-                >
-                  <div className="flex w-full items-center justify-between text-xs">
-                    <span className="pr-4">
-                      {(debug ? `${modelConfig.enabled ? '' : 'dbg-'}${provider} - ` : '') + displayName}
-                    </span>
-                  </div>
-                </DropdownMenuCheckboxItem>
-              );
-            })}
-        </DropdownMenuContent>
-      </DropdownMenu>
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={selectedModel === key}
+                    onCheckedChange={() => {
+                      mixpanel.track('[AI].model.change', { model });
+                      setSelectedModel(key);
+                    }}
+                  >
+                    <div className="flex w-full items-center justify-between text-xs">
+                      <span className="pr-4">
+                        {(debug ? `${modelConfig.enabled ? '' : 'dbg-'}${provider} - ` : '') + displayName}
+                      </span>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {canToggleThinking && (
         <TooltipPopover label="Extended thinking for complex prompts">
@@ -116,7 +118,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
             className={cn(
               thinking && '!bg-border !text-primary',
               !thinking && 'text-muted-foreground hover:text-foreground',
-              'ml-1 mr-auto flex h-6 items-center !gap-0 px-1.5 py-1 text-xs font-normal '
+              'mr-auto flex h-6 items-center !gap-0 px-1.5 py-1 text-xs font-normal'
             )}
           >
             <LightbulbIcon className={cn('mr-0.5 !flex !h-4 !w-4 items-center !text-base')} />

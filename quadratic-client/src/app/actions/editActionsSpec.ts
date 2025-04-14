@@ -56,7 +56,7 @@ type EditActionSpec = Pick<
 
 export const editActionsSpec: EditActionSpec = {
   [Action.Undo]: {
-    label: 'Undo',
+    label: () => 'Undo',
     Icon: UndoIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
@@ -64,7 +64,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.Redo]: {
-    label: 'Redo',
+    label: () => 'Redo',
     Icon: RedoIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
@@ -72,7 +72,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.Cut]: {
-    label: 'Cut',
+    label: () => 'Cut',
     Icon: CutIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
@@ -81,7 +81,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.Copy]: {
-    label: 'Copy',
+    label: () => 'Copy',
     Icon: CopyIcon,
     run: () => {
       pixiAppSettings.setContextMenu?.({});
@@ -89,7 +89,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.Paste]: {
-    label: 'Paste',
+    label: () => 'Paste',
     Icon: PasteIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
@@ -98,7 +98,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.PasteValuesOnly]: {
-    label: 'Paste values only',
+    label: () => 'Paste values only',
     Icon: PasteIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
@@ -107,7 +107,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.PasteFormattingOnly]: {
-    label: 'Paste formatting only',
+    label: () => 'Paste formatting only',
     Icon: PasteIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
@@ -116,7 +116,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.FindInCurrentSheet]: {
-    label: 'Find in current sheet',
+    label: () => 'Find in current sheet',
     Icon: FindInFileIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
@@ -125,7 +125,7 @@ export const editActionsSpec: EditActionSpec = {
     keywords: ['search'],
   },
   [Action.FindInAllSheets]: {
-    label: 'Find in all sheets',
+    label: () => 'Find in all sheets',
     Icon: FindInFileIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
@@ -134,7 +134,7 @@ export const editActionsSpec: EditActionSpec = {
     keywords: ['search'],
   },
   [Action.CopyAsPng]: {
-    label: 'Copy as PNG',
+    label: () => 'Copy as PNG',
     labelVerbose: 'Copy selection as PNG',
     Icon: CopyAsPng,
     run: () => {
@@ -144,7 +144,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.DownloadAsCsv]: {
-    label: 'Download as CSV',
+    label: () => 'Download as CSV',
     labelVerbose: 'Download selection as CSV',
     Icon: CsvIcon,
     run: async () => {
@@ -163,19 +163,19 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.Save]: {
-    label: 'Save',
+    label: () => 'Save',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.FillRight]: {
-    label: 'Fill right',
+    label: () => 'Fill right',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.FillDown]: {
-    label: 'Fill down',
+    label: () => 'Fill down',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.EditCell]: {
-    label: 'Edit cell',
+    label: () => 'Edit cell',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
@@ -202,7 +202,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.ToggleArrowMode]: {
-    label: 'Toggle arrow mode',
+    label: () => 'Toggle arrow mode',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
@@ -224,31 +224,31 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.DeleteCell]: {
-    label: 'Delete cell',
+    label: () => 'Delete cell',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.CloseInlineEditor]: {
-    label: 'Close inline editor',
+    label: () => 'Close inline editor',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.SaveInlineEditor]: {
-    label: 'Save inline editor',
+    label: () => 'Save inline editor',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.SaveInlineEditorMoveUp]: {
-    label: 'Save inline editor and move up',
+    label: () => 'Save inline editor and move up',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.SaveInlineEditorMoveRight]: {
-    label: 'Save inline editor and move right',
+    label: () => 'Save inline editor and move right',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.SaveInlineEditorMoveLeft]: {
-    label: 'Save inline editor and move left',
+    label: () => 'Save inline editor and move left',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.TriggerCell]: {
-    label: 'Trigger cell',
+    label: () => 'Trigger cell',
     run: () => {
       const p = sheets.sheet.cursor.position;
       events.emit('triggerCell', p.x, p.y, true);

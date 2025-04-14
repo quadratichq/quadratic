@@ -17,6 +17,8 @@
     "Buildx",
     "cellref",
     "cellvalue",
+    "Cinstrument",
+    "clippy",
     "cmdk",
     "codegen",
     "codingame",
@@ -34,6 +36,7 @@
     "dcell",
     "ddimaria",
     "dearmor",
+    "deepseek",
     "demangle",
     "dgraph",
     "docgen",
@@ -53,6 +56,7 @@
     "getcells",
     "gramm",
     "grammarly",
+    "grcov",
     "Hasher",
     "healthcheck",
     "healthchecks",
@@ -100,10 +104,13 @@
     "pixi",
     "pixiapp",
     "Plotly",
+    "pointerupoutside",
     "prec",
+    "profraw",
     "proptest",
     "pulumi",
     "pyimport",
+    "Pyodide",
     "quadratichq",
     "rects",
     "Referer",
@@ -113,6 +120,8 @@
     "reqwest",
     "rfind",
     "ROUNDDOWN",
+    "RUSTC",
+    "RUSTFLAGS",
     "rustup",
     "scrollend",
     "selfhost",
@@ -150,6 +159,7 @@
     "usermod",
     "vals",
     "vcpu",
+    "vertexai",
     "VITE",
     "VLOOKUP",
     "websockets",
@@ -206,7 +216,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[html]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "vscode.html-language-features"
   },
   "[markdown]": {
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"

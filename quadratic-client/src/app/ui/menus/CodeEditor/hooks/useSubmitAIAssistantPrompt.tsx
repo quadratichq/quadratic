@@ -20,10 +20,10 @@ import {
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import type { CodeCell } from '@/app/shared/types/codeCell';
+import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -35,8 +35,7 @@ const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAssistantPromptArgs = {
   content: Content;
-  messageIndex?: number;
-  clearMessages?: boolean;
+  messageIndex: number;
   codeCell?: CodeCell;
   onSubmit?: () => void;
 };
@@ -49,23 +48,23 @@ export function useSubmitAIAssistantPrompt() {
   const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
-    ({ set }) =>
+    ({ snapshot }) =>
       async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
-        const [currentSheetContext, visibleContext, codeContext] = await Promise.all([
+        const [currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
           getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
           getVisibleContext(),
           getCodeCellContext({ codeCell }),
+          snapshot.getPromise(aiAssistantMessagesAtom),
         ]);
-        let updatedMessages: ChatMessage[] = [];
-        set(aiAssistantMessagesAtom, (prevMessages) => {
-          prevMessages = getPromptMessages(prevMessages);
 
-          updatedMessages = [...currentSheetContext, ...visibleContext, ...codeContext, ...prevMessages];
+        const messagesWithContext: ChatMessage[] = [
+          ...currentSheetContext,
+          ...visibleContext,
+          ...codeContext,
+          ...getPromptMessagesWithoutPDF(prevMessages),
+        ];
 
-          return updatedMessages;
-        });
-
-        return updatedMessages;
+        return messagesWithContext;
       },
     [getCurrentSheetContext, getVisibleContext, getCodeCellContext]
   );
@@ -74,35 +73,30 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, messageIndex, clearMessages, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
+      async ({ content, messageIndex, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
         if (previousLoading) return;
 
-        if (clearMessages) {
-          set(aiAssistantIdAtom, v4());
-          set(aiAssistantMessagesAtom, []);
-        }
-
         // fork chat, if we are editing an existing chat
-        if (messageIndex !== undefined) {
+        const currentMessageCount = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
+        if (messageIndex < currentMessageCount) {
           set(aiAssistantIdAtom, v4());
           set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
-        } else {
-          messageIndex = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
         }
 
         set(codeEditorDiffEditorContentAtom, undefined);
-        if (codeCell) {
+        const currentCodeCellInEditor = await snapshot.getPromise(codeEditorCodeCellAtom);
+        if (codeCell && !isSameCodeCell(codeCell, currentCodeCellInEditor)) {
           set(codeEditorWaitingForEditorClose, {
             codeCell,
             showCellTypeMenu: false,
             initialCode: '',
             inlineEditor: false,
           });
-        } else {
-          codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+        } else if (!codeCell) {
+          codeCell = currentCodeCellInEditor;
         }
 
         if (!onSubmit) {
@@ -118,14 +112,14 @@ export function useSubmitAIAssistantPrompt() {
 
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
-          set(aiAssistantMessagesAtom, (prevMessages) => {
-            let prevWaitingOnMessageIndex: number | undefined = undefined;
-            clearTimeout(delayTimerRef.current);
-            set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
-              prevWaitingOnMessageIndex = prev;
-              return undefined;
-            });
+          let prevWaitingOnMessageIndex: number | undefined = undefined;
+          clearTimeout(delayTimerRef.current);
+          set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
+            prevWaitingOnMessageIndex = prev;
+            return undefined;
+          });
 
+          set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
@@ -158,9 +152,8 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, abortController);
 
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage, billingLimit } = await apiClient.teams.billing.aiUsage(
-          teamUuid
-        );
+        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
+          await apiClient.teams.billing.aiUsage(teamUuid);
         if (exceededBillingLimit) {
           let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
           set(aiAssistantDelaySecondsAtom, localDelaySeconds);
@@ -211,6 +204,7 @@ export function useSubmitAIAssistantPrompt() {
 
         set(aiAssistantLoadingAtom, true);
 
+        let lastMessageIndex = -1;
         let chatId = '';
         set(aiAssistantIdAtom, (prev) => {
           chatId = prev ? prev : v4();
@@ -222,12 +216,13 @@ export function useSubmitAIAssistantPrompt() {
           let toolCallIterations = 0;
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
-            const updatedMessages = await updateInternalContext({ codeCell });
+            const messagesWithContext = await updateInternalContext({ codeCell });
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAssistant',
               modelKey,
-              messages: updatedMessages,
+              messages: messagesWithContext,
               useStream: true,
               toolName: undefined,
               useToolsPrompt: true,
@@ -255,7 +250,11 @@ export function useSubmitAIAssistantPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any);
+                const result = await aiToolsActions[aiTool](args as any, {
+                  source: 'AIAssistant',
+                  chatId,
+                  messageIndex: lastMessageIndex + 1,
+                });
                 toolResultMessage.content.push({
                   id: toolCall.id,
                   text: result,

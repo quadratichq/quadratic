@@ -101,6 +101,7 @@ export const codeEditorAtom = atom<CodeEditorState>({
         }
 
         if (oldValue.showCodeEditor && !newValue.showCodeEditor) {
+          oldValue.aiAssistant.abortController?.abort();
           events.emit('codeEditorCodeCell', undefined);
           resetSelf();
           focusGrid();

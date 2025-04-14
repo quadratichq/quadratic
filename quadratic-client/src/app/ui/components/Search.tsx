@@ -36,7 +36,7 @@ export function Search() {
   const [current, setCurrent] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label : findInSheetActionSpec.label;
+  const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label() : findInSheetActionSpec.label();
 
   const moveCursor = useCallback((pos: SheetPos) => {
     if (sheets.current !== pos.sheet_id.id) {

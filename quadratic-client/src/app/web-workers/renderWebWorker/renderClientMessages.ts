@@ -7,11 +7,15 @@ import type { Rectangle } from 'pixi.js';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';
-  bitmapFonts: RenderBitmapFonts;
 
   // this is taken from the CSS variable (which is not accessible in the
   // worker): --table-column-header-foreground
   tableColumnHeaderForeground: number;
+}
+
+export interface ClientRenderBitmapFonts {
+  type: 'clientRenderBitmapFonts';
+  bitmapFonts: RenderBitmapFonts;
 }
 
 // also includes sending the data as transferable ArrayBuffers
@@ -121,6 +125,7 @@ export type RenderClientMessage =
 
 export type ClientRenderMessage =
   | ClientRenderInit
+  | ClientRenderBitmapFonts
   | ClientRenderViewport
   | ClientRenderSheetOffsetsTransient
   | ClientRenderShowLabel

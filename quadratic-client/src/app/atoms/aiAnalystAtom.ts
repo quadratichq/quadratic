@@ -23,6 +23,10 @@ export interface AIAnalystState {
     abortController: AbortController | undefined;
     suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
   };
+  pdfImport: {
+    abortController: AbortController | undefined;
+    loading: boolean;
+  };
   waitingOnMessageIndex?: number;
   delaySeconds: number;
 }
@@ -42,6 +46,10 @@ export const defaultAIAnalystState: AIAnalystState = {
   promptSuggestions: {
     abortController: undefined,
     suggestions: [],
+  },
+  pdfImport: {
+    abortController: undefined,
+    loading: false,
   },
   waitingOnMessageIndex: undefined,
   delaySeconds: 0,
@@ -84,7 +92,12 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         }
 
         if (oldValue.showAIAnalyst && !newValue.showAIAnalyst) {
+          oldValue.abortController?.abort();
           focusGrid();
+        }
+
+        if (!oldValue.showChatHistory && newValue.showChatHistory) {
+          oldValue.abortController?.abort();
         }
       });
     },
@@ -292,10 +305,6 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         ...prev,
         chats,
         currentChat,
-        promptSuggestions: {
-          abortController: undefined,
-          suggestions: [],
-        },
       };
     });
   },
@@ -310,6 +319,12 @@ export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions'
 export const aiAnalystPromptSuggestionsCountAtom = selector<number>({
   key: 'aiAnalystPromptSuggestionsCountAtom',
   get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).suggestions.length,
+});
+
+export const aiAnalystPDFImportAtom = createSelector('pdfImport');
+export const aiAnalystPDFImportLoadingAtom = selector<boolean>({
+  key: 'aiAnalystPDFImportLoadingAtom',
+  get: ({ get }) => get(aiAnalystPDFImportAtom).loading,
 });
 
 export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({

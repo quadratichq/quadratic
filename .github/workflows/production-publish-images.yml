@@ -27,8 +27,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Cache Pyodide
+        id: cache-pyodide
+        uses: useblacksmith/cache@v5
         with:
-          lfs: true
+          path: quadratic-client/public/pyodide
+          key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
+
+      - name: Download & Verify Pyodide
+        run: |
+          npm run client:download:pyodide
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -70,7 +79,6 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-
-            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-
 
       - name: Build, Tag, and Push Image to Amazon ECR Public
         uses: docker/build-push-action@v6
@@ -81,5 +89,5 @@ jobs:
           tags: |
             ${{ steps.get-ecr-url.outputs.ECR_URL }}:latest
             ${{ steps.get-ecr-url.outputs.ECR_URL }}:${{ steps.version.outputs.VERSION }}
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.6.9"
+version = "0.6.10"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -18,7 +18,7 @@ futures-util = { version = "0.3.29", default-features = false, features = [
 ] }
 headers = "0.4.0"
 jsonwebtoken = "9.2.0"
-openssl = { version = "0.10.66", features = ["vendored"] }
+openssl = { version = "0.10.72", features = ["vendored"] }
 quadratic-core = { path = "../quadratic-core", default-features = false, features = [
     "console_error_panic_hook",
     "js",
@@ -31,7 +31,7 @@ serde_json = "1.0.108"
 strum = "0.27.1"
 strum_macros = "0.27.1"
 thiserror = "2.0.12"
-tokio = { version = "1.34.0", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full"] }
 tokio-util = "0.7.11"
 tower = { version = "0.5.2", features = ["util"] }
 tower-http = { version = "0.6.2", features = [

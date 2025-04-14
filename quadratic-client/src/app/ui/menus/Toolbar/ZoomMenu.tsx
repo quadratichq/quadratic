@@ -29,7 +29,7 @@ export const ZoomMenu = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group flex h-full w-24 items-center justify-between border-l border-border  px-2 text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
+      <DropdownMenuTrigger className="group flex h-full w-24 items-center justify-between border-l border-border px-2 text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
         {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
         <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
       </DropdownMenuTrigger>
@@ -99,6 +99,7 @@ function DropdownMenuItemFromAction<T extends Action>({
 }) {
   const actionSpec = defaultActionSpec[action];
   const shortcutDisplay = keyboardShortcutEnumToDisplay(action);
+  const label = actionSpec.label();
   return (
     <DropdownMenuItem
       onClick={() => {
@@ -106,7 +107,7 @@ function DropdownMenuItemFromAction<T extends Action>({
         actionSpec.run(actionArgs);
       }}
     >
-      {actionSpec.label} {shortcutDisplay && <DropdownMenuShortcut>{shortcutDisplay}</DropdownMenuShortcut>}
+      {label} {shortcutDisplay && <DropdownMenuShortcut>{shortcutDisplay}</DropdownMenuShortcut>}
     </DropdownMenuItem>
   );
 }

@@ -30,7 +30,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   return (
     <div className="flex items-center justify-between px-4 py-2">
       <span className="flex items-center text-sm font-bold">
-        {viewActionsSpec[Action.ToggleAIAnalyst].label}
+        {viewActionsSpec[Action.ToggleAIAnalyst].label()}
         {showChatHistory && ' history'}
       </span>
 

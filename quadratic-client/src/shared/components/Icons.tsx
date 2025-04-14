@@ -111,6 +111,10 @@ export const ArrowUpwardIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_upward</Icon>;
 };
 
+export const AttachFileIcon: IconComponent = (props) => {
+  return <Icon {...props}>attach_file</Icon>;
+};
+
 export const BackspaceIcon: IconComponent = (props) => {
   return <Icon {...props}>backspace</Icon>;
 };
@@ -492,6 +496,10 @@ export const LabsIcon: IconComponent = (props) => {
 
 export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
+};
+
+export const PDFIcon: IconComponent = (props) => {
+  return <Icon {...props}>picture_as_pdf</Icon>;
 };
 
 export const PercentIcon: IconComponent = (props) => {

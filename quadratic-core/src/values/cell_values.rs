@@ -97,8 +97,6 @@ impl CellValues {
     }
 
     pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<CellValue>> {
-        // let size = rect.size();
-        // let mut values = CellValues::new(size.w.get(), size.h.get());
         let mut values =
             vec![vec![CellValue::Blank; rect.width() as usize]; rect.height() as usize];
 

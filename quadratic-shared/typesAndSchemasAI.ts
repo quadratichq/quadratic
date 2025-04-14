@@ -16,11 +16,9 @@ const VertexAnthropicModelSchema = z.enum([
   'claude-3-5-haiku@20241022',
 ]);
 const VertexAIModelSchema = z.enum([
+  'gemini-2.5-pro-preview-03-25',
   'gemini-2.0-flash-thinking-exp-01-21',
   'gemini-2.0-flash-001',
-  'gemini-2.0-flash-lite-001',
-  'gemini-1.5-pro-002',
-  'gemini-1.5-flash-002',
 ]);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -65,12 +63,7 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
-const VertexAIModelKeySchema = z.enum([
-  'vertexai:gemini-2.0-flash-001',
-  'vertexai:gemini-2.0-flash-lite-001',
-  'vertexai:gemini-1.5-pro-002',
-  'vertexai:gemini-1.5-flash-002',
-]);
+const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-03-25', 'vertexai:gemini-2.0-flash-001']);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
@@ -150,16 +143,35 @@ const InternalContextTypeSchema = z.enum([
   'selection',
   'codeCell',
   'tables',
+  'files',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
 export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 
+const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
+  z.object({
+    Connection: z.object({
+      kind: z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']),
+      id: z.string(),
+    }),
+  })
+);
 const ContextSchema = z.object({
   sheets: z.array(z.string()),
   currentSheet: z.string(),
   selection: z.string().optional(),
+  codeCell: z
+    .object({
+      sheetId: z.string(),
+      pos: z.object({
+        x: z.number(),
+        y: z.number(),
+      }),
+      language: CodeCellLanguageSchema,
+    })
+    .optional(),
 });
 export type Context = z.infer<typeof ContextSchema>;
 
@@ -363,6 +375,7 @@ const AISourceSchema = z.enum([
   'GetFileName',
   'CodeEditorCompletions',
   'GetUserPromptSuggestions',
+  'PDFImport',
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 

@@ -15,7 +15,7 @@ import type {
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
-import init from '@/app/quadratic-rust-client/quadratic_rust_client';
+import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
@@ -59,7 +59,7 @@ class RenderText {
 
   constructor() {
     this.viewportBuffer = undefined;
-    init().then(() => {
+    initRustClient().then(() => {
       this.status.rust = true;
       this.ready();
     });
@@ -77,7 +77,6 @@ class RenderText {
 
   ready() {
     if (this.status.rust && this.status.core && this.bitmapFonts) {
-      if (!this.bitmapFonts) throw new Error('Expected bitmapFonts to be defined in RenderText.ready');
       for (const sheetInfo of this.status.core) {
         const sheetId = sheetInfo.sheet_id;
         this.cellsLabels.set(sheetId, new CellsLabels(sheetInfo, this.bitmapFonts));
@@ -153,12 +152,12 @@ class RenderText {
       Atomics.load(int32Array, 0) === 0 // first slice is dirty
         ? 0
         : Atomics.load(int32Array, 14) === 0 // second slice is dirty
-        ? 14
-        : Atomics.compareExchange(int32Array, 0, 1, 0) === 1 // first slice is not locked, this is to avoid race condition
-        ? 0
-        : Atomics.compareExchange(int32Array, 14, 1, 0) === 1 // second slice is not locked, this is to avoid race condition
-        ? 14
-        : -1;
+          ? 14
+          : Atomics.compareExchange(int32Array, 0, 1, 0) === 1 // first slice is not locked, this is to avoid race condition
+            ? 0
+            : Atomics.compareExchange(int32Array, 14, 1, 0) === 1 // second slice is not locked, this is to avoid race condition
+              ? 14
+              : -1;
     if (writerStart === -1) {
       console.error('[RenderText] updateViewportBuffer: invalid flag state in viewport buffer');
       return;

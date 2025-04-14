@@ -9,20 +9,22 @@ Python does not support conditional returns in Quadratic. Only the last line of 
 Single cell references are placed in a variable of corresponding type. Multi-line references are placed in a DataFrame.
 
 Essential Python basics in Quadratic: 
-1. Reference cells - read data from the sheet into Python using table references or cell references
-2. Return data to the sheet - return Python outputs from code to the sheet
+1. Cell references - use q.cells() to read data from the sheet into Python with table references and A1 notation
+2. Return data to the sheet - return Python outputs from code to the sheet; the last line is what gets returned 
 3. Import Python packages - supporting some built-in libraries and others via micropip
 4. Make API requests - use the Requests library to query APIs
-5. Visualize data - turn your data into charts with Plotly
+5. Visualize data - turn your data into charts with Plotly exclusively, no other charting libraries supported 
 
-# Reference cells from Python
+## Reference cells from Python
 
 You can reference tables, individual cells, and ranges of cells using Python.
 
-## Referencing tables
+### Referencing tables
 
 Much of Quadratic's data is formatted in Data Tables for ease of use. To perform any reference type you can use \`q.cells\`. For table references this places the table in a DataFrame.
 
+
+Note the following examples that use table references: 
 \`\`\`python
 # References entire table, including headers, places into DataFrame 
 df = q.cells("Table1")
@@ -39,16 +41,16 @@ df_columns = q.cells("Table1[[Column 1]:[Column 3]]")
 
 Tables should be used whenever possible. Use ranged A1 references or single cell references otherwise. 
 
-## Referencing individual cells
+### Referencing individual cells
 
-To reference an individual cell, use the global function \`q.cells\` which returns the cell value.
+To reference an individual cell, use the global function \`q.cells\` which returns the cell value, as shown in following example.
 
 \`\`\`python
-# Reads the value in cell A1 and places in variable x 
+# Reads the value in cell A1 and stores in variable x 
 x = q.cells('A1')
 \`\`\`
 
-You can reference cells and use them directly in a Pythonic fashion, as shown below. 
+You can reference cells and use them directly in a Pythonic fashion, as shown in following example. 
 
 \`\`\`python
 q.cells('A1') + q.cells('A2') # Sums the values in cells A1 and A2 
@@ -56,7 +58,7 @@ q.cells('A1') + q.cells('A2') # Sums the values in cells A1 and A2
 
 Any time cells dependent on other cells update the dependent cell will also update; your code will execute whenever it makes a reference to another cell.
 
-## Referencing a range of cells
+### Referencing a range of cells
 
 To reference a range of cells, use the global function \`q.cells\`, ranged references will always return a Pandas DataFrame.
 
@@ -78,7 +80,7 @@ Use first_row_header when you have column names that you want as the header of t
 q.cells('A1:B9', first_row_header=True) # returns a 2x9 DataFrame with first row as DataFrame headers
 \`\`\`
 
-## Referencing another sheet
+### Referencing another sheet
 
 To reference another sheet's table, individual cells , or range of cells use the following: 
 
@@ -93,7 +95,7 @@ q.cells("'Sheet_name_here'!A1")
 q.cells("Table1")
 \`\`\`
 
-## Column references
+### Column references
 
 To reference all the data in a column or set of columns without defining the range, use the following syntax. 
 
@@ -114,7 +116,7 @@ q.cells('A:C', first_row_header=True) # same rules with first_row_header apply
 q.cells("'Sheet2'!A:C", first_row_header=True) # same rules to reference in other sheets apply
 \`\`\`
 
-## Relative vs absolute references
+### Relative vs absolute references
 
 By default when you copy paste a reference it will update the row reference unless you use $ notation in your references. 
 
@@ -132,7 +134,7 @@ q.cells('A$1:B$20)
 q.cells('A1:B$20')
 \`\`\`
 
-# Return data to the sheet
+## Return data to the sheet
 
 Return the data from your Python code to the spreadsheet.
 
@@ -144,7 +146,7 @@ All code outputs by default are given names that can be referenced, regardless o
 
 You can expect to primarily use DataFrames as Quadratic is heavily built around Pandas DataFrames.
 
-1. Single value
+### Single value
 
 Note the simplest possible example, where we set \`x = 5\` and then return \`x\` to the spreadsheet by placing \`x\` in the last line of code.
 
@@ -156,17 +158,17 @@ x = 5
 x
 \`\`\`
 
-2. List of values 
+### List of values 
 
 Lists can be returned directly to the sheet.  
 \`\`\`python
 my_list = [1, 2, 3, 4, 5]
 
-# Returns the list to the spreadsheet, with each value occupying subsequent cells  
+# Returns the list to the spreadsheet, with each value from the list occupying their own cell  
 my_list
 \`\`\`
 
-3. DataFrame
+### DataFrame
 
 You can return your DataFrames directly to the sheet by putting the DataFrame's variable name as the last line of code. The DataFrame's column names will be returned to the sheet as table headers. If no columns are named, column headers will not display in the sheet. To display column headers in the sheet, name the headers. The columns can still be referenced by their default DataFrame integer values. 
 
@@ -191,12 +193,12 @@ Note that if your DataFrame has an index it will not be returned to the sheet. I
 df.reset_index()
 \`\`\`
 
-An example of when this is necessary is any time you use the describe() method in Pandas.
-This creates an index so you'll need to use reset_index() if you want to correctly display the index in the sheet when you return the DataFrame. 
+This is necessary any time you use describe() method in Pandas or any method that returns a named index.
+These methods create a named index so you'll need to use reset_index() if you want to correctly display the index in the sheet when you return the DataFrame. The index is never returned to the sheet. 
 
-4. Charts
+### Charts
 
-Build your chart and return it to the spreadsheet by using the \`fig\` variable name or \`.show()\`
+Build your chart and return it to the spreadsheet by using the \`fig\` variable name or \`fig.show()\` as the last line of code. Chart will only get displayed if fig (or whatever the chart variable name is) or fig.show() are the last line of code.
 
 \`\`\`python
 import plotly.express as px
@@ -211,7 +213,7 @@ fig = px.line(df, x="year", y="lifeExp", title='Life expectancy in Canada')
 fig.show()
 \`\`\`
 
-5. Function outputs
+### Function outputs
 
 You can not use the \`return\` keyword to return data to the sheet, as that keyword only works inside of Python functions. The last line of code is what gets returned to the sheet, even if it's a function call.
 Here is an example of using a Python function to return data to the sheet. 
@@ -220,22 +222,26 @@ Here is an example of using a Python function to return data to the sheet.
 def do_some_math(x): 
     return x+1
 
-# returns the result of do_some_math(), which in this case is 6 
+# since this is the last line of code, it returns the result of do_some_math(), which in this case is 6 
 do_some_math(5)
 \`\`\`
 
 Note that conditionals will not return the value to the sheet if the last line is a conditional. The following is an example that will return nothing to the sheet:
-\'\'\'python
+
+Negative example: 
+\`\`\`python
 x = 3
 y = 0 
 if x == 3: 
     y = True
 else: 
     y = False
-\'\'\'
+\`\`\`
 
 The following is how you would return the result of that conditional to the sheet.
-\'\'\'python
+
+Positive example: 
+\`\`\`python
 x = 3
 y = 0 
 if x == 3: 
@@ -243,19 +249,47 @@ if x == 3:
 else: 
     y = False
 y
-\'\'\'
+\`\`\`
 
-# Packages
+Do NOT try to use try-except blocks. It is much more useful to simply return the output to the sheet and let the error surface in the sheet and the console. 
+
+If you create an error and need to see the data, a print statement (e.g. print(df.head(3)) of the data can allow you to see the data to continue with a more useful result. 
+
+Negative example: 
+\`\`\`python
+x = 3
+
+try: 
+    x += 1 
+except: 
+    print('error')
+\`\`\`
+
+Instead, simply return the output to the sheet. If an error occurs it will surface to the sheet and the console correctly. Never use try-except blocks.
+Positive example: 
+\`\`\`python
+x = 3
+
+# since this is the last line of code, it returns the result of x + 1, which in this case is 4 
+x += 1
+\`\`\`
+
+## Packages
 
 Using and installing Python packages.
 
-Default Packages
+### Default Packages
 
 Some libraries are included by default, here are some examples:
 
-* Pandas (https://pandas.pydata.org/)
-* NumPy (https://numpy.org/)
-* SciPy (https://scipy.org/)
+* Pandas 
+* NumPy 
+* SciPy 
+* Plotly
+* Scikit-learn
+* Statsmodels
+* Nltk
+* Regex
 
 Default packages can be imported like any other native Python package.
 
@@ -265,7 +299,9 @@ import numpy as np
 import scipy
 \`\`\`
 
-Micropip can be used to install additional Python packages that aren't automatically supported.
+### Additional packages
+
+Micropip can be used to install additional Python packages that aren't automatically supported. 
 
 \`\`\`python
 import micropip
@@ -280,13 +316,15 @@ fake.name()
 \`\`\`
 
 This only works for packages that are either pure Python or for packages with C extensions that are built in Pyodide.
-If a pure Python package is not found in the Pyodide repository, it will be loaded from PyPI.
 
-# API requests
+If you receive the following error then the library is likely not available in Quadratic or you've misspelled the library name: 
+"Can't find a pure Python 3 wheel."
+
+## API requests
 
 API Requests in Python must use the Requests library.
 
-## GET request
+### GET request
 
 Import the basic Requests library, query the API, and get the data into a Pandas DataFrame. 
 
@@ -305,7 +343,7 @@ df = pd.DataFrame(response.json())
 df
 \`\`\`
 
-POST request
+### POST request
 
 \`\`\`python
 import requests
@@ -320,24 +358,13 @@ x = requests.post(url, json = myobj)
 x.text
 \`\`\`
 
-**Going from CSV to DataFrame** 
-
-Bringing your CSV to Quadratic is as simple as a drag and drop. Once your CSV is in the spreadsheet, reference the range of cells in Python to get your data into a DatarFrame. 
-
-You use the argument \`first_row_header=True\` to set the first row of DataFrame to be your headers as column names.
-After some manipulation of the data, perhaps you would want to display your new DataFrame. In that case, leave \`df\` as the last line of code.
-
-In this case, the spreadsheet reflects \`q.cells('A:B')\` since we want the full span of data in both columns A and B.
-
-\`\`\`python
-df = q.cells('A:B'), first_row_header=True)
-\`\`\`
-
-# Charts/visualizations
+## Charts/visualizations
 
 Plotly is the only charting library supported in Quadratic. Do not try to use other libraries like Seaborn or Matplotlib. Matplotlib DOES NOT WORK in Quadratic. 
 
 To return a chart to the sheet, put fig.show() as the last line of code. 
+
+When creating charts do not try to state the code in the chat, use the set_code_cell_value function to place the code instead.
 
 \`\`\`python
 # Here are some example styling options for prettier charts
@@ -368,11 +395,7 @@ fig.update_layout(
 )
 \`\`\`
 
-3. Chart controls
-
-Charts can be resized by dragging the edges of the chart. You can also click chart to enable interactive options like resizing, exporting as png, and more. 
-
-# Time-series analysis
+## Time-series analysis
 
 For time-series analysis a good starting point is using statsmodels library for a simple ARIMA analysis. You can reference sheet data using table and sheet references to build these kinds of analysis.
 
@@ -427,47 +450,307 @@ fig.update_layout(
 fig.show()
 \`\`\`
 
-For machine learning, Scikit-learn is recommended. Here's a simple sk-learn example. 
+## Machine learning
+
+For machine learning, Scikit-learn is recommended. Here's a simple sklearn example. 
+
+When generating scikit-learn examples it helps to add a visualization, but it is not strictly required.
 
 \`\`\`python
 import pandas as pd
 import numpy as np
-import plotly.express as px
+import plotly.graph_objects as go
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 
-# Generate sample data
-np.random.seed(42)
-n_samples = 100
+# Load data from the Sample_Data table
+df = q.cells("Sample_Data_Table")
 
-# Create features
-X = np.random.normal(0, 1, n_samples)
-y = 2 * X + np.random.normal(0, 0.5, n_samples)
+# Extract features and target
+X = df[['Feature1', 'Feature2']].values
+y = df['Target'].astype(int).values  # Convert target to integers
 
-# Create DataFrame
-df = pd.DataFrame({
-    'Feature': X,
-    'Target': y
-})
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# Create scatter plot
-fig = px.scatter(df, x='Feature', y='Target', 
-                 title='Simple Linear Relationship with Noise')
+# Create and train the model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test)
+
+# Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+
+# Create a meshgrid for visualization
+x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
+y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01),
+                     np.arange(y_min, y_max, 0.01))
+
+# Get predictions for the meshgrid
+Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+Z = Z.reshape(xx.shape)
+
+# Create plot with decision boundary
+fig = go.Figure()
+
+# Add decision boundary contour
+fig.add_trace(
+    go.Contour(
+        z=Z,
+        x=np.arange(x_min, x_max, 0.01),
+        y=np.arange(y_min, y_max, 0.01),
+        showscale=False,
+        colorscale='RdBu',
+        opacity=0.4,
+        contours=dict(showlines=False)
+    )
+)
+
+# Add scatter points for class 0
+fig.add_trace(
+    go.Scatter(
+        x=X[y==0, 0],
+        y=X[y==0, 1],
+        mode='markers',
+        name='Class 0',
+        marker=dict(color='blue', size=10)
+    )
+)
+
+# Add scatter points for class 1
+fig.add_trace(
+    go.Scatter(
+        x=X[y==1, 0],
+        y=X[y==1, 1],
+        mode='markers',
+        name='Class 1',
+        marker=dict(color='red', size=10)
+    )
+)
 
 # Update layout
 fig.update_layout(
-    plot_bgcolor='white',
-    xaxis_title='Feature Value',
-    yaxis_title='Target Value'
+    title=f'Logistic Regression Decision Boundary (Accuracy: {accuracy:.2f})',
+    xaxis_title='Feature 1',
+    yaxis_title='Feature 2',
+    plot_bgcolor='white'
 )
 
 fig.show()
 \`\`\`
 
-# Correlations
+## Correlations
 
 Do not attempt to build a correlation analysis unless the user asks for it. 
 
-# File imports and exports
-Python can not be used to import files like .xlsx or .csv. Users should import those files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
+Note there are two code examples here. A good correlation analysis will have two code cells generated - the first is for the correlations, the second visualizes in a heatmap.
 
-Python can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.
+Here is an example of a successful correlation analysis.
+
+First code block finds the correlations. 
+\`\`\`python
+import pandas as pd
+import numpy as np
+
+# Get the stock data
+df = q.cells("Stock_Market_Data")
+
+# Calculate daily returns for each stock (better for correlation analysis than raw prices)
+stock_columns = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META']
+df_returns = df.copy()
+
+for col in stock_columns:
+    df_returns[f'{col}_return'] = df[col].pct_change() * 100
+
+# Drop the first row (which has NaN returns) and keep only return columns
+df_returns = df_returns.drop(columns=stock_columns + ['Date']).dropna()
+
+# Calculate correlation matrix of returns
+correlation_matrix = df_returns.corr()
+
+# Round the result that is returned to the sheet so it is more readable 
+correlation_matrix.round(3)
+\`\`\`
+
+Second code block visualizes the correlations in a heatmap.
+\`\`\`python
+import plotly.express as px
+
+# Get the correlation matrix from previous code - previous code outputs table is named "Python2"
+df = q.cells("Python2")
+
+# Create a heatmap visualization
+fig = px.imshow(df,
+               color_continuous_scale='RdBu_r',
+               zmin=-1, zmax=1,
+               title='Stock Returns Correlation Matrix')
+
+fig.update_layout(
+    xaxis_title='Stock',
+    yaxis_title='Stock',
+    coloraxis_colorbar=dict(
+        title='Correlation',
+    ),
+    plot_bgcolor='white'
+)
+
+# Display the heatmap
+fig.show()
+\`\`\`
+
+## File imports and exports
+Python can NOT be used to import files like .xlsx, .pqt, .csv. Users should import xlsx, .pqt, and csv files to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
+
+To import PDF and image files, insert them to the AI chat with the paperclip attach button, copy/paste, or drag and drop directly in the chat. PDF and image files can not be imported via Python. Once in the sheet, they can be analyzed by first being read into Python with q.cells().
+
+Python can also not be used to export/download data as various file types. To download data from Quadratic, highlight the data you'd like to download, right click, and select the "Download as CSV" button.
+
+## Sentiment analysis 
+
+For sentiment analysis, NLTK is recommended. Here's a simple NLTK example.
+
+\`\`\`python
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
+import pandas as pd
+
+# Download required NLTK data
+nltk.download('vader_lexicon')
+
+# Get text data and create DataFrame
+text_data = q.cells('A1:A3')
+df = pd.DataFrame(text_data).rename(columns={0: 'Text'})
+
+# Initialize the NLTK sentiment analyzer
+sia = SentimentIntensityAnalyzer()
+
+# Analyze sentiment
+df['Sentiment_Scores'] = df['Text'].apply(lambda x: sia.polarity_scores(x)['compound'])
+
+# Define sentiment categories
+df['Sentiment'] = df['Sentiment_Scores'].apply(lambda x: 'Positive' if x > 0.05 
+                                             else ('Negative' if x < -0.05 
+                                             else 'Neutral'))
+
+# Return the resulting DataFrame
+df
+\`\`\`
+
+## Web scraping
+
+You should use Beautifulsoup4 for web scraping.
+
+Here is a successful example of web scraping. 
+\`\`\`python
+# Import necessary libraries
+import requests
+import pandas as pd
+import micropip
+
+# Install BeautifulSoup4
+await micropip.install('beautifulsoup4')
+from bs4 import BeautifulSoup
+
+# URL of the Denver Nuggets Wikipedia page
+url = 'https://en.wikipedia.org/wiki/Denver_Nuggets'
+
+# Send a GET request to fetch the webpage
+response = requests.get(url)
+
+# Parse the HTML content
+soup = BeautifulSoup(response.content, 'html.parser')
+
+# Extract the page title
+title = soup.find('h1', {'id': 'firstHeading'}).text
+print(f"Page title: {title}")
+
+# Extract team information from the infobox
+infobox = soup.find('table', {'class': 'infobox'})
+
+# Initialize lists to store the data
+info_labels = []
+info_values = []
+
+# Extract data from the infobox
+if infobox:
+    rows = infobox.find_all('tr')
+    for row in rows:
+        header = row.find('th')
+        data = row.find('td')
+        if header and data:
+            info_labels.append(header.text.strip())
+            info_values.append(data.text.strip())
+
+# Create a DataFrame with the extracted information
+nuggets_info = pd.DataFrame({
+    'Category': info_labels,
+    'Information': info_values
+})
+
+# Extract section headers for team history
+section_titles = []
+section_ids = []
+
+for heading in soup.find_all(['h2', 'h3']):
+    if heading.get('id'):
+        section_titles.append(heading.text.strip())
+        section_ids.append(heading.get('id'))
+
+sections_df = pd.DataFrame({
+    'Section': section_titles,
+    'ID': section_ids
+})
+
+# Return the team information DataFrame
+nuggets_info
+\`\`\`
+
+## Summarizing data 
+
+A good data summary will likely include some summary statistics and visualizations. 
+
+Here is a successful summary statistics example.
+\`\`\`python
+import pandas as pd
+import plotly.express as px
+
+# This example references a table named "Sales_Data"
+df = q.cells("Sales_Data")
+
+# Explicitly set types to what they should be for each DataFrame column
+df['Units_Sold'] = pd.to_numeric(df['Units_Sold'])
+df['Revenue'] = pd.to_numeric(df['Revenue'])
+df['Cost'] = pd.to_numeric(df['Cost'])
+df['Profit'] = pd.to_numeric(df['Profit'])
+df['Date'] = pd.to_datetime(df['Date'])
+
+# Generate a statistical summary
+summary = df.describe().reset_index()
+
+# Add additional metrics
+product_summary = df.groupby('Product').agg({
+    'Units_Sold': 'sum',
+    'Revenue': 'sum',
+    'Profit': 'sum'
+}).reset_index()
+
+region_summary = df.groupby('Region').agg({
+    'Units_Sold': 'sum',
+    'Revenue': 'sum',
+    'Profit': 'sum'
+}).reset_index()
+
+# Return the summary statistics
+summary
+\`\`\`
+
+It would probably make sense to follow up these summary statistics with a visualization. 
+
+## Reading JSON strings
+
+It is advised before reading a JSON string to print an example so you can see the format of the data before trying to process it into the sheet. 
 `;
