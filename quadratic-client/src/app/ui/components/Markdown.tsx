@@ -8,5 +8,9 @@ interface Props {
 }
 
 export const Markdown = memo(({ children }: Props) => {
-  return <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>;
+  return (
+    <div className="markdown">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+    </div>
+  );
 });
