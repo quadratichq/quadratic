@@ -327,6 +327,12 @@ export class HtmlCell {
     this.iframe.style.pointerEvents = this.pointerEvents;
   }
 
+  temporarilyDeactivate() {
+    this.border.style.border = '1px solid hsl(var(--muted-foreground))';
+    this.pointerEvents = 'none';
+    this.iframe.style.pointerEvents = this.pointerEvents;
+  }
+
   deactivate() {
     this.active = false;
     this.border.style.border = '1px solid hsl(var(--muted-foreground))';
