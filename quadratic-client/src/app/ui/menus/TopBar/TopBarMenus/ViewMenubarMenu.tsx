@@ -6,6 +6,7 @@ import {
   showCodePeekAtom,
   showGridLinesAtom,
   showHeadingsAtom,
+  showScrollbarsAtom,
 } from '@/app/atoms/gridSettingsAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
@@ -34,6 +35,7 @@ export const ViewMenubarMenu = () => {
   const [showGridLines, setShowGridLines] = useRecoilState(showGridLinesAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
+  const [showScrollbars, setShowScrollbars] = useRecoilState(showScrollbarsAtom);
   const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
   const setPresentationMode = useSetRecoilState(presentationModeAtom);
 
@@ -59,6 +61,10 @@ export const ViewMenubarMenu = () => {
         <MenubarItem onClick={() => setShowCodePeek((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCodePeek} />
           Show code peek
+        </MenubarItem>
+        <MenubarItem onClick={() => setShowScrollbars((prev) => !prev)}>
+          <MenubarItemCheckbox checked={showScrollbars} />
+          Show scrollbars
         </MenubarItem>
         <MenubarSeparator />
         <MenubarSub>
