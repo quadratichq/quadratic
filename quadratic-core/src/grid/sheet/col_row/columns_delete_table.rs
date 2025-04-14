@@ -11,7 +11,7 @@ impl Sheet {
     /// Deletes all data table where either all columns are part of the deleted
     /// columns, or its a code cell where the first column is in the deleted
     /// columns.
-    pub(crate) fn check_delete_all_table_columns(
+    pub(crate) fn delete_tables_with_all_columns(
         &mut self,
         transaction: &mut PendingTransaction,
         columns: &[i64],
@@ -50,50 +50,19 @@ impl Sheet {
         }
     }
 
-    /// Resize charts if columns in the chart range are deleted
-    pub(crate) fn check_delete_chart_columns(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        columns: &[i64],
-    ) {
-        for (pos, table) in self.data_tables.iter_mut() {
-            if !table.spill_error && table.is_html_or_image() {
-                let output_rect = table.output_rect(*pos, false);
-                let count = columns
-                    .iter()
-                    .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
-                    .count();
-                if count > 0 {
-                    if let Some((width, height)) = table.chart_output {
-                        let min = (width - count as u32).max(1);
-                        if min != width {
-                            table.chart_output = Some((min, height));
-                            transaction.add_from_code_run(
-                                self.id,
-                                *pos,
-                                table.is_image(),
-                                table.is_html(),
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     /// Delete columns from data tables that are in the deleted columns range.
     /// If the first column is in the deleted columns range, then the anchor
     /// cell is moved to the right so it is in the proper place when the columns
     /// are deleted.
-    pub(crate) fn check_delete_tables_columns(
+    pub(crate) fn delete_tables_columns(
         &mut self,
         transaction: &mut PendingTransaction,
         columns: &Vec<i64>,
     ) {
-        let mut dt_to_update = Vec::new();
-
         // we need to shift the anchor if the first column is deleted
         let mut dt_to_shift_anchor = Vec::new();
+
+        let mut dt_to_update = Vec::new();
 
         for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
             if (dt.readonly && !dt.is_html_or_image()) || dt.spill_error {
@@ -138,31 +107,29 @@ impl Sheet {
                 }
             }
             if let Some(new_anchor_x) = new_anchor_x {
-                dt_to_shift_anchor.push((*pos, old_dt, index, new_anchor_x));
-            } else {
-                dt_to_update.push((*pos, old_dt, index));
+                dt_to_shift_anchor.push((index, *pos, old_dt, new_anchor_x));
+            } else if let Some(old_dt) = old_dt {
+                dt_to_update.push((index, *pos, old_dt));
             }
         }
 
         // create undo and signal client of changes
-        for (pos, old_dt, index) in dt_to_update {
-            if let (Some(old_dt), Some(_cell_value)) = (old_dt, self.cell_value(pos)) {
-                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
-                transaction.add_dirty_hashes_from_sheet_rect(
-                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-                );
-                transaction
-                    .reverse_operations
-                    .push(Operation::SetDataTable {
-                        sheet_pos: pos.to_sheet_pos(self.id),
-                        data_table: Some(old_dt),
-                        index,
-                    });
-            }
+        for (index, pos, old_dt) in dt_to_update {
+            transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+            transaction.add_dirty_hashes_from_sheet_rect(
+                old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+            );
+            transaction
+                .reverse_operations
+                .push(Operation::SetDataTable {
+                    sheet_pos: pos.to_sheet_pos(self.id),
+                    data_table: Some(old_dt),
+                    index,
+                });
         }
 
         // ensure anchor cell survives by shifting it to the right of the deleted columns
-        for (pos, old_dt, index, new_anchor_x) in dt_to_shift_anchor {
+        for (index, pos, old_dt, new_anchor_x) in dt_to_shift_anchor {
             if let (Some(old_dt), Some(cell_value)) = (old_dt, self.cell_value(pos)) {
                 transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_sheet_rect(
@@ -187,8 +154,39 @@ impl Sheet {
         }
     }
 
+    /// Resize charts if columns in the chart range are deleted
+    pub(crate) fn delete_chart_columns(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        columns: &[i64],
+    ) {
+        for (pos, dt) in self.data_tables.iter_mut() {
+            if !dt.spill_error && dt.is_html_or_image() {
+                let output_rect = dt.output_rect(*pos, false);
+                let count = columns
+                    .iter()
+                    .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
+                    .count();
+                if count > 0 {
+                    if let Some((width, height)) = dt.chart_output {
+                        let min = (width - count as u32).max(1);
+                        if min != width {
+                            dt.chart_output = Some((min, height));
+                            transaction.add_from_code_run(
+                                self.id,
+                                *pos,
+                                dt.is_image(),
+                                dt.is_html(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Moves data tables to the left if they are before the deleted columns.
-    pub(crate) fn move_tables_to_left(
+    pub(crate) fn move_tables_leftwards(
         &mut self,
         transaction: &mut PendingTransaction,
         columns: &[i64],

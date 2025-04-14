@@ -120,6 +120,8 @@ impl Sheet {
         if self.formats.has_fills() {
             transaction.add_fill_cells(self.id);
         }
+
+        // remove the column's formats from the sheet
         self.formats.remove_column(column);
 
         // remove the column's borders from the sheet
@@ -172,7 +174,7 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         columns: Vec<i64>,
         copy_formats: CopyFormats,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
         if columns.is_empty() {
             return;
@@ -183,13 +185,13 @@ impl Sheet {
         columns.dedup();
         columns.reverse();
 
-        self.check_delete_all_table_columns(transaction, &columns);
-        self.check_delete_tables_columns(transaction, &columns);
-        self.check_delete_chart_columns(transaction, &columns);
-        self.move_tables_to_left(transaction, &columns);
+        self.delete_tables_with_all_columns(transaction, &columns);
+        self.delete_tables_columns(transaction, &columns);
+        self.delete_chart_columns(transaction, &columns);
+        self.move_tables_leftwards(transaction, &columns);
 
         for column in columns {
-            self.delete_column(transaction, column, copy_formats, context);
+            self.delete_column(transaction, column, copy_formats, a1_context);
         }
     }
 }

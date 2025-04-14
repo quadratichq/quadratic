@@ -1,47 +1,13 @@
 use crate::{
-    CopyFormats, SheetRect,
-    a1::A1Context,
-    cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::Sheet,
+    grid::{DataTable, Sheet},
 };
 
-use anyhow::{Result, bail};
-
 impl Sheet {
-    /// Deletes tables that have all rows in the deletion range.
-    fn delete_tables_with_all_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
-        let tables_to_delete = self
-            .data_tables
-            .iter()
-            .enumerate()
-            .filter_map(|(index, (pos, dt))| {
-                let rect = dt.output_rect(*pos, false);
-                if rect.y_range().all(|row| rows.contains(&row)) {
-                    Some((*pos, index))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        for (pos, index) in tables_to_delete {
-            let old_dt = self.data_tables.shift_remove(&pos);
-            transaction.add_code_cell(self.id, pos);
-            transaction
-                .reverse_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos: pos.to_sheet_pos(self.id),
-                    data_table: old_dt,
-                    index,
-                });
-        }
-    }
-
-    fn ensure_no_table_ui(&self, rows: &[i64]) -> bool {
+    pub(crate) fn ensure_no_table_ui(&self, rows: &[i64]) -> bool {
         for (pos, dt) in self.data_tables.iter() {
             let rect = dt.output_rect(*pos, false);
             let ui_rows = dt.ui_rows(*pos);
@@ -56,161 +22,147 @@ impl Sheet {
         false
     }
 
-    fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
-        let mut adjust_chart_size = vec![];
-        let table_rows_to_delete = self
-            .data_tables
-            .iter()
-            .filter_map(|(pos, dt)| {
-                let rect = dt.output_rect(*pos, false);
-                if dt.readonly && !dt.is_html_or_image() {
-                    return None;
-                }
-                if dt.is_html_or_image() {
-                    let count = rows
-                        .iter()
-                        .filter(|row| **row >= rect.min.y && **row <= rect.max.y)
-                        .count();
-                    if count > 0 {
-                        if let Some((width, height)) = dt.chart_output {
-                            // charts cannot be smaller than 2 height (UI + at least one cell for display)
-                            let min = (height - count as u32).max(1);
-                            if min != height {
-                                adjust_chart_size.push((*pos, width, min));
-                            }
-                        }
-                    }
-                    None
-                } else {
-                    let rows_to_delete = rows
-                        .iter()
-                        .filter(|row| **row >= rect.min.y && **row <= rect.max.y)
-                        .collect::<Vec<_>>();
-                    if rows_to_delete.is_empty() {
-                        None
-                    } else {
-                        Some((*pos, rows_to_delete))
-                    }
-                }
-            })
-            .collect::<Vec<_>>();
-
-        for (pos, width, height) in adjust_chart_size {
-            if let Some(dt) = self.data_tables.get_mut(&pos) {
-                if let Some((_, original_height)) = dt.chart_output {
-                    dt.chart_output = Some((width, height));
-                    transaction.add_from_code_run(self.id, pos, dt.is_image(), dt.is_html());
-                    transaction
-                        .reverse_operations
-                        .push(Operation::SetChartCellSize {
-                            sheet_pos: pos.to_sheet_pos(self.id),
-                            w: width,
-                            h: original_height,
-                        });
-                }
+    /// Deletes tables that have all rows in the deletion range.
+    pub(crate) fn delete_tables_with_all_rows(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        rows: &[i64],
+    ) {
+        let mut tables_to_delete = Vec::new();
+        for (pos, dt) in self.data_tables.iter() {
+            let output_rect = dt.output_rect(*pos, false);
+            if output_rect.y_range().all(|row| rows.contains(&row)) {
+                tables_to_delete.push(*pos);
             }
         }
 
-        for (pos, rows_to_delete) in table_rows_to_delete {
-            transaction.add_code_cell(self.id, pos);
-            if let Some(dt) = self.data_tables.get_mut(&pos) {
-                let rows = rows_to_delete
-                    .iter()
-                    .map(|row| {
-                        let row = (*row - pos.y) as u32;
-                        let Ok((_actual_index, reverse_row, formats, borders)) =
-                            dt.delete_row_sorted(row as usize)
-                        else {
-                            // there was an error deleting the row, so we skip it
-                            return (row, None);
-                        };
-                        if !formats.is_default() {
-                            if formats.has_fills() {
-                                transaction.add_fill_cells(self.id);
-                            }
-                            transaction
-                                .reverse_operations
-                                .push(Operation::DataTableFormats {
-                                    sheet_pos: pos.to_sheet_pos(self.id),
-                                    formats,
-                                });
-                        }
-                        if !borders.is_empty() {
-                            transaction.add_borders(self.id);
-                            transaction
-                                .reverse_operations
-                                .push(Operation::DataTableBorders {
-                                    sheet_pos: pos.to_sheet_pos(self.id),
-                                    borders,
-                                });
-                        }
-                        let w = dt.width() as u32;
-                        transaction.add_dirty_hashes_from_sheet_rect(SheetRect::new(
-                            pos.x,
-                            pos.y + row as i64,
-                            pos.x + w as i64,
-                            pos.y + row as i64,
-                            self.id,
-                        ));
-                        (row, reverse_row)
-                    })
-                    .collect::<Vec<_>>();
-
-                // create reverse operations for the deleted rows
-                let mut values = CellValues::new(dt.width() as u32, rows.len() as u32);
-                for (row, reverse_row) in rows {
-                    if let Some(reverse_row) = reverse_row {
-                        for (col, value) in reverse_row.into_iter().enumerate() {
-                            values.set(col as u32, row, value);
-                        }
-                    }
-                }
+        for pos in tables_to_delete.into_iter() {
+            if let Some((index, pos, old_dt)) = self.data_tables.shift_remove_full(&pos) {
+                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
                 transaction
                     .reverse_operations
-                    .push(Operation::SetDataTableAt {
+                    .push(Operation::SetDataTable {
                         sheet_pos: pos.to_sheet_pos(self.id),
-                        values,
+                        data_table: Some(old_dt),
+                        index,
                     });
             }
         }
     }
 
-    /// Deletes rows. Returns false if the rows contain table UI and the
-    /// operation was aborted.
-    #[allow(clippy::result_unit_err)]
-    pub fn delete_rows(
+    pub(crate) fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
+        let mut dt_to_update = vec![];
+
+        for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
+            if (dt.readonly && !dt.is_html_or_image()) || dt.spill_error {
+                continue;
+            }
+            let output_rect = dt.output_rect(*pos, false);
+            let mut old_dt: Option<DataTable> = None;
+            for row in rows {
+                if *row >= output_rect.min.y && *row <= output_rect.max.y {
+                    // delete the row
+                    if old_dt.is_none() {
+                        old_dt = Some(dt.clone());
+                    }
+
+                    if let Ok(display_row_index) = usize::try_from(*row - output_rect.min.y) {
+                        let _ = dt.delete_row_sorted(display_row_index);
+                    }
+                }
+            }
+            if let Some(old_dt) = old_dt {
+                dt_to_update.push((index, *pos, old_dt));
+            }
+        }
+
+        // create undo and signal client of changes
+        for (index, pos, old_dt) in dt_to_update {
+            transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+            transaction.add_dirty_hashes_from_sheet_rect(
+                old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+            );
+            transaction
+                .reverse_operations
+                .push(Operation::SetDataTable {
+                    sheet_pos: pos.to_sheet_pos(self.id),
+                    data_table: Some(old_dt),
+                    index,
+                });
+        }
+    }
+
+    /// Resize charts if rows in the chart range are deleted
+    pub(crate) fn delete_chart_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
+        for (pos, dt) in self.data_tables.iter_mut() {
+            if !dt.spill_error && dt.is_html_or_image() {
+                let output_rect = dt.output_rect(*pos, false);
+                let count = rows
+                    .iter()
+                    .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
+                    .count();
+                if count > 0 {
+                    if let Some((width, height)) = dt.chart_output {
+                        let min = (height - count as u32).max(1);
+                        if min != height {
+                            dt.chart_output = Some((width, min));
+                            transaction.add_from_code_run(
+                                self.id,
+                                *pos,
+                                dt.is_image(),
+                                dt.is_html(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Moves data tables upwards if they are before the deleted columns.
+    pub(crate) fn move_tables_upwards(
         &mut self,
         transaction: &mut PendingTransaction,
-        rows: Vec<i64>,
-        _copy_formats: CopyFormats,
-        a1_context: &A1Context,
-    ) -> Result<()> {
-        if rows.is_empty() {
-            return Ok(());
-        }
+        rows: &[i64],
+    ) {
+        let mut dt_to_shift_up = Vec::new();
+        for (pos, table) in self.data_tables.iter() {
+            let mut output_rect = table.output_rect(*pos, false);
 
-        let mut rows = rows.clone();
-        rows.sort_unstable();
-        rows.dedup();
-        rows.reverse();
-
-        if self.ensure_no_table_ui(&rows) {
-            let e = "delete_rows_error".to_string();
-            if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
-                let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
-                crate::wasm_bindings::js::jsClientMessage(e.clone(), severity.to_string());
+            // check how many deleted columns are before the table
+            let mut shift_table = 0;
+            for row in rows.iter() {
+                if *row < output_rect.min.y {
+                    shift_table += 1;
+                }
             }
-            bail!(e);
-        }
+            if shift_table > 0 {
+                transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
+                transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
 
-        self.delete_tables_with_all_rows(transaction, &rows);
-        self.delete_table_rows(transaction, &rows);
+                output_rect.translate(0, -shift_table);
+                transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
+                transaction.add_from_code_run(
+                    self.id,
+                    pos.translate(0, -shift_table, 1, 1),
+                    table.is_image(),
+                    table.is_html(),
+                );
 
-        for row in rows {
-            self.delete_row(transaction, row, a1_context);
+                dt_to_shift_up.push((*pos, shift_table));
+            }
         }
-        self.recalculate_bounds(a1_context);
-        Ok(())
+        for (pos, shift_table) in dt_to_shift_up {
+            let Some((index, _, old_dt)) = self.data_tables.shift_remove_full(&pos) else {
+                dbgjs!(format!(
+                    "Error in check_delete_tables_columns: cannot shift up data table\n{:?}",
+                    pos
+                ));
+                continue;
+            };
+            let new_pos = pos.translate(0, -shift_table, 1, 1);
+            self.data_tables.shift_insert(index, new_pos, old_dt);
+        }
     }
 }
 

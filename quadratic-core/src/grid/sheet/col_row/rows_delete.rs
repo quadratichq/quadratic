@@ -9,6 +9,8 @@ use crate::{
     grid::{GridBounds, Sheet},
 };
 
+use anyhow::{Result, bail};
+
 use super::MAX_OPERATION_SIZE_COL_ROW;
 
 impl Sheet {
@@ -62,26 +64,6 @@ impl Sheet {
         } else {
             vec![]
         }
-    }
-
-    /// Creates reverse operations for code runs within the column.
-    fn reverse_code_runs_ops_for_row(&self, row: i64) -> Vec<Operation> {
-        let mut reverse_operations = Vec::new();
-
-        self.data_tables
-            .iter()
-            .enumerate()
-            .for_each(|(index, (pos, data_table))| {
-                if pos.y == row {
-                    reverse_operations.push(Operation::SetDataTable {
-                        sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
-                        data_table: Some(data_table.clone()),
-                        index,
-                    });
-                }
-            });
-
-        reverse_operations
     }
 
     /// Removes any value at row and shifts the remaining values up by 1.
@@ -153,16 +135,13 @@ impl Sheet {
                 .extend(self.reverse_formats_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.reverse_code_runs_ops_for_row(row));
-            transaction
-                .reverse_operations
                 .extend(self.reverse_values_ops_for_row(row));
         }
 
-        self.delete_row_offset(transaction, row);
-
         // mark hashes of existing rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
+
+        self.delete_row_offset(transaction, row);
 
         // todo: this can be optimized by adding a fn that checks if there are
         // any fills beyond the deleted column
@@ -181,58 +160,6 @@ impl Sheet {
         // update all cells that were impacted by the deletion
         self.delete_and_shift_values(row);
 
-        // remove the row's code runs from the sheet
-        self.data_tables.retain(|pos, code_run| {
-            if pos.y == row {
-                transaction.add_code_cell(self.id, *pos);
-
-                // signal that html and image cells are removed
-                if code_run.is_html() {
-                    transaction.add_html_cell(self.id, *pos);
-                } else if code_run.is_image() {
-                    transaction.add_image_cell(self.id, *pos);
-                }
-                false
-            } else {
-                true
-            }
-        });
-
-        // update the indices of all code_runs impacted by the deletion
-        let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.data_tables.iter() {
-            if pos.y > row {
-                code_runs_to_move.push(*pos);
-            }
-        }
-        code_runs_to_move.sort_by(|a, b| a.y.cmp(&b.y));
-        for old_pos in code_runs_to_move {
-            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
-                let new_pos = Pos {
-                    x: old_pos.x,
-                    y: old_pos.y - 1,
-                };
-
-                // signal html and image cells to update
-                if code_run.is_html() {
-                    transaction.add_html_cell(self.id, old_pos);
-                    transaction.add_html_cell(self.id, new_pos);
-                } else if code_run.is_image() {
-                    transaction.add_image_cell(self.id, old_pos);
-                    transaction.add_image_cell(self.id, new_pos);
-                }
-
-                self.data_tables.insert_sorted(new_pos, code_run);
-
-                // signal client to update the code runs
-                transaction.add_code_cell(self.id, old_pos);
-                transaction.add_code_cell(self.id, new_pos);
-            }
-        }
-
-        // mark hashes of new rows dirty
-        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
-
         let changed_selections = self
             .validations
             .remove_row(transaction, self.id, row, a1_context);
@@ -246,6 +173,51 @@ impl Sheet {
                 copy_formats: CopyFormats::None,
             });
         }
+
+        self.recalculate_bounds(a1_context);
+
+        // mark hashes of new rows dirty
+        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
+    }
+
+    /// Deletes rows. Returns false if the rows contain table UI and the
+    /// operation was aborted.
+    #[allow(clippy::result_unit_err)]
+    pub fn delete_rows(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        rows: Vec<i64>,
+        _copy_formats: CopyFormats,
+        a1_context: &A1Context,
+    ) -> Result<()> {
+        if rows.is_empty() {
+            return Ok(());
+        }
+
+        let mut rows = rows.clone();
+        rows.sort_unstable();
+        rows.dedup();
+        rows.reverse();
+
+        if self.ensure_no_table_ui(&rows) {
+            let e = "delete_rows_error".to_string();
+            if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
+                let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
+                crate::wasm_bindings::js::jsClientMessage(e.clone(), severity.to_string());
+            }
+            bail!(e);
+        }
+
+        self.delete_tables_with_all_rows(transaction, &rows);
+        self.delete_table_rows(transaction, &rows);
+        self.delete_chart_rows(transaction, &rows);
+        self.move_tables_upwards(transaction, &rows);
+
+        for row in rows {
+            self.delete_row(transaction, row, a1_context);
+        }
+
+        Ok(())
     }
 }
 
@@ -325,7 +297,13 @@ mod test {
             source: TransactionSource::User,
             ..Default::default()
         };
-        sheet.delete_row(&mut transaction, 1, &a1_context);
+
+        let _ = sheet.delete_rows(
+            &mut transaction,
+            Vec::from(&[1]),
+            CopyFormats::None,
+            &a1_context,
+        );
         assert_eq!(transaction.reverse_operations.len(), 3);
 
         assert_eq!(

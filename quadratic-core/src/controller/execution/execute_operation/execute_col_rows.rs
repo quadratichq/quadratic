@@ -166,7 +166,6 @@ impl GridController {
         } = op.clone()
         {
             self.handle_delete_rows(transaction, sheet_id, vec![row], copy_formats)?;
-            self.send_updated_bounds(transaction, sheet_id);
             transaction.forward_operations.push(op);
             return Ok(());
         };
@@ -186,7 +185,6 @@ impl GridController {
         } = op.clone()
         {
             self.handle_delete_rows(transaction, sheet_id, rows, copy_formats)?;
-            self.send_updated_bounds(transaction, sheet_id);
             transaction.forward_operations.push(op);
             return Ok(());
         };
