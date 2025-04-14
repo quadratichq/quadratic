@@ -603,7 +603,7 @@ fig.show()
 \`\`\`
 
 ## File imports and exports
-Python can NOT be used to import files like .xlsx or .csv. Users should import xlsx and csv files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
+Python can NOT be used to import files like .xlsx, .pqt, .csv. Users should import xlsx, .pqt, and csv files to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
 
 To import PDF and image files, insert them to the AI chat with the paperclip attach button, copy/paste, or drag and drop directly in the chat. PDF and image files can not be imported via Python. Once in the sheet, they can be analyzed by first being read into Python with q.cells().
 
