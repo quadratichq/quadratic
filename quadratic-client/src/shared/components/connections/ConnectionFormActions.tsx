@@ -49,7 +49,7 @@ export function ConnectionFormActions({
                 className="flex-shrink-0"
                 onClick={() => {
                   const doDelete = window.confirm(
-                    'Deleting this connection will disabled it in all existing sheets and it will no longer usable elsewhere. This cannot be undone.'
+                    'Deleting this connection will disable it in all existing sheets and it will no longer be usable elsewhere. This cannot be undone.'
                   );
                   if (doDelete) {
                     mixpanel.track('[Connections].delete', { type: connectionType });
