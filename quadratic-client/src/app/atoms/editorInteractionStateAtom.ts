@@ -61,30 +61,26 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
   default: defaultEditorInteractionState,
   effects: [
     ({ setSelf }) => {
-      const handleTransactionStart = (transaction: TransactionInfo) => {
+      const handleTransaction = (transaction: TransactionInfo, add: boolean) => {
         setSelf((prev) => {
           if (prev instanceof DefaultValue) return prev;
-
           return {
             ...prev,
             transactionsInfo: [
               ...prev.transactionsInfo.filter((t) => t.transactionId !== transaction.transactionId),
-              transaction,
+              ...(add ? [transaction] : []),
             ],
           };
         });
       };
+
+      const handleTransactionStart = (transaction: TransactionInfo) => {
+        handleTransaction(transaction, true);
+      };
       events.on('transactionStart', handleTransactionStart);
 
       const handleTransactionEnd = (transaction: TransactionInfo) => {
-        setSelf((prev) => {
-          if (prev instanceof DefaultValue) return prev;
-
-          return {
-            ...prev,
-            transactionsInfo: [...prev.transactionsInfo.filter((t) => t.transactionId !== transaction.transactionId)],
-          };
-        });
+        handleTransaction(transaction, false);
       };
       events.on('transactionEnd', handleTransactionEnd);
 
