@@ -168,7 +168,7 @@ export const Component = () => {
                             <DialogTrigger>
                               <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent aria-describedby={undefined}>
                               <DialogHeader>
                                 <DialogTitle>AI message limits</DialogTitle>
                               </DialogHeader>
@@ -261,7 +261,7 @@ export const Component = () => {
                           <DialogTrigger>
                             <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent aria-describedby={undefined}>
                             <DialogHeader>
                               <DialogTitle>Usage history</DialogTitle>
                             </DialogHeader>

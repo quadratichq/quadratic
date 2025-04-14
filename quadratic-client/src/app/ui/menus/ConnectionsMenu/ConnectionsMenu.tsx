@@ -93,6 +93,7 @@ export function ConnectionsMenu() {
         onPointerDownOutside={(event) => {
           event.preventDefault();
         }}
+        aria-describedby={undefined}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1">

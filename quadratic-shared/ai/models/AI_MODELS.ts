@@ -8,7 +8,7 @@ export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: ModelKey = 'vertexai:gemini-
 
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
-export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-exp-03-25';
+export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-03-25';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 9;
@@ -88,9 +88,9 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai-anthropic',
     promptCaching: true,
   },
-  'vertexai:gemini-2.5-pro-exp-03-25': {
-    model: 'gemini-2.5-pro-exp-03-25',
-    displayName: 'gemini 2.5 pro exp',
+  'vertexai:gemini-2.5-pro-preview-03-25': {
+    model: 'gemini-2.5-pro-preview-03-25',
+    displayName: 'gemini 2.5 pro preview',
     temperature: 0,
     max_tokens: 65535,
     canStream: true,

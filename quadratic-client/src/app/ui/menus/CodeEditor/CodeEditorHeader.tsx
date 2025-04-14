@@ -133,24 +133,6 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
-  // const description = useMemo(() => {
-  //   if (codeCell) {
-  //     if (htmlCellsHandler.isHtmlCell(codeCellState.pos.x, codeCellState.pos.y)) {
-  //       return 'Python chart at';
-  //     } else if (
-  //       pixiApp.cellsSheets
-  //         .getById(codeCellState.sheetId)
-  //         ?.cellsImages.isImageCell(codeCellState.pos.x, codeCellState.pos.y)
-  //     ) {
-  //       return 'JS chart at';
-  //     } else {
-  //       return 'Cell at';
-  //     }
-  //   } else {
-  //     return '';
-  //   }
-  // }, [codeCell, codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
-
   const changePanelPosition = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
