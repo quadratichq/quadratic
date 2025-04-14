@@ -18,11 +18,7 @@ export class LabelMeshes {
     this.hashY = hashY;
   }
 
-  clear() {
-    this.labelMeshes = [];
-  }
-
-  add(fontName: string, fontSize: number, textureUid: number, color: boolean): string {
+  add = (fontName: string, fontSize: number, textureUid: number, color: boolean): string => {
     const existing = this.labelMeshes.find(
       (labelMesh) =>
         labelMesh.textureUid === textureUid &&
@@ -45,25 +41,25 @@ export class LabelMeshes {
     });
     this.labelMeshes.push(labelMesh);
     return labelMesh.id;
-  }
+  };
 
-  get(id: string): LabelMesh {
+  get = (id: string): LabelMesh => {
     const mesh = this.labelMeshes.find((labelMesh) => labelMesh.id === id);
     if (!mesh) throw new Error('Expected to find LabelMesh based on id');
     return mesh;
-  }
+  };
 
   // prepares the buffers for each labelMesh
-  prepare() {
+  prepare = () => {
     this.labelMeshes.forEach((labelMesh) => labelMesh.prepare());
-  }
+  };
 
   // finalizes the buffers after populated
-  finalize() {
+  finalize = () => {
     this.labelMeshes.forEach((labelMesh) => labelMesh.finalize());
-  }
+  };
 
-  totalMemory(): number {
+  totalMemory = (): number => {
     return this.labelMeshes.reduce((acc, labelMesh) => acc + labelMesh.memory, 0);
-  }
+  };
 }
