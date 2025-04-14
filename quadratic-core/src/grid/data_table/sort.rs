@@ -27,7 +27,7 @@ impl DataTable {
         column_index: usize,
         direction: SortDirection,
     ) -> Result<Option<DataTableSort>> {
-        let old = self.prepend_sort(column_index, direction.clone());
+        let old = self.prepend_sort(column_index, direction);
 
         self.sort_all()?;
 
@@ -123,14 +123,26 @@ impl DataTable {
 
         Ok(())
     }
+
+    /// Returns true if the column is sorted.
+    ///
+    /// Note: This is the column_index, not the display_column_index.
+    pub fn is_column_sorted(&self, index: usize) -> bool {
+        if let Some(sort) = self.sort.as_ref() {
+            sort.iter().any(|s| s.column_index == index)
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
 pub mod test {
 
     use super::*;
-    use crate::grid::test::{
-        assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
+    use crate::{
+        grid::test::{new_data_table, test_csv_values},
+        test_util::{assert_data_table_row, pretty_print_data_table},
     };
 
     #[test]
@@ -188,5 +200,32 @@ pub mod test {
         assert_data_table_row(&data_table, 1, values[2].clone());
         assert_data_table_row(&data_table, 2, values[1].clone());
         assert_data_table_row(&data_table, 3, values[3].clone());
+    }
+
+    #[test]
+    fn test_is_column_sorted() {
+        let (_, mut data_table) = new_data_table();
+        data_table.apply_first_row_as_header();
+
+        // Initially no columns should be sorted
+        assert!(!data_table.is_column_sorted(0));
+        assert!(!data_table.is_column_sorted(1));
+
+        // Sort column 0 ascending
+        data_table.sort_column(0, SortDirection::Ascending).unwrap();
+        assert!(data_table.is_column_sorted(0));
+        assert!(!data_table.is_column_sorted(1));
+
+        // Sort column 1 descending
+        data_table
+            .sort_column(1, SortDirection::Descending)
+            .unwrap();
+        assert!(data_table.is_column_sorted(0));
+        assert!(data_table.is_column_sorted(1));
+
+        // Sort column 0 with None direction
+        data_table.sort_column(0, SortDirection::None).unwrap();
+        assert!(data_table.is_column_sorted(0));
+        assert!(data_table.is_column_sorted(1));
     }
 }
