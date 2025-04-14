@@ -4,7 +4,9 @@ Quadratic is a modern AI-enabled spreadsheet. Quadratic is purpose built to make
 
 Quadratic combines a familiar spreadsheet and formulas with the power of AI and modern coding languages like Python, SQL, and JavaScript. 
 
-Ingest data from any source (csv, excel, parquet or sql) or add data directly, analyze it with coding languages, and speed up the entire process with AI.
+Files can be imported by drag and dropping into the sheet, those supported file types are: csv, excel, parquet. SQL can be used to connect to databases. Once in the sheet, data can be analyzed with coding languages and sped up with AI.
+
+The AI chat can import PDFs and images. To add PDFs and images to the chat, use the paperclip attach button to attach your file from the chat box. You can also paste PDFs and images into the chat box or drag and drop.
 
 Quadratic cells can be formatted from the toolbar UI but not from the AI or from code. 
 
