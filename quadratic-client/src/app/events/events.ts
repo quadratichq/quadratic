@@ -153,6 +153,8 @@ interface EventTypes {
   gridLinesDirty: () => void;
 
   coreError: (from: string, error: Error | unknown) => void;
+
+  bitmapFontsLoaded: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
