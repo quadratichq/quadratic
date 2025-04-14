@@ -34,7 +34,7 @@ impl Sheet {
                             && row < pos.y + output_rect.height() as i64 + 1))
                 {
                     if let Ok(display_row_index) = usize::try_from(row - pos.y) {
-                        if dt.insert_row(display_row_index as usize, None).is_err() {
+                        if dt.insert_row(display_row_index, None).is_err() {
                             continue;
                         }
                         if dt.sort.is_some() {
