@@ -36,9 +36,7 @@ impl Sheet {
 
     /// Gets the index of the data table
     pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
-        self.data_tables
-            .iter()
-            .position(|(search_pos, _)| *search_pos == pos)
+        self.data_tables.get_index_of(&pos)
     }
 
     /// Returns the index of the data table as a result.
