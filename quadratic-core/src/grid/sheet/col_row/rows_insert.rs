@@ -42,7 +42,14 @@ impl Sheet {
         copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) {
+        // mark hashes of old rows dirty
+        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
+
+        self.check_insert_tables_rows(transaction, row, copy_formats);
+
         self.insert_and_shift_values(row);
+
+        self.adjust_insert_tables_rows(transaction, row);
 
         // update formatting
         self.formats.insert_row(row, copy_formats);
@@ -52,12 +59,7 @@ impl Sheet {
         self.borders.insert_row(row, copy_formats);
         transaction.sheet_borders.insert(self.id);
 
-        self.check_insert_tables_rows(transaction, row);
-        self.adjust_insert_tables_rows(transaction, row);
-
-        // mark hashes of new rows dirty
-        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
-
+        // update validations
         let changed_selections = self
             .validations
             .insert_row(transaction, self.id, row, a1_context);
@@ -68,7 +70,7 @@ impl Sheet {
             transaction.offsets_modified(self.id, None, Some(*index), Some(*size));
         });
 
-        // create undo operations for the inserted column
+        // create undo operations for the inserted row
         if transaction.is_user_undo_redo() {
             // reverse operation to delete the row (this will also shift all impacted rows)
             transaction.reverse_operations.push(Operation::DeleteRow {
@@ -77,6 +79,11 @@ impl Sheet {
                 copy_formats,
             });
         }
+
+        self.recalculate_bounds(a1_context);
+
+        // mark hashes of new rows dirty
+        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
     }
 }
 

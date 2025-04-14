@@ -9,6 +9,25 @@ use crate::{
 };
 
 impl Sheet {
+    /// Insert a column and shift all columns to the right of the given column index.
+    fn insert_and_shift_columns(&mut self, column: i64) {
+        // update the indices of all columns impacted by the insertion by
+        // incrementing by one
+        let mut columns_to_update = Vec::new();
+        for col in self.columns.keys() {
+            if *col >= column {
+                columns_to_update.push(*col);
+            }
+        }
+        columns_to_update.sort_by(|a, b| b.cmp(a));
+        for col in columns_to_update {
+            if let Some(mut column_data) = self.columns.remove(&col) {
+                column_data.x += 1;
+                self.columns.insert(col + 1, column_data);
+            }
+        }
+    }
+
     /// Inserts a column at the given column index.
     ///
     /// send_client indicates whether this should trigger client changes
@@ -28,42 +47,14 @@ impl Sheet {
         copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) {
-        // mark hashes of new columns dirty
+        // mark hashes of old columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         self.check_insert_tables_columns(transaction, column, copy_formats);
 
-        // update the indices of all columns impacted by the insertion by
-        // incrementing by one
-        let mut columns_to_update = Vec::new();
-        for col in self.columns.keys() {
-            if *col >= column {
-                columns_to_update.push(*col);
-            }
-        }
-        columns_to_update.sort_by(|a, b| b.cmp(a));
-        for col in columns_to_update {
-            if let Some(mut column_data) = self.columns.remove(&col) {
-                column_data.x += 1;
-                self.columns.insert(col + 1, column_data);
-            }
-        }
+        self.insert_and_shift_columns(column);
 
         self.adjust_insert_tables_columns(transaction, column, copy_formats);
-
-        // create undo operations for the inserted column; we need this before
-        // the table operations so the reverse operations are in the correct
-        // order
-        if transaction.is_user_undo_redo() {
-            // reverse operation to delete the column (this will also shift all impacted columns)
-            transaction
-                .reverse_operations
-                .push(Operation::DeleteColumn {
-                    sheet_id: self.id,
-                    column,
-                    copy_formats,
-                });
-        }
 
         // update formatting (fn has maths to find column_inserted)
         self.formats.insert_column(column, copy_formats);
@@ -84,6 +75,18 @@ impl Sheet {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
+        }
+
+        // create undo operations for the inserted column
+        if transaction.is_user_undo_redo() {
+            // reverse operation to delete the column (this will also shift all impacted columns)
+            transaction
+                .reverse_operations
+                .push(Operation::DeleteColumn {
+                    sheet_id: self.id,
+                    column,
+                    copy_formats,
+                });
         }
 
         self.recalculate_bounds(a1_context);

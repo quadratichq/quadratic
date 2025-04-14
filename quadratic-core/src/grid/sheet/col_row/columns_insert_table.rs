@@ -24,10 +24,12 @@ impl Sheet {
             _ => column,
         };
         for (pos, dt) in self.data_tables.iter_mut() {
+            let output_rect = dt.output_rect(*pos, false);
+            // if html or image, then we need to change the width
             if dt.is_html_or_image() {
                 if let Some((width, height)) = dt.chart_output {
-                    if source_column >= pos.x && source_column < pos.x + width as i64 {
-                        // if html or image, then we need to change the width
+                    if source_column >= pos.x && source_column < pos.x + output_rect.width() as i64
+                    {
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                     }
@@ -35,7 +37,6 @@ impl Sheet {
             } else {
                 // Adds columns to data tables if the column is inserted inside the
                 // table. Code is not impacted by this change.
-                let output_rect = dt.output_rect(*pos, false);
                 if !dt.readonly
                     && source_column >= pos.x
                     && (column < pos.x + output_rect.width() as i64
@@ -47,6 +48,12 @@ impl Sheet {
                             dt.get_column_index_from_display_index(display_column_index, true);
                         let _ = dt.insert_column_sorted(column_index as usize, None, None);
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
+                        if dt.formats.has_fills() {
+                            transaction.add_fill_cells(self.id);
+                        }
+                        if !dt.borders.is_default() {
+                            transaction.add_borders(self.id);
+                        }
                     }
                 }
             }

@@ -91,9 +91,8 @@ impl GridController {
             copy_formats,
         } = op.clone()
         {
-            transaction.forward_operations.push(op);
             self.handle_delete_columns(transaction, sheet_id, vec![column], copy_formats);
-            self.send_updated_bounds(transaction, sheet_id);
+            transaction.forward_operations.push(op);
         }
     }
 
@@ -104,9 +103,8 @@ impl GridController {
             copy_formats,
         } = op.clone()
         {
-            transaction.forward_operations.push(op);
             self.handle_delete_columns(transaction, sheet_id, columns, copy_formats);
-            self.send_updated_bounds(transaction, sheet_id);
+            transaction.forward_operations.push(op);
         }
     }
 
@@ -226,8 +224,6 @@ impl GridController {
                     }
                 }
             }
-
-            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -241,8 +237,6 @@ impl GridController {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 sheet.insert_row(transaction, row, copy_formats, &self.a1_context);
                 transaction.forward_operations.push(op);
-
-                sheet.recalculate_bounds(&self.a1_context);
             } else {
                 // nothing more can be done
                 return;
@@ -267,8 +261,6 @@ impl GridController {
                     }
                 }
             }
-
-            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
