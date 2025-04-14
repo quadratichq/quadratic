@@ -128,6 +128,7 @@ function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: C
     } catch (e) {
       console.error(e);
       form.setError('root', { message: 'Network error: failed to make connection.' });
+      return;
     }
   };
 
