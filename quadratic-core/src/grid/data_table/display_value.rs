@@ -208,10 +208,9 @@ pub mod test {
         },
         grid::{
             CodeCellLanguage, DataTable,
-            test::{
-                assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
-            },
+            test::{new_data_table, test_csv_values},
         },
+        test_util::{assert_data_table_row, pretty_print_data_table},
     };
 
     #[test]

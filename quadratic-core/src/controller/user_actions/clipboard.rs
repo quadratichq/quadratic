@@ -183,15 +183,13 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
-    use crate::Array;
     use crate::controller::operations::clipboard::ClipboardOperation;
     use crate::controller::user_actions::import::tests::simple_csv_at;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
-    use crate::test_util::gc::{
-        assert_cell_value, assert_code_cell_value, assert_display_cell_value, print_table,
-    };
+    use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
+    use crate::{Array, assert_cell_value, print_table_in_rect};
     use crate::{
         CellValue, Pos, SheetPos, SheetRect,
         controller::GridController,
@@ -281,7 +279,7 @@ mod test {
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
 
         // paste using plain_text
         let mut gc = GridController::default();
@@ -294,7 +292,7 @@ mod test {
             None,
         );
 
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -795,7 +793,7 @@ mod test {
         let paste_rect = SheetRect::new(pos.x + 1, pos.y, pos.x + 2, pos.y + 4, sheet_id);
 
         let assert_range_paste = |gc: &GridController| {
-            print_table(gc, sheet_id, Rect::new_span(pos, paste_rect.max));
+            print_table_in_rect(gc, sheet_id, Rect::new_span(pos, paste_rect.max));
 
             assert_cell_value(gc, sheet_id, 2, 1, 1.into());
             assert_cell_value(gc, sheet_id, 2, 2, 2.into());
@@ -846,7 +844,7 @@ mod test {
         let paste_selection = A1Selection::from_rect(paste_rect);
         gc.paste_from_clipboard(&paste_selection, None, Some(html), PasteSpecial::None, None);
 
-        print_table(&gc, sheet_id, Rect::new_span(pos, paste_rect.max));
+        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, paste_rect.max));
         assert_code_cell_value(&gc, sheet_id, 2, 2, "A2 + 1");
         assert_code_cell_value(&gc, sheet_id, 2, 3, "A3 + 1");
         assert_code_cell_value(&gc, sheet_id, 3, 2, "B2 + 1");

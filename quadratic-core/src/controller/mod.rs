@@ -168,3 +168,15 @@ impl GridController {
         Self::from_grid(Grid::test(), 0)
     }
 }
+
+impl GridController {
+    /// Returns the undo stack for testing purposes
+    pub fn undo_stack(&self) -> &Vec<Transaction> {
+        &self.undo_stack
+    }
+
+    /// Returns the redo stack for testing purposes
+    pub fn redo_stack(&self) -> &Vec<Transaction> {
+        &self.redo_stack
+    }
+}

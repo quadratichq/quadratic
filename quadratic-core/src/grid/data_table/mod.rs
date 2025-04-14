@@ -30,12 +30,6 @@ use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
 
-#[cfg(test)]
-use tabled::{
-    builder::Builder,
-    settings::{Color, Modify, Style},
-};
-
 use super::sheet::borders::Borders;
 use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting, SheetId};
 
@@ -407,18 +401,29 @@ impl DataTable {
         }
     }
 
-    /// Returns the height of the data table.
+    /// Returns the height of the data table. The force_table_bounds parameter
+    /// will return the actual height of the table, including any UI elements.
+    /// If false, it includes the array height, which may contain the column
+    /// header row if header_is_first_row is true.
     pub fn height(&self, force_table_bounds: bool) -> usize {
-        match &self.value {
-            Value::Single(_) => 1,
-            Value::Array(array) => {
-                if force_table_bounds {
-                    array.height() as usize
-                } else {
-                    (array.height() as i64 + self.y_adjustment(true)) as usize
-                }
+        if self.is_html_or_image() {
+            if let Some((_, h)) = self.chart_output {
+                (h + (if force_table_bounds { 0 } else { 1 })) as usize
+            } else {
+                1
             }
-            Value::Tuple(_) => 0,
+        } else {
+            match &self.value {
+                Value::Single(_) => 1,
+                Value::Array(array) => {
+                    if force_table_bounds {
+                        array.height() as usize
+                    } else {
+                        (array.height() as i64 + self.y_adjustment(true)) as usize
+                    }
+                }
+                Value::Tuple(_) => 0,
+            }
         }
     }
 
@@ -618,68 +623,6 @@ impl DataTable {
         }
     }
 
-    /// Pretty print a data table for testing
-    #[cfg(test)]
-    pub fn pretty_print_data_table(
-        data_table: &DataTable,
-        title: Option<&str>,
-        max: Option<usize>,
-    ) -> String {
-        let mut builder = Builder::default();
-        let array = data_table
-            .display_value(false)
-            .unwrap()
-            .into_array()
-            .unwrap();
-        let max = max.unwrap_or(array.height() as usize);
-        let title = title.unwrap_or("Data Table");
-        let display_buffer = data_table
-            .display_buffer
-            .clone()
-            .unwrap_or((0..array.height() as u64).collect::<Vec<_>>());
-
-        for (index, row) in array.rows().take(max).enumerate() {
-            let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-            let display_index = vec![display_buffer[index].to_string()];
-
-            if index == 0 && data_table.column_headers.is_some() && data_table.show_columns {
-                let headers = data_table
-                    .column_headers
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .filter(|h| h.display)
-                    .map(|h| h.name.to_string())
-                    .collect::<Vec<_>>();
-                builder.set_header([display_index, headers].concat());
-            } else if index == 0 && data_table.header_is_first_row && data_table.show_columns {
-                let row = [display_index, row].concat();
-                builder.set_header(row);
-            } else {
-                let row = [display_index, row].concat();
-                builder.push_record(row);
-            }
-        }
-
-        let mut table = builder.build();
-        table.with(Style::modern());
-
-        // bold the headers if they exist
-        if data_table.header_is_first_row {
-            table.with(Modify::new((0, 0)).with(Color::BOLD));
-
-            (0..table.count_columns())
-                .collect::<Vec<usize>>()
-                .iter()
-                .enumerate()
-                .for_each(|(index, _)| {
-                    table.with(Modify::new((0, index + 1)).with(Color::BOLD));
-                });
-        }
-
-        format!("\nData Table: {title}\n{table}")
-    }
-
     /// Returns the y adjustment for the data table to account for the UI
     /// elements
     pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
@@ -761,6 +704,24 @@ impl DataTable {
             false
         }
     }
+
+    /// Returns the rows that are part of the data table's UI.
+    pub fn ui_rows(&self, pos: Pos) -> Vec<i64> {
+        let mut rows = vec![];
+        if self.show_ui {
+            if self.show_name || self.is_html_or_image() {
+                rows.push(pos.y);
+            }
+            if self.show_columns && !self.is_html_or_image() {
+                if self.show_name {
+                    rows.push(pos.y + 1);
+                } else {
+                    rows.push(pos.y);
+                }
+            }
+        }
+        rows
+    }
 }
 
 #[cfg(test)]
@@ -771,6 +732,7 @@ pub mod test {
         Array,
         controller::GridController,
         grid::{Sheet, SheetId},
+        test_util::pretty_print_data_table,
     };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
@@ -794,33 +756,6 @@ pub mod test {
         let data_table = DataTable::from((import.clone(), array, context));
 
         (sheet, data_table)
-    }
-
-    /// Util to print a data table when testing
-    #[track_caller]
-    pub fn pretty_print_data_table(
-        data_table: &DataTable,
-        title: Option<&str>,
-        max: Option<usize>,
-    ) {
-        let data_table = super::DataTable::pretty_print_data_table(data_table, title, max);
-        println!("{}", data_table);
-    }
-
-    /// Assert a data table row matches the expected values
-    #[track_caller]
-    pub fn assert_data_table_row(data_table: &DataTable, row_index: usize, expected: Vec<&str>) {
-        let values = data_table
-            .display_value(false)
-            .unwrap()
-            .into_array()
-            .unwrap();
-
-        values.get_row(row_index).unwrap().iter().enumerate().for_each(|(index, value)| {
-            let value = value.to_string();
-            let expected_value = expected[index];
-            assert_eq!(&value, expected_value, "Expected row {row_index} to be {expected_value} at col {index}, but got {value}");
-        });
     }
 
     #[test]
@@ -1295,5 +1230,45 @@ pub mod test {
         // Allow duplicate column name if the index is the same as the existing column index
         let result = DataTable::validate_column_name(table_name, 0, "existing_col", &context);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_ui_rows() {
+        let code_run = CodeRun::default();
+        let mut data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::new_empty(ArraySize::new(2, 2).unwrap())),
+            false,
+            false,
+            true,
+            None,
+        );
+
+        // Test with show_ui = true, show_name = true, show_columns = true
+        let pos = pos!(B2);
+        assert_eq!(data_table.ui_rows(pos), vec![2, 3]);
+
+        // Test with show_name = false
+        data_table.show_name = false;
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with show_columns = false
+        data_table.show_columns = false;
+        data_table.show_name = true;
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with show_ui = false
+        data_table.show_ui = false;
+        assert_eq!(data_table.ui_rows(pos), Vec::<i64>::new());
+
+        // Test with HTML content
+        data_table.show_ui = true;
+        data_table.value = Value::Single(CellValue::Html("test".into()));
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with Image content
+        data_table.value = Value::Single(CellValue::Image("test".into()));
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
     }
 }
