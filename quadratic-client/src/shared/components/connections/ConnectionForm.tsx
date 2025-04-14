@@ -1,4 +1,5 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
@@ -108,8 +109,31 @@ function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: C
   const { ConnectionForm, useConnectionForm } = connectionsByType[type];
   const { form } = useConnectionForm(props.connection);
 
+  // This is a middleware that tests the connection before saving
+  const handleSubmitMiddleware = async (formValues: ConnectionFormValues) => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const { name, type, ...typeDetails } = formValues;
+
+    try {
+      const { connected, message } = await connectionClient.test.run({
+        type,
+        typeDetails,
+      });
+      if (connected === false) {
+        form.setError('root', { message: message ?? 'Unknown error' });
+        return;
+      }
+
+      // If it worked, update the connection
+      props.handleSubmitForm(formValues);
+    } catch (e) {
+      console.error(e);
+      form.setError('root', { message: 'Network error: failed to make connection.' });
+    }
+  };
+
   return (
-    <ConnectionForm handleSubmitForm={props.handleSubmitForm} form={form}>
+    <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form}>
       <ConnectionFormActions
         form={form}
         handleNavigateToListView={props.handleNavigateToListView}
