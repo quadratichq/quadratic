@@ -21,7 +21,7 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { isMobile } from 'react-device-detect';
-import { redirect } from 'react-router-dom';
+import { redirect } from 'react-router';
 
 const KEY = 'activeTeamUuid';
 

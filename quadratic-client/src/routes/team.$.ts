@@ -1,6 +1,6 @@
 import { requireAuth } from '@/auth/auth';
 import { ROUTES } from '@/shared/constants/routes';
-import { redirect, type LoaderFunctionArgs } from 'react-router-dom';
+import { redirect, type LoaderFunctionArgs } from 'react-router';
 
 /**
  * Shortcut route to get to a route for whatever the 'active' team is, e.g.

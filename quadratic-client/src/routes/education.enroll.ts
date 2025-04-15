@@ -1,7 +1,7 @@
 import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import { redirect, type LoaderFunctionArgs } from 'react-router-dom';
+import { redirect, type LoaderFunctionArgs } from 'react-router';
 
 /**
  * Checks the user's status, then sends them to the dashboard with the education dialog

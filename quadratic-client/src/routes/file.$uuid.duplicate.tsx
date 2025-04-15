@@ -18,7 +18,7 @@ import {
   useParams,
   useSubmit,
   type LoaderFunctionArgs,
-} from 'react-router-dom';
+} from 'react-router';
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   // You can't duplicate a file if you're not logged in, regardless of your
