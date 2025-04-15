@@ -59,8 +59,8 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   key: 'aiAnalystAtom',
   default: defaultAIAnalystState,
   effects: [
-    async ({ getPromise, setSelf, trigger }) => {
-      if (trigger === 'get') {
+    ({ getPromise, setSelf, trigger }) => {
+      const init = async () => {
         const showAIAnalyst = await getPromise(showAIAnalystOnStartupAtom);
         setSelf({
           ...defaultAIAnalystState,
@@ -83,6 +83,10 @@ export const aiAnalystAtom = atom<AIAnalystState>({
           }
         }
         events.emit('aiAnalystInitialized');
+      };
+
+      if (trigger === 'get') {
+        init();
       }
     },
     ({ onSet }) => {

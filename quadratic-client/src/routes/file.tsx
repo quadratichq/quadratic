@@ -1,3 +1,4 @@
+import { Empty } from '@/shared/components/Empty';
 import { DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
@@ -5,10 +6,9 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
-import { Empty } from '../../shared/components/Empty';
+import { Outlet } from 'react-router';
 
-export function BrowserCompatibilityLayoutRoute() {
+export function Component() {
   useEffect(() => {
     if (!isWASMSupported || !isWebGLSupported()) {
       mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {

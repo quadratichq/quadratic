@@ -17,11 +17,11 @@ beforeAll(async () => {
 
 afterAll(clearDb);
 
-describe('DELETE /v0/connections/:uuid', () => {
+describe('DELETE /v0/teams/:uuid/connections/:connectionUuid', () => {
   describe('a team viewer', () => {
     it('responds with a 403', async () => {
       await request(app)
-        .get('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .get('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ValidToken teamViewer`)
         .expect(403);
     });
@@ -30,7 +30,7 @@ describe('DELETE /v0/connections/:uuid', () => {
   describe('a team editor/owner', () => {
     it('deletes the connection', async () => {
       await request(app)
-        .delete('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .delete('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ValidToken teamOwner`)
         .expect(200)
         .expect(({ body }) => {

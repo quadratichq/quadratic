@@ -39,8 +39,8 @@ import type {
 import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-shared/typesAndSchemas';
 import type { FormEvent, ReactNode } from 'react';
 import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FetcherSubmitFunction } from 'react-router-dom';
-import { useFetcher, useFetchers, useSubmit } from 'react-router-dom';
+import type { FetcherSubmitFunction } from 'react-router';
+import { useFetcher, useFetchers, useSubmit } from 'react-router';
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {
   // prettier-ignore

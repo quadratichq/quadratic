@@ -11,8 +11,8 @@ import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMod
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import { Outlet, useRouteError, useRouteLoaderData } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -22,10 +22,7 @@ export type RootLoaderData = {
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<RootLoaderData | Response> => {
-  // All other routes get the same data
-  const isAuthenticated = await authClient.isAuthenticated();
-  const user = await authClient.user();
-
+  const [isAuthenticated, user] = await Promise.all([authClient.isAuthenticated(), authClient.user()]);
   initializeAnalytics(user);
 
   return { isAuthenticated, loggedInUser: user };
