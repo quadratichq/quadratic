@@ -5,17 +5,31 @@
 //! format string to only include the relevant elements. (Otherwise it throws an
 //! error.)
 
-use lazy_static::lazy_static;
-use std::cmp::Ordering;
+use itertools::Itertools;
+use std::{cmp::Ordering, str::FromStr};
 
 use chrono::{
     DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike, Utc,
-    format::{Fixed, Item, Numeric, Parsed, StrftimeItems},
+    format::{Fixed, Item, Numeric, StrftimeItems},
 };
 
 pub const DEFAULT_DATE_FORMAT: &str = "%m/%d/%Y";
 pub const DEFAULT_TIME_FORMAT: &str = "%-I:%M %p";
 pub const DEFAULT_DATE_TIME_FORMAT: &str = "%m/%d/%Y %-I:%M %p";
+
+/// Whether to prefer the American style M/D/Y instead of the international
+/// D/M/Y.
+pub const AMERICAN: bool = true;
+/// Cutoff year between for 2-digit parsing. For example, should `12/31/36`
+/// parse as 1936 or 2036?
+///
+/// Numbers below this cutoff are in the 21st century (20xx) and numbers at or
+/// above this cutoff are in the 19th century (19xx). This should only affect
+/// parsing, so it's safe to change in the future or even make it based on the
+/// current year without breaking existing files.
+pub const CENTURY_CUTOFF: u32 = 50;
+/// Symbols used as separators when parsing dates, not including whitespace.
+pub const DATE_SEPARATOR_SYMBOLS: &[char] = &['/', '-', '.'];
 
 fn is_date_item(item: &Item<'_>) -> bool {
     matches!(
@@ -216,77 +230,222 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
     None
 }
 
-/// Parses a date string using a list of possible formats.
-pub fn parse_date(value: &str) -> Option<NaiveDate> {
-    // Handle "4/10" for April 10th of the current year. chrono doesn't have a
-    // specifier for 1-digit month number, so we have to do this manually.
-    if let Some(result) = value.split_once('/').and_then(|(m, d)| {
-        let month = m.parse().ok()?;
-        let day = d.parse().ok()?;
-        NaiveDate::from_ymd_opt(Utc::now().year(), month, day)
-    }) {
-        return Some(result);
+#[derive(Debug, Clone)]
+struct ParsedDateComponents {
+    /// Character used to separate components.
+    separator: char,
+    components: Vec<ParsedDateComponent>,
+}
+impl FromStr for ParsedDateComponents {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match DATE_SEPARATOR_SYMBOLS.iter().find(|&&c| s.contains(c)) {
+            Some(&c) => Self::new(c, s.trim().split(c)),
+            None => Self::new(' ', s.replace(',', " ").trim().split_whitespace()),
+        }
+    }
+}
+impl ParsedDateComponents {
+    fn new<'a>(separator: char, components: impl Iterator<Item = &'a str>) -> Result<Self, ()> {
+        let components = components
+            .map(str::trim)
+            .map(ParsedDateComponent::from_str)
+            .try_collect()
+            .map_err(|_| (/* don't care about error details */))?;
+
+        Ok(Self {
+            separator,
+            components,
+        })
     }
 
-    // chrono's parsing API doesn't support patterns without a specified day, so
-    // we use a workaround from https://github.com/chronotope/chrono/issues/191
-
-    const FORMATS: &[&str] = &[
-        "%d %b", // Day and abbreviated month name (assumes current year)
-        "%d %B", // Day and full month name (assumes current year)
-        "%b %d", // Abbreviated month name and day (assumes current year)
-        "%B %d", // Full month name and day (assumes current year)
-        "%B %Y", // December 2024
-        "%b %Y", // Dec 2024
-        "%Y %B", // 2024 December
-        "%Y %b", // 2024 Dec
-        "%Y-%m-%d",
-        "%m-%d-%Y",
-        "%d-%m-%Y",
-        "%Y/%m/%d",
-        "%m/%d/%Y",
-        "%d/%m/%Y",
-        "%Y.%m.%d",
-        "%m.%d.%Y",
-        "%d.%m.%Y",
-        "%Y %m %d",
-        "%m %d %Y",
-        "%d %m %G",
-        "%Y %b %d",
-        "%b %d %Y",
-        "%d %b %Y",
-        "%Y %B %d",
-        "%B %d %Y",
-        "%d %B %Y",
-        "%b %d, %Y",
-        "%B %d, %Y", // Added to support "December 23, 2024"
-    ];
-
-    lazy_static! {
-        static ref FORMATS_AS_STRFTIME_ITEMS: Vec<StrftimeItems<'static>> =
-            FORMATS.iter().map(|f| StrftimeItems::new(f)).collect();
+    fn len(&self) -> usize {
+        self.components.len()
     }
 
-    for format in &*FORMATS_AS_STRFTIME_ITEMS {
-        let mut parsed = Parsed::new();
-        if chrono::format::parse(&mut parsed, value, format.clone()).is_ok() {
-            // We allow dates with negative years, but you have to construct
-            // them explicitly using a formula. Don't parse them.
-            if parsed.year.is_some_and(|y| y < 1) {
-                continue;
+    /// Takes a 2- or 3-character format string and tries to return this date,
+    /// parsed using that format. For example, `mdy` would match `12/25/2010`
+    /// but not `2010-12-25` (because `2010` must be a year).
+    ///
+    /// The following symbols are allowed:
+    /// - `y` = number that could be a year
+    /// - `m` = number that could be a month
+    /// - `d` = number that could be a day
+    /// - `Y` = number that MUST be a year (e.g., because it is 4 digits)
+    /// - `M` = number that MUST be a month (e.g., because it is a named month)
+    /// - `D` = number that MUST be a day (e.g., because it is an ordinal number)
+    ///
+    /// Any other symbols cause a panic.
+    pub fn try_format(&self, format: &str) -> Option<chrono::NaiveDate> {
+        if format.len() != self.components.len() {
+            return None;
+        }
+
+        let mut year = None;
+        let mut month = None;
+        let mut day = None;
+        for (format_char, component) in std::iter::zip(format.chars(), &self.components) {
+            match format_char {
+                'y' => year = Some(component.year()?),
+                'm' => month = Some(component.month()?),
+                'd' => day = Some(component.day()?),
+                'Y' => year = Some(component.year().filter(|_| !component.is_ambiguous())?),
+                'M' => month = Some(component.month().filter(|_| !component.is_ambiguous())?),
+                'D' => day = Some(component.day().filter(|_| !component.is_ambiguous())?),
+                c => panic!("unexpected char {c:?} in date format"),
             }
+        }
 
-            // Infer defaults if unspecified in the pattern.
-            parsed.year = parsed.year.or(Some(Utc::now().year()));
-            parsed.month = parsed.month.or(Some(1));
-            parsed.day = parsed.day.or(Some(1));
+        // Infer defaults if unspecified in the pattern.
+        NaiveDate::from_ymd_opt(
+            match year {
+                Some(y) => i32::try_from(y).ok()?,
+                None => Utc::now().year(),
+            },
+            month.unwrap_or(1),
+            day.unwrap_or(1),
+        )
+    }
+}
 
-            if let Ok(parsed_date) = parsed.to_naive_date() {
-                return Some(parsed_date);
+#[derive(Debug, Copy, Clone)]
+enum ParsedDateComponent {
+    /// Unambiguous year (4 digits)
+    Year(u32),
+    /// Unambiguous month (named, like "January")
+    Month(u32),
+    /// Unambiguous day (has ordinal suffix, like "3rd")
+    Day(u32),
+    /// Ambiguous (1- or 2-digit number)
+    Ambiguous {
+        year: Option<u32>,
+        month: Option<u32>,
+        day: Option<u32>,
+    },
+}
+
+impl FromStr for ParsedDateComponent {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(named_month) = chrono::Month::from_str(s) {
+            // Example: `January`
+            Ok(Self::Month(named_month.number_from_month()))
+        } else if let Some(ordinal) = s
+            .strip_suffix("st")
+            .or_else(|| s.strip_suffix("nd"))
+            .or_else(|| s.strip_suffix("rd"))
+            .or_else(|| s.strip_suffix("th"))
+        {
+            // Example `3rd`
+            Ok(Self::Day(ordinal.parse().map_err(|_| ())?))
+        } else {
+            let n = s.parse().map_err(|_| ())?;
+            match s.len() {
+                // 1-digit number must be day or month. Example: `3`
+                1 => Ok(Self::Ambiguous {
+                    year: None,
+                    month: Some(n),
+                    day: Some(n),
+                }),
+                // 2-digit number could be anything. Example: `12`
+                2 => Ok(Self::Ambiguous {
+                    year: match n {
+                        ..CENTURY_CUTOFF => n.checked_add(2000),
+                        CENTURY_CUTOFF.. => n.checked_add(1900),
+                    },
+                    month: Some(n),
+                    day: Some(n),
+                }),
+                // 4-digit number must be year. Example: `1619`
+                4 => Ok(Self::Year(n)),
+                // Anything else is probably not a date.
+                _ => Err(()),
             }
         }
     }
-    None
+}
+impl ParsedDateComponent {
+    fn year(self) -> Option<u32> {
+        match self {
+            ParsedDateComponent::Year(year) => Some(year),
+            ParsedDateComponent::Ambiguous { year, .. } => year,
+            _ => None,
+        }
+    }
+    fn month(self) -> Option<u32> {
+        match self {
+            ParsedDateComponent::Month(month) => Some(month),
+            ParsedDateComponent::Ambiguous { month, .. } => month,
+            _ => None,
+        }
+    }
+    fn day(self) -> Option<u32> {
+        match self {
+            ParsedDateComponent::Day(day) => Some(day),
+            ParsedDateComponent::Ambiguous { day, .. } => day,
+            _ => None,
+        }
+    }
+    fn is_ambiguous(self) -> bool {
+        matches!(self, ParsedDateComponent::Ambiguous { .. })
+    }
+}
+
+/// Parses a date string using a list of possible formats.
+pub fn parse_date(value: &str) -> Option<NaiveDate> {
+    let components = ParsedDateComponents::from_str(value).ok()?;
+    let sep = components.separator;
+
+    if !(2..=3).contains(&components.len()) {
+        return None;
+    }
+
+    if sep == '.' && components.len() == 2 {
+        return None; // looks like a decimal number
+    }
+
+    let formats: &[&str] = if sep == ' ' {
+        // When using spaces, a month name is always required.
+        &[
+            "MdY", // Dec 10 2024
+            "dMY", // 10 Dec 2024
+            "YMd", // 2024 Dec 10
+            "dM",  // 10 Dec
+            "Md",  // Dec 10
+            "MY",  // Dec 2024
+            "YM",  // 2024 Dec
+        ]
+    } else {
+        &[
+            //
+            // 3 COMPONENTS
+            //
+            // `10/12/24` is `mdy` or `dmy` depending on locale.
+            // This also covers `10/12/2024`.
+            if AMERICAN { "mdy" } else { "dmy" },
+            // Always accept the other pattern if there's a named month.
+            "dMy",
+            "Mdy",
+            // `2024/10/12` is always `Ymd`
+            "Ymd",
+            //
+            // 2 COMPONENTS
+            //
+            // `12/12` is `md` or `dm` depending on locale.
+            if AMERICAN { "md" } else { "dm" },
+            // Always accept the other pattern if there's a named month.
+            "dM",
+            "Md",
+            // `2024/12` is `Ym` and `12/2024` is `mY`, but only if the
+            // separator is `/`.
+            if sep == '/' { "Ym" } else { "" },
+            if sep == '/' { "mY" } else { "" },
+        ]
+    };
+
+    formats.iter().find_map(|f| components.try_format(f))
 }
 
 /// Convert the entire time into seconds since midnight
@@ -396,6 +555,19 @@ mod tests {
             NaiveDate::from_ymd_opt(2024, 4, 10),
         );
         assert_eq!(parse_date("4/6/2024"), NaiveDate::from_ymd_opt(2024, 4, 6));
+
+        assert_eq!(parse_date("6/10/12"), NaiveDate::from_ymd_opt(2012, 6, 10));
+
+        assert_eq!(parse_date("4/2024"), NaiveDate::from_ymd_opt(2024, 4, 1));
+
+        assert_eq!(
+            parse_date("jan 3rd"),
+            NaiveDate::from_ymd_opt(Utc::now().year(), 1, 3)
+        );
+        assert_eq!(
+            parse_date("3 jan"),
+            NaiveDate::from_ymd_opt(Utc::now().year(), 1, 3)
+        );
     }
 
     #[test]
@@ -463,5 +635,8 @@ mod tests {
         assert_eq!(parse_date("1893-01"), None);
         assert_eq!(parse_date("1902-01"), None);
         assert_eq!(parse_date("101-250"), None);
+        assert_eq!(parse_date("1 3"), None);
+        assert_eq!(parse_date("10 12"), None);
+        assert_eq!(parse_date("10 12 2025"), None);
     }
 }
