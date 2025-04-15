@@ -123,7 +123,7 @@ export const Connections = ({
     setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
     setActiveConnectionType(connectionType);
   };
-  const hangleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+  const handleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
     // If we're in the app, insert a query on the sheet.
     if (handleNavigateToDetailsViewOverride) {
       handleNavigateToDetailsViewOverride({ Connection: { kind: connectionType, id: connectionUuid } });
@@ -164,7 +164,7 @@ export const Connections = ({
           connectionsAreLoading={connectionsAreLoading}
           handleNavigateToCreateView={handleNavigateToCreateView}
           handleNavigateToEditView={handleNavigateToEditView}
-          hangleNavigateToDetailsView={hangleNavigateToDetailsView}
+          handleNavigateToDetailsView={handleNavigateToDetailsView}
         />
       )}
     </div>
