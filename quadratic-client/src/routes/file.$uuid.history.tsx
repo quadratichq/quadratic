@@ -23,7 +23,7 @@ import {
   useRevalidator,
   useRouteError,
   type LoaderFunctionArgs,
-} from 'react-router-dom';
+} from 'react-router';
 
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'];
 
