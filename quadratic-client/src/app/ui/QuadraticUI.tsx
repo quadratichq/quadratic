@@ -38,7 +38,7 @@ import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigation, useParams } from 'react-router';
+import { useNavigation, useParams } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {

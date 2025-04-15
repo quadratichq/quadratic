@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { cn } from '@/shared/shadcn/utils';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Link,
   redirectDocument,
@@ -48,16 +48,16 @@ export const Component = () => {
   const [selectedTeamUuid, setSelectedTeamUuid] = useState<string>(teams[0].team.uuid);
   const navigation = useNavigation();
   const submit = useSubmit();
-  const isLoading = navigation.state !== 'idle';
+  const isLoading = useMemo(() => navigation.state !== 'idle', [navigation.state]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     const data = getActionFileDuplicate({
       isPrivate: true,
       teamUuid: selectedTeamUuid,
       redirect: true,
     });
     submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
-  };
+  }, [fileUuid, selectedTeamUuid, submit]);
 
   return (
     <div className="flex h-full items-center justify-center">

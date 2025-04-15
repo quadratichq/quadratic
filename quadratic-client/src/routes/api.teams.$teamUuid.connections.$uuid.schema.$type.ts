@@ -1,5 +1,5 @@
 import { connectionClient } from '@/shared/api/connectionClient';
-import type { LoaderFunctionArgs } from 'react-router';
+import type { LoaderFunctionArgs } from 'react-router-dom';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { uuid, type, teamUuid } = params;

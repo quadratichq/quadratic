@@ -5,7 +5,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
 type Sync = {
