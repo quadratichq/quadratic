@@ -152,6 +152,17 @@ fn js_call(s: &str, args: String) {
 }
 
 #[cfg(test)]
+pub fn print_js_calls() {
+    JS_CALLS.with(|js_calls| {
+        let js_calls = js_calls.lock().unwrap();
+        println!("JS calls:");
+        for call in js_calls.iter() {
+            println!("  {:?}", call);
+        }
+    });
+}
+
+#[cfg(test)]
 #[track_caller]
 pub fn expect_js_call(name: &str, args: String, clear: bool) {
     JS_CALLS.with(|js_calls| {
@@ -598,8 +609,8 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsClientMessage(message: String, error: String) {
-    js_call("jsClientMessage", format!("{},{}", message, error));
+pub fn jsClientMessage(message: String, severity: String) {
+    js_call("jsClientMessage", format!("{},{}", message, severity));
 }
 
 #[cfg(test)]

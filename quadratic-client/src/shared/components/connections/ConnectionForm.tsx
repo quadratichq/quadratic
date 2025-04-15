@@ -105,8 +105,8 @@ export function ConnectionFormEdit({
 }
 
 function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: ConnectionFormProps }) {
-  const { ConnectionForm, useConnectionForm } = connectionsByType[type];
-  const { form } = useConnectionForm(props.connection);
+  const { ConnectionForm } = connectionsByType[type];
+  const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
   return (
     <ConnectionForm handleSubmitForm={props.handleSubmitForm} form={form}>

@@ -10,12 +10,10 @@ export const MenubarItemAction = <T extends Action>({
   action,
   actionArgs,
   shortcutOverride,
-  disableFocusGridRef,
 }: {
   action: T;
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
   shortcutOverride?: string;
-  disableFocusGridRef?: React.MutableRefObject<boolean>;
 }) => {
   const isAvailableArgs = useIsAvailableArgs();
   const actionSpec = defaultActionSpec[action];
@@ -35,9 +33,6 @@ export const MenubarItemAction = <T extends Action>({
       disabled={isDisabled ? isDisabled() : false}
       onClick={() => {
         mixpanel.track('[FileMenu].selected', { label });
-        if (disableFocusGridRef) {
-          disableFocusGridRef.current = true;
-        }
         actionSpec.run(actionArgs);
       }}
     >

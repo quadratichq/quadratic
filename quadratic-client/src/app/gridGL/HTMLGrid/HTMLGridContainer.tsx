@@ -20,7 +20,7 @@ import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidatio
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Following } from '@/app/ui/components/Following';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -35,27 +35,21 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
   const { parent } = props;
 
   // this one is not zoomed and positioned over the grid headings
-  const [normalContainer, setNormalContainer] = useState<HTMLDivElement>();
-  const normalRef = useCallback((node: HTMLDivElement) => {
-    if (node) setNormalContainer(node);
-  }, []);
+  const normalRef = useRef<HTMLDivElement>(null);
 
-  const [zoomContainer, setZoomContainer] = useState<HTMLDivElement>();
-  const zoomRef = useCallback((node: HTMLDivElement) => {
-    if (node) setZoomContainer(node);
-  }, []);
+  const zoomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!zoomContainer || !normalContainer || !parent) return;
-    const viewport = pixiApp.viewport;
     const updateTransform = () => {
-      viewport.updateLocalTransform();
+      if (!zoomRef.current || !normalRef.current || !parent) return;
+
+      pixiApp.viewport.updateLocalTransform();
       let worldTransform = viewport.worldTransform;
       const transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${worldTransform.d}, ${
         worldTransform.tx + parent.offsetLeft
       }, ${worldTransform.ty + parent.offsetTop})`;
-      zoomContainer.style.transform = transform;
-      normalContainer.style.transform = transform;
+      zoomRef.current.style.transform = transform;
+      normalRef.current.style.transform = transform;
     };
     updateTransform();
     events.on('viewportChangedReady', updateTransform);
@@ -64,7 +58,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       events.off('viewportChangedReady', updateTransform);
       window.removeEventListener('resize', updateTransform);
     };
-  }, [normalContainer, parent, zoomContainer]);
+  }, [parent]);
 
   const { leftHeading, topHeading } = useHeadingSize();
 

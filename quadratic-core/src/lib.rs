@@ -32,6 +32,7 @@ pub mod sheet_offsets;
 mod sheet_rect;
 pub mod small_timestamp;
 mod span;
+#[macro_use]
 pub mod test_util;
 mod values;
 pub mod viewport;
@@ -51,6 +52,7 @@ pub use rle::RunLengthEncoding;
 pub use selection::OldSelection;
 pub use sheet_rect::*;
 pub use span::*;
+pub use test_util::*;
 pub use values::*;
 
 pub const QUADRANT_SIZE: u64 = 16;

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    CellValue, RefAdjust,
+    CellValue, CopyFormats, RefAdjust,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -9,21 +9,26 @@ use crate::{
     grid::{GridBounds, SheetId},
 };
 
+use anyhow::{Result, bail};
+
 impl GridController {
     fn adjust_code_cell_references(
         &self,
         transaction: &mut PendingTransaction,
         adjustments: &[RefAdjust],
     ) {
-        let a1_context = self.a1_context();
-
         for sheet in self.grid.sheets().iter() {
             for (pos, _) in sheet.iter_code_runs() {
                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
                     let mut new_code = code.clone();
                     for &adj in adjustments {
-                        new_code.adjust_references(sheet_pos.sheet_id, a1_context, sheet_pos, adj);
+                        new_code.adjust_references(
+                            sheet_pos.sheet_id,
+                            &self.a1_context,
+                            sheet_pos,
+                            adj,
+                        );
                     }
                     if code.code != new_code.code {
                         transaction.operations.push_back(Operation::SetCellValues {
@@ -44,11 +49,12 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         columns: Vec<i64>,
+        copy_formats: CopyFormats,
     ) {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
             let mut columns_to_adjust = columns.clone();
-            sheet.delete_columns(transaction, columns, &self.a1_context);
+            sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
 
             if transaction.is_user() {
                 columns_to_adjust.sort_unstable();
@@ -79,31 +85,42 @@ impl GridController {
     }
 
     pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteColumn { sheet_id, column } = op.clone() {
+        if let Operation::DeleteColumn {
+            sheet_id,
+            column,
+            copy_formats,
+        } = op.clone()
+        {
+            self.handle_delete_columns(transaction, sheet_id, vec![column], copy_formats);
             transaction.forward_operations.push(op);
-            self.handle_delete_columns(transaction, sheet_id, vec![column]);
-            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
     pub fn execute_delete_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteColumns { sheet_id, columns } = op.clone() {
+        if let Operation::DeleteColumns {
+            sheet_id,
+            columns,
+            copy_formats,
+        } = op.clone()
+        {
+            self.handle_delete_columns(transaction, sheet_id, columns, copy_formats);
             transaction.forward_operations.push(op);
-            self.handle_delete_columns(transaction, sheet_id, columns);
-            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn handle_delete_rows(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
-    ) {
+        copy_formats: CopyFormats,
+    ) -> Result<()> {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
-            sheet.delete_rows(transaction, rows, &self.a1_context);
+
+            sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
 
             if transaction.is_user() {
                 rows_to_adjust.sort_unstable();
@@ -132,22 +149,45 @@ impl GridController {
                 }
             }
         }
+        Ok(())
     }
 
-    pub fn execute_delete_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteRow { sheet_id, row } = op.clone() {
+    pub fn execute_delete_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DeleteRow {
+            sheet_id,
+            row,
+            copy_formats,
+        } = op.clone()
+        {
+            self.handle_delete_rows(transaction, sheet_id, vec![row], copy_formats)?;
             transaction.forward_operations.push(op);
-            self.handle_delete_rows(transaction, sheet_id, vec![row]);
-            self.send_updated_bounds(transaction, sheet_id);
-        }
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DeleteRow in execute_delete_row");
     }
 
-    pub fn execute_delete_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::DeleteRows { sheet_id, rows } = op.clone() {
+    pub fn execute_delete_rows(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DeleteRows {
+            sheet_id,
+            rows,
+            copy_formats,
+        } = op.clone()
+        {
+            self.handle_delete_rows(transaction, sheet_id, rows, copy_formats)?;
             transaction.forward_operations.push(op);
-            self.handle_delete_rows(transaction, sheet_id, rows);
-            self.send_updated_bounds(transaction, sheet_id);
-        }
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DeleteRows in execute_delete_rows");
     }
 
     pub fn execute_insert_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
@@ -158,10 +198,8 @@ impl GridController {
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats, true, &self.a1_context);
+                sheet.insert_column(transaction, column, copy_formats, &self.a1_context);
                 transaction.forward_operations.push(op);
-
-                sheet.recalculate_bounds(&self.a1_context);
             } else {
                 // nothing more can be done
                 return;
@@ -175,10 +213,6 @@ impl GridController {
                     &[RefAdjust::new_insert_column(sheet_id, column)],
                 );
 
-                transaction
-                    .operations
-                    .extend(self.check_chart_insert_col_operations(sheet_id, column as u32));
-
                 // update information for all cells to the right of the inserted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
@@ -190,8 +224,6 @@ impl GridController {
                     }
                 }
             }
-
-            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -203,10 +235,8 @@ impl GridController {
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_row(transaction, row, copy_formats, true, &self.a1_context);
+                sheet.insert_row(transaction, row, copy_formats, &self.a1_context);
                 transaction.forward_operations.push(op);
-
-                sheet.recalculate_bounds(&self.a1_context);
             } else {
                 // nothing more can be done
                 return;
@@ -220,10 +250,6 @@ impl GridController {
                     &[RefAdjust::new_insert_row(sheet_id, row)],
                 );
 
-                transaction
-                    .operations
-                    .extend(self.check_chart_insert_row_operations(sheet_id, row as u32));
-
                 // update information for all cells below the deleted row
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
@@ -235,8 +261,6 @@ impl GridController {
                     }
                 }
             }
-
-            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -281,6 +305,9 @@ mod tests {
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+        },
+        test_util::{
+            assert_data_table_size, first_sheet_id, test_create_html_chart, test_create_js_chart,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
     };
@@ -541,7 +568,7 @@ mod tests {
     }
 
     #[test]
-    fn execute_insert_column() {
+    fn test_execute_insert_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -1013,47 +1040,40 @@ mod tests {
     }
 
     #[test]
-    fn test_insert_delete_chart() {
+    fn test_delete_rows_chart() {
         let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let sheet_id = first_sheet_id(&gc);
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_chart(pos![A1], 3, 3);
-        sheet.test_set_chart(pos![B5], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![B2], 3, 3);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
-        gc.insert_column(sheet_id, 3, true, None);
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.data_table(pos![A1]).unwrap().chart_output.unwrap(),
-            (4, 3)
-        );
-        assert_eq!(
-            sheet.data_table(pos![B5]).unwrap().chart_output.unwrap(),
-            (4, 3)
-        );
+        gc.delete_rows(sheet_id, vec![3], None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
 
         gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
-        let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
-        assert_eq!(dt.chart_output.unwrap(), (3, 3));
-        let dt_2 = sheet.data_table(pos![B5]).unwrap();
-        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
-
-        gc.insert_row(sheet_id, 3, true, None);
-
-        let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
-        assert_eq!(dt.chart_output.unwrap(), (3, 4));
-        let dt_2 = sheet.data_table(pos![B6]).unwrap();
-        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
+        gc.redo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
 
         gc.undo(None);
-        let sheet = gc.sheet(sheet_id);
-        let dt = sheet.data_table(pos![A1]).unwrap();
-        assert_eq!(dt.chart_output.unwrap(), (3, 3));
-        let dt_2 = sheet.data_table(pos![B5]).unwrap();
-        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+    }
+
+    #[test]
+    fn test_delete_bottom_rows_chart() {
+        // tests for adjust_chart_size in rows_delete_table.rs#delete_table_rows()
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 3, 3);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+
+        // deletes the bottom tow rows of the chart
+        gc.delete_rows(sheet_id, vec![3, 4], None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 1, false);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
     }
 }

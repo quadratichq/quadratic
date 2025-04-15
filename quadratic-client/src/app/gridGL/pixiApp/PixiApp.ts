@@ -103,13 +103,13 @@ export class PixiApp {
     this.debug = new Graphics();
   }
 
-  async init(): Promise<void> {
+  init = async (): Promise<void> => {
     return new Promise(async (resolve) => {
       if (this.initialized) return;
 
       // we cannot initialize pixi until the bitmap fonts are loaded
       if (!isBitmapFontLoaded()) {
-        events.once('bitmapFontsLoaded', () => this.init());
+        events.once('bitmapFontsLoaded', () => this.init().then(resolve));
         return;
       }
       renderWebWorker.sendBitmapFonts();
@@ -134,9 +134,9 @@ export class PixiApp {
       events.emit('pixiAppReady');
       resolve();
     });
-  }
+  };
 
-  private initCanvas() {
+  private initCanvas = () => {
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
     this.canvas.tabIndex = 0;
@@ -182,26 +182,26 @@ export class PixiApp {
     this.update = new Update();
 
     this.setupListeners();
-  }
+  };
 
-  private setupListeners() {
+  private setupListeners = () => {
     sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
     document.addEventListener('cut', cutToClipboardEvent);
-  }
+  };
 
-  private removeListeners() {
+  private removeListeners = () => {
     sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
     document.removeEventListener('cut', cutToClipboardEvent);
-  }
+  };
 
   // calculate sheet rectangle, without heading, factoring in scale
-  getViewportRectangle(): Rectangle {
+  getViewportRectangle = (): Rectangle => {
     const headingSize = this.headings.headingSize;
     const scale = this.viewport.scale.x;
 
@@ -214,7 +214,7 @@ export class PixiApp {
     );
 
     return rectangle;
-  }
+  };
 
   setViewportDirty = (): void => {
     this.viewport.dirty = true;
@@ -236,7 +236,7 @@ export class PixiApp {
     }
   };
 
-  attach(parent: HTMLDivElement): void {
+  attach = (parent: HTMLDivElement): void => {
     if (!this.canvas) return;
 
     this.parent = parent;
@@ -249,15 +249,15 @@ export class PixiApp {
     }
     urlParams.show();
     this.setViewportDirty();
-  }
+  };
 
-  destroy(): void {
+  destroy = (): void => {
     this.update.destroy();
     this.renderer.destroy(true);
     this.viewport.destroy();
     this.removeListeners();
     this.destroyed = true;
-  }
+  };
 
   setAccentColor = (): void => {
     // Pull the value from the current value as defined in CSS
@@ -412,6 +412,10 @@ export class PixiApp {
   changeHoverTableHeaders(hoverTableHeaders: Container) {
     this.hoverTableHeaders.removeChildren();
     this.hoverTableHeaders.addChild(hoverTableHeaders);
+  }
+
+  cellsSheetsCreate() {
+    this.cellsSheets.create();
   }
 }
 

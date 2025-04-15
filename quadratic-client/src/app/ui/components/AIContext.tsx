@@ -103,6 +103,29 @@ export const AIContext = memo(
       }
     }, [initialContext, loading, messages, messagesCount, setContext]);
 
+    const handleOnCloseSelectContextMenu = useCallback(() => {
+      textareaRef.current?.focus();
+    }, [textareaRef]);
+
+    const handleOnClickFileContext = useCallback(
+      (file: FileContent) => {
+        setFiles?.((prev) => prev.filter((f) => f !== file));
+      },
+      [setFiles]
+    );
+
+    const handleOnClickSelection = useCallback(() => {
+      setContext?.((prev) => ({ ...prev, selection: undefined }));
+    }, [setContext]);
+
+    const handleOnClickCurrentSheet = useCallback(() => {
+      setContext?.((prev) => ({
+        ...prev,
+        sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
+        currentSheet: '',
+      }));
+    }, [setContext]);
+
     return (
       <div
         className={cn(
@@ -116,7 +139,7 @@ export const AIContext = memo(
             context={context}
             setContext={setContext}
             disabled={disabled}
-            onClose={() => textareaRef.current?.focus()}
+            onClose={handleOnCloseSelectContextMenu}
           />
         )}
 
@@ -127,7 +150,7 @@ export const AIContext = memo(
             key={`${index}-${file.fileName}`}
             disabled={disabled || !setFiles}
             file={file}
-            onClick={() => setFiles?.(files.filter((f) => f !== file))}
+            onClick={() => handleOnClickFileContext(file)}
           />
         ))}
 
@@ -142,7 +165,7 @@ export const AIContext = memo(
                 : sheets.sheet.cursor.toCursorA1()
             }
             secondary="Cursor"
-            onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
+            onClick={handleOnClickSelection}
             disabled={disabled || !setContext || !context.selection}
           />
         )}
@@ -152,13 +175,7 @@ export const AIContext = memo(
             key={context.currentSheet}
             primary={context.currentSheet}
             secondary={'Sheet'}
-            onClick={() =>
-              setContext?.((prev) => ({
-                ...prev,
-                sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
-                currentSheet: '',
-              }))
-            }
+            onClick={handleOnClickCurrentSheet}
             disabled={disabled || !setContext}
           />
         )}
