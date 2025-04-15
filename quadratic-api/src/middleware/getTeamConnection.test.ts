@@ -39,6 +39,7 @@ describe('getTeamConnection()', () => {
           teamUuid: '00000000-0000-0000-0000-000000000000',
           userId,
         });
+        throw new Error('Expected ApiError to be thrown');
       } catch (error) {
         const e = error as ApiError;
         expect(e).toBeInstanceOf(ApiError);
@@ -56,6 +57,7 @@ describe('getTeamConnection()', () => {
           teamUuid: '00000000-0000-0000-0000-000000000000',
           userId,
         });
+        throw new Error('Expected ApiError to be thrown');
       } catch (error) {
         const e = error as ApiError;
         expect(e).toBeInstanceOf(ApiError);
@@ -73,6 +75,7 @@ describe('getTeamConnection()', () => {
           teamUuid: '00000000-0000-0000-0000-000000000000',
           userId,
         });
+        throw new Error('Expected ApiError to be thrown');
       } catch (error) {
         const e = error as ApiError;
         expect(e).toBeInstanceOf(ApiError);
@@ -107,7 +110,6 @@ describe('getTeamConnection()', () => {
           userId,
         });
 
-        // If no error is thrown, fail the test
         throw new Error('Expected ApiError to be thrown');
       } catch (error) {
         const e = error as ApiError;
