@@ -103,9 +103,12 @@ describe('getTeamConnection()', () => {
       try {
         await getTeamConnection({
           connectionUuid: '30000000-0000-0000-0000-000000000000',
-          teamUuid: '11111111-1111-1111-1111-111111111111',
+          teamUuid: '00000000-0000-0000-0000-000000000000',
           userId,
         });
+
+        // If no error is thrown, fail the test
+        throw new Error('Expected ApiError to be thrown');
       } catch (error) {
         const e = error as ApiError;
         expect(e).toBeInstanceOf(ApiError);
