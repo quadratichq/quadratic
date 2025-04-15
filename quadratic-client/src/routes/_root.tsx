@@ -54,11 +54,22 @@ export const HydrateFallback = () => {
   const [isTakingALongTime, setIsTakingALongTime] = useState(false);
 
   useEffect(() => {
+    const startTimeMs = Date.now();
+
     const timer = setTimeout(() => {
       setIsTakingALongTime(true);
       mixpanel.track('[Loading].still-loading', { timeMs: STILL_LOADING_MS });
     }, STILL_LOADING_MS);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      const loadTimeMs = Date.now() - startTimeMs;
+      const route = window.location.pathname + window.location.search;
+      mixpanel.track('[App].loading', {
+        route,
+        loadTimeMs,
+      });
+    };
   }, []);
 
   return (
