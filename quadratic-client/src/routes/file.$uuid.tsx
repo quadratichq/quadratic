@@ -226,7 +226,6 @@ export const ErrorBoundary = () => {
   );
 
   if (isRouteErrorResponse(error)) {
-    console.log(error);
     let title = '';
     let description: string = '';
     let actions = actionsDefault;
