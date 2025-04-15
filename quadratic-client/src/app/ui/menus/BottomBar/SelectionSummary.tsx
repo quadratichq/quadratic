@@ -13,7 +13,7 @@ export const SelectionSummary = () => {
   const [sum, setSum] = useState<string | undefined>('');
   const [avg, setAvg] = useState<string | undefined>('');
   const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Run async calculations to get the count/avg/sum meta info
   const showSelectionSummary = useCallback(async () => {

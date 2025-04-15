@@ -24,6 +24,18 @@ impl GridController {
             );
         }
 
+        #[cfg(feature = "show-first-sheet-operations")]
+        if transaction.is_undo() {
+            println!("\n========= Starting undo transaction =========\n");
+        } else if transaction.is_redo() {
+            println!("\n========= Starting redo transaction =========\n");
+        } else {
+            println!(
+                "\n========= Starting transaction {:?} =========\n",
+                transaction.transaction_name
+            );
+        }
+
         loop {
             if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
                 transaction.complete = true;

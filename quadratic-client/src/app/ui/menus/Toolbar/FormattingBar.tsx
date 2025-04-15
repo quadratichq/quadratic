@@ -56,12 +56,7 @@ export const FormattingBar = () => {
       <Separator />
 
       <FormatColorPickerButton action={Action.FormatFillColor} />
-      <FormatButtonPopover
-        disableCloseAutoFocus
-        tooltipLabel="Borders"
-        Icon={BorderAllIcon}
-        className="flex flex-row flex-wrap"
-      >
+      <FormatButtonPopover tooltipLabel="Borders" Icon={BorderAllIcon} className="flex flex-row flex-wrap">
         <BorderMenu />
       </FormatButtonPopover>
 
@@ -150,14 +145,12 @@ function FormatButtonPopover({
   children,
   showDropdownArrow,
   className,
-  disableCloseAutoFocus,
 }: {
   Icon: any;
   children: ReactNode;
   tooltipLabel: string;
   showDropdownArrow?: boolean;
   className?: string;
-  disableCloseAutoFocus?: boolean;
 }) {
   return (
     <Popover>
@@ -196,14 +189,14 @@ function FormatButtonDropdownActions<T extends Action>({
 }) {
   return actions.map((action, key) => {
     const actionSpec = defaultActionSpec[action];
-    const { label, run } = actionSpec;
+    const label = actionSpec.label();
     const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
     return (
       <DropdownMenuItem
         key={key}
         onClick={() => {
           mixpanel.track('[FormattingBar].button', { label });
-          run(actionArgs);
+          actionSpec.run(actionArgs);
         }}
       >
         {Icon && <Icon className="mr-2" />}
@@ -221,7 +214,7 @@ function FormatButton<T extends Action>({
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
 }) {
   const actionSpec = defaultActionSpec[action];
-  const { label, run } = actionSpec;
+  const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
 
@@ -234,7 +227,7 @@ function FormatButton<T extends Action>({
           className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
           onClick={() => {
             mixpanel.track('[FormattingBar].button', { label });
-            run(actionArgs);
+            actionSpec.run(actionArgs);
           }}
         >
           {Icon && <Icon />}
@@ -255,7 +248,7 @@ function FormatColorPickerButton({
   activeColor?: string;
 }) {
   const actionSpec = defaultActionSpec[action];
-  const { label, run } = actionSpec;
+  const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
   return (
@@ -263,11 +256,11 @@ function FormatColorPickerButton({
       <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
         <QColorPicker
           onChangeComplete={(color) => {
-            run(color);
+            actionSpec.run(color);
             focusGrid();
           }}
           onClear={() => {
-            run(undefined);
+            actionSpec.run(undefined);
             focusGrid();
           }}
         />
@@ -278,9 +271,10 @@ function FormatColorPickerButton({
 
 function FormatDateAndTimePickerButton() {
   const dateAndTimeAction = defaultActionSpec[Action.FormatDateTime];
+  const label = dateAndTimeAction.label();
 
   return (
-    <FormatButtonPopover tooltipLabel={dateAndTimeAction.label} Icon={dateAndTimeAction.Icon}>
+    <FormatButtonPopover tooltipLabel={label} Icon={dateAndTimeAction.Icon}>
       <div className="min-w-80 p-2">
         <DateFormat
           closeMenu={() => {

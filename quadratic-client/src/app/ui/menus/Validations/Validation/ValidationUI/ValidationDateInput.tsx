@@ -3,6 +3,7 @@ import { ValidationInput } from '@/app/ui/menus/Validations/Validation/Validatio
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
 interface ValidationInputProps {

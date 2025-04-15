@@ -3,6 +3,7 @@ import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadrati
 import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
+import type { JSX } from 'react';
 import { useMemo } from 'react';
 
 export interface ValidationDateTimeData {

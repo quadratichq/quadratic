@@ -24,7 +24,7 @@ const isRowFinite = () => sheets.sheet.cursor.isSelectedRowsFinite();
 const isColumnRowAvailableAndRowFinite = (args: ActionAvailabilityArgs) => isColumnRowAvailable(args) && isRowFinite();
 
 const insertColumnLeft: ActionSpec<void> = {
-  label: 'Insert column left',
+  label: () => 'Insert column left',
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddColumnLeftIcon,
   run: () => {
@@ -35,7 +35,7 @@ const insertColumnLeft: ActionSpec<void> = {
 };
 
 const insertColumnRight: ActionSpec<void> = {
-  label: 'Insert column right',
+  label: () => 'Insert column right',
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddColumnRightIcon,
   run: () => {
@@ -46,13 +46,12 @@ const insertColumnRight: ActionSpec<void> = {
 };
 
 const deleteColumns: ActionSpec<void> = {
-  label: `Delete column(s)`,
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => {
+  label: () => {
     const length = sheets.sheet.cursor.getSelectedColumnsFinite().length;
     const plural = length > 1 ? 's' : '';
-    deleteColumns.label = `Delete ${length} column${plural}`;
-    return !isEmbed && isAuthenticated && isColumnFinite();
+    return `Delete ${length} column${plural}`;
   },
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isColumnFinite(),
   Icon: DeleteIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
@@ -63,7 +62,7 @@ const deleteColumns: ActionSpec<void> = {
 };
 
 const insertRowAbove: ActionSpec<void> = {
-  label: 'Insert row above',
+  label: () => 'Insert row above',
   isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddRowAboveIcon,
   run: () => {
@@ -74,7 +73,7 @@ const insertRowAbove: ActionSpec<void> = {
 };
 
 const insertRowBelow: ActionSpec<void> = {
-  label: 'Insert row below',
+  label: () => 'Insert row below',
   isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddRowBelowIcon,
   run: () => {
@@ -85,13 +84,12 @@ const insertRowBelow: ActionSpec<void> = {
 };
 
 const deleteRows: ActionSpec<void> = {
-  label: 'Delete row(s)',
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => {
+  label: () => {
     const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
     const plural = length > 1 ? 's' : '';
-    deleteRows.label = `Delete ${length} row${plural}`;
-    return !isEmbed && isAuthenticated && isRowFinite();
+    return `Delete ${length} row${plural}`;
   },
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isRowFinite(),
   Icon: DeleteIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});

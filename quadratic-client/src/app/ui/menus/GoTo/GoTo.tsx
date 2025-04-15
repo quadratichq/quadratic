@@ -9,13 +9,14 @@ import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { CommandSeparator } from 'cmdk';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
   const [, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>();
+  const [currentSheet, setCurrentSheet] = useState<string>(sheets.current);
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
@@ -94,14 +95,6 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
     [closeMenu]
   );
 
-  const selectSheet = useCallback(
-    (sheetId: string) => {
-      sheets.current = sheetId;
-      closeMenu();
-    },
-    [closeMenu]
-  );
-
   const tablesFiltered = useMemo(
     () =>
       tableInfo
@@ -136,6 +129,12 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
         .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true)),
     [value]
   );
+
+  useEffect(() => {
+    if (currentSheet !== sheets.current) {
+      sheets.current = currentSheet;
+    }
+  }, [currentSheet]);
 
   return (
     <Command shouldFilter={false}>
@@ -204,7 +203,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
               <CommandItemGoto
                 key={sheet.id}
                 value={sheet.id}
-                onSelect={() => selectSheet(sheet.id)}
+                onSelect={() => setCurrentSheet(sheet.id)}
                 name={sheet.name}
               />
             ))}
