@@ -14,8 +14,7 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       code: string,
       connector_type: ConnectionKind,
-      connection_id: String,
-      teamUuid: string
+      connection_id: String
     ) => void;
   };
 

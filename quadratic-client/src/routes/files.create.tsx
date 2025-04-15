@@ -15,8 +15,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
 
   // Ensure the active team is _writeable_. If it's not, redirect them to the dashboard.
   // (They may have write access to another team, but not the 'active' one.)
-  const team = teams.find(({ team }) => team.uuid === activeTeamUuid);
-  if (!team?.userMakingRequest.teamPermissions.includes('TEAM_EDIT')) {
+  const activeTeam = teams.find(({ team }) => team.uuid === activeTeamUuid);
+  if (!activeTeam?.userMakingRequest.teamPermissions.includes('TEAM_EDIT')) {
     return redirect(
       `/?${SEARCH_PARAMS.SNACKBAR_MSG.KEY}=${encodeURIComponent('Failed to create file. You can only view this team.')}`
     );

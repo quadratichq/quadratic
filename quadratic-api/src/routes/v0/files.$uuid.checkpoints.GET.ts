@@ -35,7 +35,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/che
       name,
       ownerTeam: { uuid: teamUuid },
     },
-    userMakingRequest: { filePermissions, teamPermissions, fileRole, teamRole },
+    userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId });
 
   /**
