@@ -277,13 +277,25 @@ impl RefAdjust {
         }
     }
 
-    /// Constructs a simple translation that applies to all references.
+    /// Constructs a simple translation that applies to all non -ve references.
     pub fn new_translate(dx: i64, dy: i64) -> Self {
         Self {
             relative_only: false,
             dx,
             dy,
             ..Self::NO_OP
+        }
+    }
+
+    /// Constructs a simple translation that applies to all references greater than or equal to the start.
+    pub fn new_translate_with_start(dx: i64, dy: i64, x_start: i64, y_start: i64) -> Self {
+        Self {
+            sheet_id: None,
+            relative_only: false,
+            dx,
+            dy,
+            x_start,
+            y_start,
         }
     }
 }
