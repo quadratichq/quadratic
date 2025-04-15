@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
+import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
   getSystemPromptMessages,
   isContentImage,
@@ -76,7 +77,7 @@ export function getOpenAIApiArgs(
               return {
                 type: 'image_url',
                 image_url: {
-                  url: content.data,
+                  url: getDataBase64String(content),
                 },
               };
             }
