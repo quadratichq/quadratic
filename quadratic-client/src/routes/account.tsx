@@ -7,7 +7,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import type { ReactNode } from 'react';
-import { Form } from 'react-router-dom';
+import { Form } from 'react-router';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();

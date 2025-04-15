@@ -15,7 +15,7 @@ import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWork
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
 

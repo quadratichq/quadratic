@@ -6,7 +6,7 @@ import type { AlertColor } from '@mui/material';
 import { Alert, Snackbar } from '@mui/material';
 import type { JSX } from 'react';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 const DURATION = 6000;
 export const snackbarMsgQueryParam = 'snackbar-msg';
