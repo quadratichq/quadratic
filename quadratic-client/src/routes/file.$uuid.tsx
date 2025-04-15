@@ -18,13 +18,18 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import type { LoaderFunctionArgs } from 'react-router';
+import { useCallback } from 'react';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
+
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
+
+export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
+  currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
@@ -80,6 +85,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // initialize Core web worker
   const result = await quadraticCore.load({
     fileId: uuid,
+    teamUuid: data.team.uuid,
     url: checkpoint.url,
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
@@ -136,16 +142,19 @@ export const Component = () => {
     team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions },
   } = useLoaderData() as FileData;
-  const initializeState = ({ set }: MutableSnapshot) => {
-    set(editorInteractionStateAtom, (prevState) => ({
-      ...prevState,
-      permissions: filePermissions,
-      settings: teamSettings,
-      user: loggedInUser,
-      fileUuid,
-      teamUuid,
-    }));
-  };
+  const initializeState = useCallback(
+    ({ set }: MutableSnapshot) => {
+      set(editorInteractionStateAtom, (prevState) => ({
+        ...prevState,
+        permissions: filePermissions,
+        settings: teamSettings,
+        user: loggedInUser,
+        fileUuid,
+        teamUuid,
+      }));
+    },
+    [filePermissions, teamSettings, loggedInUser, fileUuid, teamUuid]
+  );
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
