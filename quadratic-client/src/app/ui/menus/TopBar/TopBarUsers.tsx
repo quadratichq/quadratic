@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared
 import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { useState } from 'react';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const TopBarUsers = () => {

@@ -1,4 +1,3 @@
-import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
@@ -23,7 +22,7 @@ import {
 } from '@/shared/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 export interface CellTypeOption {
   name: string;
@@ -56,18 +55,15 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export default function CellTypeMenu() {
-  const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const fetcher = useConnectionsFetcher();
 
   const searchLabel = 'Choose a cell type…';
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
-    setCellTypeMenuOpenedCount((count: number) => count + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const close = useCallback(() => {
@@ -95,10 +91,6 @@ export default function CellTypeMenu() {
     setShowCellTypeMenu(false);
     setShowConnectionsMenu(true);
   }, [setShowCellTypeMenu, setShowConnectionsMenu]);
-
-  if (!showCellTypeMenu) {
-    return null;
-  }
 
   return (
     <CommandDialog

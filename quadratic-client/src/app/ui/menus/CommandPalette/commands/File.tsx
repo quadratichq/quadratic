@@ -11,7 +11,7 @@ import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteL
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 // TODO: make the types better here so it knows whether this exists
@@ -36,10 +36,9 @@ const commands: CommandGroup = {
       label: duplicateFileAction.label,
       isAvailable: duplicateFileAction.isAvailable,
       Component: (props) => {
-        const submit = useSubmit();
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         const action = () => {
-          duplicateFileAction.run({ fileUuid, submit });
+          duplicateFileAction.run({ fileUuid });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileCopyIcon />} />;
       },

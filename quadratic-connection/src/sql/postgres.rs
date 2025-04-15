@@ -1,4 +1,5 @@
-use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use axum::{Extension, Json, debug_handler, extract::Path, response::IntoResponse};
+use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
     sql::{Connection, postgres_connection::PostgresConnection},
@@ -9,6 +10,7 @@ use crate::{
     auth::Claims,
     connection::get_api_connection,
     error::Result,
+    header::get_team_id_header,
     server::{SqlQuery, TestResponse, test_connection},
     state::State,
 };
@@ -16,6 +18,7 @@ use crate::{
 use super::{Schema, query_generic};
 
 /// Test the connection to the database.
+#[axum::debug_handler]
 pub(crate) async fn test(Json(connection): Json<PostgresConnection>) -> Json<TestResponse> {
     test_connection(connection).await
 }
@@ -25,9 +28,10 @@ async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
+    team_id: &Uuid,
 ) -> Result<(PostgresConnection, ApiConnection<PostgresConnection>)> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id).await?
+        get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
     } else {
         ApiConnection {
             uuid: Uuid::new_v4(),
@@ -58,11 +62,13 @@ async fn get_connection(
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let connection = get_connection(&state, &claims, &sql_query.connection_id)
+    let team_id = get_team_id_header(&headers)?;
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
         .await?
         .0;
     query_generic::<PostgresConnection>(connection, state, sql_query).await
@@ -71,10 +77,12 @@ pub(crate) async fn query(
 /// Get the schema of the database
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-    let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
+    let team_id = get_team_id_header(&headers)?;
+    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
     let schema = Schema {
@@ -93,7 +101,10 @@ mod tests {
     use super::*;
     use crate::{
         num_vec, test_connection,
-        test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet},
+        test_util::{
+            get_claims, new_state, new_team_id_with_header, response_bytes, str_vec,
+            validate_parquet,
+        },
     };
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
@@ -114,8 +125,9 @@ mod tests {
     #[traced_test]
     async fn postgres_schema() {
         let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
         let state = Extension(new_state().await);
-        let response = schema(Path(connection_id), state, get_claims())
+        let response = schema(Path(connection_id), headers, state, get_claims())
             .await
             .unwrap();
 
@@ -328,12 +340,15 @@ mod tests {
     #[traced_test]
     async fn postgres_query_all_data_types() {
         let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
         let sql_query = SqlQuery {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,
         };
         let state = Extension(new_state().await);
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let data = query(headers, state, get_claims(), Json(sql_query))
+            .await
+            .unwrap();
         let response = data.into_response();
 
         let expected = vec![
@@ -423,13 +438,16 @@ mod tests {
     #[traced_test]
     async fn postgres_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
         let sql_query = SqlQuery {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,
         };
         let mut state = Extension(new_state().await);
         state.settings.max_response_bytes = 0;
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let data = query(headers, state, get_claims(), Json(sql_query))
+            .await
+            .unwrap();
         let response = data.into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
