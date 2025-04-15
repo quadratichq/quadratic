@@ -65,7 +65,7 @@ export const HydrateFallback = () => {
       clearTimeout(timer);
       const loadTimeMs = Date.now() - startTimeMs;
       const route = window.location.pathname + window.location.search;
-      mixpanel.track('[App].loading', {
+      mixpanel.track('[Loading].complete', {
         route,
         loadTimeMs,
       });
