@@ -71,8 +71,9 @@ impl Grid {
     /// `name` is automatically case-folded.
     pub fn try_sheet_mut_from_name(&mut self, name: &str) -> Option<&mut Sheet> {
         let name = case_fold(name.trim());
-        self.sheets.values_mut().find(|sheet| case_fold(&sheet.name) == name)
-    }
+        self.sheets
+            .values_mut()
+            .find(|sheet| case_fold(&sheet.name) == name)
     }
 
     /// Parses `id` to a `SheetId` and returns the sheet with that ID.
