@@ -19,7 +19,7 @@ import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import type { JSX, ReactNode } from 'react';
 import { memo, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 export const ReturnTypeInspector = memo(() => {

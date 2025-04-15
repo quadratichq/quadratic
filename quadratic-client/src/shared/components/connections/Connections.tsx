@@ -7,7 +7,7 @@ import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUp
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetchers, useSearchParams } from 'react-router-dom';
+import { useFetchers, useSearchParams } from 'react-router';
 
 export type ConnectionsListConnection = {
   uuid: string;
