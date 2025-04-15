@@ -1,9 +1,7 @@
 import { auth0Client } from '@/auth/auth0';
 import { oryClient } from '@/auth/ory';
-import { ROUTES } from '@/shared/constants/routes';
+import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
-import type { LoaderFunction, LoaderFunctionArgs } from 'react-router';
-import { redirect } from 'react-router';
 
 const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
 
@@ -46,26 +44,15 @@ export const authClient: AuthClient = getAuthClient();
  * parameter that allows login to redirect back to current page upon successful
  * authentication.
  */
-export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFunction {
-  return async (loaderFnArgs: LoaderFunctionArgs) => {
-    const { request } = loaderFnArgs;
-    const isAuthenticated = await authClient.isAuthenticated();
+export async function requireAuth() {
+  // If the user is authenticated, make sure we have a valid token
+  // before we load any of the app
+  await authClient.getTokenOrRedirect();
 
-    // If the user isn't authenticated, redirect them to login & preserve their
-    // original request URL
-    if (!isAuthenticated) {
-      const originalRequestUrl = new URL(request.url);
-      let searchParams = new URLSearchParams();
-      searchParams.set('from', originalRequestUrl.pathname + originalRequestUrl.search);
-      return redirect(ROUTES.LOGIN + '?' + searchParams.toString());
-    }
+  // If the user is authenticated, make sure we have a team to work with
+  const activeTeamUuid = await getOrInitializeActiveTeam();
 
-    // If the user is authenticated, make sure we have a valid token
-    // before we load any of the app
-    await authClient.getTokenOrRedirect();
-
-    return loaderFn(loaderFnArgs);
-  };
+  return { activeTeamUuid };
 }
 
 /**

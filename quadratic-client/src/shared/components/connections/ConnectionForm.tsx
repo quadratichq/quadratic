@@ -14,7 +14,7 @@ import { useFetcher, useSubmit } from 'react-router';
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;
   handleSubmitForm: (formValues: ConnectionFormValues) => void;
-  connection?: ApiTypes['/v0/connections/:uuid.GET.response'];
+  connection?: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.GET.response'];
 };
 
 export function ConnectionFormCreate({
@@ -31,8 +31,8 @@ export function ConnectionFormCreate({
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, ...typeDetails } = formValues;
     mixpanel.track('[Connections].create', { type });
-    const data = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
-    submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
+    const { json, options } = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
+    submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
 
@@ -46,7 +46,7 @@ export function ConnectionFormCreate({
       <ConnectionHeader type={type} handleNavigateToListView={handleNavigateToListView}>
         Create
       </ConnectionHeader>
-      <ConnectionFormWrapper type={type} props={props} />
+      <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />
     </>
   );
 }
@@ -55,26 +55,28 @@ export function ConnectionFormEdit({
   connectionUuid,
   connectionType,
   handleNavigateToListView,
+  teamUuid,
 }: {
   connectionUuid: string;
   connectionType: ConnectionType;
   handleNavigateToListView: () => void;
+  teamUuid: string;
 }) {
   const submit = useSubmit();
   const fetcher = useFetcher();
 
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data === undefined) {
-      fetcher.load(`${ROUTES.API.CONNECTIONS}?connection-uuid=${connectionUuid}`);
+      fetcher.load(ROUTES.API.CONNECTIONS.GET({ teamUuid, connectionUuid }));
     }
-  }, [fetcher, connectionUuid]);
+  }, [fetcher, connectionUuid, teamUuid]);
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
     const { name, type, ...typeDetails } = formValues;
     mixpanel.track('[Connections].edit', { type });
-    const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
-    submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
+    const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, { name, typeDetails });
+    submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
 
@@ -86,6 +88,7 @@ export function ConnectionFormEdit({
       {fetcher.data?.ok ? (
         <ConnectionFormWrapper
           type={fetcher.data.connection.type}
+          teamUuid={teamUuid}
           props={{
             connection: fetcher.data.connection,
             handleNavigateToListView,
@@ -104,7 +107,15 @@ export function ConnectionFormEdit({
   );
 }
 
-function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: ConnectionFormProps }) {
+function ConnectionFormWrapper({
+  teamUuid,
+  type,
+  props,
+}: {
+  teamUuid: string;
+  type: ConnectionType;
+  props: ConnectionFormProps;
+}) {
   const { ConnectionForm } = connectionsByType[type];
   const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
@@ -115,6 +126,7 @@ function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: C
         handleNavigateToListView={props.handleNavigateToListView}
         connectionUuid={props.connection?.uuid}
         connectionType={type}
+        teamUuid={teamUuid}
       />
     </ConnectionForm>
   );

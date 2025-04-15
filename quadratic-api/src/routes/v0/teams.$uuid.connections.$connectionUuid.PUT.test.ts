@@ -30,7 +30,7 @@ const validPayload = {
   },
 };
 
-describe('PUT /v0/connections/:uuid', () => {
+describe('PUT /v0/teams/:uuid/connections/:connectionUuid', () => {
   describe('update a connection', () => {
     it('responds with a 200 and updated connection data', async () => {
       const connectionBefore = await dbClient.connection.findUnique({
@@ -38,7 +38,7 @@ describe('PUT /v0/connections/:uuid', () => {
       });
 
       await request(app)
-        .put('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .put('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
         .send(validPayload)
         .set('Authorization', `Bearer ValidToken teamUserOwner`)
         .expect(200)
@@ -55,13 +55,13 @@ describe('PUT /v0/connections/:uuid', () => {
 
     it('responds with a 403 for users who cannot edit a connection', async () => {
       await request(app)
-        .put('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .put('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
         .send(validPayload)
         .set('Authorization', `Bearer ValidToken teamUserViewer`)
         .expect(403)
         .expect(expectError);
       await request(app)
-        .put('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .put('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
         .send(validPayload)
         .set('Authorization', `Bearer ValidToken noTeamUser`)
         .expect(403)

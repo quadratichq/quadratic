@@ -22,7 +22,7 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
   handleNavigateToCreateView: NavigateToCreateView;
-  hangleNavigateToDetailsView: NavigateToView;
+  handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
 };
 
@@ -30,7 +30,7 @@ export const ConnectionsList = ({
   connections,
   connectionsAreLoading,
   handleNavigateToCreateView,
-  hangleNavigateToDetailsView,
+  handleNavigateToDetailsView,
   handleNavigateToEditView,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
@@ -92,7 +92,7 @@ export const ConnectionsList = ({
             <ListItems
               filterQuery={filterQuery}
               items={connections}
-              hangleNavigateToDetailsView={hangleNavigateToDetailsView}
+              handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
             />
           </>
@@ -110,12 +110,12 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
-  hangleNavigateToDetailsView,
+  handleNavigateToDetailsView,
   handleNavigateToEditView,
   items,
 }: {
   filterQuery: string;
-  hangleNavigateToDetailsView: Props['hangleNavigateToDetailsView'];
+  handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   items: ConnectionsListConnection[];
 }) {
@@ -129,7 +129,7 @@ function ListItems({
         <div className="group relative flex items-center gap-1" key={uuid}>
           <button
             onClick={() => {
-              hangleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
+              handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
             }}
             disabled={disabled}
             key={uuid}

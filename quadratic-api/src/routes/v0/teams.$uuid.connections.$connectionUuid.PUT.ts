@@ -3,7 +3,7 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
-import { getConnection } from '../../middleware/getConnection';
+import { getTeamConnection } from '../../middleware/getTeamConnection';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
@@ -16,32 +16,36 @@ export default [validateAccessToken, userMiddleware, handler];
 const schema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
+    connectionUuid: z.string().uuid(),
   }),
-  body: ApiSchemas['/v0/connections/:uuid.PUT.request'],
+  body: ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.PUT.request'],
 });
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connections/:uuid.PUT.response']>) {
+async function handler(
+  req: RequestWithUser,
+  res: Response<ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.response']>
+) {
   const {
     user: { id: userId },
   } = req;
   const {
     body: newConnection,
-    params: { uuid },
+    params: { uuid: teamUuid, connectionUuid },
   } = parseRequest(req, schema);
   const {
     team: {
       userMakingRequest: { permissions },
     },
-  } = await getConnection({ uuid, userId });
+  } = await getTeamConnection({ connectionUuid, teamUuid, userId });
 
-  // Do you have permission?
+  // Do you have permission to edit?
   if (!permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'You do not have permission to update this connection');
   }
 
   const { name, typeDetails } = newConnection;
   const updatedConnection = await dbClient.connection.update({
-    where: { uuid },
+    where: { uuid: connectionUuid },
     data: {
       name,
       updatedDate: new Date(),
