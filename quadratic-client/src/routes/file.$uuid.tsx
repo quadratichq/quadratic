@@ -19,6 +19,7 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { useCallback } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
   Link,
@@ -149,16 +150,19 @@ export const Component = () => {
     team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions },
   } = useLoaderData() as FileData;
-  const initializeState = ({ set }: MutableSnapshot) => {
-    set(editorInteractionStateAtom, (prevState) => ({
-      ...prevState,
-      permissions: filePermissions,
-      settings: teamSettings,
-      user: loggedInUser,
-      fileUuid,
-      teamUuid,
-    }));
-  };
+  const initializeState = useCallback(
+    ({ set }: MutableSnapshot) => {
+      set(editorInteractionStateAtom, (prevState) => ({
+        ...prevState,
+        permissions: filePermissions,
+        settings: teamSettings,
+        user: loggedInUser,
+        fileUuid,
+        teamUuid,
+      }));
+    },
+    [filePermissions, teamSettings, loggedInUser, fileUuid, teamUuid]
+  );
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
@@ -222,6 +226,7 @@ export const ErrorBoundary = () => {
   );
 
   if (isRouteErrorResponse(error)) {
+    console.log(error);
     let title = '';
     let description: string = '';
     let actions = actionsDefault;

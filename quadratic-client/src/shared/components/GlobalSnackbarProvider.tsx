@@ -113,16 +113,16 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     setOpen(false);
   }, []);
 
-  const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
+  const handleClose = useCallback((event: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
       return;
     }
     setOpen(false);
-  };
+  }, []);
 
-  const handleExited = () => {
+  const handleExited = useCallback(() => {
     setActiveMessage(undefined);
-  };
+  }, []);
 
   const value: GlobalSnackbar = { addGlobalSnackbar, closeCurrentSnackbar };
 
