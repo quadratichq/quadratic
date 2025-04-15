@@ -1,8 +1,8 @@
 import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import { redirect } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router';
+import { redirect } from 'react-router';
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const { activeTeamUuid } = await requireAuth();

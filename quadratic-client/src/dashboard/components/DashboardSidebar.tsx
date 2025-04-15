@@ -53,7 +53,7 @@ import {
   useNavigation,
   useSearchParams,
   useSubmit,
-} from 'react-router-dom';
+} from 'react-router';
 
 const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
 

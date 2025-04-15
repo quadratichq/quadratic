@@ -5,8 +5,9 @@ import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import type { ShouldRevalidateFunctionArgs } from 'react-router-dom';
-import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
+import type { ShouldRevalidateFunctionArgs } from 'react-router';
+import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -107,15 +108,7 @@ export const router = createBrowserRouter(
       <Route path={ROUTES.LOGOUT} loader={Logout.loader} action={Logout.action} />
     </>
   ),
-  {
-    future: {
-      v7_fetcherPersist: true,
-      v7_relativeSplatPath: true,
-      v7_normalizeFormMethod: true,
-      v7_partialHydration: true,
-      v7_skipActionErrorRevalidation: true,
-    },
-  }
+  {}
 );
 
 function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {

@@ -8,7 +8,7 @@ import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 

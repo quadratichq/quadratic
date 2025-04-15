@@ -2,7 +2,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 
 /**
  *

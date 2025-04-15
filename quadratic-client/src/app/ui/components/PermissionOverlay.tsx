@@ -10,7 +10,7 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
