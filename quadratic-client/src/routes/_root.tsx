@@ -9,6 +9,7 @@ import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMod
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import { useEffect, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
@@ -37,6 +38,41 @@ export const Component = () => {
         </>
       </GlobalSnackbarProvider>
     </MuiTheme>
+  );
+};
+
+/**
+ * The way this works is this component re-renders what's in the root
+ * index.html file (re-using the same styles) so it never looks like a flash of
+ * unstyled content as the app loads, but the additional logo gif animates in
+ * for slower connections. But it keeps the same structure and markup as
+ * the root index.html file so the layout doesn't jump.
+ */
+export const HydrateFallback = () => {
+  const [isTakingALongTime, setIsTakingALongTime] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsTakingALongTime(true);
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="root-loader" id="root-loading-indicator">
+      <div>
+        <img src="/images/logo_etching.png" alt="Quadratic logo etching" />
+        <img src="/images/logo_loading.gif" alt="Quadratic logo animation" className="absolute left-0 top-0" />
+        <div
+          className={
+            'absolute left-1/2 top-full mt-4 w-96 -translate-x-1/2 opacity-0 transition-opacity duration-700 ease-in-out ' +
+            (isTakingALongTime ? 'opacity-100' : '')
+          }
+        >
+          <div className="text-center text-sm text-muted-foreground">Still loading…</div>
+        </div>
+      </div>
+    </div>
   );
 };
 

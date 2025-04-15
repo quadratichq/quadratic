@@ -4,7 +4,6 @@ import * as File from '@/routes/file';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
-import { RootLoadingIndicator } from '@/shared/components/RootLoadingIndicator';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
@@ -17,7 +16,7 @@ export const router = createBrowserRouter(
         loader={RootRoute.loader}
         Component={RootRoute.Component}
         ErrorBoundary={RootRoute.ErrorBoundary}
-        HydrateFallback={RootLoadingIndicator}
+        HydrateFallback={RootRoute.HydrateFallback}
       >
         {/**
          * ----------------------------------------------------------------
