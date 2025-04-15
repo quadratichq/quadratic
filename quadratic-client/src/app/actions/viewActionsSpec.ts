@@ -34,61 +34,61 @@ type ViewActionSpec = Pick<
 
 export const viewActionsSpec: ViewActionSpec = {
   [Action.CmdClick]: {
-    label: `${KeyboardSymbols.Command}+click`,
+    label: () => `${KeyboardSymbols.Command}+click`,
     run: () => {},
   },
   [Action.ZoomIn]: {
-    label: 'Zoom in',
+    label: () => 'Zoom in',
     run: () => {
       zoomIn();
     },
   },
   [Action.ZoomOut]: {
-    label: 'Zoom out',
+    label: () => 'Zoom out',
     run: () => {
       zoomOut();
     },
   },
   [Action.ZoomToSelection]: {
-    label: 'Zoom to selection',
+    label: () => 'Zoom to selection',
     run: () => {
       zoomToSelection();
     },
   },
   [Action.ZoomToFit]: {
-    label: 'Zoom to fit',
+    label: () => 'Zoom to fit',
     run: () => {
       zoomToFit();
     },
   },
   [Action.ZoomTo50]: {
-    label: 'Zoom to 50%',
+    label: () => 'Zoom to 50%',
     run: () => {
       zoomInOut(0.5);
     },
   },
   [Action.ZoomTo100]: {
-    label: 'Zoom to 100%',
+    label: () => 'Zoom to 100%',
     run: () => {
       zoomInOut(1);
     },
   },
   [Action.ZoomTo200]: {
-    label: 'Zoom to 200%',
+    label: () => 'Zoom to 200%',
     run: () => {
       zoomInOut(2);
     },
   },
   [Action.ZoomReset]: {
-    label: 'Move to origin',
+    label: () => 'Move to origin',
     run: () => zoomReset(),
   },
   [Action.GridPanMode]: {
-    label: 'Grid pan mode',
+    label: () => 'Grid pan mode',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ShowCommandPalette]: {
-    label: 'Show command palette',
+    label: () => 'Show command palette',
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({
@@ -102,7 +102,7 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.TogglePresentationMode]: {
-    label: 'Toggle presentation mode',
+    label: () => 'Toggle presentation mode',
     run: () => {
       if (!pixiAppSettings.setGridSettings) return;
       pixiAppSettings.setGridSettings((prev) => ({
@@ -112,7 +112,7 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.CloseOverlay]: {
-    label: 'Close overlay',
+    label: () => 'Close overlay',
     run: () => {
       if (pixiAppSettings.setGridSettings) {
         pixiAppSettings.setGridSettings((prev) => ({
@@ -137,7 +137,7 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.SwitchSheetNext]: {
-    label: 'Switch sheet next',
+    label: () => 'Switch sheet next',
     run: () => {
       if (sheets.size > 1) {
         const nextSheet = sheets.getNext(sheets.sheet.order) ?? sheets.getFirst();
@@ -146,7 +146,7 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.SwitchSheetPrevious]: {
-    label: 'Switch sheet previous',
+    label: () => 'Switch sheet previous',
     run: () => {
       if (sheets.size > 1) {
         const previousSheet = sheets.getPrevious(sheets.sheet.order) ?? sheets.getLast();
@@ -155,15 +155,15 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.PageUp]: {
-    label: 'Page up',
+    label: () => 'Page up',
     run: () => pageUpDown(true),
   },
   [Action.PageDown]: {
-    label: 'Page down',
+    label: () => 'Page down',
     run: () => pageUpDown(false),
   },
   [Action.ShowGoToMenu]: {
-    label: 'Go to',
+    label: () => 'Go to',
     Icon: GoToIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
@@ -171,14 +171,14 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.ShowCellTypeMenu]: {
-    label: 'Code editor',
+    label: () => 'Code editor',
     Icon: CodeIcon,
     run: () => {
       openCodeEditor();
     },
   },
   [Action.ToggleAIAnalyst]: {
-    label: 'Sheet chat',
+    label: () => 'Sheet chat',
     run: () => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));

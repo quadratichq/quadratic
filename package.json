@@ -33,7 +33,7 @@
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
     "client:download:pyodide": "npm run download:pyodide --workspace=quadratic-client",
     "build:wasm:types": "cd quadratic-core && CC=clang AR=llvm-ar cargo run --bin export_types --features js --target-dir=target/quadratic-core-types",
-    "watch:wasm:javascript": "cd quadratic-core && cargo watch --skip-local-deps -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
+    "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build:wasm:perf:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
@@ -76,11 +76,6 @@
     "docker:ecr": "ECR_OR_BUILD=ecr CLIENT_DEV=false docker compose --profile all --env-file .env.docker up",
     "docker:down": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile all --env-file .env.docker down",
     "docker:clean": "docker system prune -af && docker builder prune -af && docker volume prune -af"
-  },
-  "dependencies": {
-    "@ory/kratos-client": "^1.2.1",
-    "vitest": "^3.0.7",
-    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

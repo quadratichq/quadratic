@@ -10,7 +10,7 @@ import type { Command, CommandPaletteListItemDynamicProps } from '@/app/ui/menus
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
 import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
-import columnRowCommandGroup from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
+import { columnCommandGroup, rowCommandGroup } from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
 import connectionsCommandGroup from '@/app/ui/menus/CommandPalette/commands/Connections';
 import editCommandGroup from '@/app/ui/menus/CommandPalette/commands/Edit';
 import fileCommandGroup from '@/app/ui/menus/CommandPalette/commands/File';
@@ -70,7 +70,8 @@ export const CommandPalette = () => {
       sheetsCommandGroup,
       helpCommandGroup,
       codeCommandGroup,
-      columnRowCommandGroup,
+      columnCommandGroup,
+      rowCommandGroup,
       dataTableCommandGroup,
       validationCommandGroup,
     ],
@@ -88,13 +89,7 @@ export const CommandPalette = () => {
         onOpenChange: closeCommandPalette,
       }}
       commandProps={{ shouldFilter: false }}
-      overlayProps={{
-        onPointerDown: (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          closeCommandPalette();
-        },
-      }}
+      overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput
         value={activeSearchValue}
@@ -104,7 +99,7 @@ export const CommandPalette = () => {
       <CommandList>
         {commandGroups.map(({ heading, commands }) => {
           let filteredCommands: Array<Command & { fuzzysortResult: any }> = [];
-          commands.forEach((commandOrAction, i) => {
+          commands.forEach((commandOrAction) => {
             // Right now, we are in the process of centralizing all actions.
             // That means for each command palette item will either be:
             // 1) a `Command` type (the OLD way)
@@ -117,7 +112,7 @@ export const CommandPalette = () => {
               const actionSpec = defaultActionSpec[commandOrAction];
               command = {
                 ...actionSpec,
-                label: actionSpec.labelVerbose ? actionSpec.labelVerbose : actionSpec.label,
+                label: actionSpec.labelVerbose ? actionSpec.labelVerbose : actionSpec.label(),
                 Component: (props: CommandPaletteListItemDynamicProps) => (
                   <CommandPaletteListItem
                     {...props}

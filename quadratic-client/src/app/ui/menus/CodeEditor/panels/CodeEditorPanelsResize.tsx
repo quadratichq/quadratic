@@ -1,10 +1,13 @@
+import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
+import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import {
   MIN_WIDTH_PANEL,
   MIN_WIDTH_VISIBLE_GRID,
   useCodeEditorPanelData,
 } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { memo, useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 const MIN_WIDTH_EDITOR = 350;
 
@@ -14,6 +17,8 @@ interface CodeEditorPanelsResizeProps {
 
 export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeProps) => {
   const codeEditorPanelData = useCodeEditorPanelData();
+  const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const { panelWidth: aiAnalystPanelWidth } = useAIAnalystPanelWidth();
 
   // we need to calculate the console height after a change in bottomHidden
   const [consoleHeaderHeight, setConsoleHeaderHeight] = useState(0);
@@ -46,7 +51,7 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
             setState={(mouseEvent) => {
               const offsetFromRight = window.innerWidth - mouseEvent.x;
               const min = MIN_WIDTH_PANEL + MIN_WIDTH_EDITOR;
-              const max = window.innerWidth - MIN_WIDTH_VISIBLE_GRID;
+              const max = window.innerWidth - (showAIAnalyst ? aiAnalystPanelWidth : 0) - MIN_WIDTH_VISIBLE_GRID;
 
               if (offsetFromRight > min && offsetFromRight < max) {
                 // change only the editor width
@@ -92,7 +97,7 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
             setState={(mouseEvent) => {
               const offsetFromRight = window.innerWidth - mouseEvent.x;
               const min = MIN_WIDTH_EDITOR;
-              const max = window.innerWidth - MIN_WIDTH_VISIBLE_GRID;
+              const max = window.innerWidth - (showAIAnalyst ? aiAnalystPanelWidth : 0) - MIN_WIDTH_VISIBLE_GRID;
               const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
               codeEditorPanelData.setEditorWidth(newValue);
             }}

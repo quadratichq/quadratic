@@ -94,7 +94,7 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
         avoidCollisions={true}
         updatePositionStrategy="always"
       >
-        <>{children}</>
+        {children}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -142,7 +142,7 @@ export const ContextMenuItemAction = (props: {
             {checkbox === true && <CheckIcon />}
           </>
         }
-        text={labelOverride ?? label}
+        text={labelOverride ?? label()}
         textBold={overrideDefaultOption ?? defaultOption}
         shortcut={keyboardShortcut}
       />

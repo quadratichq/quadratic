@@ -1,3 +1,4 @@
+import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
@@ -17,6 +18,7 @@ import {
   FileSharedWithMeIcon,
   GroupIcon,
   LabsIcon,
+  LogoutIcon,
   RefreshIcon,
   SettingsIcon,
 } from '@/shared/components/Icons';
@@ -60,6 +62,7 @@ const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
 export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
   const { loggedInUser: user } = useRootRouteLoaderData();
+  const submit = useSubmit();
   const {
     userMakingRequest: { id: ownerUserId },
     eduStatus,
@@ -213,16 +216,37 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Labs
           </SidebarNavLink>
         )}
-        <SidebarNavLink to="/account">
-          <Avatar src={user?.picture} alt={user?.name}>
-            {user?.name}
-          </Avatar>
-
-          <div className={`flex flex-col overflow-hidden text-left`}>
-            {user?.name || 'You'}
-            {user?.email && <p className={`truncate ${TYPE.caption} text-muted-foreground`}>{user?.email}</p>}
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
+              <Avatar src={user?.picture} alt={user?.name} size="xs">
+                {user?.name}
+              </Avatar>
+              <p className={`truncate text-xs`}>{user?.email}</p>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-60" side="top" align="start">
+              <DropdownMenuItem disabled className="flex-col items-start">
+                {user?.name || 'You'}
+                <span className="text-xs">{user?.email}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  submit(null, {
+                    method: 'post',
+                    action: ROUTES.LOGOUT,
+                  });
+                }}
+              >
+                <LogoutIcon className="mr-2 text-muted-foreground" /> Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex flex-shrink-0 items-center">
+            <ThemePickerMenu />
           </div>
-        </SidebarNavLink>
+        </div>
       </div>
     </nav>
   );
@@ -251,9 +275,7 @@ function SidebarNavLinkCreateButton({
           </Link>
         </Button>
       </TooltipTrigger>
-      <TooltipContent>
-        <>{children}</>
-      </TooltipContent>
+      <TooltipContent>{children}</TooltipContent>
     </Tooltip>
   );
 }
@@ -340,7 +362,7 @@ function SidebarNavLink({
       {...(target ? { target } : {})}
       {...dropProps}
     >
-      <>{children}</>
+      {children}
     </NavLink>
   );
 }

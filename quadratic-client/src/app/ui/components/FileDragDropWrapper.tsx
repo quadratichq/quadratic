@@ -6,6 +6,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isExcelMimeType } from '@/app/helpers/files';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { DragEvent, PropsWithChildren } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
@@ -55,7 +56,9 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
           setUserMessageState({ message: 'Dropped Excel file(s) will be imported as new sheet(s) in this file.' });
         } else {
           setUserMessageState({ message: undefined });
-          moveCursor(e);
+          if (!isSupportedPdfMimeType(mimeType) && !isSupportedImageMimeType(mimeType)) {
+            moveCursor(e);
+          }
         }
       } else if (e.type === 'dragleave') {
         setDragActive(false);

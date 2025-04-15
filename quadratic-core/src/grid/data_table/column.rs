@@ -34,7 +34,7 @@ impl DataTable {
     }
 
     /// Insert a new column at the given index.
-    pub fn insert_column(
+    fn insert_column(
         &mut self,
         column_index: usize,
         column_header: Option<String>,
@@ -99,7 +99,7 @@ impl DataTable {
     }
 
     /// Remove a column at the given index.
-    pub fn delete_column(&mut self, column_index: usize) -> Result<()> {
+    fn delete_column(&mut self, column_index: usize) -> Result<()> {
         let array = self.mut_value_as_array()?;
         array.delete_column(column_index)?;
 
@@ -178,8 +178,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        ArraySize, CellValue,
-        grid::test::{new_data_table, pretty_print_data_table},
+        ArraySize, CellValue, grid::test::new_data_table, test_util::pretty_print_data_table,
     };
 
     #[test]
