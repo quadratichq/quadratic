@@ -242,7 +242,8 @@ impl FromStr for ParsedDateComponents {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match DATE_SEPARATOR_SYMBOLS.iter().find(|&&c| s.contains(c)) {
             Some(&c) => Self::new(c, s.trim().split(c)),
-            None => Self::new(' ', s.replace(',', " ").trim().split_whitespace()),
+            None => Self::new(' ', s.replace(',', " ").split_whitespace()),
+            // `.trim().split_whitespace()` would be redundant
         }
     }
 }
