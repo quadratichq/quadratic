@@ -275,9 +275,7 @@ function SidebarNavLinkCreateButton({
           </Link>
         </Button>
       </TooltipTrigger>
-      <TooltipContent>
-        <>{children}</>
-      </TooltipContent>
+      <TooltipContent>{children}</TooltipContent>
     </Tooltip>
   );
 }
@@ -364,7 +362,7 @@ function SidebarNavLink({
       {...(target ? { target } : {})}
       {...dropProps}
     >
-      <>{children}</>
+      {children}
     </NavLink>
   );
 }
