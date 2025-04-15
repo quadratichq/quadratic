@@ -8,7 +8,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -22,7 +22,7 @@ export function PermissionOverlay() {
     file: { uuid: fileUuid },
   } = useFileRouteLoaderData();
 
-  const handleDuplicate = () => duplicateFileAction.run({ fileUuid });
+  const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid }), []);
 
   // This component assumes that the file can be viewed in some way, either by
   // a logged in user or a logged out user where the file's link is public.
