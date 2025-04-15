@@ -63,6 +63,11 @@ pub(crate) fn _new_postgres_connection() -> PostgresConnection {
         "0.0.0.0".into(),
         Some("5432".into()),
         "postgres".into(),
+        Some(false),
+        Some("".into()),
+        Some("".into()),
+        Some("".into()),
+        Some("".into()),
     )
 }
 

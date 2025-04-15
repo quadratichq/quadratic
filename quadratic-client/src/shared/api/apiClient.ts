@@ -369,7 +369,9 @@ export const apiClient = {
         ApiSchemas['/v0/connections/:uuid.GET.response']
       );
 
-      connection.typeDetails.sshKey = Buffer.from(connection.typeDetails.sshKey, 'base64').toString('utf-8');
+      if (connection.typeDetails.sshKey) {
+        connection.typeDetails.sshKey = Buffer.from(connection.typeDetails.sshKey, 'base64').toString('utf-8');
+      }
 
       return connection;
     },

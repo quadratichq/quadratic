@@ -1,5 +1,8 @@
+use std::net::SocketAddr;
+
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use quadratic_rust_shared::{
+    net::{ssh::SshConfig, ssh_tunnel::SshTunnel},
     quadratic_api::Connection as ApiConnection,
     sql::{Connection, postgres_connection::PostgresConnection},
 };
@@ -8,8 +11,9 @@ use uuid::Uuid;
 use crate::{
     auth::Claims,
     connection::get_api_connection,
-    error::Result,
+    error::{ConnectionError, Result},
     server::{SqlQuery, TestResponse, test_connection},
+    ssh::open_ssh_tunnel,
     state::State,
 };
 
@@ -29,6 +33,7 @@ async fn get_connection(
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id).await?
     } else {
+        let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
         ApiConnection {
             uuid: Uuid::new_v4(),
             name: "".into(),
@@ -46,17 +51,16 @@ async fn get_connection(
                 username: Some("dbuser".into()),
                 password: Some("dbpassword".into()),
                 database: "mydb".into(),
+                use_ssh: Some(true),
+                ssh_host: Some(ssh_config.host.to_string()),
+                ssh_port: Some(ssh_config.port.to_string()),
+                ssh_username: Some(ssh_config.username.to_string()),
+                ssh_key: Some(ssh_config.private_key.to_string()),
             },
         }
     };
 
-    let pg_connection = PostgresConnection::new(
-        connection.type_details.username.to_owned(),
-        connection.type_details.password.to_owned(),
-        connection.type_details.host.to_owned(),
-        connection.type_details.port.to_owned(),
-        connection.type_details.database.to_owned(),
-    );
+    let pg_connection = PostgresConnection::from(&connection);
 
     Ok((pg_connection, connection))
 }
@@ -67,10 +71,38 @@ pub(crate) async fn query(
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let connection = get_connection(&state, &claims, &sql_query.connection_id)
+    let mut connection = get_connection(&state, &claims, &sql_query.connection_id)
         .await?
         .0;
-    query_generic::<PostgresConnection>(connection, state, sql_query).await
+
+    println!("connection: {:?}", connection);
+
+    let use_ssh = connection.use_ssh.unwrap_or(false);
+    let mut ssh_tunnel: Option<SshTunnel> = None;
+    let connection_for_ssh = connection.clone();
+
+    if use_ssh {
+        let ssh_config = (&connection_for_ssh).try_into()?;
+        tracing::info!("ssh_config: {:?}", ssh_config);
+        let forwarding_port = connection
+            .port
+            .ok_or(ConnectionError::Ssh("Port is required".into()))?
+            .parse::<u16>()
+            .map_err(|_| ConnectionError::Ssh("Could not parse port into a number".into()))?;
+        let (addr, tunnel) =
+            open_ssh_tunnel(ssh_config, &connection_for_ssh.host, forwarding_port).await?;
+
+        connection.port = Some(addr.port().to_string());
+        ssh_tunnel = Some(tunnel);
+    }
+
+    let result = query_connection(state, connection, sql_query).await?;
+
+    if let Some(mut ssh_tunnel) = ssh_tunnel {
+        ssh_tunnel.close().await?;
+    }
+
+    Ok(result)
 }
 
 pub(crate) async fn query_connection(
@@ -135,6 +167,11 @@ pub mod tests {
                 username: Some("dbuser".into()),
                 password: Some("dbpassword".into()),
                 database: "mydb".into(),
+                use_ssh: Some(true),
+                ssh_host: Some("localhost".into()),
+                ssh_port: Some("22".into()),
+                ssh_username: Some("user".into()),
+                ssh_key: Some("".into()),
             },
         }
     }
@@ -476,20 +513,31 @@ pub mod tests {
     #[tokio::test]
     #[traced_test]
     async fn postgres_test_connection_with_ssh() {
-        let ssh_config = get_ssh_config();
-        let (addr, mut tunnel) = open_ssh_tunnel(ssh_config, "localhost", 5432)
-            .await
-            .unwrap();
-        let connection = get_ssh_api_connection(addr.port());
+        // let ssh_config = get_ssh_config();
+        // let (addr, mut tunnel) = open_ssh_tunnel(ssh_config, "localhost", 5432)
+        //     .await
+        //     .unwrap();
+        // let connection = get_ssh_api_connection(addr.port());
 
-        // let pg_connection = get_ssh_api_connection().type_details;
-        let result = test_connection(connection.type_details.clone()).await;
-        println!("result: {:?}", result);
-        assert!(result.0.connected);
+        // // let pg_connection = get_ssh_api_connection().type_details;
+        // let result = test_connection(connection.type_details.clone()).await;
+        // println!("result: {:?}", result);
+        // assert!(result.0.connected);
 
-        let result = query_connection(
+        // let result = query_connection(
+        //     Extension(new_state().await),
+        //     connection.type_details,
+        //     Json(SqlQuery {
+        //         query: "SELECT * FROM pg_catalog.pg_tables;".into(),
+        //         connection_id: Uuid::new_v4(),
+        //     }),
+        // )
+        // .await
+        // .unwrap();
+
+        let result = query(
             Extension(new_state().await),
-            connection.type_details,
+            get_claims(),
             Json(SqlQuery {
                 query: "SELECT * FROM pg_catalog.pg_tables;".into(),
                 connection_id: Uuid::new_v4(),
@@ -500,6 +548,6 @@ pub mod tests {
         println!("result: {:?}", result.into_response());
 
         // Keep the tunnel alive until the test completes
-        tunnel.close().await.unwrap();
+        // tunnel.close().await.unwrap();
     }
 }

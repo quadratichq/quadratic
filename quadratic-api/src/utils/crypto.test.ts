@@ -57,8 +57,8 @@ describe('Encryption and Decryption', () => {
 });
 
 describe('SSH Key Generation', () => {
-  it('should generate a new SSH key pair', () => {
-    const { privateKey, publicKey } = generateSshKeys();
+  it('should generate a new SSH key pair', async () => {
+    const { privateKey, publicKey } = await generateSshKeys();
 
     console.log('privateKey', privateKey);
     console.log('publicKey', publicKey);

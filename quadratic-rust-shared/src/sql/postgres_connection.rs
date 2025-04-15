@@ -19,22 +19,74 @@ use sqlx::{
     postgres::{PgColumn, PgConnectOptions, PgRow, PgTypeKind, types::PgTimeTz},
 };
 
-use crate::convert_pg_type;
 use crate::error::{Result, SharedError};
+use crate::quadratic_api::Connection as ApiConnection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
-
+use crate::{convert_pg_type, net::ssh::SshConfig};
 /// PostgreSQL connection
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PostgresConnection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
     pub database: String,
+    pub use_ssh: Option<bool>,
+    pub ssh_host: Option<String>,
+    pub ssh_port: Option<String>,
+    pub ssh_username: Option<String>,
+    pub ssh_key: Option<String>,
 }
 
+impl From<&ApiConnection<PostgresConnection>> for PostgresConnection {
+    fn from(connection: &ApiConnection<PostgresConnection>) -> Self {
+        let details = connection.type_details.to_owned();
+        PostgresConnection::new(
+            details.username,
+            details.password,
+            details.host,
+            details.port,
+            details.database,
+            details.use_ssh,
+            details.ssh_host,
+            details.ssh_port,
+            details.ssh_username,
+            details.ssh_key,
+        )
+    }
+}
+
+impl<'a> TryFrom<&'a PostgresConnection> for SshConfig<'a> {
+    type Error = SharedError;
+
+    fn try_from(connection: &'a PostgresConnection) -> Result<Self> {
+        let required = |value: Option<&'a String>| {
+            value.ok_or(SharedError::Sql(SqlError::Connect(
+                "Required field is missing".into(),
+            )))
+        };
+
+        let ssh_port = required(connection.ssh_port.as_ref()).and_then(|port| {
+            port.parse::<u16>().map_err(|_| {
+                SharedError::Sql(SqlError::Connect(
+                    "Could not parse port into a number".into(),
+                ))
+            })
+        })?;
+
+        Ok(SshConfig::new(
+            &required(connection.ssh_host.as_ref())?,
+            ssh_port,
+            &required(connection.ssh_username.as_ref())?,
+            connection.password.as_deref(),
+            &required(connection.ssh_key.as_ref())?,
+            None,
+        ))
+    }
+}
 impl PostgresConnection {
     /// Create a new PostgreSQL connection
     pub fn new(
@@ -43,6 +95,11 @@ impl PostgresConnection {
         host: String,
         port: Option<String>,
         database: String,
+        use_ssh: Option<bool>,
+        ssh_host: Option<String>,
+        ssh_port: Option<String>,
+        ssh_username: Option<String>,
+        ssh_key: Option<String>,
     ) -> PostgresConnection {
         PostgresConnection {
             username,
@@ -50,6 +107,11 @@ impl PostgresConnection {
             host,
             port,
             database,
+            use_ssh,
+            ssh_host,
+            ssh_port,
+            ssh_username,
+            ssh_key,
         }
     }
 
@@ -291,6 +353,11 @@ mod tests {
             "127.0.0.1".into(),
             Some("5433".into()),
             "postgres-connection".into(),
+            Some(false),
+            Some("".into()),
+            Some("".into()),
+            Some("".into()),
+            Some("".into()),
         )
     }
 

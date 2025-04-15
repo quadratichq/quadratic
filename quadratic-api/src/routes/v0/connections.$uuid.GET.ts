@@ -23,7 +23,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   const {
     params: { uuid },
   } = parseRequest(req, schema);
-  const {
+  let {
     connection,
     team: {
       userMakingRequest: { permissions: teamPermissions },
@@ -40,11 +40,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
 
   // generate SSH keys if they don't exist and update the team
   if (sshPublicKey === null || sshPrivateKey === null) {
-    const { privateKey, publicKey } = generateSshKeys();
+    const { privateKey, publicKey } = await generateSshKeys();
     await dbClient.team.update({
       where: { id: teamId },
       data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
     });
+
+    sshPublicKey = publicKey;
+    sshPrivateKey = privateKey;
   }
 
   const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString()));

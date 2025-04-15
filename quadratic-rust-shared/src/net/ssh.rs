@@ -18,13 +18,13 @@ use crate::net::error::Net;
 
 #[derive(Debug, Clone)]
 pub struct SshConfig<'a> {
-    host: &'a str,
-    port: u16,
-    username: &'a str,
-    password: Option<&'a str>,
-    private_key: &'a str,
-    private_key_password: Option<&'a str>,
-    openssh_certificate: Option<&'a str>,
+    pub host: &'a str,
+    pub port: u16,
+    pub username: &'a str,
+    pub password: Option<&'a str>,
+    pub private_key: &'a str,
+    pub private_key_password: Option<&'a str>,
+    pub openssh_certificate: Option<&'a str>,
 }
 
 impl<'a> SshConfig<'a> {
@@ -220,60 +220,59 @@ pub mod tests {
     use super::*;
 
     pub const PRIVATE_KEY: &str = "-----BEGIN OPENSSH PRIVATE KEY-----
-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
-VWluqmDlhVpF8Go3CWF0CRv4w=
+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
 -----END OPENSSH PRIVATE KEY-----
 ";
 
     pub fn get_ssh_config() -> SshConfig<'static> {
         SshConfig {
-            host: "localhost".into(),
+            host: "0.0.0.0".into(),
             port: 2222,
             username: "root".into(),
             password: Some("password".into()),

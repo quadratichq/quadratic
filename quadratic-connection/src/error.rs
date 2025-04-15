@@ -44,6 +44,9 @@ pub enum ConnectionError {
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
 
+    #[error("SSH error: {0}")]
+    Ssh(String),
+
     #[error("unknown error: {0}")]
     Unknown(String),
 }
