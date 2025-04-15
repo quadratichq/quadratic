@@ -13,7 +13,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Link,
   useFetcher,
@@ -40,23 +40,71 @@ export const Component = () => {
   const data = useLoaderData() as LoaderData;
   const revalidator = useRevalidator();
   const [activeCheckpointId, setActiveCheckpointId] = useState<number | null>(null);
-  const activeCheckpoint = data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId);
-  const iframeUrl = activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : '';
-  const teamUuid = data.team.uuid;
 
-  const checkpointsByDay = data.checkpoints.reduce(
-    (acc, version) => {
-      const date = new Date(version.timestamp);
-      const day = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-      acc[day] = [...(acc[day] || []), version];
-      return acc;
-    },
-    {} as Record<string, LoaderData['checkpoints']>
+  const activeCheckpoint = useMemo(
+    () => data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId),
+    [activeCheckpointId, data.checkpoints]
+  );
+
+  const iframeUrl = useMemo(
+    () => (activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : ''),
+    [activeCheckpointId, uuid]
+  );
+
+  const teamUuid = useMemo(() => data.team.uuid, [data.team.uuid]);
+
+  const checkpointsByDay = useMemo(
+    () =>
+      data.checkpoints.reduce(
+        (acc, version) => {
+          const date = new Date(version.timestamp);
+          const day = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+          acc[day] = [...(acc[day] || []), version];
+          return acc;
+        },
+        {} as Record<string, LoaderData['checkpoints']>
+      ),
+    [data.checkpoints]
   );
 
   const fetcher = useFetcher();
-  const isLoading = fetcher.state !== 'idle' || revalidator.state === 'loading';
-  const btnsDisabled = isLoading || !activeCheckpoint;
+  const isLoading = useMemo(
+    () => fetcher.state !== 'idle' || revalidator.state === 'loading',
+    [fetcher.state, revalidator.state]
+  );
+  const btnsDisabled = useMemo(() => isLoading || !activeCheckpoint, [activeCheckpoint, isLoading]);
+
+  const handleDuplicateVersion = useCallback(() => {
+    if (!activeCheckpoint || !teamUuid) return;
+
+    mixpanel.track('[FileVersionHistory].duplicateVersion', {
+      uuid,
+      checkpointId: activeCheckpoint.id,
+    });
+
+    const data = getActionFileDuplicate({
+      teamUuid,
+      isPrivate: true,
+      redirect: true,
+      checkpointVersion: activeCheckpoint.version,
+      checkpointDataUrl: activeCheckpoint.dataUrl,
+    });
+
+    fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+  }, [activeCheckpoint, fetcher, teamUuid, uuid]);
+
+  const handleDownload = useCallback(() => {
+    if (!activeCheckpoint) return;
+
+    mixpanel.track('[FileVersionHistory].downloadVersion', {
+      uuid,
+      checkpointId: activeCheckpoint.id,
+    });
+
+    const data = getActionFileDownload({ checkpointDataUrl: activeCheckpoint.dataUrl });
+
+    fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+  }, [activeCheckpoint, fetcher, uuid]);
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
@@ -80,9 +128,7 @@ export const Component = () => {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground"
-              onClick={() => {
-                revalidator.revalidate();
-              }}
+              onClick={revalidator.revalidate}
               disabled={isLoading}
             >
               <RefreshIcon className={cn(isLoading && 'animate-spin opacity-50')} />
@@ -94,46 +140,15 @@ export const Component = () => {
           </p>
 
           <div className="mt-2 flex items-center gap-2">
-            <Button
-              disabled={btnsDisabled}
-              className="flex-grow"
-              onClick={() => {
-                if (!activeCheckpoint || !teamUuid) return;
-
-                mixpanel.track('[FileVersionHistory].duplicateVersion', {
-                  uuid,
-                  checkpointId: activeCheckpoint.id,
-                });
-                const data = getActionFileDuplicate({
-                  teamUuid,
-                  isPrivate: true,
-                  redirect: true,
-                  checkpointVersion: activeCheckpoint.version,
-                  checkpointDataUrl: activeCheckpoint.dataUrl,
-                });
-                fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-              }}
-            >
+            <Button disabled={btnsDisabled} className="flex-grow" onClick={handleDuplicateVersion}>
               Duplicate version
             </Button>
-            <Button
-              variant="outline"
-              disabled={btnsDisabled}
-              onClick={() => {
-                if (!activeCheckpoint) return;
-
-                mixpanel.track('[FileVersionHistory].downloadVersion', {
-                  uuid,
-                  checkpointId: activeCheckpoint.id,
-                });
-                const data = getActionFileDownload({ checkpointDataUrl: activeCheckpoint.dataUrl });
-                fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-              }}
-            >
+            <Button variant="outline" disabled={btnsDisabled} onClick={handleDownload}>
               Download
             </Button>
           </div>
         </div>
+
         <div className="h-full flex-col overflow-auto p-3">
           {Object.entries(checkpointsByDay).map(([day, checkpoints], groupIndex) => {
             return (
@@ -175,6 +190,7 @@ export const Component = () => {
           })}
         </div>
       </div>
+
       <div className="h-full w-full">
         {iframeUrl ? (
           <iframe src={iframeUrl} title="App" className="h-full w-full" />
