@@ -21,18 +21,17 @@ impl GridController {
         sequence_num: u64,
         operations: Vec<Operation>,
     ) {
-        let mut transaction = PendingTransaction {
+        let transaction = PendingTransaction {
             id: transaction_id,
             source: TransactionSource::Multiplayer,
             operations: operations.into(),
             ..Default::default()
         };
-        self.client_apply_transaction(&mut transaction, sequence_num);
-        self.finalize_transaction(transaction);
+        self.client_apply_transaction(transaction, sequence_num);
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
-    fn rollback_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
+    fn rollback_unsaved_transactions(&mut self) {
         if self.transactions.unsaved_transactions.is_empty() {
             return;
         }
@@ -49,12 +48,11 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut rollback);
-        rollback.send_transaction();
-        transaction.add_updates_from_transaction(rollback);
+        self.finalize_transaction(rollback);
     }
 
     /// Reapplies the rolled-back unsaved transactions after adding earlier transactions.
-    fn reapply_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
+    fn reapply_unsaved_transactions(&mut self) {
         if self.transactions.unsaved_transactions.is_empty() {
             return;
         }
@@ -74,8 +72,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut reapply);
-        reapply.send_transaction();
-        transaction.add_updates_from_transaction(reapply);
+        self.finalize_transaction(reapply);
     }
 
     /// Used by the server to apply transactions. Since the server owns the sequence_num,
@@ -126,11 +123,7 @@ impl GridController {
 
     /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from
     /// out_of_order_transactions and apply their operations.
-    fn apply_out_of_order_transactions(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        mut sequence_num: u64,
-    ) {
+    fn apply_out_of_order_transactions(&mut self, mut sequence_num: u64) {
         // nothing to do here
         if self.transactions.out_of_order_transactions.is_empty() {
             self.transactions.last_sequence_num = sequence_num;
@@ -160,17 +153,12 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut out_of_order_transaction);
-        out_of_order_transaction.send_transaction();
-        transaction.add_updates_from_transaction(out_of_order_transaction);
+        self.finalize_transaction(out_of_order_transaction);
         self.transactions.last_sequence_num = sequence_num;
     }
 
     /// Used by the client to ensure transactions are applied in order
-    fn client_apply_transaction(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        sequence_num: u64,
-    ) {
+    fn client_apply_transaction(&mut self, mut transaction: PendingTransaction, sequence_num: u64) {
         // this is the normal case where we receive the next transaction in sequence
         if sequence_num == self.transactions.last_sequence_num + 1 {
             // first check if the received transaction is one of ours
@@ -183,30 +171,25 @@ impl GridController {
                 if index == 0 {
                     self.transactions.unsaved_transactions.remove(index);
                     self.mark_transaction_sent(transaction.id);
-                    self.apply_out_of_order_transactions(transaction, sequence_num);
+                    self.apply_out_of_order_transactions(sequence_num);
                 }
                 // otherwise we need to rollback all transaction and properly apply it
                 else {
-                    self.rollback_unsaved_transactions(transaction);
+                    self.rollback_unsaved_transactions();
                     self.transactions.unsaved_transactions.remove(index);
                     self.mark_transaction_sent(transaction.id);
-                    self.start_transaction(transaction);
-                    self.apply_out_of_order_transactions(transaction, sequence_num);
-                    self.reapply_unsaved_transactions(transaction);
+                    self.start_transaction(&mut transaction);
+                    self.finalize_transaction(transaction);
+                    self.apply_out_of_order_transactions(sequence_num);
+                    self.reapply_unsaved_transactions();
                 }
             } else {
                 // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions
-                self.rollback_unsaved_transactions(transaction);
-                self.start_transaction(transaction);
-                self.apply_out_of_order_transactions(transaction, sequence_num);
-                self.reapply_unsaved_transactions(transaction);
-
-                // We do not need to render a thumbnail unless we have outstanding unsaved transactions.
-                // Note: this may result in a thumbnail being unnecessarily generated by a user who's
-                // unsaved transactions did not force a thumbnail generation. This is a minor issue.
-                if self.transactions.unsaved_transactions.is_empty() {
-                    transaction.generate_thumbnail = false;
-                }
+                self.rollback_unsaved_transactions();
+                self.start_transaction(&mut transaction);
+                self.finalize_transaction(transaction);
+                self.apply_out_of_order_transactions(sequence_num);
+                self.reapply_unsaved_transactions();
             }
         } else if sequence_num > self.transactions.last_sequence_num {
             // If we receive an unexpected later transaction then we just hold on to it in a sorted list.
@@ -230,12 +213,7 @@ impl GridController {
 
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
-        // used to track client changes when combining transactions
-        let mut results = PendingTransaction {
-            source: TransactionSource::Multiplayer,
-            ..Default::default()
-        };
-        self.rollback_unsaved_transactions(&mut results);
+        self.rollback_unsaved_transactions();
 
         // combine all transaction into one transaction
         transactions.into_iter().for_each(|t| {
@@ -243,7 +221,7 @@ impl GridController {
                 Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations);
 
             if let Ok(operations) = operations {
-                let mut transaction = PendingTransaction {
+                let transaction = PendingTransaction {
                     id: t.id,
                     source: TransactionSource::Multiplayer,
                     operations: operations.into(),
@@ -251,17 +229,15 @@ impl GridController {
                     ..Default::default()
                 };
 
-                self.client_apply_transaction(&mut transaction, t.sequence_num);
-                results.add_updates_from_transaction(transaction);
+                self.client_apply_transaction(transaction, t.sequence_num);
             } else {
                 dbgjs!(
                     "Unable to decompress and deserialize operations in received_transactions()"
                 );
             }
         });
-        self.reapply_unsaved_transactions(&mut results);
-        results.complete = true;
-        self.finalize_transaction(results);
+
+        self.reapply_unsaved_transactions();
     }
 
     /// Called by TS for each offline transaction it has in its offline queue.

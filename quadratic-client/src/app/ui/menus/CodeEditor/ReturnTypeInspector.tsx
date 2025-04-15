@@ -17,7 +17,7 @@ import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/share
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { memo, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';

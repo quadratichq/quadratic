@@ -199,7 +199,7 @@ export class CellsTextHash {
           );
           this.renderCellsReceivedTime = performance.now();
         } catch (e) {
-          this.dirty = true;
+          this.dirty = dirty;
           console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
           return false;
         }

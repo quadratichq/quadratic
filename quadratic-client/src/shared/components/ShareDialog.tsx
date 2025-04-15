@@ -454,7 +454,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="[&>button]:hidden">
+      <DialogContent className="[&>button]:hidden" aria-describedby={undefined}>
         <DialogHeader>
           <div className={`-mb-1 -mt-2 flex flex-row items-center justify-between`}>
             <DialogTitle>Share file</DialogTitle>

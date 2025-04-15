@@ -49,7 +49,7 @@ jest.mock('./src/storage/storage', () => {
 
 jest.mock('./src/stripe/stripe', () => {
   return {
-    updateBillingIfNecessary: jest.fn().mockImplementation(async () => {}),
+    updateBilling: jest.fn().mockImplementation(async () => {}),
     updateCustomer: jest.fn().mockImplementation(async () => {}),
     updateSeatQuantity: jest.fn().mockImplementation(async () => {}),
   };

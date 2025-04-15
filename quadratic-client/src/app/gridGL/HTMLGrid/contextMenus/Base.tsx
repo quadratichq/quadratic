@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -141,7 +142,7 @@ export const ContextMenuItemAction = (props: {
             {checkbox === true && <CheckIcon />}
           </>
         }
-        text={labelOverride ?? label}
+        text={labelOverride ?? label()}
         textBold={overrideDefaultOption ?? defaultOption}
         shortcut={keyboardShortcut}
       />
