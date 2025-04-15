@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
+  AIMessagePrompt,
   AIRequestHelperArgs,
   OpenAIModelKey,
   ParsedAIResponse,
@@ -25,6 +26,7 @@ export const handleOpenAIRequest = async (
       model,
       messages,
       temperature: options.temperature,
+      max_completion_tokens: options.max_tokens,
       stream: options.stream,
       tools,
       tool_choice,
@@ -61,6 +63,14 @@ export const handleOpenAIRequest = async (
         console.error(error);
       }
     } else {
+      const responseMessage: AIMessagePrompt = {
+        role: 'assistant',
+        content: [{ type: 'text', text: error instanceof OpenAI.APIError ? error.message : JSON.stringify(error) }],
+        contextType: 'userPrompt',
+        toolCalls: [],
+        model: getModelFromModelKey(modelKey),
+      };
+      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response.end();
       console.error('Error occurred after headers were sent:', error);
     }
