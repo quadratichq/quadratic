@@ -105,7 +105,9 @@ export function QuadraticApp() {
     }
   }, [multiplayerLoading]);
 
-  // Show loading screen until everything is loaded
+  // Don't render the app until these are done — even on slow connections these
+  // don't take long. We should probably move them to where we do all the other
+  // async stuff before the app loads.
   if (offlineLoading || multiplayerLoading) {
     return null;
   }
