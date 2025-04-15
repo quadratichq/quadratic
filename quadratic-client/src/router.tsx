@@ -8,7 +8,6 @@ import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/rout
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
 
-
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
