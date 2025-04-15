@@ -10,6 +10,7 @@ use crate::{
     connection::get_api_connection,
     error::Result,
     server::{SqlQuery, TestResponse, test_connection},
+    ssh::open_ssh_tunnel_for_connection,
     state::State,
 };
 
@@ -29,6 +30,7 @@ async fn get_connection(
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id).await?
     } else {
+        let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
         ApiConnection {
             uuid: Uuid::new_v4(),
             name: "".into(),
@@ -41,27 +43,16 @@ async fn get_connection(
                 username: Some("sa".into()),
                 password: Some("yourStrong(!)Password".into()),
                 database: "AllTypes".into(),
-                use_ssh: Some(false),
-                ssh_host: None,
-                ssh_port: None,
-                ssh_username: None,
-                ssh_key: None,
+                use_ssh: Some(true),
+                ssh_host: Some(ssh_config.host.to_string()),
+                ssh_port: Some(ssh_config.port.to_string()),
+                ssh_username: Some(ssh_config.username.to_string()),
+                ssh_key: Some(ssh_config.private_key.to_string()),
             },
         }
     };
 
-    let mssql_connection = MsSqlConnection::new(
-        connection.type_details.username.to_owned(),
-        connection.type_details.password.to_owned(),
-        connection.type_details.host.to_owned(),
-        connection.type_details.port.to_owned(),
-        connection.type_details.database.to_owned(),
-        connection.type_details.use_ssh,
-        connection.type_details.ssh_host,
-        connection.type_details.ssh_port,
-        connection.type_details.ssh_username,
-        connection.type_details.ssh_key,
-    );
+    let mssql_connection = MsSqlConnection::from(&connection);
 
     Ok((mssql_connection, connection))
 }
@@ -72,10 +63,17 @@ pub(crate) async fn query(
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let connection = get_connection(&state, &claims, &sql_query.connection_id)
+    let mut connection = get_connection(&state, &claims, &sql_query.connection_id)
         .await?
         .0;
-    query_generic::<MsSqlConnection>(connection, state, sql_query).await
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
+    let result = query_generic::<MsSqlConnection>(connection, state, sql_query).await?;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
+    Ok(result)
 }
 
 /// Get the schema of the database
@@ -84,9 +82,16 @@ pub(crate) async fn schema(
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-    let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
+    let (mut connection, api_connection) = get_connection(&state, &claims, &id).await?;
+
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
     let schema = Schema {
         id: api_connection.uuid,
         name: api_connection.name,

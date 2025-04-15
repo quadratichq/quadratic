@@ -15,18 +15,18 @@ use super::error::Net;
 use super::ssh::SshConfig;
 
 #[derive(Clone, Debug)]
-pub struct SshTunnel<'a> {
-    pub config: SshConfig<'a>,
-    pub forwarding_host: &'a str,
+pub struct SshTunnel {
+    pub config: SshConfig,
+    pub forwarding_host: String,
     pub forwarding_port: u16,
     tx: Sender<u8>,
     rx: Receiver<u8>,
     is_connected: bool,
 }
 
-impl<'a> SshTunnel<'a> {
+impl SshTunnel {
     /// Create a new SSH tunnel
-    pub fn new(config: SshConfig<'a>, forwarding_host: &'a str, forwarding_port: u16) -> Self {
+    pub fn new(config: SshConfig, forwarding_host: String, forwarding_port: u16) -> Self {
         let (tx, rx) = channel::<u8>(1);
 
         Self {
@@ -41,7 +41,7 @@ impl<'a> SshTunnel<'a> {
 
     /// Open the SSH tunnel
     pub async fn open(&mut self) -> Result<SocketAddr> {
-        let ssh_client = self.config.connect().await?;
+        let ssh_client = self.config.to_owned().connect().await?;
         let forwarding_host = self.forwarding_host.to_string();
         let forwarding_port = self.forwarding_port as u32;
         let rx_clone = self.rx.clone();
@@ -132,7 +132,7 @@ mod tests {
     #[tokio::test]
     async fn test_ssh_tunnel() {
         let config = get_ssh_config();
-        let mut tunnel = SshTunnel::new(config, "localhost", 1111);
+        let mut tunnel = SshTunnel::new(config, "localhost".into(), 1111);
         let addr = tunnel.open().await.unwrap();
 
         assert!(tunnel.is_connected());

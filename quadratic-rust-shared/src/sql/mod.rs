@@ -191,5 +191,5 @@ pub trait UsesSsh {
     fn set_port(&mut self, port: u16);
 
     // The host to connect to
-    fn ssh_host(&self) -> Option<&str>;
+    fn ssh_host(&self) -> Option<String>;
 }

@@ -61,34 +61,31 @@ impl From<&ApiConnection<PostgresConnection>> for PostgresConnection {
     }
 }
 
-impl<'a> TryFrom<&'a PostgresConnection> for SshConfig<'a> {
+impl TryFrom<PostgresConnection> for SshConfig {
     type Error = SharedError;
 
-    fn try_from(connection: &'a PostgresConnection) -> Result<Self> {
-        let required = |value: Option<&'a String>| {
+    fn try_from(connection: PostgresConnection) -> Result<Self> {
+        let required = |value: Option<String>| {
             value.ok_or(SharedError::Sql(SqlError::Connect(
                 "Required field is missing".into(),
             )))
         };
 
-        let ssh_port = required(connection.ssh_port.as_ref()).and_then(|port| {
-            port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(SqlError::Connect(
-                    "Could not parse port into a number".into(),
-                ))
-            })
-        })?;
+        let ssh_port = <PostgresConnection as UsesSsh>::parse_port(&connection.ssh_port).ok_or(
+            SharedError::Sql(SqlError::Connect("SSH port is required".into())),
+        )??;
 
         Ok(SshConfig::new(
-            &required(connection.ssh_host.as_ref())?,
+            required(connection.ssh_host)?,
             ssh_port,
-            &required(connection.ssh_username.as_ref())?,
-            connection.password.as_deref(),
-            &required(connection.ssh_key.as_ref())?,
+            required(connection.ssh_username)?,
+            connection.password,
+            required(connection.ssh_key)?,
             None,
         ))
     }
 }
+
 impl PostgresConnection {
     /// Create a new PostgreSQL connection
     pub fn new(
@@ -345,8 +342,8 @@ impl UsesSsh for PostgresConnection {
         self.port = Some(port.to_string());
     }
 
-    fn ssh_host(&self) -> Option<&str> {
-        self.ssh_host.as_deref()
+    fn ssh_host(&self) -> Option<String> {
+        self.ssh_host.to_owned()
     }
 }
 

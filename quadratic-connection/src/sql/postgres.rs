@@ -1,6 +1,5 @@
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use quadratic_rust_shared::{
-    net::ssh_tunnel::SshTunnel,
     quadratic_api::Connection as ApiConnection,
     sql::{Connection, postgres_connection::PostgresConnection},
 };
@@ -9,9 +8,9 @@ use uuid::Uuid;
 use crate::{
     auth::Claims,
     connection::get_api_connection,
-    error::{ConnectionError, Result},
+    error::Result,
     server::{SqlQuery, TestResponse, test_connection},
-    ssh::{open_ssh_tunnel, process_in_ssh_tunnel},
+    ssh::open_ssh_tunnel_for_connection,
     state::State,
 };
 
@@ -73,46 +72,14 @@ pub(crate) async fn query(
         .await?
         .0;
 
-    let result = process_in_ssh_tunnel(&mut connection, || {
-        Box::pin(async move { query_connection(state, connection, sql_query).await })
-    })
-    .await?;
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
+    let result = query_generic::<PostgresConnection>(connection, state, sql_query).await?;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
 
     Ok(result)
-
-    // let use_ssh = connection.use_ssh.unwrap_or(false);
-    // let mut ssh_tunnel: Option<SshTunnel> = None;
-    // let connection_for_ssh = connection.clone();
-
-    // if use_ssh {
-    //     let ssh_config = (&connection_for_ssh).try_into()?;
-    //     let forwarding_port = connection
-    //         .port
-    //         .ok_or(ConnectionError::Ssh("Port is required".into()))?
-    //         .parse::<u16>()
-    //         .map_err(|_| ConnectionError::Ssh("Could not parse port into a number".into()))?;
-    //     let (addr, tunnel) =
-    //         open_ssh_tunnel(ssh_config, &connection_for_ssh.host, forwarding_port).await?;
-
-    //     connection.port = Some(addr.port().to_string());
-    //     ssh_tunnel = Some(tunnel);
-    // }
-
-    // let result = query_connection(state, connection, sql_query).await?;
-
-    // if let Some(mut ssh_tunnel) = ssh_tunnel {
-    //     ssh_tunnel.close().await?;
-    // }
-
-    // Ok(result)
-}
-
-pub(crate) async fn query_connection(
-    state: Extension<State>,
-    connection: PostgresConnection,
-    sql_query: Json<SqlQuery>,
-) -> Result<impl IntoResponse> {
-    query_generic::<PostgresConnection>(connection, state, sql_query).await
 }
 
 /// Get the schema of the database
@@ -121,9 +88,16 @@ pub(crate) async fn schema(
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-    let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
+    let (mut connection, api_connection) = get_connection(&state, &claims, &id).await?;
+
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
     let schema = Schema {
         id: api_connection.uuid,
         name: api_connection.name,
@@ -520,6 +494,7 @@ pub mod tests {
         )
         .await
         .unwrap();
+
         println!("result: {:?}", result.into_response());
 
         // Keep the tunnel alive until the test completes

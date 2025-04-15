@@ -17,25 +17,25 @@ use crate::error::Result;
 use crate::net::error::Net;
 
 #[derive(Debug, Clone)]
-pub struct SshConfig<'a> {
-    pub host: &'a str,
+pub struct SshConfig {
+    pub host: String,
     pub port: u16,
-    pub username: &'a str,
-    pub password: Option<&'a str>,
-    pub private_key: &'a str,
-    pub private_key_password: Option<&'a str>,
-    pub openssh_certificate: Option<&'a str>,
+    pub username: String,
+    pub password: Option<String>,
+    pub private_key: String,
+    pub private_key_password: Option<String>,
+    pub openssh_certificate: Option<String>,
 }
 
-impl<'a> SshConfig<'a> {
+impl SshConfig {
     /// Create a new SSH config
     pub fn new(
-        host: &'a str,
+        host: String,
         port: u16,
-        username: &'a str,
-        password: Option<&'a str>,
-        private_key: &'a str,
-        private_key_password: Option<&'a str>,
+        username: String,
+        password: Option<String>,
+        private_key: String,
+        private_key_password: Option<String>,
     ) -> Self {
         Self {
             host,
@@ -49,11 +49,11 @@ impl<'a> SshConfig<'a> {
     }
 
     /// Connect to the SSH server
-    pub async fn connect(&self) -> Result<Session> {
+    pub async fn connect(self) -> Result<Session> {
         Session::connect(
-            &self.private_key,
+            self.private_key,
             self.private_key_password,
-            &self.username,
+            self.username,
             self.password,
             self.openssh_certificate,
             (self.host, self.port),
@@ -107,14 +107,14 @@ impl Session {
 
     /// Connect to the session
     async fn connect<A: ToSocketAddrs>(
-        key: &str,
-        key_password: Option<&str>,
-        user: &str,
-        _password: Option<&str>,
-        openssh_cert_plain: Option<&str>,
+        key: String,
+        key_password: Option<String>,
+        user: String,
+        _password: Option<String>,
+        openssh_cert_plain: Option<String>,
         addrs: A,
     ) -> Result<Self> {
-        let key_pair = decode_secret_key(key, key_password).map_err(Self::error)?;
+        let key_pair = decode_secret_key(&key, key_password.as_deref()).map_err(Self::error)?;
 
         // load ssh certificate
         let mut openssh_cert = None;
@@ -270,7 +270,7 @@ spDLJbPts5Dztw8g9mRQsrMtxnKC0/6XU+Zr0PnCUnM/rITuZsnrJvmPPEILnHP8CqxaJh
 -----END OPENSSH PRIVATE KEY-----
 ";
 
-    pub fn get_ssh_config() -> SshConfig<'static> {
+    pub fn get_ssh_config() -> SshConfig {
         SshConfig {
             host: "0.0.0.0".into(),
             port: 2222,
