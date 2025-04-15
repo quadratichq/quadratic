@@ -26,6 +26,8 @@ use crate::sql::Connection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 
+use super::UsesSsh;
+
 /// Microsoft SQL Server connection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MsSqlConnection {
@@ -34,6 +36,11 @@ pub struct MsSqlConnection {
     pub host: String,
     pub port: Option<String>,
     pub database: String,
+    pub use_ssh: Option<bool>,
+    pub ssh_host: Option<String>,
+    pub ssh_port: Option<String>,
+    pub ssh_username: Option<String>,
+    pub ssh_key: Option<String>,
 }
 
 impl MsSqlConnection {
@@ -44,6 +51,11 @@ impl MsSqlConnection {
         host: String,
         port: Option<String>,
         database: String,
+        use_ssh: Option<bool>,
+        ssh_host: Option<String>,
+        ssh_port: Option<String>,
+        ssh_username: Option<String>,
+        ssh_key: Option<String>,
     ) -> MsSqlConnection {
         MsSqlConnection {
             username,
@@ -51,6 +63,11 @@ impl MsSqlConnection {
             host,
             port,
             database,
+            use_ssh,
+            ssh_host,
+            ssh_port,
+            ssh_username,
+            ssh_key,
         }
     }
 
@@ -334,6 +351,24 @@ where
         .unwrap_or(ArrowType::Void)
 }
 
+impl UsesSsh for MsSqlConnection {
+    fn use_ssh(&self) -> bool {
+        self.use_ssh.unwrap_or(false)
+    }
+
+    fn port(&self) -> Option<Result<u16>> {
+        Self::parse_port(&self.port)
+    }
+
+    fn set_port(&mut self, port: u16) {
+        self.port = Some(port.to_string());
+    }
+
+    fn ssh_host(&self) -> Option<&str> {
+        self.ssh_host.as_deref()
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -350,6 +385,11 @@ mod tests {
             "0.0.0.0".into(),
             Some("1433".into()),
             "AllTypes".into(),
+            None,
+            None,
+            None,
+            None,
+            None,
         )
     }
 

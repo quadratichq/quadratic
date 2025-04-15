@@ -41,6 +41,11 @@ async fn get_connection(
                 username: Some("sa".into()),
                 password: Some("yourStrong(!)Password".into()),
                 database: "AllTypes".into(),
+                use_ssh: Some(false),
+                ssh_host: None,
+                ssh_port: None,
+                ssh_username: None,
+                ssh_key: None,
             },
         }
     };
@@ -51,6 +56,11 @@ async fn get_connection(
         connection.type_details.host.to_owned(),
         connection.type_details.port.to_owned(),
         connection.type_details.database.to_owned(),
+        connection.type_details.use_ssh,
+        connection.type_details.ssh_host,
+        connection.type_details.ssh_port,
+        connection.type_details.ssh_username,
+        connection.type_details.ssh_key,
     );
 
     Ok((mssql_connection, connection))

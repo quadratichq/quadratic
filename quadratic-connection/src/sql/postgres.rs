@@ -1,8 +1,6 @@
-use std::net::SocketAddr;
-
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use quadratic_rust_shared::{
-    net::{ssh::SshConfig, ssh_tunnel::SshTunnel},
+    net::ssh_tunnel::SshTunnel,
     quadratic_api::Connection as ApiConnection,
     sql::{Connection, postgres_connection::PostgresConnection},
 };
@@ -13,7 +11,7 @@ use crate::{
     connection::get_api_connection,
     error::{ConnectionError, Result},
     server::{SqlQuery, TestResponse, test_connection},
-    ssh::open_ssh_tunnel,
+    ssh::{open_ssh_tunnel, process_in_ssh_tunnel},
     state::State,
 };
 
@@ -75,34 +73,38 @@ pub(crate) async fn query(
         .await?
         .0;
 
-    println!("connection: {:?}", connection);
-
-    let use_ssh = connection.use_ssh.unwrap_or(false);
-    let mut ssh_tunnel: Option<SshTunnel> = None;
-    let connection_for_ssh = connection.clone();
-
-    if use_ssh {
-        let ssh_config = (&connection_for_ssh).try_into()?;
-        tracing::info!("ssh_config: {:?}", ssh_config);
-        let forwarding_port = connection
-            .port
-            .ok_or(ConnectionError::Ssh("Port is required".into()))?
-            .parse::<u16>()
-            .map_err(|_| ConnectionError::Ssh("Could not parse port into a number".into()))?;
-        let (addr, tunnel) =
-            open_ssh_tunnel(ssh_config, &connection_for_ssh.host, forwarding_port).await?;
-
-        connection.port = Some(addr.port().to_string());
-        ssh_tunnel = Some(tunnel);
-    }
-
-    let result = query_connection(state, connection, sql_query).await?;
-
-    if let Some(mut ssh_tunnel) = ssh_tunnel {
-        ssh_tunnel.close().await?;
-    }
+    let result = process_in_ssh_tunnel(&mut connection, || {
+        Box::pin(async move { query_connection(state, connection, sql_query).await })
+    })
+    .await?;
 
     Ok(result)
+
+    // let use_ssh = connection.use_ssh.unwrap_or(false);
+    // let mut ssh_tunnel: Option<SshTunnel> = None;
+    // let connection_for_ssh = connection.clone();
+
+    // if use_ssh {
+    //     let ssh_config = (&connection_for_ssh).try_into()?;
+    //     let forwarding_port = connection
+    //         .port
+    //         .ok_or(ConnectionError::Ssh("Port is required".into()))?
+    //         .parse::<u16>()
+    //         .map_err(|_| ConnectionError::Ssh("Could not parse port into a number".into()))?;
+    //     let (addr, tunnel) =
+    //         open_ssh_tunnel(ssh_config, &connection_for_ssh.host, forwarding_port).await?;
+
+    //     connection.port = Some(addr.port().to_string());
+    //     ssh_tunnel = Some(tunnel);
+    // }
+
+    // let result = query_connection(state, connection, sql_query).await?;
+
+    // if let Some(mut ssh_tunnel) = ssh_tunnel {
+    //     ssh_tunnel.close().await?;
+    // }
+
+    // Ok(result)
 }
 
 pub(crate) async fn query_connection(
@@ -137,9 +139,7 @@ pub(crate) async fn schema(
 pub mod tests {
     use super::*;
     use crate::{
-        num_vec,
-        ssh::open_ssh_tunnel,
-        test_connection,
+        num_vec, test_connection,
         test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet},
     };
     use arrow::datatypes::Date32Type;
@@ -147,34 +147,9 @@ pub mod tests {
     use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::{
-        net::ssh::tests::get_ssh_config,
-        sql::schema::{SchemaColumn, SchemaTable},
-    };
+    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
     use tracing_test::traced_test;
     use uuid::Uuid;
-
-    pub fn get_ssh_api_connection(port: u16) -> ApiConnection<PostgresConnection> {
-        ApiConnection {
-            uuid: Uuid::new_v4(),
-            name: "".into(),
-            r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
-            type_details: PostgresConnection {
-                host: "localhost".into(),
-                port: Some(port.to_string()),
-                username: Some("dbuser".into()),
-                password: Some("dbpassword".into()),
-                database: "mydb".into(),
-                use_ssh: Some(true),
-                ssh_host: Some("localhost".into()),
-                ssh_port: Some("22".into()),
-                ssh_username: Some("user".into()),
-                ssh_key: Some("".into()),
-            },
-        }
-    }
 
     #[tokio::test]
     #[traced_test]

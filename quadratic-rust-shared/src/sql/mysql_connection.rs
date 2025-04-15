@@ -25,6 +25,8 @@ use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
 
+use super::UsesSsh;
+
 /// MySQL connection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MySqlConnection {
@@ -33,6 +35,11 @@ pub struct MySqlConnection {
     pub host: String,
     pub port: Option<String>,
     pub database: String,
+    pub use_ssh: Option<bool>,
+    pub ssh_host: Option<String>,
+    pub ssh_port: Option<String>,
+    pub ssh_username: Option<String>,
+    pub ssh_key: Option<String>,
 }
 
 impl MySqlConnection {
@@ -43,6 +50,11 @@ impl MySqlConnection {
         host: String,
         port: Option<String>,
         database: String,
+        use_ssh: Option<bool>,
+        ssh_host: Option<String>,
+        ssh_port: Option<String>,
+        ssh_username: Option<String>,
+        ssh_key: Option<String>,
     ) -> MySqlConnection {
         MySqlConnection {
             username,
@@ -50,6 +62,11 @@ impl MySqlConnection {
             host,
             port,
             database,
+            use_ssh,
+            ssh_host,
+            ssh_port,
+            ssh_username,
+            ssh_key,
         }
     }
 
@@ -230,6 +247,24 @@ impl Connection for MySqlConnection {
     }
 }
 
+impl UsesSsh for MySqlConnection {
+    fn use_ssh(&self) -> bool {
+        self.use_ssh.unwrap_or(false)
+    }
+
+    fn port(&self) -> Option<Result<u16>> {
+        Self::parse_port(&self.port)
+    }
+
+    fn set_port(&mut self, port: u16) {
+        self.port = Some(port.to_string());
+    }
+
+    fn ssh_host(&self) -> Option<&str> {
+        self.ssh_host.as_deref()
+    }
+}
+
 #[macro_export]
 macro_rules! convert_mysql_type {
     ( $kind:ty, $row:ident, $index:ident ) => {{
@@ -256,6 +291,11 @@ mod tests {
             "0.0.0.0".into(),
             Some("3306".into()),
             "mysql-connection".into(),
+            None,
+            None,
+            None,
+            None,
+            None,
         )
     }
 

@@ -25,6 +25,8 @@ use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
 use crate::{convert_pg_type, net::ssh::SshConfig};
+
+use super::UsesSsh;
 /// PostgreSQL connection
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -327,6 +329,24 @@ impl Connection for PostgresConnection {
                 ArrowType::Utf8(convert_pg_type!(String, row, index))
             }
         }
+    }
+}
+
+impl UsesSsh for PostgresConnection {
+    fn use_ssh(&self) -> bool {
+        self.use_ssh.unwrap_or(false)
+    }
+
+    fn port(&self) -> Option<Result<u16>> {
+        Self::parse_port(&self.port)
+    }
+
+    fn set_port(&mut self, port: u16) {
+        self.port = Some(port.to_string());
+    }
+
+    fn ssh_host(&self) -> Option<&str> {
+        self.ssh_host.as_deref()
     }
 }
 
