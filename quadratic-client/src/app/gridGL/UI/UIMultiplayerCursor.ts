@@ -46,20 +46,20 @@ export class UIMultiPlayerCursor extends Graphics {
     }
 
     // draw cursor)
-    this.lineStyle({
+    this.rect(x, y, width, height);
+    this.stroke({
       width: CURSOR_THICKNESS,
       color,
       alignment: 0,
     });
-    this.drawRect(x, y, width, height);
     if (editing || code) {
-      this.lineStyle({
+      this.rect(x, y, width, height);
+      this.stroke({
         width: CURSOR_THICKNESS * 1.5,
         color,
         alpha: CURSOR_INPUT_ALPHA,
         alignment: 1,
       });
-      this.drawRect(x, y, width, height);
     }
   }
 

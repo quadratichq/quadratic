@@ -10,8 +10,8 @@ import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { DataTableSort, JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sharedEvents } from '@/shared/sharedEvents';
-import type { Point } from 'pixi.js';
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import type { Point, Rectangle } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 
 export class TableColumnHeaders extends Container {
   private table: Table;
@@ -42,31 +42,29 @@ export class TableColumnHeaders extends Container {
   drawBackground = (skipSelection = false) => {
     this.background.clear();
 
-    this.background.lineStyle();
-    this.background.beginFill(0xffffff);
-
     // need to adjust so the outside border is still visible
-    this.background.drawShape(new Rectangle(0.5, 0, this.table.tableBounds.width - 1, this.columnsHeight));
-    this.background.endFill();
+
+    this.background.rect(0.5, 0, this.table.tableBounds.width - 1, this.columnsHeight);
+    this.background.fill({ color: 0xffffff });
 
     // draw borders on the top and bottom of the column headers (either active or inactive)
     const active = pixiApp.cellsSheet().tables.isActive(this.table);
     if ((this.table.inOverHeadings && active) || this.table.codeCell.show_ui) {
       const width = active ? 1 : 0;
-      this.background.lineStyle({
+      this.background.moveTo(0, 0);
+      this.background.lineTo(0, this.columnsHeight);
+      this.background.stroke({
         color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
         width,
         alignment: 1,
       });
-      this.background.moveTo(0, 0);
-      this.background.lineTo(0, this.columnsHeight);
-      this.background.lineStyle({
+      this.background.moveTo(this.table.tableBounds.width, 0);
+      this.background.lineTo(this.table.tableBounds.width, this.columnsHeight);
+      this.background.stroke({
         color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
         width,
         alignment: 0,
       });
-      this.background.moveTo(this.table.tableBounds.width, 0);
-      this.background.lineTo(this.table.tableBounds.width, this.columnsHeight);
     }
 
     if (!skipSelection) {
@@ -80,20 +78,18 @@ export class TableColumnHeaders extends Container {
           this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
         );
         const endX = end.position + end.size;
-        this.background.lineStyle();
-        this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
-        this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.columnsHeight);
-        this.background.endFill();
+        this.background.rect(startX - this.table.tableBounds.x, 0, endX - startX, this.columnsHeight);
+        this.background.fill({ color: pixiApp.accentColor, alpha: FILL_SELECTION_ALPHA });
       }
     }
 
-    this.background.lineStyle({
+    this.background.moveTo(0, this.columnsHeight);
+    this.background.lineTo(this.table.tableBounds.width, this.columnsHeight);
+    this.background.stroke({
       color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
       width: 1,
       alignment: 1,
     });
-    this.background.moveTo(0, this.columnsHeight);
-    this.background.lineTo(this.table.tableBounds.width, this.columnsHeight);
   };
 
   private onSortPressed = (column: JsDataTableColumnHeader) => {

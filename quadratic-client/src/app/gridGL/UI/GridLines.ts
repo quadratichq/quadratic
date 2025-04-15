@@ -9,7 +9,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
 import { colors } from '@/app/theme/colors';
-import type { ILineStyleOptions, Rectangle } from 'pixi.js';
+import type { Rectangle, StrokeStyle } from 'pixi.js';
 import { Graphics } from 'pixi.js';
 
 interface GridLine {
@@ -22,7 +22,7 @@ interface GridLine {
 }
 
 export class GridLines extends Graphics {
-  currentLineStyle: ILineStyleOptions = { alpha: 0 };
+  currentLineStyle: StrokeStyle = { alpha: 0 };
   dirty = true;
 
   // cache of lines used for snapping
@@ -71,14 +71,15 @@ export class GridLines extends Graphics {
       color: colors.gridLines,
       alpha: 0.2 * gridAlpha,
       alignment: 0.5,
-      native: true,
+      pixelLine: true,
     };
-    this.lineStyle(this.currentLineStyle);
+    this.strokeStyle = this.currentLineStyle;
     this.gridLinesX = [];
     this.gridLinesY = [];
 
     const range = this.drawHorizontalLines(bounds); //, this.getColumns(bounds));
     this.drawVerticalLines(bounds, range);
+    this.stroke();
   };
 
   private drawVerticalLines(bounds: Rectangle, range: [number, number]) {

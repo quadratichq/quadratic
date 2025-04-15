@@ -1,8 +1,8 @@
 // Converts BitmapFont information to a simplified format that can be sent over
 // to the render web worker
 
-import type { IBitmapFontCharacter } from 'pixi.js';
-import { BitmapFont } from 'pixi.js';
+import { bitmapFonts } from '@/app/gridGL/loadAssets';
+import { Assets, type BitmapFont, type CharData } from 'pixi.js';
 
 export interface RenderBitmapChar {
   textureUid: number;
@@ -23,13 +23,25 @@ export interface RenderBitmapFont {
   lineHeight: number;
 }
 
-const copyChars = (chars: Record<string, IBitmapFontCharacter>): Record<string, RenderBitmapChar> => {
+const copyChars = (chars: Record<string, CharData>): Record<string, RenderBitmapChar> => {
   const results: Record<string, RenderBitmapChar> = {};
   for (const char in chars) {
     const charInfo = chars[char];
+    if (!charInfo.texture) {
+      throw new Error(`Character ${char} has no texture`);
+    }
     results[char] = {
-      textureUid: charInfo.texture.baseTexture.uid,
-      uvs: charInfo.texture._uvs.uvsFloat32,
+      textureUid: charInfo.texture.source.uid,
+      uvs: new Float32Array([
+        charInfo.texture.uvs.x0,
+        charInfo.texture.uvs.y0,
+        charInfo.texture.uvs.x1,
+        charInfo.texture.uvs.y1,
+        charInfo.texture.uvs.x2,
+        charInfo.texture.uvs.y2,
+        charInfo.texture.uvs.x3,
+        charInfo.texture.uvs.y3,
+      ]),
       frame: charInfo.texture.frame,
       xAdvance: charInfo.xAdvance,
       xOffset: charInfo.xOffset,
@@ -45,11 +57,11 @@ const copyChars = (chars: Record<string, IBitmapFontCharacter>): Record<string, 
 // used to shard the BitmapFont information between client and render web worker
 export const prepareBitmapFontInformation = (): RenderBitmapFonts => {
   const fonts: RenderBitmapFonts = {};
-  for (const font in BitmapFont.available) {
-    const fontInfo = BitmapFont.available[font];
+  for (const font of bitmapFonts) {
+    const fontInfo = Assets.get(font) as BitmapFont;
     fonts[font] = {
       font,
-      size: fontInfo.size,
+      size: fontInfo.fontMetrics.fontSize,
       lineHeight: fontInfo.lineHeight,
       chars: copyChars(fontInfo.chars),
     };

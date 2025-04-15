@@ -10,7 +10,9 @@ export class CellsDrawRects extends Container {
     this.clear();
     drawRects.forEach(({ rects, tint }) => {
       rects.forEach((rect) => {
-        const line = new Graphics().beginFill(tint).drawRect(rect.x, rect.y, rect.width, rect.height).endFill();
+        const line = new Graphics();
+        line.rect(rect.x, rect.y, rect.width, rect.height);
+        line.fill({ color: tint });
         this.addChild(line);
       });
     });

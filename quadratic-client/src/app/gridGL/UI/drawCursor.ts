@@ -24,17 +24,14 @@ export const isUnbounded = (coord: bigint): boolean => {
 
 export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordinate) => {
   const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);
-  g.lineStyle({ width: CURSOR_THICKNESS, color, alignment: 0 });
-  g.drawRect(outline.x, outline.y, outline.width, outline.height);
+  g.rect(outline.x, outline.y, outline.width, outline.height);
+  g.stroke({ width: CURSOR_THICKNESS, color, alignment: 0 });
 };
 
 // Draws a cursor with a finite number of cells (this is drawn once for each
 // selection setting).
 export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: RefRangeBounds[]) => {
   if (ranges.length === 0) return;
-
-  g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 0, native: SECTION_OUTLINE_NATIVE });
-  g.beginFill(color, alpha);
 
   const sheet = sheets.sheet;
   ranges.forEach((range) => {
@@ -48,10 +45,11 @@ export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, r
       const width = Math.abs(Number(end.col.coord) - Number(start.col.coord)) + 1;
       const height = Math.abs(Number(end.row.coord) - Number(start.row.coord)) + 1;
       const rect = sheet.getScreenRectangle(startX, startY, width, height);
-      g.drawShape(rect);
+      g.rect(rect.x, rect.y, rect.width, rect.height);
     }
   });
-  g.endFill();
+  g.fill({ color, alpha });
+  g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 0, pixelLine: SECTION_OUTLINE_NATIVE });
 };
 
 // Draws a cursor with an infinite number of cells (this is drawn on each
@@ -81,8 +79,6 @@ export const drawInfiniteSelection = (options: {
     const start = range.start;
     const end = range.end;
 
-    g.lineStyle();
-    g.beginFill(color, alpha);
     // the entire sheet is selected
     if (
       isStart(start.col.coord) &&
@@ -90,9 +86,9 @@ export const drawInfiniteSelection = (options: {
       isUnbounded(end.col.coord) &&
       isUnbounded(end.row.coord)
     ) {
-      g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
-      g.endFill();
-      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+      g.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+      g.fill({ color, alpha });
+      g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: SECTION_OUTLINE_NATIVE });
       g.moveTo(0, 0);
       g.lineTo(0, bounds.height);
       g.moveTo(0, 0);
@@ -107,9 +103,9 @@ export const drawInfiniteSelection = (options: {
       rect.width = bounds.right - rect.x;
       rect.height = bounds.bottom - rect.y;
       if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.rect(rect.x, rect.y, rect.width, rect.height);
+        g.fill({ color, alpha });
+        g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: SECTION_OUTLINE_NATIVE });
         g.moveTo(rect.right, rect.top);
         g.lineTo(rect.left, rect.top);
         g.lineTo(rect.left, rect.bottom);
@@ -124,9 +120,9 @@ export const drawInfiniteSelection = (options: {
       rect.y = Math.max(0, bounds.y);
       rect.height = bounds.height;
       if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.rect(rect.x, rect.y, rect.width, rect.height);
+        g.fill({ color, alpha });
+        g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: SECTION_OUTLINE_NATIVE });
         g.moveTo(rect.left, 0);
         g.lineTo(rect.right, 0);
         const top = Math.max(0, bounds.top);
@@ -134,7 +130,7 @@ export const drawInfiniteSelection = (options: {
         g.lineTo(rect.left, bounds.bottom);
         g.moveTo(rect.right, top);
         g.lineTo(rect.right, bounds.bottom);
-
+        g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: SECTION_OUTLINE_NATIVE });
         if (ranges.length === 1) {
           rectangle = new Rectangle(rect.left, top, rect.width, bounds.bottom - top);
         }
@@ -156,15 +152,14 @@ export const drawInfiniteSelection = (options: {
       rect.y = Math.max(rect.top, bounds.top);
       rect.height = bounds.bottom - rect.y;
       if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.rect(rect.x, rect.y, rect.width, rect.height);
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.right, rect.top);
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.left, bounds.bottom);
         g.moveTo(rect.right, rect.top);
         g.lineTo(rect.right, bounds.bottom);
+        g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: SECTION_OUTLINE_NATIVE });
       }
     }
 
@@ -176,15 +171,14 @@ export const drawInfiniteSelection = (options: {
       rect.x = Math.max(0, bounds.x);
       rect.width = bounds.width;
       if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.rect(rect.x, rect.y, rect.width, rect.height);
         g.moveTo(0, rect.top);
         g.lineTo(0, rect.bottom);
         g.moveTo(bounds.left, rect.top);
         g.lineTo(bounds.right, rect.top);
         g.moveTo(bounds.left, rect.bottom);
         g.lineTo(bounds.right, rect.bottom);
+        g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: SECTION_OUTLINE_NATIVE });
       }
 
       if (ranges.length === 1) {
@@ -207,15 +201,14 @@ export const drawInfiniteSelection = (options: {
       rect.x = Math.max(rect.left, bounds.x);
       rect.width = bounds.right - rect.x;
       if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.rect(rect.x, rect.y, rect.width, rect.height);
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.left, rect.bottom);
         g.moveTo(rect.left, rect.top);
         g.lineTo(bounds.right, rect.top);
         g.moveTo(rect.left, rect.bottom);
         g.lineTo(rect.right, rect.bottom);
+        g.stroke({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, pixelLine: SECTION_OUTLINE_NATIVE });
       }
     }
   });

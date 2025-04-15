@@ -62,9 +62,12 @@ export class GridHeadings extends Container {
 
   // calculates static character size (used in overlap calculations)
   private calculateCharacterSize() {
-    const label = new BitmapText('X', {
-      fontName: 'OpenSans',
-      fontSize: GRID_HEADER_FONT_SIZE,
+    const label = new BitmapText({
+      text: 'X',
+      style: {
+        fontFamily: 'OpenSans',
+        fontSize: GRID_HEADER_FONT_SIZE,
+      },
     });
     this.characterSize = { width: label.width, height: label.height };
   }
@@ -99,16 +102,13 @@ export class GridHeadings extends Container {
     const cursor = sheet.cursor;
     const clamp = sheet.clamp;
 
-    this.headingsGraphics.lineStyle(0);
-    this.headingsGraphics.beginFill(colors.headerBackgroundColor);
     this.columnRect = new Rectangle(bounds.left, bounds.top, bounds.width, cellHeight);
-    this.headingsGraphics.drawShape(this.columnRect);
-    this.headingsGraphics.endFill();
+    this.headingsGraphics.rect(this.columnRect.x, this.columnRect.y, this.columnRect.width, this.columnRect.height);
+    this.headingsGraphics.fill({ color: colors.headerBackgroundColor });
 
     const left = Math.max(bounds.left, clamp.left);
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
-    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
     this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
@@ -120,9 +120,12 @@ export class GridHeadings extends Container {
         const endPlacement = offsets.getColumnPlacement(this.selectedColumns[i + 1]);
         end = endPlacement.position + endPlacement.size;
       }
-      this.headingsGraphics.drawRect(start, viewport.top, end - start, cellHeight);
+      this.headingsGraphics.rect(start, viewport.top, end - start, cellHeight);
     }
-    this.headingsGraphics.endFill();
+    this.headingsGraphics.fill({
+      color: pixiApp.accentColor,
+      alpha: colors.headerSelectedRowColumnBackgroundColorAlpha,
+    });
   }
 
   // Adds horizontal labels
@@ -161,15 +164,15 @@ export class GridHeadings extends Container {
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = offsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(
-          1,
-          colors.gridLines,
-          colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
-          0.5,
-          true
-        );
         this.headingsGraphics.moveTo(x, bounds.top);
         this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
+        this.headingsGraphics.stroke({
+          width: 1,
+          color: colors.gridLines,
+          alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
+          alignment: 0.5,
+          pixelLine: true,
+        });
         this.gridLinesColumns.push({ column: column - 1, x, width: offsets.getColumnWidth(column - 1) });
       }
 
@@ -261,19 +264,16 @@ export class GridHeadings extends Container {
     this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
 
     // draw background of vertical bar
-    this.headingsGraphics.lineStyle(0);
-    this.headingsGraphics.beginFill(colors.headerBackgroundColor);
     // Always start from the topmost part of the viewport (bounds.top) to ensure
     // it extends to the corner, regardless of clamp
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
-    this.headingsGraphics.drawShape(this.rowRect);
-    this.headingsGraphics.endFill();
+    this.headingsGraphics.rect(this.rowRect.x, this.rowRect.y, this.rowRect.width, this.rowRect.height);
+    this.headingsGraphics.fill({ color: colors.headerBackgroundColor });
 
     // For selection highlighting, we use clamped top
     const top = Math.max(bounds.top, clamp.top);
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
-    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
     this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
     for (let i = 0; i < this.selectedRows.length; i += 2) {
@@ -286,9 +286,12 @@ export class GridHeadings extends Container {
         const endPlacement = offsets.getRowPlacement(this.selectedRows[i + 1]);
         end = endPlacement.position + endPlacement.size;
       }
-      this.headingsGraphics.drawRect(bounds.left, start, this.rowWidth, end - start);
+      this.headingsGraphics.rect(bounds.left, start, this.rowWidth, end - start);
     }
-    this.headingsGraphics.endFill();
+    this.headingsGraphics.fill({
+      color: pixiApp.accentColor,
+      alpha: colors.headerSelectedRowColumnBackgroundColorAlpha,
+    });
   }
 
   private verticalLabels() {
@@ -336,15 +339,15 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle({
+        this.headingsGraphics.moveTo(bounds.left, y);
+        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        this.headingsGraphics.stroke({
           width: 1,
           color: colors.gridLines,
           alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
           alignment: 0.5,
-          native: true,
+          pixelLine: true,
         });
-        this.headingsGraphics.moveTo(bounds.left, y);
-        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
@@ -400,15 +403,20 @@ export class GridHeadings extends Container {
     const bounds = viewport.getVisibleBounds();
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     this.corner.clear();
-    this.corner.beginFill(colors.headerCornerBackgroundColor);
     // Always position at the top-left of viewport bounds to ensure connection with headers
     this.cornerRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, cellHeight);
-    this.corner.drawShape(this.cornerRect);
-    this.corner.endFill();
-    this.corner.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0, true);
+    this.corner.rect(this.cornerRect.x, this.cornerRect.y, this.cornerRect.width, this.cornerRect.height);
+    this.corner.fill({ color: colors.headerCornerBackgroundColor });
     this.corner.moveTo(bounds.left + this.rowWidth, bounds.top);
     this.corner.lineTo(bounds.left + this.rowWidth, bounds.top + cellHeight);
     this.corner.lineTo(bounds.left, bounds.top + cellHeight);
+    this.corner.stroke({
+      width: 1,
+      color: colors.gridLines,
+      alpha: colors.headerSelectedRowColumnBackgroundColorAlpha,
+      alignment: 0,
+      pixelLine: true,
+    });
   }
 
   // draws the lines under and to the right of the headings
@@ -416,7 +424,6 @@ export class GridHeadings extends Container {
     const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
-    this.headingsGraphics.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0.5, true);
 
     // draw the left line to the right of the headings
     // Start from bounds.top to ensure it connects with the corner
@@ -427,6 +434,13 @@ export class GridHeadings extends Container {
     // Start from bounds.left to ensure it connects with the corner
     this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
+    this.headingsGraphics.stroke({
+      width: 1,
+      color: colors.gridLines,
+      alpha: colors.headerSelectedRowColumnBackgroundColorAlpha,
+      alignment: 0.5,
+      pixelLine: true,
+    });
   }
 
   update = (viewportDirty: boolean) => {

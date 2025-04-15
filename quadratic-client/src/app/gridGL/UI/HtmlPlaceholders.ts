@@ -23,10 +23,9 @@ export class HtmlPlaceholders extends Graphics {
       throw new Error('Expected sheet to be defined in HtmlPlaceholders.drawPlaceholder');
     }
     const offsets = sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
-    this.lineStyle(BORDER_WIDTH, colors.htmlPlaceholderThumbnailBorderColor, 1);
-    this.beginFill(colors.htmlPlaceholderThumbnailColor);
-    this.drawRect(offsets.x, offsets.y + offsets.height, w, h);
-    this.endFill();
+    this.rect(offsets.x, offsets.y + offsets.height, w, h);
+    this.fill({ color: colors.htmlPlaceholderThumbnailColor });
+    this.stroke({ color: colors.htmlPlaceholderThumbnailBorderColor, width: BORDER_WIDTH });
     const thumbnail = this.addChild(new Sprite(Texture.from('chart-placeholder')));
     thumbnail.width = SPRITE_WIDTH;
     thumbnail.height = SPRITE_WIDTH;

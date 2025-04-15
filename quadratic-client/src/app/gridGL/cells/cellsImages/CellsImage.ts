@@ -110,10 +110,11 @@ export class CellsImage extends Container {
   resizeImage = () => {
     // We need to wait until the baseTexture loads from the string before we can
     // calculate bounds. We do not have to wait if we have a user-set size.
-    if (!this.sprite.texture.baseTexture.valid) {
-      this.sprite.texture.once('update', this.resizeImage);
-      return;
-    }
+    // todo: ***
+    // if (!this.sprite.texture.source.) {
+    //   this.sprite.texture.source.once('update', this.resizeImage);
+    //   return;
+    // }
 
     // store original size once it's loaded
     if (!this.aspectRatio) {

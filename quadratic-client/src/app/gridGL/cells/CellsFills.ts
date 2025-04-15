@@ -7,9 +7,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { convertColorStringToTint, getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
+import type { IParticle } from 'pixi.js';
+import { Container, Graphics, ParticleContainer, Rectangle, Texture } from 'pixi.js';
 
-interface SpriteBounds extends Sprite {
+interface SpriteBounds extends IParticle {
   viewBounds: Rectangle;
 }
 
@@ -38,7 +39,7 @@ export class CellsFills extends Container {
     this.cellsSheet = cellsSheet;
     this.meta = this.addChild(new Graphics());
     this.cellsContainer = this.addChild(
-      new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
+      new ParticleContainer({ dynamicProperties: { vertices: true, tint: true }, texture: Texture.WHITE })
     );
     this.alternatingColorsGraphics = this.addChild(new Graphics());
 
@@ -92,7 +93,8 @@ export class CellsFills extends Container {
 
   cheapCull = (viewBounds: Rectangle) => {
     this.cellsContainer.children.forEach(
-      (sprite) => (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds))
+      (sprite) =>
+        (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as any as SpriteBounds).viewBounds))
     );
   };
 
@@ -111,15 +113,22 @@ export class CellsFills extends Container {
   }
 
   private drawCells = () => {
-    this.cellsContainer.removeChildren();
+    this.cellsContainer.removeParticles();
     this.cells.forEach((fill) => {
-      const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
-      sprite.tint = this.getColor(fill.color);
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
-      sprite.position.set(screen.x, screen.y);
-      sprite.width = screen.width;
-      sprite.height = screen.height;
-      sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+      this.cellsContainer.addParticle({
+        x: screen.x,
+        y: screen.y,
+        texture: Texture.WHITE,
+
+        // todo...
+        scaleX: screen.width,
+        scaleY: screen.height,
+
+        color: this.getColor(fill.color),
+
+        viewBounds: new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1),
+      } as SpriteBounds);
     });
     pixiApp.setViewportDirty();
   };
@@ -151,40 +160,37 @@ export class CellsFills extends Container {
 
         // infinite sheet
         if (fill.w == null && fill.h == null) {
-          this.meta.beginFill(this.getColor(fill.color));
           const x = Math.max(offset.x, viewport.left);
           const y = Math.max(offset.y, viewport.top);
-          this.meta.drawRect(
+          this.meta.rect(
             x,
             y,
             viewport.width - (offset.x - viewport.left),
             viewport.height - (offset.y - viewport.top)
           );
-          this.meta.endFill();
+          this.meta.fill({ color: this.getColor(fill.color) });
         }
 
         // infinite column
         else if (fill.h == null && fill.w != null) {
-          this.meta.beginFill(this.getColor(fill.color));
           const startX = Math.max(offset.x, viewport.left);
           const startY = Math.max(offset.y, viewport.top);
           const end = this.sheet.offsets.getColumnPlacement(Number(fill.x) + Number(fill.w));
           let endX = end.position;
           endX = Math.min(endX, viewport.right);
-          this.meta.drawRect(startX, startY, endX - startX, viewport.height - (startY - viewport.top));
-          this.meta.endFill();
+          this.meta.rect(startX, startY, endX - startX, viewport.height - (startY - viewport.top));
+          this.meta.fill({ color: this.getColor(fill.color) });
         }
 
         // infinite row
         else if (fill.w == null && fill.h != null) {
-          this.meta.beginFill(this.getColor(fill.color));
           const startX = Math.max(offset.x, viewport.left);
           const startY = Math.max(offset.y, viewport.top);
           const end = this.sheet.offsets.getRowPlacement(Number(fill.y) + Number(fill.h));
           let endY = end.position;
           endY = Math.min(endY, viewport.bottom);
-          this.meta.drawRect(startX, startY, viewport.width - (startX - viewport.left), endY - startY);
-          this.meta.endFill();
+          this.meta.rect(startX, startY, viewport.width - (startX - viewport.left), endY - startY);
+          this.meta.fill({ color: this.getColor(fill.color) });
         }
       });
       pixiApp.setViewportDirty();
@@ -213,9 +219,8 @@ export class CellsFills extends Container {
       for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
         if (y % 2 !== (table.show_ui && table.show_name !== table.show_columns ? 1 : 0)) {
-          this.alternatingColorsGraphics.beginFill(ALTERNATING_BG_COLOR, ALTERNATING_BG_OPACITY);
-          this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
-          this.alternatingColorsGraphics.endFill();
+          this.alternatingColorsGraphics.rect(bounds.x, yOffset, bounds.width, height);
+          this.alternatingColorsGraphics.fill({ color: ALTERNATING_BG_COLOR, alpha: ALTERNATING_BG_OPACITY });
         }
         yOffset += height;
       }

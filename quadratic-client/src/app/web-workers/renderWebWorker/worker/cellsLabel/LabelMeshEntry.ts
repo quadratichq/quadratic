@@ -22,7 +22,7 @@ export class LabelMeshEntry {
   uvsCount = 0;
   size = 0;
 
-  indices?: Uint16Array;
+  indices?: Uint32Array;
   vertices?: Float32Array;
   uvs?: Float32Array;
   colors?: Float32Array;
@@ -38,7 +38,7 @@ export class LabelMeshEntry {
   clear() {
     this.vertices = new Float32Array(4 * 2 * this.total);
     this.uvs = new Float32Array(4 * 2 * this.total);
-    this.indices = new Uint16Array(6 * this.total);
+    this.indices = new Uint32Array(6 * this.total);
     this.size = 6 * this.total;
     this.index = 0;
 
@@ -72,14 +72,18 @@ export class LabelMeshEntry {
       message.colors = this.colors;
       this.memory = this.vertices.byteLength + this.uvs.byteLength + this.indices.byteLength + this.colors.byteLength;
       renderClient.sendLabelMeshEntry(message, [
-        this.vertices.buffer,
-        this.uvs.buffer,
-        this.indices.buffer,
-        this.colors.buffer,
+        this.vertices.buffer as ArrayBuffer,
+        this.uvs.buffer as ArrayBuffer,
+        this.indices.buffer as ArrayBuffer,
+        this.colors.buffer as ArrayBuffer,
       ]);
     } else {
       this.memory = this.vertices.byteLength + this.uvs.byteLength + this.indices.byteLength;
-      renderClient.sendLabelMeshEntry(message, [this.vertices.buffer, this.uvs.buffer, this.indices.buffer]);
+      renderClient.sendLabelMeshEntry(message, [
+        this.vertices.buffer as ArrayBuffer,
+        this.uvs.buffer as ArrayBuffer,
+        this.indices.buffer as ArrayBuffer,
+      ]);
     }
 
     if (debugShowCellHashesInfo) {

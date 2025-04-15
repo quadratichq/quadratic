@@ -1,12 +1,14 @@
 import { debugShowFileIO, debugStartupTime } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import FontFaceObserver from 'fontfaceobserver';
-import { Assets, BitmapFont } from 'pixi.js';
+import { Assets } from 'pixi.js';
 import { createBorderTypes } from './generateTextures';
 
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
 const TIMEOUT = 10000;
+
+let assetsLoaded = false;
 
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);
@@ -14,7 +16,7 @@ function loadFont(fontName: string): void {
 }
 
 export function isBitmapFontLoaded(): boolean {
-  return bitmapFonts.every((font) => BitmapFont.available[font]);
+  return assetsLoaded;
 }
 
 export function loadAssets() {
@@ -55,6 +57,7 @@ export function loadAssets() {
   Assets.addBundle('bundle', bundle);
   Assets.loadBundle('bundle').then(() => {
     if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+    assetsLoaded = true;
     events.emit('bitmapFontsLoaded');
   });
 }

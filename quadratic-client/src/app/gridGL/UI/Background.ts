@@ -18,22 +18,19 @@ export class Background extends Graphics {
     const bottom = Math.min(bounds.bottom, clamp.bottom);
 
     // draw normal background
-    this.beginFill(colors.gridBackground);
-    this.drawRect(left, top, right - left, bottom - top);
-    this.endFill();
+    this.rect(left, top, right - left, bottom - top);
+    this.fill({ color: colors.gridBackground });
 
     // draw out of bounds to the left
     if (left > bounds.left) {
-      this.beginFill(colors.gridBackgroundOutOfBounds);
-      this.drawRect(bounds.left, top, left - bounds.left, bottom - top);
-      this.endFill();
+      this.rect(bounds.left, top, left - bounds.left, bottom - top);
+      this.fill({ color: colors.gridBackgroundOutOfBounds });
     }
 
     // draw out of bounds to the top
     if (top > bounds.top) {
-      this.beginFill(colors.gridBackgroundOutOfBounds);
-      this.drawRect(bounds.left, bounds.top, right - bounds.left, top - bounds.top);
-      this.endFill();
+      this.rect(bounds.left, bounds.top, right - bounds.left, top - bounds.top);
+      this.fill({ color: colors.gridBackgroundOutOfBounds });
     }
   };
 }
