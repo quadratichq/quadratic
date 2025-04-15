@@ -44,16 +44,14 @@ impl SheetMap {
     pub fn remove_name(&mut self, name: &str) -> Option<SheetId> {
         self.folded_name_to_id
             .remove(&case_fold(name))
-            .map(|sheet_id| {
-                self.id_to_name.remove(&sheet_id);
-                sheet_id
+            .inspect(|sheet_id| {
+                self.id_to_name.remove(sheet_id);
             })
     }
     /// Removes the sheet with the given ID and returns its name.
     pub fn remove_sheet_id(&mut self, sheet_id: SheetId) -> Option<String> {
-        self.id_to_name.remove(&sheet_id).map(|name| {
-            self.folded_name_to_id.remove(&case_fold(&name));
-            name
+        self.id_to_name.remove(&sheet_id).inspect(|name| {
+            self.folded_name_to_id.remove(&case_fold(name));
         })
     }
 
