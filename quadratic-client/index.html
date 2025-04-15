@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-material-symbols-loaded="false">
+<html lang="en" data-material-symbols-loaded="false" data-is-loading>
 
 <head>
   <meta charset="utf-8" />
@@ -67,44 +67,38 @@
       margin: 0;
     }
 
-    .root-loader {
+    /* When the app loads, we have a side effect that will remove this data
+       attribute and therefore remove the loading UI */
+    [data-is-loading] body {
+      background-image: url('/images/logo_etching.png');
+      background-size: 100px 100px;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    [data-is-loading] body:after {
+      content: '';
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
       height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      user-select: none;
-      position: relative;
-    }
-
-    .root-loader>div {
-      position: relative;
-      width: 100px;
-      height: 100px;
-    }
-
-    .root-loader img {
-      width: 100px;
-      height: 100px;
-    }
-
-    .root-loader img[src*="logo_loading.gif"] {
+      background-image: url('/images/logo_loading.gif');
+      background-size: 100px 100px;
+      background-position: center;
+      background-repeat: no-repeat;
       opacity: 1;
       transition: opacity 0.5s ease-in-out .5s;
     }
 
     @starting-style {
-      .root-loader img[src*="logo_loading.gif"] {
+      [data-is-loading] body:after {
         opacity: 0;
       }
     }
   </style>
-  <div id="root">
-    <div class="root-loader">
-      <div>
-        <img src="/images/logo_etching.png" alt="Quadratic logo etching" width="100" height="100" />
-      </div>
-    </div>
-  </div>
+  <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
   <!--
     The combination of these two things (<script> & <style>) appear to be

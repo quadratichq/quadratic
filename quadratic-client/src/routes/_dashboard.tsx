@@ -8,6 +8,7 @@ import { Empty } from '@/shared/components/Empty';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -145,6 +146,8 @@ export const Component = () => {
       window.removeEventListener('pageshow', handlePageShow);
     };
   }, [revalidator]);
+
+  useRemoveInitialLoadingUI();
 
   return (
     <RecoilRoot>
