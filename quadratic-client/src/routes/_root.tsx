@@ -9,6 +9,7 @@ import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMod
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
@@ -48,13 +49,15 @@ export const Component = () => {
  * for slower connections. But it keeps the same structure and markup as
  * the root index.html file so the layout doesn't jump.
  */
+const STILL_LOADING_MS = 15000;
 export const HydrateFallback = () => {
   const [isTakingALongTime, setIsTakingALongTime] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsTakingALongTime(true);
-    }, 15000);
+      mixpanel.track('[Loading].still-loading', { timeMs: STILL_LOADING_MS });
+    }, STILL_LOADING_MS);
     return () => clearTimeout(timer);
   }, []);
 
