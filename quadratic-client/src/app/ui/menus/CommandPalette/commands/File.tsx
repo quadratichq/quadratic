@@ -11,7 +11,6 @@ import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteL
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
@@ -37,9 +36,7 @@ const commands: CommandGroup = {
       label: duplicateFileAction.label,
       isAvailable: duplicateFileAction.isAvailable,
       Component: (props) => {
-        const {
-          file: { uuid: fileUuid },
-        } = useFileRouteLoaderData();
+        const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         const action = () => {
           duplicateFileAction.run({ fileUuid });
         };
