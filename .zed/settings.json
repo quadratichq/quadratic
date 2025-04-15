@@ -66,5 +66,6 @@
     "bracketSpacing": true,
     "endOfLine": "auto",
     "plugins": ["prettier-plugin-tailwindcss"]
-  }
+  },
+  "tab_size": 2
 }

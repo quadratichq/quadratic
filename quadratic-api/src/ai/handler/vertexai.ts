@@ -2,7 +2,12 @@ import type { GenerateContentRequest, VertexAI } from '@google-cloud/vertexai';
 import { ClientError, GoogleApiError, GoogleAuthError } from '@google-cloud/vertexai';
 import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIRequestHelperArgs, ParsedAIResponse, VertexAIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  ParsedAIResponse,
+  VertexAIModelKey,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { getVertexAIApiArgs, parseVertexAIResponse, parseVertexAIStream } from '../helpers/vertexai.helper';
 
 const KEEP_ALIVE_INTERVAL = 25000;
@@ -78,6 +83,22 @@ export const handleVertexAIRequest = async (
         console.error(error);
       }
     } else {
+      const responseMessage: AIMessagePrompt = {
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text:
+              error instanceof ClientError || error instanceof GoogleApiError || error instanceof GoogleAuthError
+                ? error.message
+                : JSON.stringify(error),
+          },
+        ],
+        contextType: 'userPrompt',
+        toolCalls: [],
+        model: getModelFromModelKey(modelKey),
+      };
+      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response.end();
       console.error('Error occurred after headers were sent:', error);
     }
