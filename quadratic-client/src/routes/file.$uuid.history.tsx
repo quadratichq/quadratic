@@ -27,7 +27,7 @@ import {
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'];
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData> => {
-  await requireAuth(loaderArgs);
+  await requireAuth();
 
   const { params } = loaderArgs;
   const { uuid } = params as { uuid: string };

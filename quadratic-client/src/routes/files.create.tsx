@@ -5,7 +5,7 @@ import type { LoaderFunctionArgs } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  const { activeTeamUuid } = await requireAuth(loaderArgs);
+  const { activeTeamUuid } = await requireAuth();
 
   const { request } = loaderArgs;
   const url = new URL(request.url);

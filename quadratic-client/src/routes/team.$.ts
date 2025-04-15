@@ -8,7 +8,7 @@ import { redirect, type LoaderFunctionArgs } from 'react-router-dom';
  * /team/settings -> /teams/:teamUuid/settings
  */
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  const { activeTeamUuid } = await requireAuth(loaderArgs);
+  const { activeTeamUuid } = await requireAuth();
   const { params } = loaderArgs;
   return redirect(ROUTES.TEAM(activeTeamUuid) + '/' + params['*']);
 };
