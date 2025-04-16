@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" data-material-symbols-loaded="false" data-is-loading>
+<html lang="en" data-material-symbols-loaded="false" data-loading-start="">
 
 <head>
+  <script>
+    document.documentElement.setAttribute('data-loading-start', Date.now());
+  </script>
   <meta charset="utf-8" />
   <link rel="icon" href="/favicon.ico" />
   <meta content="True" name="HandheldFriendly" />
@@ -69,14 +72,14 @@
 
     /* When the app loads, we have a side effect that will remove this data
        attribute and therefore remove the loading UI */
-    [data-is-loading] body {
+    [data-loading-start] body {
       background-image: url('/images/logo_etching.png');
       background-size: 100px 100px;
       background-position: center;
       background-repeat: no-repeat;
     }
 
-    [data-is-loading] body:after {
+    [data-loading-start] body:after {
       content: '';
       display: block;
       position: absolute;
@@ -93,7 +96,7 @@
     }
 
     @starting-style {
-      [data-is-loading] body:after {
+      [data-loading-start] body:after {
         opacity: 0;
       }
     }

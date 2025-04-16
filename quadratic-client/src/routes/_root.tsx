@@ -8,9 +8,6 @@ import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
 import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
@@ -42,39 +39,8 @@ export const Component = () => {
   );
 };
 
-/**
- * We use this to track the time it takes to load the matching root route and
- * do the first render.
- */
-export const HydrateFallback = () => {
-  useEffect(() => {
-    const startTimeMs = Date.now();
-    return () => {
-      const loadTimeMs = Date.now() - startTimeMs;
-
-      // This is a hack to prevent React's strict mode from triggering this
-      // during development, as effects run twice.
-      if (process.env.NODE_ENV === 'development' && loadTimeMs < 10) return;
-
-      const route = window.location.pathname + window.location.search;
-      mixpanel.track('[Loading].complete', {
-        route,
-        loadTimeMs,
-      });
-      document.documentElement.removeAttribute('data-is-loading');
-    };
-  }, []);
-
-  return null;
-};
-
 export const ErrorBoundary = () => {
-  let error = useRouteError();
-  console.error(error);
-
-  Sentry.captureException({
-    message: `RootRoute error element triggered. ${error}`,
-  });
+  const error = useRouteError();
 
   return (
     <Empty
@@ -83,6 +49,7 @@ export const ErrorBoundary = () => {
       Icon={ExclamationTriangleIcon}
       severity="error"
       error={error}
+      showLoggedInUser
     />
   );
 };

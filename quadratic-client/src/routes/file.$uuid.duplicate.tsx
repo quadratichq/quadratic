@@ -4,6 +4,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { ROUTES } from '@/shared/constants/routes';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/shadcn/ui/card';
 import { Label } from '@/shared/shadcn/ui/label';
@@ -58,6 +59,8 @@ export const Component = () => {
     });
     submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
   }, [fileUuid, selectedTeamUuid, submit]);
+
+  useRemoveInitialLoadingUI();
 
   return (
     <div className="flex h-full items-center justify-center">
