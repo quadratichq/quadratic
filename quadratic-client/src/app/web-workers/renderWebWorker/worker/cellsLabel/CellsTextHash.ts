@@ -55,10 +55,10 @@ export class CellsTextHash {
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
   // update text
-  dirtyText = true;
+  dirtyText = false;
 
   // rebuild only buffers
-  dirtyBuffers = true;
+  dirtyBuffers = false;
 
   loaded = false;
   clientLoaded = false;
