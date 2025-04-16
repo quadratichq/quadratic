@@ -225,12 +225,10 @@ export class CellsTextHash {
             abortSignal
           );
           this.renderCellsReceivedTime = performance.now();
-        } catch (e) {
+        } catch (_) {
           this.dirty = dirty;
           this.dirtyText = dirtyText;
           this.dirtyBuffers = dirtyBuffers;
-
-          console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
           return false;
         }
       } else if (dirty === 'show') {
@@ -250,16 +248,10 @@ export class CellsTextHash {
       this.updateBuffers();
 
       return true;
-    } else if (this.dirtyText) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
+    } else if (this.dirtyText || this.dirtyBuffers) {
+      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text and buffers ${this.hashX}, ${this.hashY}`);
 
       this.updateText();
-      this.updateBuffers();
-
-      return true;
-    } else if (this.dirtyBuffers) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-
       this.updateBuffers();
 
       return true;
