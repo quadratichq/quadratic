@@ -439,10 +439,9 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
             // Always accept the other pattern if there's a named month.
             "dM",
             "Md",
-            // `2024/12` is `Ym` and `12/2024` is `mY`, but only if the
-            // separator is `/`.
-            if sep == '/' { "Ym" } else { "" },
-            if sep == '/' { "mY" } else { "" },
+            // `2024/12` is `Ym` and `12/2024` is `mY`.
+            "Ym",
+            "mY",
         ]
     };
 
@@ -569,6 +568,13 @@ mod tests {
             parse_date("3 jan"),
             NaiveDate::from_ymd_opt(Utc::now().year(), 1, 3)
         );
+
+        assert_eq!(
+            parse_date("14-Mar-2021"),
+            NaiveDate::from_ymd_opt(2021, 3, 14)
+        );
+
+        assert_eq!(parse_date("14.03.21"), None);
     }
 
     #[test]
