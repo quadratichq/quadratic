@@ -68,8 +68,11 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
     q: `user_id:(${auth0Ids.join(' OR ')})`,
   });
 
-  // Map users by their Quadratic ID. If we didn't find a user, throw.
-  type UsersById = Record<
+  // Index search results by user_id for quick lookup
+  const auth0UserMap = new Map(auth0Users.map((u) => [u.user_id, u]));
+
+  // Map the users we found by their Quadratic ID
+  let usersById: Record<
     number,
     {
       id: number;
@@ -78,12 +81,29 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
       name?: string;
       picture?: string;
     }
-  >;
-  const usersById: UsersById = users.reduce((acc: UsersById, { id, auth0Id }) => {
-    const auth0User = auth0Users.find(({ user_id }) => user_id === auth0Id);
+  > = {};
+  for (const { id, auth0Id } of users) {
+    let auth0User = auth0UserMap.get(auth0Id);
+
+    // If missing or incomplete, fallback to direct lookup
+    if (!auth0User || !auth0User.email) {
+      console.log('Fallback to direct lookup for', auth0Id);
+      try {
+        auth0User = await getAuth0().getUser({ id: auth0Id });
+      } catch (err) {
+        Sentry.captureException(err, {
+          level: 'error',
+          extra: {
+            context: 'Failed fallback Auth0 user lookup',
+            auth0Id,
+          },
+        });
+      }
+    }
 
     // If we're missing data we expect, log it to Sentry and skip this user
-    if (!auth0User || auth0User.email === undefined) {
+    if (!auth0User || !auth0User.email) {
+      console.log('Failed to retrieve all user info from Auth0', auth0Id);
       Sentry.captureException({
         message: 'Auth0 user returned without `email`',
         level: 'error',
@@ -95,18 +115,15 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
       throw new Error('Failed to retrieve all user info from Auth0');
     }
 
-    const { email, name, picture } = auth0User;
-    return {
-      ...acc,
-      [id]: {
-        id,
-        auth0Id,
-        email,
-        name,
-        picture,
-      },
+    // Add the user
+    usersById[id] = {
+      id,
+      auth0Id,
+      email: auth0User.email,
+      name: auth0User.name,
+      picture: auth0User.picture,
     };
-  }, {});
+  }
 
   return usersById;
 };
