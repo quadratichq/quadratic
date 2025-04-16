@@ -51,11 +51,17 @@ export const HydrateFallback = () => {
     const startTimeMs = Date.now();
     return () => {
       const loadTimeMs = Date.now() - startTimeMs;
+
+      // This is a hack to prevent React's strict mode from triggering this
+      // during development, as effects run twice.
+      if (process.env.NODE_ENV === 'development' && loadTimeMs < 10) return;
+
       const route = window.location.pathname + window.location.search;
       mixpanel.track('[Loading].complete', {
         route,
         loadTimeMs,
       });
+      document.documentElement.removeAttribute('data-is-loading');
     };
   }, []);
 

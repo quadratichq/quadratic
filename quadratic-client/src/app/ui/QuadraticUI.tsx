@@ -35,7 +35,6 @@ import { Empty } from '@/shared/components/Empty';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
-import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
@@ -82,8 +81,6 @@ export default function QuadraticUI() {
       window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
     }
   }, []);
-
-  useRemoveInitialLoadingUI();
 
   if (error) {
     return (
