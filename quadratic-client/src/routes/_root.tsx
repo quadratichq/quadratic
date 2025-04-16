@@ -8,8 +8,6 @@ import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
 import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
@@ -28,7 +26,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<R
 };
 
 export const Component = () => {
-  useRemoveInitialLoadingUI();
   return (
     <MuiTheme>
       <GlobalSnackbarProvider>
@@ -42,29 +39,8 @@ export const Component = () => {
   );
 };
 
-/**
- * We use this to track the time it takes to load the matching root route and
- * do the first render.
- */
-export const HydrateFallback = () => {
-  useEffect(() => {
-    const startTimeMs = Date.now();
-    return () => {
-      const loadTimeMs = Date.now() - startTimeMs;
-      const route = window.location.pathname + window.location.search;
-      mixpanel.track('[Loading].complete', {
-        route,
-        loadTimeMs,
-      });
-    };
-  }, []);
-
-  return null;
-};
-
 export const ErrorBoundary = () => {
   const error = useRouteError();
-  useRemoveInitialLoadingUI();
 
   return (
     <Empty
@@ -77,10 +53,3 @@ export const ErrorBoundary = () => {
     />
   );
 };
-
-function useRemoveInitialLoadingUI() {
-  useEffect(() => {
-    document.documentElement.removeAttribute('data-is-loading');
-  }, []);
-  return null;
-}

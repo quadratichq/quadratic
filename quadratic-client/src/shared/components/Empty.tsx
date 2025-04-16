@@ -2,6 +2,7 @@ import { authClient, type User } from '@/auth/auth';
 import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES } from '@/shared/constants/routes';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import type { IconProps } from '@radix-ui/react-icons/dist/types';
@@ -35,6 +36,8 @@ export function Empty({
 }: EmptyProps) {
   const [loggedInUser, setLoggedInUser] = useState<User | undefined>(undefined);
   const submit = useSubmit();
+
+  useRemoveInitialLoadingUI();
 
   useEffect(() => {
     if (showLoggedInUser && !loggedInUser) {

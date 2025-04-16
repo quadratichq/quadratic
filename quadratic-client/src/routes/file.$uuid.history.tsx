@@ -7,6 +7,7 @@ import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -105,6 +106,8 @@ export const Component = () => {
 
     fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
   }, [activeCheckpoint, fetcher, uuid]);
+
+  useRemoveInitialLoadingUI();
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
