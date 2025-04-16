@@ -123,6 +123,7 @@ class RenderCore {
   ): Promise<JsRenderCell[]> => {
     return new Promise((resolve, reject) => {
       if (!this.renderCorePort) {
+        console.warn('Expected renderCorePort to be defined in RenderCore.getRenderCells');
         resolve([]);
         return;
       }
