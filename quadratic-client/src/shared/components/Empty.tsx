@@ -1,4 +1,4 @@
-import { useRootRouteLoaderData } from '@/routes/_root';
+import { authClient, type User } from '@/auth/auth';
 import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES } from '@/shared/constants/routes';
@@ -7,8 +7,20 @@ import { cn } from '@/shared/shadcn/utils';
 import type { IconProps } from '@radix-ui/react-icons/dist/types';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
+
+type EmptyProps = {
+  title: string;
+  description: React.ReactNode;
+  actions?: React.ReactNode;
+  Icon: React.ForwardRefExoticComponent<IconProps>;
+  severity?: 'error';
+  className?: string;
+  showLoggedInUser?: boolean;
+  error?: unknown;
+  source?: string;
+};
 
 export function Empty({
   title,
@@ -20,19 +32,15 @@ export function Empty({
   showLoggedInUser,
   error,
   source,
-}: {
-  title: string;
-  description: React.ReactNode;
-  actions?: React.ReactNode;
-  Icon: React.ForwardRefExoticComponent<IconProps>;
-  severity?: 'error';
-  className?: string;
-  showLoggedInUser?: boolean;
-  error?: unknown;
-  source?: string;
-}) {
-  const { loggedInUser } = useRootRouteLoaderData();
+}: EmptyProps) {
+  const [loggedInUser, setLoggedInUser] = useState<User | undefined>(undefined);
   const submit = useSubmit();
+
+  useEffect(() => {
+    if (showLoggedInUser && !loggedInUser) {
+      authClient.user().then((user) => setLoggedInUser(user));
+    }
+  }, [showLoggedInUser, loggedInUser]);
 
   useEffect(() => {
     if (severity === 'error' || error) {
