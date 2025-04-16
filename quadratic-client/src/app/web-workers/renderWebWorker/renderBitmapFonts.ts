@@ -30,7 +30,7 @@ const copyChars = (chars: Record<string, CharData>): Record<string, RenderBitmap
     if (!charInfo.texture) {
       throw new Error(`Character ${char} has no texture`);
     }
-    results[char] = {
+    results[char.charCodeAt(0)] = {
       textureUid: charInfo.texture.source.uid,
       uvs: new Float32Array([
         charInfo.texture.uvs.x0,

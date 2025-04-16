@@ -7,21 +7,26 @@
  * are rendered.
  */
 
+import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
+import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import type { Texture } from 'pixi.js';
-import { Assets, MeshGeometry, MeshSimple } from 'pixi.js';
+import type { MeshGeometry, Texture, TextureShader } from 'pixi.js';
+import { Assets, Geometry, GlProgram, Mesh, Shader } from 'pixi.js';
 
-export class LabelMeshEntry extends MeshSimple {
+export class LabelMeshEntry extends Mesh {
   private fontName: string;
   private fontSize = 14;
 
   constructor(message: RenderClientLabelMeshEntry) {
-    const geometry = new MeshGeometry({
-      positions: message.vertices,
-      uvs: message.uvs,
-      indices: message.indices,
+    const geometry = new Geometry({
+      attributes: {
+        aVertexPosition: message.vertices,
+        aTextureCoord: message.uvs,
+      },
+      indexBuffer: message.indices,
     });
-    // const shader = message.hasColor ? shaderTint : shaderNoTint;
+
+    const shaderGL = message.hasColor ? shaderTint : shaderNoTint;
 
     // Get the font from Assets
     const font = Assets.get(message.fontName);
@@ -30,31 +35,33 @@ export class LabelMeshEntry extends MeshSimple {
     }
 
     // Get the texture from the font's page textures
-    const pages = font.pageTextures;
+    const pages = font.pages;
     let texture: Texture | undefined;
     for (const page in pages) {
-      if (pages[page].source.uid === message.textureUid) {
-        texture = pages[page];
+      if (pages[page].texture.source.uid === message.textureUid) {
+        texture = pages[page].texture;
       }
     }
     if (!texture) {
       throw new Error(`Texture not found for font: ${message.fontName} with uid: ${message.textureUid}`);
     }
 
-    // const material = new MeshMaterial(texture, {
-    //   program: Program.from(shader.msdfVert, shader.msdfFrag),
-    //   uniforms: { uFWidth: 0 },
-    // });
-
-    // geometry.getBuffer('aVertexPosition').update(message.vertices);
-    // geometry.getBuffer('aTextureCoord').update(message.uvs);
-    // geometry.getIndex().update(message.indices);
+    const shader = new Shader({
+      glProgram: new GlProgram({
+        vertex: shaderGL.msdfVert,
+        fragment: shaderGL.msdfFrag,
+      }),
+      resources: {
+        uFWidth: 0,
+        uTexture: texture.source,
+      },
+    });
 
     if (message.hasColor && message.colors) {
       geometry.addAttribute('aColors', { buffer: message.colors, size: 4 });
     }
 
-    super({ texture, vertices: message.vertices, uvs: message.uvs, indices: message.indices });
+    super({ geometry: geometry as MeshGeometry, shader: shader as TextureShader, texture });
     this.fontName = message.fontName;
     this.blendMode = 'normal-npm';
   }
@@ -65,8 +72,11 @@ export class LabelMeshEntry extends MeshSimple {
     if (!font) {
       throw new Error(`Font not found: ${this.fontName}`);
     }
-    // const fontScale = this.fontSize / font.size;
-    // const ufWidth = font.distanceFieldRange * fontScale * scale;
-    // this.shader.uniforms.uFWidth = ufWidth;
+    const fontScale = this.fontSize / font.fontMetrics.fontSize;
+    const ufWidth = font.distanceField.range * fontScale * scale;
+    if (!this.shader) {
+      throw new Error('Expected to find shader for LabelMeshEntry');
+    }
+    this.shader.resources.uFWidth = ufWidth;
   }
 }

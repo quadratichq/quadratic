@@ -38,7 +38,6 @@ export class CellsSheets extends Container<CellsSheet> {
         pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
       }
     }
-    console.log('pixiIsReady');
     renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 

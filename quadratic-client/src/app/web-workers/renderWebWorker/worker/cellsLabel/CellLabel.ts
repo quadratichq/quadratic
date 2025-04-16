@@ -428,7 +428,6 @@ export class CellLabel {
       }
       const charData = data.chars[charCode];
       if (!charData) continue;
-
       const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
