@@ -1,4 +1,5 @@
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
     sql::{Connection, snowflake_connection::SnowflakeConnection},
@@ -9,6 +10,7 @@ use crate::{
     auth::Claims,
     connection::get_api_connection,
     error::Result,
+    header::get_team_id_header,
     server::{SqlQuery, TestResponse},
     state::State,
 };
@@ -38,9 +40,10 @@ async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
+    team_id: &Uuid,
 ) -> Result<(SnowflakeConnection, ApiConnection<SnowflakeConnection>)> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id).await?
+        get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
     } else {
         ApiConnection {
             uuid: Uuid::new_v4(),
@@ -75,11 +78,13 @@ async fn get_connection(
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let connection = get_connection(&state, &claims, &sql_query.connection_id)
+    let team_id = get_team_id_header(&headers)?;
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
         .await?
         .0;
     query_generic::<SnowflakeConnection>(connection, state, sql_query).await
@@ -88,10 +93,12 @@ pub(crate) async fn query(
 /// Get the schema of the database
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-    let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
+    let team_id = get_team_id_header(&headers)?;
+    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
     let schema = Schema {
@@ -109,7 +116,7 @@ pub(crate) async fn schema(
 mod tests {
 
     use super::*;
-    use crate::test_util::{get_claims, new_state, response_bytes};
+    use crate::test_util::{get_claims, new_state, new_team_id_with_header, response_bytes};
     use bytes::Bytes;
     use http::StatusCode;
     use quadratic_rust_shared::parquet::utils::compare_parquet_file_with_bytes;
@@ -137,8 +144,9 @@ mod tests {
     #[traced_test]
     async fn snowflake_schema() {
         let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
         let state = Extension(new_state().await);
-        let response = schema(Path(connection_id), state, get_claims())
+        let response = schema(Path(connection_id), headers, state, get_claims())
             .await
             .unwrap();
 
@@ -257,7 +265,10 @@ mod tests {
             connection_id,
         };
         let state = Extension(new_state().await);
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let (_, headers) = new_team_id_with_header().await;
+        let data = query(headers, state, get_claims(), Json(sql_query))
+            .await
+            .unwrap();
         let response = data.into_response();
 
         assert!(compare_parquet_file_with_bytes(
@@ -277,7 +288,10 @@ mod tests {
         };
         let mut state = Extension(new_state().await);
         state.settings.max_response_bytes = 0;
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let (_, headers) = new_team_id_with_header().await;
+        let data = query(headers, state, get_claims(), Json(sql_query))
+            .await
+            .unwrap();
         let response = data.into_response();
 
         assert_eq!(response.status(), StatusCode::OK);

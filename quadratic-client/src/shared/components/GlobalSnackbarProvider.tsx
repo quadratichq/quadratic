@@ -6,7 +6,7 @@ import type { AlertColor } from '@mui/material';
 import { Alert, Snackbar } from '@mui/material';
 import type { JSX } from 'react';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 const DURATION = 6000;
 export const snackbarMsgQueryParam = 'snackbar-msg';
@@ -113,16 +113,16 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     setOpen(false);
   }, []);
 
-  const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
+  const handleClose = useCallback((event: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
       return;
     }
     setOpen(false);
-  };
+  }, []);
 
-  const handleExited = () => {
+  const handleExited = useCallback(() => {
     setActiveMessage(undefined);
-  };
+  }, []);
 
   const value: GlobalSnackbar = { addGlobalSnackbar, closeCurrentSnackbar };
 

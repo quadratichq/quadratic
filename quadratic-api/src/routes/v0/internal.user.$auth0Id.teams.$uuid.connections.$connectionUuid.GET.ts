@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
-import { getConnection } from '../../middleware/getConnection';
+import { getTeamConnection } from '../../middleware/getTeamConnection';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { ApiError } from '../../utils/ApiError';
 import { decryptFromEnv } from '../../utils/crypto';
@@ -10,12 +10,12 @@ import { decryptFromEnv } from '../../utils/crypto';
 export default [validateM2MAuth(), handler];
 
 const schema = z.object({
-  params: z.object({ auth0Id: z.string(), uuid: z.string().uuid() }),
+  params: z.object({ auth0Id: z.string(), uuid: z.string().uuid(), connectionUuid: z.string().uuid() }),
 });
 
 async function handler(req: Request, res: Response) {
   const {
-    params: { auth0Id, uuid },
+    params: { auth0Id, uuid: teamUuid, connectionUuid },
   } = parseRequest(req, schema);
 
   // Get the user
@@ -29,7 +29,7 @@ async function handler(req: Request, res: Response) {
   }
 
   // Get the connection
-  const { connection, team } = await getConnection({ uuid, userId: user.id });
+  const { connection, team } = await getTeamConnection({ connectionUuid, teamUuid, userId: user.id });
   const typeDetails = decryptFromEnv(connection.typeDetails.toString('utf-8'));
 
   // Do you have permission?

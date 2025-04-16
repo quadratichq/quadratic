@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
 const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
