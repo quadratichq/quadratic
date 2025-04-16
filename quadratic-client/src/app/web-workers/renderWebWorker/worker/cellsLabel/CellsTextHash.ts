@@ -185,6 +185,13 @@ export class CellsTextHash {
       // the this.dirty to change while fetching the cells.
       const dirty = this.dirty;
       this.dirty = false;
+
+      const dirtyText = this.dirtyText;
+      this.dirtyText = true;
+
+      const dirtyBuffers = this.dirtyBuffers;
+      this.dirtyBuffers = true;
+
       let cells: JsRenderCell[] | false;
       if (!Array.isArray(dirty) && (!this.loaded || dirty === true)) {
         if (isTransactionRunning) return false;
@@ -200,6 +207,9 @@ export class CellsTextHash {
           this.renderCellsReceivedTime = performance.now();
         } catch (e) {
           this.dirty = dirty;
+          this.dirtyText = dirtyText;
+          this.dirtyBuffers = dirtyBuffers;
+
           console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
           return false;
         }
@@ -214,7 +224,10 @@ export class CellsTextHash {
       }
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
 
-      if (cells) this.createLabels(cells);
+      if (cells) {
+        this.createLabels(cells);
+      }
+
       this.updateText();
       this.updateBuffers();
 
@@ -237,11 +250,11 @@ export class CellsTextHash {
   };
 
   updateText = () => {
+    this.dirtyText = false;
+
     if (!this.loaded || this.dirty) {
       return;
     }
-
-    this.dirtyText = false;
 
     this.labelMeshes.clear();
     this.labels.forEach((label) => label.updateText(this.labelMeshes));
@@ -265,11 +278,12 @@ export class CellsTextHash {
   };
 
   updateBuffers = (): void => {
+    this.dirtyBuffers = false;
+
     if (!this.loaded || this.dirty || this.dirtyText) {
       this.sendCellsTextHashClear();
       return;
     }
-    this.dirtyBuffers = false;
 
     this.links = [];
     this.drawRects = [];
