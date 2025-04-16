@@ -1,16 +1,16 @@
-import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { Empty } from '@/shared/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
-import { ShowAfter } from '@/shared/components/ShowAfter';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
 import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import mixpanel from 'mixpanel-browser';
+import { useEffect } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
@@ -42,12 +42,30 @@ export const Component = () => {
   );
 };
 
+/**
+ * We use this to track the time it takes to load the matching root route and
+ * do the first render.
+ */
 export const HydrateFallback = () => {
-  return (
-    <ShowAfter delay={2000}>
-      <QuadraticLoading />
-    </ShowAfter>
-  );
+  useEffect(() => {
+    const startTimeMs = Date.now();
+    return () => {
+      const loadTimeMs = Date.now() - startTimeMs;
+
+      // This is a hack to prevent React's strict mode from triggering this
+      // during development, as effects run twice.
+      if (process.env.NODE_ENV === 'development' && loadTimeMs < 10) return;
+
+      const route = window.location.pathname + window.location.search;
+      mixpanel.track('[Loading].complete', {
+        route,
+        loadTimeMs,
+      });
+      document.documentElement.removeAttribute('data-is-loading');
+    };
+  }, []);
+
+  return null;
 };
 
 export const ErrorBoundary = () => {
