@@ -60,8 +60,8 @@ export class CellsTextHash {
   // rebuild only buffers
   dirtyBuffers = false;
 
-  loaded = false;
-  clientLoaded = false;
+  private _loaded = false;
+  private _clientLoaded = false;
 
   // screen coordinates
   viewRectangle: Rectangle;
@@ -74,6 +74,22 @@ export class CellsTextHash {
   private content: CellsTextHashContent;
 
   renderCellsReceivedTime = 0;
+
+  get loaded(): boolean {
+    return this._loaded;
+  }
+
+  private set loaded(value: boolean) {
+    this._loaded = value;
+  }
+
+  get clientLoaded(): boolean {
+    return this._clientLoaded;
+  }
+
+  private set clientLoaded(value: boolean) {
+    this._clientLoaded = value;
+  }
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -138,8 +154,6 @@ export class CellsTextHash {
 
   private createLabels = (cells: JsRenderCell[]) => {
     this.unload();
-    this.labels = new Map();
-    this.content.clear();
     cells.forEach((cell) => this.createLabel(cell));
     this.loaded = true;
   };
@@ -149,10 +163,11 @@ export class CellsTextHash {
       if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
       this.loaded = false;
       this.labels.clear();
+      this.special.clear();
       this.content.clear();
+      this.labelMeshes.clear();
       this.links = [];
       this.drawRects = [];
-      this.labelMeshes.clear();
       this.overflowGridLines = [];
     }
   };
@@ -192,9 +207,14 @@ export class CellsTextHash {
       const dirtyBuffers = this.dirtyBuffers;
       this.dirtyBuffers = true;
 
-      let cells: JsRenderCell[] | false;
-      if (!Array.isArray(dirty) && (!this.loaded || dirty === true)) {
-        if (isTransactionRunning) return false;
+      let cells: JsRenderCell[] | false = false;
+      if (Array.isArray(dirty)) {
+        cells = dirty;
+      } else if (!this.loaded || dirty === true) {
+        if (isTransactionRunning) {
+          return false;
+        }
+
         try {
           cells = await renderCore.getRenderCells(
             this.cellsLabels.sheetId,
@@ -218,10 +238,8 @@ export class CellsTextHash {
         // cells. This is used to change visibility of a CellLabel without
         // refetching the cell contents.
         cells = false;
-      } else {
-        cells = dirty as JsRenderCell[];
-        this.special.clear();
       }
+
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
 
       if (cells) {
