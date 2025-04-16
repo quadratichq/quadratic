@@ -43,7 +43,6 @@ export class TableColumnHeaders extends Container {
     this.background.clear();
 
     // need to adjust so the outside border is still visible
-
     this.background.rect(0.5, 0, this.table.tableBounds.width - 1, this.columnsHeight);
     this.background.fill({ color: 0xffffff });
 
