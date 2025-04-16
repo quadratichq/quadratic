@@ -10,22 +10,19 @@
 import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import type { MeshGeometry, Texture, TextureShader } from 'pixi.js';
-import { Assets, Geometry, GlProgram, Mesh, Shader } from 'pixi.js';
+import type { Texture, TextureShader } from 'pixi.js';
+import { Assets, Mesh, MeshGeometry, Shader } from 'pixi.js';
 
 export class LabelMeshEntry extends Mesh {
   private fontName: string;
   private fontSize = 14;
 
   constructor(message: RenderClientLabelMeshEntry) {
-    const geometry = new Geometry({
-      attributes: {
-        aVertexPosition: message.vertices,
-        aTextureCoord: message.uvs,
-      },
-      indexBuffer: message.indices,
+    const geometry = new MeshGeometry({
+      positions: message.vertices,
+      uvs: message.uvs,
+      indices: message.indices,
     });
-
     const shaderGL = message.hasColor ? shaderTint : shaderNoTint;
 
     // Get the font from Assets
@@ -46,22 +43,24 @@ export class LabelMeshEntry extends Mesh {
       throw new Error(`Texture not found for font: ${message.fontName} with uid: ${message.textureUid}`);
     }
 
-    const shader = new Shader({
-      glProgram: new GlProgram({
+    const shader = Shader.from({
+      gl: {
         vertex: shaderGL.msdfVert,
         fragment: shaderGL.msdfFrag,
-      }),
+      },
       resources: {
         uFWidth: 0,
         uTexture: texture.source,
       },
     });
+    const shaderWithTexture = shader as TextureShader;
+    shaderWithTexture.texture = texture;
 
     if (message.hasColor && message.colors) {
       geometry.addAttribute('aColors', { buffer: message.colors, size: 4 });
     }
 
-    super({ geometry: geometry as MeshGeometry, shader: shader as TextureShader, texture });
+    super({ geometry, shader: shaderWithTexture, texture });
     this.fontName = message.fontName;
     this.blendMode = 'normal-npm';
   }

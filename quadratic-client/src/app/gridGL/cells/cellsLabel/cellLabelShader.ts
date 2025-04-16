@@ -33,8 +33,8 @@ void main(void) {
 }`;
 
 export const msdfVert = `
-attribute vec2 aVertexPosition;
-attribute vec2 aTextureCoord;
+attribute vec2 aPosition;
+attribute vec2 aUV;
 
 uniform mat3 projectionMatrix;
 uniform mat3 translationMatrix;
@@ -43,8 +43,8 @@ uniform mat3 uTextureMatrix;
 varying vec2 vTextureCoord;
 
 void main(void) {
-    gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);
-    vTextureCoord = (uTextureMatrix * vec3(aTextureCoord, 1.0)).xy;
+    gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
+    vTextureCoord = (uTextureMatrix * vec3(aUV, 1.0)).xy;
 }`;
 
 // WebGPU shaders
@@ -83,8 +83,8 @@ export const msdfVertWGSL = `
 // WebGPU MSDF Vertex Shader
 // Based on the original WebGL MSDF vertex shader
 struct VertexInput {
-    @location(0) aVertexPosition: vec2<f32>,
-    @location(1) aTextureCoord: vec2<f32>,
+    @location(0) aPosition: vec2<f32>,
+    @location(1) aUV: vec2<f32>,
 };
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
@@ -100,9 +100,9 @@ struct Uniforms {
 fn main(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
     // Calculate position
-    let pos = uniforms.projectionMatrix * uniforms.translationMatrix * vec3<f32>(input.aVertexPosition, 1.0);
+    let pos = uniforms.projectionMatrix * uniforms.translationMatrix * vec3<f32>(input.aPosition, 1.0);
     output.position = vec4<f32>(pos.xy, 0.0, 1.0);
     // Calculate texture coordinates
-    output.textureCoord = (uniforms.textureMatrix * vec3<f32>(input.aTextureCoord, 1.0)).xy;
+    output.textureCoord = (uniforms.textureMatrix * vec3<f32>(input.aUV, 1.0)).xy;
     return output;
 }`;
