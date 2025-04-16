@@ -26,6 +26,9 @@ pub enum ConnectionError {
     #[error("Connection error: {0}")]
     Connection(String),
 
+    #[error("Header error: {0}")]
+    Header(String),
+
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
@@ -53,6 +56,10 @@ pub enum ConnectionError {
 
 pub(crate) fn proxy_error(e: impl ToString) -> ConnectionError {
     ConnectionError::Proxy(e.to_string())
+}
+
+pub(crate) fn header_error(e: impl ToString) -> ConnectionError {
+    ConnectionError::Header(e.to_string())
 }
 
 impl From<SharedError> for ConnectionError {

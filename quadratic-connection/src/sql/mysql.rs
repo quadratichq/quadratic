@@ -1,4 +1,5 @@
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
     sql::{Connection, mysql_connection::MySqlConnection},
@@ -7,8 +8,9 @@ use uuid::Uuid;
 
 use crate::{
     auth::Claims,
-    connection::get_api_connection,
+    connection::{get_api_connection, get_api_team},
     error::Result,
+    header::get_team_id_header,
     server::{SqlQuery, TestResponse, test_connection},
     ssh::open_ssh_tunnel_for_connection,
     state::State,
@@ -17,8 +19,24 @@ use crate::{
 use super::{Schema, query_generic};
 
 /// Test the connection to the database.
-pub(crate) async fn test(Json(connection): Json<MySqlConnection>) -> Json<TestResponse> {
-    test_connection(connection).await
+pub(crate) async fn test(
+    headers: HeaderMap,
+    state: Extension<State>,
+    claims: Claims,
+    Json(mut connection): Json<MySqlConnection>,
+) -> Result<Json<TestResponse>> {
+    let team_id = get_team_id_header(&headers)?;
+    let team = get_api_team(&state, "", &claims.sub, &team_id).await?;
+    connection.ssh_key = Some(team.ssh_private_key);
+
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
+    let result = test_connection(connection).await;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
+    Ok(result)
 }
 
 /// Get the connection details from the API and create a MySqlConnection.

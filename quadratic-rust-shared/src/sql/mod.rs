@@ -192,4 +192,7 @@ pub trait UsesSsh {
 
     // The host to connect to
     fn ssh_host(&self) -> Option<String>;
+
+    // Set the SSH key
+    fn set_ssh_key(&mut self, ssh_key: Option<String>);
 }

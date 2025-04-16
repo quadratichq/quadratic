@@ -32,6 +32,7 @@ use super::UsesSsh;
 
 /// Microsoft SQL Server connection
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MsSqlConnection {
     pub username: Option<String>,
     pub password: Option<String>,
@@ -163,12 +164,8 @@ impl Connection for MsSqlConnection {
         config.host(&self.host);
         config.database(&self.database);
 
-        if let Some(port) = &self.port {
-            config.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(SqlError::Connect(
-                    "Could not parse port into a number".into(),
-                ))
-            })?);
+        if let Some(port) = self.port() {
+            config.port(port?);
         }
 
         if let Some(username) = &self.username {
@@ -411,6 +408,10 @@ impl UsesSsh for MsSqlConnection {
 
     fn ssh_host(&self) -> Option<String> {
         self.ssh_host.to_owned()
+    }
+
+    fn set_ssh_key(&mut self, ssh_key: Option<String>) {
+        self.ssh_key = ssh_key;
     }
 }
 

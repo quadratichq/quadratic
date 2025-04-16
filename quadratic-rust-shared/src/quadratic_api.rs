@@ -128,7 +128,6 @@ pub async fn set_file_checkpoint(
     let deserialized = response.json::<Checkpoint>().await?.last_checkpoint;
     Ok(deserialized)
 }
-
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Connection<T> {
@@ -161,6 +160,23 @@ pub async fn get_connection<T: DeserializeOwned>(
     handle_response(&response)?;
 
     Ok(response.json::<Connection<T>>().await?)
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Team {
+    pub ssh_private_key: String,
+}
+
+/// Retrieve user's team from the quadratic API server.
+pub async fn get_team(base_url: &str, jwt: &str, user_id: &str, team_id: &Uuid) -> Result<Team> {
+    let url = format!("{base_url}/v0/internal/user/{user_id}/teams/{team_id}");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    handle_response(&response)?;
+
+    Ok(response.json::<Team>().await?)
 }
 
 fn handle_response(response: &Response) -> Result<()> {

@@ -11,11 +11,11 @@ use axum::{
     routing::{any, get, post},
 };
 use http::{
-    HeaderName, HeaderValue,
+    HeaderMap, HeaderName, HeaderValue,
     header::{CACHE_CONTROL, PRAGMA},
 };
-use quadratic_rust_shared::auth::jwt::get_jwks;
-use quadratic_rust_shared::sql::Connection;
+use quadratic_rust_shared::{SharedError, auth::jwt::get_jwks, sql::UsesSsh};
+use quadratic_rust_shared::{net::ssh::SshConfig, sql::Connection};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tokio::time;
@@ -28,9 +28,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
 use crate::{
-    auth::get_middleware,
+    auth::{Claims, get_middleware},
     config::config,
+    connection::get_api_team,
     error::{ConnectionError, Result},
+    header::get_team_id_header,
     proxy::proxy,
     sql::{
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
@@ -38,6 +40,7 @@ use crate::{
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
         snowflake::{query as query_snowflake, schema as schema_snowflake, test as test_snowflake},
     },
+    ssh::open_ssh_tunnel_for_connection,
     state::State,
 };
 
@@ -248,6 +251,32 @@ pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestRes
 
     TestResponse::new(message.is_none(), message).into()
 }
+
+// pub(crate) async fn test_connection_with_ssh<T>(
+//     headers: HeaderMap,
+//     state: Extension<State>,
+//     claims: Claims,
+//     connection: T,
+// ) -> Result<Json<TestResponse>>
+// where
+//     T: Connection + UsesSsh + Clone,
+//     // T: quadratic_rust_shared::sql::HasSshKey,
+//     ConnectionError: From<SharedError>,
+//     SshConfig: From<T>,
+// {
+//     let team_id = get_team_id_header(&headers)?;
+//     let team = get_api_team(&state, "", &claims.sub, &team_id).await?;
+//     connection.set_ssh_key(Some(team.ssh_private_key));
+
+//     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
+//     let result = test_connection(connection).await;
+
+//     if let Some(mut tunnel) = tunnel {
+//         tunnel.close().await?;
+//     }
+
+//     Ok(result)
+// }
 
 #[cfg(test)]
 pub(crate) mod tests {

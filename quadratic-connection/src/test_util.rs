@@ -8,6 +8,9 @@
 
 use std::io::Read;
 
+use crate::auth::Claims;
+use crate::config::config;
+use crate::state::State;
 use arrow_schema::DataType;
 use axum::response::Response;
 use bytes::Bytes;
@@ -17,21 +20,21 @@ use parquet::data_type::AsBytes;
 use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 use serde::de::DeserializeOwned;
 
-use crate::auth::Claims;
-use crate::config::config;
-use crate::state::State;
-
 /// Utility to test a connection over various databases.
 #[macro_export]
 macro_rules! test_connection {
     ( $get_connection:expr ) => {{
         let connection_id = Uuid::new_v4();
-        let state = new_state().await;
+        let team_id = Uuid::new_v4();
+        let state = Extension(new_state().await);
         let claims = get_claims();
+        let headers = http::HeaderMap::new();
         let (mysql_connection, _) = $get_connection(&state, &claims, &connection_id)
             .await
             .unwrap();
-        let response = test(axum::Json(mysql_connection)).await;
+        let response = test(headers, state, claims, axum::Json(mysql_connection))
+            .await
+            .unwrap();
 
         println!("response: {:?}", response);
 

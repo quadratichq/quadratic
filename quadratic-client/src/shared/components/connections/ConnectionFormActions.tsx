@@ -1,3 +1,4 @@
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
@@ -10,6 +11,7 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -28,7 +30,7 @@ export function ConnectionFormActions({
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
-
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const formData = form.watch();
 
   // If the user changed some data, reset the state of the connection so they
@@ -60,6 +62,7 @@ export function ConnectionFormActions({
                   const { connected, message } = await connectionClient.test.run({
                     type,
                     typeDetails,
+                    teamUuid,
                   });
                   setConnectionError(connected === false && message ? message : '');
                   setConnectionState(connected ? 'success' : 'error');

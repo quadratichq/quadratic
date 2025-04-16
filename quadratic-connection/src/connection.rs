@@ -1,4 +1,4 @@
-use quadratic_rust_shared::quadratic_api::{Connection, get_connection};
+use quadratic_rust_shared::quadratic_api::{Connection, Team, get_connection, get_team};
 use serde::de::DeserializeOwned;
 use uuid::Uuid;
 
@@ -14,4 +14,17 @@ pub(crate) async fn get_api_connection<T: DeserializeOwned>(
     let connection = get_connection(&base_url, jwt, user_id, connection_id).await?;
 
     Ok(connection)
+}
+
+/// Get the team from the quadratic API server.
+pub(crate) async fn get_api_team(
+    state: &State,
+    jwt: &str,
+    user_id: &str,
+    team_id: &Uuid,
+) -> Result<Team> {
+    let base_url = state.settings.quadratic_api_uri.to_owned();
+    let team = get_team(&base_url, jwt, user_id, team_id).await?;
+
+    Ok(team)
 }

@@ -56,12 +56,15 @@ export const connectionClient = {
     },
   },
   test: {
-    run: async ({ type, typeDetails }: { type: ConnectionType; typeDetails: ConnectionTypeDetails }) => {
+    run: async ({ type, typeDetails, teamUuid }: { type: ConnectionType; typeDetails: ConnectionTypeDetails; teamUuid: string }) => {
       try {
         const typeLower = type.toLowerCase();
+        const headers = new Headers(await jwtHeader());
+        headers.set('X-Team-Id', teamUuid);
+
         const res = await fetch(`${API_URL}/${typeLower}/test`, {
           method: 'POST',
-          headers: new Headers(await jwtHeader()),
+          headers,
           body: JSON.stringify(typeDetails),
         });
         const data = await res.json();

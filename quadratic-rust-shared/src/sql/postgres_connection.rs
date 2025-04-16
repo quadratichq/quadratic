@@ -160,12 +160,8 @@ impl Connection for PostgresConnection {
             options = options.password(password);
         }
 
-        if let Some(ref port) = self.port {
-            options = options.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(SqlError::Connect(
-                    "Could not parse port into a number".into(),
-                ))
-            })?);
+        if let Some(port) = self.port() {
+            options = options.port(port?);
         }
 
         let pool = options.connect().await.map_err(|e| {
@@ -344,6 +340,10 @@ impl UsesSsh for PostgresConnection {
 
     fn ssh_host(&self) -> Option<String> {
         self.ssh_host.to_owned()
+    }
+
+    fn set_ssh_key(&mut self, ssh_key: Option<String>) {
+        self.ssh_key = ssh_key;
     }
 }
 
