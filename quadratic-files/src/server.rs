@@ -4,11 +4,12 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::Json;
-use axum::http::{Method, StatusCode};
+use axum::http::Method;
 use axum::response::IntoResponse;
 use axum::{Extension, Router, routing::get};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::storage::Storage;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
@@ -206,8 +207,16 @@ pub(crate) async fn serve() -> Result<()> {
     Ok(())
 }
 
-pub(crate) async fn healthcheck() -> impl IntoResponse {
-    StatusCode::OK
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct HealthResponse {
+    pub version: String,
+}
+
+pub(crate) async fn healthcheck() -> Json<HealthResponse> {
+    HealthResponse {
+        version: env!("CARGO_PKG_VERSION").into(),
+    }
+    .into()
 }
 
 pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
@@ -220,7 +229,7 @@ pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::test_util::{new_arc_state, response};
-    use axum::http::Method;
+    use axum::http::{Method, StatusCode};
 
     use super::*;
 

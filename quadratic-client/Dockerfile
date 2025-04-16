@@ -115,8 +115,6 @@ COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCall
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build the rust-client
-ARG GIT_COMMIT
-ENV GIT_COMMIT=$GIT_COMMIT
 RUN if [ "$CLIENT_DEV" = "true" ]; then \
     echo 'Building rust-client in dev mode...' && npm run build:dev --workspace=quadratic-rust-client; \
     else \

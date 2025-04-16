@@ -9,7 +9,7 @@ use axum::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
-    http::StatusCode,
+    http::StatusCode,Json,
     response::IntoResponse,
     routing::get,
 };
@@ -325,20 +325,25 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-pub(crate) async fn healthcheck() -> impl IntoResponse {
-    StatusCode::OK
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct HealthResponse {
+    pub version: String,
+}
+
+pub(crate) async fn healthcheck() -> Json<HealthResponse> {
+    HealthResponse {
+        version: env!("CARGO_PKG_VERSION").into(),
+    }
+    .into()
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
 
-    use std::time::Duration;
-
     use super::*;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
-    use crate::test_util::{
-        add_user_via_ws, integration_test_send_and_receive, new_arc_state, setup,
+    use crate::test_util::{integration_test_send_and_receive, new_arc_state, setup
     };
     use axum::{
         body::Body,
@@ -349,7 +354,6 @@ pub(crate) mod tests {
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
 
-    use tokio::time::{Instant, sleep};
     use tower::ServiceExt;
     use uuid::Uuid;
 
