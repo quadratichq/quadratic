@@ -138,7 +138,7 @@ export class Cursor extends Container {
       g.stroke({
         width: CURSOR_THICKNESS,
         color,
-        alignment: 0,
+        alignment: 1,
       });
     }
 

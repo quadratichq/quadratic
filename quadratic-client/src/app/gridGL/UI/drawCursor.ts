@@ -25,7 +25,7 @@ export const isUnbounded = (coord: bigint): boolean => {
 export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordinate) => {
   const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);
   g.rect(outline.x, outline.y, outline.width, outline.height);
-  g.stroke({ width: CURSOR_THICKNESS, color, alignment: 0 });
+  g.stroke({ width: CURSOR_THICKNESS, color, alignment: 1 });
 };
 
 // Draws a cursor with a finite number of cells (this is drawn once for each
