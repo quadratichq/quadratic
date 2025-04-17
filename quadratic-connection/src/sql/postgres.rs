@@ -46,40 +46,51 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
 ) -> Result<(PostgresConnection, ApiConnection<PostgresConnection>)> {
-    let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id).await?
-    } else {
-        let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
-        ApiConnection {
-            uuid: Uuid::new_v4(),
-            name: "".into(),
-            r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
-            type_details: PostgresConnection {
-                // host: "0.0.0.0".into(),
-                // port: Some("5433".into()),
-                // username: Some("user".into()),
-                // password: Some("password".into()),
-                // database: "postgres-connection".into(),
-                host: "localhost".into(),
-                port: Some("5432".into()),
-                username: Some("dbuser".into()),
-                password: Some("dbpassword".into()),
-                database: "mydb".into(),
-                use_ssh: Some(true),
-                ssh_host: Some(ssh_config.host.to_string()),
-                ssh_port: Some(ssh_config.port.to_string()),
-                ssh_username: Some(ssh_config.username.to_string()),
-                ssh_key: Some(ssh_config.private_key.to_string()),
-            },
-        }
-    };
+    let connection = get_api_connection(state, "", &claims.sub, connection_id).await?;
 
-    let pg_connection = PostgresConnection::from(&connection);
-
-    Ok((pg_connection, connection))
+    Ok(((&connection).into(), connection))
 }
+
+// /// Get the connection details from the API and create a PostgresConnection.
+// async fn get_connection(
+//     state: &State,
+//     claims: &Claims,
+//     connection_id: &Uuid,
+// ) -> Result<(PostgresConnection, ApiConnection<PostgresConnection>)> {
+//     let connection = if cfg!(not(test)) {
+//         get_api_connection(state, "", &claims.sub, connection_id).await?
+//     } else {
+//         let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
+//         ApiConnection {
+//             uuid: Uuid::new_v4(),
+//             name: "".into(),
+//             r#type: "".into(),
+//             created_date: "".into(),
+//             updated_date: "".into(),
+//             type_details: PostgresConnection {
+//                 // host: "0.0.0.0".into(),
+//                 // port: Some("5433".into()),
+//                 // username: Some("user".into()),
+//                 // password: Some("password".into()),
+//                 // database: "postgres-connection".into(),
+//                 host: "localhost".into(),
+//                 port: Some("5432".into()),
+//                 username: Some("dbuser".into()),
+//                 password: Some("dbpassword".into()),
+//                 database: "mydb".into(),
+//                 use_ssh: Some(true),
+//                 ssh_host: Some(ssh_config.host.to_string()),
+//                 ssh_port: Some(ssh_config.port.to_string()),
+//                 ssh_username: Some(ssh_config.username.to_string()),
+//                 ssh_key: Some(ssh_config.private_key.to_string()),
+//             },
+//         }
+//     };
+
+//     let pg_connection = PostgresConnection::from(&connection);
+
+//     Ok((pg_connection, connection))
+// }
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
@@ -87,10 +98,19 @@ pub(crate) async fn query(
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let mut connection = get_connection(&state, &claims, &sql_query.connection_id)
+    let connection = get_connection(&state, &claims, &sql_query.connection_id)
         .await?
         .0;
 
+    query_with_connection(state, sql_query, connection).await
+}
+
+/// Query the database and return the results as a parquet file.
+pub(crate) async fn query_with_connection(
+    state: Extension<State>,
+    sql_query: Json<SqlQuery>,
+    mut connection: PostgresConnection,
+) -> Result<impl IntoResponse> {
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let result = query_generic::<PostgresConnection>(connection, state, sql_query).await?;
 
@@ -140,15 +160,59 @@ pub mod tests {
     use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::{
+        net::ssh::tests::get_ssh_config,
+        sql::schema::{SchemaColumn, SchemaTable},
+    };
     use tracing_test::traced_test;
     use uuid::Uuid;
 
-    // #[tokio::test]
-    // #[traced_test]
-    // async fn postgres_test_connection() {
-    //     test_connection!(get_connection);
-    // }
+    fn get_connection(ssh: bool) -> ApiConnection<PostgresConnection> {
+        let type_details = if ssh {
+            let ssh_config = get_ssh_config();
+
+            PostgresConnection {
+                host: "localhost".into(),
+                port: Some("5432".into()),
+                username: Some("dbuser".into()),
+                password: Some("dbpassword".into()),
+                database: "mydb".into(),
+                use_ssh: Some(true),
+                ssh_host: Some(ssh_config.host.to_string()),
+                ssh_port: Some(ssh_config.port.to_string()),
+                ssh_username: Some(ssh_config.username.to_string()),
+                ssh_key: Some(ssh_config.private_key.to_string()),
+            }
+        } else {
+            PostgresConnection {
+                host: "0.0.0.0".into(),
+                port: Some("5433".into()),
+                username: Some("user".into()),
+                password: Some("password".into()),
+                database: "postgres-connection".into(),
+                use_ssh: Some(false),
+                ssh_host: None,
+                ssh_port: None,
+                ssh_username: None,
+                ssh_key: None,
+            }
+        };
+
+        ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            created_date: "".into(),
+            updated_date: "".into(),
+            type_details,
+        }
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn postgres_test_connection() {
+        test_connection!(get_connection);
+    }
 
     #[tokio::test]
     #[traced_test]
@@ -469,7 +533,10 @@ pub mod tests {
         };
         let mut state = Extension(new_state().await);
         state.settings.max_response_bytes = 0;
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let connection = get_connection(false);
+        let data = query_with_connection(state, Json(sql_query), connection.type_details)
+            .await
+            .unwrap();
         let response = data.into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
@@ -481,42 +548,18 @@ pub mod tests {
     #[tokio::test]
     #[traced_test]
     async fn postgres_test_connection_with_ssh() {
-        // let ssh_config = get_ssh_config();
-        // let (addr, mut tunnel) = open_ssh_tunnel(ssh_config, "localhost", 5432)
-        //     .await
-        //     .unwrap();
-        // let connection = get_ssh_api_connection(addr.port());
-
-        // // let pg_connection = get_ssh_api_connection().type_details;
-        // let result = test_connection(connection.type_details.clone()).await;
-        // println!("result: {:?}", result);
-        // assert!(result.0.connected);
-
-        // let result = query_connection(
-        //     Extension(new_state().await),
-        //     connection.type_details,
-        //     Json(SqlQuery {
-        //         query: "SELECT * FROM pg_catalog.pg_tables;".into(),
-        //         connection_id: Uuid::new_v4(),
-        //     }),
-        // )
-        // .await
-        // .unwrap();
-
-        let result = query(
+        let connection = get_connection(true);
+        let result = query_with_connection(
             Extension(new_state().await),
-            get_claims(),
             Json(SqlQuery {
                 query: "SELECT * FROM pg_catalog.pg_tables;".into(),
                 connection_id: Uuid::new_v4(),
             }),
+            connection.type_details,
         )
         .await
         .unwrap();
 
         println!("result: {:?}", result.into_response());
-
-        // Keep the tunnel alive until the test completes
-        // tunnel.close().await.unwrap();
     }
 }

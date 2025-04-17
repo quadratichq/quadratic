@@ -545,6 +545,32 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-postgres
 
+  ssh-postgres-connection:
+    build:
+      context: .
+      dockerfile: docker/ssh-postgres-connection/Dockerfile
+    restart: always
+    container_name: ssh-postgres-connection
+    ports:
+      - "2222:22"
+    environment:
+      POSTGRES_DB: ssh-postgres-connection
+      POSTGRES_USER: user
+      PGUSER: user
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d ssh-postgres-connection" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ssh-postgres-connection-data:/var/lib/postgresql/data
+      - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-postgres-ssh
+
   mysql-connection:
     image: mysql:8
     restart: always
@@ -569,20 +595,36 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mysql
 
+  ssh-mysql-connection:
+    build:
+      context: .
+      dockerfile: docker/ssh-mysql-connection/Dockerfile
+    restart: always
+    container_name: ssh-mysql-connection
+    ports:
+      - "2222:22"
+    environment:
+      MYSQL_DATABASE: mysql-connection
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - ssh-mysql-connection-data:/var/lib/mysql
+      - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-mysql-ssh
+
   mssql-connection:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    restart: always
     container_name: mssql-connection
-    user: root
     ports:
       - 1433:1433
     environment:
       ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: yourStrong(!)Password
-      MSSQL_PID: Express
     volumes:
       - mssql-connection-data:/var/opt/mssql
-      - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
     healthcheck:
       test: [ "CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "yourStrong(!)Password", "-Q", "SELECT 1", "-C", "-N", "-t", "30" ]
       interval: 10s
@@ -595,16 +637,45 @@ services:
       - quadratic-connection
       - quadratic-connection-db
       - quadratic-connection-db-mssql
+  ssh-mssql-connection:
+    build:
+      context: .
+      platforms:
+        - "linux/amd64"
+      dockerfile: docker/ssh-mssql-connection/Dockerfile
+    restart: always
+    container_name: ssh-mssql-connection
+    ports:
+      - "2222:22"
+    environment:
+      MSSQL_SA_PASSWORD: yourStrong(!)Password
+      MSSQL_PID: Evaluation
+    volumes:
+      - ssh-mssql-connection-data:/var/opt/mssql
+      - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-mssql-ssh  
 
 volumes:
   postgres-connection-data:
     name: postgres-connection-data
     driver: local
+  ssh-postgres-connection-data:
+    name: ssh-postgres-connection-data
+    driver: local
   mysql-connection-data:
-    name: mysql-connection
+    name: mysql-connection-data
+    driver: local
+  ssh-mysql-connection-data:
+    name: ssh-mysql-connection-data
     driver: local
   mssql-connection-data:
     name: mssql-connection-data
+    driver: local
+  ssh-mssql-connection-data:
+    name: ssh-mssql-connection-data
     driver: local
 
 networks:
