@@ -288,9 +288,9 @@ jobs:
           - name: api
             url: "https://api.quadratichq.com/health"
           - name: multiplayer
-            url: "http://multiplayer.quadratichq.com/health"
+            url: "https://multiplayer.quadratichq.com/health"
           - name: connection
-            url: "http://connection.quadratichq.com/health"
+            url: "https://connection.quadratichq.com/health"
           - name: files
             url: "http://files.quadratichq.com/health"
       fail-fast: false

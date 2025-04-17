@@ -305,9 +305,9 @@ jobs:
           - name: api
             url: "https://quadratic-staging.herokuapp.com/health"
           - name: multiplayer
-            url: "http://multiplayer-pr-qa.quadratic-preview.com/health"
+            url: "https://multiplayer-pr-qa.quadratic-preview.com/health"
           - name: connection
-            url: "http://connection-pr-qa.quadratic-preview.com/health"
+            url: "https://connection-pr-qa.quadratic-preview.com/health"
           - name: files
             url: "http://files-pr-qa.quadratic-preview.com/health"
       fail-fast: false
