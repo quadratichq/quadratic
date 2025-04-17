@@ -21,4 +21,4 @@ COPY --from=builder /quadratic .
 RUN apt-get update && apt install -y openssl
 RUN npm run postinstall --workspace=quadratic-api
 RUN npm run build --workspace=quadratic-api
-CMD ["npm", "start:prod"]
+CMD ["npm", "run", "start:prod"]
