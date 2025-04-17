@@ -132,7 +132,8 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let (mut connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
 

@@ -85,9 +85,8 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
-        .await?
-        .0;
+    let (mut connection, api_connection) =
+        get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let result = query_generic::<MsSqlConnection>(connection, state, sql_query).await?;
 
@@ -106,7 +105,8 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let (mut connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
 
