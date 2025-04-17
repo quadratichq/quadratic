@@ -13,7 +13,8 @@ import InfoIcon from '@mui/icons-material/Info';
 import WarningIcon from '@mui/icons-material/Warning';
 import { IconButton, Tooltip } from '@mui/material';
 import type { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 interface Props {
@@ -29,18 +30,17 @@ export const HtmlValidationMessage = (props: Props) => {
   const { offsets, validation, column, row, hoverError } = props;
   const [hide, setHide] = useState(true);
 
-  const showError = useMemo(() => {
+  const [showError, setShowError] = useState(false);
+
+  useEffect(() => {
     if (column === undefined || row === undefined) {
-      return false;
+      setShowError(false);
+    } else if (hoverError !== undefined || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
+      setShowError(true);
+    } else {
+      setShowError(false);
     }
-
-    if (hoverError !== undefined || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
-      return true;
-    }
-    return false;
-
     // we need to watch changes to validations to check if error has changed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [column, hoverError, row, validation]);
 
   useEffect(() => {

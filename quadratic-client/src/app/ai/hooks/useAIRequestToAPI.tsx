@@ -64,7 +64,7 @@ export function useAIRequestToAPI() {
                 text = 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
                 break;
               default:
-                text = `Looks like there was a problem. Error: ${data.error}`;
+                text = `Looks like there was a problem. Error: ${JSON.stringify(data.error)}`;
                 break;
             }
             setMessages?.((prev) => [
@@ -102,7 +102,7 @@ export function useAIRequestToAPI() {
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
                     responseMessage = newResponseMessage;
                   } catch (error) {
-                    console.error('Error parsing AI response: ', { error, line, lines });
+                    console.warn('Error parsing AI response: ', { error, line });
                   }
                 }
               }

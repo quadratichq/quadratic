@@ -15,7 +15,7 @@ import type {
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
-import init from '@/app/quadratic-rust-client/quadratic_rust_client';
+import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
@@ -59,7 +59,7 @@ class RenderText {
 
   constructor() {
     this.viewportBuffer = undefined;
-    init().then(() => {
+    initRustClient().then(() => {
       this.status.rust = true;
       this.ready();
     });
@@ -77,7 +77,6 @@ class RenderText {
 
   ready() {
     if (this.status.rust && this.status.core && this.bitmapFonts) {
-      if (!this.bitmapFonts) throw new Error('Expected bitmapFonts to be defined in RenderText.ready');
       for (const sheetInfo of this.status.core) {
         const sheetId = sheetInfo.sheet_id;
         this.cellsLabels.set(sheetId, new CellsLabels(sheetInfo, this.bitmapFonts));

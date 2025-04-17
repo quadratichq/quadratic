@@ -85,6 +85,7 @@ pub(crate) fn app(state: State) -> Result<Router> {
         //     ACCEPT,
         //     ORIGIN,
         //     HeaderName::from_static("proxy"),
+        //     HeaderName::from_static("x-team-id"),
         // ])
         //
         // required for the proxy

@@ -1,17 +1,14 @@
-import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { SpinnerIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { useSubmit } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useSubmit } from 'react-router';
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -20,17 +17,19 @@ export function ConnectionFormActions({
   connectionUuid,
   form,
   handleNavigateToListView,
+  teamUuid,
 }: {
   connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
   handleNavigateToListView: () => void;
+  teamUuid: string;
 }) {
   const submit = useSubmit();
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
-  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
+  // const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const formData = form.watch();
 
   // If the user changed some data, reset the state of the connection so they
@@ -115,11 +114,9 @@ export function ConnectionFormActions({
               const doDelete = window.confirm('Please confirm you want delete this connection. This cannot be undone.');
               if (doDelete) {
                 mixpanel.track('[Connections].delete', { type: connectionType });
-                const data = getDeleteConnectionAction(connectionUuid);
-                submit(data, {
-                  action: ROUTES.API.CONNECTIONS,
-                  method: 'POST',
-                  encType: 'application/json',
+                const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
+                submit(json, {
+                  ...options,
                   navigate: false,
                 });
                 handleNavigateToListView();

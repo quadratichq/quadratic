@@ -3,7 +3,7 @@ use http::{HeaderMap, HeaderName};
 use tokio::time::Instant;
 use uuid::Uuid;
 
-use crate::error::{Result, header_error};
+use crate::error::{ConnectionError, Result, header_error};
 
 pub fn time_header(time: Instant) -> HeaderValue {
     header::HeaderValue::from_str(&time.elapsed().as_millis().to_string())

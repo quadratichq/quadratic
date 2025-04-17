@@ -280,7 +280,7 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a vertical edge of a table.
     pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_at(pos) {
-            // we handle charts separately in find_next_*; 
+            // we handle charts separately in find_next_*;
             // we ignore single_value tables
             if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
@@ -296,7 +296,7 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
     pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_at(pos) {
-            // we handle charts separately in find_next_*; 
+            // we handle charts separately in find_next_*;
             // we ignore single_value tables
             if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
@@ -634,6 +634,16 @@ impl Sheet {
         });
         rows_set.into_iter().collect()
     }
+
+    /// Moves a cell value from one position to another.
+    pub fn move_cell_value(&mut self, old_pos: Pos, new_pos: Pos) {
+        let column = self.get_or_create_column(old_pos.x);
+        let cell_value = column.values.remove(&old_pos.y);
+        let column = self.get_or_create_column(new_pos.x);
+        if let Some(cell_value) = cell_value {
+            column.values.insert(new_pos.y, cell_value);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -647,7 +657,7 @@ mod test {
     use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
-    use crate::test_util::gc::print_table;
+    use crate::test_util::print_table_in_rect;
     use crate::{SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -844,7 +854,7 @@ mod test {
         ];
         let (grid, sheet_id) = test_setup(&selected, &vals);
 
-        print_table(&grid, sheet_id, selected);
+        print_table_in_rect(&grid, sheet_id, selected);
 
         let sheet = grid.sheet(sheet_id);
         let values = sheet.cell_values_in_rect(&selected, false).unwrap();

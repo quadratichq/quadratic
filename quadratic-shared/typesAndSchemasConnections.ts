@@ -139,20 +139,20 @@ export const ApiSchemasConnections = {
   '/v0/teams/:uuid/connections.GET.response': ConnectionListSchema,
 
   // Create connection
-  '/v0/team/:uuid/connections.POST.request': ConnectionSchema.pick({
+  '/v0/teams/:uuid/connections.POST.request': ConnectionSchema.pick({
     name: true,
     type: true,
     typeDetails: true,
   }),
-  '/v0/connections.POST.response': ConnectionSchema.pick({ uuid: true }),
+  '/v0/teams/:uuid/connections.POST.response': ConnectionSchema.pick({ uuid: true }),
 
   // Get connection
-  '/v0/connections/:uuid.GET.response': ConnectionSchema,
+  '/v0/teams/:uuid/connections/:connectionUuid.GET.response': ConnectionSchema,
 
   // Update connection
-  '/v0/connections/:uuid.PUT.request': ConnectionSchema.pick({ name: true, typeDetails: true }),
-  '/v0/connections/:uuid.PUT.response': ConnectionSchema,
+  '/v0/teams/:uuid/connections/:connectionUuid.PUT.request': ConnectionSchema.pick({ name: true, typeDetails: true }),
+  '/v0/teams/:uuid/connections/:connectionUuid.PUT.response': ConnectionSchema,
 
   // Delete connection
-  '/v0/connections/:uuid.DELETE.response': z.object({ message: z.string() }),
+  '/v0/teams/:uuid/connections/:connectionUuid.DELETE.response': z.object({ message: z.string() }),
 };

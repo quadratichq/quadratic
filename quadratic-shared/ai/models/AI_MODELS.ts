@@ -193,28 +193,6 @@ export const MODELS_CONFIGURATION: {
     provider: 'bedrock',
     promptCaching: false,
   },
-  'bedrock:us.meta.llama3-2-90b-instruct-v1:0': {
-    model: 'us.meta.llama3-2-90b-instruct-v1:0',
-    displayName: 'llama 3.2 90b instruct',
-    temperature: 0,
-    max_tokens: 2048,
-    canStream: true,
-    canStreamWithToolCalls: false,
-    enabled: false,
-    provider: 'bedrock',
-    promptCaching: false,
-  },
-  'bedrock:mistral.mistral-large-2407-v1:0': {
-    model: 'mistral.mistral-large-2407-v1:0',
-    displayName: 'mistral large 2 (24.07)',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: false,
-    enabled: false,
-    provider: 'bedrock',
-    promptCaching: false,
-  },
   'anthropic:claude:thinking-toggle-off': {
     model: 'claude-3-5-sonnet-20241022',
     displayName: `claude`,
@@ -287,11 +265,11 @@ export const MODELS_CONFIGURATION: {
     provider: 'anthropic',
     promptCaching: true,
   },
-  'openai:gpt-4.5-preview-2025-02-27': {
-    model: 'gpt-4.5-preview-2025-02-27',
-    displayName: 'gpt 4.5 preview',
+  'openai:gpt-4.1-2025-04-14': {
+    model: 'gpt-4.1-2025-04-14',
+    displayName: 'gpt 4.1',
     temperature: 0,
-    max_tokens: 4096, // not used for openai
+    max_tokens: 32768, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -303,7 +281,19 @@ export const MODELS_CONFIGURATION: {
     model: 'gpt-4o-2024-11-20',
     displayName: 'gpt 4o',
     temperature: 0,
-    max_tokens: 4096, // not used for openai
+    max_tokens: 16384, // not used for openai
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+  },
+  'openai:o3-mini-2025-01-31': {
+    model: 'o3-mini-2025-01-31',
+    displayName: 'o3 mini',
+    temperature: 1, // only temperature 1 is supported for o1
+    max_tokens: 100000, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -315,7 +305,7 @@ export const MODELS_CONFIGURATION: {
     model: 'o1-2024-12-17',
     displayName: 'o1',
     temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 4096, // not used for openai
+    max_tokens: 100000, // not used for openai
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
     enabled: false,
@@ -323,35 +313,11 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
   },
-  'openai:o3-mini-2025-01-31': {
-    model: 'o3-mini-2025-01-31',
-    displayName: 'o3 mini',
-    temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 4096, // not used for openai
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'openai',
-    promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
-  },
-  'xai:grok-2-1212': {
-    model: 'grok-2-1212',
-    displayName: `grok 2`,
+  'xai:grok-3-beta': {
+    model: 'grok-3-beta',
+    displayName: `grok 3 beta`,
     temperature: 0,
-    max_tokens: 4096,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'xai',
-    promptCaching: true, // not used for xai
-    strictParams: false,
-  },
-  'xai:grok-beta': {
-    model: 'grok-beta',
-    displayName: `grok beta`,
-    temperature: 0,
-    max_tokens: 4096,
+    max_tokens: 131072,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,

@@ -66,6 +66,7 @@ export const apiClient = {
         return data;
       },
     },
+
     invites: {
       create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
@@ -172,11 +173,13 @@ export const apiClient = {
       downloadQuadraticFile(name, new Uint8Array(checkpointData));
     },
 
-    async duplicate(uuid: string, args: { isPrivate: boolean; checkpoint?: { dataUrl: string; version: string } }) {
+    async duplicate(
+      uuid: string,
+      args: { teamUuid: string; isPrivate: boolean; checkpoint?: { dataUrl: string; version: string } }
+    ) {
       // Get the file we want to duplicate
       const {
         file: { name, lastCheckpointDataUrl, lastCheckpointVersion, thumbnail },
-        team,
       } = await apiClient.files.get(uuid);
 
       // Get the file checkpoint we’re downloading (the latest if not specified)
@@ -195,7 +198,7 @@ export const apiClient = {
           version: checkpointVersion,
           contents,
         },
-        teamUuid: team.uuid,
+        teamUuid: args.teamUuid,
         isPrivate: args.isPrivate,
       });
 
@@ -362,11 +365,11 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections.GET.response']
       );
     },
-    async get(uuid: string) {
+    async get({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) {
       const connection = await fetchFromApi(
-        `/v0/connections/${uuid}`,
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'GET' },
-        ApiSchemas['/v0/connections/:uuid.GET.response']
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response']
       );
 
       if (connection.typeDetails.sshKey) {
@@ -375,25 +378,33 @@ export const apiClient = {
 
       return connection;
     },
-    create(body: ApiTypes['/v0/team/:uuid/connections.POST.request'], teamUuid: string) {
+    create({ body, teamUuid }: { body: ApiTypes['/v0/teams/:uuid/connections.POST.request']; teamUuid: string }) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections`,
         { method: 'POST', body: JSON.stringify(body) },
-        ApiSchemas['/v0/connections.POST.response']
+        ApiSchemas['/v0/teams/:uuid/connections.POST.response']
       );
     },
-    update(uuid: string, body: ApiTypes['/v0/connections/:uuid.PUT.request']) {
+    update({
+      connectionUuid,
+      body,
+      teamUuid,
+    }: {
+      connectionUuid: string;
+      body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request'];
+      teamUuid: string;
+    }) {
       return fetchFromApi(
-        `/v0/connections/${uuid}`,
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'PUT', body: JSON.stringify(body) },
-        ApiSchemas['/v0/connections/:uuid.PUT.response']
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.PUT.response']
       );
     },
-    delete(uuid: string) {
+    delete({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) {
       return fetchFromApi(
-        `/v0/connections/${uuid}`,
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'DELETE' },
-        ApiSchemas['/v0/connections/:uuid.DELETE.response']
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.DELETE.response']
       );
     },
   },
@@ -404,6 +415,13 @@ export const apiClient = {
         `/v0/ai/feedback`,
         { method: 'PATCH', body: JSON.stringify(body) },
         ApiSchemas['/v0/ai/feedback.PATCH.response']
+      );
+    },
+    codeRunError(body: ApiTypes['/v0/ai/codeRunError.PATCH.request']) {
+      return fetchFromApi(
+        `/v0/ai/codeRunError`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+        ApiSchemas['/v0/ai/codeRunError.PATCH.response']
       );
     },
   },

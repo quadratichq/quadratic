@@ -51,13 +51,17 @@ export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessageProm
   );
 };
 
+const getAIPromptMessages = (messages: ChatMessage[]): AIMessagePrompt[] => {
+  return getPromptMessages(messages).filter((message): message is AIMessagePrompt => message.role === 'assistant');
+};
+
 export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
   const userPromptMessage = getUserPromptMessages(messages);
   return userPromptMessage[userPromptMessage.length - 1].contextType;
 };
 
-export const getLastUserPromptMessageIndex = (messages: ChatMessage[]): number => {
-  return getUserPromptMessages(messages).length - 1;
+export const getLastAIPromptMessageIndex = (messages: ChatMessage[]): number => {
+  return getAIPromptMessages(messages).length - 1;
 };
 
 export const getSystemPromptMessages = (

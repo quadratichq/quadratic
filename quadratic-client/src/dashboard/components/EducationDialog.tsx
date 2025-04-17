@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 
 export function EducationDialog() {
   const { loggedInUser } = useRootRouteLoaderData();

@@ -45,9 +45,10 @@ async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
+    team_id: &Uuid,
 ) -> Result<(MsSqlConnection, ApiConnection<MsSqlConnection>)> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id).await?
+        get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
     } else {
         let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
         ApiConnection {
@@ -78,11 +79,13 @@ async fn get_connection(
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let mut connection = get_connection(&state, &claims, &sql_query.connection_id)
+    let team_id = get_team_id_header(&headers)?;
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
         .await?
         .0;
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
@@ -98,12 +101,12 @@ pub(crate) async fn query(
 /// Get the schema of the database
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-    let (mut connection, api_connection) = get_connection(&state, &claims, &id).await?;
-
-    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
+    let team_id = get_team_id_header(&headers)?;
+    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
 
@@ -130,7 +133,10 @@ mod tests {
     use super::*;
     use crate::{
         num_vec, test_connection,
-        test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet},
+        test_util::{
+            get_claims, new_state, new_team_id_with_header, response_bytes, str_vec,
+            validate_parquet,
+        },
     };
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
@@ -151,8 +157,9 @@ mod tests {
     #[traced_test]
     async fn mssql_schema() {
         let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
         let state = Extension(new_state().await);
-        let response = schema(Path(connection_id), state, get_claims())
+        let response = schema(Path(connection_id), headers, state, get_claims())
             .await
             .unwrap();
 
@@ -346,7 +353,10 @@ mod tests {
             connection_id,
         };
         let state = Extension(new_state().await);
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let (_, headers) = new_team_id_with_header().await;
+        let data = query(headers, state, get_claims(), Json(sql_query))
+            .await
+            .unwrap();
         let response = data.into_response();
 
         let expected = vec![
@@ -451,7 +461,10 @@ mod tests {
         };
         let mut state = Extension(new_state().await);
         state.settings.max_response_bytes = 0;
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let (_, headers) = new_team_id_with_header().await;
+        let data = query(headers, state, get_claims(), Json(sql_query))
+            .await
+            .unwrap();
         let response = data.into_response();
 
         assert_eq!(response.status(), StatusCode::OK);

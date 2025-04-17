@@ -11,7 +11,7 @@ import { AddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';
 import { FileIcon } from '@radix-ui/react-icons';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export const Component = () => {
   const {

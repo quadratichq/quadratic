@@ -26,7 +26,7 @@ export type ActionAvailabilityArgs = {
  * e.g. the sidebar, command palette, file menu, and formatting bar.
  */
 export type ActionSpec<ActionArgsType> = {
-  label: string;
+  label: () => string;
   run: (args: ActionArgsType) => void;
 
   // Used for contexts where we want to show a longer label

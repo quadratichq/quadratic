@@ -145,8 +145,11 @@ pub async fn get_connection<T: DeserializeOwned>(
     jwt: &str,
     user_id: &str,
     connection_id: &Uuid,
+    team_id: &Uuid,
 ) -> Result<Connection<T>> {
-    let url = format!("{base_url}/v0/internal/user/{user_id}/connections/{connection_id}");
+    let url = format!(
+        "{base_url}/v0/internal/user/{user_id}/teams/{team_id}/connections/{connection_id}"
+    );
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
