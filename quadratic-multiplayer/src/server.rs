@@ -46,14 +46,19 @@ pub struct Claims {
 /// integration tested.
 pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
+        //
         // handle websockets
         .route("/ws", get(ws_handler))
+        //
         // healthcheck
         .route("/health", get(healthcheck))
+        //
         // full healthcheck
         .route("/health/full", get(full_healthcheck))
+        //
         // state
         .layer(Extension(state))
+        //
         // logger
         .layer(
             TraceLayer::new_for_http()
