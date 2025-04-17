@@ -106,6 +106,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
     strategy:
       matrix:
         include:
@@ -124,14 +126,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Read version
+        id: read-version
+        if: matrix.service == 'client'
+        run: |
+          VERSION=$(cat VERSION)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Cache Pyodide
-        id: cache-pyodide
+        if: matrix.service == 'client'
         uses: useblacksmith/cache@v5
         with:
           path: quadratic-client/public/pyodide
           key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
 
       - name: Download & Verify Pyodide
+        if: matrix.service == 'client'
         run: |
           npm run client:download:pyodide
 
@@ -422,7 +432,7 @@ jobs:
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
           SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//')
 
-          echo "WebsiteURL=https://${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
+          echo "WebsiteURL=${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
           echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
@@ -447,7 +457,7 @@ jobs:
 
             🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
 
-            🔗 URL: ${{ steps.deploy-metadata.outputs.WebsiteURL }}
+            🔗 URL: https://${{ steps.deploy-metadata.outputs.WebsiteURL }}
           edit-mode: replace
 
       - name: Update comment on deploy images failure
@@ -472,7 +482,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="success" \
-            -f environment_url="${{ steps.deploy-metadata.outputs.WebsiteURL }}" \
+            -f environment_url="https://${{ steps.deploy-metadata.outputs.WebsiteURL }}" \
             -f description="Deployment successful!" \
             -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -492,3 +502,67 @@ jobs:
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  verify_deployed_version:
+    name: Verify Version
+    needs: [build_images, deploy_images]
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        service:
+          - name: client
+            url: "${{ needs.deploy_images.outputs.website_url }}/version.json"
+          - name: api
+            url: "api.${{ needs.deploy_images.outputs.website_url }}/health"
+          - name: multiplayer
+            url: "multiplayer.${{ needs.deploy_images.outputs.website_url }}/health"
+          - name: connection
+            url: "connection.${{ needs.deploy_images.outputs.website_url }}/health"
+          - name: files
+            url: "files.${{ needs.deploy_images.outputs.website_url }}/health"
+      fail-fast: false
+    env:
+      EXPECTED_VERSION: ${{ needs.build_images.outputs.version }}
+      MAX_ATTEMPTS: 20
+    steps:
+      - name: Verify ${{ matrix.service.name }} version
+        run: |
+          ATTEMPTS=0
+          echo "Checking ${{ matrix.service.name }} version..."
+
+          while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
+            ATTEMPT_NUM=$((ATTEMPTS + 1))
+
+            RESPONSE=$(curl -s -w "\n%{http_code}" "${{ matrix.service.url }}" 2>&1)
+            HTTP_BODY=$(echo "$RESPONSE" | head -n 1)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "$ATTEMPT_NUM - Endpoint not ready (HTTP $HTTP_CODE)"
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 30
+              continue
+            fi
+
+            DEPLOYED_VERSION=$(echo "$HTTP_BODY" | jq -r .version 2>/dev/null || echo "")
+            if [ -z "$DEPLOYED_VERSION" ]; then
+              echo "$ATTEMPT_NUM - Invalid version format in response"
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 30
+              continue
+            fi
+
+            if [ "$DEPLOYED_VERSION" = "$EXPECTED_VERSION" ]; then
+              echo "::notice::${{ matrix.service.name }} version verified successfully"
+              exit 0
+            fi
+
+            echo "$ATTEMPT_NUM - Version mismatch, found $DEPLOYED_VERSION"
+            ATTEMPTS=$((ATTEMPTS + 1))
+            sleep 30
+          done
+
+          echo "::error::${{ matrix.service.name }} version check failed after ${{ env.MAX_ATTEMPTS }} attempts"
+          exit 1

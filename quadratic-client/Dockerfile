@@ -190,7 +190,7 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
 
 # Create version.json from VERSION file
 COPY --link VERSION .
-RUN echo "{\"version\": \"$(cat VERSION)\"}" > ./quadratic-client/public/version.json
+RUN echo "{\"version\":\"$(cat VERSION)\"}" > ./quadratic-client/public/version.json
 
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
