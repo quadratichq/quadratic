@@ -130,10 +130,7 @@ export class UI {
       this.write(" " + DONE, "green");
     }
     if (
-      (component === "core" && this.cli.options.perf) ||
-      (component === "rustClient" &&
-        this.cli.options.perf &&
-        this.cli.options.rustClient)
+      component === "core" && this.cli.options.perf
     ) {
       this.write(PERF);
     }
@@ -183,7 +180,6 @@ export class UI {
     this.statusItem("files");
     this.statusItem("connection");
     this.statusItem("types");
-    this.statusItem("rustClient");
     this.statusItem("python");
     if (this.help === "cli") {
       this.write(helpCLI);

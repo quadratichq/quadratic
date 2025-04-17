@@ -15,7 +15,7 @@ import type {
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
-import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
+import initRustClient from '@/app/quadratic-core/quadratic_core';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
