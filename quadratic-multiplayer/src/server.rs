@@ -4,12 +4,12 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
-    Extension, Router,
+    Extension, Json, Router,
     extract::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
-    http::StatusCode,Json,
+    http::StatusCode,
     response::IntoResponse,
     routing::get,
 };
@@ -17,7 +17,11 @@ use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use futures_util::stream::SplitSink;
-use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
+use quadratic_rust_shared::{
+    auth::jwt::{authorize, get_jwks},
+    pubsub::PubSub,
+    quadratic_api::is_healthy,
+};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
@@ -47,8 +51,10 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
         // handle websockets
         .route("/ws", get(ws_handler))
-        // healthchecks
+        // healthcheck
         .route("/health", get(healthcheck))
+        // full healthcheck
+        .route("/health/full", get(full_healthcheck))
         // state
         .layer(Extension(state))
         // logger
@@ -337,14 +343,35 @@ pub(crate) async fn healthcheck() -> Json<HealthResponse> {
     .into()
 }
 
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct FullHealthResponse {
+    pub version: String,
+    pub redis_is_healthy: bool,
+    pub api_is_healthy: bool,
+}
+
+pub(crate) async fn full_healthcheck(
+    Extension(state): Extension<Arc<State>>,
+) -> Json<FullHealthResponse> {
+    let version = env!("CARGO_PKG_VERSION").into();
+    let redis_is_healthy = state.pubsub.lock().await.connection.is_healthy().await;
+    let api_is_healthy = is_healthy(&state.settings.quadratic_api_uri).await;
+
+    FullHealthResponse {
+        version,
+        redis_is_healthy,
+        api_is_healthy,
+    }
+    .into()
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
 
     use super::*;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
-    use crate::test_util::{integration_test_send_and_receive, new_arc_state, setup
-    };
+    use crate::test_util::{integration_test_send_and_receive, new_arc_state, setup};
     use axum::{
         body::Body,
         http::{self, Request},
