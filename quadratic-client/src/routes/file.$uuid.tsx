@@ -3,7 +3,7 @@ import { debugShowFileIO, debugShowMultiplayer, debugStartupTime } from '@/app/d
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
-import initCore from '@/app/quadratic-core/quadratic_core';
+import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -67,7 +67,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
   // initialize: Rust metadata
-  await initCore();
+  await initCoreClient();
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
