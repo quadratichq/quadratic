@@ -69,7 +69,7 @@ impl Sheet {
         for old_pos in data_tables_to_move {
             if let Some((index, old_pos, data_table)) = self.data_tables.shift_remove_full(&old_pos)
             {
-                let new_pos = old_pos.translate(0, 1, 1, 1);
+                let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_from_code_run(
                     self.id,

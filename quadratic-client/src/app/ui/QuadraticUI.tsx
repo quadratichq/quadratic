@@ -35,6 +35,7 @@ import { Empty } from '@/shared/components/Empty';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
@@ -62,6 +63,8 @@ export default function QuadraticUI() {
       events.off('coreError', handleError);
     };
   }, []);
+
+  useRemoveInitialLoadingUI();
 
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)
