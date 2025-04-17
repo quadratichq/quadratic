@@ -69,7 +69,15 @@ export const connectionClient = {
     },
   },
   test: {
-    run: async ({ type, typeDetails, teamUuid }: { type: ConnectionType; typeDetails: ConnectionTypeDetails; teamUuid: string }) => {
+    run: async ({
+      type,
+      typeDetails,
+      teamUuid,
+    }: {
+      type: ConnectionType;
+      typeDetails: ConnectionTypeDetails;
+      teamUuid: string;
+    }) => {
       try {
         const typeLower = type.toLowerCase();
         const headers = new Headers(await jwtHeader());

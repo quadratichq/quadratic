@@ -83,12 +83,8 @@ pub(crate) async fn query(
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-<<<<<<< HEAD
-    let mut connection = get_connection(&state, &claims, &sql_query.connection_id)
-=======
     let team_id = get_team_id_header(&headers)?;
     let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
->>>>>>> origin/qa
         .await?
         .0;
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
@@ -108,14 +104,8 @@ pub(crate) async fn schema(
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-<<<<<<< HEAD
-    let (mut connection, api_connection) = get_connection(&state, &claims, &id).await?;
-
-    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
-=======
     let team_id = get_team_id_header(&headers)?;
     let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
->>>>>>> origin/qa
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
 
