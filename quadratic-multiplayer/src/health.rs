@@ -42,48 +42,21 @@ pub(crate) async fn full_healthcheck(
 
 #[cfg(test)]
 mod tests {
-    use crate::{server::app, test_util::new_arc_state};
+    use crate::test_util::process_route;
     use axum::{
         body::Body,
-        http::{self, Request, StatusCode},
+        http::{self, StatusCode},
     };
-    use tower::ServiceExt;
 
     #[tokio::test]
     async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_arc_state().await;
-        let app = app(state);
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
+        let response = process_route("/health", http::Method::GET, Body::empty()).await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
     async fn responds_with_a_200_ok_for_a_full_healthcheck() {
-        let state = new_arc_state().await;
-        let app = app(state);
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health/full")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
+        let response = process_route("/health/full", http::Method::GET, Body::empty()).await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 }
