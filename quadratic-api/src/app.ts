@@ -9,6 +9,7 @@ import path from 'path';
 import { CORS, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
+
 export const app = express();
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction): void => {
