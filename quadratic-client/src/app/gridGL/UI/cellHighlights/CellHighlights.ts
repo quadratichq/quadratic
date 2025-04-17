@@ -75,11 +75,11 @@ export class CellHighlights extends Container {
 
     const selectedCellIndex = this.selectedCellIndex;
 
-    this.cellsAccessed.forEach(({ sheetId, ranges }, index) => {
-      if (sheetId !== sheets.current) return;
+    if (!inlineEditorHandler.cursorIsMoving) {
+      this.cellsAccessed.forEach(({ sheetId, ranges }, index) => {
+        if (sheetId !== sheets.current || selectedCellIndex === index) return;
 
-      ranges.forEach((range) => {
-        if (selectedCellIndex !== index || !inlineEditorHandler.cursorIsMoving) {
+        ranges.forEach((range) => {
           const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range);
           if (refRangeBounds) {
             drawDashedRectangle({
@@ -89,23 +89,27 @@ export class CellHighlights extends Container {
               range: refRangeBounds,
             });
           }
-        }
+        });
       });
-    });
+    }
 
     this.dirty = true;
   };
 
   // Draws the marching highlights by using an offset dashed line to create the
   // marching effect.
-  private updateMarchingHighlight() {
+  private updateMarchingHighlight = () => {
     if (!inlineEditorHandler.cursorIsMoving) {
+      this.marchingHighlight.clear();
       this.selectedCellIndex = undefined;
       return;
     }
 
     // Index may not have been set yet.
-    if (this.selectedCellIndex === undefined) return;
+    if (this.selectedCellIndex === undefined) {
+      this.marchingHighlight.clear();
+      return;
+    }
 
     if (this.marchLastTime === 0) {
       this.marchLastTime = Date.now();
@@ -117,11 +121,17 @@ export class CellHighlights extends Container {
 
     const selectedCellIndex = this.selectedCellIndex;
     const accessedCell = this.cellsAccessed[selectedCellIndex];
-    if (!accessedCell || accessedCell.sheetId !== sheets.current) return;
+    if (!accessedCell || accessedCell.sheetId !== sheets.current) {
+      this.marchingHighlight.clear();
+      return;
+    }
 
     const colorNumber = convertColorStringToTint(colors.cellHighlightColor[selectedCellIndex % NUM_OF_CELL_REF_COLORS]);
     const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(accessedCell.ranges[0]);
-    if (!refRangeBounds) return;
+    if (!refRangeBounds) {
+      this.marchingHighlight.clear();
+      return;
+    }
 
     const render = drawDashedRectangleMarching({
       g: this.marchingHighlight,
@@ -134,7 +144,7 @@ export class CellHighlights extends Container {
     if (render) {
       this.dirty = true;
     }
-  }
+  };
 
   update = () => {
     if (this.dirty) {
