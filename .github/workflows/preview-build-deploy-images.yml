@@ -488,15 +488,15 @@ jobs:
       matrix:
         service:
           - name: client
-            url: https://"${{ needs.deploy_images.outputs.website_url }}/version.json"
+            url: "https://${{ needs.deploy_images.outputs.website_url }}/version.json"
           - name: api
-            url: https://"api.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://api.${{ needs.deploy_images.outputs.website_url }}/health"
           - name: multiplayer
-            url: https://"multiplayer.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://multiplayer.${{ needs.deploy_images.outputs.website_url }}/health"
           - name: connection
-            url: https://"connection.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://connection.${{ needs.deploy_images.outputs.website_url }}/health"
           - name: files
-            url: https://"files.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://files.${{ needs.deploy_images.outputs.website_url }}/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_images.outputs.version }}
