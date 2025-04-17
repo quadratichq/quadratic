@@ -16,7 +16,6 @@ export const router = createBrowserRouter(
         loader={RootRoute.loader}
         Component={RootRoute.Component}
         ErrorBoundary={RootRoute.ErrorBoundary}
-        HydrateFallback={RootRoute.HydrateFallback}
       >
         {/**
          * ----------------------------------------------------------------

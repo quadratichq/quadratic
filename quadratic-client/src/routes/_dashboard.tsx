@@ -8,6 +8,7 @@ import { Empty } from '@/shared/components/Empty';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -125,6 +126,8 @@ export const Component = () => {
   const revalidator = useRevalidator();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
+
+  useRemoveInitialLoadingUI();
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
