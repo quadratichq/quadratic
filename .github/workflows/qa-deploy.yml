@@ -294,7 +294,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
-      group: qa-verify_deployed_version
+      group: qa-verify-version-${{ matrix.service.name }}
       cancel-in-progress: true
     timeout-minutes: 30
     strategy:
@@ -305,9 +305,9 @@ jobs:
           - name: api
             url: "https://quadratic-staging.herokuapp.com/health"
           - name: multiplayer
-            url: "http://multiplayer-pr-qa.quadratic-preview.com/health"
+            url: "https://multiplayer-pr-qa.quadratic-preview.com/health"
           - name: connection
-            url: "http://connection-pr-qa.quadratic-preview.com/health"
+            url: "https://connection-pr-qa.quadratic-preview.com/health"
           - name: files
             url: "http://files-pr-qa.quadratic-preview.com/health"
       fail-fast: false
