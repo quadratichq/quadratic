@@ -79,11 +79,7 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 
 
 ###########################################################################################
-# Builder 3 - Build rust client (deleted)
-###########################################################################################
-
-###########################################################################################
-# Builder 4 - Combine all builder files and build the client
+# Builder 3 - Combine all builder files and build the client
 ###########################################################################################
 FROM node:23 AS vite-builder
 
