@@ -483,7 +483,7 @@ jobs:
     needs: [build_images, deploy_images]
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       matrix:
         service:
@@ -500,7 +500,7 @@ jobs:
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_images.outputs.version }}
-      MAX_ATTEMPTS: 20
+      MAX_ATTEMPTS: 50
     steps:
       - name: Verify ${{ matrix.service.name }} version
         run: |

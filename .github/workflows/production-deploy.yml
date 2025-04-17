@@ -279,7 +279,7 @@ jobs:
     concurrency:
       group: production-verify_deployed_version
       cancel-in-progress: true
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       matrix:
         service:
@@ -296,7 +296,7 @@ jobs:
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_client.outputs.version }}
-      MAX_ATTEMPTS: 20
+      MAX_ATTEMPTS: 50
     steps:
       - name: Verify ${{ matrix.service.name }} version
         run: |
