@@ -400,33 +400,6 @@ jobs:
           echo "Deployment timed out after ${{ env.MAX_ATTEMPTS }} attempts"
           exit 1
 
-      - name: Delete untagged (old) images
-        run: |
-          for service in client api connection files multiplayer; do
-            REPO_NAME="quadratic-${service}"
-
-            # Get list of untagged image digests in batches
-            UNTAGGED_IMAGES=$(aws ecr list-images \
-              --repository-name "$REPO_NAME" \
-              --filter "tagStatus=UNTAGGED" \
-              --query 'imageIds[*].imageDigest' \
-              --output json)
-
-            # Process images in batches of 100
-            if [ "$UNTAGGED_IMAGES" != "[]" ]; then
-              echo "Deleting untagged images from $REPO_NAME"
-              echo "$UNTAGGED_IMAGES" | jq -c -r '. | _nwise(100) | map({imageDigest: .})' | while read -r BATCH; do
-                if [ ! -z "$BATCH" ]; then
-                  aws ecr batch-delete-image \
-                    --repository-name "$REPO_NAME" \
-                    --image-ids "$BATCH" || true
-                fi
-              done
-            else
-              echo "No untagged images found in $REPO_NAME"
-            fi
-          done
-
       - name: Generate Deploy Metadata
         id: deploy-metadata
         run: |
@@ -515,15 +488,15 @@ jobs:
       matrix:
         service:
           - name: client
-            url: "${{ needs.deploy_images.outputs.website_url }}/version.json"
+            url: https://"${{ needs.deploy_images.outputs.website_url }}/version.json"
           - name: api
-            url: "api.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: https://"api.${{ needs.deploy_images.outputs.website_url }}/health"
           - name: multiplayer
-            url: "multiplayer.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: https://"multiplayer.${{ needs.deploy_images.outputs.website_url }}/health"
           - name: connection
-            url: "connection.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: https://"connection.${{ needs.deploy_images.outputs.website_url }}/health"
           - name: files
-            url: "files.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: https://"files.${{ needs.deploy_images.outputs.website_url }}/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_images.outputs.version }}
