@@ -24,7 +24,7 @@ import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams,
 
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
-import { Empty } from '../shared/components/Empty';
+import { EmptyPage } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
@@ -251,14 +251,12 @@ export const ErrorBoundary = () => {
       reportError = true;
     }
     return (
-      <Empty
+      <EmptyPage
         title={title}
         description={description}
         Icon={ExclamationTriangleIcon}
         actions={actions}
-        showLoggedInUser
         error={reportError ? error : undefined}
-        severity={reportError ? 'error' : undefined}
       />
     );
   }
@@ -266,14 +264,12 @@ export const ErrorBoundary = () => {
   // If we reach here, it's an error we don't know how to handle.
   console.error(error);
   return (
-    <Empty
+    <EmptyPage
       title="Unexpected error"
       description="Something went wrong loading this file. If the error continues, contact us."
       Icon={ExclamationTriangleIcon}
       actions={actionsDefault}
-      severity="error"
       error={error}
-      showLoggedInUser
     />
   );
 };

@@ -1,6 +1,6 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyState } from '@/shared/components/Empty';
 import { AddIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -97,8 +97,9 @@ export const ConnectionsList = ({
             />
           </>
         ) : (
-          <Empty
+          <EmptyState
             title="No connections"
+            className="mt-8"
             description="Create a connection from the options above, then open a spreadsheet and pull in data from it."
             Icon={ConnectionsIcon}
           />

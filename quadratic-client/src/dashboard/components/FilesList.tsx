@@ -5,7 +5,7 @@ import { FilesListViewControls } from '@/dashboard/components/FilesListViewContr
 import { Layout, Order, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import type { Action as FilesAction } from '@/routes/api.files.$uuid';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyState } from '@/shared/components/Empty';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
@@ -241,6 +241,12 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListExampl
 
 function EmptyFilterState() {
   return (
-    <Empty title="No matches" description={<>No files found with that specified name.</>} Icon={MagnifyingGlassIcon} />
+    <div className="flex min-h-80 items-center justify-center">
+      <EmptyState
+        title="No matches"
+        description={'No files found with that specified name.'}
+        Icon={MagnifyingGlassIcon}
+      />
+    </div>
   );
 }

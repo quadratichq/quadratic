@@ -1,7 +1,7 @@
 import { requireAuth } from '@/auth/auth';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/Empty';
 import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
@@ -211,11 +211,10 @@ export const ErrorBoundary = () => {
   const error = useRouteError();
 
   return (
-    <Empty
+    <EmptyPage
       title="Failed to load version history"
       description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
       Icon={ExclamationTriangleIcon}
-      severity="error"
       error={error}
       actions={
         <div className="flex justify-center gap-2">

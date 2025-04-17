@@ -1,4 +1,5 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { EmptyPage } from '@/shared/components/Empty';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouteError } from 'react-router';
 import { debugShowUILogs } from '../app/debugFlags';
@@ -6,7 +7,6 @@ import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { FilesList } from '../dashboard/components/FilesList';
 import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState';
 import NewFileButton from '../dashboard/components/NewFileButton';
-import { Empty } from '../shared/components/Empty';
 
 export const Component = () => {
   const {
@@ -50,14 +50,11 @@ export const ErrorBoundary = () => {
   if (debugShowUILogs) console.error('[<MineRoute>.<ErrorBoundary>]', error);
 
   return (
-    <div className="mx-auto max-w-prose py-4">
-      <Empty
-        title="Unexpected error"
-        description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
-        Icon={ExclamationTriangleIcon}
-        severity="error"
-        error={error}
-      />
-    </div>
+    <EmptyPage
+      title="Unexpected error"
+      description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
+      Icon={ExclamationTriangleIcon}
+      error={error}
+    />
   );
 };
