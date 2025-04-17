@@ -4,7 +4,7 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
-    Extension, Json, Router,
+    Extension, Router,
     extract::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -17,11 +17,7 @@ use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use futures_util::stream::SplitSink;
-use quadratic_rust_shared::{
-    auth::jwt::{authorize, get_jwks},
-    pubsub::PubSub,
-    quadratic_api::is_healthy,
-};
+use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
@@ -33,6 +29,7 @@ use crate::{
     background_worker,
     config::config,
     error::{ErrorLevel, MpError, Result},
+    health::{full_healthcheck, healthcheck},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
@@ -331,57 +328,18 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct HealthResponse {
-    pub version: String,
-}
-
-pub(crate) async fn healthcheck() -> Json<HealthResponse> {
-    HealthResponse {
-        version: env!("CARGO_PKG_VERSION").into(),
-    }
-    .into()
-}
-
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct FullHealthResponse {
-    pub version: String,
-    pub redis_is_healthy: bool,
-    pub api_is_healthy: bool,
-}
-
-pub(crate) async fn full_healthcheck(
-    Extension(state): Extension<Arc<State>>,
-) -> Json<FullHealthResponse> {
-    let version = env!("CARGO_PKG_VERSION").into();
-    let redis_is_healthy = state.pubsub.lock().await.connection.is_healthy().await;
-    let api_is_healthy = is_healthy(&state.settings.quadratic_api_uri).await;
-
-    FullHealthResponse {
-        version,
-        redis_is_healthy,
-        api_is_healthy,
-    }
-    .into()
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
 
     use super::*;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
-    use crate::test_util::{integration_test_send_and_receive, new_arc_state, setup};
-    use axum::{
-        body::Body,
-        http::{self, Request},
-    };
+    use crate::test_util::{integration_test_send_and_receive, setup};
+
     use base64::{Engine, engine::general_purpose::STANDARD};
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
-
-    use tower::ServiceExt;
     use uuid::Uuid;
 
     async fn assert_user_changes_state(update: UserStateUpdate) {
@@ -402,6 +360,7 @@ pub(crate) mod tests {
         assert_eq!(response, Some(expected));
     }
 
+    #[allow(dead_code)]
     fn new_user_state_update(user: User, file_id: Uuid) -> MessageRequest {
         MessageRequest::UserUpdate {
             session_id: user.session_id,
@@ -418,25 +377,6 @@ pub(crate) mod tests {
                 follow: None,
             },
         }
-    }
-
-    #[tokio::test]
-    async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_arc_state().await;
-        let app = app(state);
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
