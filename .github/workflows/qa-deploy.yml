@@ -308,8 +308,8 @@ jobs:
             url: "https://multiplayer-pr-qa.quadratic-preview.com/health"
           - name: connection
             url: "https://connection-pr-qa.quadratic-preview.com/health"
-          # - name: files
-          #   url: "https://files-pr-qa.quadratic-preview.com/health"
+          - name: files
+            url: "https://files-pr-qa.quadratic-preview.com/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_client.outputs.version }}

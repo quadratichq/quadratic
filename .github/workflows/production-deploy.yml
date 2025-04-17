@@ -291,8 +291,8 @@ jobs:
             url: "https://multiplayer.quadratichq.com/health"
           - name: connection
             url: "https://connection.quadratichq.com/health"
-          # - name: files
-          #   url: "https://files.quadratichq.com/health"
+          - name: files
+            url: "https://files.quadratichq.com/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_client.outputs.version }}
