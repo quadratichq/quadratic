@@ -507,27 +507,47 @@ jobs:
           ATTEMPTS=0
           echo "Checking ${{ matrix.service.name }} version..."
           echo "Expected version: ${{ env.EXPECTED_VERSION }}"
+          echo "Service URL: ${{ matrix.service.url }}"
 
           while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
 
-            RESPONSE=$(curl -s -w "\n%{http_code}" "${{ matrix.service.url }}" 2>&1)
+            RESPONSE=$(curl -v -s
+              --connect-timeout 10 \
+              --max-time 30 \
+              -w "\n%{http_code}" \
+              "${{ matrix.service.url }}" 2>&1)
+            CURL_EXIT_CODE=$?
+
+            # If curl failed, retry
+            if [ $CURL_EXIT_CODE -ne 0 ]; then
+              echo "$ATTEMPTS/${{ env.MAX_ATTEMPTS }} - Curl failed with exit code $CURL_EXIT_CODE"
+              [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ] && sleep 30
+              continue
+            fi
+
+            # Extract HTTP code and body
             HTTP_BODY=$(echo "$RESPONSE" | head -n 1)
             HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
 
+            # Check for valid HTTP response
             if [ "$HTTP_CODE" != "200" ]; then
               echo "$ATTEMPTS/${{ env.MAX_ATTEMPTS }} - Endpoint not ready (HTTP $HTTP_CODE)"
               [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ] && sleep 30
               continue
             fi
 
+            # Try to parse version
             DEPLOYED_VERSION=$(echo "$HTTP_BODY" | jq -r .version 2>/dev/null || echo "")
+
+            # Check if version was successfully extracted
             if [ -z "$DEPLOYED_VERSION" ]; then
               echo "$ATTEMPTS/${{ env.MAX_ATTEMPTS }} - Invalid version format in response"
               [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ] && sleep 30
               continue
             fi
 
+            # Compare versions
             if [ "$DEPLOYED_VERSION" = "$EXPECTED_VERSION" ]; then
               echo "::notice::${{ matrix.service.name }} version verified successfully"
               exit 0
