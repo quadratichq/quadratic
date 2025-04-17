@@ -1,6 +1,5 @@
 use axum::body::Body;
 use axum::http::{self, Request, Response};
-use axum::response::IntoResponse;
 use fake::Fake;
 use fake::faker::filesystem::en::FilePath;
 use fake::faker::internet::en::FreeEmail;

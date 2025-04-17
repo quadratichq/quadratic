@@ -31,6 +31,7 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{ConnectionError, Result},
+    health::{full_healthcheck, healthcheck},
     proxy::proxy,
     sql::{
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
@@ -136,8 +137,12 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .layer(Extension(state))
         //
         // unprotected routes without state
+        //
+        // healthcheck
         .route("/health", get(healthcheck))
         //
+        // full healthcheck of dependencies
+        .route("/health/full", get(full_healthcheck))
         // cache control - disable client side caching
         .layer(map_response(|mut response: Response| async move {
             let headers = response.headers_mut();
@@ -222,18 +227,6 @@ pub(crate) async fn serve() -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct HealthResponse {
-    pub version: String,
-}
-
-pub(crate) async fn healthcheck() -> Json<HealthResponse> {
-    HealthResponse {
-        version: env!("CARGO_PKG_VERSION").into(),
-    }
-    .into()
-}
-
 pub(crate) async fn static_ips() -> Result<Json<StaticIpsResponse>> {
     let static_ips = config()?.static_ips.to_vec();
     let response = StaticIpsResponse { static_ips };
@@ -261,25 +254,6 @@ pub(crate) mod tests {
     use tower::ServiceExt;
 
     use super::*;
-
-    #[tokio::test]
-    async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_state().await;
-        let app = app(state).unwrap();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-    }
 
     #[tokio::test]
     async fn gets_static_ips() {
