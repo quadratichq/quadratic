@@ -242,6 +242,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
+    outputs:
+      website_url: ${{ steps.deploy-metadata.outputs.website_url }}
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
       MAX_ATTEMPTS: 50
@@ -432,7 +434,7 @@ jobs:
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
           SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//')
 
-          echo "WebsiteURL=${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
+          echo "website_url=${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
           echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
@@ -457,7 +459,7 @@ jobs:
 
             🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
 
-            🔗 URL: https://${{ steps.deploy-metadata.outputs.WebsiteURL }}
+            🔗 URL: https://${{ steps.deploy-metadata.outputs.website_url }}
           edit-mode: replace
 
       - name: Update comment on deploy images failure
@@ -482,7 +484,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="success" \
-            -f environment_url="https://${{ steps.deploy-metadata.outputs.WebsiteURL }}" \
+            -f environment_url="https://${{ steps.deploy-metadata.outputs.website_url }}" \
             -f description="Deployment successful!" \
             -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -531,26 +533,25 @@ jobs:
         run: |
           ATTEMPTS=0
           echo "Checking ${{ matrix.service.name }} version..."
+          echo "Expected version: ${{ env.EXPECTED_VERSION }}"
 
           while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
-            ATTEMPT_NUM=$((ATTEMPTS + 1))
+            ATTEMPTS=$((ATTEMPTS + 1))
 
             RESPONSE=$(curl -s -w "\n%{http_code}" "${{ matrix.service.url }}" 2>&1)
             HTTP_BODY=$(echo "$RESPONSE" | head -n 1)
             HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
 
             if [ "$HTTP_CODE" != "200" ]; then
-              echo "$ATTEMPT_NUM - Endpoint not ready (HTTP $HTTP_CODE)"
-              ATTEMPTS=$((ATTEMPTS + 1))
-              sleep 30
+              echo "$ATTEMPTS - Endpoint not ready (HTTP $HTTP_CODE)"
+              [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ] && sleep 30
               continue
             fi
 
             DEPLOYED_VERSION=$(echo "$HTTP_BODY" | jq -r .version 2>/dev/null || echo "")
             if [ -z "$DEPLOYED_VERSION" ]; then
-              echo "$ATTEMPT_NUM - Invalid version format in response"
-              ATTEMPTS=$((ATTEMPTS + 1))
-              sleep 30
+              echo "$ATTEMPTS - Invalid version format in response"
+              [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ] && sleep 30
               continue
             fi
 
@@ -559,9 +560,8 @@ jobs:
               exit 0
             fi
 
-            echo "$ATTEMPT_NUM - Version mismatch, found $DEPLOYED_VERSION"
-            ATTEMPTS=$((ATTEMPTS + 1))
-            sleep 30
+            echo "$ATTEMPTS - Version mismatch, found $DEPLOYED_VERSION"
+            [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ] && sleep 30
           done
 
           echo "::error::${{ matrix.service.name }} version check failed after ${{ env.MAX_ATTEMPTS }} attempts"
