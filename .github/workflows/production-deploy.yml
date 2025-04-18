@@ -308,7 +308,7 @@ jobs:
           while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
 
-            RESPONSE=$(curl -v -s
+            RESPONSE=$(curl -s -k \
               --connect-timeout 10 \
               --max-time 30 \
               -w "\n%{http_code}" \
@@ -344,7 +344,7 @@ jobs:
             fi
 
             # Compare versions
-            if [ "$DEPLOYED_VERSION" = "$EXPECTED_VERSION" ]; then
+            if [ "$DEPLOYED_VERSION" = "${{ env.EXPECTED_VERSION }}" ]; then
               echo "::notice::${{ matrix.service.name }} version verified successfully"
               exit 0
             fi
