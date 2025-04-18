@@ -564,6 +564,44 @@ impl A1Selection {
             Ordering::Greater => Some(vec![end as u32, start as u32]),
         }
     }
+
+    /// Returns true if the selection contains only table columns within the
+    /// table and a minimum of the table's column (defined by index) selected.
+    pub fn is_table_column_selected(
+        &self,
+        table_name: &str,
+        column: i64,
+        a1_context: &A1Context,
+    ) -> bool {
+        let Some(table) = a1_context.try_table(table_name) else {
+            return false;
+        };
+        let mut found_column = false;
+        self.ranges.iter().all(|range| match range {
+            CellRefRange::Table { range } => {
+                if range.col_range.has_col(column, table) {
+                    found_column = true;
+                }
+                table_name == range.table_name
+            }
+            _ => false,
+        }) && found_column
+    }
+
+    /// If a single table is selected, then returns the number of columns that
+    /// are selected.
+    pub fn selected_table_columns(&self, a1_context: &A1Context) -> usize {
+        if self.ranges.len() != 1 {
+            return 0;
+        }
+        let Some(CellRefRange::Table { range }) = self.ranges.first() else {
+            return 0;
+        };
+        let Some(table) = a1_context.try_table(&range.table_name) else {
+            return 0;
+        };
+        range.col_range.col_count(table)
+    }
 }
 
 #[cfg(test)]
@@ -1382,5 +1420,55 @@ mod tests {
         // Test cell range
         let selection = A1Selection::test_a1("A1:C3");
         assert_eq!(selection.selected_rows_finite(&context), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_is_table_column_selected() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B", "C"], Rect::test_a1("A1:C3")),
+                ("Table2", &["D", "E"], Rect::test_a1("D1:E3")),
+            ],
+        );
+
+        // Test selecting all columns from a table
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert!(selection.is_table_column_selected("Table1", 0, &context));
+        assert!(selection.is_table_column_selected("Table1", 1, &context));
+        assert!(selection.is_table_column_selected("Table1", 2, &context));
+
+        // Test selecting specific columns from a table
+        let selection = A1Selection::test_a1_context("Table1[[A]:[C]]", &context);
+        assert!(selection.is_table_column_selected("Table1", 0, &context));
+        assert!(selection.is_table_column_selected("Table1", 1, &context));
+        assert!(selection.is_table_column_selected("Table1", 2, &context));
+
+        // Test selecting single column from a table
+        let selection = A1Selection::test_a1_context("Table1[A]", &context);
+        assert!(selection.is_table_column_selected("Table1", 0, &context));
+        assert!(!selection.is_table_column_selected("Table1", 1, &context));
+        assert!(!selection.is_table_column_selected("Table1", 2, &context));
+
+        // Test selecting from wrong table name
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert!(!selection.is_table_column_selected("Table2", 0, &context));
+
+        // Test non-table selection
+        let selection = A1Selection::test_a1_context("A1:C3", &context);
+        assert!(!selection.is_table_column_selected("Table1", 0, &context));
+
+        // Test multiple table selections
+        let selection = A1Selection::test_a1_context("Table1[A],Table2[D]", &context);
+        assert!(!selection.is_table_column_selected("Table1", 0, &context));
+        assert!(!selection.is_table_column_selected("Table2", 0, &context));
+
+        // Test table headers only
+        let selection = A1Selection::test_a1_context("Table1[#Headers]", &context);
+        assert!(selection.is_table_column_selected("Table1", 0, &context));
+
+        // Test with non-existent table
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert!(!selection.is_table_column_selected("NonExistentTable", 0, &context));
     }
 }

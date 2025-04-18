@@ -45,10 +45,16 @@ pub enum Operation {
         data_table: Option<DataTable>,
         index: usize,
     },
+    /// Adds or replaces a data table at a specific SheetPos.
     AddDataTable {
         sheet_pos: SheetPos,
         data_table: DataTable,
         cell_value: CellValue,
+
+        // Used to insert a data table at a specific index (usually after an
+        // undo action)
+        #[serde(default)]
+        index: Option<usize>,
     },
     DeleteDataTable {
         sheet_pos: SheetPos,
@@ -118,6 +124,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableColumns {
         sheet_pos: SheetPos,
@@ -144,6 +156,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableRows {
         sheet_pos: SheetPos,
@@ -152,10 +170,10 @@ pub enum Operation {
         // the row index is the display index, not the actual index
         rows: Vec<u32>,
 
-        /// Inserts the removed row into sheet at the same position.
+        // Inserts the removed row into sheet at the same position.
         flatten: bool,
 
-        /// select the table after the operation
+        // select the table after the operation
         select_table: bool,
     },
     SetCodeRun {
@@ -317,11 +335,19 @@ pub enum Operation {
     DeleteColumn {
         sheet_id: SheetId,
         column: i64,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     /// Deletes a row.
     DeleteRow {
         sheet_id: SheetId,
         row: i64,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     /// Inserts a column.
     InsertColumn {
@@ -351,9 +377,17 @@ pub enum Operation {
     DeleteColumns {
         sheet_id: SheetId,
         columns: Vec<i64>,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     DeleteRows {
         sheet_id: SheetId,
         rows: Vec<i64>,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
 }

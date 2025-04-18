@@ -6,9 +6,10 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
-import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
+import { CORS, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
+
 export const app = express();
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction): void => {
@@ -37,6 +38,9 @@ app.use((req, res, next) => {
 // Health-check
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'OK' });
+});
+app.get('/health', (req, res) => {
+  res.status(200).json({ version: VERSION });
 });
 
 // App routes

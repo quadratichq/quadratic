@@ -1,28 +1,28 @@
 import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
-import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
+import { requireAuth, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { Empty } from '@/shared/components/Empty';
 import { MenuIcon } from '@/shared/components/Icons';
-import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
-import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import getActiveTeam from '@/shared/utils/getActiveTeam';
+import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
-import { isMobile } from 'react-device-detect';
-import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
+
 import {
+  isRouteErrorResponse,
   Link,
   Outlet,
-  isRouteErrorResponse,
   redirect,
   useLocation,
   useNavigation,
@@ -30,7 +30,7 @@ import {
   useRouteError,
   useRouteLoaderData,
   useSearchParams,
-} from 'react-router-dom';
+} from 'react-router';
 import { RecoilRoot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
@@ -57,7 +57,20 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
+  const { activeTeamUuid } = await requireAuth();
+  const { params, request } = loaderArgs;
+
+  // Check the URL for a team UUID. If there's one, use that as it’s what the
+  // user is explicitly looking at. Otherwise, fallback to the one in localstorage
+  const teamUuid = params.teamUuid ? params.teamUuid : activeTeamUuid;
+
+  // If this was a request to the root of the app, re-route to the active team
+  const url = new URL(request.url);
+  if (url.pathname === '/') {
+    throw redirect(ROUTES.TEAM(teamUuid) + url.search);
+  }
+
   /**
    * Get the initial data
    */
@@ -67,33 +80,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   ]);
 
   /**
-   * Handle a few cases
-   */
-  let { teamUuid, teamCreated } = await getActiveTeam(teams, params.teamUuid);
-
-  // If a team was created, it was probably a first time user so send them to
-  // the team dashboard if mobile, otherwise to a new file
-  if (teamCreated) {
-    return isMobile ? redirect(ROUTES.TEAM(teamUuid)) : redirect(ROUTES.CREATE_FILE(teamUuid));
-  }
-
-  // If this was a request to the root of the app, re-route to the active team
-  const url = new URL(request.url);
-  if (url.pathname === '/') {
-    // If there are search params, keep 'em
-    return redirect(ROUTES.TEAM(teamUuid) + url.search);
-  }
-
-  /**
    * Get data for the active team
    */
   const activeTeam = await apiClient.teams
     .get(teamUuid)
     .then((data) => {
-      // If we got to here, we successfully loaded the active team so now this is
-      // the one we keep in localstorage for when the page loads anew
-      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, teamUuid);
-
       // Sort the users so the logged-in user is first in the list
       data.users.sort((a, b) => {
         const loggedInUser = data.userMakingRequest.id;
@@ -105,12 +96,15 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
         return 0;
       });
 
+      // We accessed the team successfully, so set it as the active team
+      setActiveTeam(teamUuid);
+
       return data;
     })
     .catch((error) => {
       // If we errored out, remove this one from localstorage because we can't access it
       // so we don't want to keep trying to load it on the home route `/`
-      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, '');
+      setActiveTeam('');
       const { status } = error;
       if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
       throw error;
@@ -132,6 +126,8 @@ export const Component = () => {
   const revalidator = useRevalidator();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
+
+  useRemoveInitialLoadingUI();
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {

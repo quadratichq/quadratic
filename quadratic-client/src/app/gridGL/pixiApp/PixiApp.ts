@@ -23,6 +23,7 @@ import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
@@ -88,9 +89,6 @@ export class PixiApp {
   // for testing purposes
   debug!: Graphics;
 
-  // used for timing purposes for sheets initialized after first render
-  sheetsCreated = false;
-
   initialized = false;
 
   constructor() {
@@ -116,23 +114,26 @@ export class PixiApp {
     this.debug = new Graphics();
   }
 
-  init() {
-    this.initialized = true;
-    this.initCanvas();
-    this.rebuild();
-
-    urlParams.init();
-
-    if (this.sheetsCreated) {
-      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
-    }
+  init = (): Promise<void> => {
     return new Promise((resolve) => {
+      // we cannot initialize pixi until the bitmap fonts are loaded
+      if (!isBitmapFontLoaded()) {
+        events.once('bitmapFontsLoaded', () => this.init().then(resolve));
+        return;
+      }
+      renderWebWorker.sendBitmapFonts();
+      this.initialized = true;
+      this.initCanvas();
+      this.rebuild();
+
+      urlParams.init();
+
       this.waitingForFirstRender = resolve;
       if (this.alreadyRendered) {
         this.firstRenderComplete();
       }
     });
-  }
+  };
 
   // called after RenderText has no more updates to send
   firstRenderComplete = () => {
@@ -147,7 +148,7 @@ export class PixiApp {
     }
   };
 
-  private initCanvas() {
+  private initCanvas = () => {
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
     this.canvas.tabIndex = 0;
@@ -193,26 +194,26 @@ export class PixiApp {
     this.update = new Update();
 
     this.setupListeners();
-  }
+  };
 
-  private setupListeners() {
+  private setupListeners = () => {
     sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
     document.addEventListener('cut', cutToClipboardEvent);
-  }
+  };
 
-  private removeListeners() {
+  private removeListeners = () => {
     sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
     document.removeEventListener('cut', cutToClipboardEvent);
-  }
+  };
 
   // calculate sheet rectangle, without heading, factoring in scale
-  getViewportRectangle(): Rectangle {
+  getViewportRectangle = (): Rectangle => {
     const headingSize = this.headings.headingSize;
     const scale = this.viewport.scale.x;
 
@@ -225,7 +226,7 @@ export class PixiApp {
     );
 
     return rectangle;
-  }
+  };
 
   setViewportDirty = (): void => {
     this.viewport.dirty = true;
@@ -247,7 +248,7 @@ export class PixiApp {
     }
   };
 
-  attach(parent: HTMLDivElement): void {
+  attach = (parent: HTMLDivElement): void => {
     if (!this.canvas) return;
 
     this.parent = parent;
@@ -260,15 +261,15 @@ export class PixiApp {
     }
     urlParams.show();
     this.setViewportDirty();
-  }
+  };
 
-  destroy(): void {
+  destroy = (): void => {
     this.update.destroy();
     this.renderer.destroy(true);
     this.viewport.destroy();
     this.removeListeners();
     this.destroyed = true;
-  }
+  };
 
   setAccentColor = (): void => {
     // Pull the value from the current value as defined in CSS
@@ -423,6 +424,10 @@ export class PixiApp {
   changeHoverTableHeaders(hoverTableHeaders: Container) {
     this.hoverTableHeaders.removeChildren();
     this.hoverTableHeaders.addChild(hoverTableHeaders);
+  }
+
+  cellsSheetsCreate() {
+    this.cellsSheets.create();
   }
 }
 

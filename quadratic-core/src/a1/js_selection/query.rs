@@ -275,4 +275,15 @@ impl JsSelection {
     pub fn get_single_full_table_selection_name(&self) -> Option<String> {
         self.selection.get_single_full_table_selection_name()
     }
+
+    #[wasm_bindgen(js_name = "isTableColumnSelected")]
+    pub fn is_table_column_selected(&self, table_name: &str, column: u32) -> bool {
+        self.selection
+            .is_table_column_selected(table_name, column as i64, &self.context)
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedTableColumnsCount")]
+    pub fn get_selected_table_columns(&self) -> u32 {
+        self.selection.selected_table_columns(&self.context) as u32
+    }
 }

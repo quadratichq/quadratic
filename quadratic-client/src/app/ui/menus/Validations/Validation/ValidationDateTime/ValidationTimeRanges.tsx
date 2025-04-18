@@ -69,7 +69,7 @@ export const ValidationTimeRanges = (props: Props) => {
       if (index === -1) {
         current = { TimeRange: [null, null] };
       } else {
-        current = validationDateTime.ranges[index];
+        current = { ...validationDateTime.ranges[index] };
       }
       if (!('TimeRange' in current)) throw new Error('Expected TimeRange in changeRange');
 

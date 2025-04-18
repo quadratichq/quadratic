@@ -92,7 +92,8 @@ export const auth0Client: Auth0AuthClient = {
       const token = await client.getTokenSilently();
       return token;
     } catch (e) {
-      await this.login(new URL(window.location.href).pathname);
+      const { pathname, search } = new URL(window.location.href);
+      await this.login(pathname + search);
       return '';
     }
   },

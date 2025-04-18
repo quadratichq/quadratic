@@ -178,10 +178,7 @@ impl PendingTransaction {
 
     /// Sends the transaction to the multiplayer server (if needed)
     pub fn send_transaction(&self) {
-        if self.complete
-            && self.is_user_undo_redo()
-            && (cfg!(target_family = "wasm") || cfg!(test))
-            && !self.is_server()
+        if self.complete && self.is_user_undo_redo() && (cfg!(target_family = "wasm") || cfg!(test))
         {
             let transaction_id = self.id.to_string();
 
@@ -219,9 +216,17 @@ impl PendingTransaction {
         self.source == TransactionSource::User || self.source == TransactionSource::Unsaved
     }
 
+    pub fn is_undo(&self) -> bool {
+        self.source == TransactionSource::Undo
+    }
+
+    pub fn is_redo(&self) -> bool {
+        self.source == TransactionSource::Redo
+    }
+
     /// Returns whether the transaction is from an undo/redo.
     pub fn is_undo_redo(&self) -> bool {
-        self.source == TransactionSource::Undo || self.source == TransactionSource::Redo
+        self.is_undo() || self.is_redo()
     }
 
     /// Returns whether the transaction is from the local user, including
@@ -477,57 +482,6 @@ impl PendingTransaction {
 
         if let Ok(json) = serde_json::to_string(&selection) {
             self.update_selection = Some(json);
-        }
-    }
-
-    pub fn add_updates_from_transaction(&mut self, transaction: PendingTransaction) {
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
-            return;
-        }
-
-        self.generate_thumbnail |= transaction.generate_thumbnail;
-
-        self.validations.extend(transaction.validations);
-
-        for (sheet_id, dirty_hashes) in transaction.dirty_hashes {
-            self.dirty_hashes
-                .entry(sheet_id)
-                .or_default()
-                .extend(dirty_hashes);
-        }
-
-        self.sheet_borders.extend(transaction.sheet_borders);
-
-        for (sheet_id, code_cells) in transaction.code_cells {
-            self.code_cells
-                .entry(sheet_id)
-                .or_default()
-                .extend(code_cells);
-        }
-
-        for (sheet_id, html_cells) in transaction.html_cells {
-            self.html_cells
-                .entry(sheet_id)
-                .or_default()
-                .extend(html_cells);
-        }
-
-        for (sheet_id, image_cells) in transaction.image_cells {
-            self.image_cells
-                .entry(sheet_id)
-                .or_default()
-                .extend(image_cells);
-        }
-
-        self.fill_cells.extend(transaction.fill_cells);
-
-        self.sheet_info.extend(transaction.sheet_info);
-
-        for (sheet_id, offsets_modified) in transaction.offsets_modified {
-            self.offsets_modified
-                .entry(sheet_id)
-                .or_default()
-                .extend(offsets_modified);
         }
     }
 

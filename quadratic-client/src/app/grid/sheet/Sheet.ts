@@ -190,4 +190,13 @@ export class Sheet {
   getValidationById(id: string): Validation | undefined {
     return this.validations.find((v) => v.id === id);
   }
+
+  // Returns the content bounds in viewport coordinates from 0,0 to the
+  // bottom-right of the content.
+  getScrollbarBounds(): Rectangle {
+    const bounds = this.bounds;
+    if (bounds.type === 'empty') return new Rectangle();
+    const bottomRight = this.getCellOffsets(Number(bounds.max.x) + 1, Number(bounds.max.y) + 1);
+    return new Rectangle(0, 0, bottomRight.left, bottomRight.top);
+  }
 }
