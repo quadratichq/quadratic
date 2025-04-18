@@ -655,7 +655,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.ToggleTableName]: {
     label: () => 'Show name',
-    isAvailable: () => isCodeCell('Python') || !isSingleCell(),
+    isAvailable: () => isCodeCell('Python') || isCodeCell('Javascript') || !isSingleCell(),
     labelVerbose: 'Show table name',
     checkbox: isTableNameShowing,
     run: toggleTableName,
