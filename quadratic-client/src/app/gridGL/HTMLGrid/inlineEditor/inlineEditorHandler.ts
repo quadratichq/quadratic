@@ -169,7 +169,6 @@ class InlineEditorHandler {
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         this.updateMonacoCursorPosition();
       }
-      inlineEditorFormula.cursorMoved();
     } else {
       this.close(0, 0, false, true);
     }

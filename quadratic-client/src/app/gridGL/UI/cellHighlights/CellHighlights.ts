@@ -75,12 +75,11 @@ export class CellHighlights extends Container {
 
     const selectedCellIndex = this.selectedCellIndex;
 
-    const cellsAccessed = [...this.cellsAccessed];
-    cellsAccessed
-      .filter(({ sheetId }) => sheetId === sheets.current)
-      .flatMap(({ ranges }) => ranges)
-      .forEach((range, index) => {
-        if (selectedCellIndex === undefined || selectedCellIndex !== index || !inlineEditorHandler.cursorIsMoving) {
+    if (!inlineEditorHandler.cursorIsMoving) {
+      this.cellsAccessed.forEach(({ sheetId, ranges }, index) => {
+        if (sheetId !== sheets.current || selectedCellIndex === index) return;
+
+        ranges.forEach((range) => {
           const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range);
           if (refRangeBounds) {
             drawDashedRectangle({
@@ -90,21 +89,28 @@ export class CellHighlights extends Container {
               range: refRangeBounds,
             });
           }
-        }
+        });
       });
+    }
 
     this.dirty = true;
   };
 
   // Draws the marching highlights by using an offset dashed line to create the
   // marching effect.
-  private updateMarchingHighlight() {
+  private updateMarchingHighlight = () => {
     if (!inlineEditorHandler.cursorIsMoving) {
+      this.marchingHighlight.clear();
       this.selectedCellIndex = undefined;
       return;
     }
+
     // Index may not have been set yet.
-    if (this.selectedCellIndex === undefined) return;
+    if (this.selectedCellIndex === undefined) {
+      this.marchingHighlight.clear();
+      return;
+    }
+
     if (this.marchLastTime === 0) {
       this.marchLastTime = Date.now();
     } else if (Date.now() - this.marchLastTime < MARCH_ANIMATE_TIME_MS) {
@@ -112,12 +118,21 @@ export class CellHighlights extends Container {
     } else {
       this.marchLastTime = Date.now();
     }
+
     const selectedCellIndex = this.selectedCellIndex;
     const accessedCell = this.cellsAccessed[selectedCellIndex];
-    if (!accessedCell) return;
+    if (!accessedCell || accessedCell.sheetId !== sheets.current) {
+      this.marchingHighlight.clear();
+      return;
+    }
+
     const colorNumber = convertColorStringToTint(colors.cellHighlightColor[selectedCellIndex % NUM_OF_CELL_REF_COLORS]);
     const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(accessedCell.ranges[0]);
-    if (!refRangeBounds) return;
+    if (!refRangeBounds) {
+      this.marchingHighlight.clear();
+      return;
+    }
+
     const render = drawDashedRectangleMarching({
       g: this.marchingHighlight,
       color: colorNumber,
@@ -129,7 +144,7 @@ export class CellHighlights extends Container {
     if (render) {
       this.dirty = true;
     }
-  }
+  };
 
   update = () => {
     if (this.dirty) {

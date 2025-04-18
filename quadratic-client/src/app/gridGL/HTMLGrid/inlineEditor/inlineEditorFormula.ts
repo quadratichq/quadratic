@@ -113,7 +113,7 @@ class InlineEditorFormula {
 
       inlineEditorHandler.cursorIsMoving = true;
       inlineEditorMonaco.removeSelection();
-      this.insertInsertingCells(cursor.toA1String());
+      this.insertInsertingCells(cursor.toA1String(inlineEditorHandler.location?.sheetId));
 
       inlineEditorHandler.sendMultiplayerUpdate();
 

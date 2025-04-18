@@ -29,6 +29,7 @@ use crate::{
     background_worker,
     config::config,
     error::{ErrorLevel, MpError, Result},
+    health::{full_healthcheck, healthcheck},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
@@ -45,12 +46,19 @@ pub struct Claims {
 /// integration tested.
 pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
+        //
         // handle websockets
         .route("/ws", get(ws_handler))
-        // healthchecks
+        //
+        // healthcheck
         .route("/health", get(healthcheck))
+        //
+        // full healthcheck
+        .route("/health/full", get(full_healthcheck))
+        //
         // state
         .layer(Extension(state))
+        //
         // logger
         .layer(
             TraceLayer::new_for_http()
@@ -325,32 +333,18 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-pub(crate) async fn healthcheck() -> impl IntoResponse {
-    StatusCode::OK
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
-
-    use std::time::Duration;
 
     use super::*;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
-    use crate::test_util::{
-        add_user_via_ws, integration_test_send_and_receive, new_arc_state, setup,
-    };
-    use axum::{
-        body::Body,
-        http::{self, Request},
-    };
+    use crate::test_util::{integration_test_send_and_receive, setup};
+
     use base64::{Engine, engine::general_purpose::STANDARD};
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
-
-    use tokio::time::{Instant, sleep};
-    use tower::ServiceExt;
     use uuid::Uuid;
 
     async fn assert_user_changes_state(update: UserStateUpdate) {
@@ -371,6 +365,7 @@ pub(crate) mod tests {
         assert_eq!(response, Some(expected));
     }
 
+    #[allow(dead_code)]
     fn new_user_state_update(user: User, file_id: Uuid) -> MessageRequest {
         MessageRequest::UserUpdate {
             session_id: user.session_id,
@@ -387,25 +382,6 @@ pub(crate) mod tests {
                 follow: None,
             },
         }
-    }
-
-    #[tokio::test]
-    async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_arc_state().await;
-        let app = app(state);
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
