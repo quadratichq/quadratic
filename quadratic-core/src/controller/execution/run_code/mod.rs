@@ -112,12 +112,6 @@ impl GridController {
                 new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
             }
 
-            // if the new data table is a single value and is a code cell, then we
-            // don't want to show the name or columns headers
-            if new_data_table.is_single_value() && is_code_cell {
-                new_data_table.apply_single_value_settings(false);
-            }
-
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
             if old_data_table.output_size().w == new_data_table.output_size().w {
