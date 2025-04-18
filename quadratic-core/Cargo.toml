@@ -43,6 +43,7 @@ js = [
     "wasm-bindgen-futures",
 ]
 show-operations = []
+show-first-sheet-operations = []
 dbgjs = []
 function-timer = ["function-timer/enabled"]
 

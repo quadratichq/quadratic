@@ -178,6 +178,10 @@ class HTMLCellsHandler {
     this.getCells().forEach((cell) => cell.deactivate());
   }
 
+  temporarilyDisable() {
+    this.getCells().forEach((cell) => cell.temporarilyDeactivate());
+  }
+
   enable() {
     this.getCells().forEach((cell) => cell.reactivate());
   }

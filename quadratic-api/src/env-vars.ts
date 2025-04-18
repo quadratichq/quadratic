@@ -2,6 +2,7 @@ const SAMPLE_ENCRYPTION_KEY = 'eb4758047f74bdb2603cce75c4370327ca2c3662c47868676
 
 // Optional
 export const DEBUG = process.env.DEBUG;
+export const VERSION = process.env.VERSION;
 export const RATE_LIMIT_AI_WINDOW_MS = process.env.RATE_LIMIT_AI_WINDOW_MS;
 export const RATE_LIMIT_AI_REQUESTS_MAX = process.env.RATE_LIMIT_AI_REQUESTS_MAX;
 export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;

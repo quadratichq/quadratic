@@ -63,7 +63,7 @@ export class PointerLink {
     if (link) {
       this.cursor = matchShortcut(Action.CmdClick, event) ? 'pointer' : undefined;
       const tooltipText = 'Open link ';
-      const tooltipSubtext = `(${defaultActionSpec[Action.CmdClick].label})`;
+      const tooltipSubtext = `(${defaultActionSpec[Action.CmdClick].label()})`;
       this.emitHoverTooltip(link, tooltipText, tooltipSubtext);
       return true;
     }

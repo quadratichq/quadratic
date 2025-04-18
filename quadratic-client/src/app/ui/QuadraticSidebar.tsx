@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
@@ -64,7 +64,7 @@ export const QuadraticSidebar = () => {
 
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
-          <SidebarTooltip label={toggleAIChat.label} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
+          <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
             <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
               <AIIcon />
             </SidebarToggle>
@@ -73,7 +73,7 @@ export const QuadraticSidebar = () => {
 
         {canEditFile && (
           <SidebarTooltip
-            label={toggleCodeEditor.label}
+            label={toggleCodeEditor.label()}
             shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}
           >
             <SidebarToggle pressed={showCodeEditor} onPressedChange={() => toggleCodeEditor.run()}>

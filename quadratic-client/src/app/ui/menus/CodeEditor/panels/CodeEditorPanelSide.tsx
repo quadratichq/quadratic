@@ -6,7 +6,7 @@ import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCode
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface CodeEditorPanelSideProps {
-  codeEditorRef: React.RefObject<HTMLDivElement>;
+  codeEditorRef: React.RefObject<HTMLDivElement | null>;
   schemaBrowser: React.ReactNode | undefined;
   showAIAssistant: boolean;
 }

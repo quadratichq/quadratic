@@ -10,7 +10,7 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { FocusEvent } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface Props {
   label?: string;
@@ -44,7 +44,7 @@ export const SheetRange = (props: Props) => {
     onlyCurrentSheetError,
   } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
-  const ref = useRef<HTMLInputElement>(null);
+  const [input, setInput] = useState<string>('');
 
   const a1SheetId = useMemo((): string => {
     if (onlyCurrentSheet) {
@@ -56,12 +56,10 @@ export const SheetRange = (props: Props) => {
 
   // insert the range of the current selection
   const onInsert = useCallback(() => {
-    if (ref.current) {
-      const jsSelection = sheets.sheet.cursor.jsSelection;
-      ref.current.value = jsSelection.toA1String(a1SheetId);
-      onChangeRange(jsSelection);
-      setRangeError(undefined);
-    }
+    const jsSelection = sheets.sheet.cursor.jsSelection;
+    setInput(jsSelection.toA1String(a1SheetId));
+    onChangeRange(jsSelection);
+    setRangeError(undefined);
   }, [a1SheetId, onChangeRange]);
 
   const updateValue = useCallback(
@@ -93,24 +91,22 @@ export const SheetRange = (props: Props) => {
   );
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.value = initial ? A1SelectionToJsSelection(initial, sheets.a1Context).toA1String(a1SheetId) : '';
-    }
+    setInput(initial ? A1SelectionToJsSelection(initial, sheets.a1Context).toA1String(a1SheetId) : '');
   }, [changeCursor, a1SheetId, initial]);
 
-  const onFocus = () => {
-    if (!ref.current || !changeCursor) return;
+  const onFocus = useCallback(() => {
+    if (!changeCursor) return;
     try {
-      const selection = stringToSelection(ref.current.value, a1SheetId, sheets.a1Context);
+      const selection = stringToSelection(input, a1SheetId, sheets.a1Context);
       if (selection) {
         sheets.changeSelection(selection, true);
       }
     } catch (_) {
       // there was an error parsing the range, so nothing more to do
     }
-  };
+  }, [a1SheetId, changeCursor, input]);
 
-  const isError = triggerError && (!ref.current || ref.current.value === '');
+  const isError = useMemo(() => triggerError && input === '', [input, triggerError]);
 
   const [sheetId, setSheetId] = useState(sheets.current);
   useEffect(() => {
@@ -125,11 +121,17 @@ export const SheetRange = (props: Props) => {
   return (
     <div>
       {props.label && <Label htmlFor={label}>{label}</Label>}
+
       <div className="flex w-full items-center space-x-2">
         <div className={cn('w-full', rangeError || isError ? 'border border-red-500' : '')}>
           <Input
-            ref={ref}
             id={props.label}
+            value={input}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setInput(e.currentTarget.value);
+            }}
             onBlur={onBlur}
             onFocus={onFocus}
             readOnly={readOnly}
@@ -141,6 +143,7 @@ export const SheetRange = (props: Props) => {
             }}
           />
         </div>
+
         {!readOnly && (
           <TooltipPopover
             label={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
@@ -152,7 +155,9 @@ export const SheetRange = (props: Props) => {
           </TooltipPopover>
         )}
       </div>
+
       {rangeError && <div className="text-xs text-red-500">{rangeError}</div>}
+
       {!rangeError && isError && <div className="text-xs text-red-500">Empty range</div>}
     </div>
   );

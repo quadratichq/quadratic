@@ -98,7 +98,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                   >
                     <div className="flex w-full items-center justify-between text-xs">
                       <span className="pr-4">
-                        {(debug ? `${modelConfig.enabled ? '' : 'dbg-'}${provider} - ` : '') + displayName}
+                        {(debug ? `${modelConfig.enabled ? '' : '(debug) '}${provider} - ` : '') + displayName}
                       </span>
                     </div>
                   </DropdownMenuCheckboxItem>

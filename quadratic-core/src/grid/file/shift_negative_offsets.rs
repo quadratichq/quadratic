@@ -56,14 +56,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 changed = true;
                 let insert = bounds.min.x - 1;
                 for _ in bounds.min.x..=0 {
-                    sheet.insert_column(
-                        &mut transaction,
-                        insert,
-                        CopyFormats::None,
-                        false,
-                        &a1_context,
-                    );
-                    sheet.recalculate_bounds(&a1_context);
+                    sheet.insert_column(&mut transaction, insert, CopyFormats::None, &a1_context);
                     x_shift += 1;
                 }
             }
@@ -73,14 +66,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 changed = true;
                 let insert = bounds.min.y - 1;
                 for _ in bounds.min.y..=0 {
-                    sheet.insert_row(
-                        &mut transaction,
-                        insert,
-                        CopyFormats::None,
-                        false,
-                        &a1_context,
-                    );
-                    sheet.recalculate_bounds(&a1_context);
+                    sheet.insert_row(&mut transaction, insert, CopyFormats::None, &a1_context);
                     y_shift += 1;
                 }
             }
@@ -109,7 +95,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 // Translate all ranges and collect into new HashSet
                 *ranges = std::mem::take(ranges)
                     .into_iter()
-                    .filter_map(|r| r.adjust(RefAdjust::new_translate(x_shift, y_shift)).ok())
+                    .filter_map(|r| r.adjust(RefAdjust::new_translate_with_start(x_shift, y_shift, i64::MIN, i64::MIN)).ok())
                     .collect();
             }
         }

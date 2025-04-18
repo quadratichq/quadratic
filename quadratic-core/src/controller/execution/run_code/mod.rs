@@ -302,6 +302,13 @@ impl GridController {
                 );
             }
         }
+
+        #[cfg(feature = "show-first-sheet-operations")]
+        {
+            println!("\n========= After calculation async =========");
+            print_first_sheet!(&self);
+        }
+
         // continue the compute loop after a successful async call
         self.start_transaction(transaction);
         Ok(())
