@@ -574,7 +574,10 @@ mod tests {
             NaiveDate::from_ymd_opt(2021, 3, 14)
         );
 
-        assert_eq!(parse_date("14.03.21"), None);
+        assert_eq!(parse_date("1893-01"), NaiveDate::from_ymd_opt(1893, 1, 1));
+        assert_eq!(parse_date("1902-06"), NaiveDate::from_ymd_opt(1902, 6, 1));
+        assert_eq!(parse_date("01-1893"), NaiveDate::from_ymd_opt(1893, 1, 1));
+        assert_eq!(parse_date("06-1902"), NaiveDate::from_ymd_opt(1902, 6, 1));
     }
 
     #[test]
@@ -639,11 +642,10 @@ mod tests {
 
     #[test]
     fn test_parse_date_time() {
-        assert_eq!(parse_date("1893-01"), None);
-        assert_eq!(parse_date("1902-01"), None);
         assert_eq!(parse_date("101-250"), None);
         assert_eq!(parse_date("1 3"), None);
         assert_eq!(parse_date("10 12"), None);
         assert_eq!(parse_date("10 12 2025"), None);
+        assert_eq!(parse_date("14.03.21"), None);
     }
 }
