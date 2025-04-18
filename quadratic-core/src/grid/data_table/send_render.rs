@@ -34,9 +34,15 @@ impl DataTable {
         if transaction.is_user() {
             let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
 
-            let table_rows = self
+            let mut table_rows = self
                 .formats
                 .get_rows_with_wrap_in_rect(&data_table_rect.into());
+
+            // translate to actual row on the sheet
+            let y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+            table_rows.iter_mut().for_each(|table_row| {
+                *table_row += y_offset;
+            });
 
             if !sheet_rows.is_empty() || !table_rows.is_empty() {
                 let resize_rows = transaction
@@ -78,20 +84,25 @@ impl DataTable {
     ) {
         // 1-based for formatting, just max bounds are needed to finitize formatting bounds
         let data_table_rect = self.output_rect((1, 1).into(), true);
+        let x_offset = data_table_pos.x - 1;
+        let y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
         if let Some(format) = format {
             format
                 .to_rects_with_rect_bounds(data_table_rect)
                 .for_each(|(x1, y1, x2, y2, _)| {
                     let mut rect = Rect::new(x1, y1, x2, y2);
-                    // translate to actual data table pos
-                    rect.translate(data_table_pos.x - 1, data_table_pos.y - 1);
-                    // add y adjustment to factor in table name and headers
-                    rect.max.y += self.y_adjustment(true);
-                    dirty_hashes.extend(rect.to_hashes());
                     if needs_resize {
-                        let rows = self.formats.get_rows_with_wrap_in_rect(&rect);
+                        let mut rows = self.formats.get_rows_with_wrap_in_rect(&rect);
+                        // translate to actual row on the sheet
+                        rows.iter_mut().for_each(|row| {
+                            *row += y_offset;
+                        });
                         resize_rows.extend(rows);
                     }
+
+                    // translate to actual rect on the sheet
+                    rect.translate(x_offset, y_offset);
+                    dirty_hashes.extend(rect.to_hashes());
                 });
         }
     }
@@ -115,21 +126,26 @@ impl DataTable {
         dirty_hashes: &mut HashSet<Pos>,
         resize_rows: &mut HashSet<i64>,
     ) {
-        let data_table_rect = self.output_rect(data_table_pos, true);
+        let data_table_rect = self.output_rect((1, 1).into(), true);
+        let x_offset = data_table_pos.x - 1;
+        let y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
         if let Some(wrap) = wrap {
             wrap.to_rects_with_rect_bounds(data_table_rect)
                 .for_each(|(x1, y1, x2, y2, value)| {
-                    let rect = Rect::new(x1, y1, x2, y2);
-                    dirty_hashes.extend(rect.to_hashes());
+                    let mut rect = Rect::new(x1, y1, x2, y2);
 
                     // check if new formats is wrap
                     if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
                             if self.has_content_in_row(data_table_pos, y) {
-                                resize_rows.insert(y);
+                                resize_rows.insert(y + y_offset);
                             }
                         }
                     }
+
+                    // translate to actual rect on the sheet
+                    rect.translate(x_offset, y_offset);
+                    dirty_hashes.extend(rect.to_hashes());
                 });
         }
     }
@@ -151,7 +167,6 @@ impl DataTable {
 
         let mut dirty_hashes = HashSet::new();
         let mut resize_rows = HashSet::new();
-        let mut fills_changed = false;
 
         self.format_transaction_changes(
             data_table_pos,
@@ -246,10 +261,6 @@ impl DataTable {
             &mut resize_rows,
         );
 
-        if formats.fill_color.is_some() {
-            fills_changed = true;
-        }
-
         if !transaction.is_server() {
             if !dirty_hashes.is_empty() {
                 let dirty_hashes_transaction =
@@ -262,7 +273,7 @@ impl DataTable {
                 resize_rows_transaction.extend(resize_rows);
             }
 
-            if fills_changed {
+            if formats.fill_color.is_some() {
                 transaction.add_fill_cells(sheet_id);
             }
         }
