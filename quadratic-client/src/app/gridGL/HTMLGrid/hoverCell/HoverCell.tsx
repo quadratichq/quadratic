@@ -41,7 +41,7 @@ export function HoverCell() {
   const [hovering, setHovering] = useState(false);
   const hoveringRef = useRef(false);
 
-  const timeoutId = useRef<NodeJS.Timeout | undefined>();
+  const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
   const [allowPointerEvents, setAllowPointerEvents] = useState(false);
 
   const addPointerEvents = useCallback(() => {

@@ -1,4 +1,3 @@
-export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 export const SUPPORT_EMAIL = 'support@quadratichq.com';
 export const DEFAULT_FILE_NAME = 'Untitled';
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';

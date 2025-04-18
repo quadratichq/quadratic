@@ -1,6 +1,6 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { useRouteError } from 'react-router-dom';
+import { useRouteError } from 'react-router';
 import { debugShowUILogs } from '../app/debugFlags';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { FilesList } from '../dashboard/components/FilesList';

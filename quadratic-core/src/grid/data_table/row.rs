@@ -1,7 +1,10 @@
 use anyhow::{Result, bail};
 
 use super::DataTable;
-use crate::{CellValue, CopyFormats};
+use crate::{
+    CellValue, CopyFormats,
+    grid::{formats::SheetFormatUpdates, sheet::borders::BordersUpdates},
+};
 
 impl DataTable {
     /// Get the values of a row (does not include the header)
@@ -33,7 +36,6 @@ impl DataTable {
     /// Insert a new row at the given index.
     pub fn insert_row(&mut self, row_index: usize, values: Option<Vec<CellValue>>) -> Result<()> {
         let row_index = row_index as i64 - self.y_adjustment(true);
-
         let array = self.mut_value_as_array()?;
         array.insert_row(usize::try_from(row_index)?, values)?;
 
@@ -48,7 +50,7 @@ impl DataTable {
             let len = display_buffer.len();
             let index = usize::try_from(row_index)?;
 
-            if index >= len {
+            if index > len {
                 bail!("Row index {index} is out of bounds. Display buffer length: {len}");
             }
 
@@ -65,17 +67,20 @@ impl DataTable {
     }
 
     /// Remove a row at the given index.
-    pub fn delete_row(&mut self, row_index: usize) -> Result<()> {
+    pub fn delete_row(
+        &mut self,
+        row_index: usize,
+    ) -> Result<(Vec<CellValue>, SheetFormatUpdates, BordersUpdates)> {
         let row_index = row_index as i64 - self.y_adjustment(true);
 
         let array = self.mut_value_as_array()?;
-        array.delete_row(usize::try_from(row_index)?)?;
+        let values = array.delete_row(usize::try_from(row_index)?)?;
 
         // formats and borders are 1 indexed
-        self.formats.remove_row(row_index + 1);
-        self.borders.remove_row(row_index + 1);
+        let formats = self.formats.remove_row(row_index + 1);
+        let borders = self.borders.remove_row(row_index + 1);
 
-        Ok(())
+        Ok((values, formats, borders))
     }
 
     /// Remove a row at the given index, for table having sorted columns.
@@ -84,14 +89,17 @@ impl DataTable {
     pub fn delete_row_sorted(
         &mut self,
         display_row_index: usize,
-    ) -> Result<(u32, Option<Vec<CellValue>>)> {
-        let old_values = self.get_row_sorted(display_row_index)?;
-
+    ) -> Result<(
+        u32,
+        Option<Vec<CellValue>>,
+        SheetFormatUpdates,
+        BordersUpdates,
+    )> {
         let row_index = display_row_index as i64 - self.y_adjustment(true);
 
         let actual_row_index = self.get_row_index_from_display_index(row_index as u64);
 
-        self.delete_row(usize::try_from(
+        let (old_values, formats, borders) = self.delete_row(usize::try_from(
             actual_row_index as i64 + self.y_adjustment(true),
         )?)?;
 
@@ -107,7 +115,7 @@ impl DataTable {
 
         let reverse_row_index = u32::try_from(actual_row_index as i64 + self.y_adjustment(true))?;
 
-        Ok((reverse_row_index, Some(old_values)))
+        Ok((reverse_row_index, Some(old_values), formats, borders))
     }
 }
 
@@ -115,10 +123,8 @@ impl DataTable {
 pub mod test {
     use crate::{
         ArraySize, CellValue,
-        grid::{
-            sort::SortDirection,
-            test::{new_data_table, pretty_print_data_table},
-        },
+        grid::{sort::SortDirection, test::new_data_table},
+        test_util::pretty_print_data_table,
     };
 
     #[test]
@@ -128,16 +134,24 @@ pub mod test {
 
         pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
-        data_table.insert_row(4, None).unwrap();
+        data_table.insert_row(5, None).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table with New Row"), None);
 
-        // this should be a 5x4 array
+        // this should be a 4x6 array
         let expected_size = ArraySize::new(4, 6).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        // expect index out of bounds error
         // first sort the table to create the display buffer
         data_table.sort_column(0, SortDirection::Ascending).unwrap();
+
+        data_table.insert_row(6, None).unwrap();
+        pretty_print_data_table(&data_table, Some("Data Table with second New Row"), None);
+
+        // this should be a 4x7 array
+        let expected_size = ArraySize::new(4, 7).unwrap();
+        assert_eq!(data_table.output_size(), expected_size);
+
+        // expect index out of bounds error
         let expected_error = data_table.insert_row(10, None);
         assert!(expected_error.is_err());
     }

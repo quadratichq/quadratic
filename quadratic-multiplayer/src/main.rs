@@ -6,6 +6,7 @@
 mod background_worker;
 mod config;
 mod error;
+mod health;
 mod message;
 mod permissions;
 mod server;

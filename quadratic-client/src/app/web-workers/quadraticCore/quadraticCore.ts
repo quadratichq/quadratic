@@ -248,11 +248,13 @@ class QuadraticCore {
   // Loads a Grid file and initializes renderWebWorker upon response
   async load({
     fileId,
+    teamUuid,
     url,
     version,
     sequenceNumber,
   }: {
     fileId: string;
+    teamUuid: string;
     url: string;
     version: string;
     sequenceNumber: number;
@@ -282,6 +284,7 @@ class QuadraticCore {
         sequenceNumber,
         id,
         fileId,
+        teamUuid,
       };
       if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);

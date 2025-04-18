@@ -16,7 +16,7 @@ import { memo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 type AIAnalystHeaderProps = {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {

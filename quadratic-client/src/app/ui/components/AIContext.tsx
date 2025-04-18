@@ -15,7 +15,11 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getFileTypeLabel, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import {
+  getDataBase64String,
+  getFileTypeLabel,
+  isSupportedImageMimeType,
+} from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -103,6 +107,29 @@ export const AIContext = memo(
       }
     }, [initialContext, loading, messages, messagesCount, setContext]);
 
+    const handleOnCloseSelectContextMenu = useCallback(() => {
+      textareaRef.current?.focus();
+    }, [textareaRef]);
+
+    const handleOnClickFileContext = useCallback(
+      (file: FileContent) => {
+        setFiles?.((prev) => prev.filter((f) => f !== file));
+      },
+      [setFiles]
+    );
+
+    const handleOnClickSelection = useCallback(() => {
+      setContext?.((prev) => ({ ...prev, selection: undefined }));
+    }, [setContext]);
+
+    const handleOnClickCurrentSheet = useCallback(() => {
+      setContext?.((prev) => ({
+        ...prev,
+        sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
+        currentSheet: '',
+      }));
+    }, [setContext]);
+
     return (
       <div
         className={cn(
@@ -116,7 +143,7 @@ export const AIContext = memo(
             context={context}
             setContext={setContext}
             disabled={disabled}
-            onClose={() => textareaRef.current?.focus()}
+            onClose={handleOnCloseSelectContextMenu}
           />
         )}
 
@@ -127,7 +154,7 @@ export const AIContext = memo(
             key={`${index}-${file.fileName}`}
             disabled={disabled || !setFiles}
             file={file}
-            onClick={() => setFiles?.(files.filter((f) => f !== file))}
+            onClick={() => handleOnClickFileContext(file)}
           />
         ))}
 
@@ -142,7 +169,7 @@ export const AIContext = memo(
                 : sheets.sheet.cursor.toCursorA1()
             }
             secondary="Cursor"
-            onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
+            onClick={handleOnClickSelection}
             disabled={disabled || !setContext || !context.selection}
           />
         )}
@@ -152,13 +179,7 @@ export const AIContext = memo(
             key={context.currentSheet}
             primary={context.currentSheet}
             secondary={'Sheet'}
-            onClick={() =>
-              setContext?.((prev) => ({
-                ...prev,
-                sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
-                currentSheet: '',
-              }))
-            }
+            onClick={handleOnClickCurrentSheet}
             disabled={disabled || !setContext}
           />
         )}
@@ -231,7 +252,7 @@ const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps)
         />
       </HoverCardTrigger>
       <HoverCardContent className="w-48 overflow-hidden p-0" side="top">
-        <img src={`data:${file.mimeType};base64,${file.data}`} alt={file.fileName} />
+        <img src={getDataBase64String(file)} alt={file.fileName} />
         <span className="block border-t border-border px-1 py-0.5 text-xs">{file.fileName}</span>
       </HoverCardContent>
     </HoverCard>
