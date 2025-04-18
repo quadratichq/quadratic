@@ -88,6 +88,7 @@ impl GridController {
 
             new_data_table.alternating_colors = old_data_table.alternating_colors;
             new_data_table.name = old_data_table.name.to_owned();
+            new_data_table.show_name = old_data_table.show_name;
 
             // for python dataframes, we don't want preserve the show_columns setting
             // for other data tables types, we want to preserve most settings
@@ -97,7 +98,6 @@ impl GridController {
                 && !new_data_table.is_html_or_image()
             {
                 new_data_table.show_ui = old_data_table.show_ui;
-                new_data_table.show_name = old_data_table.show_name;
                 new_data_table.show_columns = old_data_table.show_columns;
 
                 // since we don't automatically apply the first row as headers in JS,
