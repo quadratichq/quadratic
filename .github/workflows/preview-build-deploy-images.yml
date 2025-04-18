@@ -512,7 +512,7 @@ jobs:
           while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
 
-            RESPONSE=$(curl -v -s
+            RESPONSE=$(curl -v -s \
               --connect-timeout 10 \
               --max-time 30 \
               -w "\n%{http_code}" \
