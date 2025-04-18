@@ -82,10 +82,6 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
-            let is_code_cell = sheet
-                .get_table_language(pos, new_data_table)
-                .is_some_and(|lang| lang.is_code_language());
-
             new_data_table.alternating_colors = old_data_table.alternating_colors;
             new_data_table.name = old_data_table.name.to_owned();
             new_data_table.show_name = old_data_table.show_name;
