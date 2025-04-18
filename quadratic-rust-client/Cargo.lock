@@ -3874,7 +3874,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.6.10"
+version = "0.6.11"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -3927,7 +3927,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-client"
-version = "0.6.10"
+version = "0.6.11"
 dependencies = [
  "chrono",
  "console_error_panic_hook",
@@ -3942,7 +3942,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.10"
+version = "0.6.11"
 dependencies = [
  "aes",
  "arrow",

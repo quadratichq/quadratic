@@ -3769,7 +3769,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.10"
+version = "0.6.11"
 dependencies = [
  "aes",
  "arrow",
