@@ -618,8 +618,8 @@ mod test {
             true,
             None,
         )
-        .with_show_name(false)
-        .with_show_columns(false);
+        .with_show_name(true)
+        .with_show_columns(true);
         new_data_table.column_headers = None;
 
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
