@@ -7,6 +7,7 @@ mod auth;
 mod config;
 mod error;
 mod file;
+mod health;
 mod server;
 mod state;
 mod storage;
