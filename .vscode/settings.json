@@ -119,6 +119,7 @@
     "relcells",
     "repr",
     "reqwest",
+    "revalidator",
     "rfind",
     "ROUNDDOWN",
     "RUSTC",

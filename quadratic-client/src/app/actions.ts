@@ -1,8 +1,7 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
+import { getActionFileDelete } from '@/routes/api.files.$uuid';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import mixpanel from 'mixpanel-browser';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import type { SubmitFunction } from 'react-router';
@@ -70,17 +69,17 @@ export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   run({ teamUuid }: { teamUuid: string }) {
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
+    window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
   },
 };
 
 export const duplicateFileAction = {
   label: 'Duplicate',
-  isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  async run({ fileUuid, submit }: { fileUuid: string; submit: SubmitFunction }) {
-    mixpanel.track('[Files].duplicateFile', { id: fileUuid });
-    const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
-    submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
+  // If you're logged in and you can see the file, you can duplicate it
+  isAvailable: ({ isAuthenticated, filePermissions }: IsAvailableArgs) =>
+    isAuthenticated && filePermissions.includes('FILE_VIEW'),
+  async run({ fileUuid }: { fileUuid: string }) {
+    window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
   },
 };
 

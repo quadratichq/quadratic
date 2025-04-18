@@ -115,8 +115,6 @@ COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCall
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build the rust-client
-ARG GIT_COMMIT
-ENV GIT_COMMIT=$GIT_COMMIT
 RUN if [ "$CLIENT_DEV" = "true" ]; then \
     echo 'Building rust-client in dev mode...' && npm run build:dev --workspace=quadratic-rust-client; \
     else \
@@ -189,6 +187,10 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
     echo "VITE_ORY_HOST=VITE_ORY_HOST_VAL" >> ./quadratic-client/.env && \
     echo "VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL" >> ./quadratic-client/.env; \
     fi
+
+# Create version.json from VERSION file
+COPY --link VERSION .
+RUN echo "{\"version\":\"$(cat VERSION)\"}" > ./quadratic-client/public/version.json
 
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client

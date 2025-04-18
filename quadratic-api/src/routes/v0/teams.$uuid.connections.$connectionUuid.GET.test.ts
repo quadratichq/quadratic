@@ -21,7 +21,7 @@ describe('GET /v0/connections/:uuid', () => {
   describe('a team editor/owner', () => {
     it('responds with a connection', async () => {
       await request(app)
-        .get('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .get('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ValidToken teamOwner`)
         .expect(200)
         .expect(({ body }) => {
@@ -39,7 +39,7 @@ describe('GET /v0/connections/:uuid', () => {
   describe('a team viewer', () => {
     it('responds with a 403', async () => {
       await request(app)
-        .get('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .get('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ValidToken teamViewer`)
         .expect(403);
     });

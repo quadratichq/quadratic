@@ -33,7 +33,7 @@ export function ConnectionsMenu() {
   // Fetch when this component mounts but only if the user has permission in the current team
   useEffect(() => {
     if (fetcherRef.current.state === 'idle' && fetcherRef.current.data === undefined && permissionsHasTeamEdit) {
-      fetcherRef.current.load(`${ROUTES.API.CONNECTIONS}?team-uuid=${teamUuid}`);
+      fetcherRef.current.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
     }
   }, [permissionsHasTeamEdit, teamUuid]);
 

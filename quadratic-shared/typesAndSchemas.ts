@@ -225,7 +225,8 @@ export const ApiSchemas = {
    * File checkpoints
    */
   '/v0/files/:uuid/checkpoints.GET.response': z.object({
-    name: FileSchema.shape.name,
+    file: FileSchema.pick({ name: true }),
+    team: TeamSchema.pick({ uuid: true }),
     checkpoints: z.array(
       z.object({
         dataUrl: z.string().url(),
@@ -420,18 +421,16 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
 
   /**
+   * Connections (which are all under `/v0/teams/:uuid/connections/*`)
+   */
+  ...ApiSchemasConnections,
+
+  /**
    * ===========================================================================
    * Users
    * ===========================================================================
    */
   '/v0/users/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
-
-  /**
-   * ===========================================================================
-   * Connections
-   * ===========================================================================
-   */
-  ...ApiSchemasConnections,
 
   /**
    *

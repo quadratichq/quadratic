@@ -6,7 +6,6 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -106,9 +105,11 @@ export function QuadraticApp() {
     }
   }, [multiplayerLoading]);
 
-  // Show loading screen until everything is loaded
+  // Don't render the app until these are done — even on slow connections these
+  // don't take long. We should probably move them to where we do all the other
+  // async stuff before the app loads.
   if (offlineLoading || multiplayerLoading) {
-    return <QuadraticLoading />;
+    return null;
   }
   return <QuadraticUIContext />;
 }
