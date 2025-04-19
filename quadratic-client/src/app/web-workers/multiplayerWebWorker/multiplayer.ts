@@ -377,7 +377,6 @@ export class Multiplayer {
 
   private async checkVersion(serverVersion: string) {
     console.log(`Comparing ${serverVersion} with ${version}`);
-    ``;
     if (serverVersion !== version) {
       const versionClientFile = await fetch('/VERSION');
       if (versionClientFile.status === 200) {
