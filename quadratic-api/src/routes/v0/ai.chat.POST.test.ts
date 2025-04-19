@@ -1,5 +1,4 @@
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
-import { DEFAULT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
@@ -11,7 +10,7 @@ const payload: AIRequestBody = {
   chatId: '00000000-0000-0000-0000-000000000000',
   fileUuid: '11111111-1111-1111-1111-111111111111',
   source: 'AIAnalyst',
-  modelKey: DEFAULT_MODEL,
+  modelKey: 'bedrock-anthropic:claude:thinking-toggle-off',
   messages: [
     {
       role: 'user',
