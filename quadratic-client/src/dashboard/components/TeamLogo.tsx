@@ -73,7 +73,7 @@ export function TeamLogoDialog({
 
   return (
     <Dialog onOpenChange={onClose} open={true}>
-      <DialogContent className={`max-w-sm`}>
+      <DialogContent className={`max-w-sm`} aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Edit icon</DialogTitle>
         </DialogHeader>

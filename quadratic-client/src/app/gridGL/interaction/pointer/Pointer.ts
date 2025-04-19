@@ -89,18 +89,18 @@ export class Pointer {
     return overCodeEditor;
   }
 
-  private handlePointerDown = (e: FederatedPointerEvent): void => {
+  private handlePointerDown = (e: FederatedPointerEvent) => {
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.global);
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
     // do not interfere with pointerImages when its resizing.
-    (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
+    this.pointerHeading.pointerDown(world, e) ||
+      (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
       this.pointerImages.pointerDown(world) ||
       this.pointerCellMoving.pointerDown(e) ||
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerTable.pointerDown(world, e) ||
-      this.pointerHeading.pointerDown(world, e) ||
       this.pointerLink.pointerDown(world, e) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerTableResize.pointerDown(world) ||
@@ -109,13 +109,14 @@ export class Pointer {
     this.updateCursor();
   };
 
-  private pointerMove = (e: FederatedPointerEvent): void => {
+  private pointerMove = (e: FederatedPointerEvent) => {
     // ignore pointerMove if the target is a child of an element with class pointer-move-ignore
     const target = e.originalEvent.target;
     const isWithinPointerMoveIgnore = target instanceof HTMLElement && !!target.closest('.pointer-move-ignore');
     if (isWithinPointerMoveIgnore) return;
 
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
+
     const world = pixiApp.viewport.toWorld(e.global);
 
     // the pointerImage.resizing check is needed so pointerHtmlCells
@@ -153,7 +154,7 @@ export class Pointer {
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
 
-  private pointerUp = (e: FederatedPointerEvent): void => {
+  private pointerUp = (e: FederatedPointerEvent) => {
     if (this.isMoreThanOneTouch(e)) return;
 
     this.pointerHtmlCells.pointerUp(e) ||

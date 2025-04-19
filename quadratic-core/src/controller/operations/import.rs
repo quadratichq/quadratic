@@ -231,6 +231,7 @@ impl GridController {
             sheet_pos,
             data_table,
             cell_value: CellValue::Import(import),
+            index: None,
         }];
 
         Ok(ops)
@@ -487,6 +488,7 @@ impl GridController {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
             data_table,
             cell_value: CellValue::Import(import),
+            index: None,
         }];
 
         Ok(ops)
@@ -522,9 +524,8 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 mod test {
     use super::{read_utf16, *};
     use crate::{
-        CellValue,
-        controller::user_actions::import::tests::simple_csv_at,
-        test_util::gc::{assert_data_table_cell_value, assert_display_cell_value},
+        CellValue, controller::user_actions::import::tests::simple_csv_at,
+        test_util::assert_display_cell_value,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
@@ -628,6 +629,7 @@ mod test {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
             data_table: expected_data_table,
             cell_value,
+            index: None,
         };
 
         assert_eq!(ops.len(), 1);
@@ -695,10 +697,10 @@ mod test {
         .unwrap();
 
         let value = CellValue::Date(NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap());
-        assert_data_table_cell_value(&gc, sheet_id, 1, 3, &value.to_string());
+        assert_display_cell_value(&gc, sheet_id, 1, 3, &value.to_string());
 
         let value = CellValue::Time(NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap());
-        assert_data_table_cell_value(&gc, sheet_id, 2, 3, &value.to_string());
+        assert_display_cell_value(&gc, sheet_id, 2, 3, &value.to_string());
 
         let value = CellValue::DateTime(
             NaiveDate::from_ymd_opt(2024, 12, 21)
@@ -706,7 +708,7 @@ mod test {
                 .and_hms_opt(13, 23, 0)
                 .unwrap(),
         );
-        assert_data_table_cell_value(&gc, sheet_id, 3, 3, &value.to_string());
+        assert_display_cell_value(&gc, sheet_id, 3, 3, &value.to_string());
     }
 
     #[test]

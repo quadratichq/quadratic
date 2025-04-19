@@ -9,6 +9,7 @@ import type { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
+  AIMessagePrompt,
   AIRequestHelperArgs,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
@@ -54,11 +55,12 @@ export const handleAnthropicRequest = async (
       };
     }
     if (options.stream) {
-      const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
-
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
+      response.write(`stream\n\n`);
+
+      const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
 
       const parsedResponse = await parseAnthropicStream(chunks, response, modelKey);
       return parsedResponse;
@@ -78,6 +80,19 @@ export const handleAnthropicRequest = async (
         console.error(error);
       }
     } else {
+      const responseMessage: AIMessagePrompt = {
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text: error instanceof Anthropic.APIError ? error.message : JSON.stringify(error),
+          },
+        ],
+        contextType: 'userPrompt',
+        toolCalls: [],
+        model: getModelFromModelKey(modelKey),
+      };
+      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response.end();
       console.error('Error occurred after headers were sent:', error);
     }

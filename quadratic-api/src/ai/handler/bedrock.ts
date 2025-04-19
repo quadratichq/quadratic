@@ -2,7 +2,12 @@ import type { BedrockRuntimeClient, ConverseRequest, ConverseStreamRequest } fro
 import { ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIRequestHelperArgs, BedrockModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  BedrockModelKey,
+  ParsedAIResponse,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
 
 export const handleBedrockRequest = async (
@@ -29,13 +34,13 @@ export const handleBedrockRequest = async (
     };
 
     if (options.stream) {
-      const command = new ConverseStreamCommand(apiArgs);
-
-      const chunks = (await bedrock.send(command)).stream ?? [];
-
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
+      response.write(`stream\n\n`);
+
+      const command = new ConverseStreamCommand(apiArgs);
+      const chunks = (await bedrock.send(command)).stream ?? [];
 
       const parsedResponse = await parseBedrockStream(chunks, response, modelKey);
       return parsedResponse;
@@ -48,14 +53,22 @@ export const handleBedrockRequest = async (
     }
   } catch (error: any) {
     if (!options.stream || !response.headersSent) {
-      if (error.response) {
-        response.status(error.response.status).json({ error: error.response.data });
-        console.error(error.response.status, error.response.data);
-      } else {
-        response.status(400).json({ error: error.message });
-        console.error(error.message);
-      }
+      response.status(400).json({ error });
+      console.error(error);
     } else {
+      const responseMessage: AIMessagePrompt = {
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(error),
+          },
+        ],
+        contextType: 'userPrompt',
+        toolCalls: [],
+        model: getModelFromModelKey(modelKey),
+      };
+      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response.end();
       console.error('Error occurred after headers were sent:', error);
     }

@@ -40,6 +40,7 @@ export function AIAnalystExamplePrompts() {
             submitPrompt({
               content: [{ type: 'text', text: prompt }],
               context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
+              messageIndex: 0,
             });
           }}
         >

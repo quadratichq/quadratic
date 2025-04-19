@@ -18,10 +18,10 @@ import { memo, useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
-  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMenuProps) => {
+export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const [selectedModel, setSelectedModel, selectedModelConfig, thinkingToggle, setThinkingToggle] = useAIModel();
 
   const modelConfigs = useMemo(() => {
@@ -73,7 +73,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
             alignOffset={-4}
             onCloseAutoFocus={(e) => {
               e.preventDefault();
-              textAreaRef.current?.focus();
+              textareaRef.current?.focus();
             }}
           >
             {modelConfigs
@@ -98,7 +98,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
                   >
                     <div className="flex w-full items-center justify-between text-xs">
                       <span className="pr-4">
-                        {(debug ? `${modelConfig.enabled ? '' : 'dbg-'}${provider} - ` : '') + displayName}
+                        {(debug ? `${modelConfig.enabled ? '' : '(debug) '}${provider} - ` : '') + displayName}
                       </span>
                     </div>
                   </DropdownMenuCheckboxItem>

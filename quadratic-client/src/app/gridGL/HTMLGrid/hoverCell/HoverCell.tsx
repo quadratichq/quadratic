@@ -41,7 +41,7 @@ export function HoverCell() {
   const [hovering, setHovering] = useState(false);
   const hoveringRef = useRef(false);
 
-  const timeoutId = useRef<NodeJS.Timeout | undefined>();
+  const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
   const [allowPointerEvents, setAllowPointerEvents] = useState(false);
 
   const addPointerEvents = useCallback(() => {
@@ -253,7 +253,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
             });
             submitPrompt({
               content: [{ type: 'text', text: 'Fix the error in the code cell' }],
-              clearMessages: true,
+              messageIndex: 0,
               codeCell,
             }).catch(console.error);
             onClick();

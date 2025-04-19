@@ -1,4 +1,5 @@
 *.svg
+/public
 src/app/quadratic-core
 src/shared/shadcn/ui
 src/app/web-workers/pythonLanguageServer/pyright-initialization.json

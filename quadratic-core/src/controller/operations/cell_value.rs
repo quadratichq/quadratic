@@ -199,6 +199,8 @@ impl GridController {
                         columns: columns.into_iter().map(|c| (c, None, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -210,6 +212,8 @@ impl GridController {
                         rows: rows.into_iter().map(|r| (r, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -248,10 +252,8 @@ impl GridController {
 
                         let is_full_table_selected = rect.contains_rect(&data_table_rect);
                         let can_delete_table = is_full_table_selected || data_table.readonly;
-                        let table_column_selection = selection.table_column_selection(
-                            data_table.name(),
-                            self.a1_context(),
-                        );
+                        let table_column_selection =
+                            selection.table_column_selection(data_table.name(), self.a1_context());
                         can_delete_column = !is_full_table_selected
                             && table_column_selection.is_some()
                             && !data_table.readonly;
@@ -333,13 +335,13 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    use crate::Rect;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::test_util::gc::print_table;
+    use crate::controller::user_actions::import::tests::simple_csv;
+    use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
+    use crate::{Rect, print_table_sheet};
 
     #[test]
     fn test() {
@@ -428,6 +430,150 @@ mod test {
             CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // currency with comma
+        let (value, format_update) = gc.string_to_cell_value("$123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with comma
+        let (value, format_update) = gc.string_to_cell_value("(123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // parentheses with -ve
+        let (value, format_update) = gc.string_to_cell_value("(-123,456)", true);
+        assert_eq!(value, CellValue::Text("(-123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // currency with a space
+        let (value, format_update) = gc.string_to_cell_value("$ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve outside
+        let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve inside
+        let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses outside
+        let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses inside
+        let (value, format_update) = gc.string_to_cell_value("$(123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses and space
+        let (value, format_update) = gc.string_to_cell_value("$ ( 123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with -ve
+        let (value, format_update) = gc.string_to_cell_value("(-$123,456)", true);
+        assert_eq!(value, CellValue::Text("(-$123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // percent with a space
+        let (value, format_update) = gc.string_to_cell_value("123456 %", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
+
+        // percent with a comma
+        let (value, format_update) = gc.string_to_cell_value("123,456%", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
     }
 
     #[test]
@@ -554,18 +700,20 @@ mod test {
 
     #[test]
     fn test_set_cell_values_operations() {
-        let mut gc = GridController::test();
+        // let mut gc = GridController::test();
+        let (mut gc, _, _, _) = simple_csv();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
             x: 1,
-            y: 1,
+            y: 13,
             sheet_id,
         };
 
-        let values = vec![vec!["a".to_string(), "b".to_string()]];
+        let values = vec![vec!["a".to_string()]];
         let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
         println!("{:?}", ops);
         println!("{:?}", data_table_ops);
-        print_table(&gc, sheet_id, Rect::from_numbers(1, 1, 2, 2));
+        let sheet = gc.try_sheet(sheet_id).unwrap();
+        print_table_sheet(sheet, Rect::from_numbers(1, 1, 4, 14), true);
     }
 }
