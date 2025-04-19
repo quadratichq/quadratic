@@ -455,7 +455,8 @@ export class CellsTextHash {
           }
         }
       });
-      this.special.adjustWidth(column, delta);
+      const c = this.special.adjustWidth(column, delta);
+      changed = changed || c;
     } else if (row !== undefined) {
       if (this.AABB.y < 0 && this.AABB.y <= row) {
         this.viewRectangle.y += delta;
@@ -482,7 +483,8 @@ export class CellsTextHash {
           }
         }
       });
-      this.special.adjustHeight(row, delta);
+      const c = this.special.adjustHeight(row, delta);
+      changed = changed || c;
     }
     if (changed && debugShowHashUpdates)
       console.log(

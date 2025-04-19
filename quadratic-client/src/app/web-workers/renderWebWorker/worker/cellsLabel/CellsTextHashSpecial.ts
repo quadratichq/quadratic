@@ -70,31 +70,39 @@ export class CellsTextHashSpecial {
     bounds.updateRectangle(rectangle);
   }
 
-  adjustWidth(column: number, delta: number) {
+  adjustWidth(column: number, delta: number): boolean {
+    let changed = false;
     this.special.checkboxes.forEach((entry) => {
       if (entry.column >= column) {
         entry.x -= delta;
+        changed = true;
       }
     });
 
     this.special.dropdowns.forEach((entry) => {
       if (entry.column >= column) {
         entry.x -= delta;
+        changed = true;
       }
     });
+    return changed;
   }
 
-  adjustHeight(row: number, delta: number) {
+  adjustHeight(row: number, delta: number): boolean {
+    let changed = false;
     this.special.checkboxes.forEach((entry) => {
       if (entry.row >= row) {
         entry.y -= delta;
+        changed = true;
       }
     });
 
     this.special.dropdowns.forEach((entry) => {
       if (entry.row >= row) {
         entry.y -= delta;
+        changed = true;
       }
     });
+    return changed;
   }
 }
