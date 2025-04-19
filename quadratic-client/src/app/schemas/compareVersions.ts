@@ -38,8 +38,8 @@ export function compareVersions(version1: string, version2: string) {
 
 // Returns true if only the patch version is different
 export function isPatchVersionDifferent(version1: string, version2: string): boolean {
-  const parts1 = version1.split('.');
-  const parts2 = version2.split('.');
+  const parts1 = version1.split('.').map(Number);
+  const parts2 = version2.split('.').map(Number);
 
   const maxLength = Math.max(parts1.length, parts2.length);
 
