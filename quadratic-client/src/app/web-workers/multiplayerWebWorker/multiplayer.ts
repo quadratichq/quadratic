@@ -1,5 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { debugShowMultiplayer, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugShowMultiplayer, debugShowVersionCheck, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
@@ -382,6 +382,9 @@ export class Multiplayer {
 
   private async checkVersion(serverVersion: string) {
     if (serverVersion !== VERSION) {
+      if (debugShowVersionCheck) {
+        console.log(`Multiplayer server version (${serverVersion}) is different than the client version (${VERSION})`);
+      }
       const versionClientFile = await fetch('/VERSION');
       if (versionClientFile.status === 200) {
         // we may have to wait to show the update dialog if the client version
@@ -390,6 +393,11 @@ export class Multiplayer {
         if (versionClient === serverVersion) {
           events.emit('needRefresh', isPatchVersionDifferent(versionClient, VERSION) ? 'recommended' : 'required');
         } else {
+          if (debugShowVersionCheck) {
+            console.log(
+              `quadratic-client's VERSION (${versionClient}) does not yet match the quadratic-multiplayer's version (${serverVersion}) (trying again in ${RECHECK_VERSION_INTERVAL}ms)`
+            );
+          }
           setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
         }
       } else {
