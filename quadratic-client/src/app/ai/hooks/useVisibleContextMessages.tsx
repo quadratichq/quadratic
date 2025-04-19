@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { A1SelectionStringToSelection, xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionStringToSelection, xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';

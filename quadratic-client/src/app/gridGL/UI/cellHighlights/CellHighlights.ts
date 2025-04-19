@@ -8,7 +8,7 @@ import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/U
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import type { CellRefRange, JsCellsAccessed, RefRangeBounds } from '@/app/quadratic-core-types';
-import { cellRefRangeToRefRangeBounds } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { cellRefRangeToRefRangeBounds } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
