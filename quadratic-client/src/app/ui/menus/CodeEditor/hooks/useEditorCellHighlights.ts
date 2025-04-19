@@ -7,7 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import type { JsFormulaParseResult } from '@/app/quadratic-core-types';
-import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { parseFormula } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import type { Monaco } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
