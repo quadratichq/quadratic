@@ -1,4 +1,3 @@
-import { version } from '@/../package.json';
 import { hasPermissionToEditFile } from '@/app/actions';
 import { debugShowMultiplayer, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
@@ -7,6 +6,7 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { isPatchVersionDifferent } from '@/app/schemas/compareVersions';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
@@ -21,9 +21,14 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
+import { VERSION } from '@/shared/constants/appConstants';
 import { displayName } from '@/shared/utils/userUtil';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
+
+// time to recheck the version of the client after receiving a different version
+// from the server
+const RECHECK_VERSION_INTERVAL = 5000;
 
 export class Multiplayer {
   private worker?: Worker;
@@ -376,23 +381,20 @@ export class Multiplayer {
   }
 
   private async checkVersion(serverVersion: string) {
-    console.log(`Comparing ${serverVersion} with ${version}`);
-    if (serverVersion !== version) {
+    if (serverVersion !== VERSION) {
       const versionClientFile = await fetch('/VERSION');
       if (versionClientFile.status === 200) {
-        const versionClient = await versionClientFile.text();
-        console.log(versionClient, version);
-        if (versionClient !== version) {
-          events.emit('needRefresh', 'required');
+        // we may have to wait to show the update dialog if the client version
+        // on the server is different than the one served from the client
+        const versionClient = (await versionClientFile.text()).trim();
+        if (versionClient === serverVersion) {
+          events.emit('needRefresh', isPatchVersionDifferent(versionClient, VERSION) ? 'recommended' : 'required');
+        } else {
+          setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
         }
       } else {
-        throw new Error('Failed to fetch version file');
+        throw new Error('Failed to fetch /VERSION file');
       }
-      // if (room.version > updateAlertVersion.requiredVersion) {
-      //   events.emit('needRefresh', 'required');
-      // } else if (room.min_version.recommendedVersion > updateAlertVersion.recommendedVersion) {
-      //   events.emit('needRefresh', 'recommended');
-      // }
     }
   }
 

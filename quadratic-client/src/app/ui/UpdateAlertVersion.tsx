@@ -17,11 +17,6 @@ export const UpdateAlertVersion = () => {
 
   if (showDialog === false) return null;
 
-  if (showDialog === 'force') {
-    window.location.reload();
-    return null;
-  }
-
   return (
     <FixedBottomAlert>
       <div>

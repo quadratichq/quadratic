@@ -163,4 +163,9 @@ echo $NEW_VERSION > VERSION
 # After updating all versions
 verify_versions
 
+# copy VERSION file to quadratic-client/public
+cp VERSION quadratic-client/public/VERSION
+echo "Copied VERSION file to quadratic-client/public/"
+
+
 echo "Version bump to $NEW_VERSION complete!"
