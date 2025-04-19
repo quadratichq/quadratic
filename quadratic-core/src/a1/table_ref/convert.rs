@@ -1,8 +1,56 @@
-use crate::a1::{A1Context, RefRangeBounds, UNBOUNDED};
+use crate::a1::{A1Context, RefRangeBounds, TableMapEntry, UNBOUNDED};
 
 use super::*;
 
 impl TableRef {
+    /// Converts a table ref to a CellRefRange::RefRangeBounds for use
+    /// by the CellsHighlights.ts fn (which draws the dashed rectangles around
+    /// cells accessed by code cells)
+    pub fn convert_cells_accessed_to_ref_range_bounds(
+        &self,
+        show_table_headers_for_python: bool,
+        a1_context: &A1Context,
+    ) -> Option<RefRangeBounds> {
+        let Some(table) = a1_context.try_table(&self.table_name) else {
+            // the table may no longer exist
+            return None;
+        };
+
+        // for html and images, we return only the anchor cell
+        if table.is_html_image {
+            return Some(RefRangeBounds::new_relative(
+                table.bounds.min.x,
+                table.bounds.min.y,
+                table.bounds.min.x,
+                table.bounds.min.y,
+            ));
+        }
+        let (mut y_start, y_end) = table.to_sheet_rows();
+        if self.headers && !self.data {
+            // this is the case where we only want the header row and can ignore force_table_bounds
+            y_start = table.bounds.min.y
+                + if table.show_ui && table.show_name {
+                    1
+                } else {
+                    0
+                };
+        } else if show_table_headers_for_python {
+            y_start = table.bounds.min.y
+                + if table.show_ui && table.show_name {
+                    1
+                } else {
+                    0
+                };
+        }
+        // this is for the clipboard, we don't want to copy the table name when it's a full column
+        else if let ColRange::Col(_) = &self.col_range {
+            y_start += table.y_adjustment(true);
+        }
+        let y_end = if !self.data { y_start } else { y_end };
+
+        self.finish_convert(table, y_start, y_end, false)
+    }
+
     /// Converts the table ref to a list of CellRefRange::RefRangeBounds
     ///
     /// - `use_unbounded` - return an infinite column if selecting a column
@@ -59,13 +107,6 @@ impl TableRef {
                 } else {
                     0
                 };
-        } else if force_table_bounds {
-            y_start = table.bounds.min.y
-                + if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                };
         }
         // this is for the clipboard, we don't want to copy the table name when it's a full column
         else if let ColRange::Col(_) = &self.col_range {
@@ -73,6 +114,16 @@ impl TableRef {
         }
         let y_end = if !self.data { y_start } else { y_end };
 
+        self.finish_convert(table, y_start, y_end, use_unbounded)
+    }
+
+    fn finish_convert(
+        &self,
+        table: &TableMapEntry,
+        y_start: i64,
+        y_end: i64,
+        use_unbounded: bool,
+    ) -> Option<RefRangeBounds> {
         match &self.col_range {
             ColRange::All => {
                 let range = RefRangeBounds::new_relative(
@@ -335,5 +386,114 @@ mod tests {
 
         let bounds = table_ref.convert_to_ref_range_bounds(false, &context, false, true);
         assert_eq!(bounds, Some(RefRangeBounds::test_a1("A2")));
+    }
+
+    #[test]
+    fn test_convert_cells_accessed_to_ref_range_bounds() {
+        let context = create_test_context(Rect::test_a1("A1:C4"));
+
+        // Test with headers only
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: false,
+            headers: true,
+            totals: false,
+        };
+
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
+            Some(RefRangeBounds::test_a1("A2:C2"))
+        );
+
+        // Test with data only
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
+            Some(RefRangeBounds::test_a1("A1:C4"))
+        );
+
+        // Test with both headers and data
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: true,
+            totals: false,
+        };
+
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
+            Some(RefRangeBounds::test_a1("A1:C4"))
+        );
+
+        // Test with show_table_headers_for_python = true
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(true, &context),
+            Some(RefRangeBounds::test_a1("A2:C4"))
+        );
+
+        // Test with a single column
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("Col1".to_string()),
+            data: true,
+            headers: true,
+            totals: false,
+        };
+
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
+            Some(RefRangeBounds::test_a1("A3:A4"))
+        );
+
+        // Test with a column range
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColRange("Col1".to_string(), "Col2".to_string()),
+            data: true,
+            headers: true,
+            totals: false,
+        };
+
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
+            Some(RefRangeBounds::test_a1("A1:B4"))
+        );
+
+        // Test with a column to end
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColToEnd("Col2".to_string()),
+            data: true,
+            headers: true,
+            totals: false,
+        };
+
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
+            Some(RefRangeBounds::test_a1("B1:C4"))
+        );
+
+        // Test with a non-existent table
+        let table_ref = TableRef {
+            table_name: "nonexistent".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: true,
+            totals: false,
+        };
+
+        assert_eq!(
+            table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
+            None
+        );
     }
 }

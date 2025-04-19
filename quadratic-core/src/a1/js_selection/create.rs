@@ -149,7 +149,7 @@ pub fn a1_selection_value_to_selection(
 #[wasm_bindgen(js_name = "cellRefRangeToRefRangeBounds")]
 pub fn cell_ref_range_to_ref_range_bounds(
     cell_ref_range: String,
-    force_table_bounds: bool,
+    show_table_headers_for_python: bool,
     context: &str,
 ) -> Result<String, String> {
     let cell_ref_range =
@@ -158,7 +158,9 @@ pub fn cell_ref_range_to_ref_range_bounds(
     let ref_range_bounds = match cell_ref_range {
         CellRefRange::Sheet { range } => range,
         CellRefRange::Table { range } => {
-            match range.convert_to_ref_range_bounds(false, &context, false, force_table_bounds) {
+            match range
+                .convert_cells_accessed_to_ref_range_bounds(show_table_headers_for_python, &context)
+            {
                 Some(ref_range_bounds) => ref_range_bounds,
                 None => return Err("Unable to convert table range to ref range bounds".to_string()),
             }
