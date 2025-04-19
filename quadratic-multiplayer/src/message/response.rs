@@ -3,7 +3,6 @@
 //! A central place for websocket messages responses.
 
 use crate::error::{ErrorLevel, MpError};
-use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use dashmap::DashMap;
@@ -25,7 +24,7 @@ pub(crate) struct Transaction {
 pub(crate) enum MessageResponse {
     UsersInRoom {
         users: Vec<User>,
-        min_version: MinVersion,
+        version: String,
     },
     UserUpdate {
         session_id: Uuid,
@@ -65,11 +64,11 @@ impl From<TransactionServer> for Transaction {
     }
 }
 
-impl From<(DashMap<Uuid, User>, &MinVersion)> for MessageResponse {
-    fn from((users, min_version): (DashMap<Uuid, User>, &MinVersion)) -> Self {
+impl From<(DashMap<Uuid, User>, &String)> for MessageResponse {
+    fn from((users, version): (DashMap<Uuid, User>, &String)) -> Self {
         MessageResponse::UsersInRoom {
             users: users.into_iter().map(|user| (user.1)).collect(),
-            min_version: min_version.to_owned(),
+            version: version.to_owned(),
         }
     }
 }

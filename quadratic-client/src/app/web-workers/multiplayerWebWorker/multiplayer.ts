@@ -1,3 +1,4 @@
+import { version } from '@/../package.json';
 import { hasPermissionToEditFile } from '@/app/actions';
 import { debugShowMultiplayer, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
@@ -23,7 +24,6 @@ import { parseDomain } from '@/auth/auth.helper';
 import { displayName } from '@/shared/utils/userUtil';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
-import updateAlertVersion from '../../../../../updateAlertVersion.json';
 
 export class Multiplayer {
   private worker?: Worker;
@@ -375,13 +375,31 @@ export class Multiplayer {
     }
   }
 
+  private async checkVersion(serverVersion: string) {
+    console.log(`Comparing ${serverVersion} with ${version}`);
+    ``;
+    if (serverVersion !== version) {
+      const versionClientFile = await fetch('/VERSION');
+      if (versionClientFile.status === 200) {
+        const versionClient = await versionClientFile.text();
+        console.log(versionClient, version);
+        if (versionClient !== version) {
+          events.emit('needRefresh', 'required');
+        }
+      } else {
+        throw new Error('Failed to fetch version file');
+      }
+      // if (room.version > updateAlertVersion.requiredVersion) {
+      //   events.emit('needRefresh', 'required');
+      // } else if (room.min_version.recommendedVersion > updateAlertVersion.recommendedVersion) {
+      //   events.emit('needRefresh', 'recommended');
+      // }
+    }
+  }
+
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
-    if (room.min_version.requiredVersion > updateAlertVersion.requiredVersion) {
-      events.emit('needRefresh', 'required');
-    } else if (room.min_version.recommendedVersion > updateAlertVersion.recommendedVersion) {
-      events.emit('needRefresh', 'recommended');
-    }
+    this.checkVersion(room.version);
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {
