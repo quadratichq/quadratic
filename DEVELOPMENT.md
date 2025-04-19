@@ -53,7 +53,7 @@ Auth0 creds need to be updated in: API, Client, Multiplayer, and Connections.
 ## Start Docker
 
 Keep this running in a tab
-`npm run docker:base`  
+`npm run docker:base`
 or
 `npm run docker:base -- -d`
 to run as a daemon
@@ -285,7 +285,7 @@ Output will be located in the terminal.
 
 ## Prompting user after version change
 
-The current version numbers are stored in `updateAlertVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.
+Versioning is handled by client and the multiplayer server based on the bump script and the /VERSION file.
 
 ## Install Pyodide
 
