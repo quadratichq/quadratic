@@ -1,5 +1,5 @@
-//! Utility functions to creates selections for use in JS via
-//! quadratic-rust-client.
+//! Utility functions to creates selections for use in JS via quadratic-client's
+//! local core (without access to the grid).
 
 use wasm_bindgen::prelude::*;
 
