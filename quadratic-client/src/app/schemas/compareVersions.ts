@@ -35,3 +35,32 @@ export function compareVersions(version1: string, version2: string) {
 
   return VersionComparisonResult.Equal;
 }
+
+// Returns true if only the patch version is different
+export function isPatchVersionDifferent(version1: string, version2: string): boolean {
+  const parts1 = version1.split('.');
+  const parts2 = version2.split('.');
+
+  const maxLength = Math.max(parts1.length, parts2.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    const num1 = parts1[i] || 0;
+    const num2 = parts2[i] || 0;
+
+    if (num1 < num2) {
+      if (i === maxLength - 1) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (num1 > num2) {
+      if (i === maxLength - 1) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  return false;
+}
