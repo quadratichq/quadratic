@@ -85,7 +85,7 @@ export class CellHighlights extends Container {
         if (sheetId !== sheets.current || selectedCellIndex === index) return;
 
         ranges.forEach((range) => {
-          const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, false);
+          const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, this.isPython);
           if (refRangeBounds) {
             drawDashedRectangle({
               g: this.highlights,
@@ -98,7 +98,7 @@ export class CellHighlights extends Container {
       });
     }
 
-    this.dirty = true;
+    this.dirty = false;
   };
 
   // Draws the marching highlights by using an offset dashed line to create the

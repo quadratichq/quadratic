@@ -59,6 +59,13 @@ impl TableRef {
                 } else {
                     0
                 };
+        } else if force_table_bounds {
+            y_start = table.bounds.min.y
+                + if table.show_ui && table.show_name {
+                    1
+                } else {
+                    0
+                };
         }
         // this is for the clipboard, we don't want to copy the table name when it's a full column
         else if let ColRange::Col(_) = &self.col_range {
