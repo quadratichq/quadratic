@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsDataTableColumnHeader } from '@/app/quadratic-core-types';
-import { validateColumnName } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { validateColumnName } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useCallback } from 'react';

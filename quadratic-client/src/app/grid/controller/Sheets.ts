@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
-import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
