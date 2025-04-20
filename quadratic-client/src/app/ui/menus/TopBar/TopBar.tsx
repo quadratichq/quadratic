@@ -15,7 +15,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 
 export const TopBar = () => {
-  // TODO: what about embedable view? should we show the file menu?
+  // TODO: what about embeddable view? should we show the file menu?
 
   return (
     <div

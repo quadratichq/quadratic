@@ -41,26 +41,17 @@ export function isPatchVersionDifferent(version1: string, version2: string): boo
   const parts1 = version1.split('.').map(Number);
   const parts2 = version2.split('.').map(Number);
 
-  const maxLength = Math.max(parts1.length, parts2.length);
-
-  for (let i = 0; i < maxLength; i++) {
-    const num1 = parts1[i] || 0;
-    const num2 = parts2[i] || 0;
-
-    if (num1 < num2) {
-      if (i === maxLength - 1) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (num1 > num2) {
-      if (i === maxLength - 1) {
-        return true;
-      } else {
-        return false;
-      }
-    }
+  if (parts1.length !== 3 || parts2.length !== 3) {
+    console.error('Invalid version format. Expected format: major.minor.patch', version1, version2);
+    return false;
   }
 
-  return false;
+  const [major1, minor1, patch1] = parts1;
+  const [major2, minor2, patch2] = parts2;
+
+  if (major1 !== major2 || minor1 !== minor2) {
+    return false; // Major or minor versions are different
+  }
+
+  return patch1 !== patch2; // Only the patch version is different
 }

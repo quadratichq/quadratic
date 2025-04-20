@@ -7,6 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { isPatchVersionDifferent } from '@/app/schemas/compareVersions';
+import { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
@@ -133,7 +134,7 @@ export class Multiplayer {
         break;
 
       case 'multiplayerClientReload':
-        events.emit('needRefresh', 'force');
+        events.emit('needRefresh', RefreshType.FORCE);
         break;
 
       case 'multiplayerClientRefreshJwt':
@@ -381,28 +382,39 @@ export class Multiplayer {
   }
 
   private async checkVersion(serverVersion: string) {
-    if (serverVersion !== VERSION) {
-      if (debugShowVersionCheck) {
-        console.log(`Multiplayer server version (${serverVersion}) is different than the client version (${VERSION})`);
+    if (serverVersion === VERSION) {
+      return;
+    }
+
+    if (debugShowVersionCheck) {
+      console.log(`Multiplayer server version (${serverVersion}) is different than the client version (${VERSION})`);
+    }
+
+    try {
+      const versionClientJson = await fetch('/version.json').then((res) => res.json());
+      if (typeof versionClientJson !== 'object' || !('version' in versionClientJson)) {
+        throw new Error(`Invalid version.json: ${JSON.stringify(versionClientJson)}`);
       }
-      const versionClientFile = await fetch('/VERSION');
-      if (versionClientFile.status === 200) {
-        // we may have to wait to show the update dialog if the client version
-        // on the server is different than the one served from the client
-        const versionClient = (await versionClientFile.text()).trim();
-        if (versionClient === serverVersion) {
-          events.emit('needRefresh', isPatchVersionDifferent(versionClient, VERSION) ? 'recommended' : 'required');
-        } else {
-          if (debugShowVersionCheck) {
-            console.log(
-              `quadratic-client's VERSION (${versionClient}) does not yet match the quadratic-multiplayer's version (${serverVersion}) (trying again in ${RECHECK_VERSION_INTERVAL}ms)`
-            );
-          }
-          setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
-        }
+      const versionClient = versionClientJson.version;
+
+      // we may have to wait to show the update dialog if the client version
+      // on the server is different than the one served from the client
+      if (versionClient === serverVersion) {
+        events.emit(
+          'needRefresh',
+          isPatchVersionDifferent(versionClient, VERSION) ? RefreshType.RECOMMENDED : RefreshType.REQUIRED
+        );
       } else {
-        throw new Error('Failed to fetch /VERSION file');
+        if (debugShowVersionCheck) {
+          console.log(
+            `quadratic-client's version (${versionClient}) does not yet match the quadratic-multiplayer's version (${serverVersion}) (trying again in ${RECHECK_VERSION_INTERVAL}ms)`
+          );
+        }
+        setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
       }
+    } catch (e) {
+      setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
+      console.error('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
     }
   }
 

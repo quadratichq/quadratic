@@ -285,7 +285,7 @@ Output will be located in the terminal.
 
 ## Prompting user after version change
 
-Versioning is handled by client and the multiplayer server based on the bump script and the /VERSION file.
+Versioning is handled by client and the multiplayer server based on the bump script and the /quadratic-client/public/version.json file.
 
 ## Install Pyodide
 
