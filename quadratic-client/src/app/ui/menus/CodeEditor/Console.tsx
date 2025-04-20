@@ -4,7 +4,7 @@ import {
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { useMemo } from 'react';

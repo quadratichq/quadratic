@@ -1,3 +1,4 @@
+import type { FileContent } from '../../typesAndSchemasAI';
 import {
   ImageContentSchema,
   PdfFileContentSchema,
@@ -37,4 +38,8 @@ export const dataUrlToMimeTypeAndData = (dataUrl: string) => {
     mimeType: dataUrl.split(';')?.[0]?.split(':')?.[1],
     data: dataUrl.split(',')?.[1],
   };
+};
+
+export const getDataBase64String = (content: FileContent) => {
+  return `data:${content.mimeType};base64,${content.data}`;
 };

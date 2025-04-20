@@ -35,123 +35,123 @@ type SelectionActionSpec = Pick<
 
 export const selectionActionsSpec: SelectionActionSpec = {
   [Action.SelectAll]: {
-    label: 'Select all',
+    label: () => 'Select all',
     run: () => {
       sheets.sheet.cursor.selectAll();
     },
   },
   [Action.SelectColumn]: {
-    label: 'Select column',
+    label: () => 'Select column',
     run: () => {
       sheets.sheet.cursor.setColumnsSelected();
     },
   },
   [Action.SelectRow]: {
-    label: 'Select row',
+    label: () => 'Select row',
     run: () => {
       sheets.sheet.cursor.setRowsSelected();
     },
   },
   [Action.MoveCursorUp]: {
-    label: 'Move cursor up',
+    label: () => 'Move cursor up',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.JumpCursorContentTop]: {
-    label: 'Jump cursor content top',
+    label: () => 'Jump cursor content top',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionUp]: {
-    label: 'Expand selection up',
+    label: () => 'Expand selection up',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionContentTop]: {
-    label: 'Expand selection content top',
+    label: () => 'Expand selection content top',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.MoveCursorDown]: {
-    label: 'Move cursor down',
+    label: () => 'Move cursor down',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.JumpCursorContentBottom]: {
-    label: 'Jump cursor content bottom',
+    label: () => 'Jump cursor content bottom',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionDown]: {
-    label: 'Expand selection down',
+    label: () => 'Expand selection down',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionContentBottom]: {
-    label: 'Expand selection content bottom',
+    label: () => 'Expand selection content bottom',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.MoveCursorLeft]: {
-    label: 'Move cursor left',
+    label: () => 'Move cursor left',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.JumpCursorContentLeft]: {
-    label: 'Jump cursor content left',
+    label: () => 'Jump cursor content left',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionLeft]: {
-    label: 'Expand selection left',
+    label: () => 'Expand selection left',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionContentLeft]: {
-    label: 'Expand selection content left',
+    label: () => 'Expand selection content left',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.MoveCursorLeftWithSelection]: {
-    label: 'Move cursor left with selection',
+    label: () => 'Move cursor left with selection',
     run: () => {
       // handled in keyboardPosition
       // todo: probably rethink how we handle keyboard shortcuts
     },
   },
   [Action.MoveCursorRight]: {
-    label: 'Move cursor right',
+    label: () => 'Move cursor right',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.JumpCursorContentRight]: {
-    label: 'Jump cursor content right',
+    label: () => 'Jump cursor content right',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionRight]: {
-    label: 'Expand selection right',
+    label: () => 'Expand selection right',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.ExpandSelectionContentRight]: {
-    label: 'Expand selection content right',
+    label: () => 'Expand selection content right',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.MoveCursorRightWithSelection]: {
-    label: 'Move cursor right with selection',
+    label: () => 'Move cursor right with selection',
     run: () => {
       // handled in keyboardPosition
       // todo: probably rethink how we handle keyboard shortcuts
     },
   },
   [Action.GotoA1]: {
-    label: 'Goto A1',
+    label: () => 'Goto A1',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.GotoBottomRight]: {
-    label: 'Goto bottom right',
+    label: () => 'Goto bottom right',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.GotoRowStart]: {
-    label: 'Goto row start',
+    label: () => 'Goto row start',
     run: () => sheets.sheet.cursor.moveTo(1, sheets.sheet.cursor.position.y, { checkForTableRef: true }),
   },
   [Action.GotoRowEnd]: {
-    label: 'Goto row end',
+    label: () => 'Goto row end',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.SelectPageDown]: {
-    label: 'Select page down',
+    label: () => 'Select page down',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.SelectPageUp]: {
-    label: 'Select page up',
+    label: () => 'Select page up',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
 };

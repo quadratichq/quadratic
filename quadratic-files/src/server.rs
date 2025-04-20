@@ -4,7 +4,7 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::Json;
-use axum::http::{Method, StatusCode};
+use axum::http::Method;
 use axum::response::IntoResponse;
 use axum::{Extension, Router, routing::get};
 use quadratic_rust_shared::auth::jwt::get_jwks;
@@ -17,6 +17,7 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::file::get_files_to_process;
+use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
 use crate::truncate::truncate_processed_transactions;
@@ -71,6 +72,9 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         //
         // healthcheck
         .route("/health", get(healthcheck))
+        //
+        // full healthcheck
+        .route("/health/full", get(full_healthcheck))
         //
         // stats
         .route("/stats", get(stats))
@@ -206,10 +210,6 @@ pub(crate) async fn serve() -> Result<()> {
     Ok(())
 }
 
-pub(crate) async fn healthcheck() -> impl IntoResponse {
-    StatusCode::OK
-}
-
 pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
     let stats = state.stats.lock().await.to_owned();
     let response = StatsResponse::from(&stats);
@@ -220,17 +220,9 @@ pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::test_util::{new_arc_state, response};
-    use axum::http::Method;
+    use axum::http::{Method, StatusCode};
 
     use super::*;
-
-    #[tokio::test]
-    async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_arc_state().await;
-        let app = app(state);
-        let response = response(app, Method::GET, "/health").await;
-        assert_eq!(response.status(), StatusCode::OK);
-    }
 
     #[tokio::test]
     async fn responds_with_a_200_ok_for_stats() {

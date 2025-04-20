@@ -1,7 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation } from '@/app/quadratic-core-types';
-import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { numberToDate, numberToTime } from '@/app/quadratic-core/quadratic_core';
 import { joinWithOr } from '@/shared/utils/text';
+import type { JSX } from 'react';
 
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
   if (validation.rule === 'None') {

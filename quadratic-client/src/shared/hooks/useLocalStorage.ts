@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // See: https://usehooks-ts.com/react-hook/use-event-listener
 import useEventListener from './useEventListener';
@@ -14,22 +14,24 @@ declare global {
 export type SetValue<T> = Dispatch<SetStateAction<T>>;
 
 function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
+  const initialValueRef = useRef(initialValue);
+
   // source https://usehooks-ts.com/react-hook/use-local-storage
   // Get from local storage then
   // parse stored json or return initialValue
   const readValue = useCallback((): T => {
     // Prevent build error "window is undefined" but keep keep working
     if (typeof window === 'undefined') {
-      return initialValue;
+      return initialValueRef.current;
     }
 
     try {
       const item = window.localStorage.getItem(key);
-      return item ? (parseJSON(item) as T) : initialValue;
+      return item ? (parseJSON(item) as T) : initialValueRef.current;
     } catch (error) {
       throw new Error(`Error reading localStorage key “${key}”`);
     }
-  }, [initialValue, key]);
+  }, [key]);
 
   // State to store our value
   // Pass initial state function to useState so logic is only executed once
@@ -65,8 +67,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
 
   useEffect(() => {
     setStoredValue(readValue());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [readValue]);
 
   const handleStorageChange = useCallback(() => {
     setStoredValue(readValue());

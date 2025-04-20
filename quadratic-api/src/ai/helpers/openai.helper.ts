@@ -8,6 +8,7 @@ import type {
   ChatCompletionToolChoiceOption,
 } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
+import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
   getSystemPromptMessages,
   isContentImage,
@@ -41,7 +42,7 @@ function convertContent(content: Content): Array<ChatCompletionContentPart> {
         return {
           type: 'image_url',
           image_url: {
-            url: content.data,
+            url: getDataBase64String(content),
           },
         };
       }

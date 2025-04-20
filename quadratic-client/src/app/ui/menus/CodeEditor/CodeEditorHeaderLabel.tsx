@@ -7,7 +7,7 @@ import {
   newSingleSelection,
   stringToSelection,
   validateTableName,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+} from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { Input } from '@/shared/shadcn/ui/input';

@@ -35,9 +35,12 @@ class RenderClient {
     }
 
     switch (e.data.type) {
-      case 'clientRenderInit':
+      case 'clientRenderBitmapFonts':
         renderText.clientInit(e.data.bitmapFonts);
-        renderCore.init(e.ports[0]);
+        return;
+
+      case 'clientRenderInit':
+        renderCore.clientInit(e.ports[0]);
         this.tableColumnHeaderForeground = e.data.tableColumnHeaderForeground;
         return;
 
