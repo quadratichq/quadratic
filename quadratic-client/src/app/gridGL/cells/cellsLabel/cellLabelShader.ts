@@ -50,10 +50,8 @@ void main(@location(1) aUV: vec2<f32>, ) {
 // WebGPU shaders
 export const wgsl = `
 struct GlobalUniforms {
-    uProjectionMatrix: mat3x3<f32>,
-    uWorldTransformMatrix: mat3x3<f32>,
-    uWorldColorAlpha: vec4<f32>,
-    uResolution: vec2<f32>,
+  uProjectionMatrix:mat3x3<f32>,
+  uWorldTransformMatrix:mat3x3<f32>,
 };
 
 struct LocalUniforms {
@@ -64,7 +62,7 @@ struct LocalUniforms {
 @group(1) @binding(0) var<uniform> localUniforms: LocalUniforms;
 
 struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
+  @builtin(position) position: vec4<f32>,
     @location(0) textureCoord: vec2<f32>,
 };
 

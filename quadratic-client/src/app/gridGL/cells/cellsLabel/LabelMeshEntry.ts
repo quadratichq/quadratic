@@ -12,18 +12,14 @@ import { wgsl } from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { BitmapFont, TextureShader } from 'pixi.js';
-import { Assets, Geometry, GpuProgram, Mesh, Shader, UniformGroup } from 'pixi.js';
+import { Assets, GlProgram, GpuProgram, Mesh, MeshGeometry, Shader, UniformGroup } from 'pixi.js';
 
-export class LabelMeshEntry extends Mesh<Geometry, TextureShader> {
+export class LabelMeshEntry extends Mesh {
   private fontName: string;
   private fontSize = 14;
 
   constructor(message: RenderClientLabelMeshEntry) {
-    const geometry = new Geometry();
-
-    geometry.addAttribute('aPosition', { buffer: message.vertices, size: 2 });
-    geometry.addAttribute('aUV', { buffer: message.uvs, size: 2 });
-    geometry.addIndex(message.indices);
+    const geometry = new MeshGeometry({ positions: message.vertices, uvs: message.uvs, indices: message.indices });
 
     const shaderGL = message.hasColor ? shaderTint : shaderNoTint;
     if (shaderGL) console.log();
@@ -46,11 +42,12 @@ export class LabelMeshEntry extends Mesh<Geometry, TextureShader> {
     });
 
     const shader = new Shader({
-      // gl: {
-      //   vertex: shaderGL.msdfVert,
-      //   fragment: shaderGL.msdfFrag,
-      // },
+      glProgram: new GlProgram({
+        vertex: shaderGL.msdfVert,
+        fragment: shaderGL.msdfFrag,
+      }),
       gpuProgram: GpuProgram.from({
+        name: 'cellLabelShader',
         vertex: {
           source: wgsl,
           entryPoint: 'mainVertex',
@@ -59,6 +56,8 @@ export class LabelMeshEntry extends Mesh<Geometry, TextureShader> {
       }),
       resources: {
         localUniforms,
+        uTexture: texture.source,
+        uSampler: texture.source.style,
       },
     });
     const shaderWithTexture = shader as TextureShader;
@@ -69,8 +68,6 @@ export class LabelMeshEntry extends Mesh<Geometry, TextureShader> {
     }
 
     super({ geometry, shader: shaderWithTexture, texture });
-
-    console.log(this);
 
     this.fontName = message.fontName;
     this.blendMode = 'normal-npm';
