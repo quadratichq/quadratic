@@ -34,9 +34,7 @@ impl DataTable {
         if transaction.is_user() {
             let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
 
-            let mut table_rows = self
-                .formats
-                .get_rows_with_wrap_in_rect(&data_table_rect.into());
+            let mut table_rows = self.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
 
             // translate to actual row on the sheet
             let y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
@@ -74,6 +72,42 @@ impl DataTable {
         }
     }
 
+    fn has_content_in_row(&self, row: i64) -> bool {
+        let data_table_rect = self.output_rect((0, 0).into(), false);
+        for x in data_table_rect.x_range() {
+            if let Some(cell_value) = self.cell_value_at(x as u32, row as u32) {
+                dbgjs!(format!("Cell value at ({}, {}): {:?}", x, row, cell_value));
+                if !cell_value.is_blank_or_empty_string() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Returns the rows with wrap in the given rect.
+    fn get_rows_with_wrap_in_rect(&self, rect: &Rect, include_blanks: bool) -> Vec<i64> {
+        let mut rows = vec![];
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                if (include_blanks
+                    || self
+                        .cell_value_at(x as u32, y as u32)
+                        .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string()))
+                    && self
+                        .formats
+                        .wrap
+                        .get((x, y).into())
+                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
+                {
+                    rows.push(y);
+                    break;
+                }
+            }
+        }
+        rows
+    }
+
     fn format_transaction_changes<T: std::fmt::Debug + Clone + PartialEq>(
         &self,
         data_table_pos: Pos,
@@ -92,7 +126,7 @@ impl DataTable {
                 .for_each(|(x1, y1, x2, y2, _)| {
                     let mut rect = Rect::new(x1, y1, x2, y2);
                     if needs_resize {
-                        let mut rows = self.formats.get_rows_with_wrap_in_rect(&rect);
+                        let mut rows = self.get_rows_with_wrap_in_rect(&rect, false);
                         // translate to actual row on the sheet
                         rows.iter_mut().for_each(|row| {
                             *row += y_offset;
@@ -105,18 +139,6 @@ impl DataTable {
                     dirty_hashes.extend(rect.to_hashes());
                 });
         }
-    }
-
-    fn has_content_in_row(&self, data_table_pos: Pos, row: i64) -> bool {
-        let data_table_rect = self.output_rect(data_table_pos, false);
-        for x in data_table_rect.x_range() {
-            if let Some(cell_value) = self.cell_value_at(x as u32, row as u32) {
-                if !cell_value.is_blank_or_empty_string() {
-                    return true;
-                }
-            }
-        }
-        false
     }
 
     fn wrap_transaction_changes(
@@ -137,7 +159,7 @@ impl DataTable {
                     // check if new formats is wrap
                     if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
-                            if self.has_content_in_row(data_table_pos, y) {
+                            if self.has_content_in_row(y) {
                                 resize_rows.insert(y + y_offset);
                             }
                         }
@@ -277,5 +299,58 @@ impl DataTable {
                 transaction.add_fill_cells(sheet_id);
             }
         }
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use crate::{
+        Pos,
+        a1::A1Selection,
+        controller::user_actions::import::tests::simple_csv_at,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
+    };
+
+    #[test]
+    fn test_table_js_hashes_dirty() {
+        clear_js_calls();
+
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos![M20]);
+
+        gc.set_bold(
+            &A1Selection::test_a1_sheet_id("M22", sheet_id),
+            Some(true),
+            None,
+        )
+        .unwrap();
+
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call(
+            "jsHashesDirty",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![Pos::new(0, 0)]).unwrap()
+            ),
+            true,
+        );
+
+        gc.set_bold(
+            &A1Selection::test_a1_sheet_id("P31", sheet_id),
+            Some(true),
+            None,
+        )
+        .unwrap();
+
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call(
+            "jsHashesDirty",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![Pos::new(1, 1)]).unwrap()
+            ),
+            true,
+        );
     }
 }

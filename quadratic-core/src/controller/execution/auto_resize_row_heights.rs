@@ -83,6 +83,7 @@ mod tests {
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCellValueResult;
     use crate::controller::transaction_types::JsCodeResult;
+    use crate::controller::user_actions::import::tests::simple_csv_at;
     use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::SheetFormatUpdates;
     use crate::grid::formatting::RenderSize;
@@ -766,5 +767,37 @@ mod tests {
         // confirm no pending async transaction
         let async_transaction = gc.transactions.get_async_transaction(next_transaction.id);
         assert!(async_transaction.is_err());
+    }
+
+    #[test]
+    fn test_table_rows_resize() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos![M20]);
+
+        clear_js_calls();
+
+        // should trigger auto resize row heights for wrap
+        let ops = vec![Operation::DataTableFormats {
+            sheet_pos: pos.to_sheet_pos(sheet_id),
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1_sheet_id("A2", sheet_id),
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 22,
+            height: 40f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[22]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 40f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
     }
 }
