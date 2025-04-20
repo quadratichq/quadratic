@@ -291,8 +291,8 @@ impl GridController {
                                             .min
                                             .to_sheet_pos(selection.sheet_id),
                                         values: CellValues::new_blank(
-                                            intersection.width() as u32,
-                                            intersection.height() as u32,
+                                            intersection.width(),
+                                            intersection.height(),
                                         ),
                                     });
                                 }
