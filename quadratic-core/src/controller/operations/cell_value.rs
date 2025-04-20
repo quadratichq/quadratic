@@ -224,6 +224,8 @@ impl GridController {
         Ok((ops, data_table_ops))
     }
 
+    // todo: we should change this from pushing ops to acting on the sheet directly.
+
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
     ///
@@ -241,64 +243,67 @@ impl GridController {
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
-                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
                 let mut can_delete_column = false;
 
-                if let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) {
-                    if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
-                        let mut data_table_rect =
-                            data_table.output_rect(data_table_pos.to_owned(), false);
-                        data_table_rect.min.y += data_table.y_adjustment(true);
+                if let Ok(data_tables) = sheet.data_tables_within_rect(rect, false) {
+                    for data_table_pos in data_tables {
+                        if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
+                            let mut data_table_rect =
+                                data_table.output_rect(data_table_pos.to_owned(), false);
+                            data_table_rect.min.y += data_table.y_adjustment(true);
 
-                        let is_full_table_selected = rect.contains_rect(&data_table_rect);
-                        let can_delete_table = is_full_table_selected || data_table.readonly;
-                        let table_column_selection =
-                            selection.table_column_selection(data_table.name(), self.a1_context());
-                        can_delete_column = !is_full_table_selected
-                            && table_column_selection.is_some()
-                            && !data_table.readonly;
+                            let is_full_table_selected = rect.contains_rect(&data_table_rect);
+                            let can_delete_table = is_full_table_selected || data_table.readonly;
+                            let table_column_selection = selection
+                                .table_column_selection(data_table.name(), self.a1_context());
+                            can_delete_column = !is_full_table_selected
+                                && table_column_selection.is_some()
+                                && !data_table.readonly;
 
-                        if can_delete_table {
-                            ops.push(Operation::DeleteDataTable {
-                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                            });
-                        } else if can_delete_column {
-                            // adjust for hidden columns, reverse the order to delete from right to left
-                            let columns = (rect.min.x..=rect.max.x)
-                                .map(|x| {
-                                    // account for hidden columns
-                                    data_table.get_column_index_from_display_index(
-                                        (x - data_table_rect.min.x) as u32,
-                                        true,
-                                    )
-                                })
-                                .rev()
-                                .collect();
-                            ops.push(Operation::DeleteDataTableColumns {
-                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                                columns,
-                                flatten: false,
-                                select_table: false,
-                            });
-                        } else {
-                            ops.push(Operation::SetDataTableAt {
-                                sheet_pos,
-                                values: CellValues::new_blank(
-                                    rect.width().min(
-                                        (data_table_rect.max.x - sheet_pos.x + 1).max(1) as u32,
-                                    ),
-                                    rect.height().min(
-                                        (data_table_rect.max.y - sheet_pos.y + 1).max(1) as u32,
-                                    ),
-                                ),
-                            });
+                            if can_delete_table {
+                                // shouldn't need this as the table will be deleted if its anchor is deleted
+                                // ops.push(Operation::DeleteDataTable {
+                                //     sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                // });
+                            } else if can_delete_column {
+                                // adjust for hidden columns, reverse the order to delete from right to left
+                                let columns = (rect.min.x..=rect.max.x)
+                                    .map(|x| {
+                                        // account for hidden columns
+                                        data_table.get_column_index_from_display_index(
+                                            (x - data_table_rect.min.x) as u32,
+                                            true,
+                                        )
+                                    })
+                                    .rev()
+                                    .collect();
+                                ops.push(Operation::DeleteDataTableColumns {
+                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                    columns,
+                                    flatten: false,
+                                    select_table: false,
+                                });
+                            } else {
+                                // find the intersection of the selection rect and the data table rect
+                                if let Some(intersection) = rect.intersection(&data_table_rect) {
+                                    ops.push(Operation::SetDataTableAt {
+                                        sheet_pos: intersection
+                                            .min
+                                            .to_sheet_pos(selection.sheet_id),
+                                        values: CellValues::new_blank(
+                                            intersection.width() as u32,
+                                            intersection.height() as u32,
+                                        ),
+                                    });
+                                }
+                            }
                         }
                     }
                 }
 
                 if !can_delete_column {
                     ops.push(Operation::SetCellValues {
-                        sheet_pos,
+                        sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
                         values: CellValues::new(rect.width(), rect.height()),
                     });
                 }
@@ -335,13 +340,14 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
+    use crate::Rect;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::controller::user_actions::import::tests::simple_csv;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
+    use crate::test_util::*;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
-    use crate::{Rect, print_table_sheet};
 
     #[test]
     fn test() {
@@ -715,5 +721,28 @@ mod test {
         println!("{:?}", data_table_ops);
         let sheet = gc.try_sheet(sheet_id).unwrap();
         print_table_sheet(sheet, Rect::from_numbers(1, 1, 4, 14), true);
+    }
+
+    #[test]
+    fn test_delete_cells_within_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["3", "4", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["6", "7", "8"]);
+
+        let selection = A1Selection::test_a1("A5:C7");
+        gc.delete_cells(&selection, None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["3", "4", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["6", "7", "8"]);
+
+        gc.redo(None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
     }
 }

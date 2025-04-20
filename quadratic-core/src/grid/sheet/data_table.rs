@@ -140,6 +140,9 @@ impl Sheet {
             .unwrap_or(false)
     }
 
+    // todo: (DF) not sure how there could be multiple tables in one position if
+    // ignore_spills is false
+
     /// Returns the first data table within a position
     pub fn first_data_table_within(&self, pos: Pos) -> Result<Pos> {
         let data_tables = self.data_tables_within(pos)?;
