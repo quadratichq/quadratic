@@ -164,5 +164,4 @@ echo $NEW_VERSION > VERSION
 # After updating all versions
 verify_versions
 
-
 echo "Version bump to $NEW_VERSION complete!"
