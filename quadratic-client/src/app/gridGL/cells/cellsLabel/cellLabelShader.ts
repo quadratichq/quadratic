@@ -8,7 +8,7 @@ uniform sampler2D uSampler;
 // on 2D applications fwidth is screenScale / glyphAtlasScale * distanceFieldRange
 uniform float uFWidth;
 
-void main(void) {
+void main() {
 
   // To stack MSDF and SDF we need a non-pre-multiplied-alpha texture.
   vec4 texColor = texture2D(uSampler, vTextureCoord);
@@ -36,14 +36,14 @@ export const msdfVert = `
 attribute vec2 aPosition;
 attribute vec2 aUV;
 
-uniform mat3 projectionMatrix;
-uniform mat3 translationMatrix;
+uniform mat3 uProjectionMatrix;
+uniform mat3 uTranslationMatrix;
 uniform mat3 uTextureMatrix;
 
 varying vec2 vTextureCoord;
 
-void main(@location(1) aUV: vec2<f32>, ) {
-    gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
+void main() {
+    gl_Position = vec4((uProjectionMatrix * uTranslationMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
     vTextureCoord = (uTextureMatrix * vec3(aUV, 1.0)).xy;
 }`;
 

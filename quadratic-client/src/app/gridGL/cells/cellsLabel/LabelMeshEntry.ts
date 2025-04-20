@@ -22,7 +22,6 @@ export class LabelMeshEntry extends Mesh {
     const geometry = new MeshGeometry({ positions: message.vertices, uvs: message.uvs, indices: message.indices });
 
     const shaderGL = message.hasColor ? shaderTint : shaderNoTint;
-    if (shaderGL) console.log();
 
     // Get the font from Assets
     const font = Assets.get(message.fontName) as BitmapFont;
