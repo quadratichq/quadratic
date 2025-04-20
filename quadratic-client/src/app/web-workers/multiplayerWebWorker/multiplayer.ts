@@ -413,8 +413,8 @@ export class Multiplayer {
         setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
       }
     } catch (e) {
-      setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
       console.error('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
+      setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
     }
   }
 
