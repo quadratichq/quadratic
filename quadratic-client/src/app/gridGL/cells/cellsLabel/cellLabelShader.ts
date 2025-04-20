@@ -42,67 +42,70 @@ uniform mat3 uTextureMatrix;
 
 varying vec2 vTextureCoord;
 
-void main(void) {
+void main(@location(1) aUV: vec2<f32>, ) {
     gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
     vTextureCoord = (uTextureMatrix * vec3(aUV, 1.0)).xy;
 }`;
 
 // WebGPU shaders
-export const msdfFragWGSL = `
-// WebGPU MSDF Fragment Shader
-// Based on the original WebGL MSDF shader
+export const wgsl = `
+struct GlobalUniforms {
+    uProjectionMatrix: mat3x3<f32>,
+    uWorldTransformMatrix: mat3x3<f32>,
+    uWorldColorAlpha: vec4<f32>,
+    uResolution: vec2<f32>,
+};
+
+struct LocalUniforms {
+    uFWidth: f32,
+};
+
+@group(0) @binding(0) var<uniform> globalUniforms: GlobalUniforms;
+@group(1) @binding(0) var<uniform> localUniforms: LocalUniforms;
+
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) textureCoord: vec2<f32>,
 };
-@group(0) @binding(0) var uSampler: sampler;
-@group(0) @binding(1) var uTexture: texture_2d<f32>;
-@group(0) @binding(2) var<uniform> uFWidth: f32;
+
+@vertex
+fn mainVertex(@location(0) aPosition : vec2<f32>, @location(1) aUV : vec2<f32>, ) -> VertexOutput {
+    var output: VertexOutput;
+
+    // Calculate position using the transformation matrices
+    let pos = globalUniforms.uProjectionMatrix * globalUniforms.uWorldTransformMatrix * vec3<f32>(aPosition, 1.0);
+    output.position = vec4<f32>(pos.xy, 0.0, 1.0);
+
+    // Pass through texture coordinates
+    output.textureCoord = aUV;
+
+    return output;
+}
+
+@group(2) @binding(1) var uTexture: texture_2d<f32>;
+@group(2) @binding(2) var uSampler: sampler;
+
 @fragment
-fn main(input: VertexOutput) -> @location(0) vec4<f32> {
+fn mainFrag(@location(0) aUV: vec2<f32>, ) -> @location(0) vec4<f32> {
     // Sample the texture
-    let texColor = textureSample(uTexture, uSampler, input.textureCoord);
+    let texColor = textureSample(uTexture, uSampler, aUV);
+
     // MSDF calculation
     let median = texColor.r + texColor.g + texColor.b -
                  min(texColor.r, min(texColor.g, texColor.b)) -
                  max(texColor.r, max(texColor.g, texColor.b));
+
     // SDF calculation
     let combinedMedian = min(median, texColor.a);
-    let screenPxDistance = uFWidth * (combinedMedian - 0.5);
+    let screenPxDistance = localUniforms.uFWidth * (combinedMedian - 0.5);
     var alpha = clamp(screenPxDistance + 0.5, 0.0, 1.0);
+
     if (combinedMedian < 0.01) {
         alpha = 0.0;
     } else if (combinedMedian > 0.99) {
         alpha = 1.0;
     }
+
     // Return the final color with alpha
     return vec4<f32>(0.0, 0.0, 0.0, alpha);
-}`;
-
-export const msdfVertWGSL = `
-// WebGPU MSDF Vertex Shader
-// Based on the original WebGL MSDF vertex shader
-struct VertexInput {
-    @location(0) aPosition: vec2<f32>,
-    @location(1) aUV: vec2<f32>,
-};
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) textureCoord: vec2<f32>,
-};
-struct Uniforms {
-    projectionMatrix: mat3x3<f32>,
-    translationMatrix: mat3x3<f32>,
-    textureMatrix: mat3x3<f32>,
-};
-@group(0) @binding(3) var<uniform> uniforms: Uniforms;
-@vertex
-fn main(input: VertexInput) -> VertexOutput {
-    var output: VertexOutput;
-    // Calculate position
-    let pos = uniforms.projectionMatrix * uniforms.translationMatrix * vec3<f32>(input.aPosition, 1.0);
-    output.position = vec4<f32>(pos.xy, 0.0, 1.0);
-    // Calculate texture coordinates
-    output.textureCoord = (uniforms.textureMatrix * vec3<f32>(input.aUV, 1.0)).xy;
-    return output;
 }`;
