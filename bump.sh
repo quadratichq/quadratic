@@ -42,6 +42,7 @@ JAVASCRIPT=(
   "package.json"
   "quadratic-api/package.json"
   "quadratic-client/package.json"
+  "quadratic-client/public/version.json"
   "quadratic-shared/package.json"
 )
 
@@ -162,10 +163,6 @@ echo $NEW_VERSION > VERSION
 
 # After updating all versions
 verify_versions
-
-# copy VERSION file to quadratic-client/public
-cp VERSION quadratic-client/public/VERSION
-echo "Copied VERSION file to quadratic-client/public/"
 
 
 echo "Version bump to $NEW_VERSION complete!"
