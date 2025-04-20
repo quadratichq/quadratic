@@ -34,7 +34,6 @@ RUST=(
   "quadratic-core/Cargo.toml"
   "quadratic-files/Cargo.toml"
   "quadratic-multiplayer/Cargo.toml"
-  "quadratic-rust-client/Cargo.toml"
   "quadratic-rust-shared/Cargo.toml"
 )
 

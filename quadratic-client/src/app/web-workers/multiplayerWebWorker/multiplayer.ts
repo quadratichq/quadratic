@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { isPatchVersionDifferent } from '@/app/schemas/compareVersions';
 import { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';

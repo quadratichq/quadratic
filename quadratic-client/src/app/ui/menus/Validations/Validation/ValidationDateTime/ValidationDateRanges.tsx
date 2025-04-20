@@ -1,5 +1,5 @@
 import type { DateTimeRange } from '@/app/quadratic-core-types';
-import { numberToDate, userDateToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { numberToDate, userDateToNumber } from '@/app/quadratic-core/quadratic_core';
 import type { ValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
 import { ValidationDateInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationDateInput';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
