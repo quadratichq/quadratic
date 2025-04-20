@@ -167,7 +167,13 @@ impl Rect {
         self.width() == 0 || self.height() == 0
     }
 
-    pub fn translate(&mut self, x: i64, y: i64) {
+    pub fn translate(&self, x: i64, y: i64) -> Self {
+        let mut rect = *self;
+        rect.translate_in_place(x, y);
+        rect
+    }
+
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
         self.min.x += x;
         self.min.y += y;
         self.max.x += x;
@@ -516,9 +522,9 @@ mod test {
     }
 
     #[test]
-    fn test_translate() {
+    fn test_translate_in_place() {
         let mut rect = Rect::from_ranges(1..=3, 2..=4);
-        rect.translate(1, 2);
+        rect.translate_in_place(1, 2);
         assert_eq!(rect.min, Pos { x: 2, y: 4 });
         assert_eq!(rect.max, Pos { x: 4, y: 6 });
     }

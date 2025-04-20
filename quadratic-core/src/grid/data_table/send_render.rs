@@ -33,15 +33,8 @@ impl DataTable {
 
         if transaction.is_user() {
             let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
-
-            let mut table_rows = self.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
-
-            // translate to actual row on the sheet
-            let y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
-            table_rows.iter_mut().for_each(|table_row| {
-                *table_row += y_offset;
-            });
-
+            let table_rows =
+                self.get_rows_with_wrap_in_rect(&data_table_pos, &data_table_rect.into(), true);
             if !sheet_rows.is_empty() || !table_rows.is_empty() {
                 let resize_rows = transaction
                     .resize_rows
@@ -76,7 +69,6 @@ impl DataTable {
         let data_table_rect = self.output_rect((0, 0).into(), false);
         for x in data_table_rect.x_range() {
             if let Some(cell_value) = self.cell_value_at(x as u32, row as u32) {
-                dbgjs!(format!("Cell value at ({}, {}): {:?}", x, row, cell_value));
                 if !cell_value.is_blank_or_empty_string() {
                     return true;
                 }
@@ -86,18 +78,25 @@ impl DataTable {
     }
 
     /// Returns the rows with wrap in the given rect.
-    fn get_rows_with_wrap_in_rect(&self, rect: &Rect, include_blanks: bool) -> Vec<i64> {
+    pub(crate) fn get_rows_with_wrap_in_rect(
+        &self,
+        data_table_pos: &Pos,
+        rect: &Rect,
+        include_blanks: bool,
+    ) -> Vec<i64> {
         let mut rows = vec![];
+        let formats_x_offset = data_table_pos.x - 1;
+        let formats_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
         for y in rect.y_range() {
             for x in rect.x_range() {
                 if (include_blanks
                     || self
-                        .cell_value_at(x as u32, y as u32)
+                        .cell_value_at((x - data_table_pos.x) as u32, (y - data_table_pos.y) as u32)
                         .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string()))
                     && self
                         .formats
                         .wrap
-                        .get((x, y).into())
+                        .get((x - formats_x_offset, y - formats_y_offset).into())
                         .is_some_and(|wrap| wrap == CellWrap::Wrap)
                 {
                     rows.push(y);
@@ -117,26 +116,27 @@ impl DataTable {
         resize_rows: &mut HashSet<i64>,
     ) {
         // 1-based for formatting, just max bounds are needed to finitize formatting bounds
-        let data_table_rect = self.output_rect((1, 1).into(), true);
-        let x_offset = data_table_pos.x - 1;
-        let y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+        let data_table_formats_rect = self.output_rect((1, 1).into(), true);
         if let Some(format) = format {
             format
-                .to_rects_with_rect_bounds(data_table_rect)
+                .to_rects_with_rect_bounds(data_table_formats_rect)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    let mut rect = Rect::new(x1, y1, x2, y2);
+                    let formats_rect = Rect::new(x1, y1, x2, y2);
+                    let formats_rect_x_offset = data_table_pos.x - 1;
+                    let formats_rect_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+                    let actual_rect_on_sheet =
+                        formats_rect.translate(formats_rect_x_offset, formats_rect_y_offset);
+
+                    dirty_hashes.extend(actual_rect_on_sheet.to_hashes());
+
                     if needs_resize {
-                        let mut rows = self.get_rows_with_wrap_in_rect(&rect, false);
-                        // translate to actual row on the sheet
-                        rows.iter_mut().for_each(|row| {
-                            *row += y_offset;
-                        });
+                        let rows = self.get_rows_with_wrap_in_rect(
+                            &data_table_pos,
+                            &actual_rect_on_sheet,
+                            false,
+                        );
                         resize_rows.extend(rows);
                     }
-
-                    // translate to actual rect on the sheet
-                    rect.translate(x_offset, y_offset);
-                    dirty_hashes.extend(rect.to_hashes());
                 });
         }
     }
@@ -149,25 +149,25 @@ impl DataTable {
         resize_rows: &mut HashSet<i64>,
     ) {
         let data_table_rect = self.output_rect((1, 1).into(), true);
-        let x_offset = data_table_pos.x - 1;
-        let y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
         if let Some(wrap) = wrap {
             wrap.to_rects_with_rect_bounds(data_table_rect)
                 .for_each(|(x1, y1, x2, y2, value)| {
-                    let mut rect = Rect::new(x1, y1, x2, y2);
+                    let formats_rect = Rect::new(x1, y1, x2, y2);
+                    let formats_rect_x_offset = data_table_pos.x - 1;
+                    let formats_rect_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+                    let actual_rect_on_sheet =
+                        formats_rect.translate(formats_rect_x_offset, formats_rect_y_offset);
+
+                    dirty_hashes.extend(actual_rect_on_sheet.to_hashes());
 
                     // check if new formats is wrap
                     if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
                             if self.has_content_in_row(y) {
-                                resize_rows.insert(y + y_offset);
+                                resize_rows.insert(y + formats_rect_y_offset);
                             }
                         }
                     }
-
-                    // translate to actual rect on the sheet
-                    rect.translate(x_offset, y_offset);
-                    dirty_hashes.extend(rect.to_hashes());
                 });
         }
     }
