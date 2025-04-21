@@ -34,19 +34,19 @@ export const rerunAllCode = () => {
 
 export const codeActionsSpec: CodeActionSpec = {
   [Action.CancelExecution]: {
-    label: 'Cancel execution',
+    label: () => 'Cancel execution',
     run: cancelExecution,
   },
   [Action.ExecuteCode]: {
-    label: 'Execute code',
+    label: () => 'Execute code',
     run: executeCode,
   },
   [Action.RerunSheetCode]: {
-    label: 'Rerun sheet code',
+    label: () => 'Rerun sheet code',
     run: rerunSheetCode,
   },
   [Action.RerunAllCode]: {
-    label: 'Rerun all code',
+    label: () => 'Rerun all code',
     run: rerunAllCode,
   },
 };

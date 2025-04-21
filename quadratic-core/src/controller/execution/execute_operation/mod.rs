@@ -52,6 +52,12 @@ impl GridController {
             #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {:?}", &op));
 
+            #[cfg(feature = "show-first-sheet-operations")]
+            println!(
+                "{}",
+                format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+            );
+
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
@@ -64,6 +70,7 @@ impl GridController {
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
+
                 Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table(transaction, op),
                 ),
@@ -173,8 +180,16 @@ impl GridController {
 
                 Operation::DeleteColumn { .. } => self.execute_delete_column(transaction, op),
                 Operation::DeleteColumns { .. } => self.execute_delete_columns(transaction, op),
-                Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
-                Operation::DeleteRows { .. } => self.execute_delete_rows(transaction, op),
+                Operation::DeleteRow { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_row(transaction, op),
+                    );
+                }
+                Operation::DeleteRows { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_rows(transaction, op),
+                    );
+                }
 
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
@@ -183,6 +198,8 @@ impl GridController {
                 Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
             }
         }
+        #[cfg(feature = "show-first-sheet-operations")]
+        print_first_sheet!(&self);
     }
 }
 

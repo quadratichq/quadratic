@@ -17,12 +17,14 @@ import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, memo, useCallback, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
-type Props = AIUserMessageFormWrapperProps & {
+const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
+
+type AIAnalystUserMessageFormProps = AIUserMessageFormWrapperProps & {
   initialContext?: Context;
 };
 
 export const AIAnalystUserMessageForm = memo(
-  forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
+  forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>((props: AIAnalystUserMessageFormProps, ref) => {
     const { initialContext, ...rest } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
@@ -63,6 +65,7 @@ export const AIAnalystUserMessageForm = memo(
         loading={loading}
         setLoading={setLoading}
         isFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
+        fileTypes={ANALYST_FILE_TYPES}
         submitPrompt={handleSubmit}
         formOnKeyDown={formOnKeyDown}
         ctx={{

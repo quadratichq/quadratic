@@ -1,5 +1,6 @@
 {
   "extends": ["react-app", "react-app/jest"],
+  "plugins": ["eslint-plugin-react-compiler", "prettier"],
   "rules": {
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "error",
@@ -10,7 +11,9 @@
         "disallowTypeAnnotations": false
       }
     ],
-    "react/jsx-no-target-blank": "off"
+    "react/react-in-jsx-scope": "off",
+    "react-compiler/react-compiler": "error",
+    "prettier/prettier": "error"
   },
   "ignorePatterns": ["node_modules/*", "src/quadratic-core/*", "src/quadratic-rust-client/*"]
 }

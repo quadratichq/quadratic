@@ -31,6 +31,7 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{ConnectionError, Result},
+    health::{full_healthcheck, healthcheck},
     proxy::proxy,
     sql::{
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
@@ -41,7 +42,7 @@ use crate::{
     state::State,
 };
 
-const HEALTHCHECK_INTERVAL_S: u64 = 5;
+const STATS_INTERVAL_S: u64 = 5;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
@@ -82,6 +83,7 @@ pub(crate) fn app(state: State) -> Result<Router> {
         //     ACCEPT,
         //     ORIGIN,
         //     HeaderName::from_static("proxy"),
+        //     HeaderName::from_static("x-team-id"),
         // ])
         //
         // required for the proxy
@@ -128,14 +130,19 @@ pub(crate) fn app(state: State) -> Result<Router> {
         // auth middleware
         .route_layer(auth)
         //
+        // unprotected routes without state
+        //
+        // healthcheck
+        .route("/health", get(healthcheck))
+        //
+        // full healthcheck of dependencies
+        .route("/health/full", get(full_healthcheck))
+        //
         // state, required
         .with_state(state.clone())
         //
         // state, repeated, but required
         .layer(Extension(state))
-        //
-        // unprotected routes without state
-        .route("/health", get(healthcheck))
         //
         // cache control - disable client side caching
         .layer(map_response(|mut response: Response| async move {
@@ -192,7 +199,7 @@ pub(crate) async fn serve() -> Result<()> {
     // log stats in a separate thread
     tokio::spawn({
         async move {
-            let mut interval = time::interval(Duration::from_secs(HEALTHCHECK_INTERVAL_S));
+            let mut interval = time::interval(Duration::from_secs(STATS_INTERVAL_S));
 
             loop {
                 interval.tick().await;
@@ -221,18 +228,6 @@ pub(crate) async fn serve() -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct HealthResponse {
-    pub version: String,
-}
-
-pub(crate) async fn healthcheck() -> Json<HealthResponse> {
-    HealthResponse {
-        version: env!("CARGO_PKG_VERSION").into(),
-    }
-    .into()
-}
-
 pub(crate) async fn static_ips() -> Result<Json<StaticIpsResponse>> {
     let static_ips = config()?.static_ips.to_vec();
     let response = StaticIpsResponse { static_ips };
@@ -251,50 +246,15 @@ pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestRes
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::test_util::{new_state, response_json};
-    use axum::{
-        body::Body,
-        http::{self, Request},
-    };
+    use crate::test_util::{process_route, response_json};
+    use axum::body::Body;
     use http::StatusCode;
-    use tower::ServiceExt;
 
     use super::*;
 
     #[tokio::test]
-    async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_state().await;
-        let app = app(state).unwrap();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-    }
-
-    #[tokio::test]
     async fn gets_static_ips() {
-        let state = new_state().await;
-        let app = app(state).unwrap();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/static-ips")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
+        let response = process_route("/static-ips", http::Method::GET, Body::empty()).await;
 
         assert_eq!(response.status(), StatusCode::OK);
 
