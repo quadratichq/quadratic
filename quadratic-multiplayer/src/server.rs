@@ -260,7 +260,6 @@ async fn handle_socket(
                     tracing::info!("Broadcasting room {file_id} after connection close");
 
                     let message = MessageResponse::from((room.users, &state.settings.version));
-
                     if let Err(error) = broadcast(
                         vec![connection.session_id],
                         file_id,
@@ -337,6 +336,7 @@ async fn process_message(
 pub(crate) mod tests {
 
     use super::*;
+    use crate::message::response::MinVersion;
     use crate::state::settings::version;
     use crate::state::user::{User, UserStateUpdate};
     use crate::test_util::{integration_test_send_and_receive, setup};
@@ -407,6 +407,12 @@ pub(crate) mod tests {
         let expected = MessageResponse::UsersInRoom {
             users: vec![user_1.clone()],
             version: version(),
+
+            // TODO: to be deleted after next version
+            min_version: MinVersion {
+                required_version: 5,
+                recommended_version: 5,
+            },
         };
 
         let response = integration_test_send_and_receive(&socket, request, true, 2).await;
