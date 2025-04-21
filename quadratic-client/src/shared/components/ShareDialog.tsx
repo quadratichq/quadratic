@@ -1,6 +1,7 @@
 import type { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -41,6 +42,15 @@ import type { FormEvent, ReactNode } from 'react';
 import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FetcherSubmitFunction } from 'react-router';
 import { useFetcher, useFetchers, useSubmit } from 'react-router';
+
+type UserMakingRequest = ApiTypes['/v0/teams/:uuid.GET.response']['userMakingRequest'];
+type ShareUser = {
+  id: number;
+  role: UserTeamRole | UserFileRole;
+  email: string;
+  name?: string;
+  picture?: string;
+};
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {
   // prettier-ignore
@@ -141,51 +151,13 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
       )}
 
       {users.map((user) => {
-        const isLoggedInUser = userMakingRequest.id === user.id;
-        const canDelete = isLoggedInUser
-          ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
-          : canDeleteUserInTeam({
-              permissions: userMakingRequest.teamPermissions,
-              loggedInUserRole: userMakingRequest.teamRole,
-              userRole: user.role,
-            });
-        const roles = isLoggedInUser
-          ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
-          : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
         return (
-          <ManageUser
+          <ManageTeamUser
             key={user.id}
-            isLoggedInUser={isLoggedInUser}
             user={user}
-            onUpdate={(submit, userId, role) => {
-              const data: TeamAction['request.update-team-user'] = {
-                intent: 'update-team-user',
-                userId,
-                role,
-              };
-              submit(data, {
-                method: 'POST',
-                action,
-                encType: 'application/json',
-              });
-            }}
-            onDelete={
-              canDelete
-                ? (submit, userId) => {
-                    const data: TeamAction['request.delete-team-user'] = {
-                      intent: 'delete-team-user',
-                      userId,
-                    };
-
-                    submit(data, {
-                      method: 'POST',
-                      action,
-                      encType: 'application/json',
-                    });
-                  }
-                : undefined
-            }
-            roles={roles}
+            userMakingRequest={userMakingRequest}
+            numberOfOwners={numberOfOwners}
+            action={action}
           />
         );
       })}
@@ -211,6 +183,69 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
         <ManageInvite key={i} invite={invite} />
       ))}
     </DialogBody>
+  );
+}
+
+function ManageTeamUser({
+  action,
+  numberOfOwners,
+  user,
+  userMakingRequest,
+}: {
+  action: string;
+  numberOfOwners: number;
+  user: ShareUser;
+  userMakingRequest: UserMakingRequest;
+}) {
+  const isLoggedInUser = userMakingRequest.id === user.id;
+  const canDelete = isLoggedInUser
+    ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
+    : canDeleteUserInTeam({
+        permissions: userMakingRequest.teamPermissions,
+        loggedInUserRole: userMakingRequest.teamRole,
+        userRole: user.role,
+      });
+  const roles = isLoggedInUser
+    ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
+    : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
+  const confirmFn = useConfirmDialog('deleteUserFromTeam', { name: user.name ?? user.email, isLoggedInUser });
+  return (
+    <ManageUser
+      key={user.id}
+      isLoggedInUser={isLoggedInUser}
+      user={user}
+      onUpdate={(submit, userId, role) => {
+        const data: TeamAction['request.update-team-user'] = {
+          intent: 'update-team-user',
+          userId,
+          role,
+        };
+        submit(data, {
+          method: 'POST',
+          action,
+          encType: 'application/json',
+        });
+      }}
+      onDelete={
+        canDelete
+          ? async (submit, userId) => {
+              if (await confirmFn()) {
+                const data: TeamAction['request.delete-team-user'] = {
+                  intent: 'delete-team-user',
+                  userId,
+                };
+
+                submit(data, {
+                  method: 'POST',
+                  action,
+                  encType: 'application/json',
+                });
+              }
+            }
+          : undefined
+      }
+      roles={roles}
+    />
   );
 }
 
@@ -295,37 +330,14 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
       )}
 
       {users.map((user) => {
-        const isLoggedInUser = user.id === loggedInUserId;
-        const canDelete = isLoggedInUser ? true : canEditFile;
-
         return (
-          <ManageUser
+          <ManageFileUser
             key={user.id}
             publicLinkAccess={publicLinkAccess}
-            isLoggedInUser={isLoggedInUser}
+            loggedInUserId={loggedInUserId}
             user={user}
-            roles={canEditFile ? ['EDITOR', 'VIEWER'] : ['VIEWER']}
-            onDelete={
-              canDelete
-                ? (submit, userId) => {
-                    const data: FileShareAction['request.delete-file-user'] = { intent: 'delete-file-user', userId };
-                    submit(data, { method: 'POST', action, encType: 'application/json' });
-                  }
-                : undefined
-            }
-            onUpdate={
-              canEditFile
-                ? (submit, userId, role) => {
-                    const data: FileShareAction['request.update-file-user'] = {
-                      intent: 'update-file-user',
-                      userId,
-                      // @ts-expect-error fix type here because role
-                      role,
-                    };
-                    submit(data, { method: 'POST', action, encType: 'application/json' });
-                  }
-                : undefined
-            }
+            canEditFile={canEditFile}
+            action={action}
           />
         );
       })}
@@ -354,6 +366,57 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         <ManageInvite key={i} invite={invite} />
       ))}
     </>
+  );
+}
+
+function ManageFileUser({
+  user,
+  loggedInUserId,
+  canEditFile,
+  action,
+  publicLinkAccess,
+}: {
+  user: ShareUser;
+  loggedInUserId: number;
+  canEditFile: boolean;
+  action: string;
+  publicLinkAccess: PublicLinkAccess;
+}) {
+  const isLoggedInUser = user.id === loggedInUserId;
+  const canDelete = isLoggedInUser ? true : canEditFile;
+  const confirmFn = useConfirmDialog('deleteUserFromFile', { name: user.name ?? user.email, isLoggedInUser });
+
+  return (
+    <ManageUser
+      key={user.id}
+      publicLinkAccess={publicLinkAccess}
+      isLoggedInUser={isLoggedInUser}
+      user={user}
+      roles={canEditFile ? ['EDITOR', 'VIEWER'] : ['VIEWER']}
+      onDelete={
+        canDelete
+          ? async (submit, userId) => {
+              if (await confirmFn()) {
+                const data: FileShareAction['request.delete-file-user'] = { intent: 'delete-file-user', userId };
+                submit(data, { method: 'POST', action, encType: 'application/json' });
+              }
+            }
+          : undefined
+      }
+      onUpdate={
+        canEditFile
+          ? (submit, userId, role) => {
+              const data: FileShareAction['request.update-file-user'] = {
+                intent: 'update-file-user',
+                userId,
+                // @ts-expect-error fix type here because role
+                role,
+              };
+              submit(data, { method: 'POST', action, encType: 'application/json' });
+            }
+          : undefined
+      }
+    />
   );
 }
 
@@ -653,17 +716,11 @@ function ManageUser({
   onDelete,
   onUpdate,
 }: {
-  onDelete?: (submit: FetcherSubmitFunction, userId: string) => void;
+  onDelete?: (submit: FetcherSubmitFunction, userId: string) => Promise<void>;
   onUpdate?: (submit: FetcherSubmitFunction, userId: string, role: UserTeamRole | UserFileRole) => void;
   publicLinkAccess?: PublicLinkAccess;
   isLoggedInUser: boolean;
-  user: {
-    id: number;
-    role: UserTeamRole | UserFileRole;
-    email: string;
-    name?: string;
-    picture?: string;
-  };
+  user: ShareUser;
   roles: (UserTeamRole | UserFileRole)[];
 }) {
   const fetcherDelete = useFetcher();
@@ -717,13 +774,7 @@ function ManageUser({
               value={activeRole}
               onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
                 if (value === 'DELETE' && onDelete) {
-                  const msg = isLoggedInUser
-                    ? 'Please confirm you want to leave this team. Your private files will be made public to the team.'
-                    : 'Please confirm you want to remove this person from the team. Their private files will be made public to the team.';
-                  const result = window.confirm(msg);
-                  if (result) {
-                    onDelete(fetcherDelete.submit, userId);
-                  }
+                  onDelete(fetcherDelete.submit, userId);
                 } else if (onUpdate) {
                   const role = value as (typeof roles)[0];
                   onUpdate(fetcherUpdate.submit, userId, role);
@@ -752,8 +803,8 @@ function ManageUser({
 }
 
 /**
- * Displaying an invite in the UI. If the invite can be deleted, pass a function
- * to handle the delete.
+ * Displaying a team OR file invite in the UI. If the invite can be deleted,
+ * pass a function to handle the delete.
  */
 function ManageInvite({
   invite,

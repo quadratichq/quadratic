@@ -8,48 +8,84 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/shadcn/ui/alert-dialog';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+// 1. Required dialog options
 type ConfirmOptions = {
-  title?: string;
+  title: string;
   message: string;
-  confirmText?: string;
-  cancelText?: string;
+  confirmText: string;
 };
 
-const initialOptions: ConfirmOptions = {
-  title: 'Confirm',
-  message: 'Please confirm that you want to complete this action.',
-  confirmText: 'Confirm',
-  cancelText: 'Cancel',
+// 2. Keys and required args for each dialog type
+type ConfirmDialogArgs = {
+  deleteFile: { name: string };
+  deleteConnection: undefined;
+  deleteUserFromTeam: { name: string; isLoggedInUser: boolean };
+  deleteUserFromFile: { name: string; isLoggedInUser: boolean };
+};
+type ConfirmDialogKeys = keyof ConfirmDialogArgs;
+
+// 3. Dialog registry (centralized verbiage and structure)
+const confirmDialogs: {
+  [K in ConfirmDialogKeys]: (args: ConfirmDialogArgs[K]) => ConfirmOptions;
+} = {
+  deleteFile: ({ name }) => ({
+    title: 'Delete file',
+    message: `"${name}" will be deleted if you continue. This cannot be undone.`,
+    confirmText: 'Delete',
+  }),
+  deleteConnection: () => ({
+    title: 'Delete connection',
+    message: `The connection will be deleted if you continue. This cannot be undone.`,
+    confirmText: 'Delete',
+  }),
+  deleteUserFromTeam: ({ name, isLoggedInUser }) => ({
+    title: isLoggedInUser ? 'Leave team' : 'Remove user from team',
+    message: isLoggedInUser
+      ? `Any of your private files will be made publicly available to the team if you continue.`
+      : `${name} will be removed from the team and any of their private files will be made publicly available to the team if you continue.`,
+    confirmText: isLoggedInUser ? 'Leave' : 'Remove',
+  }),
+  deleteUserFromFile: ({ name, isLoggedInUser }) => ({
+    title: isLoggedInUser ? 'Leave file' : 'Remove user from file',
+    message: isLoggedInUser
+      ? `You will lose your invited access to the file if you continue.`
+      : `${name} will lose their invited access to this file if you continue.`,
+    confirmText: isLoggedInUser ? 'Leave' : 'Remove',
+  }),
 };
 
-type ConfirmFn = (options?: ConfirmOptions) => Promise<boolean>;
+// 4. Internal confirm function type
+type InternalConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
 
-const ConfirmContext = createContext<ConfirmFn | null>(null);
+// 5. Context
+const ConfirmContext = createContext<InternalConfirmFn | null>(null);
 
-export const useConfirm = () => {
+// 6. useConfirm hook (typed, requires args)
+export function useConfirmDialog<T extends ConfirmDialogKeys>(
+  key: T,
+  args: ConfirmDialogArgs[T]
+): () => Promise<boolean> {
   const ctx = useContext(ConfirmContext);
   if (!ctx) throw new Error('useConfirm must be used within ConfirmProvider');
-  return ctx;
-};
+  const options = confirmDialogs[key](args);
+  return () => ctx(options);
+}
 
-export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// 7. Provider
+// By default, the confirm dialog is destructive. We really shouldn't be asking
+// for confirmation to do something that isn't destructive and non-reversible.
+export const ConfirmProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [resolvePromise, setResolvePromise] = useState<(val: boolean) => void>(() => () => {});
-  const [options, setOptions] = useState<ConfirmOptions>(initialOptions);
+  const [options, setOptions] = useState<ConfirmOptions | null>(null);
 
-  // Reset options when the dialog is closed
-  useEffect(() => {
-    if (isOpen === false) {
-      setOptions(initialOptions);
-    }
-  }, [isOpen]);
-
-  const confirm: ConfirmFn = useCallback((opts) => {
-    setOptions(opts ?? initialOptions);
+  const confirm: InternalConfirmFn = useCallback((opts) => {
+    setOptions(opts);
     setIsOpen(true);
-    return new Promise<boolean>((resolve) => {
+    return new Promise((resolve) => {
       setResolvePromise(() => resolve);
     });
   }, []);
@@ -64,20 +100,25 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
     resolvePromise(false);
   };
 
+  // Reset options after closing
+  useEffect(() => {
+    if (!isOpen) setOptions(null);
+  }, [isOpen]);
+
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
       <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{options.title ?? 'Confirm'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {options.message ?? 'Please confirm that you want to complete this action.'}
-            </AlertDialogDescription>
+            <AlertDialogTitle>{options?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{options?.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancel}>{options.cancelText ?? 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>{options.confirmText ?? 'Ok'}</AlertDialogAction>
+            <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm} variant="destructive">
+              {options?.confirmText}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
