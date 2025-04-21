@@ -54,6 +54,9 @@ jobs:
           components: clippy, llvm-tools-preview
           override: true
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
       - uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
