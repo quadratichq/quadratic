@@ -2,6 +2,8 @@ export const auth0Mock = (
   auth0Users: Array<{
     user_id: string;
     email: string;
+    name?: string;
+    picture?: string;
   }>
 ) => ({
   ManagementClient: jest.fn().mockImplementation(() => ({
