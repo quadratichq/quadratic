@@ -1,4 +1,5 @@
 import { ABTest } from '@/shared/components/ABTest';
+import mixpanel from 'mixpanel-browser';
 import { memo } from 'react';
 
 type AIUsageExceededProps = {
@@ -27,7 +28,10 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
             target="_blank"
             rel="noreferrer"
             className={linkClassName}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              mixpanel.track('[AI].UsageExceeded.upgrade', { ab_test: 'control' });
+            }}
           >
             upgrade to Quadratic Pro
           </a>
@@ -42,7 +46,10 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
             target="_blank"
             rel="noreferrer"
             className={linkClassName}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              mixpanel.track('[AI].UsageExceeded.upgrade', { ab_test: 'variant' });
+            }}
           >
             upgrade to Quadratic Pro
           </a>{' '}
