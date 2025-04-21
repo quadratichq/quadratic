@@ -4,6 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use quadratic_core::{
+    compression::read_header,
     controller::{
         GridController,
         operations::operation::Operation,
@@ -15,6 +16,10 @@ use quadratic_core::{
     },
 };
 use quadratic_rust_shared::{
+    protobuf::{
+        Message,
+        quadratic::transaction::{ReceiveTransaction, SendTransaction},
+    },
     pubsub::PubSub as PubSubTrait,
     quadratic_api::{get_file_checkpoint, set_file_checkpoint},
     storage::{Storage, StorageContainer},
@@ -120,10 +125,28 @@ pub(crate) async fn process_queue_for_room(
         .get_messages_from(channel, &(checkpoint_sequence_num + 1).to_string(), false)
         .await?
         .into_iter()
-        .flat_map(|(_, message)| decompress_and_deserialize::<TransactionServer>(message))
+        .flat_map(|(_, message)| match Transaction::read_header(&message) {
+            Ok(header) => match header.version.as_str() {
+                "1.0" => decompress_and_deserialize_serde::<TransactionServer>(message),
+                "2.0" => {
+                    let decoded = decode_protobuf(message)?;
+                    tracing::info!("Decoded: {:?}", decoded.file_id);
+                    Ok(TransactionServer {
+                        id: Uuid::parse_str(&decoded.id)?,
+                        file_id: Uuid::parse_str(&decoded.file_id)?,
+                        operations: decoded.operations,
+                        sequence_num: decoded.sequence_num,
+                    })
+                }
+                _ => Err(FilesError::Serialization(
+                    "Invalid transaction version".into(),
+                )),
+            },
+            Err(_) => Err(FilesError::Serialization("Invalid header".into())),
+        })
         .collect::<Vec<TransactionServer>>();
 
-    tracing::trace!(
+    tracing::info!(
         "Found {} transaction(s) for room {file_id}",
         transactions.len()
     );
@@ -156,7 +179,8 @@ pub(crate) async fn process_queue_for_room(
             //     transaction.id,
             //     transaction.sequence_num
             // );
-            decompress_and_deserialize::<Vec<Operation>>(transaction.operations)
+
+            decompress_and_deserialize_serde::<Vec<Operation>>(transaction.operations)
         })
         .flatten()
         .collect::<Vec<Operation>>();
@@ -265,8 +289,13 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     Ok(())
 }
 
-fn decompress_and_deserialize<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
+fn decompress_and_deserialize_serde<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
     Transaction::decompress_and_deserialize::<T>(&data)
+        .map_err(|e| FilesError::Serialization(e.to_string()))
+}
+
+fn decode_protobuf(data: Vec<u8>) -> Result<ReceiveTransaction> {
+    Transaction::decode::<ReceiveTransaction>(&data)
         .map_err(|e| FilesError::Serialization(e.to_string()))
 }
 

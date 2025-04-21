@@ -234,9 +234,11 @@ pub(crate) async fn handle_message(
 
             // add the transaction to the transaction queue
             // we need to clone operations since we broadcast it later
+            let now = std::time::Instant::now();
             let sequence_num = state
-                .push_pubsub(id, file_id, operations.to_owned(), room_sequence_num)
+                .push_protobuf_pubsub(id, file_id, operations.to_owned(), room_sequence_num)
                 .await?;
+            tracing::info!("Pushed to pubsub in {:?}", now.elapsed());
 
             // broadcast the transaction to all users in the room
             let response = MessageResponse::BinaryTransaction {

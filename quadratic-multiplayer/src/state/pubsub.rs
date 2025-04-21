@@ -4,7 +4,10 @@ use quadratic_rust_shared::pubsub::{
 };
 use uuid::Uuid;
 
-use crate::error::{MpError, Result};
+use crate::{
+    error::{MpError, Result},
+    message::{proto::response::encode_message, response::MessageResponse},
+};
 
 use super::State;
 
@@ -44,14 +47,15 @@ impl PubSub {
             operations,
             sequence_num,
         };
+        let now = std::time::Instant::now();
         let transaction_compressed = Transaction::serialize_and_compress(&transaction)
             .map_err(|e| MpError::Serialization(e.to_string()))?;
-
+        tracing::info!("Serialized and compressed in {:?}", now.elapsed());
         let active_channels = match self.config {
             PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
             _ => "active_channels",
         };
-
+        let now = std::time::Instant::now();
         self.connection
             .publish(
                 &file_id.to_string(),
@@ -60,7 +64,47 @@ impl PubSub {
                 Some(active_channels),
             )
             .await?;
+        tracing::info!("Published in {:?}", now.elapsed());
+        Ok(sequence_num)
+    }
 
+    pub(crate) async fn push_protobuf(
+        &mut self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<u8>,
+        sequence_num: u64,
+    ) -> Result<u64> {
+        let transaction = MessageResponse::BinaryTransaction {
+            id,
+            file_id,
+            operations,
+            sequence_num,
+        };
+        let now = std::time::Instant::now();
+        let encoded = encode_message(transaction)?;
+        tracing::info!("Encoded in {:?}", now.elapsed());
+        tracing::info!("Encoded length {:?}", encoded.len());
+
+        let now = std::time::Instant::now();
+        let transaction_compressed =
+            Transaction::add_header(encoded).map_err(|e| MpError::Serialization(e.to_string()))?;
+        tracing::info!("Encoded message in {:?}", now.elapsed());
+        tracing::info!("Compressed length {:?}", transaction_compressed.len());
+        let active_channels = match self.config {
+            PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
+            _ => "active_channels",
+        };
+        let now = std::time::Instant::now();
+        self.connection
+            .publish(
+                &file_id.to_string(),
+                &sequence_num.to_string(),
+                &transaction_compressed,
+                Some(active_channels),
+            )
+            .await?;
+        tracing::info!("Published in {:?}", now.elapsed());
         Ok(sequence_num)
     }
 
@@ -109,6 +153,20 @@ impl State {
             .lock()
             .await
             .push(id, file_id, operations, sequence_num)
+            .await
+    }
+
+    pub(crate) async fn push_protobuf_pubsub(
+        &self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<u8>,
+        sequence_num: u64,
+    ) -> Result<u64> {
+        self.pubsub
+            .lock()
+            .await
+            .push_protobuf(id, file_id, operations, sequence_num)
             .await
     }
 

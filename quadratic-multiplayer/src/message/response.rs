@@ -5,13 +5,12 @@
 use crate::error::{ErrorLevel, MpError};
 use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
+
 use base64::{Engine, engine::general_purpose::STANDARD};
 use dashmap::DashMap;
 use quadratic_core::controller::transaction::TransactionServer;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use super::proto::multiplayer::transaction::ReceiveTransaction;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct Transaction {
@@ -98,18 +97,6 @@ impl From<TransactionServer> for BinaryTransaction {
         BinaryTransaction {
             id: transaction_server.id,
             file_id: transaction_server.file_id,
-            sequence_num: transaction_server.sequence_num,
-            operations: transaction_server.operations,
-        }
-    }
-}
-
-impl From<TransactionServer> for ReceiveTransaction {
-    fn from(transaction_server: TransactionServer) -> Self {
-        ReceiveTransaction {
-            r#type: "BinaryTransaction".to_string(),
-            id: transaction_server.id.to_string(),
-            file_id: transaction_server.file_id.to_string(),
             sequence_num: transaction_server.sequence_num,
             operations: transaction_server.operations,
         }

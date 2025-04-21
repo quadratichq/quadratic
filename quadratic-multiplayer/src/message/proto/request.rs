@@ -1,8 +1,8 @@
-use super::multiplayer::transaction::SendTransaction;
 use crate::error::{MpError, Result};
 use crate::message::request::MessageRequest;
 
 use prost::Message;
+use quadratic_rust_shared::protobuf::quadratic::transaction::SendTransaction;
 
 pub(crate) fn decode_transaction(b: &[u8]) -> Result<SendTransaction> {
     let transaction = Message::decode(b)?;

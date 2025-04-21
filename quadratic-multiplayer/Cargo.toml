@@ -56,6 +56,3 @@ zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
 
 [patch.'https://github.com/zip-rs/zip2']
 zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }
-
-[build-dependencies]
-prost-build = "0.13.5"

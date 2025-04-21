@@ -4,7 +4,7 @@ use flate2::{
     Compression,
     write::{ZlibDecoder, ZlibEncoder},
 };
-use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::io::prelude::*;
 
 const HEADER_DELIMITER: u8 = "*".as_bytes()[0];
@@ -18,11 +18,13 @@ const BINCODE_CONFIG: bincode::config::Configuration<
     .with_fixed_int_encoding()
     .with_limit::<MAX_FILE_SIZE>();
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CompressionFormat {
     None,
     Zlib,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum SerializationFormat {
     Bincode,
     Json,
@@ -142,6 +144,16 @@ pub fn remove_header(data: &[u8]) -> Result<(&[u8], &[u8])> {
     let data = &data[index + 1..];
 
     Ok((header, data))
+}
+
+pub fn read_header(data: &[u8]) -> Result<&[u8]> {
+    let index = data
+        .iter()
+        .position(|&r| r == HEADER_DELIMITER)
+        .ok_or_else(|| anyhow!("Could not find the file header delimiter"))?;
+    let header = &data[0..=index];
+
+    Ok(header)
 }
 
 #[cfg(test)]

@@ -1,8 +1,10 @@
-use super::multiplayer::transaction::{ReceiveTransaction, ReceiveTransactions};
 use crate::error::{MpError, Result};
 use crate::message::response::{BinaryTransaction, MessageResponse};
 
 use prost::Message;
+use quadratic_rust_shared::protobuf::quadratic::transaction::{
+    ReceiveTransaction, ReceiveTransactions,
+};
 
 pub(crate) fn encode_message(message: MessageResponse) -> Result<Vec<u8>> {
     let mut buffer = Vec::new();
