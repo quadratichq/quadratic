@@ -298,21 +298,21 @@ export class PixiApp {
   };
 
   // called before and after a render
-  prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle }): Container {
+  prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle }): Promise<Container> => {
     this.gridLines.visible = options?.gridLines ?? false;
     this.cursor.visible = false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
     this.headings.visible = false;
     this.boxCells.visible = false;
-    this.htmlPlaceholders.prepare();
+    await this.htmlPlaceholders.prepare();
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
     }
     return this.viewportContents;
-  }
+  };
 
   cleanUpAfterCopying(culled?: boolean): void {
     this.gridLines.visible = true;

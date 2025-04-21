@@ -14,7 +14,7 @@ export class HtmlPlaceholders extends Graphics {
     this.visible = false;
   }
 
-  private drawPlaceholder(htmlCell: HtmlCell) {
+  private drawPlaceholder = async (htmlCell: HtmlCell) => {
     let w = htmlCell.div.offsetWidth;
     let h = htmlCell.div.offsetHeight;
 
@@ -22,29 +22,53 @@ export class HtmlPlaceholders extends Graphics {
     if (!sheet) {
       throw new Error('Expected sheet to be defined in HtmlPlaceholders.drawPlaceholder');
     }
+
     const offsets = sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
     this.lineStyle(BORDER_WIDTH, colors.htmlPlaceholderThumbnailBorderColor, 1);
     this.beginFill(colors.htmlPlaceholderThumbnailColor);
     this.drawRect(offsets.x, offsets.y + offsets.height, w, h);
     this.endFill();
-    const thumbnail = this.addChild(new Sprite(Texture.from('chart-placeholder')));
-    thumbnail.width = SPRITE_WIDTH;
-    thumbnail.height = SPRITE_WIDTH;
-    thumbnail.x = offsets.x + (w - SPRITE_WIDTH) / 2;
-    thumbnail.y = offsets.y + (h - SPRITE_WIDTH) / 2;
-  }
 
-  prepare() {
+    await new Promise<void>(async (resolve) => {
+      const dataUrl = await htmlCell.getImageDataUrl();
+      if (dataUrl) {
+        const sprite = this.addChild(new Sprite(Texture.EMPTY));
+        sprite.texture = Texture.from(dataUrl);
+        sprite.texture.once('update', () => {
+          sprite.width = htmlCell.width;
+          sprite.height = htmlCell.height;
+          sprite.x = offsets.x;
+          sprite.y = offsets.y;
+          resolve();
+        });
+      } else {
+        const sprite = this.addChild(new Sprite(Texture.from('chart-placeholder')));
+        sprite.width = SPRITE_WIDTH;
+        sprite.height = SPRITE_WIDTH;
+        sprite.x = offsets.x + (w - SPRITE_WIDTH) / 2;
+        sprite.y = offsets.y + (h - SPRITE_WIDTH) / 2;
+        resolve();
+      }
+    });
+  };
+
+  prepare = async () => {
     this.removeChildren();
     this.clear();
     const firstId = sheets.getFirst().id;
-    htmlCellsHandler.getCells().forEach((cell) => {
+
+    const drawPlaceholderPromises = htmlCellsHandler.getCells().map((cell) => {
       if (cell.sheet.id === firstId) {
-        this.drawPlaceholder(cell);
+        return this.drawPlaceholder(cell);
+      } else {
+        return Promise.resolve();
       }
     });
+
+    await Promise.all(drawPlaceholderPromises);
+
     this.visible = true;
-  }
+  };
 
   hide() {
     this.visible = false;

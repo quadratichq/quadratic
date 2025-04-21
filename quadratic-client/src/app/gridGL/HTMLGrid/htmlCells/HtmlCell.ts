@@ -122,7 +122,7 @@ export class HtmlCell {
   get width(): number {
     return this.offset.width;
   }
-  private get height(): number {
+  get height(): number {
     return this.offset.height;
   }
 
