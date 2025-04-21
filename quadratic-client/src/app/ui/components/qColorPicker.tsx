@@ -66,7 +66,7 @@ export const QColorPicker = (props: IProps) => {
     );
   } else {
     colors.push(
-      '#4d4d4d', // removed so we can add clear color at end
+      '#4d4d4d', // not removed, there is no clear color at the end
       '#737373',
       '#cccccc',
       '#dddddd',
