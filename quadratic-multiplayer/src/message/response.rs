@@ -20,6 +20,7 @@ pub(crate) struct Transaction {
 
 // TODO: to be deleted after the next release
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct MinVersion {
     pub(crate) required_version: u32,
     pub(crate) recommended_version: u32,
