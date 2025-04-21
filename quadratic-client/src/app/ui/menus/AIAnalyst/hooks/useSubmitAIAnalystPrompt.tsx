@@ -25,7 +25,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getPromptMessagesWithoutPDF,
+  isContentText,
+  removeOldFilesInToolResult,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -365,9 +370,18 @@ export function useSubmitAIAnalystPrompt() {
               });
             }
 
+            const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
+              result.content.forEach((content) => {
+                if (!isContentText(content)) {
+                  acc.add(content.fileName);
+                }
+              });
+              return acc;
+            }, new Set<string>());
+
             let nextChatMessages: ChatMessage[] = [];
             set(aiAnalystCurrentChatMessagesAtom, (prev) => {
-              nextChatMessages = [...prev, toolResultMessage];
+              nextChatMessages = [...removeOldFilesInToolResult(prev, filesInToolResult), toolResultMessage];
               return nextChatMessages;
             });
             chatMessages = nextChatMessages;

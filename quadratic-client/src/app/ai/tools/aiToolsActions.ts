@@ -37,7 +37,7 @@ const setCodeCellResult = async (
   sheetId: string,
   x: number,
   y: number,
-  messageMetaData: AIToolMesageMetaData
+  messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
   const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
   const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
@@ -100,7 +100,16 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
 
   if (table.codeCell.is_html) {
     const htmlCell = htmlCellsHandler.findCodeCell(sheetId, x, y);
-    const dataUrl = (await htmlCell?.getImageDataUrl(320, 240)) ?? '';
+    const dataUrl = (await htmlCell?.getImageDataUrl()) ?? '';
+    // Create temporary anchor element
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'plot.png'; // Set desired filename
+
+    // Append to document, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     if (dataUrl) {
       const { mimeType, data } = dataUrlToMimeTypeAndData(dataUrl);
       if (isSupportedImageMimeType(mimeType) && !!data) {
@@ -113,7 +122,7 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
           },
           {
             type: 'text',
-            text: 'Executed set code cell value tool successfully to create a plotly chart, image of this chart is attached.',
+            text: 'Executed set code cell value tool successfully to create a plotly chart.',
           },
         ];
       }
@@ -132,7 +141,7 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
           },
           {
             type: 'text',
-            text: 'Executed set code cell value tool successfully to create a javascript chart, image of this chart is attached.',
+            text: 'Executed set code cell value tool successfully to create a javascript chart.',
           },
         ];
       }
@@ -154,7 +163,7 @@ ${
   ];
 };
 
-type AIToolMesageMetaData = {
+type AIToolMessageMetaData = {
   source: AISource;
   chatId: string;
   messageIndex: number;
@@ -163,7 +172,7 @@ type AIToolMesageMetaData = {
 export type AIToolActionsRecord = {
   [K in AITool]: (
     args: z.infer<(typeof AIToolsArgsSchema)[K]>,
-    messageMetaData: AIToolMesageMetaData
+    messageMetaData: AIToolMessageMetaData
   ) => Promise<ToolResultContent>;
 };
 
@@ -354,11 +363,10 @@ export const aiToolsActions: AIToolActionsRecord = {
         const result = await setCodeCellResult(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, messageMetaData);
 
         return [
+          ...result,
           {
             type: 'text',
-            text:
-              result +
-              '\n\nUser is presented with diff editor, with accept and reject buttons, to revert the changes if needed',
+            text: 'User is presented with diff editor, with accept and reject buttons, to revert the changes if needed',
           },
         ];
       } else {

@@ -1,11 +1,11 @@
 import type {
-  Content as VertexContent,
   FunctionDeclaration,
   GenerateContentResult,
   Part,
   StreamGenerateContentResult,
   Tool,
   ToolConfig,
+  Content as VertexContent,
 } from '@google-cloud/vertexai';
 import { FunctionCallingMode, SchemaType } from '@google-cloud/vertexai';
 import type { Response } from 'express';

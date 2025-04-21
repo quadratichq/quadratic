@@ -23,7 +23,12 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getPromptMessagesWithoutPDF,
+  isContentText,
+  removeOldFilesInToolResult,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -272,7 +277,19 @@ export function useSubmitAIAssistantPrompt() {
               }
             }
 
-            set(aiAssistantMessagesAtom, (prev) => [...prev, toolResultMessage]);
+            const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
+              result.content.forEach((content) => {
+                if (!isContentText(content)) {
+                  acc.add(content.fileName);
+                }
+              });
+              return acc;
+            }, new Set<string>());
+
+            set(aiAssistantMessagesAtom, (prev) => [
+              ...removeOldFilesInToolResult(prev, filesInToolResult),
+              toolResultMessage,
+            ]);
           }
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
