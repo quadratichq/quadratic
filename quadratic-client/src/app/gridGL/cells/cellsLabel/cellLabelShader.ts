@@ -3,7 +3,7 @@
 export const msdfFrag = `
 varying vec2 vTextureCoord;
 
-uniform sampler2D uSampler;
+uniform sampler2D uTexture;
 
 // on 2D applications fwidth is screenScale / glyphAtlasScale * distanceFieldRange
 uniform float uFWidth;
@@ -11,7 +11,7 @@ uniform float uFWidth;
 void main(void) {
 
   // To stack MSDF and SDF we need a non-pre-multiplied-alpha texture.
-  vec4 texColor = texture2D(uSampler, vTextureCoord);
+  vec4 texColor = texture(uTexture, vTextureCoord);
 
   // MSDF
   float median = texColor.r + texColor.g + texColor.b -
@@ -60,6 +60,10 @@ struct LocalUniforms {
   uTransformMatrix: mat3x3<f32>,
 };
 
+struct TextureUniforms {
+  uTextureMatrix: mat3x3<f32>,
+};
+
 struct MyUniforms {
   uFWidth: f32,
 };
@@ -67,6 +71,7 @@ struct MyUniforms {
 @group(0) @binding(0) var<uniform> globalUniforms: GlobalUniforms;
 @group(1) @binding(0) var<uniform> localUniforms: LocalUniforms;
 @group(2) @binding(0) var<uniform> myUniforms: MyUniforms;
+@group(3) @binding(0) var<uniform> textureUniforms: TextureUniforms;
 
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,

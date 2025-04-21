@@ -111,12 +111,13 @@ export class PixiApp {
   private async prepareRenderer() {
     if (this.initialized) return;
     this.renderer = await autoDetectRenderer({
-      preference: 'webgl',
+      preference: 'webgpu',
       canvas: this.canvas,
       resolution: Math.max(2, window.devicePixelRatio),
       antialias: true,
       backgroundColor: 0xffffff,
     });
+    console.log(this.renderer.name);
     this.viewport = new Viewport(this);
   }
 

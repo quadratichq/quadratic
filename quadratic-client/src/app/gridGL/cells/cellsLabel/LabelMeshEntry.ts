@@ -11,15 +11,18 @@ import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import { wgsl } from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import type { BitmapFont, TextureShader } from 'pixi.js';
-import { Assets, GlProgram, GpuProgram, Mesh, MeshGeometry, Shader, UniformGroup } from 'pixi.js';
+import type { BitmapFont } from 'pixi.js';
+import { Assets, Geometry, GlProgram, GpuProgram, Mesh, Shader, UniformGroup } from 'pixi.js';
 
-export class LabelMeshEntry extends Mesh {
+export class LabelMeshEntry extends Mesh<Geometry, Shader> {
   private fontName: string;
   private fontSize = 14;
 
   constructor(message: RenderClientLabelMeshEntry) {
-    const geometry = new MeshGeometry({ positions: message.vertices, uvs: message.uvs, indices: message.indices });
+    const geometry = new Geometry();
+    geometry.addAttribute('aPosition', { buffer: message.vertices, size: 2 });
+    geometry.addAttribute('aUV', { buffer: message.uvs, size: 2 });
+    geometry.addIndex(message.indices);
 
     const shaderGL = message.hasColor ? shaderTint : shaderNoTint;
 
@@ -57,16 +60,17 @@ export class LabelMeshEntry extends Mesh {
         myUniforms,
         uTexture: texture.source,
         uSampler: texture.source.style,
+        textureUniforms: {
+          uTextureMatrix: { type: 'mat3x3<f32>', value: texture.textureMatrix.mapCoord },
+        },
       },
     });
-    const shaderWithTexture = shader as TextureShader;
-    shaderWithTexture.texture = texture;
 
     if (message.hasColor && message.colors) {
       geometry.addAttribute('aColors', { buffer: message.colors, size: 4 });
     }
 
-    super({ geometry, shader: shaderWithTexture, texture });
+    super({ geometry, shader });
 
     this.fontName = message.fontName;
     this.blendMode = 'normal-npm';
