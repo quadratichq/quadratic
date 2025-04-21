@@ -111,7 +111,7 @@ export class PixiApp {
   private async prepareRenderer() {
     if (this.initialized) return;
     this.renderer = await autoDetectRenderer({
-      preference: 'webgpu',
+      preference: 'webgl',
       canvas: this.canvas,
       resolution: Math.max(2, window.devicePixelRatio),
       antialias: true,
@@ -235,8 +235,10 @@ export class PixiApp {
     return rectangle;
   };
 
-  setViewportDirty = (): void => {
-    this.viewport.dirty = true;
+  setViewportDirty = () => {
+    if (this.viewport) {
+      this.viewport.dirty = true;
+    }
   };
 
   viewportChanged = (): void => {

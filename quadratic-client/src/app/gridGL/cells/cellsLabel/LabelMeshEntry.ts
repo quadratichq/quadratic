@@ -36,7 +36,7 @@ export class LabelMeshEntry extends Mesh {
       throw new Error(`Texture not found for font: ${message.fontName} with uid: ${message.textureUid}`);
     }
 
-    const localUniforms = new UniformGroup({
+    const myUniforms = new UniformGroup({
       uFWidth: { value: 0, type: 'f32' },
     });
 
@@ -54,7 +54,7 @@ export class LabelMeshEntry extends Mesh {
         fragment: { source: wgsl, entryPoint: 'mainFrag' },
       }),
       resources: {
-        localUniforms,
+        myUniforms,
         uTexture: texture.source,
         uSampler: texture.source.style,
       },
@@ -83,8 +83,6 @@ export class LabelMeshEntry extends Mesh {
     if (!this.shader) {
       throw new Error('Expected to find shader for LabelMeshEntry');
     }
-    if (this.shader.resources.localUniforms?.uniforms) {
-      this.shader.resources.localUniforms.uniforms.uFWidth = ufWidth;
-    }
+    this.shader.resources.myUniforms.uniforms.uFWidth = ufWidth;
   }
 }

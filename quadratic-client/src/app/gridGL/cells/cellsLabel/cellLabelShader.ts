@@ -1,7 +1,7 @@
 /** Contains the Shader for a non-tinted MSDF font (which requires less data than the tinted version). */
 
 export const msdfFrag = `
-varying vec2 vTextureCoord;
+varying vec2 aUV;
 
 uniform sampler2D uSampler;
 
@@ -11,7 +11,7 @@ uniform float uFWidth;
 void main() {
 
   // To stack MSDF and SDF we need a non-pre-multiplied-alpha texture.
-  vec4 texColor = texture2D(uSampler, vTextureCoord);
+  vec4 texColor = texture2D(uSampler, aUV);
 
   // MSDF
   float median = texColor.r + texColor.g + texColor.b -
@@ -20,7 +20,7 @@ void main() {
   // SDF
   median = min(median, texColor.a);
 
-  float screenPxDistance = uFWidth * (median - 0.5);
+  float screenPxDistance = ufWidth * (median - 0.5);
   float alpha = clamp(screenPxDistance + 0.5, 0.0, 1.0);
   if (median < 0.01) {
     alpha = 0.0;
@@ -55,15 +55,20 @@ struct GlobalUniforms {
 };
 
 struct LocalUniforms {
-    uFWidth: f32,
+  uTransformMatrix: mat3x3<f32>,
+};
+
+struct MyUniforms {
+  uFWidth: f32,
 };
 
 @group(0) @binding(0) var<uniform> globalUniforms: GlobalUniforms;
 @group(1) @binding(0) var<uniform> localUniforms: LocalUniforms;
+@group(2) @binding(0) var<uniform> myUniforms: MyUniforms;
 
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,
-    @location(0) textureCoord: vec2<f32>,
+  @location(0) textureCoord: vec2<f32>,
 };
 
 @vertex
@@ -71,7 +76,7 @@ fn mainVertex(@location(0) aPosition : vec2<f32>, @location(1) aUV : vec2<f32>, 
     var output: VertexOutput;
 
     // Calculate position using the transformation matrices
-    let pos = globalUniforms.uProjectionMatrix * globalUniforms.uWorldTransformMatrix * vec3<f32>(aPosition, 1.0);
+    let pos = globalUniforms.uProjectionMatrix * globalUniforms.uWorldTransformMatrix * localUniforms.uTransformMatrix * vec3<f32>(aPosition, 1.0);
     output.position = vec4<f32>(pos.xy, 0.0, 1.0);
 
     // Pass through texture coordinates
@@ -95,7 +100,7 @@ fn mainFrag(@location(0) aUV: vec2<f32>, ) -> @location(0) vec4<f32> {
 
     // SDF calculation
     let combinedMedian = min(median, texColor.a);
-    let screenPxDistance = localUniforms.uFWidth * (combinedMedian - 0.5);
+    let screenPxDistance = myUniforms.uFWidth * (combinedMedian - 0.5);
     var alpha = clamp(screenPxDistance + 0.5, 0.0, 1.0);
 
     if (combinedMedian < 0.01) {
