@@ -55,13 +55,13 @@ export class CellsTextHash {
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
   // update text
-  dirtyText = true;
+  dirtyText = false;
 
   // rebuild only buffers
-  dirtyBuffers = true;
+  dirtyBuffers = false;
 
-  loaded = false;
-  clientLoaded = false;
+  private _loaded = false;
+  private _clientLoaded = false;
 
   // screen coordinates
   viewRectangle: Rectangle;
@@ -74,6 +74,22 @@ export class CellsTextHash {
   private content: CellsTextHashContent;
 
   renderCellsReceivedTime = 0;
+
+  get loaded(): boolean {
+    return this._loaded;
+  }
+
+  private set loaded(value: boolean) {
+    this._loaded = value;
+  }
+
+  get clientLoaded(): boolean {
+    return this._clientLoaded;
+  }
+
+  private set clientLoaded(value: boolean) {
+    this._clientLoaded = value;
+  }
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -138,8 +154,6 @@ export class CellsTextHash {
 
   private createLabels = (cells: JsRenderCell[]) => {
     this.unload();
-    this.labels = new Map();
-    this.content.clear();
     cells.forEach((cell) => this.createLabel(cell));
     this.loaded = true;
   };
@@ -149,10 +163,11 @@ export class CellsTextHash {
       if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
       this.loaded = false;
       this.labels.clear();
+      this.special.clear();
       this.content.clear();
+      this.labelMeshes.clear();
       this.links = [];
       this.drawRects = [];
-      this.labelMeshes.clear();
       this.overflowGridLines = [];
     }
   };
@@ -185,9 +200,21 @@ export class CellsTextHash {
       // the this.dirty to change while fetching the cells.
       const dirty = this.dirty;
       this.dirty = false;
-      let cells: JsRenderCell[] | false;
-      if (!Array.isArray(dirty) && (!this.loaded || dirty === true)) {
-        if (isTransactionRunning) return false;
+
+      const dirtyText = this.dirtyText;
+      this.dirtyText = true;
+
+      const dirtyBuffers = this.dirtyBuffers;
+      this.dirtyBuffers = true;
+
+      let cells: JsRenderCell[] | false = false;
+      if (Array.isArray(dirty)) {
+        cells = dirty;
+      } else if (!this.loaded || dirty === true) {
+        if (isTransactionRunning) {
+          return false;
+        }
+
         try {
           cells = await renderCore.getRenderCells(
             this.cellsLabels.sheetId,
@@ -198,9 +225,10 @@ export class CellsTextHash {
             abortSignal
           );
           this.renderCellsReceivedTime = performance.now();
-        } catch (e) {
+        } catch (_) {
           this.dirty = dirty;
-          console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
+          this.dirtyText = dirtyText;
+          this.dirtyBuffers = dirtyBuffers;
           return false;
         }
       } else if (dirty === 'show') {
@@ -208,27 +236,22 @@ export class CellsTextHash {
         // cells. This is used to change visibility of a CellLabel without
         // refetching the cell contents.
         cells = false;
-      } else {
-        cells = dirty as JsRenderCell[];
-        this.special.clear();
       }
+
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
 
-      if (cells) this.createLabels(cells);
-      this.updateText();
-      this.updateBuffers();
-
-      return true;
-    } else if (this.dirtyText) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
+      if (cells) {
+        this.createLabels(cells);
+      }
 
       this.updateText();
       this.updateBuffers();
 
       return true;
-    } else if (this.dirtyBuffers) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
+    } else if (this.dirtyText || this.dirtyBuffers) {
+      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text and buffers ${this.hashX}, ${this.hashY}`);
 
+      this.updateText();
       this.updateBuffers();
 
       return true;
@@ -237,11 +260,11 @@ export class CellsTextHash {
   };
 
   updateText = () => {
+    this.dirtyText = false;
+
     if (!this.loaded || this.dirty) {
       return;
     }
-
-    this.dirtyText = false;
 
     this.labelMeshes.clear();
     this.labels.forEach((label) => label.updateText(this.labelMeshes));
@@ -265,11 +288,12 @@ export class CellsTextHash {
   };
 
   updateBuffers = (): void => {
+    this.dirtyBuffers = false;
+
     if (!this.loaded || this.dirty || this.dirtyText) {
       this.sendCellsTextHashClear();
       return;
     }
-    this.dirtyBuffers = false;
 
     this.links = [];
     this.drawRects = [];

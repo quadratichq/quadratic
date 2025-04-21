@@ -19,7 +19,7 @@ import mixpanel from 'mixpanel-browser';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useFetcher, useSubmit } from 'react-router-dom';
+import { Link, Navigate, useFetcher, useSubmit } from 'react-router';
 
 export const Component = () => {
   const {
@@ -168,7 +168,7 @@ export const Component = () => {
                             <DialogTrigger>
                               <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent aria-describedby={undefined}>
                               <DialogHeader>
                                 <DialogTitle>AI message limits</DialogTitle>
                               </DialogHeader>
@@ -259,7 +259,7 @@ export const Component = () => {
                           <DialogTrigger>
                             <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent aria-describedby={undefined}>
                             <DialogHeader>
                               <DialogTitle>Usage history</DialogTitle>
                             </DialogHeader>
@@ -294,7 +294,7 @@ export const Component = () => {
 
               <p className="pt-4 text-sm text-muted-foreground">
                 Learn more on our{' '}
-                <a href={PRICING_URL} target="_blank" className="underline hover:text-primary">
+                <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                   pricing page
                   <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
                 </a>
@@ -312,7 +312,12 @@ export const Component = () => {
                 description={
                   <>
                     Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                    <a
+                      href={DOCUMENTATION_ANALYTICS_AI}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline hover:text-primary"
+                    >
                       Learn more
                     </a>
                     .

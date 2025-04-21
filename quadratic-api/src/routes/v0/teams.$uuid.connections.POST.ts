@@ -1,23 +1,24 @@
-import { Response } from 'express';
-import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { encryptFromEnv } from '../../utils/crypto';
 
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
-  body: ApiSchemas['/v0/team/:uuid/connections.POST.request'],
+  body: ApiSchemas['/v0/teams/:uuid/connections.POST.request'],
   params: z.object({ uuid: z.string().uuid() }),
 });
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connections.POST.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid/connections.POST.response']>) {
   const {
     user: { id: userId },
   } = req;

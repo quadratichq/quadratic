@@ -1,4 +1,5 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
@@ -6,6 +7,7 @@ import { DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL } from 'quadratic-shared/ai/model
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useMemo } from 'react';
+import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
 
 interface HandleAICompletionProps {
@@ -18,9 +20,11 @@ interface HandleAICompletionProps {
 export function useCodeEditorCompletions({ language }: { language: CodeCellLanguage }) {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const connectionInfo = useMemo(() => getConnectionInfo(language), [language]);
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const { data, isLoading } = useConnectionSchemaBrowser({
     type: connectionInfo?.kind,
     uuid: connectionInfo?.id,
+    teamUuid,
   });
   const schemaJsonForAi = useMemo(() => (data ? JSON.stringify(data) : undefined), [data]);
 

@@ -489,7 +489,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
             "The prompt based on the user's intention and the context of the conversation to extract data from PDF files, which will be used by the pdf_import tool to extract data from PDF files.",
         },
       },
-      required: ['prompt'],
+      required: ['file_name', 'prompt'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.PDFImport],

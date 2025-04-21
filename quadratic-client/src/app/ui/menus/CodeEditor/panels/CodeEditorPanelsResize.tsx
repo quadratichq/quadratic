@@ -12,7 +12,7 @@ import { useRecoilValue } from 'recoil';
 const MIN_WIDTH_EDITOR = 350;
 
 interface CodeEditorPanelsResizeProps {
-  codeEditorRef: React.RefObject<HTMLDivElement>;
+  codeEditorRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeProps) => {

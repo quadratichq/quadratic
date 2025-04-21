@@ -52,6 +52,18 @@ pub struct Checkpoint {
     last_checkpoint: LastCheckpoint,
 }
 
+/// Check if the quadratic API server is healthy.
+pub async fn is_healthy(base_url: &str) -> bool {
+    let url = format!("{base_url}/health");
+    let client = get_client(&url, "");
+    let response = client.send().await;
+
+    match response {
+        Ok(response) => response.status() == StatusCode::OK,
+        Err(_) => false,
+    }
+}
+
 /// Retrieve file perms from the quadratic API server.
 pub fn get_client(url: &str, jwt: &str) -> RequestBuilder {
     if jwt.is_empty() {
@@ -146,8 +158,11 @@ pub async fn get_connection<T: DeserializeOwned>(
     jwt: &str,
     user_id: &str,
     connection_id: &Uuid,
+    team_id: &Uuid,
 ) -> Result<Connection<T>> {
-    let url = format!("{base_url}/v0/internal/user/{user_id}/connections/{connection_id}");
+    let url = format!(
+        "{base_url}/v0/internal/user/{user_id}/teams/{team_id}/connections/{connection_id}"
+    );
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 

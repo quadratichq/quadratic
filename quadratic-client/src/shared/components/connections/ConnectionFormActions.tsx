@@ -7,18 +7,20 @@ import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 
 export function ConnectionFormActions({
   connectionType,
   connectionUuid,
   form,
   handleNavigateToListView,
+  teamUuid,
 }: {
   connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
   handleNavigateToListView: () => void;
+  teamUuid: string;
 }) {
   const submit = useSubmit();
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
@@ -53,9 +55,9 @@ export function ConnectionFormActions({
                   );
                   if (doDelete) {
                     mixpanel.track('[Connections].delete', { type: connectionType });
-                    const data = getDeleteConnectionAction(connectionUuid);
+                    const data = getDeleteConnectionAction(connectionUuid, teamUuid);
                     submit(data, {
-                      action: ROUTES.API.CONNECTIONS,
+                      action: ROUTES.API.CONNECTIONS.POST,
                       method: 'POST',
                       encType: 'application/json',
                       navigate: false,

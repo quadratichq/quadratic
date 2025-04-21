@@ -7,7 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
-import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { provideCompletionItems, provideHover } from '@/app/quadratic-core/quadratic_core';
 import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -404,8 +404,8 @@ class InlineEditorMonaco {
       wordWrap: 'off',
       wrappingStrategy: 'advanced',
       wordBreak: 'keepAll',
-      occurrencesHighlight: false,
-      wordBasedSuggestions: false,
+      occurrencesHighlight: 'off',
+      wordBasedSuggestions: 'off',
       find: {
         addExtraSpaceOnTop: false,
         autoFindInSelection: 'never',

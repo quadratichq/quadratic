@@ -95,7 +95,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 // Translate all ranges and collect into new HashSet
                 *ranges = std::mem::take(ranges)
                     .into_iter()
-                    .filter_map(|r| r.adjust(RefAdjust::new_translate(x_shift, y_shift)).ok())
+                    .filter_map(|r| r.adjust(RefAdjust::new_translate_with_start(x_shift, y_shift, i64::MIN, i64::MIN)).ok())
                     .collect();
             }
         }

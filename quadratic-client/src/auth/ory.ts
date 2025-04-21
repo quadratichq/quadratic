@@ -121,7 +121,8 @@ export const oryClient: OryAuthClient = {
     const session = await getSession();
 
     if (!session || !session.tokenized) {
-      await this.login('/');
+      const { pathname, search } = new URL(window.location.href);
+      await this.login(pathname + search);
       return '';
     }
 

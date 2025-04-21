@@ -7,7 +7,7 @@ import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUp
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetchers, useSearchParams } from 'react-router-dom';
+import { useFetchers, useSearchParams } from 'react-router';
 
 export type ConnectionsListConnection = {
   uuid: string;
@@ -123,7 +123,7 @@ export const Connections = ({
     setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
     setActiveConnectionType(connectionType);
   };
-  const hangleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+  const handleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
     // If we're in the app, insert a query on the sheet.
     if (handleNavigateToDetailsViewOverride) {
       handleNavigateToDetailsViewOverride({ Connection: { kind: connectionType, id: connectionUuid } });
@@ -142,6 +142,7 @@ export const Connections = ({
             connectionUuid={activeConnectionState.uuid}
             connectionType={activeConnectionType}
             handleNavigateToListView={handleNavigateToListView}
+            teamUuid={teamUuid}
           />
         ) : (
           <ConnectionDetails
@@ -163,7 +164,7 @@ export const Connections = ({
           connectionsAreLoading={connectionsAreLoading}
           handleNavigateToCreateView={handleNavigateToCreateView}
           handleNavigateToEditView={handleNavigateToEditView}
-          hangleNavigateToDetailsView={hangleNavigateToDetailsView}
+          handleNavigateToDetailsView={handleNavigateToDetailsView}
         />
       )}
     </div>

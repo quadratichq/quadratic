@@ -44,10 +44,13 @@ const HIDDEN_2 = [false, false];
 const HEIGHT_PERCENT_3 = [34, 33, 33];
 const HEIGHT_PERCENT_2 = [50, 50];
 
+const CODE_EDITOR_KEY = 'codeEditorWidth';
+const CODE_EDITOR_PANEL_WIDTH_KEY = 'codeEditorPanelWidth';
+
 export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
-    'codeEditorWidth',
+    CODE_EDITOR_KEY,
     window.innerWidth * 0.35 // default to 35% of the window width
   );
 
@@ -57,7 +60,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   const type = getLanguage(language);
 
   // this stores the width/height when editor is in horizontal mode
-  const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', MIN_WIDTH_PANEL);
+  const [panelWidth, setPanelWidth] = useLocalStorage(CODE_EDITOR_PANEL_WIDTH_KEY, MIN_WIDTH_PANEL);
   const [panelHeightPercentage, setPanelHeightPercentage] = useLocalStorage<number>(
     `codeEditorPanelHeightPercentage-${type}`,
     50
@@ -87,12 +90,14 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   useEffect(() => {
     if (panelPosition === 'left') {
       if (editorWidth + panelWidth > window.innerWidth - MIN_WIDTH_VISIBLE_GRID) {
-        setPanelWidth(MIN_WIDTH_PANEL);
-        setEditorWidth(window.innerWidth - MIN_WIDTH_PANEL - MIN_WIDTH_VISIBLE_GRID);
+        window.localStorage.setItem(CODE_EDITOR_PANEL_WIDTH_KEY, JSON.stringify(MIN_WIDTH_PANEL));
+        window.localStorage.setItem(
+          CODE_EDITOR_KEY,
+          JSON.stringify(window.innerWidth - MIN_WIDTH_PANEL - MIN_WIDTH_VISIBLE_GRID)
+        );
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelPosition]);
+  }, [editorWidth, panelPosition, panelWidth]);
 
   // When the window resizes, recalculate the appropriate proportions for
   // the editor and the panel

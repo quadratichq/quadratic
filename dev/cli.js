@@ -10,7 +10,6 @@ export class CLI {
             .option("-r, --react", "Do NOT watch quadratic-client (React)")
             .option("-c, --core", "Watch the quadratic-core directory")
             .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
-            .option("-e, --rustClient", "Watch the quadratic-rust-client directory")
             .option("-f, --files", "Watch the quadratic-files directory")
             .option("-n, --connection", "Watch the quadratic-connection directory")
             .option("-y, --python", "Watch the quadratic-kernels/python-wasm directory")
@@ -25,7 +24,6 @@ export class CLI {
             .option("-F, --hideFiles", "Hide Files output")
             .option("-N, --hideConnection", "Hide Connection output")
             .option("-Y, --hidePython", "Hide Python output")
-            .option("-O, --rustClient", "Hide RustClient")
             .option("-E, --hideRustClient", "Hide RustClient")
             .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
             .option("-D, --dockerDev", "Run dev in docker")
@@ -40,7 +38,6 @@ export class CLI {
             this.options.multiplayer = true;
             this.options.files = true;
             this.options.connection = true;
-            this.options.rustClient = true;
             this.options.python = true;
         }
     }
