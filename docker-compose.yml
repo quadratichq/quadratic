@@ -9,7 +9,7 @@ services:
       - "6379:6379"
       - "8001:8001"
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: "5s"
     volumes:
       - ./docker/redis/data:/data:rw
@@ -31,7 +31,7 @@ services:
       POSTGRES_PASSWORD: postgres
       ADDITIONAL_DATABASES: kratos
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -99,7 +99,7 @@ services:
     command: >
       /bin/sh -c "/client/scripts/replace_env_vars.sh && nginx -g \"daemon off;\""
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
+      test: ["CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1"]
       start_period: 10s
       interval: 10s
       timeout: 5s
@@ -134,6 +134,7 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       BILLING_AI_USAGE_LIMIT: ${BILLING_AI_USAGE_LIMIT}
       GCP_REGION: ${GCP_REGION}
+      GCP_REGION_ANTHROPIC: ${GCP_REGION_ANTHROPIC}
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
       GCP_CLIENT_EMAIL: ${GCP_CLIENT_EMAIL}
       GCP_PRIVATE_KEY: ${GCP_PRIVATE_KEY}
@@ -326,6 +327,7 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       BILLING_AI_USAGE_LIMIT: ${BILLING_AI_USAGE_LIMIT}
       GCP_REGION: ${GCP_REGION}
+      GCP_REGION_ANTHROPIC: ${GCP_REGION_ANTHROPIC}
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
       GCP_CLIENT_EMAIL: ${GCP_CLIENT_EMAIL}
       GCP_PRIVATE_KEY: ${GCP_PRIVATE_KEY}
@@ -533,7 +535,7 @@ services:
       PGUSER: user
       POSTGRES_PASSWORD: password
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d postgres-connection" ]
+      test: ["CMD-SHELL", "pg_isready -U user -d postgres-connection"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -583,7 +585,7 @@ services:
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -626,7 +628,23 @@ services:
     volumes:
       - mssql-connection-data:/var/opt/mssql
     healthcheck:
-      test: [ "CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "yourStrong(!)Password", "-Q", "SELECT 1", "-C", "-N", "-t", "30" ]
+      test:
+        [
+          "CMD",
+          "/opt/mssql-tools18/bin/sqlcmd",
+          "-S",
+          "localhost",
+          "-U",
+          "sa",
+          "-P",
+          "yourStrong(!)Password",
+          "-Q",
+          "SELECT 1",
+          "-C",
+          "-N",
+          "-t",
+          "30",
+        ]
       interval: 10s
       timeout: 5s
       start_period: 30s

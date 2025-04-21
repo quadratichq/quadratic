@@ -55,7 +55,13 @@ impl DataTable {
 
         if let Some(headers) = &mut self.column_headers {
             let new_header = DataTableColumnHeader::new(column_name, true, column_index as u32);
-            headers.insert(column_index, new_header);
+
+            if column_index < headers.len() {
+                headers.insert(column_index, new_header);
+            } else {
+                headers.push(new_header);
+            }
+
             for (index, header) in headers.iter_mut().enumerate() {
                 header.value_index = index as u32;
             }

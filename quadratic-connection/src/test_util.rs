@@ -8,10 +8,8 @@
 
 use std::io::Read;
 
-use crate::auth::Claims;
-use crate::config::config;
-use crate::state::State;
 use arrow_schema::DataType;
+use axum::body::Body;
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
@@ -20,7 +18,13 @@ use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::data_type::AsBytes;
 use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 use serde::de::DeserializeOwned;
+use tower::ServiceExt;
 use uuid::Uuid;
+
+use crate::auth::Claims;
+use crate::config::config;
+use crate::server::app;
+use crate::state::State;
 
 /// Utility to test a connection over various databases.
 #[macro_export]
@@ -148,4 +152,21 @@ pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType
         assert_eq!(data_type, expect.0);
         assert_eq!(value, expect.1);
     }
+}
+
+/// Process a route and return the response.
+/// TODO(ddimaria): move to quadratic-rust-shared
+pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
+    let state = new_state().await;
+    let app = app(state).unwrap();
+
+    app.oneshot(
+        axum::http::Request::builder()
+            .method(method)
+            .uri(uri)
+            .body(body)
+            .unwrap(),
+    )
+    .await
+    .unwrap()
 }
