@@ -12,7 +12,7 @@ import { wgsl } from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { BitmapFont } from 'pixi.js';
-import { Assets, Geometry, GlProgram, GpuProgram, Mesh, Shader, UniformGroup } from 'pixi.js';
+import { Assets, Geometry, Mesh, Shader, UniformGroup } from 'pixi.js';
 
 export class LabelMeshEntry extends Mesh<Geometry, Shader> {
   private fontName: string;
@@ -43,19 +43,18 @@ export class LabelMeshEntry extends Mesh<Geometry, Shader> {
       uFWidth: { value: 0, type: 'f32' },
     });
 
-    const shader = new Shader({
-      glProgram: new GlProgram({
+    const shader = Shader.from({
+      gl: {
         vertex: shaderGL.msdfVert,
         fragment: shaderGL.msdfFrag,
-      }),
-      gpuProgram: GpuProgram.from({
-        name: 'cellLabelShader',
+      },
+      gpu: {
         vertex: {
           source: wgsl,
           entryPoint: 'mainVertex',
         },
         fragment: { source: wgsl, entryPoint: 'mainFrag' },
-      }),
+      },
       resources: {
         myUniforms,
         uTexture: texture.source,
