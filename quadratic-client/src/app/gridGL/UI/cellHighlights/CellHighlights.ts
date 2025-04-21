@@ -61,13 +61,7 @@ export class CellHighlights extends Container {
     isPython: boolean
   ): RefRangeBounds | undefined {
     try {
-      const refRangeBoundsStringified = cellRefRangeToRefRangeBounds(
-        JSON.stringify(cellRefRange, bigIntReplacer),
-        isPython,
-        sheets.a1Context
-      );
-      const refRangeBounds = JSON.parse(refRangeBoundsStringified);
-      return refRangeBounds;
+      return cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange, bigIntReplacer), isPython, sheets.a1Context);
     } catch (e) {
       console.log(`Error converting CellRefRange to RefRangeBounds: ${e}`);
     }
@@ -78,11 +72,9 @@ export class CellHighlights extends Container {
 
     if (!this.cellsAccessed.length) return;
 
-    const selectedCellIndex = this.selectedCellIndex;
-
     if (!inlineEditorHandler.cursorIsMoving) {
       this.cellsAccessed.forEach(({ sheetId, ranges }, index) => {
-        if (sheetId !== sheets.current || selectedCellIndex === index) return;
+        if (sheetId !== sheets.current) return;
 
         ranges.forEach((range) => {
           const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, this.isPython);
@@ -90,7 +82,7 @@ export class CellHighlights extends Container {
             drawDashedRectangle({
               g: this.highlights,
               color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
-              isSelected: selectedCellIndex === index,
+              isSelected: this.selectedCellIndex === index,
               range: refRangeBounds,
             });
           }

@@ -151,7 +151,7 @@ pub fn cell_ref_range_to_ref_range_bounds(
     cell_ref_range: String,
     show_table_headers_for_python: bool,
     context: &str,
-) -> Result<String, String> {
+) -> Result<JsValue, String> {
     let cell_ref_range =
         serde_json::from_str::<CellRefRange>(&cell_ref_range).map_err(|e| e.to_string())?;
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
@@ -166,5 +166,5 @@ pub fn cell_ref_range_to_ref_range_bounds(
             }
         }
     };
-    serde_json::to_string(&ref_range_bounds).map_err(|e| e.to_string())
+    serde_wasm_bindgen::to_value(&ref_range_bounds).map_err(|e| e.to_string())
 }
