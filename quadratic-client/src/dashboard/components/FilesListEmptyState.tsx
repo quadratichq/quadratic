@@ -3,7 +3,7 @@ import { Empty } from '@/shared/components/Empty';
 import { ROUTES } from '@/shared/constants/routes';
 import { FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean }) => {
   const {

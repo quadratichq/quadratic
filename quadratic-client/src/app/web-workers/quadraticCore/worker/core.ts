@@ -71,6 +71,7 @@ import { Rectangle } from 'pixi.js';
 
 class Core {
   gridController?: GridController;
+  teamUuid?: string;
 
   private sendAnalyticsError = (from: string, error: Error | unknown) => {
     console.error(error);
@@ -84,24 +85,32 @@ class Core {
     coreClient.sendCoreError(from, error);
   };
 
-  private async loadGridFile(file: string): Promise<Uint8Array> {
+  private fetchGridFile = async (file: string): Promise<Uint8Array> => {
     const res = await fetch(file);
     return new Uint8Array(await res.arrayBuffer());
-  }
+  };
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
-  async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
+  loadFile = async (
+    message: ClientCoreLoad,
+    renderPort: MessagePort
+  ): Promise<{ version: string } | { error: string }> => {
+    this.teamUuid = message.teamUuid;
+
     coreRender.init(renderPort);
-    const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
+
     try {
+      const results = await Promise.all([this.fetchGridFile(message.url), initCore()]);
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
       this.sendAnalyticsError('loadFile', e);
       return { error: 'Unable to load file' };
     }
+
     if (debugWebWorkers) console.log('[core] GridController loaded');
+
     return { version: this.gridController.getVersion() };
-  }
+  };
 
   getSheetName(sheetId: string): Promise<string> {
     return new Promise((resolve) => {

@@ -96,7 +96,7 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::GridController;
-    use crate::grid::SheetId;
+    use crate::grid::{CodeCellLanguage, SheetId};
     use crate::{CellValue, Pos, SheetPos};
 
     #[test]
@@ -166,15 +166,6 @@ mod tests {
             None,
         );
     }
-}
-
-#[cfg(test)]
-mod test {
-    use bigdecimal::BigDecimal;
-
-    use super::*;
-    use crate::grid::CodeCellLanguage;
-    use crate::{CellValue, SheetPos};
 
     #[test]
     fn test_set_cell_values_code_cell_remove() {

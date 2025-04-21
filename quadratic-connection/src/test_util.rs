@@ -9,16 +9,21 @@
 use std::io::Read;
 
 use arrow_schema::DataType;
+use axum::body::Body;
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
+use http::{HeaderMap, HeaderName, HeaderValue};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::data_type::AsBytes;
 use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 use serde::de::DeserializeOwned;
+use tower::ServiceExt;
+use uuid::Uuid;
 
 use crate::auth::Claims;
 use crate::config::config;
+use crate::server::app;
 use crate::state::State;
 
 /// Utility to test a connection over various databases.
@@ -26,9 +31,10 @@ use crate::state::State;
 macro_rules! test_connection {
     ( $get_connection:expr ) => {{
         let connection_id = Uuid::new_v4();
+        let (team_id, _) = new_team_id_with_header().await;
         let state = new_state().await;
         let claims = get_claims();
-        let (mysql_connection, _) = $get_connection(&state, &claims, &connection_id)
+        let (mysql_connection, _) = $get_connection(&state, &claims, &connection_id, &team_id)
             .await
             .unwrap();
         let response = test(axum::Json(mysql_connection)).await;
@@ -53,6 +59,16 @@ pub(crate) async fn new_state() -> State {
     State::new(&config, None).unwrap()
 }
 
+pub(crate) async fn new_team_id_with_header() -> (Uuid, HeaderMap) {
+    let team_id = Uuid::new_v4();
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("x-team-id"),
+        HeaderValue::from_str(&team_id.to_string()).unwrap(),
+    );
+
+    (team_id, headers)
+}
 /// TODO(ddimaria): remove once API is setup to return connections
 pub(crate) fn _new_postgres_connection() -> PostgresConnection {
     PostgresConnection::new(
@@ -126,4 +142,21 @@ pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType
         assert_eq!(data_type, expect.0);
         assert_eq!(value, expect.1);
     }
+}
+
+/// Process a route and return the response.
+/// TODO(ddimaria): move to quadratic-rust-shared
+pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
+    let state = new_state().await;
+    let app = app(state).unwrap();
+
+    app.oneshot(
+        axum::http::Request::builder()
+            .method(method)
+            .uri(uri)
+            .body(body)
+            .unwrap(),
+    )
+    .await
+    .unwrap()
 }

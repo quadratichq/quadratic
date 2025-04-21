@@ -46,7 +46,7 @@ export class CellsTextHashContent {
     return this.bits;
   }
 
-  import(bits: Uint32Array) {
+  import(bits: Uint32Array<ArrayBuffer>) {
     this.bits = bits;
   }
 }

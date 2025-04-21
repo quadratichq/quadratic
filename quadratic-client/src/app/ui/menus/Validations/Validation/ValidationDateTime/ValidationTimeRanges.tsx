@@ -1,5 +1,5 @@
 import type { DateTimeRange } from '@/app/quadratic-core-types';
-import { numberToTime, userTimeToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { numberToTime, userTimeToNumber } from '@/app/quadratic-core/quadratic_core';
 import type { ValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
@@ -69,7 +69,7 @@ export const ValidationTimeRanges = (props: Props) => {
       if (index === -1) {
         current = { TimeRange: [null, null] };
       } else {
-        current = validationDateTime.ranges[index];
+        current = { ...validationDateTime.ranges[index] };
       }
       if (!('TimeRange' in current)) throw new Error('Expected TimeRange in changeRange');
 
