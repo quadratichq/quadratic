@@ -30,12 +30,14 @@ jobs:
 
       - name: Cache Pyodide
         id: cache-pyodide
+        if: matrix.service == 'client'
         uses: useblacksmith/cache@v5
         with:
           path: quadratic-client/public/pyodide
           key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
 
       - name: Download & Verify Pyodide
+        if: matrix.service == 'client'
         run: |
           npm run client:download:pyodide
 

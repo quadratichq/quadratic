@@ -1,9 +1,9 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debugShowFileIO, debugShowMultiplayer } from '@/app/debugFlags';
+import { debugShowFileIO, debugShowMultiplayer, debugStartupTime } from '@/app/debugFlags';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
-import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
+import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -18,21 +18,18 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import {
-  Link,
-  Outlet,
-  isRouteErrorResponse,
-  redirect,
-  useLoaderData,
-  useParams,
-  useRouteError,
-} from 'react-router-dom';
+import { useCallback } from 'react';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
+import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
+
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
+
+export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
+  currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
@@ -60,11 +57,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
 
-  // initialize all workers
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing workers');
   initWorkers();
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing workers');
 
-  // initialize: Rust metadata and PIXI assets
-  await Promise.all([initRustClient(), loadAssets()]);
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing PIXI assets');
+  loadAssets();
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+  // initialize: Rust metadata
+  await initCoreClient();
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
@@ -82,6 +85,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // initialize Core web worker
   const result = await quadraticCore.load({
     fileId: uuid,
+    teamUuid: data.team.uuid,
     url: checkpoint.url,
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
@@ -126,7 +130,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (isVersionHistoryPreview) {
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
-
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
   return data;
 };
 
@@ -138,16 +142,19 @@ export const Component = () => {
     team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions },
   } = useLoaderData() as FileData;
-  const initializeState = ({ set }: MutableSnapshot) => {
-    set(editorInteractionStateAtom, (prevState) => ({
-      ...prevState,
-      permissions: filePermissions,
-      settings: teamSettings,
-      user: loggedInUser,
-      fileUuid,
-      teamUuid,
-    }));
-  };
+  const initializeState = useCallback(
+    ({ set }: MutableSnapshot) => {
+      set(editorInteractionStateAtom, (prevState) => ({
+        ...prevState,
+        permissions: filePermissions,
+        settings: teamSettings,
+        user: loggedInUser,
+        fileUuid,
+        teamUuid,
+      }));
+    },
+    [filePermissions, teamSettings, loggedInUser, fileUuid, teamUuid]
+  );
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed

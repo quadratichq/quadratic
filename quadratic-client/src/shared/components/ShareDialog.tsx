@@ -39,8 +39,8 @@ import type {
 import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-shared/typesAndSchemas';
 import type { FormEvent, ReactNode } from 'react';
 import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FetcherSubmitFunction } from 'react-router-dom';
-import { useFetcher, useFetchers, useSubmit } from 'react-router-dom';
+import type { FetcherSubmitFunction } from 'react-router';
+import { useFetcher, useFetchers, useSubmit } from 'react-router';
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {
   // prettier-ignore
@@ -454,7 +454,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="[&>button]:hidden">
+      <DialogContent className="[&>button]:hidden" aria-describedby={undefined}>
         <DialogHeader>
           <div className={`-mb-1 -mt-2 flex flex-row items-center justify-between`}>
             <DialogTitle>Share file</DialogTitle>

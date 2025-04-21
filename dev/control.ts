@@ -20,7 +20,6 @@ export class Control {
   files?: ChildProcessWithoutNullStreams;
   connection?: ChildProcessWithoutNullStreams;
   python?: ChildProcessWithoutNullStreams;
-  rustClient?: ChildProcessWithoutNullStreams;
   db?: ChildProcessWithoutNullStreams;
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
@@ -35,7 +34,6 @@ export class Control {
     files: false,
     connection: false,
     python: false,
-    rustClient: false,
     types: false,
     db: false,
     npm: false,
@@ -60,7 +58,6 @@ export class Control {
       this.kill("files"),
       this.kill("connection"),
       this.kill("python"),
-      this.kill("rustClient"),
     ]);
     process.exit(0);
   }
@@ -259,7 +256,6 @@ export class Control {
   togglePerf() {
     this.cli.options.perf = !this.cli.options.perf;
     this.restartCore();
-    this.restartRustClient();
   }
 
   async runCore(restart?: boolean) {
@@ -359,7 +355,6 @@ export class Control {
       this.cli.options.multiplayer
         ? [
             "watch",
-            "--skip-local-deps",
             "-x",
             "run -p quadratic-multiplayer --target-dir=target",
           ]
@@ -407,7 +402,6 @@ export class Control {
       this.cli.options.files
         ? [
             "watch",
-            "--skip-local-deps",
             "-x",
             "run -p quadratic-files --target-dir=target",
           ]
@@ -469,7 +463,6 @@ export class Control {
       this.cli.options.connection
         ? [
             "watch",
-            "--skip-local-deps",
             "-x",
             "run -p quadratic-connection --target-dir=target",
           ]
@@ -534,34 +527,6 @@ export class Control {
     this.runPython();
   }
 
-  async runRustClient() {
-    if (this.quitting) return;
-    this.status.rustClient = false;
-    await this.kill("rustClient");
-    this.ui.print("rustClient");
-    this.signals.rustClient = new AbortController();
-    this.rustClient = spawn(
-      "npm",
-      [
-        "run",
-          `${this.cli.options.rustClient ? "watch" : "build"}:rust-client${this.cli.options.perf ? ":perf" : ""}`
-      ],
-      { signal: this.signals.rustClient.signal }
-    );
-    this.ui.printOutput("rustClient", (data) =>
-      this.handleResponse("rustClient", data, {
-        success: "Your wasm pkg is ready to publish",
-        error: "error[",
-        start: "[Running ",
-      })
-    );
-  }
-
-  async restartRustClient() {
-    this.cli.options.rustClient = !this.cli.options.rustClient;
-    this.runRustClient();
-  }
-
   async runDb() {
     if (this.quitting) return;
     this.ui.print("db", "checking migration...");
@@ -615,7 +580,6 @@ export class Control {
       }
       this.runTypes();
       this.runCore();
-      this.runRustClient();
     });
   }
 

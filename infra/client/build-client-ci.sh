@@ -21,7 +21,6 @@ echo 'Packaging quadratic_py'
 echo 'Starting parallel rust builds...'
 (echo 'Building core...' && npm run build --workspace=quadratic-core) & \
 (echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core) & \
-(echo 'Building rust-client...' && npm run build --workspace=quadratic-rust-client) & \
 wait
 
 echo 'Building front-end...'

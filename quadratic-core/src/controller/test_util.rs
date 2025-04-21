@@ -86,6 +86,7 @@ impl GridController {
             sheet_pos: SheetPos::new(sheet_id, x, y),
             data_table,
             cell_value,
+            index: None,
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }
@@ -118,6 +119,7 @@ impl GridController {
             sheet_pos,
             data_table,
             cell_value,
+            index: None,
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }

@@ -199,6 +199,8 @@ impl GridController {
                         columns: columns.into_iter().map(|c| (c, None, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -210,6 +212,8 @@ impl GridController {
                         rows: rows.into_iter().map(|r| (r, None)).collect(),
                         swallow: true,
                         select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
                     });
                 }
             }
@@ -331,13 +335,13 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    use crate::Rect;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
+    use crate::controller::user_actions::import::tests::simple_csv;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
-    use crate::test_util::gc::print_table;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
+    use crate::{Rect, print_table_sheet};
 
     #[test]
     fn test() {
@@ -696,18 +700,20 @@ mod test {
 
     #[test]
     fn test_set_cell_values_operations() {
-        let mut gc = GridController::test();
+        // let mut gc = GridController::test();
+        let (mut gc, _, _, _) = simple_csv();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
             x: 1,
-            y: 1,
+            y: 13,
             sheet_id,
         };
 
-        let values = vec![vec!["a".to_string(), "b".to_string()]];
+        let values = vec![vec!["a".to_string()]];
         let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
         println!("{:?}", ops);
         println!("{:?}", data_table_ops);
-        print_table(&gc, sheet_id, Rect::from_numbers(1, 1, 2, 2));
+        let sheet = gc.try_sheet(sheet_id).unwrap();
+        print_table_sheet(sheet, Rect::from_numbers(1, 1, 4, 14), true);
     }
 }

@@ -1,6 +1,8 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
   editorInteractionStatePermissionsAtom,
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -33,6 +35,7 @@ import { Empty } from '@/shared/components/Empty';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
@@ -47,6 +50,8 @@ export default function QuadraticUI() {
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
+  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
+  const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
@@ -58,6 +63,8 @@ export default function QuadraticUI() {
       events.off('coreError', handleError);
     };
   }, []);
+
+  useRemoveInitialLoadingUI();
 
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)
@@ -135,8 +142,8 @@ export default function QuadraticUI() {
       <FeedbackMenu />
       {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
       {presentationMode && <PresentationModeHint />}
-      <CellTypeMenu />
-      <CommandPalette />
+      {showCellTypeMenu && <CellTypeMenu />}
+      {showCommandPalette && <CommandPalette />}
       {showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"

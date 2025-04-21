@@ -1,5 +1,5 @@
 import type { JsNumber } from '@/app/quadratic-core-types';
-import { BigNumber } from 'bignumber.js';
+import BigNumber from 'bignumber.js';
 
 // Converts a number to a string with the given cell formatting
 export const convertNumber = (n: string, format: JsNumber, currentFractionDigits?: number): string => {
