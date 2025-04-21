@@ -1,4 +1,4 @@
-use axum::{Extension, Json, debug_handler, extract::Path, response::IntoResponse};
+use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,

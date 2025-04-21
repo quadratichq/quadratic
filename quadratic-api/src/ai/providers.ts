@@ -14,6 +14,7 @@ import {
   GCP_PRIVATE_KEY,
   GCP_PROJECT_ID,
   GCP_REGION,
+  GCP_REGION_ANTHROPIC,
   OPENAI_API_KEY,
   XAI_API_KEY,
 } from '../env-vars';
@@ -30,7 +31,7 @@ const googleAuthOptions = {
 // anthropic-sdk for gcp
 export const vertex_anthropic = new AnthropicVertex({
   projectId: GCP_PROJECT_ID,
-  region: GCP_REGION,
+  region: GCP_REGION_ANTHROPIC,
   googleAuth: new GoogleAuth(googleAuthOptions),
 });
 

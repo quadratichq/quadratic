@@ -10,6 +10,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { Point } from 'pixi.js';
 import { Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
+import { htmlCellsHandler } from '../../HTMLGrid/htmlCells/htmlCellsHandler';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
@@ -57,6 +58,8 @@ export class PointerAutoComplete {
       this.active = false;
       pixiApp.boxCells.reset();
       sheets.sheet.cursor.changeBoxCells(false);
+      pixiApp.viewport.disableMouseEdges();
+      htmlCellsHandler.enable();
     }
   }
 
@@ -72,6 +75,8 @@ export class PointerAutoComplete {
       return false;
     } else {
       this.cursor = 'crosshair';
+      pixiApp.viewport.enableMouseEdges();
+      htmlCellsHandler.disable();
 
       if (this.active) {
         const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
