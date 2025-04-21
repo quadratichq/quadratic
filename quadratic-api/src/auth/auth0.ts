@@ -72,7 +72,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
   const auth0UserMap = new Map(auth0Users.map((u) => [u.user_id, u]));
 
   // Map the users we found by their Quadratic ID
-  let usersById: Record<
+  const usersById: Record<
     number,
     {
       id: number;
@@ -101,7 +101,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
       }
     }
 
-    // If we're missing data we expect, log it to Sentry and skip this user
+    // If we're missing data we expect, log it to Sentry and throw
     if (!auth0User || !auth0User.email) {
       console.log('Failed to retrieve all user info from Auth0', auth0Id);
       Sentry.captureException({
