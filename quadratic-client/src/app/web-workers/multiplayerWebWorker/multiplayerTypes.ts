@@ -1,6 +1,8 @@
 import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { SheetPosTS } from '@/app/shared/types/size';
 
+// todo: this should be replaced with automatic types created by export_types.rs
+
 export interface CellEdit {
   active: boolean;
   text: string;
@@ -41,15 +43,10 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   parsedSelection?: JsSelection;
 }
 
-export interface Version {
-  recommendedVersion: number;
-  requiredVersion: number;
-}
-
 export interface ReceiveRoom {
   type: 'UsersInRoom';
   users: MultiplayerUser[];
-  min_version: Version;
+  version: string;
 }
 
 export interface UserUpdate {
