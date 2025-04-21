@@ -81,11 +81,9 @@ export function ConnectionFormActions({
         {dbConnectionError && (
           <Alert variant="destructive" className="mt-4">
             <ErrorIcon />
-            <AlertTitle>Failed to connect</AlertTitle>
+            <AlertTitle>Failed to {connectionUuid ? 'save changes' : 'create'}</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <span className="mb-2">
-                The connection must be reachable before saving; the server returned the following error:
-              </span>
+              <span className="mb-1">The connection is not reachable. The server returned this error:</span>
               <span className="font-mono text-xs">{dbConnectionError.message}</span>
               <span>
                 Need help?{' '}

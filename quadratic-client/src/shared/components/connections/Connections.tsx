@@ -3,7 +3,9 @@ import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAc
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
+import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
+import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
@@ -135,38 +137,44 @@ export const Connections = ({
   };
 
   return (
-    <div>
-      {activeConnectionState && activeConnectionType ? (
-        activeConnectionState.view === 'edit' ? (
-          <ConnectionFormEdit
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionType}
-            handleNavigateToListView={handleNavigateToListView}
+    <div className={cn('flex w-full max-w-4xl flex-col gap-8 md:flex-row')}>
+      <div className="md:w-2/3">
+        {activeConnectionState && activeConnectionType ? (
+          activeConnectionState.view === 'edit' ? (
+            <ConnectionFormEdit
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          ) : (
+            <ConnectionDetails
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          )
+        ) : activeConnectionType ? (
+          <ConnectionFormCreate
             teamUuid={teamUuid}
+            type={activeConnectionType}
+            handleNavigateToListView={handleNavigateToListView}
           />
         ) : (
-          <ConnectionDetails
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionType}
-            handleNavigateToListView={handleNavigateToListView}
-            teamUuid={teamUuid}
+          <ConnectionsList
+            connections={connections}
+            connectionsAreLoading={connectionsAreLoading}
+            handleNavigateToCreateView={handleNavigateToCreateView}
+            handleNavigateToEditView={handleNavigateToEditView}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
           />
-        )
-      ) : activeConnectionType ? (
-        <ConnectionFormCreate
-          teamUuid={teamUuid}
-          type={activeConnectionType}
-          handleNavigateToListView={handleNavigateToListView}
-        />
-      ) : (
-        <ConnectionsList
-          connections={connections}
-          connectionsAreLoading={connectionsAreLoading}
-          handleNavigateToCreateView={handleNavigateToCreateView}
-          handleNavigateToEditView={handleNavigateToEditView}
-          handleNavigateToDetailsView={handleNavigateToDetailsView}
-        />
-      )}
+        )}
+      </div>
+      <div className="h-[1px] w-full bg-border md:h-auto md:w-[1px]"></div>
+      <div className="md:w-1/3">
+        <ConnectionsSidebar staticIps={staticIps} />
+      </div>
     </div>
   );
 };
