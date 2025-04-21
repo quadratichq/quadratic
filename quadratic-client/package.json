@@ -177,6 +177,9 @@
     "vitest": "^3.0.9",
     "vscode-languageserver-types": "^3.17.5"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.12.0"
+  },
   "madge": {
     "detectiveOptions": {
       "ts": {
