@@ -1,17 +1,17 @@
 /** Contains the Shader for a non-tinted MSDF font (which requires less data than the tinted version). */
 
 export const msdfFrag = `
-varying vec2 aUV;
+varying vec2 vTextureCoord;
 
 uniform sampler2D uSampler;
 
 // on 2D applications fwidth is screenScale / glyphAtlasScale * distanceFieldRange
 uniform float uFWidth;
 
-void main() {
+void main(void) {
 
   // To stack MSDF and SDF we need a non-pre-multiplied-alpha texture.
-  vec4 texColor = texture2D(uSampler, aUV);
+  vec4 texColor = texture2D(uSampler, vTextureCoord);
 
   // MSDF
   float median = texColor.r + texColor.g + texColor.b -
@@ -20,7 +20,7 @@ void main() {
   // SDF
   median = min(median, texColor.a);
 
-  float screenPxDistance = ufWidth * (median - 0.5);
+  float screenPxDistance = uFWidth * (median - 0.5);
   float alpha = clamp(screenPxDistance + 0.5, 0.0, 1.0);
   if (median < 0.01) {
     alpha = 0.0;
@@ -37,13 +37,15 @@ attribute vec2 aPosition;
 attribute vec2 aUV;
 
 uniform mat3 uProjectionMatrix;
-uniform mat3 uTranslationMatrix;
+uniform mat3 uWorldTransformMatrix;
+uniform mat3 uTransformMatrix;
+
 uniform mat3 uTextureMatrix;
 
 varying vec2 vTextureCoord;
 
 void main() {
-    gl_Position = vec4((uProjectionMatrix * uTranslationMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
+    gl_Position = vec4((uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
     vTextureCoord = (uTextureMatrix * vec3(aUV, 1.0)).xy;
 }`;
 
@@ -89,9 +91,9 @@ fn mainVertex(@location(0) aPosition : vec2<f32>, @location(1) aUV : vec2<f32>, 
 @group(2) @binding(2) var uSampler: sampler;
 
 @fragment
-fn mainFrag(@location(0) aUV: vec2<f32>, ) -> @location(0) vec4<f32> {
+fn mainFrag(@location(0) vTextureCoord: vec2<f32>, ) -> @location(0) vec4<f32> {
     // Sample the texture
-    let texColor = textureSample(uTexture, uSampler, aUV);
+    let texColor = textureSample(uTexture, uSampler, vTextureCoord);
 
     // MSDF calculation
     let median = texColor.r + texColor.g + texColor.b -
