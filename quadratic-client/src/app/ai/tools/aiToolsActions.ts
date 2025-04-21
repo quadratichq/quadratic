@@ -101,15 +101,6 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
   if (table.codeCell.is_html) {
     const htmlCell = htmlCellsHandler.findCodeCell(sheetId, x, y);
     const dataUrl = (await htmlCell?.getImageDataUrl()) ?? '';
-    // Create temporary anchor element
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = 'plot.png'; // Set desired filename
-
-    // Append to document, click, and remove
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
     if (dataUrl) {
       const { mimeType, data } = dataUrlToMimeTypeAndData(dataUrl);
       if (isSupportedImageMimeType(mimeType) && !!data) {

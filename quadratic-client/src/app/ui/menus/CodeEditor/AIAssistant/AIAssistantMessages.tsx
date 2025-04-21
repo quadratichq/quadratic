@@ -82,7 +82,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-2 overflow-y-auto whitespace-pre-wrap pb-8 text-sm outline-none"
+      className="flex select-text flex-col gap-2 overflow-y-auto whitespace-pre-wrap p-2 text-sm outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
