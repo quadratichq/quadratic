@@ -23,7 +23,7 @@ RUN echo 'dbuser:password' | chpasswd
 
 # Copy the public key
 RUN mkdir -p /root/.ssh
-COPY keys/id_rsa.pub /root/.ssh/authorized_keys
+COPY docker/keys/id_rsa.pub /root/.ssh/authorized_keys
 RUN chmod 600 /root/.ssh/authorized_keys
 
 # Generate SSL certificates for MySQL

@@ -604,7 +604,7 @@ services:
     restart: always
     container_name: ssh-mysql-connection
     ports:
-      - "2222:22"
+      - "2223:22"
     environment:
       MYSQL_DATABASE: mysql-connection
       MYSQL_USER: user
@@ -658,13 +658,13 @@ services:
   ssh-mssql-connection:
     build:
       context: .
-      platforms:
-        - "linux/amd64"
+      # platforms:
+      #   - "linux/amd64"
       dockerfile: docker/ssh-mssql-connection/Dockerfile
     restart: always
     container_name: ssh-mssql-connection
     ports:
-      - "2222:22"
+      - "2224:22"
     environment:
       MSSQL_SA_PASSWORD: yourStrong(!)Password
       MSSQL_PID: Evaluation
