@@ -36,9 +36,9 @@ export class HtmlPlaceholders extends Graphics {
         sprite.texture = Texture.from(dataUrl);
         sprite.texture.once('update', () => {
           sprite.width = htmlCell.width;
-          sprite.height = htmlCell.height;
+          sprite.height = htmlCell.height - offsets.height;
           sprite.x = offsets.x;
-          sprite.y = offsets.y;
+          sprite.y = offsets.y + offsets.height;
           resolve();
         });
       } else {
