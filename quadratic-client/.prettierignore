@@ -5,5 +5,4 @@ src/shared/shadcn/ui
 src/app/web-workers/pythonLanguageServer/pyright-initialization.json
 src/app/quadratic-core
 src/app/quadratic-core-types
-src/app/quadratic-rust-client
 src/app/web-workers/javascriptWebWorker/worker/javascript/runner
