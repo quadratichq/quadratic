@@ -17,8 +17,6 @@ void main(void) {
   float median = texColor.r + texColor.g + texColor.b -
                   min(texColor.r, min(texColor.g, texColor.b)) -
                   max(texColor.r, max(texColor.g, texColor.b));
-  // SDF
-  median = min(median, texColor.a);
 
   float screenPxDistance = uFWidth * (median - 0.5);
   float alpha = clamp(screenPxDistance + 0.5, 0.0, 1.0);
@@ -76,10 +74,11 @@ struct MyUniforms {
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,
   @location(0) textureCoord: vec2<f32>,
+  @location(1) colors: vec4<f32>,
 };
 
 @vertex
-fn mainVertex(@location(0) aPosition : vec2<f32>, @location(1) aUV : vec2<f32>, ) -> VertexOutput {
+fn mainVertex(@location(0) aPosition : vec2<f32>, @location(1) aUV : vec2<f32>, @location(2) aColors : vec4<f32>) -> VertexOutput {
     var output: VertexOutput;
 
     // Calculate position using the transformation matrices
@@ -88,7 +87,7 @@ fn mainVertex(@location(0) aPosition : vec2<f32>, @location(1) aUV : vec2<f32>, 
 
     // Pass through texture coordinates
     output.textureCoord = aUV;
-
+    output.colors = aColors;
     return output;
 }
 
@@ -96,7 +95,7 @@ fn mainVertex(@location(0) aPosition : vec2<f32>, @location(1) aUV : vec2<f32>, 
 @group(2) @binding(2) var uSampler: sampler;
 
 @fragment
-fn mainFrag(@location(0) vTextureCoord: vec2<f32>, ) -> @location(0) vec4<f32> {
+fn mainFrag(@location(0) vTextureCoord: vec2<f32>, @location(1) vColors: vec4<f32>) -> @location(0) vec4<f32> {
     // Sample the texture
     let texColor = textureSample(uTexture, uSampler, vTextureCoord);
 
@@ -117,5 +116,5 @@ fn mainFrag(@location(0) vTextureCoord: vec2<f32>, ) -> @location(0) vec4<f32> {
     }
 
     // Return the final color with alpha
-    return vec4<f32>(0.0, 0.0, 0.0, alpha);
+    return vec4<f32>(vColors.rgb, alpha);
 }`;
