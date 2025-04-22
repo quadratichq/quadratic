@@ -1,7 +1,6 @@
 FROM rust:latest AS builder
 
 WORKDIR /quadratic
-COPY updateAlertVersion.json .
 COPY ./quadratic-multiplayer/. ./quadratic-multiplayer/
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
