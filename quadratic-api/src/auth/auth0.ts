@@ -82,7 +82,8 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
       picture?: string;
     }
   > = {};
-  for (const { id, auth0Id } of users) {
+
+  const promises = users.map(async ({ id, auth0Id }) => {
     let auth0User = auth0UserMap.get(auth0Id);
 
     // If missing or incomplete, fallback to direct lookup
@@ -123,7 +124,9 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
       name: auth0User.name,
       picture: auth0User.picture,
     };
-  }
+  });
+
+  await Promise.all(promises);
 
   return usersById;
 };

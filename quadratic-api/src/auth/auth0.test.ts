@@ -16,7 +16,7 @@ jest.mock('auth0', () =>
 );
 
 describe('auth0.ts', () => {
-  it('finds exisiting users', async () => {
+  it('finds existing users', async () => {
     const result = await getUsersFromAuth0([
       { id: 1, auth0Id: 'user1' },
       { id: 2, auth0Id: 'user2' },
