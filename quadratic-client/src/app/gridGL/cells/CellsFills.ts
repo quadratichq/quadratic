@@ -7,10 +7,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { convertColorStringToTint, getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import type { IParticle } from 'pixi.js';
-import { Container, Graphics, ParticleContainer, Rectangle, Texture } from 'pixi.js';
+import type { IParticle, Rectangle } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 
-interface SpriteBounds extends IParticle {
+interface FillParticle extends IParticle {
   viewBounds: Rectangle;
 }
 
@@ -27,7 +27,7 @@ export class CellsFills extends Container {
   private sheetFills?: JsSheetFill[];
   private alternatingColorsGraphics: Graphics;
 
-  private cellsContainer: ParticleContainer;
+  private cellFills: Graphics;
   private meta: Graphics;
   private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
 
@@ -38,9 +38,7 @@ export class CellsFills extends Container {
     super();
     this.cellsSheet = cellsSheet;
     this.meta = this.addChild(new Graphics());
-    this.cellsContainer = this.addChild(
-      new ParticleContainer({ dynamicProperties: { vertices: true, tint: true }, texture: Texture.WHITE })
-    );
+    this.cellFills = this.addChild(new Graphics());
     this.alternatingColorsGraphics = this.addChild(new Graphics());
 
     events.on('sheetFills', this.handleSheetFills);
@@ -92,9 +90,9 @@ export class CellsFills extends Container {
   };
 
   cheapCull = (viewBounds: Rectangle) => {
-    this.cellsContainer.children.forEach(
+    this.cellFills.children.forEach(
       (sprite) =>
-        (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as any as SpriteBounds).viewBounds))
+        (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as any as FillParticle).viewBounds))
     );
   };
 
@@ -113,22 +111,11 @@ export class CellsFills extends Container {
   }
 
   private drawCells = () => {
-    this.cellsContainer.removeParticles();
+    this.cellFills.clear();
     this.cells.forEach((fill) => {
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
-      this.cellsContainer.addParticle({
-        x: screen.x,
-        y: screen.y,
-        texture: Texture.WHITE,
-
-        // todo...
-        scaleX: screen.width,
-        scaleY: screen.height,
-
-        color: this.getColor(fill.color),
-
-        viewBounds: new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1),
-      } as SpriteBounds);
+      this.cellFills.rect(screen.x, screen.y, screen.width, screen.height);
+      this.cellFills.fill({ color: this.getColor(fill.color) });
     });
     pixiApp.setViewportDirty();
   };
