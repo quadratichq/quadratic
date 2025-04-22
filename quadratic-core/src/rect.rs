@@ -125,6 +125,7 @@ impl Rect {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 
+    /// Returns whether other is fully contained within self
     pub fn contains_rect(&self, other: &Rect) -> bool {
         self.x_range().contains(&other.min.x)
             && self.x_range().contains(&other.max.x)

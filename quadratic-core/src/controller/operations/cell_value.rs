@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use super::operation::Operation;
-use crate::Pos;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::CodeCellLanguage;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::grid::{CodeCellLanguage, DataTableKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
+use crate::{Pos, Rect};
 use anyhow::{Result, bail};
 
 impl GridController {
@@ -224,8 +224,6 @@ impl GridController {
         Ok((ops, data_table_ops))
     }
 
-    // todo: we should change this from pushing ops to acting on the sheet directly.
-
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
     ///
@@ -244,12 +242,14 @@ impl GridController {
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
                 let mut can_delete_column = false;
+                let mut save_data_table_anchors = vec![];
 
                 if let Ok(data_tables) = sheet.data_tables_within_rect(rect, false) {
                     for data_table_pos in data_tables {
                         if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
-                            let mut data_table_rect =
+                            let data_table_full_rect =
                                 data_table.output_rect(data_table_pos.to_owned(), false);
+                            let mut data_table_rect = data_table_full_rect.clone();
                             data_table_rect.min.y += data_table.y_adjustment(true);
 
                             let is_full_table_selected = rect.contains_rect(&data_table_rect);
@@ -260,12 +260,20 @@ impl GridController {
                                 && table_column_selection.is_some()
                                 && !data_table.readonly;
 
+                            // if a data table is not fully selected, then
+                            // we delete its contents and save its anchor
+                            if !is_full_table_selected
+                                && rect.contains(data_table_pos)
+                                && matches!(data_table.kind, DataTableKind::Import(_))
+                            {
+                                save_data_table_anchors.push(data_table_pos);
+                            }
                             if can_delete_table {
-                                // shouldn't need this as the table will be deleted if its anchor is deleted
-                                // ops.push(Operation::DeleteDataTable {
-                                //     sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                                // });
-                            } else if can_delete_column {
+                                // we don't need to manually delete the table as
+                                // the SetCellValues operation below will do
+                                // this properly
+                            }
+                            if can_delete_column {
                                 // adjust for hidden columns, reverse the order to delete from right to left
                                 let columns = (rect.min.x..=rect.max.x)
                                     .map(|x| {
@@ -302,10 +310,36 @@ impl GridController {
                 }
 
                 if !can_delete_column {
-                    ops.push(Operation::SetCellValues {
-                        sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
-                        values: CellValues::new(rect.width(), rect.height()),
-                    });
+                    if save_data_table_anchors.is_empty() {
+                        ops.push(Operation::SetCellValues {
+                            sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
+                            values: CellValues::new(rect.width(), rect.height()),
+                        });
+                    } else {
+                        // remove all saved_data_table_anchors from the rect
+                        // (which may result in multiple resulting rects)
+                        let mut rects = vec![rect];
+                        for data_table_pos in save_data_table_anchors {
+                            let mut next_rects = vec![];
+                            for rect in rects {
+                                let result = rect.subtract(Rect::single_pos(data_table_pos));
+                                next_rects.extend(result);
+                            }
+                            rects = next_rects;
+                        }
+
+                        // set the cell values for each of the resulting rects
+                        for rect in rects {
+                            ops.push(Operation::SetCellValues {
+                                sheet_pos: SheetPos::new(
+                                    selection.sheet_id,
+                                    rect.min.x,
+                                    rect.min.y,
+                                ),
+                                values: CellValues::new(rect.width(), rect.height()),
+                            });
+                        }
+                    }
                 }
 
                 // need to update the selection if a table was deleted (since we
@@ -744,5 +778,44 @@ mod test {
         gc.redo(None);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
+    }
+
+    #[test]
+    fn test_delete_cells_from_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
+        assert_cell_value_row(&gc, sheet_id, 1, 4, 4, vec!["", "0", "1", "2"]);
+
+        // should delete part of the first row of the data table
+        gc.delete_cells(&A1Selection::test_a1("A1:C4"), None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["", "", "2"]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 4, 4, vec!["", "0", "1", "2"]);
+
+        gc.redo(None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["", "", "2"]);
+    }
+
+    #[test]
+    fn test_delete_cells_from_data_table_without_ui() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // create a data table without ui
+        test_create_data_table_no_ui(&mut gc, sheet_id, pos![B2], 3, 3);
+        assert_cell_value_row(&gc, sheet_id, 1, 4, 2, vec!["", "0", "1", "2"]);
+
+        // should delete part of the first row of the data table
+        gc.delete_cells(&A1Selection::test_a1("A1:C4"), None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 4, 2, vec!["", "0", "1", "2"]);
+
+        gc.redo(None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
     }
 }

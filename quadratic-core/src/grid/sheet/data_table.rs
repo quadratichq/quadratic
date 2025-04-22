@@ -481,6 +481,12 @@ impl Sheet {
             .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
     }
 
+    /// Returns true if the cell at pos is a data table cell
+    pub fn is_data_table_cell(&self, pos: Pos) -> bool {
+        self.data_table(pos)
+            .is_some_and(|dt| matches!(dt.kind, DataTableKind::Import(_)))
+    }
+
     /// You shouldn't be able to create a data table that includes a data table.
     /// Deny the action and give a popup explaining why it was blocked.
     /// Returns true if the data table is not within the rect
@@ -511,7 +517,8 @@ mod test {
         },
         first_sheet_id,
         grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
-        test_create_code_table, test_create_data_table,
+        test_create_code_table, test_create_data_table, test_create_html_chart,
+        test_create_js_chart,
     };
     use bigdecimal::BigDecimal;
 
@@ -681,5 +688,25 @@ mod test {
 
         // The second data table should have index 1
         assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
+    }
+
+    #[test]
+    fn test_is_data_table_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        test_create_code_table(&mut gc, sheet_id, pos![E5], 2, 2);
+        test_create_js_chart(&mut gc, sheet_id, pos![G7], 2, 2);
+        test_create_html_chart(&mut gc, sheet_id, pos![J9], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.is_data_table_cell(pos![E5]));
+        assert!(!sheet.is_data_table_cell(pos![G7]));
+        assert!(!sheet.is_data_table_cell(pos![J9]));
+        assert!(!sheet.is_data_table_cell(pos![B1]));
+        assert!(!sheet.is_data_table_cell(pos![A2]));
+
+        assert!(sheet.is_data_table_cell(pos![A1]));
     }
 }
