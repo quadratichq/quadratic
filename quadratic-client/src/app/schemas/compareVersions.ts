@@ -35,3 +35,23 @@ export function compareVersions(version1: string, version2: string) {
 
   return VersionComparisonResult.Equal;
 }
+
+// Returns true if only the patch version is different
+export function isPatchVersionDifferent(version1: string, version2: string): boolean {
+  const parts1 = version1.split('.').map(Number);
+  const parts2 = version2.split('.').map(Number);
+
+  if (parts1.length !== 3 || parts2.length !== 3) {
+    console.error('Invalid version format. Expected format: major.minor.patch', version1, version2);
+    return false;
+  }
+
+  const [major1, minor1, patch1] = parts1;
+  const [major2, minor2, patch2] = parts2;
+
+  if (major1 !== major2 || minor1 !== minor2) {
+    return false; // Major or minor versions are different
+  }
+
+  return patch1 !== patch2; // Only the patch version is different
+}
