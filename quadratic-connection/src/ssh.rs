@@ -36,7 +36,7 @@ where
     Ok(ssh_tunnel)
 }
 
-pub(crate) async fn process_in_ssh_tunnel<T, C, F, Fut>(connection: &mut C, func: F) -> Result<T>
+pub(crate) async fn _process_in_ssh_tunnel<T, C, F, Fut>(connection: &mut C, func: F) -> Result<T>
 where
     C: Connection + Clone + UsesSsh,
     C: TryInto<SshConfig>,

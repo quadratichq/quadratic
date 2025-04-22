@@ -11,11 +11,11 @@ use axum::{
     routing::{any, get, post},
 };
 use http::{
-    HeaderMap, HeaderName, HeaderValue,
+    HeaderName, HeaderValue,
     header::{CACHE_CONTROL, PRAGMA},
 };
-use quadratic_rust_shared::{SharedError, auth::jwt::get_jwks, sql::UsesSsh};
-use quadratic_rust_shared::{net::ssh::SshConfig, sql::Connection};
+use quadratic_rust_shared::auth::jwt::get_jwks;
+use quadratic_rust_shared::sql::Connection;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tokio::time;
@@ -28,11 +28,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
 use crate::{
-    auth::{Claims, get_middleware},
+    auth::get_middleware,
     config::config,
-    connection::get_api_team,
     error::{ConnectionError, Result},
-    header::get_team_id_header,
     health::{full_healthcheck, healthcheck},
     proxy::proxy,
     sql::{
@@ -41,7 +39,6 @@ use crate::{
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
         snowflake::{query as query_snowflake, schema as schema_snowflake, test as test_snowflake},
     },
-    ssh::open_ssh_tunnel_for_connection,
     state::State,
 };
 
