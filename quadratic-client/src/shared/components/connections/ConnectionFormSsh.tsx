@@ -1,9 +1,10 @@
-import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import type { FileData } from '@/routes/file.$uuid';
 import { ConnectionFormSshKey } from '@/shared/components/connections/ConnectionFormSshKey';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import type { UseFormReturn } from 'react-hook-form';
+import { useLoaderData } from 'react-router';
 
 interface ConnectionFormSshProps {
   form: UseFormReturn<any>;
@@ -14,10 +15,11 @@ const DEFAULTS = {
 };
 
 const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean }) => {
-  const { data } = useConnectionsFetcher();
-  const sshPublicKey = data?.sshPublicKey?.sshPublicKey ?? '';
+  const {
+    team: { sshPublicKey },
+  } = useLoaderData() as FileData;
 
-  if (!showSsh) return null;
+  if (!showSsh || !sshPublicKey) return null;
 
   return (
     <>

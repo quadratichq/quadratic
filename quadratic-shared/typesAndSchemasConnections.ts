@@ -132,9 +132,4 @@ export const ApiSchemasConnections = {
 
   // Delete connection
   '/v0/teams/:uuid/connections/:connectionUuid.DELETE.response': z.object({ message: z.string() }),
-
-  // Get SSH public key
-  '/v0/teams/:uuid/ssh-public-key.GET.response': z.object({
-    sshPublicKey: z.string(),
-  }),
 };
