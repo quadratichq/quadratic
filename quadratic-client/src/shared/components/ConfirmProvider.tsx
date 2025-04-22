@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/shadcn/ui/alert-dialog';
 import type { ReactNode } from 'react';
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useState } from 'react';
 
 // 1. Required dialog options
 type ConfirmOptions = {
@@ -79,7 +79,7 @@ export function useConfirmDialog<T extends ConfirmDialogKeys>(
 // for confirmation to do something that isn't destructive and non-reversible.
 export const ConfirmProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [resolvePromise, setResolvePromise] = useState<(val: boolean) => void>(() => () => {});
+  const [resolvePromise, setResolvePromise] = useState<(val: boolean) => void>(() => {});
   const [options, setOptions] = useState<ConfirmOptions | null>(null);
 
   const confirm: InternalConfirmFn = useCallback((opts) => {
@@ -90,20 +90,17 @@ export const ConfirmProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     setIsOpen(false);
+    setOptions(null);
     resolvePromise(true);
-  };
+  }, [resolvePromise]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setIsOpen(false);
+    setOptions(null);
     resolvePromise(false);
-  };
-
-  // Reset options after closing
-  useEffect(() => {
-    if (!isOpen) setOptions(null);
-  }, [isOpen]);
+  }, [resolvePromise]);
 
   return (
     <ConfirmContext.Provider value={confirm}>

@@ -150,17 +150,16 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
         </div>
       )}
 
-      {users.map((user) => {
-        return (
-          <ManageTeamUser
-            key={user.id}
-            user={user}
-            userMakingRequest={userMakingRequest}
-            numberOfOwners={numberOfOwners}
-            action={action}
-          />
-        );
-      })}
+      {users.map((user) => (
+        <ManageTeamUser
+          key={user.id}
+          user={user}
+          userMakingRequest={userMakingRequest}
+          numberOfOwners={numberOfOwners}
+          action={action}
+        />
+      ))}
+
       {invites.map((invite) => (
         <ManageInvite
           key={invite.id}
@@ -179,6 +178,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
           }
         />
       ))}
+
       {pendingInvites.map((invite, i) => (
         <ManageInvite key={i} invite={invite} />
       ))}
@@ -329,18 +329,17 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         />
       )}
 
-      {users.map((user) => {
-        return (
-          <ManageFileUser
-            key={user.id}
-            publicLinkAccess={publicLinkAccess}
-            loggedInUserId={loggedInUserId}
-            user={user}
-            canEditFile={canEditFile}
-            action={action}
-          />
-        );
-      })}
+      {users.map((user) => (
+        <ManageFileUser
+          key={user.id}
+          publicLinkAccess={publicLinkAccess}
+          loggedInUserId={loggedInUserId}
+          user={user}
+          canEditFile={canEditFile}
+          action={action}
+        />
+      ))}
+
       {invites.map((invite) => (
         <ManageInvite
           key={invite.id}
@@ -362,6 +361,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
           }
         />
       ))}
+
       {pendingInvites.map((invite, i) => (
         <ManageInvite key={i} invite={invite} />
       ))}
