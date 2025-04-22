@@ -1,12 +1,12 @@
+import { debugShowUILogs } from '@/app/debugFlags';
+import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { FilesList } from '@/dashboard/components/FilesList';
+import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
+import NewFileButton from '@/dashboard/components/NewFileButton';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouteError } from 'react-router';
-import { debugShowUILogs } from '../app/debugFlags';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { FilesList } from '../dashboard/components/FilesList';
-import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState';
-import NewFileButton from '../dashboard/components/NewFileButton';
 
 export const Component = () => {
   const {
