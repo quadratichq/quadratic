@@ -243,6 +243,7 @@ impl GridController {
             for rect in rects.into_iter().rev() {
                 let mut can_delete_column = false;
                 let mut save_data_table_anchors = vec![];
+                let mut delete_data_tables = vec![];
 
                 if let Ok(data_tables) = sheet.data_tables_within_rect(rect, false) {
                     for data_table_pos in data_tables {
@@ -256,13 +257,36 @@ impl GridController {
                             let can_delete_table = is_full_table_selected || data_table.readonly;
                             let table_column_selection = selection
                                 .table_column_selection(data_table.name(), self.a1_context());
+
                             can_delete_column = !is_full_table_selected
                                 && table_column_selection.is_some()
                                 && !data_table.readonly;
 
-                            // if a data table is not fully selected, then
-                            // we delete its contents and save its anchor
+                            // we also delete a data table if it is not fully
+                            // selected but any cell in the name ui is selected
                             if !is_full_table_selected
+                                && data_table.show_ui
+                                && data_table.show_name
+                                // the selection intersects the name ui row
+                                && rect.intersects(Rect::new(
+                                    data_table_full_rect.min.x,
+                                    data_table_full_rect.min.y,
+                                    data_table_full_rect.max.x,
+                                    data_table_full_rect.min.y,
+                                ))
+                                // but the selection does not contain the
+                                // top-left cell (as it will automatically
+                                // delete it in that case)
+                                && !rect.contains(data_table_full_rect.min)
+                            {
+                                delete_data_tables.push(data_table_pos);
+                            }
+
+                            // if a data table is not fully selected and there
+                            // is no name ui, then we delete its contents and
+                            // save its anchor
+                            if !is_full_table_selected
+                                && (!data_table.show_ui || !data_table.show_name)
                                 && rect.contains(data_table_pos)
                                 && matches!(data_table.kind, DataTableKind::Import(_))
                             {
@@ -341,6 +365,12 @@ impl GridController {
                         }
                     }
                 }
+
+                delete_data_tables.iter().for_each(|data_table_pos| {
+                    ops.push(Operation::DeleteDataTable {
+                        sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                    });
+                });
 
                 // need to update the selection if a table was deleted (since we
                 // can no longer use the table ref)
@@ -778,25 +808,6 @@ mod test {
         gc.redo(None);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
-    }
-
-    #[test]
-    fn test_delete_cells_from_data_table() {
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
-
-        test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
-        assert_cell_value_row(&gc, sheet_id, 1, 4, 4, vec!["", "0", "1", "2"]);
-
-        // should delete part of the first row of the data table
-        gc.delete_cells(&A1Selection::test_a1("A1:C4"), None);
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["", "", "2"]);
-
-        gc.undo(None);
-        assert_cell_value_row(&gc, sheet_id, 1, 4, 4, vec!["", "0", "1", "2"]);
-
-        gc.redo(None);
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["", "", "2"]);
     }
 
     #[test]

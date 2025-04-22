@@ -287,7 +287,6 @@ impl GridController {
                 .to_sheet_rect(sheet_id);
 
             if data_table.readonly {
-                dbgjs!(format!("Data table {} is readonly", data_table.name));
                 return Ok(());
             }
 

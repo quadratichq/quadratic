@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashSet};
 use crate::{
     Pos, Rect, SheetPos,
     a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
-    grid::Sheet,
+    grid::{CodeCellLanguage, Sheet},
 };
 
 use super::{A1Selection, CellRefRange};
@@ -453,27 +453,36 @@ impl A1Selection {
                     names.push(range.table_name.clone());
                 }
             }
-            // DSF: this is correct code for our current implementation; but the one below is what we should work towards
             CellRefRange::Sheet { range } => context.tables().for_each(|table| {
-                if table.sheet_id == self.sheet_id
-                    && range
-                        .to_rect()
-                        .is_some_and(|rect| rect.contains(table.bounds.min))
-                {
-                    names.push(table.table_name.clone());
+                if table.sheet_id == self.sheet_id {
+                    if let Some(rect) = range.to_rect() {
+                        // if the selection intersects the name ui row of the table
+                        if table.show_ui
+                            && table.show_name
+                            && rect.intersects(Rect::new(
+                                table.bounds.min.x,
+                                table.bounds.min.y,
+                                table.bounds.max.x,
+                                table.bounds.min.y,
+                            ))
+                        {
+                            names.push(table.table_name.clone());
+                        }
+                        // or if the selection contains the entire table
+                        else if rect.contains_rect(&table.bounds) {
+                            names.push(table.table_name.clone());
+                        }
+                        // or if the selection contains the code cell of a code table
+                        else if table.language != CodeCellLanguage::Import
+                            && rect.contains(table.bounds.min)
+                        {
+                            names.push(table.table_name.clone());
+                        }
+                    }
                 }
             }),
         });
         names
-
-        // DF: this is the correct code; but it doesn't work properly with delete
-        // CellRefRange::Sheet { range } => {
-        //     context.tables().for_each(|table| {
-        //         if table.sheet_id == self.sheet_id && range.contains_rect(table.bounds) {
-        //             names.push(table.table_name.clone());
-        //         }
-        //     });
-        // }
     }
 
     /// Returns the columns that are selected in the table.
