@@ -105,7 +105,9 @@ export const ConnectionTypeDetailsSnowflakeSchema = z.object({
  */
 
 export const ConnectionListSchema = z.array(
-  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
+  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true }).extend({
+    sshKey: z.string().optional()
+  })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
 
@@ -130,4 +132,9 @@ export const ApiSchemasConnections = {
 
   // Delete connection
   '/v0/teams/:uuid/connections/:connectionUuid.DELETE.response': z.object({ message: z.string() }),
+
+  // Get SSH public key
+  '/v0/teams/:uuid/ssh-public-key.GET.response': z.object({
+    sshPublicKey: z.string(),
+  }),
 };
