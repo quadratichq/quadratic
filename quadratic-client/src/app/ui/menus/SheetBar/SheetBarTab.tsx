@@ -7,7 +7,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { validateSheetName } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { validateSheetName } from '@/app/quadratic-core/quadratic_core';
 import { SheetBarTabDropdownMenu } from '@/app/ui/menus/SheetBar/SheetBarTabDropdownMenu';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';

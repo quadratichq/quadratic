@@ -3,7 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
-import { convertTableToRange, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { convertTableToRange, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';

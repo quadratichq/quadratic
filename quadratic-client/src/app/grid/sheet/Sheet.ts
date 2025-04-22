@@ -10,11 +10,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import {
-  A1SelectionToJsSelection,
-  type SheetOffsets,
-  SheetOffsetsWasm,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionToJsSelection, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 
