@@ -25,7 +25,7 @@ async function handler(
   const {
     params: { uuid: teamUuid, connectionUuid },
   } = parseRequest(req, schema);
-  let {
+  const {
     connection,
     team: {
       userMakingRequest: { permissions: teamPermissions },
