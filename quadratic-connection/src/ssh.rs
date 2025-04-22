@@ -36,24 +36,27 @@ where
     Ok(ssh_tunnel)
 }
 
-pub(crate) async fn _process_in_ssh_tunnel<T, C, F, Fut>(connection: &mut C, func: F) -> Result<T>
-where
-    C: Connection + Clone + UsesSsh,
-    C: TryInto<SshConfig>,
-    <C as TryInto<SshConfig>>::Error: Into<ConnectionError>,
-    F: FnOnce() -> Fut,
-    Fut: std::future::Future<Output = Result<T>>,
-{
-    let ssh_tunnel = open_ssh_tunnel_for_connection::<C>(connection).await?;
+// TODO(ddimara): keep this b/c I want to come back to finsih this to keep the
+// other functions more DRY.
+//
+// pub(crate) async fn _process_in_ssh_tunnel<T, C, F, Fut>(connection: &mut C, func: F) -> Result<T>
+// where
+//     C: Connection + Clone + UsesSsh,
+//     C: TryInto<SshConfig>,
+//     <C as TryInto<SshConfig>>::Error: Into<ConnectionError>,
+//     F: FnOnce() -> Fut,
+//     Fut: std::future::Future<Output = Result<T>>,
+// {
+//     let ssh_tunnel = open_ssh_tunnel_for_connection::<C>(connection).await?;
 
-    let result = func().await?;
+//     let result = func().await?;
 
-    if let Some(mut ssh_tunnel) = ssh_tunnel {
-        ssh_tunnel.close().await?;
-    }
+//     if let Some(mut ssh_tunnel) = ssh_tunnel {
+//         ssh_tunnel.close().await?;
+//     }
 
-    Ok(result)
-}
+//     Ok(result)
+// }
 
 #[cfg(test)]
 pub mod tests {

@@ -271,15 +271,14 @@ spDLJbPts5Dztw8g9mRQsrMtxnKC0/6XU+Zr0PnCUnM/rITuZsnrJvmPPEILnHP8CqxaJh
 ";
 
     pub fn get_ssh_config() -> SshConfig {
-        SshConfig {
-            host: "0.0.0.0".into(),
-            port: 2222,
-            username: "root".into(),
-            password: Some("password".into()),
-            private_key: PRIVATE_KEY.into(),
-            private_key_password: Some("password".into()),
-            openssh_certificate: None,
-        }
+        SshConfig::new(
+            "0.0.0.0".into(),
+            2222,
+            "root".into(),
+            Some("password".into()),
+            PRIVATE_KEY.into(),
+            Some("password".into()),
+        )
     }
 
     #[tokio::test]

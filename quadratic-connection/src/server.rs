@@ -244,32 +244,6 @@ pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestRes
     TestResponse::new(message.is_none(), message).into()
 }
 
-// pub(crate) async fn test_connection_with_ssh<T>(
-//     headers: HeaderMap,
-//     state: Extension<State>,
-//     claims: Claims,
-//     connection: T,
-// ) -> Result<Json<TestResponse>>
-// where
-//     T: Connection + UsesSsh + Clone,
-//     // T: quadratic_rust_shared::sql::HasSshKey,
-//     ConnectionError: From<SharedError>,
-//     SshConfig: From<T>,
-// {
-//     let team_id = get_team_id_header(&headers)?;
-//     let team = get_api_team(&state, "", &claims.sub, &team_id).await?;
-//     connection.set_ssh_key(Some(team.ssh_private_key));
-
-//     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
-//     let result = test_connection(connection).await;
-
-//     if let Some(mut tunnel) = tunnel {
-//         tunnel.close().await?;
-//     }
-
-//     Ok(result)
-// }
-
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::test_util::{process_route, response_json};
