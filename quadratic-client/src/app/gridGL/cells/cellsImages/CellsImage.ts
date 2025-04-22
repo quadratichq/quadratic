@@ -8,7 +8,7 @@ import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '@/app/gridGL/UI/UICellI
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point } from 'pixi.js';
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, ImageSource, Rectangle, Sprite, Texture } from 'pixi.js';
 
 // todo: rename to resize; separate bottom and right bars so they can animate separately
 
@@ -65,12 +65,28 @@ export class CellsImage extends Container {
     return this.pos.y;
   }
 
+  private loadImage(image: HTMLImageElement) {
+    if (image.complete) {
+    } else {
+      setTimeout(() => this.loadImage(image), 100);
+    }
+  }
+
   updateMessage(message: CoreClientImage) {
     if (!message.image) {
       throw new Error('Expected message.image to be defined in SpriteImage.updateMessage');
     }
-    this.sprite.texture = Texture.from(message.image);
-    this.resizeImage();
+    const image = new Image();
+    image.onload = () => {
+      const source = new ImageSource({
+        resource: image,
+      });
+      const texture = new Texture({ source });
+      this.aspectRatio = texture.width / texture.height;
+      this.sprite.texture = texture;
+      this.reposition();
+    };
+    image.src = message.image;
   }
 
   get sheet(): Sheet {
@@ -108,19 +124,6 @@ export class CellsImage extends Container {
   }
 
   resizeImage = () => {
-    // We need to wait until the baseTexture loads from the string before we can
-    // calculate bounds. We do not have to wait if we have a user-set size.
-    // todo: ***
-    // if (!this.sprite.texture.source.) {
-    //   this.sprite.texture.source.once('update', this.resizeImage);
-    //   return;
-    // }
-
-    // store original size once it's loaded
-    if (!this.aspectRatio) {
-      this.aspectRatio = this.sprite.width / this.sprite.height;
-    }
-
     const table = this.table;
     this.imageBounds = this.sheet.getScreenRectangle(
       this.pos.x,
@@ -153,6 +156,9 @@ export class CellsImage extends Container {
   };
 
   reposition() {
+    // the image is not loaded yet
+    if (!this.aspectRatio) return;
+
     const top = this.sheet.offsets.getRowHeight(this.pos.y);
     const table = this.table;
     this.position.set(table.tableBounds.left, table.tableBounds.top + top);
