@@ -199,7 +199,7 @@ impl Session {
             }
         }
 
-        Ok(code.ok_or_else(|| Self::error("program did not exit cleanly"))?)
+        code.ok_or_else(|| Self::error("program did not exit cleanly"))
     }
 
     /// Close the session
