@@ -83,9 +83,9 @@ export class CellsLabels extends Container {
       );
       this.cellsTextHash.set(key, cellsTextHash);
     }
-    cellsTextHash.content.import(message.content);
+    cellsTextHash.content.import(message.content as Uint32Array<ArrayBuffer>);
     cellsTextHash.links = message.links;
-    cellsTextHash.newDrawRects = message.drawRects;
+    cellsTextHash.newTextLines = message.drawRects;
   }
 
   // Returns whether the cell has content by checking CellsTextHashContent.

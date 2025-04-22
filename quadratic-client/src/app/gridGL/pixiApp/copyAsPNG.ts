@@ -1,4 +1,5 @@
-import { Matrix, Renderer } from 'pixi.js';
+import type { Renderer } from 'pixi.js';
+import { autoDetectRenderer, Matrix } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
 
@@ -11,7 +12,8 @@ let renderer: Renderer | undefined;
 /** returns a dataURL to a copy of the selected cells */
 export const copyAsPNG = async (): Promise<Blob | null> => {
   if (!renderer) {
-    renderer = new Renderer({
+    renderer = await autoDetectRenderer({
+      preference: 'webgl',
       resolution,
       antialias: true,
       backgroundColor: 0xffffff,
@@ -39,17 +41,17 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     }
   }
   renderer.resize(imageWidth, imageHeight);
-  renderer.view.width = imageWidth;
-  renderer.view.height = imageHeight;
+  renderer.canvas.width = imageWidth;
+  renderer.canvas.height = imageHeight;
   pixiApp.prepareForCopying();
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
   const scale = imageWidth / (screenRect.width * resolution);
   transform.scale(scale, scale);
-  renderer.render(pixiApp.viewportContents, { transform });
+  renderer.render({ container: pixiApp.viewportContents, transform });
   pixiApp.cleanUpAfterCopying();
   return new Promise((resolve) => {
-    renderer!.view.toBlob?.((blob) => resolve(blob));
+    renderer!.canvas.toBlob?.((blob) => resolve(blob));
   });
 };

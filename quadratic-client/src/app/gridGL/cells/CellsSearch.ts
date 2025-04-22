@@ -28,9 +28,8 @@ export class CellsSearch extends Graphics {
           const sheet = sheets.getById(sheetId);
           if (!sheet) throw new Error('Expected sheet to be defined in CellsSearch.handleSearch');
           const offsets = sheet.getCellOffsets(Number(x), Number(y));
-          this.beginFill(colors.searchCell, current === index ? 1 : 0.1);
-          this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
-          this.endFill();
+          this.rect(offsets.x, offsets.y, offsets.width, offsets.height);
+          this.fill({ color: colors.searchCell, alpha: current === index ? 1 : 0.1 });
         }
       });
     }

@@ -37,8 +37,7 @@ import {
   SORT_BUTTON_PADDING,
   SORT_BUTTON_RADIUS,
 } from '@/shared/constants/gridConstants';
-import { removeItems } from '@pixi/utils';
-import { Point, Rectangle } from 'pixi.js';
+import { Point, Rectangle, removeItems } from 'pixi.js';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -429,7 +428,6 @@ export class CellLabel {
       }
       const charData = data.chars[charCode];
       if (!charData) continue;
-
       const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];

@@ -38,7 +38,6 @@ export class UICellMoving extends Container {
     }
     this.visible = true;
     this.graphics.clear();
-    this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     const sheet = sheets.sheet;
     if (moving.colRows) {
       this.drawMovingColRow();
@@ -54,7 +53,8 @@ export class UICellMoving extends Container {
     }
     const start = sheet.getCellOffsets(moving.toColumn, moving.toRow);
     const end = sheet.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
-    this.graphics.drawRect(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
+    this.graphics.rect(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
+    this.graphics.stroke({ color: this.borderColor(), width: MOVING_THICKNESS });
   }
 
   // draw moving columns and rows (this is the cut and paste version when dragging from the headers)
@@ -65,24 +65,21 @@ export class UICellMoving extends Container {
     }
     this.visible = true;
     this.graphics.clear();
-    this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     const sheet = sheets.sheet;
     let line = moving.isColumn ? sheet.getColumnX(moving.place) : sheet.getRowY(moving.place);
     const length = moving.indicies[moving.indicies.length - 1] - moving.indicies[0] + 1;
     const bounds = pixiApp.viewport.getVisibleBounds();
-    this.graphics.lineStyle();
 
     // draw the background
-    this.graphics.beginFill(getCSSVariableTint('primary'), COL_ROW_ALPHA);
     const left = moving.isColumn ? sheets.sheet.getColumnX(moving.place - moving.offset) : bounds.left;
     const right = moving.isColumn ? sheets.sheet.getColumnX(moving.place + length - moving.offset) : bounds.right;
     const top = moving.isColumn ? bounds.top : sheets.sheet.getRowY(moving.place - moving.offset);
     const bottom = moving.isColumn ? bounds.bottom : sheets.sheet.getRowY(moving.place + length - moving.offset);
-    this.graphics.drawRect(left, top, right - left, bottom - top);
-    this.graphics.endFill();
+    this.graphics.rect(left, top, right - left, bottom - top);
+    this.graphics.fill({ color: getCSSVariableTint('primary'), alpha: COL_ROW_ALPHA });
+    this.graphics.stroke({ color: this.borderColor(), width: MOVING_THICKNESS });
 
     // draw the line indicating where the move will be inserted
-    this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     if (moving.isColumn) {
       if (moving.offset !== 0) {
         line = sheet.getColumnX(moving.place);
@@ -96,6 +93,7 @@ export class UICellMoving extends Container {
       this.graphics.moveTo(bounds.left, line);
       this.graphics.lineTo(bounds.right, line);
     }
+    this.graphics.stroke({ color: this.borderColor(), width: MOVING_THICKNESS });
   }
 
   // draw moving columns and rows (this is the normal cell move for entire rows and columns)
@@ -106,7 +104,6 @@ export class UICellMoving extends Container {
     }
     this.visible = true;
     this.graphics.clear();
-    this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     const sheet = sheets.sheet;
     const isColumn = moving.colRows === 'columns';
     const bounds = pixiApp.viewport.getVisibleBounds();
@@ -125,6 +122,7 @@ export class UICellMoving extends Container {
       this.graphics.moveTo(bounds.left, endY);
       this.graphics.lineTo(bounds.right, endY);
     }
+    this.graphics.stroke({ color: this.borderColor(), width: MOVING_THICKNESS });
   }
 
   update = () => {
