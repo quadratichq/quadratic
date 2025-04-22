@@ -67,6 +67,8 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
 
+export const debugShowVersionCheck = debug && true;
+
 export const debugSaveURLState = debug && false;
 
 // --------
