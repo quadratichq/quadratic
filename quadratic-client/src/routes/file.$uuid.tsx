@@ -11,6 +11,7 @@ import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -21,10 +22,8 @@ import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSc
 import { useCallback } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
-
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
-import { EmptyPage } from '../shared/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 

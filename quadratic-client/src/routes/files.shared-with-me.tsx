@@ -1,11 +1,12 @@
+import { debugShowUILogs } from '@/app/debugFlags';
+import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { apiClient } from '@/shared/api/apiClient';
+import { EmptyPage } from '@/shared/components/EmptyPage';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
 import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData, useRouteError } from 'react-router';
-import { debugShowUILogs } from '../app/debugFlags';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { EmptyPage, EmptyState } from '../shared/components/Empty';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClient.files.list({ shared: 'with-me' });

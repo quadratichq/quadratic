@@ -1,4 +1,4 @@
-import { EmptyPage } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';

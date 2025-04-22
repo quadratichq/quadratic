@@ -1,6 +1,6 @@
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
-import { EmptyPage } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';

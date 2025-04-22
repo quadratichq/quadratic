@@ -1,6 +1,6 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { EmptyState } from '@/shared/components/Empty';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import type {

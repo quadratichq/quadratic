@@ -1,5 +1,5 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { EmptyPage } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouteError } from 'react-router';
 import { debugShowUILogs } from '../app/debugFlags';

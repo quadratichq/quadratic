@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { EmptyPage } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { Button } from '@/shared/shadcn/ui/button';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';

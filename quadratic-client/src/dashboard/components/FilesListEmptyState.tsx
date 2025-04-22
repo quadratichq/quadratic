@@ -1,5 +1,5 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { EmptyState } from '@/shared/components/Empty';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { ROUTES } from '@/shared/constants/routes';
 import { FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';

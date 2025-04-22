@@ -5,7 +5,7 @@ import { FilesListViewControls } from '@/dashboard/components/FilesListViewContr
 import { Layout, Order, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import type { Action as FilesAction } from '@/routes/api.files.$uuid';
-import { EmptyState } from '@/shared/components/Empty';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
