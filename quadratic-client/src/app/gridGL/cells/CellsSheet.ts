@@ -60,12 +60,6 @@ export class CellsSheet extends Container {
     super.destroy({ children: true });
   }
 
-  // used to render all cellsTextHashes to warm up the GPU
-  showAll() {
-    this.visible = true;
-    this.cellsLabels.showAll();
-  }
-
   show(bounds: Rectangle): void {
     this.visible = true;
     this.cellsLabels.show(bounds);
