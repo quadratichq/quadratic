@@ -52,47 +52,6 @@ async fn get_connection(
     Ok(((&connection).into(), connection))
 }
 
-// /// Get the connection details from the API and create a PostgresConnection.
-// async fn get_connection(
-//     state: &State,
-//     claims: &Claims,
-//     connection_id: &Uuid,
-// ) -> Result<(PostgresConnection, ApiConnection<PostgresConnection>)> {
-//     let connection = if cfg!(not(test)) {
-//         get_api_connection(state, "", &claims.sub, connection_id).await?
-//     } else {
-//         let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
-//         ApiConnection {
-//             uuid: Uuid::new_v4(),
-//             name: "".into(),
-//             r#type: "".into(),
-//             created_date: "".into(),
-//             updated_date: "".into(),
-//             type_details: PostgresConnection {
-//                 // host: "0.0.0.0".into(),
-//                 // port: Some("5433".into()),
-//                 // username: Some("user".into()),
-//                 // password: Some("password".into()),
-//                 // database: "postgres-connection".into(),
-//                 host: "localhost".into(),
-//                 port: Some("5432".into()),
-//                 username: Some("dbuser".into()),
-//                 password: Some("dbpassword".into()),
-//                 database: "mydb".into(),
-//                 use_ssh: Some(true),
-//                 ssh_host: Some(ssh_config.host.to_string()),
-//                 ssh_port: Some(ssh_config.port.to_string()),
-//                 ssh_username: Some(ssh_config.username.to_string()),
-//                 ssh_key: Some(ssh_config.private_key.to_string()),
-//             },
-//         }
-//     };
-
-//     let pg_connection = PostgresConnection::from(&connection);
-
-//     Ok((pg_connection, connection))
-// }
-
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
@@ -132,7 +91,16 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (mut connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+
+    schema_with_connection(connection, api_connection).await
+}
+
+/// Get the schema of the database
+pub(crate) async fn schema_with_connection(
+    mut connection: PostgresConnection,
+    api_connection: ApiConnection<PostgresConnection>,
+) -> Result<Json<Schema>> {
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
@@ -156,12 +124,10 @@ pub(crate) async fn schema(
 pub mod tests {
     use super::*;
     use crate::{
-        num_vec, test_connection,
-        test_util::{
-            get_claims, new_state, new_team_id_with_header, response_bytes, str_vec,
-            validate_parquet,
-        },
+        num_vec,
+        test_util::{new_state, response_bytes, str_vec, validate_parquet},
     };
+
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
     use bytes::Bytes;
@@ -224,10 +190,9 @@ pub mod tests {
     #[tokio::test]
     #[traced_test]
     async fn postgres_schema() {
-        let connection_id = Uuid::new_v4();
-        let (_, headers) = new_team_id_with_header().await;
-        let state = Extension(new_state().await);
-        let response = schema(Path(connection_id), headers, state, get_claims())
+        let api_connection = get_connection(false);
+        let connection = (&api_connection).into();
+        let response = schema_with_connection(connection, api_connection)
             .await
             .unwrap();
 
@@ -440,13 +405,13 @@ pub mod tests {
     #[traced_test]
     async fn postgres_query_all_data_types() {
         let connection_id = Uuid::new_v4();
-        let (_, headers) = new_team_id_with_header().await;
         let sql_query = SqlQuery {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,
         };
         let state = Extension(new_state().await);
-        let data = query(headers, state, get_claims(), Json(sql_query))
+        let connection = get_connection(false);
+        let data = query_with_connection(state, Json(sql_query), connection.type_details)
             .await
             .unwrap();
         let response = data.into_response();
@@ -538,7 +503,6 @@ pub mod tests {
     #[traced_test]
     async fn postgres_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
-        let (_, headers) = new_team_id_with_header().await;
         let sql_query = SqlQuery {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,

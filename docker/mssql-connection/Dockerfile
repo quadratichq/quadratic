@@ -40,13 +40,10 @@ RUN chmod 600 /root/.ssh/authorized_keys
 # Create SQL initialization script
 RUN mkdir -p /sql-scripts
 RUN echo "CREATE DATABASE mydb;" > /sql-scripts/01-create-db.sql
-RUN echo "CREATE DATABASE AllTypes;" > /sql-scripts/02-create-db.sql
-RUN echo "CREATE LOGIN dbuser WITH PASSWORD='$MSSQL_SA_PASSWORD';" > /sql-scripts/03-create-login.sql
-RUN echo "ALTER SERVER ROLE sysadmin ADD MEMBER dbuser;" > /sql-scripts/04-add-role.sql
+RUN echo "CREATE LOGIN dbuser WITH PASSWORD='$MSSQL_SA_PASSWORD';" > /sql-scripts/02-create-login.sql
+RUN echo "ALTER SERVER ROLE sysadmin ADD MEMBER dbuser;" > /sql-scripts/03-add-role.sql
 RUN echo "USE mydb; CREATE USER dbuser FOR LOGIN dbuser;" > /sql-scripts/04-create-user.sql
 RUN echo "USE mydb; ALTER ROLE db_owner ADD MEMBER dbuser;" > /sql-scripts/05-add-db-role.sql
-RUN echo "USE AllTypes; CREATE USER dbuser FOR LOGIN dbuser;" > /sql-scripts/06-create-user.sql
-RUN echo "USE AllTypes; ALTER ROLE db_owner ADD MEMBER dbuser;" > /sql-scripts/07-add-db-role.sql
 
 # Create a simple table with sample data
 RUN echo "USE mydb; \
@@ -82,7 +79,6 @@ RUN echo '    for script in /sql-scripts/*.sql; do' >> /init_db.sh
 RUN echo '        echo "Executing $script"' >> /init_db.sh
 RUN echo '        sqlcmd -i "$script" && echo "Success: $script" || echo "Failed: $script"' >> /init_db.sh
 RUN echo '    done' >> /init_db.sh
-RUN echo '    sqlcmd -i /docker-entrypoint-initdb.d/seed_db.sql &' >> /init_db.sh
 RUN echo '    echo "Database initialization attempted. Check for errors above."' >> /init_db.sh
 RUN echo 'else' >> /init_db.sh
 RUN echo '    echo "sqlcmd not found. You will need to initialize the database manually."' >> /init_db.sh

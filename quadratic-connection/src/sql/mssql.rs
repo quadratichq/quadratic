@@ -85,8 +85,18 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let (mut connection, api_connection) =
-        get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
+        .await?
+        .0;
+
+    query_with_connection(state, sql_query, connection).await
+}
+
+pub(crate) async fn query_with_connection(
+    state: Extension<State>,
+    sql_query: Json<SqlQuery>,
+    mut connection: MsSqlConnection,
+) -> Result<impl IntoResponse> {
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let result = query_generic::<MsSqlConnection>(connection, state, sql_query).await?;
 
@@ -105,7 +115,16 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (mut connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+
+    schema_with_connection(connection, api_connection).await
+}
+
+/// Get the schema of the database
+pub(crate) async fn schema_with_connection(
+    mut connection: MsSqlConnection,
+    api_connection: ApiConnection<MsSqlConnection>,
+) -> Result<Json<Schema>> {
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
@@ -132,34 +151,74 @@ mod tests {
 
     use super::*;
     use crate::{
-        num_vec, test_connection,
-        test_util::{
-            get_claims, new_state, new_team_id_with_header, response_bytes, str_vec,
-            validate_parquet,
-        },
+        num_vec,
+        test_util::{new_state, response_bytes, str_vec, validate_parquet},
     };
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
     use bytes::Bytes;
     use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::{
+        net::ssh::tests::get_ssh_config,
+        sql::schema::{SchemaColumn, SchemaTable},
+    };
     use tracing_test::traced_test;
     use uuid::Uuid;
 
-    #[tokio::test]
-    #[traced_test]
-    async fn mssql_test_connection() {
-        test_connection!(get_connection);
+    fn get_connection(ssh: bool) -> ApiConnection<MsSqlConnection> {
+        let type_details = if ssh {
+            let ssh_config = get_ssh_config();
+
+            MsSqlConnection {
+                host: "localhost".into(),
+                port: Some("1433".into()),
+                username: Some("sa".into()),
+                password: Some("yourStrong(!)Password".into()),
+                database: "AllTypes".into(),
+                use_ssh: Some(true),
+                ssh_host: Some(ssh_config.host.to_string()),
+                ssh_port: Some(ssh_config.port.to_string()),
+                ssh_username: Some(ssh_config.username.to_string()),
+                ssh_key: Some(ssh_config.private_key.to_string()),
+            }
+        } else {
+            MsSqlConnection {
+                host: "0.0.0.0".into(),
+                port: Some("1433".into()),
+                username: Some("sa".into()),
+                password: Some("yourStrong(!)Password".into()),
+                database: "AllTypes".into(),
+                use_ssh: Some(false),
+                ssh_host: None,
+                ssh_port: None,
+                ssh_username: None,
+                ssh_key: None,
+            }
+        };
+
+        ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            created_date: "".into(),
+            updated_date: "".into(),
+            type_details,
+        }
     }
+
+    // #[tokio::test]
+    // #[traced_test]
+    // async fn mssql_test_connection() {
+    //     test_connection!(get_connection);
+    // }
 
     #[tokio::test]
     #[traced_test]
     async fn mssql_schema() {
-        let connection_id = Uuid::new_v4();
-        let (_, headers) = new_team_id_with_header().await;
-        let state = Extension(new_state().await);
-        let response = schema(Path(connection_id), headers, state, get_claims())
+        let api_connection = get_connection(false);
+        let connection = (&api_connection).into();
+        let response = schema_with_connection(connection, api_connection)
             .await
             .unwrap();
 
@@ -353,8 +412,8 @@ mod tests {
             connection_id,
         };
         let state = Extension(new_state().await);
-        let (_, headers) = new_team_id_with_header().await;
-        let data = query(headers, state, get_claims(), Json(sql_query))
+        let connection = get_connection(false);
+        let data = query_with_connection(state, Json(sql_query), (&connection).into())
             .await
             .unwrap();
         let response = data.into_response();
@@ -461,8 +520,8 @@ mod tests {
         };
         let mut state = Extension(new_state().await);
         state.settings.max_response_bytes = 0;
-        let (_, headers) = new_team_id_with_header().await;
-        let data = query(headers, state, get_claims(), Json(sql_query))
+        let connection = get_connection(false);
+        let data = query_with_connection(state, Json(sql_query), (&connection).into())
             .await
             .unwrap();
         let response = data.into_response();

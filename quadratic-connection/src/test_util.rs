@@ -31,10 +31,9 @@ use crate::state::State;
 macro_rules! test_connection {
     ( $get_connection:expr ) => {{
         let connection_id = Uuid::new_v4();
-        let (team_id, _) = new_team_id_with_header().await;
+        let (team_id, headers) = new_team_id_with_header().await;
         let state = Extension(new_state().await);
         let claims = get_claims();
-        let headers = http::HeaderMap::new();
         let (mysql_connection, _) = $get_connection(&state, &claims, &connection_id, &team_id)
             .await
             .unwrap();

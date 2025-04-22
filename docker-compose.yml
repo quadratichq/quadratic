@@ -618,43 +618,27 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mysql-ssh
 
-  mssql-connection:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: mssql-connection
-    ports:
-      - 1433:1433
-    environment:
-      ACCEPT_EULA: Y
-    volumes:
-      - mssql-connection-data:/var/opt/mssql
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "/opt/mssql-tools18/bin/sqlcmd",
-          "-S",
-          "localhost",
-          "-U",
-          "sa",
-          "-P",
-          "yourStrong(!)Password",
-          "-Q",
-          "SELECT 1",
-          "-C",
-          "-N",
-          "-t",
-          "30",
-        ]
-      interval: 10s
-      timeout: 5s
-      start_period: 30s
-      retries: 5
-    command: >
-      bash -c " /opt/mssql/bin/sqlservr & sleep 10 && /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/create_db.sql -C -N -t 30 && /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/seed_db.sql -C -N -t 30 && tail -f /dev/null"
-    profiles:
-      - quadratic-connection
-      - quadratic-connection-db
-      - quadratic-connection-db-mssql
+  # mssql-connection:
+  #   build:
+  #     context: .
+  #     # platforms:
+  #     #   - "linux/amd64"
+  #     dockerfile: docker/mssql-connection/Dockerfile
+  #   restart: always
+  #   container_name: mssql-connection
+  #   ports:
+  #     - "1433:1433"
+  #   environment:
+  #     MSSQL_SA_PASSWORD: yourStrong(!)Password
+  #     # MSSQL_PID: Evaluation
+  #   volumes:
+  #     - mssql-connection-data:/var/opt/mssql
+  #     - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
+  #   profiles:
+  #     - quadratic-connection
+  #     - quadratic-connection-db
+  #     - quadratic-connection-db-mssql
+
   ssh-mssql-connection:
     build:
       context: .
@@ -664,16 +648,18 @@ services:
     restart: always
     container_name: ssh-mssql-connection
     ports:
+      - "1433:1433"
       - "2224:22"
     environment:
       MSSQL_SA_PASSWORD: yourStrong(!)Password
-      MSSQL_PID: Evaluation
+      # MSSQL_PID: Evaluation
     volumes:
       - ssh-mssql-connection-data:/var/opt/mssql
-      - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
+      - ./docker/ssh-mssql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
       - quadratic-connection-db
+      - quadratic-connection-db-mssql  
       - quadratic-connection-db-mssql-ssh  
 
 volumes:
