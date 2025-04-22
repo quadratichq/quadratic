@@ -428,7 +428,9 @@ export class CellsTextHash {
 
   adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {
     const { delta, column, row } = options;
+
     let changed = false;
+
     if (column !== undefined) {
       if (this.AABB.x < 0) {
         this.viewRectangle.x += delta;
@@ -455,8 +457,6 @@ export class CellsTextHash {
           }
         }
       });
-      const c = this.special.adjustWidth(column, delta);
-      changed = changed || c;
     } else if (row !== undefined) {
       if (this.AABB.y < 0 && this.AABB.y <= row) {
         this.viewRectangle.y += delta;
@@ -483,13 +483,17 @@ export class CellsTextHash {
           }
         }
       });
-      const c = this.special.adjustHeight(row, delta);
-      changed = changed || c;
     }
-    if (changed && debugShowHashUpdates)
+
+    const specialsChanged = this.special.adjustHeadings(options);
+
+    changed = changed || specialsChanged;
+
+    if (changed && debugShowHashUpdates) {
       console.log(
         `[CellsTextHash] adjustHeadings for ${this.hashX}, ${this.hashY} because of changes in column: ${column}, row: ${row}`
       );
+    }
 
     return changed;
   };
