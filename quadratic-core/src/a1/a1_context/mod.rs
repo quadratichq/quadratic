@@ -1,5 +1,5 @@
-//! Contains context for use by quadratic-rust-client (and core) when using A1.
-//! This is needed because rust-client does not have access to the grid, so it
+//! Contains context for use by quadratic-core when using A1. This is needed
+//! because quadratic-client's core does not have access to the grid, so it
 //! needs a mapping of sheet names to ids, table information, and (eventually)
 //! named ranges.
 

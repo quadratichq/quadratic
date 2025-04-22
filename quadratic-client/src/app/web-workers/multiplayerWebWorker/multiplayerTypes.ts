@@ -1,4 +1,4 @@
-import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { SheetPosTS } from '@/app/shared/types/size';
 
 // todo: this should be replaced with automatic types created by export_types.rs

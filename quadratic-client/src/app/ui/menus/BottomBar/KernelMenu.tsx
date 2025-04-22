@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';

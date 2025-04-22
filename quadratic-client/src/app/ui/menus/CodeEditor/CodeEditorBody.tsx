@@ -12,7 +12,7 @@ import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { provideCompletionItems, provideHover } from '@/app/quadratic-core/quadratic_core';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
