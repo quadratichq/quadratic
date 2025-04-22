@@ -51,43 +51,6 @@ async fn get_connection(
     Ok(((&connection).into(), connection))
 }
 
-// /// Get the connection details from the API and create a MySqlConnection.
-// async fn get_connection(
-//     state: &State,
-//     claims: &Claims,
-//     connection_id: &Uuid,
-//     team_id: &Uuid,
-// ) -> Result<(MySqlConnection, ApiConnection<MySqlConnection>)> {
-//     let connection = if cfg!(not(test)) {
-//         get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
-//     } else {
-//         let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
-//         ApiConnection {
-//             uuid: Uuid::new_v4(),
-//             name: "".into(),
-//             r#type: "".into(),
-//             created_date: "".into(),
-//             updated_date: "".into(),
-//             type_details: MySqlConnection {
-//                 host: "0.0.0.0".into(),
-//                 port: Some("3306".into()),
-//                 username: Some("user".into()),
-//                 password: Some("password".into()),
-//                 database: "mysql-connection".into(),
-//                 use_ssh: Some(true),
-//                 ssh_host: Some(ssh_config.host.to_string()),
-//                 ssh_port: Some(ssh_config.port.to_string()),
-//                 ssh_username: Some(ssh_config.username.to_string()),
-//                 ssh_key: Some(ssh_config.private_key.to_string()),
-//             },
-//         }
-//     };
-
-//     let mysql_connection = MySqlConnection::from(&connection);
-
-//     Ok((mysql_connection, connection))
-// }
-
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
@@ -177,14 +140,15 @@ mod tests {
 
     fn get_connection(ssh: bool) -> ApiConnection<MySqlConnection> {
         let type_details = if ssh {
-            let ssh_config = get_ssh_config();
+            let mut ssh_config = get_ssh_config();
+            ssh_config.port = 2223;
 
             MySqlConnection {
                 host: "localhost".into(),
                 port: Some("3306".into()),
-                username: Some("user".into()),
-                password: Some("password".into()),
-                database: "mysql-connection".into(),
+                username: Some("dbuser".into()),
+                password: Some("dbpassword".into()),
+                database: "mydb".into(),
                 use_ssh: Some(true),
                 ssh_host: Some(ssh_config.host.to_string()),
                 ssh_port: Some(ssh_config.port.to_string()),
@@ -497,5 +461,23 @@ mod tests {
 
         let body = response_bytes(response).await;
         assert_eq!(body, Bytes::new());
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn mysql_test_connection_with_ssh() {
+        let connection = get_connection(true);
+        let result = query_with_connection(
+            Extension(new_state().await),
+            Json(SqlQuery {
+                query: "SELECT * FROM INFORMATION_SCHEMA.COLUMNS LIMIT 1".into(),
+                connection_id: Uuid::new_v4(),
+            }),
+            connection.type_details,
+        )
+        .await
+        .unwrap();
+
+        println!("result: {:?}", result.into_response());
     }
 }

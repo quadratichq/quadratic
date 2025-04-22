@@ -168,7 +168,8 @@ mod tests {
 
     fn get_connection(ssh: bool) -> ApiConnection<MsSqlConnection> {
         let type_details = if ssh {
-            let ssh_config = get_ssh_config();
+            let mut ssh_config = get_ssh_config();
+            ssh_config.port = 2224;
 
             MsSqlConnection {
                 host: "localhost".into(),
@@ -530,5 +531,23 @@ mod tests {
 
         let body = response_bytes(response).await;
         assert_eq!(body, Bytes::new());
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn mssql_test_connection_with_ssh() {
+        let connection = get_connection(true);
+        let result = query_with_connection(
+            Extension(new_state().await),
+            Json(SqlQuery {
+                query: "SELECT * FROM ALL_NATIVE_DATA_TYPES".into(),
+                connection_id: Uuid::new_v4(),
+            }),
+            connection.type_details,
+        )
+        .await
+        .unwrap();
+
+        println!("result: {:?}", result.into_response());
     }
 }
