@@ -1,14 +1,13 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import dbClient from '../../dbClient';
 import { getTeamConnection } from '../../middleware/getTeamConnection';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { decryptFromEnv, generateSshKeys } from '../../utils/crypto';
+import { decryptFromEnv } from '../../utils/crypto';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -30,7 +29,6 @@ async function handler(
     connection,
     team: {
       userMakingRequest: { permissions: teamPermissions },
-      team: { sshPublicKey, sshPrivateKey, id: teamId },
     },
   } = await getTeamConnection({ connectionUuid, userId, teamUuid });
 
@@ -39,20 +37,7 @@ async function handler(
     throw new ApiError(403, 'You do not have permission to view this connection');
   }
 
-  // generate SSH keys if they don't exist and update the team
-  if (sshPublicKey === null || sshPrivateKey === null) {
-    const { privateKey, publicKey } = await generateSshKeys();
-    await dbClient.team.update({
-      where: { id: teamId },
-      data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
-    });
-
-    sshPublicKey = publicKey;
-    sshPrivateKey = privateKey;
-  }
-
   const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString()));
-  typeDetails.sshKey = sshPublicKey ? Buffer.from(sshPublicKey).toString('base64') : undefined;
 
   return res.status(200).json({
     uuid: connection.uuid,

@@ -7,6 +7,9 @@ import { forwardRef } from 'react';
 type InputProps = React.ComponentProps<typeof Input>;
 
 export const ConnectionInputSshKey = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+  // decode the ssh key from base64 to a string
+  const sshKey = atob(props.value as string);
+
   return (
     <div className="relative">
       <Input
@@ -14,6 +17,7 @@ export const ConnectionInputSshKey = forwardRef<HTMLInputElement, InputProps>((p
         type={'password'}
         className="pr-8"
         ref={ref}
+        readOnly
         {...props}
       />
       <Button
@@ -21,7 +25,7 @@ export const ConnectionInputSshKey = forwardRef<HTMLInputElement, InputProps>((p
         size="sm"
         className="absolute right-0.5 top-2 text-muted-foreground hover:bg-transparent"
         type="button"
-        onClick={() => navigator.clipboard.writeText(props.value as string)}
+        onClick={() => navigator.clipboard.writeText(sshKey)}
       >
         <Icon>
           <CopyIcon className="h-4 w-4" />

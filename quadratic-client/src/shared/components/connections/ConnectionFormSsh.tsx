@@ -1,3 +1,4 @@
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { ConnectionInputSshKey } from '@/shared/components/connections/ConnectionInputSshKey';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -13,6 +14,9 @@ const DEFAULTS = {
 };
 
 const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean }) => {
+  const { data } = useConnectionsFetcher();
+  const sshPublicKey = data?.sshPublicKey;
+
   if (!showSsh) return null;
 
   return (
@@ -67,7 +71,7 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
             <FormItem>
               <FormLabel>SSH Key</FormLabel>
               <FormControl>
-                <ConnectionInputSshKey {...field} />
+                <ConnectionInputSshKey value={sshPublicKey?.sshPublicKey} />
               </FormControl>
               <FormMessage />
             </FormItem>

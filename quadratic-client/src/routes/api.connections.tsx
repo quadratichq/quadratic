@@ -35,11 +35,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export type GetConnections = Awaited<ReturnType<typeof getTeamConnections>>;
 async function getTeamConnections(teamUuid: string) {
-  const [connections, staticIps] = await Promise.all([
+  const [connections, staticIps, sshPublicKey] = await Promise.all([
     apiClient.connections.list(teamUuid),
     connectionClient.staticIps.list(),
+    apiClient.teams.sshPublicKey(teamUuid),
   ]);
-  return { ok: true, connections, staticIps };
+  return { ok: true, connections, staticIps, sshPublicKey };
 }
 
 export type GetConnection = Awaited<ReturnType<typeof getConnection>>;

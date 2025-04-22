@@ -104,6 +104,13 @@ export const apiClient = {
         );
       },
     },
+    sshPublicKey(teamUuid: string) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/ssh-public-key`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/ssh-public-key.GET.response']
+      );
+    },
   },
 
   files: {
