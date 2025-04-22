@@ -1,7 +1,7 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation } from '@/app/quadratic-core-types';
-import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionToJsSelection } from '@/app/quadratic-core/quadratic_core';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import type { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
 import { Button } from '@/shared/shadcn/ui/button';

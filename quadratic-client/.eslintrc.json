@@ -15,5 +15,5 @@
     "react-compiler/react-compiler": "error",
     "prettier/prettier": "error"
   },
-  "ignorePatterns": ["node_modules/*", "src/quadratic-core/*", "src/quadratic-rust-client/*"]
+  "ignorePatterns": ["node_modules/*", "src/quadratic-core/*"]
 }

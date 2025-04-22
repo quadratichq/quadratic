@@ -9,7 +9,7 @@ import {
 import { bigIntReplacer } from '@/app/bigint';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation, ValidationRule } from '@/app/quadratic-core-types';
-import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { ValidationRuleSimple, ValidationUndefined } from '@/app/ui/menus/Validations/Validation/validationType';
 import { validationRuleSimple, ValidationRuleSimpleValues } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';

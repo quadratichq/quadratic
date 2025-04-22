@@ -16,10 +16,6 @@ use crate::{Pos, grid::Sheet};
 
 use super::Direction;
 
-// todo: ideally, this should be part of rust-client and not core--right now we
-// rely on has_content, which is a sheet fn. We should port the TS
-// CellsTextHashContent to rust and use that as part of the A1Context instead.
-
 // todo: this should not return a Pos but should directly change the
 // A1Selection--ie, it should handle the entire keyboard movement logic
 

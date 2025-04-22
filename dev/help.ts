@@ -10,10 +10,9 @@ export const helpCLI =
   "\n     -f, --files           Watch the quadratic-files directory" +
   "\n     -n, --connection       Watch the quadratic-connection directory" +
   "\n     -y, --python          Watch the quadratic-kernel/python-wasm directory" +
-  "\n     -e, --rustClient      Watch the quadratic-rust-client directory" +
   "\n     -s, --skipTypes       Skip WASM types compilation" +
   "\n     -l, --all             Watch all directories" +
-  "\n     -p, --perf            Run quadratic-core and rust-client in perf mode (slower linking but faster runtime)" +
+  "\n     -p, --perf            Run quadratic-core in perf mode (slower linking but faster runtime)" +
   "\n     -R, --hideReact       Hide React output" +
   "\n     -A, --hideApi         Hide API output" +
   "\n     -C, --hideCore        Hide Core output" +
@@ -21,7 +20,6 @@ export const helpCLI =
   "\n     -F, --hideFiles       Hide Files output" +
   "\n     -N, --hideConnection   Hide Connection output" +
   "\n     -Y, --hidePython      Hide Python output" +
-  "\n     -O, --hideRustClient  Hide RustClient output" +
   "\n     -T, --hideTypes       Hide Types output" +
   "\n     -L, --servicesLocal   Set Redis & Postgres as running locally" +
   "\n     -d, --dark            Use dark theme" +
@@ -32,7 +30,7 @@ export const helpKeyboard =
   "\n\nPress:" +
   "\n   a c   e m f o y - Toggle watch for component" +
   "\n   A C T E M F O Y - Toggle showing logs for component" +
-  "\n                 p - Toggle performance build for Core and RustClient" +
+  "\n                 p - Toggle performance build for Core" +
   "\n                 r - Restart React" +
   "\n                 t - Rebuild WASM types from Core for React" +
   "\n                 l - Watch all" +
