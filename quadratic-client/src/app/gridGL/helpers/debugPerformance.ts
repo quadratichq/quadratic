@@ -1,4 +1,6 @@
 import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '@/app/debugFlags';
+import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Container } from 'pixi.js';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
@@ -28,24 +30,38 @@ export function debugRendererLight(on: boolean): void {
 
 let count = 0;
 let visibleCount = 0;
+let cellsSheet = 0;
+let labelMeshEntry = 0;
 function countChildren(parent: Container): void {
   count++;
   if (parent.visible) {
     visibleCount++;
   }
-  parent.children.forEach((child) => {
-    if (child instanceof Container) {
-      countChildren(child);
-    }
-  });
+  if (parent.visible && parent instanceof CellsTextHash) {
+    labelMeshEntry++;
+  }
+  if (parent.visible && parent instanceof CellsSheet) {
+    cellsSheet++;
+  }
+  if (parent.visible) {
+    parent.children.forEach((child) => {
+      if (child instanceof Container) {
+        countChildren(child);
+      }
+    });
+  }
 }
 
 export function debugShowChildren(parent: Container, name?: string): void {
   if (!debugShowCountRenderedObjects) return;
   count = 0;
   visibleCount = 0;
+  labelMeshEntry = 0;
+  cellsSheet = 0;
   countChildren(parent);
-  console.log(`[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
+  console.log(
+    `[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible | ${labelMeshEntry} labelMeshEntry | ${cellsSheet} cellsSheet`
+  );
 }
 
 export function debugShowCachedCounts(): void {

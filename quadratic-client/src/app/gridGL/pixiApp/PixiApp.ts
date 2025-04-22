@@ -145,6 +145,7 @@ export class PixiApp {
   // called after RenderText has no more updates to send
   firstRenderComplete = () => {
     if (this.waitingForFirstRender) {
+      this.cellsSheets.showAll(sheets.current);
       this.renderer.render(this.stage);
       this.waitingForFirstRender();
       this.waitingForFirstRender = undefined;

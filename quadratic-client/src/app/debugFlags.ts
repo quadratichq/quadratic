@@ -29,7 +29,7 @@ export const debugShowOfflineTransactions = debug && false;
 export const debugShowTime = debug && true;
 
 // counts number of children and which are visible in the viewport
-export const debugShowCountRenderedObjects = debug && true;
+export const debugShowCountRenderedObjects = debug && false;
 
 // shows count of cached sprites for formatting
 export const debugShowCachedSpriteCounts = debug && false;
