@@ -244,13 +244,14 @@ impl GridController {
                 let mut can_delete_column = false;
                 let mut save_data_table_anchors = vec![];
                 let mut delete_data_tables = vec![];
+                let mut data_tables_automatically_deleted = vec![];
 
                 if let Ok(data_tables) = sheet.data_tables_within_rect(rect, false) {
                     for data_table_pos in data_tables {
                         if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
                             let data_table_full_rect =
                                 data_table.output_rect(data_table_pos.to_owned(), false);
-                            let mut data_table_rect = data_table_full_rect.clone();
+                            let mut data_table_rect = data_table_full_rect;
                             data_table_rect.min.y += data_table.y_adjustment(true);
 
                             let is_full_table_selected = rect.contains_rect(&data_table_rect);
@@ -296,6 +297,7 @@ impl GridController {
                                 // we don't need to manually delete the table as
                                 // the SetCellValues operation below will do
                                 // this properly
+                                data_tables_automatically_deleted.push(data_table_pos);
                             }
                             if can_delete_column {
                                 // adjust for hidden columns, reverse the order to delete from right to left
@@ -315,7 +317,9 @@ impl GridController {
                                     flatten: false,
                                     select_table: false,
                                 });
-                            } else {
+                            } else if !delete_data_tables.contains(&data_table_pos)
+                                && !data_tables_automatically_deleted.contains(&data_table_pos)
+                            {
                                 // find the intersection of the selection rect and the data table rect
                                 if let Some(intersection) = rect.intersection(&data_table_rect) {
                                     ops.push(Operation::SetDataTableAt {
@@ -682,7 +686,7 @@ mod test {
     }
 
     #[test]
-    fn problematic_number() {
+    fn test_problematic_number() {
         let gc = GridController::test();
         let value = "980E92207901934";
         let (cell_value, _) = gc.string_to_cell_value(value, true);
@@ -690,7 +694,7 @@ mod test {
     }
 
     #[test]
-    fn delete_cells_operations() {
+    fn test_delete_cells_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
@@ -711,6 +715,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
+
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
         let operations = gc.delete_cells_operations(&selection, false);
         let sheet_pos = SheetPos {
@@ -718,17 +723,19 @@ mod test {
             y: 2,
             sheet_id,
         };
-        let values = CellValues::new(2, 1);
 
         assert_eq!(operations.len(), 1);
         assert_eq!(
             operations,
-            vec![Operation::SetCellValues { sheet_pos, values },]
+            vec![Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::new(2, 1)
+            },]
         );
     }
 
     #[test]
-    fn delete_columns() {
+    fn test_delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {

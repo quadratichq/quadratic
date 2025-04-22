@@ -457,24 +457,19 @@ impl A1Selection {
                 if table.sheet_id == self.sheet_id {
                     if let Some(rect) = range.to_rect() {
                         // if the selection intersects the name ui row of the table
-                        if table.show_ui
+                        if (table.show_ui
                             && table.show_name
                             && rect.intersects(Rect::new(
                                 table.bounds.min.x,
                                 table.bounds.min.y,
                                 table.bounds.max.x,
                                 table.bounds.min.y,
-                            ))
-                        {
-                            names.push(table.table_name.clone());
-                        }
-                        // or if the selection contains the entire table
-                        else if rect.contains_rect(&table.bounds) {
-                            names.push(table.table_name.clone());
-                        }
-                        // or if the selection contains the code cell of a code table
-                        else if table.language != CodeCellLanguage::Import
-                            && rect.contains(table.bounds.min)
+                            ))) ||
+                            // or if the selection contains the entire table
+                            rect.contains_rect(&table.bounds) ||
+                            // or if the selection contains the code cell of a code table
+                            (table.language != CodeCellLanguage::Import
+                                && rect.contains(table.bounds.min))
                         {
                             names.push(table.table_name.clone());
                         }
@@ -482,6 +477,8 @@ impl A1Selection {
                 }
             }),
         });
+        names.sort();
+        names.dedup();
         names
     }
 
@@ -1046,8 +1043,6 @@ mod tests {
 
         // Test mixed selection with tables and regular ranges
         let selection = A1Selection::test_a1_context("D1:E15,Table1,C3", &context);
-        // todo: when code is fixed, this should be changed
-        // assert_eq!(selection.selected_table_names(&context), vec!["Table1"]);
         assert_eq!(
             selection.selected_table_names(&context),
             vec!["Table1", "Table2"]
