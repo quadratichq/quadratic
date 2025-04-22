@@ -16,6 +16,7 @@ use crate::SharedError;
 use crate::error::Result;
 use crate::net::error::Net;
 
+/// SSH config
 #[derive(Debug, Clone)]
 pub struct SshConfig {
     pub host: String,
@@ -62,8 +63,10 @@ impl SshConfig {
     }
 }
 
+/// SSH client
 pub struct Client;
 
+// Ovverides the default handler for the SSH client, useful for debugging
 impl Handler for Client {
     type Error = russh::Error;
 
@@ -85,12 +88,16 @@ impl Handler for Client {
     }
 }
 
+/// SSH session
+///
+/// A Session is a handle used to send messages to a client outside of
+/// the request/response cycle.
 pub struct Session {
     pub session: Handle<Client>,
 }
 
 impl Session {
-    /// Configure the session
+    /// Configure the session with sensible defaults
     fn config() -> Config {
         Config {
             inactivity_timeout: Some(Duration::from_secs(5)),
@@ -123,6 +130,8 @@ impl Session {
         }
 
         let config = Arc::new(Self::config());
+
+        // connect to the session
         let mut session = russh::client::connect(config, addrs, Client)
             .await
             .map_err(Self::error)?;

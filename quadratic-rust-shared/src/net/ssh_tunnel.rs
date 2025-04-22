@@ -14,13 +14,24 @@ use crate::error::{Result, SharedError};
 use super::error::Net;
 use super::ssh::SshConfig;
 
+/// SSH tunnel
+///
+/// A tunnel is a connection to a remote server that is used to forward
+/// connections to the local server.
 #[derive(Clone, Debug)]
 pub struct SshTunnel {
+    // The SSH config
     pub config: SshConfig,
+
+    // The host and port to forward connections to
     pub forwarding_host: String,
     pub forwarding_port: u16,
+
+    // The channel to send and receive messages on
     tx: Sender<u8>,
     rx: Receiver<u8>,
+
+    // Whether the tunnel is connected
     is_connected: bool,
 }
 
@@ -46,6 +57,7 @@ impl SshTunnel {
         let forwarding_port = self.forwarding_port as u32;
         let rx_clone = self.rx.clone();
 
+        // bind to a random local port
         let listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))
             .await
             .map_err(Self::error)?;
@@ -66,7 +78,11 @@ impl SshTunnel {
                         .await
                         .map_err(Self::error)?;
 
+                    // clone the channel to send and receive messages on
+                    // this is a cheap clone
                     let mut rx_clone_clone = rx_clone.clone();
+
+                    // create a stream to send and receive messages on
                     let mut remote_stream = channel.into_stream();
 
                     tokio::spawn(async move {
@@ -77,13 +93,14 @@ impl SshTunnel {
                                     // ignore copy_bidirectional_with_sizes errors
                                 }
                             }
-                            // receive close signal
+                            // receive close signal, noop
                             _ = rx_clone_clone.changed() => {}
                         }
                         let _ = remote_stream.shutdown().await;
                     });
                 }
 
+                // if the channel has been closed, disconnect from the remote server
                 if rx_clone.has_changed().map_err(Self::error)? {
                     ssh_client
                         .session

@@ -8,7 +8,7 @@ beforeAll(async () => {
   const teamUserViewer = await createUser({ auth0Id: 'teamUserViewer' });
   await createUser({ auth0Id: 'noTeamUser' });
 
-  const team = await createTeam({
+  await createTeam({
     team: {
       uuid: '00000000-0000-0000-0000-000000000000',
     },
