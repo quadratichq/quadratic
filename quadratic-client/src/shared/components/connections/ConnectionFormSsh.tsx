@@ -1,8 +1,8 @@
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { ConnectionInputSshKey } from '@/shared/components/connections/ConnectionInputSshKey';
+import { ConnectionFormSshKey } from '@/shared/components/connections/ConnectionFormSshKey';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Switch } from '@mui/material';
+import { Switch } from '@/shared/shadcn/ui/switch';
 import type { UseFormReturn } from 'react-hook-form';
 
 interface ConnectionFormSshProps {
@@ -15,7 +15,7 @@ const DEFAULTS = {
 
 const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean }) => {
   const { data } = useConnectionsFetcher();
-  const sshPublicKey = data?.sshPublicKey;
+  const sshPublicKey = data?.sshPublicKey?.sshPublicKey ?? '';
 
   if (!showSsh) return null;
 
@@ -27,7 +27,7 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
           name="sshHost"
           render={({ field }) => (
             <FormItem className="col-span-2">
-              <FormLabel>SSH Host</FormLabel>
+              <FormLabel>SSH host</FormLabel>
               <FormControl>
                 <Input autoComplete="off" {...field} />
               </FormControl>
@@ -40,7 +40,7 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
           name="sshPort"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>SSH Port</FormLabel>
+              <FormLabel>SSH port</FormLabel>
               <FormControl>
                 <Input autoComplete="off" placeholder={`e.g. ${DEFAULTS.SSH_PORT}`} {...field} />
               </FormControl>
@@ -56,7 +56,7 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
           name="sshUsername"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>SSH Username</FormLabel>
+              <FormLabel>SSH username</FormLabel>
               <FormControl>
                 <Input autoComplete="off" {...field} />
               </FormControl>
@@ -69,9 +69,9 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
           name="sshKey"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>SSH Key</FormLabel>
+              <FormLabel>SSH public key</FormLabel>
               <FormControl>
-                <ConnectionInputSshKey value={sshPublicKey?.sshPublicKey} />
+                <ConnectionFormSshKey value={sshPublicKey} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -89,12 +89,14 @@ export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
       <FormField
         control={form.control}
         name="useSsh"
-        render={({ field: { value, onChange, ...field } }) => (
-          <FormItem className="col-span-4">
-            <FormLabel className="flex items-center gap-2">Use SSH</FormLabel>
-            <FormControl>
-              <Switch checked={value} onChange={onChange} {...field} />
-            </FormControl>
+        render={({ field }) => (
+          <FormItem className="space-y-0 pt-2">
+            <FormLabel className="inline-flex items-center gap-2">
+              <FormControl>
+                <Switch checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              Connect via SSH
+            </FormLabel>
             <FormMessage />
           </FormItem>
         )}
