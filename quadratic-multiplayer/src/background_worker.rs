@@ -110,7 +110,7 @@ async fn remove_stale_users_in_room(
     }
 
     let users = get_room!(state, file_id)?.users.to_owned();
-    let message = MessageResponse::from((users, &state.settings.min_version));
+    let message = MessageResponse::from((users, &state.settings.version));
 
     Ok(Some(broadcast(
         vec![],
