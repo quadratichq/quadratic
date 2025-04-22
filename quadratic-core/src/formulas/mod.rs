@@ -3,6 +3,10 @@ mod criteria;
 mod ctx;
 #[allow(clippy::vec_init_then_push)]
 pub mod functions;
+
+#[macro_use]
+pub mod jsexpr;
+
 pub mod legacy_cell_ref;
 mod lexer;
 pub mod lsp;
@@ -10,6 +14,7 @@ mod params;
 pub mod parse_formula;
 mod parser;
 pub mod util;
+mod wasm;
 mod wildcards;
 
 #[cfg(test)]

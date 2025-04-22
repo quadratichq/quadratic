@@ -73,48 +73,7 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 
 
 ###########################################################################################
-# Builder 3 - Build rust client
-###########################################################################################
-FROM node:23 AS rust-client-builder
-
-ARG CLIENT_DEV
-
-# Install build-essential, llvm, and clang
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
-
-# Install rustup
-RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target/rust-client
-ENV CARGO_HOME=/quadratic/.cargo
-ENV CARGO_BUILD_JOBS=64
-
-# Install wasm-pack
-RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-RUN echo 'wasm-pack version:' && wasm-pack --version
-
-# Install wasm32-unknown-unknown target
-RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm32-unknown-unknown
-
-WORKDIR /quadratic
-
-# Copy required files for building rust client
-COPY --link package.json .
-COPY --link ./quadratic-rust-client/. ./quadratic-rust-client/
-COPY --link ./quadratic-core/. ./quadratic-core/
-COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
-COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
-
-# Build the rust-client
-RUN if [ "$CLIENT_DEV" = "true" ]; then \
-    echo 'Building rust-client in dev mode...' && npm run build:dev --workspace=quadratic-rust-client; \
-    else \
-    echo 'Building rust-client...' && npm run build --workspace=quadratic-rust-client; \
-    fi
-
-
-###########################################################################################
-# Builder 4 - Combine all builder files and build the client
+# Builder 3 - Combine all builder files and build the client
 ###########################################################################################
 FROM node:23 AS vite-builder
 
@@ -123,7 +82,6 @@ WORKDIR /quadratic
 # Copy files from core, ts/rust types, and rust client builders
 COPY --link --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./quadratic-client/src/app/quadratic-core
 COPY --link --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
-COPY --link --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-rust-client/. ./quadratic-client/src/app/quadratic-rust-client
 
 # Install system brotli instead of Rust version
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -137,7 +95,6 @@ COPY --link package.json .
 COPY --link package-lock.json .
 COPY --link ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
 COPY --link ./quadratic-core/package*.json ./quadratic-core/
-COPY --link ./quadratic-rust-client/package*.json ./quadratic-rust-client/
 COPY --link ./quadratic-shared/package*.json ./quadratic-shared/
 COPY --link ./quadratic-client/package*.json ./quadratic-client/
 
