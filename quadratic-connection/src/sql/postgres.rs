@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::Claims,
-    connection::{get_api_connection, get_api_team},
+    connection::{add_key_to_connection, get_api_connection, get_api_team},
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse, test_connection},
@@ -26,9 +26,7 @@ pub(crate) async fn test(
     claims: Claims,
     Json(mut connection): Json<PostgresConnection>,
 ) -> Result<Json<TestResponse>> {
-    let team_id = get_team_id_header(&headers)?;
-    let team = get_api_team(&state, "", &claims.sub, &team_id).await?;
-    connection.ssh_key = Some(team.ssh_private_key);
+    add_key_to_connection(&mut connection, &state, &headers, &claims).await?;
 
     let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let result = test_connection(connection).await;
@@ -124,7 +122,7 @@ pub(crate) async fn schema_with_connection(
 pub mod tests {
     use super::*;
     use crate::{
-        num_vec,
+        num_vec, test_connection,
         test_util::{new_state, response_bytes, str_vec, validate_parquet},
     };
 
@@ -181,11 +179,12 @@ pub mod tests {
         }
     }
 
-    // #[tokio::test]
-    // #[traced_test]
-    // async fn postgres_test_connection() {
-    //     test_connection!(get_connection);
-    // }
+    #[tokio::test]
+    #[traced_test]
+    async fn postgres_test_connection() {
+        let connection = get_connection(false);
+        test_connection!(connection.type_details);
+    }
 
     #[tokio::test]
     #[traced_test]

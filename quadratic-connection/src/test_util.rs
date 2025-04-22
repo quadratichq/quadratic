@@ -29,15 +29,11 @@ use crate::state::State;
 /// Utility to test a connection over various databases.
 #[macro_export]
 macro_rules! test_connection {
-    ( $get_connection:expr ) => {{
-        let connection_id = Uuid::new_v4();
-        let (team_id, headers) = new_team_id_with_header().await;
-        let state = Extension(new_state().await);
-        let claims = get_claims();
-        let (mysql_connection, _) = $get_connection(&state, &claims, &connection_id, &team_id)
-            .await
-            .unwrap();
-        let response = test(headers, state, claims, axum::Json(mysql_connection))
+    ( $connection:expr ) => {{
+        let (_, headers) = crate::test_util::new_team_id_with_header().await;
+        let state = Extension(crate::test_util::new_state().await);
+        let claims = crate::test_util::get_claims();
+        let response = test(headers, state, claims, axum::Json($connection))
             .await
             .unwrap();
 
