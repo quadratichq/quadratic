@@ -41,6 +41,7 @@ JAVASCRIPT=(
   "package.json"
   "quadratic-api/package.json"
   "quadratic-client/package.json"
+  "quadratic-client/public/version.json"
   "quadratic-shared/package.json"
 )
 
