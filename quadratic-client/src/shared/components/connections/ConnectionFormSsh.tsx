@@ -1,8 +1,8 @@
-import { ConnectionFormSshKey } from '@/shared/components/connections/ConnectionFormSshKey';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Switch } from '@/shared/shadcn/ui/switch';
-import type { UseFormReturn } from 'react-hook-form';
+import { useEffect } from 'react';
+import { type UseFormReturn } from 'react-hook-form';
 
 interface ConnectionFormSshProps {
   form: UseFormReturn<any>;
@@ -12,9 +12,7 @@ const DEFAULTS = {
   SSH_PORT: '22',
 };
 
-const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean }) => {
-  if (!showSsh) return null;
-
+const Children = ({ form }: ConnectionFormSshProps) => {
   return (
     <>
       <div className="grid grid-cols-3 gap-4">
@@ -46,7 +44,7 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <FormField
           control={form.control}
           name="sshUsername"
@@ -60,19 +58,6 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="sshKey"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>SSH public key</FormLabel>
-              <FormControl>
-                <ConnectionFormSshKey {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </div>
     </>
   );
@@ -80,11 +65,24 @@ const Children = ({ form, showSsh }: ConnectionFormSshProps & { showSsh: boolean
 
 // Change the component signature to use the new props type
 export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
+  const name = 'useSsh';
+  const useSsh: boolean = form.getValues(name);
+
+  // We use this to signal up the tree when the user has this enabled.
+  // It's a little hacky, but it makes it so we dno't have to elevate form state
+  // all the way to the top of the parent Connections component.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('changeUseSsh', { detail: useSsh }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent('changeUseSsh', { detail: false }));
+    };
+  }, [useSsh]);
   return (
     <>
       <FormField
         control={form.control}
-        name="useSsh"
+        name={name}
         render={({ field }) => (
           <FormItem className="space-y-0 pt-2">
             <FormLabel className="inline-flex items-center gap-2">
@@ -98,7 +96,7 @@ export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
         )}
       />
 
-      <Children form={form} showSsh={form.getValues('useSsh')} />
+      {useSsh && <Children form={form} />}
     </>
   );
 };

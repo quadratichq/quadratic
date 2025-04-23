@@ -38,7 +38,6 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     sshHost: String(connection?.typeDetails?.sshHost || ''),
     sshPort: String(connection?.typeDetails?.sshPort || ''),
     sshUsername: String(connection?.typeDetails?.sshUsername || ''),
-    sshKey: String(connection?.typeDetails?.sshKey || ''),
   };
 
   const form = useForm<FormValues>({

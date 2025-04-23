@@ -3,6 +3,7 @@ import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAc
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
+import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -137,40 +138,43 @@ export const Connections = ({
   };
 
   return (
-    <div>
-      {activeConnectionState && activeConnectionType ? (
-        activeConnectionState.view === 'edit' ? (
-          <ConnectionFormEdit
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionType}
-            handleNavigateToListView={handleNavigateToListView}
+    <div className={'grid-cols-12 gap-12 md:grid'}>
+      <div className="col-span-8">
+        {activeConnectionState && activeConnectionType ? (
+          activeConnectionState.view === 'edit' ? (
+            <ConnectionFormEdit
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          ) : (
+            <ConnectionDetails
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          )
+        ) : activeConnectionType ? (
+          <ConnectionFormCreate
             teamUuid={teamUuid}
-            sshPublicKey={sshPublicKey}
+            type={activeConnectionType}
+            handleNavigateToListView={handleNavigateToListView}
           />
         ) : (
-          <ConnectionDetails
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionType}
-            handleNavigateToListView={handleNavigateToListView}
-            teamUuid={teamUuid}
+          <ConnectionsList
+            connections={connections}
+            connectionsAreLoading={connectionsAreLoading}
+            handleNavigateToCreateView={handleNavigateToCreateView}
+            handleNavigateToEditView={handleNavigateToEditView}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
           />
-        )
-      ) : activeConnectionType ? (
-        <ConnectionFormCreate
-          teamUuid={teamUuid}
-          sshPublicKey={sshPublicKey}
-          type={activeConnectionType}
-          handleNavigateToListView={handleNavigateToListView}
-        />
-      ) : (
-        <ConnectionsList
-          connections={connections}
-          connectionsAreLoading={connectionsAreLoading}
-          handleNavigateToCreateView={handleNavigateToCreateView}
-          handleNavigateToEditView={handleNavigateToEditView}
-          handleNavigateToDetailsView={handleNavigateToDetailsView}
-        />
-      )}
+        )}
+      </div>
+      <div className="col-span-4 mt-12 md:mt-0">
+        <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
+      </div>
     </div>
   );
 };

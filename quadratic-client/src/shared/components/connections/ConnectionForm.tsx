@@ -19,12 +19,10 @@ export type ConnectionFormProps = {
 
 export function ConnectionFormCreate({
   teamUuid,
-  sshPublicKey,
   type,
   handleNavigateToListView,
 }: {
   teamUuid: string;
-  sshPublicKey: string;
   type: ConnectionType;
   handleNavigateToListView: () => void;
 }) {
@@ -48,7 +46,7 @@ export function ConnectionFormCreate({
       <ConnectionHeader type={type} handleNavigateToListView={handleNavigateToListView}>
         Create
       </ConnectionHeader>
-      <ConnectionFormWrapper teamUuid={teamUuid} sshPublicKey={sshPublicKey} type={type} props={props} />
+      <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />
     </>
   );
 }
@@ -58,13 +56,11 @@ export function ConnectionFormEdit({
   connectionType,
   handleNavigateToListView,
   teamUuid,
-  sshPublicKey,
 }: {
   connectionUuid: string;
   connectionType: ConnectionType;
   handleNavigateToListView: () => void;
   teamUuid: string;
-  sshPublicKey: string;
 }) {
   const submit = useSubmit();
   const fetcher = useFetcher();
@@ -93,7 +89,6 @@ export function ConnectionFormEdit({
         <ConnectionFormWrapper
           type={fetcher.data.connection.type}
           teamUuid={teamUuid}
-          sshPublicKey={sshPublicKey}
           props={{
             connection: fetcher.data.connection,
             handleNavigateToListView,
@@ -116,19 +111,13 @@ function ConnectionFormWrapper({
   teamUuid,
   type,
   props,
-  sshPublicKey,
 }: {
   teamUuid: string;
   type: ConnectionType;
   props: ConnectionFormProps;
-  sshPublicKey?: string;
 }) {
   const { ConnectionForm } = connectionsByType[type];
   const { form } = connectionsByType[type].useConnectionForm(props.connection);
-
-  if (form.getValues().sshKey === '' && sshPublicKey) {
-    form.setValue('sshKey', sshPublicKey);
-  }
 
   return (
     <ConnectionForm handleSubmitForm={props.handleSubmitForm} form={form}>
