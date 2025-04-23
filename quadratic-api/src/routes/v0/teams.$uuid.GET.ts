@@ -14,6 +14,7 @@ import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
+import { generateSshKeys } from '../../utils/crypto';
 import { getFilePermissions } from '../../utils/permissions';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -120,6 +121,16 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
+  if (dbTeam.sshPublicKey === null) {
+    const { privateKey, publicKey } = await generateSshKeys();
+    await dbClient.team.update({
+      where: { id: dbTeam.id },
+      data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
+    });
+
+    dbTeam.sshPublicKey = publicKey;
+  }
+
   // Get signed thumbnail URLs
   await Promise.all(
     dbFiles.map(async (file) => {
@@ -139,6 +150,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
+      sshPublicKey: dbTeam.sshPublicKey,
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

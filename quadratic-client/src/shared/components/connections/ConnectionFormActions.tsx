@@ -29,6 +29,7 @@ export function ConnectionFormActions({
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
+  // const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const formData = form.watch();
 
   // If the user changed some data, reset the state of the connection so they

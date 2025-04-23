@@ -372,10 +372,6 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response']
       );
 
-      if (connection.typeDetails.sshKey) {
-        connection.typeDetails.sshKey = Buffer.from(connection.typeDetails.sshKey, 'base64').toString('utf-8');
-      }
-
       return connection;
     },
     create({ body, teamUuid }: { body: ApiTypes['/v0/teams/:uuid/connections.POST.request']; teamUuid: string }) {

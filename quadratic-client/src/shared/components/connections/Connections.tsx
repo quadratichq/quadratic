@@ -18,6 +18,7 @@ export type ConnectionsListConnection = {
 };
 type Props = {
   teamUuid: string;
+  sshPublicKey: string;
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
@@ -33,6 +34,7 @@ export const Connections = ({
   teamUuid,
   staticIps,
   handleNavigateToDetailsViewOverride,
+  sshPublicKey,
 }: Props) => {
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
@@ -143,6 +145,7 @@ export const Connections = ({
             connectionType={activeConnectionType}
             handleNavigateToListView={handleNavigateToListView}
             teamUuid={teamUuid}
+            sshPublicKey={sshPublicKey}
           />
         ) : (
           <ConnectionDetails
@@ -155,6 +158,7 @@ export const Connections = ({
       ) : activeConnectionType ? (
         <ConnectionFormCreate
           teamUuid={teamUuid}
+          sshPublicKey={sshPublicKey}
           type={activeConnectionType}
           handleNavigateToListView={handleNavigateToListView}
         />

@@ -100,7 +100,7 @@ async function handler(
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },
-      sshPublicKey: Buffer.from(ownerTeam.sshPublicKey).toString('base64'),
+      sshPublicKey: ownerTeam.sshPublicKey,
     },
     userMakingRequest: {
       id: userId,

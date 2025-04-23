@@ -1,14 +1,16 @@
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 
-export const ConnectionFormSshKey = ({ value }: { value: string }) => {
-  // decode the ssh key from base64 to a string
-  const sshKey = atob(value);
+type InputProps = React.ComponentProps<typeof Input>;
+
+export const ConnectionFormSshKey = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
   const [copied, setCopied] = useState(false);
 
+  if (!props.value) return null;
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(sshKey).then(() => {
+    navigator.clipboard.writeText(String(props.value)).then(() => {
       setCopied(true);
       setTimeout(() => {
         setCopied(false);
@@ -24,6 +26,7 @@ export const ConnectionFormSshKey = ({ value }: { value: string }) => {
         className="pr-8"
         disabled
         value={'xxxxxxxxxxxxx'}
+        ref={ref}
       />
       <Button
         variant="ghost"
@@ -36,4 +39,6 @@ export const ConnectionFormSshKey = ({ value }: { value: string }) => {
       </Button>
     </div>
   );
-};
+});
+
+ConnectionFormSshKey.displayName = 'ConnectionFormSshKey';

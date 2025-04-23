@@ -21,10 +21,9 @@ export function ConnectionsMenu() {
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const {
-    team: { uuid: teamUuid },
+    team: { uuid: teamUuid, sshPublicKey },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-
   const fetcher = useConnectionsFetcher();
   const fetcherRef = useRef(fetcher);
 
@@ -120,6 +119,7 @@ export function ConnectionsMenu() {
             connections={fetcher.data && fetcher.data.connections ? fetcher.data.connections : []}
             connectionsAreLoading={fetcher.data === undefined}
             teamUuid={teamUuid}
+            sshPublicKey={sshPublicKey}
             staticIps={fetcher.data && fetcher.data.staticIps ? fetcher.data.staticIps : []}
             handleNavigateToDetailsViewOverride={openEditor}
           />
