@@ -56,6 +56,7 @@ impl Sheet {
         );
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -73,7 +74,9 @@ impl Sheet {
                 Value::Single(value),
                 false,
                 false,
-                false,
+                Some(false),
+                Some(true),
+                Some(true),
                 None,
             )),
         );
@@ -115,6 +118,7 @@ impl Sheet {
         );
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -132,7 +136,9 @@ impl Sheet {
                 Value::Array(array),
                 false,
                 false,
-                false,
+                Some(false),
+                Some(true),
+                Some(true),
                 None,
             )),
         );
@@ -163,6 +169,7 @@ impl Sheet {
         }
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -180,7 +187,9 @@ impl Sheet {
                 Value::Array(array),
                 false,
                 false,
-                false,
+                Some(false),
+                Some(true),
+                Some(true),
                 None,
             )),
         );
@@ -196,6 +205,7 @@ impl Sheet {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -212,7 +222,9 @@ impl Sheet {
                 Value::Single(CellValue::Image("chart".to_string())),
                 false,
                 false,
-                true,
+                Some(true),
+                Some(true),
+                Some(true),
                 Some((1.0, 1.0)),
             )),
         );
@@ -229,6 +241,7 @@ impl Sheet {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -245,7 +258,9 @@ impl Sheet {
                 Value::Single(CellValue::Html("chart".to_string())),
                 false,
                 false,
-                true,
+                Some(true),
+                Some(true),
+                Some(true),
                 Some((1.0, 1.0)),
             )),
         );
@@ -278,7 +293,9 @@ impl Sheet {
                 value,
                 false,
                 header_is_first_row,
-                show_ui,
+                Some(show_ui),
+                Some(true),
+                Some(true),
                 None,
             )),
         );

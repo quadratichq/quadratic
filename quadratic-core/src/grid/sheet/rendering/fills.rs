@@ -226,7 +226,7 @@ mod tests {
         )
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = Some(true);
         let fills = sheet.get_all_render_fills();
         assert_eq!(fills.len(), 2);
         assert_fill_eq(&fills[0], 6, 4, 1, 3, "red");
@@ -278,7 +278,7 @@ mod tests {
         .unwrap();
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = false;
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = Some(false);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
@@ -286,7 +286,7 @@ mod tests {
         assert_fill_eq(&fills[3], 7, 3, 1, 1, "red");
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = Some(true);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 5, 1, 1, "red");
@@ -294,7 +294,7 @@ mod tests {
         assert_fill_eq(&fills[3], 7, 5, 1, 1, "red");
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_name = false;
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_name = Some(false);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 4, 1, 1, "red");
@@ -305,7 +305,7 @@ mod tests {
         sheet
             .data_table_mut(Pos { x: 5, y: 2 })
             .unwrap()
-            .show_columns = false;
+            .show_columns = Some(false);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
@@ -327,7 +327,7 @@ mod tests {
         sheet
             .data_table_mut(Pos { x: 5, y: 2 })
             .unwrap()
-            .show_columns = true;
+            .show_columns = Some(true);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");

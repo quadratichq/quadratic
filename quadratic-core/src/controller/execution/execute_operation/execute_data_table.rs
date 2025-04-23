@@ -444,21 +444,25 @@ impl GridController {
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
 
+            let show_ui = data_table.get_show_ui();
+            let show_name = data_table.get_show_name();
+            let show_columns = data_table.get_show_columns();
+
             let mut values = data_table.display_value(false)?.into_array()?;
             let ArraySize { w, h } = values.size();
 
-            if !data_table.header_is_first_row && data_table.show_ui && data_table.show_columns {
+            if !data_table.header_is_first_row && show_ui && show_columns {
                 let headers = data_table.column_headers_to_cell_values();
                 values.insert_row(0, headers)?;
             }
 
             // delete the heading row if toggled off
-            if data_table.header_is_first_row && (!data_table.show_ui || !data_table.show_columns) {
+            if data_table.header_is_first_row && (!show_ui || !show_columns) {
                 values.delete_row(0)?;
             }
 
             // insert the heading row if toggled on
-            if data_table.show_ui && data_table.show_name {
+            if show_ui && show_name {
                 let mut table_row = vec![CellValue::Blank; w.get() as usize];
                 table_row[0] = data_table.name.to_owned();
                 values.insert_row(0, Some(table_row))?;
@@ -605,9 +609,9 @@ impl GridController {
                 DataTable::from((import.to_owned(), old_values.to_owned(), context));
 
             // show_ui false is required for correct mapping of formats, values will shift when show_ui is true
-            data_table.show_ui = false;
+            data_table.show_ui = Some(false);
             let format_update = data_table.transfer_formats_from_sheet(rect.min, sheet, rect)?;
-            data_table.show_ui = true;
+            data_table.show_ui = Some(true);
 
             if !format_update.is_default() {
                 data_table.formats.apply_updates(&format_update);
@@ -673,6 +677,40 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::DataTableMeta {
+            sheet_pos,
+            name,
+            alternating_colors,
+            columns,
+            show_ui,
+            show_name,
+            show_columns,
+            readonly,
+        } = op
+        {
+            let new_op = Operation::DataTableOptionMeta {
+                sheet_pos,
+                name,
+                alternating_colors,
+                columns,
+                show_ui: show_ui.map(Some),
+                show_name: show_name.map(Some),
+                show_columns: show_columns.map(Some),
+                readonly,
+            };
+            self.execute_data_table_option_meta(transaction, new_op)?;
+
+            return Ok(());
+        }
+
+        bail!("Expected Operation::DataTableMeta in execute_data_table_meta");
+    }
+
+    pub(super) fn execute_data_table_option_meta(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DataTableOptionMeta {
             sheet_pos,
             name,
             alternating_colors,
@@ -827,7 +865,7 @@ impl GridController {
             }
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DataTableMeta {
+            let reverse_operations = vec![Operation::DataTableOptionMeta {
                 sheet_pos,
                 name: Some(old_name),
                 alternating_colors: old_alternating_colors,
@@ -847,7 +885,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::DataTableMeta in execute_data_table_meta");
+        bail!("Expected Operation::DataTableOptionMeta in execute_data_table_option_meta");
     }
 
     pub(super) fn execute_sort_data_table(
@@ -943,11 +981,10 @@ impl GridController {
 
                 if swallow && column_header.is_none() && values.is_none() {
                     let display_index = data_table.get_display_index_from_column_index(index, true);
-                    let y_adjustment = if data_table.show_ui && data_table.show_name {
-                        1
-                    } else {
-                        0
-                    };
+                    let show_ui = data_table.get_show_ui();
+                    let show_name = data_table.get_show_name();
+                    let show_columns = data_table.get_show_columns();
+                    let y_adjustment = if show_ui && show_name { 1 } else { 0 };
 
                     let values_rect = Rect::from_numbers(
                         data_table_pos.x + display_index,
@@ -975,7 +1012,7 @@ impl GridController {
                         transaction.operations.clear();
                         bail!("Cannot add code cell to table");
                     } else {
-                        if data_table.show_ui && data_table.show_columns {
+                        if show_ui && show_columns {
                             let header = if data_table.header_is_first_row {
                                 cell_values[0].to_string()
                             } else {
@@ -1119,11 +1156,11 @@ impl GridController {
             let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
             old_data_table_rect.min.x += 1; // cannot flatten the first column
 
-            let y_adjustment = if data_table.show_ui && data_table.show_name {
-                1
-            } else {
-                0
-            };
+            let show_ui = data_table.get_show_ui();
+            let show_name = data_table.get_show_name();
+            let show_columns = data_table.get_show_columns();
+
+            let y_adjustment = if show_ui && show_name { 1 } else { 0 };
             old_data_table_rect.min.y += y_adjustment;
 
             let mut sheet_cell_values =
@@ -1145,19 +1182,14 @@ impl GridController {
                 if flatten {
                     // collect values to flatten
                     let old_values = old_values.to_owned();
-                    let y_adjustment = if data_table.show_ui
-                        && data_table.show_columns
-                        && !data_table.header_is_first_row
+                    let y_adjustment = if show_ui && show_columns && !data_table.header_is_first_row
                     {
                         1
                     } else {
                         0
                     };
                     for (y, old_value) in old_values.into_iter().enumerate() {
-                        if y == 0
-                            && data_table.header_is_first_row
-                            && (!data_table.show_ui || !data_table.show_columns)
-                        {
+                        if y == 0 && data_table.header_is_first_row && (!show_ui || !show_columns) {
                             continue;
                         }
 
@@ -1169,7 +1201,7 @@ impl GridController {
                         }
                     }
 
-                    if data_table.show_ui && data_table.show_columns {
+                    if show_ui && show_columns {
                         if let Some(column_header) = &old_column_header {
                             if let (Ok(value_x), Ok(value_y)) =
                                 (u32::try_from(display_index - 1), u32::try_from(0))
@@ -1972,6 +2004,7 @@ mod tests {
     #[test]
     fn test_execute_code_data_table_to_data_table() {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
             std_err: None,
             std_out: None,
             error: None,
@@ -1986,7 +2019,9 @@ mod tests {
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
+            Some(true),
             None,
         );
 

@@ -637,6 +637,7 @@ mod tests {
         assert_eq!(transaction.image_cells.len(), 0);
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -652,7 +653,9 @@ mod tests {
             Value::Single(CellValue::Html("html".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
+            Some(true),
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
@@ -661,6 +664,7 @@ mod tests {
         assert_eq!(transaction.image_cells.len(), 0);
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -676,7 +680,9 @@ mod tests {
             Value::Single(CellValue::Image("image".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
+            Some(true),
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());

@@ -4,7 +4,7 @@ use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, parse_formula},
-    grid::{CodeRun, DataTable, DataTableKind},
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
 };
 
 impl GridController {
@@ -23,6 +23,7 @@ impl GridController {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
                 let new_code_run = CodeRun {
+                    language: CodeCellLanguage::Formula,
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
@@ -38,7 +39,9 @@ impl GridController {
                     output.inner,
                     false,
                     false,
-                    false,
+                    None,
+                    None,
+                    None,
                     None,
                 );
                 self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
@@ -262,12 +265,12 @@ mod test {
                 Value::Single(CellValue::Number(12.into())),
                 false,
                 false,
-                true,
+                Some(true),
+                Some(false),
+                Some(false),
                 None,
             )
             .with_last_modified(result.last_modified)
-            .with_show_columns(false)
-            .with_show_name(false),
         );
     }
 
@@ -338,10 +341,11 @@ mod test {
             Value::Array(array),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
+            Some(false),
             None,
-        )
-        .with_show_columns(false);
+        );
         let column_headers =
             expected_result.default_header_with_name(|i| format!("{}", i - 1), None);
         expected_result = expected_result

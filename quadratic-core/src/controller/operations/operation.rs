@@ -7,7 +7,7 @@ use crate::{
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
-        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
+        DataTable, DataTableKind, Sheet, SheetId,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
@@ -95,6 +95,16 @@ pub enum Operation {
         show_columns: Option<bool>,
         readonly: Option<bool>,
     },
+    DataTableOptionMeta {
+        sheet_pos: SheetPos,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumnHeader>>,
+        show_ui: Option<Option<bool>>,
+        show_name: Option<Option<bool>>,
+        show_columns: Option<Option<bool>>,
+        readonly: Option<bool>,
+    },
     DataTableFormats {
         sheet_pos: SheetPos,
         formats: SheetFormatUpdates,
@@ -175,20 +185,6 @@ pub enum Operation {
 
         // select the table after the operation
         select_table: bool,
-    },
-    SetCodeRun {
-        sheet_pos: SheetPos,
-        code_run: Option<CodeRunOld>,
-        index: usize,
-    },
-    /// Sets a code run.
-    SetCodeRunVersion {
-        sheet_pos: SheetPos,
-        code_run: Option<CodeRunOld>,
-        index: usize,
-
-        /// Simple version for tracking breaking changes to [`CodeRun`].
-        version: u16,
     },
     /// Runs the code cell at a specific position.
     ComputeCode {

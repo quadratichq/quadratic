@@ -280,7 +280,9 @@ impl GridController {
             cell_values.into(),
             false,
             first_row_is_header,
-            true,
+            Some(true),
+            Some(true),
+            Some(true),
             None,
         );
         data_table.formats.apply_updates(&sheet_format_updates);

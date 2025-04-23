@@ -176,6 +176,7 @@ mod tests {
     #[test]
     fn test_code_data_table_to_data_table() {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
             std_err: None,
             std_out: None,
             error: None,
@@ -190,7 +191,9 @@ mod tests {
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
+            Some(true),
             None,
         );
 

@@ -63,6 +63,7 @@ impl GridController {
         }
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -78,7 +79,9 @@ impl GridController {
             Value::Array(array),
             false,
             false,
-            false,
+            Some(false),
+            Some(true),
+            Some(true),
             None,
         );
 
@@ -111,7 +114,9 @@ impl GridController {
             value,
             false,
             header_is_first_row,
-            show_ui,
+            Some(show_ui),
+            Some(true),
+            Some(true),
             None,
         );
 

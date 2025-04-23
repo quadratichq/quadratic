@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, SheetPos,
-    grid::{CodeCellLanguage, DataTable, SheetId},
+    grid::{DataTable, SheetId},
     util::case_fold_ascii,
 };
 
@@ -31,15 +31,9 @@ impl TableMap {
         self.tables.remove(&table_name_folded)
     }
 
-    pub fn insert_table(
-        &mut self,
-        sheet_id: SheetId,
-        pos: Pos,
-        table: &DataTable,
-        language: CodeCellLanguage,
-    ) {
+    pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
         let table_name_folded = case_fold_ascii(table.name());
-        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
+        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
@@ -140,7 +134,7 @@ impl TableMap {
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: crate::Rect,
-        language: CodeCellLanguage,
+        language: crate::grid::CodeCellLanguage,
     ) {
         let table_name_folded = case_fold_ascii(table_name);
         self.tables.insert(
@@ -160,7 +154,7 @@ impl TableMap {
 mod tests {
     use super::*;
 
-    use crate::Rect;
+    use crate::{Rect, grid::CodeCellLanguage};
 
     #[test]
     fn test_try_col_index() {

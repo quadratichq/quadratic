@@ -385,7 +385,7 @@ mod test {
         // show name
         let data_table: &mut crate::grid::DataTable =
             gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.show_name = false;
+        data_table.show_name = Some(false);
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E3], sheet_id))),
             CellValue::Text("city1".into())
@@ -418,7 +418,7 @@ mod test {
         // show columns
         let data_table: &mut crate::grid::DataTable =
             gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.show_columns = false;
+        data_table.show_columns = Some(false);
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
             CellValue::Text("city2".into())

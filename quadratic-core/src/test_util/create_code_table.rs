@@ -57,6 +57,7 @@ pub fn test_create_code_table_with_values(
     }
 
     let code_run = CodeRun {
+        language: CodeCellLanguage::Python,
         std_out: None,
         std_err: None,
         cells_accessed: Default::default(),
@@ -72,7 +73,9 @@ pub fn test_create_code_table_with_values(
         Value::Array(array),
         false,
         false,
-        false,
+        Some(false),
+        Some(true),
+        Some(true),
         None,
     );
 

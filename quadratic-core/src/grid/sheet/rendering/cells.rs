@@ -139,8 +139,8 @@ impl Sheet {
                 if let Some(intersection) = code_rect.intersection(render_rect) {
                     for x in intersection.x_range() {
                         for y in intersection.y_range() {
-                            let is_header = data_table.show_ui
-                                && data_table.show_columns
+                            let is_header = data_table.get_show_ui()
+                                && data_table.get_show_columns()
                                 && y == code_rect_start_y - 1;
 
                             // We skip rendering the header rows because we render it separately.
@@ -320,6 +320,7 @@ mod tests {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -336,7 +337,9 @@ mod tests {
                 Value::Single(CellValue::Text("hello".to_string())),
                 false,
                 false,
-                true,
+                Some(true),
+                Some(true),
+                Some(true),
                 None,
             )),
         );

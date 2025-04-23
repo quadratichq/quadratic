@@ -373,8 +373,8 @@ impl Sheet {
                         }
 
                         // don't expand if the position is at the data table's name
-                        if data_table.show_ui
-                            && data_table.show_name
+                        if data_table.get_show_ui()
+                            && data_table.get_show_name()
                             && data_table_left.min.y == pos.y
                         {
                             return false;
@@ -462,7 +462,7 @@ impl Sheet {
     /// Returns the code language at a pos
     pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
         self.data_table(pos)
-            .and_then(|data_table| self.get_table_language(pos, data_table))
+            .map(|data_table| data_table.get_language())
     }
 
     /// Returns true if the cell at pos is a formula cell
@@ -475,7 +475,7 @@ impl Sheet {
     /// If the show_name=false and show_columns=false, it cannot be the source cell
     pub fn is_source_cell(&self, pos: Pos) -> bool {
         self.data_table(pos)
-            .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
+            .is_some_and(|data_table| data_table.get_show_name() || data_table.get_show_columns())
     }
 
     /// You shouldn't be able to create a data table that includes a data table.
@@ -514,6 +514,7 @@ mod test {
 
     pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -529,7 +530,9 @@ mod test {
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
-            false,
+            Some(false),
+            Some(true),
+            Some(true),
             None,
         );
 

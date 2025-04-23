@@ -64,8 +64,6 @@ impl DataTable {
 
     /// Toggles whether the first row of the data table is used as the column headings.
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
-        self.header_is_first_row = first_row_as_header;
-
         match first_row_as_header {
             true => self.apply_first_row_as_header(),
             false => self.apply_default_header(),
@@ -103,6 +101,7 @@ impl DataTable {
     /// Apply default column headings to the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
     pub fn apply_default_header(&mut self) {
+        self.header_is_first_row = false;
         self.column_headers = Some(self.default_header(None));
     }
 
@@ -227,9 +226,18 @@ pub mod test {
 
         // test column headings taken from first row
         let value = Value::Array(values.clone());
-        let mut data_table =
-            DataTable::new(kind.clone(), "Table 1", value, false, true, true, None)
-                .with_last_modified(data_table.last_modified);
+        let mut data_table = DataTable::new(
+            kind.clone(),
+            "Table 1",
+            value,
+            false,
+            true,
+            Some(true),
+            Some(true),
+            Some(true),
+            None,
+        )
+        .with_last_modified(data_table.last_modified);
 
         data_table.apply_first_row_as_header();
         let expected_columns = vec![
@@ -294,9 +302,9 @@ pub mod test {
             readonly: false,
             spill_error: false,
             last_modified: Utc::now(),
-            show_ui: true,
-            show_name: true,
-            show_columns: true,
+            show_ui: Some(true),
+            show_name: Some(true),
+            show_columns: Some(true),
             header_is_first_row: true,
             alternating_colors: true,
             formats: Default::default(),
@@ -348,9 +356,9 @@ pub mod test {
             readonly: false,
             spill_error: false,
             last_modified: Utc::now(),
-            show_ui: true,
-            show_name: true,
-            show_columns: true,
+            show_ui: Some(true),
+            show_name: Some(true),
+            show_columns: Some(true),
             header_is_first_row: false,
             alternating_colors: true,
             formats: Default::default(),
