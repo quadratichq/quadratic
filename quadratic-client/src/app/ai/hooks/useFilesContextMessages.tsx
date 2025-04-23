@@ -10,9 +10,6 @@ export function useFilesContextMessages() {
     async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
       const imageFiles = filterImageFilesInChatMessages(chatMessages);
       const pdfFiles = filterPdfFilesInChatMessages(chatMessages);
-      if (imageFiles.length === 0 && pdfFiles.length === 0) {
-        return [];
-      }
 
       return [
         {
@@ -23,6 +20,11 @@ export function useFilesContextMessages() {
               text: `
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 
+${
+  imageFiles.length === 0 && pdfFiles.length === 0
+    ? `No files are attached. Don't use pdf import tool, also do not assume or make any assumptions that files are attached when responding to users. If asked to do anything with an attached files, as for the file first.`
+    : ''
+}
 
 ${
   imageFiles.length > 0
