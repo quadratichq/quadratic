@@ -146,10 +146,10 @@ export const AIUserMessageForm = memo(
       (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement> | DragEvent<HTMLDivElement>) => {
         const filesToHandle =
           'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : null;
-        e.preventDefault();
-        e.stopPropagation();
         setDragOver(false);
         if (editing && filesToHandle && filesToHandle.length > 0) {
+          e.preventDefault();
+          e.stopPropagation();
           handleFiles(filesToHandle);
         }
       },
