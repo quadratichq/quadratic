@@ -1,3 +1,7 @@
+#cell-edit .monaco-editor[data-text-align] .view-line span {
+  display: contents;
+}
+
 #cell-edit .monaco-editor[data-text-align='left'] .view-line {
   text-align: left;
 }
