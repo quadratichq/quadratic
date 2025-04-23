@@ -1,6 +1,6 @@
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import mixpanel from 'mixpanel-browser';
-import { memo, useRef } from 'react';
+import { memo, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type ABTestProps = {
@@ -12,7 +12,6 @@ type ABTestProps = {
 
 export const ABTest = memo(({ name, control, variant, probability = 0.1 }: ABTestProps) => {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
-  const hasTrackedRef = useRef(false);
 
   // Convert the team's UUID to a number between 0 and 1
   // This is a simple hash function that will return a number between 0 and 1
@@ -20,20 +19,14 @@ export const ABTest = memo(({ name, control, variant, probability = 0.1 }: ABTes
   // consistently putting the same user in the same group by using the same UUID
   const hash = parseInt(teamUuid.replace(/-/g, '').slice(0, 8), 16) / 0xffffffff;
 
-  // Send to mixpanel only once
-  if (!hasTrackedRef.current) {
-    console.log('Tracking ABTest', {
-      name,
-      variant: hash < probability ? 'variant' : 'control',
-      probability,
-    });
+  // Send to mixpanel only once on mount
+  useEffect(() => {
     mixpanel.track('[ABTest].started', {
       name,
       variant: hash < probability ? 'variant' : 'control',
       probability,
     });
-    hasTrackedRef.current = true;
-  }
+  }, [name, hash, probability]);
 
   // Return variant if hash is less than probability, otherwise control
   return hash < probability ? variant : control;
