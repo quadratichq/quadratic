@@ -517,7 +517,7 @@ mod tests {
         );
 
         let context = gc.a1_context();
-        let selection = A1Selection::test_a1_context("table1", &context);
+        let selection = A1Selection::test_a1_context("table1", context);
         let table = if let CellRefRange::Table { range } = selection.ranges[0].clone() {
             range
         } else {
@@ -526,7 +526,7 @@ mod tests {
 
         println!(
             "{:?}",
-            table.convert_cells_accessed_to_ref_range_bounds(false, &context)
+            table.convert_cells_accessed_to_ref_range_bounds(false, context)
         );
     }
 }
