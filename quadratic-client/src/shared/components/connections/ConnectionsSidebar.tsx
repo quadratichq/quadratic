@@ -54,9 +54,7 @@ export const ConnectionsSidebar = ({
       {useSsh && (
         <SidebarItem
           title="Public SSH key"
-          description="If you are connecting via SSH, you’ll need your team’s public key to connect."
-          linkText="Using SSH"
-          linkHref={TRUST_CENTER}
+          description="If you’re connecting via SSH, you’ll need your team’s public key."
         >
           <SidebarCopyContent text={sshPublicKey} />
         </SidebarItem>
@@ -95,7 +93,19 @@ function SidebarCopyContent({ text }: { text: string }) {
   );
 }
 
-function SidebarItem({ title, description, linkText, linkHref, children }: any) {
+function SidebarItem({
+  title,
+  description,
+  linkText,
+  linkHref,
+  children,
+}: {
+  title: string;
+  description: string;
+  linkText?: string;
+  linkHref?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div>
       <div>
