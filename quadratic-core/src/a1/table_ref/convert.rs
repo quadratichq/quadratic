@@ -41,9 +41,7 @@ impl TableRef {
                 } else {
                     0
                 };
-        }
-        // this is for the clipboard, we don't want to copy the table name when it's a full column
-        else if let ColRange::Col(_) = &self.col_range {
+        } else {
             y_start += table.y_adjustment(true);
         }
         let y_end = if !self.data { y_start } else { y_end };
@@ -417,7 +415,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
-            Some(RefRangeBounds::test_a1("A1:C4"))
+            Some(RefRangeBounds::test_a1("A3:C4"))
         );
 
         // Test with both headers and data
@@ -431,7 +429,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
-            Some(RefRangeBounds::test_a1("A1:C4"))
+            Some(RefRangeBounds::test_a1("A3:C4"))
         );
 
         // Test with show_table_headers_for_python = true
@@ -465,7 +463,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
-            Some(RefRangeBounds::test_a1("A1:B4"))
+            Some(RefRangeBounds::test_a1("A3:B4"))
         );
 
         // Test with a column to end
@@ -479,7 +477,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
-            Some(RefRangeBounds::test_a1("B1:C4"))
+            Some(RefRangeBounds::test_a1("B3:C4"))
         );
 
         // Test with a non-existent table
