@@ -365,14 +365,12 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections.GET.response']
       );
     },
-    async get({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) {
-      const connection = await fetchFromApi(
+    get({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) {
+      return fetchFromApi(
         `/v0/teams/${teamUuid}/connections/${connectionUuid}`,
         { method: 'GET' },
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response']
       );
-
-      return connection;
     },
     create({ body, teamUuid }: { body: ApiTypes['/v0/teams/:uuid/connections.POST.request']; teamUuid: string }) {
       return fetchFromApi(

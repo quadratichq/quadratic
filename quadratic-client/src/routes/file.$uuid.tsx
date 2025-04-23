@@ -26,7 +26,7 @@ import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../shared/components/Empty';
 
-export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
+type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
 export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
   currentParams.uuid !== nextParams.uuid;
