@@ -18,6 +18,7 @@ import type {
   Validation,
 } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
+import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
@@ -34,7 +35,7 @@ import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
+  needRefresh: (state: RefreshType) => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
