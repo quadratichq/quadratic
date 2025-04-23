@@ -55,7 +55,6 @@ impl GridController {
             return;
         };
         let pos: Pos = sheet_pos.into();
-
         // index for SetCodeRun is either set by execute_set_code_run or calculated
         let index = index.unwrap_or(
             sheet
@@ -83,12 +82,9 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
-            let is_code_cell = sheet
-                .get_table_language(pos, new_data_table)
-                .is_some_and(|lang| lang.is_code_language());
-
             new_data_table.alternating_colors = old_data_table.alternating_colors;
             new_data_table.name = old_data_table.name.to_owned();
+            new_data_table.show_name = old_data_table.show_name;
 
             // for python dataframes, we don't want preserve the show_columns setting
             // for other data tables types, we want to preserve most settings
@@ -98,7 +94,6 @@ impl GridController {
                 && !new_data_table.is_html_or_image()
             {
                 new_data_table.show_ui = old_data_table.show_ui;
-                new_data_table.show_name = old_data_table.show_name;
                 new_data_table.show_columns = old_data_table.show_columns;
 
                 // since we don't automatically apply the first row as headers in JS,
@@ -111,12 +106,6 @@ impl GridController {
                 // have headers; if the data table already has headers (eg, via data
                 // frames), then leave them in.
                 new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
-            }
-
-            // if the new data table is a single value and is a code cell, then we
-            // don't want to show the name or columns headers
-            if new_data_table.is_single_value() && is_code_cell {
-                new_data_table.apply_single_value_settings();
             }
 
             // if the width of the old and new data tables are the same,
@@ -411,6 +400,7 @@ impl GridController {
             _ => "Table1",
         };
 
+        // sheet may have been deleted before the async operation completed
         let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
             // todo: this is probably not the best place to handle this
             // sheet may have been deleted before the async operation completed
@@ -439,6 +429,8 @@ impl GridController {
                 None,
             );
         };
+
+        let first_run = sheet.data_table(start.into()).is_none();
 
         let value = if js_code_result.success {
             if let Some(array_output) = js_code_result.output_array {
@@ -511,7 +503,7 @@ impl GridController {
         // if the new data table is a single value and is a code cell, then we
         // don't want to show the name or columns headers
         if data_table.is_single_value() && language.is_code_language() {
-            data_table.apply_single_value_settings();
+            data_table.apply_single_value_settings(first_run);
         }
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
@@ -616,8 +608,8 @@ mod test {
             true,
             None,
         )
-        .with_show_name(false)
-        .with_show_columns(false);
+        .with_show_name(true)
+        .with_show_columns(true);
         new_data_table.column_headers = None;
 
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);

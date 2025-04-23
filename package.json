@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.6.12",
+  "version": "0.6.13",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -14,7 +14,6 @@
     "quadratic-client",
     "quadratic-files",
     "quadratic-multiplayer",
-    "quadratic-rust-client",
     "quadratic-core",
     "quadratic-client",
     "quadratic-kernels/python-wasm",
@@ -37,10 +36,6 @@
     "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build:wasm:perf:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
-    "watch:rust-client": "cd quadratic-rust-client && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'",
-    "watch:rust-client:perf": "cd quadratic-rust-client && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'",
-    "build:rust-client": "cd quadratic-rust-client && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs",
-    "build:rust-client:perf": "cd quadratic-rust-client && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
     "build:python": "./quadratic-kernels/python-wasm/package.sh",
     "build:file:blank": "cd quadratic-core && cargo run --bin generate_blank_current_file",

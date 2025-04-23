@@ -283,7 +283,7 @@ export function useSubmitAIAnalystPrompt() {
               messages: messagesWithContext,
               useStream: USE_STREAM,
               toolName: undefined,
-              useToolsPrompt: false,
+              useToolsPrompt: true,
               language: undefined,
               useQuadraticContext: true,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),

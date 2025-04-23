@@ -10,7 +10,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';

@@ -13,7 +13,6 @@ export class Control {
     files;
     connection;
     python;
-    rustClient;
     db;
     npm;
     rust;
@@ -26,7 +25,6 @@ export class Control {
         files: false,
         connection: false,
         python: false,
-        rustClient: false,
         types: false,
         db: false,
         npm: false,
@@ -50,7 +48,6 @@ export class Control {
             this.kill("files"),
             this.kill("connection"),
             this.kill("python"),
-            this.kill("rustClient"),
         ]);
         process.exit(0);
     }
@@ -210,7 +207,6 @@ export class Control {
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
         this.restartCore();
-        this.restartRustClient();
     }
     async runCore(restart) {
         if (this.quitting)
@@ -439,27 +435,6 @@ export class Control {
         this.cli.options.python = !this.cli.options.python;
         this.runPython();
     }
-    async runRustClient() {
-        if (this.quitting)
-            return;
-        this.status.rustClient = false;
-        await this.kill("rustClient");
-        this.ui.print("rustClient");
-        this.signals.rustClient = new AbortController();
-        this.rustClient = spawn("npm", [
-            "run",
-            `${this.cli.options.rustClient ? "watch" : "build"}:rust-client${this.cli.options.perf ? ":perf" : ""}`
-        ], { signal: this.signals.rustClient.signal });
-        this.ui.printOutput("rustClient", (data) => this.handleResponse("rustClient", data, {
-            success: "Your wasm pkg is ready to publish",
-            error: "error[",
-            start: "[Running ",
-        }));
-    }
-    async restartRustClient() {
-        this.cli.options.rustClient = !this.cli.options.rustClient;
-        this.runRustClient();
-    }
     async runDb() {
         if (this.quitting)
             return;
@@ -517,7 +492,6 @@ export class Control {
             }
             this.runTypes();
             this.runCore();
-            this.runRustClient();
         });
     }
     isRedisRunning() {
