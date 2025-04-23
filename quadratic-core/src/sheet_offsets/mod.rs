@@ -8,6 +8,7 @@ use self::{offsets::Offsets, resize_transient::TransientResize};
 pub mod offsets;
 pub mod resize_transient;
 pub mod sheet_offsets_wasm;
+mod wasm;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

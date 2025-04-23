@@ -4,14 +4,14 @@
 
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
-use quadratic_core::{
-    CellValue,
-    date_time::{
+use {
+    super::{
         DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT,
         date_time_to_date_time_string, date_to_date_string, i32_to_naive_time, i64_to_naive_date,
         naive_date_time_to_i64, naive_date_to_i64, naive_time_to_i32, parse_date, parse_time,
         time_to_time_string,
     },
+    crate::CellValue,
 };
 
 /// Returns a formatted version of the date string. The date is expected to

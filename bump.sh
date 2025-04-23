@@ -34,7 +34,6 @@ RUST=(
   "quadratic-core/Cargo.toml"
   "quadratic-files/Cargo.toml"
   "quadratic-multiplayer/Cargo.toml"
-  "quadratic-rust-client/Cargo.toml"
   "quadratic-rust-shared/Cargo.toml"
 )
 
@@ -42,6 +41,7 @@ JAVASCRIPT=(
   "package.json"
   "quadratic-api/package.json"
   "quadratic-client/package.json"
+  "quadratic-client/public/version.json"
   "quadratic-shared/package.json"
 )
 

@@ -42,10 +42,8 @@ quadratic-core/tmp.txt
 quadratic-files/target/
 quadratic-files/storage
 quadratic-multiplayer/target/
-quadratic-rust-client/target/
 quadratic-rust-shared/target/
 
-quadratic-multiplayer/updateAlertVersion.json
 quadratic-rust-shared/src/auto_gen_path.rs
 
 # Generated JS files

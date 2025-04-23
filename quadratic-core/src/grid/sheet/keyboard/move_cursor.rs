@@ -5,7 +5,7 @@ use crate::{Pos, grid::Sheet};
 
 use super::Direction;
 
-// todo: this should be moved to rust-client using A1Context
+// todo: this should use A1Context instead of quadraticCore
 
 impl Sheet {
     /// Returns a new Pos after pressing an arrow key.
