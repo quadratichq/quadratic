@@ -42,7 +42,7 @@ impl TableRef {
                     0
                 };
         } else {
-            y_start += table.y_adjustment(true);
+            y_start += table.y_adjustment(false);
         }
         let y_end = if !self.data { y_start } else { y_end };
 
@@ -178,7 +178,9 @@ impl TableRef {
 
 #[cfg(test)]
 mod tests {
-    use crate::Rect;
+    use crate::a1::{A1Selection, CellRefRange};
+    use crate::test_util::*;
+    use crate::{Rect, test_create_code_table};
 
     use super::*;
 
@@ -492,6 +494,39 @@ mod tests {
         assert_eq!(
             table_ref.convert_cells_accessed_to_ref_range_bounds(false, &context),
             None
+        );
+    }
+
+    #[test]
+    fn test_convert_cells_accessed_to_ref_range_bounds_from_python() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_code_table(&mut gc, sheet_id, pos![B2], 2, 2);
+
+        // ensure the table has UI
+        gc.data_table_meta(
+            pos![sheet_id!B2],
+            None,
+            None,
+            None,
+            Some(true),
+            Some(true),
+            Some(true),
+            None,
+        );
+
+        let context = gc.a1_context();
+        let selection = A1Selection::test_a1_context("table1", &context);
+        let table = if let CellRefRange::Table { range } = selection.ranges[0].clone() {
+            range
+        } else {
+            panic!("Expected a table reference")
+        };
+
+        println!(
+            "{:?}",
+            table.convert_cells_accessed_to_ref_range_bounds(false, &context)
         );
     }
 }
