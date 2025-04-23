@@ -1,6 +1,5 @@
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import mixpanel from 'mixpanel-browser';
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type ABTestProps = {
@@ -18,15 +17,6 @@ export const ABTest = memo(({ name, control, variant, probability = 0.1 }: ABTes
   // This will allow us to split the users into two groups, control and variant
   // consistently putting the same user in the same group by using the same UUID
   const hash = parseInt(teamUuid.replace(/-/g, '').slice(0, 8), 16) / 0xffffffff;
-
-  // Send to mixpanel only once on mount
-  useEffect(() => {
-    mixpanel.track('[ABTest].started', {
-      name,
-      variant: hash < probability ? 'variant' : 'control',
-      probability,
-    });
-  }, [name, hash, probability]);
 
   // Return variant if hash is less than probability, otherwise control
   return hash < probability ? variant : control;
