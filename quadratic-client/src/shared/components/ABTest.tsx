@@ -22,6 +22,11 @@ export const ABTest = memo(({ name, control, variant, probability = 0.1 }: ABTes
 
   // Send to mixpanel only once
   if (!hasTrackedRef.current) {
+    console.log('Tracking ABTest', {
+      name,
+      variant: hash < probability ? 'variant' : 'control',
+      probability,
+    });
     mixpanel.track('[ABTest].started', {
       name,
       variant: hash < probability ? 'variant' : 'control',
