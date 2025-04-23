@@ -4126,7 +4126,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.6.11"
+version = "0.6.13"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -4180,7 +4180,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-files"
-version = "0.6.11"
+version = "0.6.13"
 dependencies = [
  "axum",
  "axum-extra",
@@ -4214,7 +4214,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.11"
+version = "0.6.13"
 dependencies = [
  "aes",
  "arrow",

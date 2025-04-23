@@ -3,7 +3,6 @@
 //! A central place for websocket messages responses.
 
 use crate::error::{ErrorLevel, MpError};
-use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -28,12 +27,23 @@ pub(crate) struct BinaryTransaction {
     pub(crate) operations: Vec<u8>,
 }
 
+// TODO: to be deleted after the next release
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MinVersion {
+    pub(crate) required_version: u32,
+    pub(crate) recommended_version: u32,
+}
+
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
     UsersInRoom {
         users: Vec<User>,
+        version: String,
+
+        // TODO: to be deleted after the next release
         min_version: MinVersion,
     },
     UserUpdate {
@@ -103,11 +113,17 @@ impl From<TransactionServer> for BinaryTransaction {
     }
 }
 
-impl From<(DashMap<Uuid, User>, &MinVersion)> for MessageResponse {
-    fn from((users, min_version): (DashMap<Uuid, User>, &MinVersion)) -> Self {
+impl From<(DashMap<Uuid, User>, &String)> for MessageResponse {
+    fn from((users, version): (DashMap<Uuid, User>, &String)) -> Self {
         MessageResponse::UsersInRoom {
             users: users.into_iter().map(|user| (user.1)).collect(),
-            min_version: min_version.to_owned(),
+            version: version.to_owned(),
+
+            // TODO: to be deleted after next version
+            min_version: MinVersion {
+                required_version: 5,
+                recommended_version: 5,
+            },
         }
     }
 }

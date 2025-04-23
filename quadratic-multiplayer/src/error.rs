@@ -60,9 +60,6 @@ pub(crate) enum MpError {
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
-    #[error("Error reading MinVersion file: {0}")]
-    MinVersion(String),
-
     #[error("Requested {0} transactions but only found {1}")]
     MissingTransactions(String, String),
 

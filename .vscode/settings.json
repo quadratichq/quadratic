@@ -74,6 +74,7 @@
     "itertools",
     "jamba",
     "jetli",
+    "jsonwebtoken",
     "jwks",
     "keepalive",
     "keyrings",

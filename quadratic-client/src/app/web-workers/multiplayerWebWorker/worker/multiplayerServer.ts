@@ -20,7 +20,6 @@ import type {
   SendGetBinaryTransactions,
   SendTransaction,
   UserUpdate,
-  Version,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import {
   ReceiveTransaction as ReceiveProtoTransaction,
@@ -31,7 +30,6 @@ import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
 import type { User } from '@/auth/auth';
 import * as Sentry from '@sentry/react';
-import sharedConstants from '../../../../../../updateAlertVersion.json';
 
 const UPDATE_TIME_MS = 1000 / 60;
 const HEARTBEAT_TIME = 1000 * 10;
@@ -72,8 +70,6 @@ export class MultiplayerServer {
 
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
-
-  private updateAlertVersion: Version = sharedConstants;
 
   // queue of items waiting to be sent to the server on the next tick
   userUpdate: UserUpdate = {};

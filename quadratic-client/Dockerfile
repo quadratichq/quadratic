@@ -24,9 +24,6 @@ RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm
 
 WORKDIR /quadratic
 
-# trigger rebuild if updateAlertVersion.json changes
-COPY --link updateAlertVersion.json .
-
 # Copy required files for building core
 COPY --link package.json .
 COPY --link ./quadratic-core/. ./quadratic-core/
@@ -65,9 +62,6 @@ RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm
 
 WORKDIR /quadratic
 
-# trigger rebuild if updateAlertVersion.json changes
-COPY --link updateAlertVersion.json .
-
 # Copy required files for building ts/rust types
 COPY --link package.json .
 COPY --link ./quadratic-core/. ./quadratic-core/
@@ -95,9 +89,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     brotli \
     pigz
-
-# Copy updateAlertVersion.json
-COPY --link updateAlertVersion.json .
 
 # Copy all package.json files
 COPY --link package.json .
@@ -141,10 +132,6 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
     echo "VITE_ORY_HOST=VITE_ORY_HOST_VAL" >> ./quadratic-client/.env && \
     echo "VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL" >> ./quadratic-client/.env; \
     fi
-
-# Create version.json from VERSION file
-COPY --link VERSION .
-RUN echo "{\"version\":\"$(cat VERSION)\"}" > ./quadratic-client/public/version.json
 
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
