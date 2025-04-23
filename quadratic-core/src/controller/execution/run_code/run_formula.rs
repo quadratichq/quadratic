@@ -253,6 +253,7 @@ mod test {
             CodeCellLanguage::Javascript,
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
             return_type: Some("number".into()),
             output_type: Some("number".into()),
             ..Default::default()
@@ -265,9 +266,9 @@ mod test {
                 Value::Single(CellValue::Number(12.into())),
                 false,
                 false,
-                Some(true),
-                Some(false),
-                Some(false),
+                None,
+                None,
+                None,
                 None,
             )
             .with_last_modified(result.last_modified)
@@ -330,6 +331,7 @@ mod test {
             CodeCellLanguage::Javascript,
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
             return_type: Some("array".into()),
             output_type: Some("array".into()),
             ..Default::default()
@@ -341,9 +343,9 @@ mod test {
             Value::Array(array),
             false,
             false,
-            Some(true),
-            Some(true),
-            Some(false),
+            None,
+            None,
+            None,
             None,
         );
         let column_headers =

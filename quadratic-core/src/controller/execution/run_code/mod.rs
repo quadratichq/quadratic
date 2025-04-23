@@ -59,8 +59,6 @@ impl GridController {
                 // we need to do it manually here
                 if old_data_table.header_is_first_row {
                     new_data_table.apply_first_row_as_header();
-                } else {
-                    new_data_table.apply_default_header();
                 }
             }
 
@@ -484,6 +482,12 @@ impl GridController {
             cells_accessed: std::mem::take(&mut transaction.cells_accessed),
         };
 
+        let show_column = if js_code_result.has_headers {
+            Some(true)
+        } else {
+            None
+        };
+
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
@@ -492,7 +496,7 @@ impl GridController {
             js_code_result.has_headers,
             None,
             None,
-            None,
+            show_column,
             js_code_result.chart_pixel_output,
         );
 

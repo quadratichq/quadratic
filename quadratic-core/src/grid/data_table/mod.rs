@@ -284,8 +284,7 @@ impl DataTable {
             return show_ui;
         }
 
-        let language = self.get_language();
-        if language == CodeCellLanguage::Import || self.header_is_first_row {
+        if self.get_language() == CodeCellLanguage::Import {
             return true;
         }
 
@@ -293,7 +292,7 @@ impl DataTable {
             return false;
         }
 
-        false
+        true
     }
 
     pub fn get_show_name(&self) -> bool {
@@ -310,7 +309,11 @@ impl DataTable {
             return false;
         }
 
-        false
+        if language == CodeCellLanguage::Formula {
+            return false;
+        }
+
+        true
     }
 
     pub fn get_show_columns(&self) -> bool {
@@ -322,10 +325,6 @@ impl DataTable {
             return show_columns;
         }
 
-        if self.header_is_first_row {
-            return true;
-        }
-
         let language = self.get_language();
         if language == CodeCellLanguage::Import {
             return true;
@@ -335,7 +334,19 @@ impl DataTable {
             return false;
         }
 
-        false
+        if self.header_is_first_row {
+            return true;
+        }
+
+        if self.is_list() || self.is_series() {
+            return false;
+        }
+
+        if language == CodeCellLanguage::Javascript || language == CodeCellLanguage::Formula {
+            return false;
+        }
+
+        true
     }
 
     pub fn name(&self) -> &str {

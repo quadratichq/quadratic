@@ -291,6 +291,7 @@ mod tests {
                 success: true,
                 output_value: None,
                 output_array: Some(python_array(vec![1, 2, 3])),
+                output_display_type: Some("list".into()),
                 ..Default::default()
             })
             .is_ok()
