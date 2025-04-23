@@ -13,7 +13,7 @@ import type {
   JsRenderCodeCell,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { newRectSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { newRectSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   AddColumnLeftIcon,
@@ -655,7 +655,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.ToggleTableName]: {
     label: () => 'Show name',
-    isAvailable: () => !isSingleCell(),
+    isAvailable: () => isCodeCell('Python') || isCodeCell('Javascript') || !isSingleCell(),
     labelVerbose: 'Show table name',
     checkbox: isTableNameShowing,
     run: toggleTableName,

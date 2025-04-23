@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';

@@ -1,9 +1,5 @@
 import type { Rect } from '@/app/quadratic-core-types';
-import {
-  newAllSelection,
-  newRectSelection,
-  newSingleSelection,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { newAllSelection, newRectSelection, newSingleSelection } from '@/app/quadratic-core/quadratic_core';
 
 export const getSingleSelection = (sheetId: string, x: number, y: number): string => {
   try {

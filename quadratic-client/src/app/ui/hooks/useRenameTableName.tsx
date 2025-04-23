@@ -1,5 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { validateTableName } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { validateTableName } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useCallback } from 'react';

@@ -28,6 +28,7 @@ export const AWS_S3_SECRET_ACCESS_KEY = process.env.AWS_S3_SECRET_ACCESS_KEY as 
 export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME as string;
 export const AWS_S3_ANALYTICS_BUCKET_NAME = process.env.AWS_S3_ANALYTICS_BUCKET_NAME as string;
 export const GCP_REGION = process.env.GCP_REGION as string;
+export const GCP_REGION_ANTHROPIC = process.env.GCP_REGION_ANTHROPIC as string;
 export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID as string;
 export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL as string;
 export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY as string;
