@@ -309,15 +309,10 @@ async fn process_message(
         }
         // binary messages are protocol buffers
         Message::Binary(b) => {
-            let now = std::time::Instant::now();
-            tracing::info!("Received binary message");
             let transaction = decode_transaction(&b)?;
-            tracing::info!("Decoded transaction in {:?}", now.elapsed());
             let message_request = MessageRequest::try_from(transaction)?;
-            tracing::info!("Converted to message request in {:?}", now.elapsed());
             let message_response =
                 handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
-            tracing::info!("Handled message in {:?}", now.elapsed());
 
             send_response(sender, message_response).await?;
         }

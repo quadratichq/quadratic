@@ -4157,6 +4157,7 @@ dependencies = [
  "lexicon_fractional_index",
  "parquet",
  "pollster",
+ "prost",
  "quadratic-rust-shared",
  "rand 0.9.0",
  "regex",

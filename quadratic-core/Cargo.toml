@@ -109,6 +109,7 @@ dateparser = "0.2.1"
 fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
+prost = { version = "0.13.5", default-features = false }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use quadratic_rust_shared::protobuf::Message;
+use prost::Message;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

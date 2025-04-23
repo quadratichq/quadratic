@@ -5,7 +5,10 @@ pub mod crypto;
 pub mod environment;
 pub mod error;
 pub mod parquet;
+
+#[cfg(feature = "protobuf")]
 pub mod protobuf;
+
 pub mod pubsub;
 pub mod quadratic_api;
 pub mod sql;

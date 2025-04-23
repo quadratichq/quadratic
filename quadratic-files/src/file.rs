@@ -4,7 +4,6 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use quadratic_core::{
-    compression::read_header,
     controller::{
         GridController,
         operations::operation::Operation,
@@ -16,10 +15,7 @@ use quadratic_core::{
     },
 };
 use quadratic_rust_shared::{
-    protobuf::{
-        Message,
-        quadratic::transaction::{ReceiveTransaction, SendTransaction},
-    },
+    protobuf::quadratic::transaction::ReceiveTransaction,
     pubsub::PubSub as PubSubTrait,
     quadratic_api::{get_file_checkpoint, set_file_checkpoint},
     storage::{Storage, StorageContainer},
@@ -107,17 +103,11 @@ pub(crate) async fn process_queue_for_room(
         ..
     } = &state.settings;
 
-    let now = Utc::now();
     let checkpoint_sequence_num =
         match get_file_checkpoint(quadratic_api_uri, m2m_auth_token, &file_id).await {
             Ok(last_checkpoint) => last_checkpoint.sequence_number,
             Err(_) => 0,
         };
-
-    tracing::info!(
-        "Checkpoint sequence numbee in {:?}ms",
-        (Utc::now() - now).num_milliseconds()
-    );
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut pubsub = state.pubsub.lock().await;
@@ -126,7 +116,6 @@ pub(crate) async fn process_queue_for_room(
     pubsub.connection.subscribe(channel, GROUP_NAME).await?;
 
     // get all transactions for the room in the queue
-    let now = Utc::now();
     let transactions = pubsub
         .connection
         .get_messages_from(channel, &(checkpoint_sequence_num + 1).to_string(), false)
@@ -137,7 +126,7 @@ pub(crate) async fn process_queue_for_room(
                 "1.0" => decompress_and_deserialize_serde::<TransactionServer>(message),
                 "2.0" => {
                     let decoded = decode_protobuf(message)?;
-                    tracing::info!("Decoded: {:?}", decoded.file_id);
+
                     Ok(TransactionServer {
                         id: Uuid::parse_str(&decoded.id)?,
                         file_id: Uuid::parse_str(&decoded.file_id)?,
@@ -152,12 +141,6 @@ pub(crate) async fn process_queue_for_room(
             Err(_) => Err(FilesError::Serialization("Invalid header".into())),
         })
         .collect::<Vec<TransactionServer>>();
-
-    tracing::info!(
-        "Found {} transaction(s) for room {file_id} in {:?}ms",
-        transactions.len(),
-        (Utc::now() - now).num_milliseconds()
-    );
 
     if transactions.is_empty() {
         return Ok(None);
@@ -179,7 +162,6 @@ pub(crate) async fn process_queue_for_room(
         .ok_or_else(|| FilesError::Unknown("No transactions to process".into()))?;
 
     // combine all operations into a single vec
-    let now = Utc::now();
     let operations = transactions
         .into_iter()
         .flat_map(|transaction| {
@@ -194,14 +176,8 @@ pub(crate) async fn process_queue_for_room(
         .flatten()
         .collect::<Vec<Operation>>();
 
-    tracing::info!(
-        "Combined {} operations in {:?}ms",
-        operations.len(),
-        (Utc::now() - now).num_milliseconds()
-    );
-
     // process the transactions and save the file to S3
-    let now = Utc::now();
+    let start_processing = Utc::now();
     let last_sequence_num = process_transactions(
         storage,
         file_id,
@@ -211,9 +187,9 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
-    tracing::info!(
+    tracing::trace!(
         "Processed transactions in {:?}ms",
-        (Utc::now() - now).num_milliseconds()
+        (Utc::now() - start_processing).num_milliseconds()
     );
 
     // convert keys to &str requires 2 iterations
@@ -233,7 +209,6 @@ pub(crate) async fn process_queue_for_room(
 
     // update the checkpoint in quadratic-api
     let key = &key(file_id, last_sequence_num);
-    let now = Utc::now();
     set_file_checkpoint(
         quadratic_api_uri,
         m2m_auth_token,
@@ -245,11 +220,6 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
-    tracing::info!(
-        "Set checkpoint in {:?}ms",
-        (Utc::now() - now).num_milliseconds()
-    );
-
     // add FILE_ID.SEQUENCE_NUM to the processed transactions channel
     let message = processed_transaction_key(&file_id.to_string(), &last_sequence_num.to_string());
     let processed_transactions_channel = state
@@ -257,18 +227,12 @@ pub(crate) async fn process_queue_for_room(
         .pubsub_processed_transactions_channel
         .to_owned();
 
-    let now = Utc::now();
     add_processed_transaction(
         &Arc::clone(state),
         &processed_transactions_channel,
         &message,
     )
     .await?;
-
-    tracing::info!(
-        "Added processed transaction in {:?}ms",
-        (Utc::now() - now).num_milliseconds()
-    );
 
     state.stats.lock().await.last_processed_file_time = Some(Utc::now());
 

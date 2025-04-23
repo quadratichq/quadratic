@@ -15,7 +15,7 @@ pub(crate) fn encode_message(message: MessageResponse) -> Result<Vec<u8>> {
 
             transaction
                 .encode(&mut buffer)
-                .map_err(|e| MpError::Unknown(e.to_string()))?;
+                .map_err(|e| MpError::Serialization(e.to_string()))?;
         }
         MessageResponse::BinaryTransactions { transactions } => {
             let transactions = transactions
@@ -30,10 +30,12 @@ pub(crate) fn encode_message(message: MessageResponse) -> Result<Vec<u8>> {
 
             response
                 .encode(&mut buffer)
-                .map_err(|e| MpError::Unknown(e.to_string()))?;
+                .map_err(|e| MpError::Serialization(e.to_string()))?;
         }
         _ => {
-            return Err(MpError::Unknown("Invalid message response".to_string()));
+            return Err(MpError::ReceivingMessage(
+                "Invalid message response".to_string(),
+            ));
         }
     };
 
@@ -58,7 +60,7 @@ impl TryFrom<MessageResponse> for ReceiveTransaction {
                 operations,
             },
             _ => {
-                return Err(MpError::Unknown(format!(
+                return Err(MpError::ReceivingMessage(format!(
                     "Invalid message response: {:?}",
                     message_response
                 )));

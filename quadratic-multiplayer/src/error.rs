@@ -69,6 +69,9 @@ pub(crate) enum MpError {
     #[error("PubSub error: {0}")]
     PubSub(String),
 
+    #[error("Error receiving message: {0}")]
+    ReceivingMessage(String),
+
     #[error("Error requesting data: {0}")]
     Request(String),
 

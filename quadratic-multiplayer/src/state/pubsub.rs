@@ -81,21 +81,21 @@ impl PubSub {
             operations,
             sequence_num,
         };
-        let now = std::time::Instant::now();
-        let encoded = encode_message(transaction)?;
-        tracing::info!("Encoded in {:?}", now.elapsed());
-        tracing::info!("Encoded length {:?}", encoded.len());
 
-        let now = std::time::Instant::now();
+        // turn BinaryTransaction into Protobuf
+        let encoded = encode_message(transaction)?;
+
+        // add header to the message
         let transaction_compressed =
             Transaction::add_header(encoded).map_err(|e| MpError::Serialization(e.to_string()))?;
-        tracing::info!("Encoded message in {:?}", now.elapsed());
-        tracing::info!("Compressed length {:?}", transaction_compressed.len());
+
+        // get the active channels name
         let active_channels = match self.config {
             PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
             _ => "active_channels",
         };
-        let now = std::time::Instant::now();
+
+        // publish the message to the PubSub server
         self.connection
             .publish(
                 &file_id.to_string(),
@@ -104,7 +104,7 @@ impl PubSub {
                 Some(active_channels),
             )
             .await?;
-        tracing::info!("Published in {:?}", now.elapsed());
+
         Ok(sequence_num)
     }
 
