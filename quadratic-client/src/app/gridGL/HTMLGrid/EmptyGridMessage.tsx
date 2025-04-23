@@ -1,15 +1,17 @@
 import { Action } from '@/app/actions/actions';
 import { insertActionsSpec } from '@/app/actions/insertActionsSpec';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSetRecoilState } from 'recoil';
 
@@ -21,8 +23,9 @@ export function EmptyGridMessage() {
   } = useFileRouteLoaderData();
   const canEdit = filePermissions.includes('FILE_EDIT');
   const [open, setOpen] = useState(!fileHasData());
-  const showConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
-  const showCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const setCodeEditorCodeCell = useSetRecoilState(codeEditorCodeCellAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const { data } = useConnectionsFetcher();
   const connections = data?.connections ?? [];
 
@@ -37,6 +40,30 @@ export function EmptyGridMessage() {
       events.off('hashContentChanged', checkBounds);
     };
   }, [open]);
+
+  const handleImportFile = useCallback(() => {
+    insertActionsSpec[Action.InsertFile].run();
+  }, []);
+
+  const handleShowConnection = useCallback(() => {
+    const { x, y } = sheets.sheet.cursor.position;
+    setCodeEditorCodeCell((prev) => ({
+      ...prev,
+      sheetId: sheets.current,
+      pos: { x, y },
+    }));
+    setShowConnectionsMenu(true);
+  }, [setCodeEditorCodeCell, setShowConnectionsMenu]);
+
+  const handleUseConnection = useCallback(() => {
+    const { x, y } = sheets.sheet.cursor.position;
+    setCodeEditorCodeCell((prev) => ({
+      ...prev,
+      sheetId: sheets.current,
+      pos: { x, y },
+    }));
+    setShowCellTypeMenu(true);
+  }, [setCodeEditorCodeCell, setShowCellTypeMenu]);
 
   if (!canEdit) {
     return null;
@@ -80,33 +107,16 @@ export function EmptyGridMessage() {
         Drag and drop a file (CSV, Excel, Parquet) or use a connection (Postgres, MySQL, and more).
       </p>
       <div className="mt-2 flex w-full flex-col justify-center gap-2">
-        <Button
-          className="w-full"
-          onClick={() => {
-            insertActionsSpec[Action.InsertFile].run();
-          }}
-        >
+        <Button className="w-full" onClick={handleImportFile}>
           Upload file
         </Button>
 
         {connections.length === 0 ? (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              showConnectionsMenu(true);
-            }}
-          >
+          <Button variant="outline" className="w-full" onClick={handleShowConnection}>
             Create connection
           </Button>
         ) : (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              showCellTypeMenu(true);
-            }}
-          >
+          <Button variant="outline" className="w-full" onClick={handleUseConnection}>
             Use connection
           </Button>
         )}
