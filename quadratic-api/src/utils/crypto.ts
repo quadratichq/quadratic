@@ -82,8 +82,8 @@ export const generateSshKeys = async (
   } = options;
 
   // Create unique filenames for this run
-  const timestamp = Date.now();
-  const privateKeyPath = path.join(outputDir, `id_${type}_${timestamp}`);
+  const unique = crypto.randomBytes(32);
+  const privateKeyPath = path.join(outputDir, `id_${type}_${unique}`);
   const publicKeyPath = `${privateKeyPath}.pub`;
 
   // Build the ssh-keygen command
