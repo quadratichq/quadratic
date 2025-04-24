@@ -4,7 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debug, debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -212,6 +212,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientCoreError') {
       events.emit('coreError', e.data.from, e.data.error);
+      if (debug) {
+        console.error('[quadraticCore] core error', e.data.from, e.data.error);
+      }
       return;
     }
 
@@ -1544,6 +1547,26 @@ class QuadraticCore {
     });
   }
   //#endregion
+
+  resizeColumns(sheetId: string, columns: number[], size: number, cursor: string) {
+    this.send({
+      type: 'clientCoreResizeColumns',
+      sheetId,
+      columns,
+      size,
+      cursor,
+    });
+  }
+
+  resizeRows(sheetId: string, rows: number[], size: number, cursor: string) {
+    this.send({
+      type: 'clientCoreResizeRows',
+      sheetId,
+      rows,
+      size,
+      cursor,
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();

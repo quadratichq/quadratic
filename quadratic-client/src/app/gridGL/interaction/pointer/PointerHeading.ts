@@ -364,16 +364,28 @@ export class PointerHeading {
     if (this.active) {
       this.active = false;
       if (this.resizing) {
-        const transientResize = sheets.sheet.offsets.getResizeToApply();
-        if (transientResize) {
-          try {
-            const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
-            const delta = old_size - new_size;
-            if (delta !== 0) {
-              quadraticCore.commitTransientResize(sheets.current, transientResize);
+        // if multiple columns or rows are selected, we need to resize all of them
+        const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
+        const rows = sheets.sheet.cursor.getSelectedRowsFinite();
+        if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
+          quadraticCore.resizeColumns(sheets.current, columns, this.resizing.width, sheets.getCursorPosition());
+        } else if (this.resizing.row && rows.length !== 1 && this.resizing.height !== undefined) {
+          quadraticCore.resizeRows(sheets.current, rows, this.resizing.height, sheets.getCursorPosition());
+        }
+
+        // otherwise work with the transient resize (if available)
+        else {
+          const transientResize = sheets.sheet.offsets.getResizeToApply();
+          if (transientResize) {
+            try {
+              const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
+              const delta = old_size - new_size;
+              if (delta !== 0) {
+                quadraticCore.commitTransientResize(sheets.current, transientResize);
+              }
+            } catch (error) {
+              console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
             }
-          } catch (error) {
-            console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
           }
         }
         this.resizing = undefined;

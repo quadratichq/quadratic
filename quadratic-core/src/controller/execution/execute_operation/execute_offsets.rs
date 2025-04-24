@@ -4,7 +4,7 @@ use crate::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::js_types::JsRowHeight,
+    grid::js_types::{JsColumnWidth, JsRowHeight},
 };
 
 impl GridController {
@@ -190,6 +190,69 @@ impl GridController {
             }
         }
     }
+
+    pub fn execute_resize_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::ResizeColumns {
+            sheet_id,
+            column_heights,
+        } = op
+        {
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
+
+            let mut old_column_heights: Vec<JsColumnWidth> = column_heights
+                .iter()
+                .map(|JsColumnWidth { column, width }| {
+                    let old_size = sheet.offsets.set_column_width(*column, *width);
+                    JsColumnWidth {
+                        column: *column,
+                        width: old_size,
+                    }
+                })
+                .collect();
+
+            old_column_heights.sort_by_key(|JsColumnWidth { column, .. }| *column);
+
+            if old_column_heights == column_heights {
+                return;
+            }
+
+            transaction
+                .forward_operations
+                .push(Operation::ResizeColumns {
+                    sheet_id,
+                    column_heights: column_heights.clone(),
+                });
+
+            transaction
+                .reverse_operations
+                .push(Operation::ResizeColumns {
+                    sheet_id,
+                    column_heights: old_column_heights,
+                });
+
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                column_heights
+                    .iter()
+                    .for_each(|&JsColumnWidth { column, width }| {
+                        transaction.offsets_modified(sheet_id, Some(column), None, Some(width));
+                    });
+            }
+
+            if !transaction.is_server() {
+                column_heights.iter().any(|JsColumnWidth { column, .. }| {
+                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: *column,
+                        y: 0,
+                        sheet_id,
+                    });
+                    transaction.generate_thumbnail
+                });
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -198,8 +261,11 @@ mod tests {
 
     use crate::{
         controller::GridController,
+        grid::js_types::JsColumnWidth,
         wasm_bindings::js::{clear_js_calls, expect_js_offsets},
     };
+
+    use crate::test_util::*;
 
     // also see tests in sheet_offsets.rs
 
@@ -245,5 +311,27 @@ mod tests {
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
         offsets.insert((None, Some(row as i64)), new_size);
         expect_js_offsets(sheet_id, offsets, true);
+    }
+
+    #[test]
+    fn test_execute_resize_columns() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        gc.resize_columns(
+            sheet_id,
+            vec![
+                JsColumnWidth {
+                    column: 2,
+                    width: 200.0,
+                },
+                JsColumnWidth {
+                    column: 4,
+                    width: 400.0,
+                },
+            ],
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.column_width(2), 200.0);
+        assert_eq!(sheet.offsets.column_width(4), 400.0);
     }
 }

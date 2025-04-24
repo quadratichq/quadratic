@@ -22,10 +22,12 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeResult,
+  JsColumnWidth,
   JsCoordinate,
   JsDataTableColumnHeader,
   JsRenderCell,
   JsResponse,
+  JsRowHeight,
   JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
@@ -1566,6 +1568,32 @@ class Core {
       this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
     } catch (e) {
       this.handleCoreError('moveRows', e);
+    }
+  }
+
+  resizeColumns(sheetId: string, columns: number[], size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsColumnWidth[] = columns.map((column) => ({
+      column: BigInt(column),
+      width: size,
+    }));
+    try {
+      this.gridController.resizeColumns(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeColumns', e);
+    }
+  }
+
+  resizeRows(sheetId: string, rows: number[], size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsRowHeight[] = rows.map((row) => ({
+      row: BigInt(row),
+      height: size,
+    }));
+    try {
+      this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeRows', e);
     }
   }
 }

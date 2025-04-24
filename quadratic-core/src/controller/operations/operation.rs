@@ -12,7 +12,7 @@ use crate::{
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
         formatting::CellFmtArray,
-        js_types::JsRowHeight,
+        js_types::{JsColumnWidth, JsRowHeight},
         sheet::{
             borders::{
                 BordersUpdates,
@@ -281,6 +281,12 @@ pub enum Operation {
         /// See note in `ResizeColumn.client_resized`.
         #[serde(default)]
         client_resized: bool,
+    },
+
+    /// Resizes multiple columns.
+    ResizeColumns {
+        sheet_id: SheetId,
+        column_heights: Vec<JsColumnWidth>,
     },
 
     /// Resizes several rows.

@@ -96,4 +96,26 @@ impl GridController {
             &self.complete_auto_resize_row_heights(transaction_id, sheet_id, row_heights),
         )?)
     }
+
+    #[wasm_bindgen(js_name = "resizeColumns")]
+    pub fn js_resize_columns(&mut self, sheet_id: String, columns: String, cursor: Option<String>) {
+        if let (Ok(sheet_id), Ok(columns)) =
+            (SheetId::from_str(&sheet_id), serde_json::from_str(&columns))
+        {
+            self.resize_columns(sheet_id, columns, cursor);
+        } else {
+            dbgjs!("Failed to parse values in resizeColumns");
+        }
+    }
+
+    #[wasm_bindgen(js_name = "resizeRows")]
+    pub fn js_resize_rows(&mut self, sheet_id: String, rows: String, cursor: Option<String>) {
+        if let (Ok(sheet_id), Ok(rows)) =
+            (SheetId::from_str(&sheet_id), serde_json::from_str(&rows))
+        {
+            self.resize_rows(sheet_id, rows, cursor);
+        } else {
+            dbgjs!("Failed to parse values in resizeRows");
+        }
+    }
 }
