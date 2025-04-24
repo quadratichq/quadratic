@@ -325,7 +325,7 @@ export class PointerHeading {
 
   private pointerUpMovingColRows(): boolean {
     if (this.movingColRows) {
-      if (this.movingColRows.place !== this.movingColRows.start) {
+      if (this.movingColRows.place !== this.movingColRows.start && this.movingColRows.indicies.length >= 1) {
         if (this.movingColRows.isColumn) {
           quadraticCore.moveColumns(
             sheets.current,
