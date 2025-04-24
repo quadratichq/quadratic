@@ -15,7 +15,6 @@ use quadratic_core::{
     },
 };
 use quadratic_rust_shared::{
-    protobuf::quadratic::transaction::ReceiveTransaction,
     pubsub::PubSub as PubSubTrait,
     quadratic_api::{get_file_checkpoint, set_file_checkpoint},
     storage::{Storage, StorageContainer},
@@ -121,25 +120,7 @@ pub(crate) async fn process_queue_for_room(
         .get_messages_from(channel, &(checkpoint_sequence_num + 1).to_string(), false)
         .await?
         .into_iter()
-        .flat_map(|(_, message)| match Transaction::read_header(&message) {
-            Ok(header) => match header.version.as_str() {
-                "1.0" => Transaction::decompress_and_deserialize(&message)?,
-                "2.0" => {
-                    let decoded = decode_protobuf(message)?;
-
-                    Ok(TransactionServer {
-                        id: Uuid::parse_str(&decoded.id)?,
-                        file_id: Uuid::parse_str(&decoded.file_id)?,
-                        operations: decoded.operations,
-                        sequence_num: decoded.sequence_num,
-                    })
-                }
-                _ => Err(FilesError::Serialization(
-                    "Invalid transaction version".into(),
-                )),
-            },
-            Err(_) => Err(FilesError::Serialization("Invalid header".into())),
-        })
+        .flat_map(|(_, message)| Transaction::process_incoming(&message))
         .collect::<Vec<TransactionServer>>();
 
     if transactions.is_empty() {
@@ -287,11 +268,6 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
 
 fn decompress_and_deserialize_serde<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
     Transaction::decompress_and_deserialize::<T>(&data)
-        .map_err(|e| FilesError::Serialization(e.to_string()))
-}
-
-fn decode_protobuf(data: Vec<u8>) -> Result<ReceiveTransaction> {
-    Transaction::decode::<ReceiveTransaction>(&data)
         .map_err(|e| FilesError::Serialization(e.to_string()))
 }
 

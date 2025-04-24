@@ -1,5 +1,6 @@
-use anyhow::Result;
+use anyhow::{Result, bail};
 use prost::Message;
+use quadratic_rust_shared::protobuf::quadratic::transaction::ReceiveTransaction;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -82,6 +83,31 @@ impl Transaction {
         Ok(version)
     }
 
+    pub fn process_incoming(operations: &[u8]) -> Result<TransactionServer> {
+        let (header, data) = remove_header(operations)?;
+        let version = deserialize::<TransactionVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
+
+        match version.version.as_str() {
+            "1.0" => decompress_and_deserialize::<TransactionServer>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            ),
+            "2.0" => {
+                let decoded: ReceiveTransaction =
+                    Message::decode(data).map_err(|e| anyhow::anyhow!(e))?;
+
+                Ok(TransactionServer {
+                    id: Uuid::parse_str(&decoded.id)?,
+                    file_id: Uuid::parse_str(&decoded.file_id)?,
+                    operations: decoded.operations,
+                    sequence_num: decoded.sequence_num,
+                })
+            }
+            _ => bail!("Invalid transaction version: {}", version.version),
+        }
+    }
+
     /// Decompress and deserialize the transaction's operations, removing the
     /// version header.
     ///
@@ -96,47 +122,6 @@ impl Transaction {
         let _version = deserialize::<TransactionVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
 
         decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, data)
-    }
-
-    // pub fn decompress_and_deserialize(operations: &[u8]) -> Result<TransactionServer> {
-    //     let (header, data) = remove_header(operations)?;
-    //     let version = deserialize::<TransactionVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
-
-    //     match version.version.as_str() {
-    //         "1.0" => decompress_and_deserialize::<TransactionServer>(
-    //             &SERIALIZATION_FORMAT,
-    //             &COMPRESSION_FORMAT,
-    //             data,
-    //         ),
-    //         "2.0" => {
-    //             let decoded: TransactionServer =
-    //                 Message::decode(data).map_err(|e| anyhow::anyhow!(e))?;
-
-    //             Ok(TransactionServer {
-    //                 id: Uuid::parse_str(&decoded.id)?,
-    //                 file_id: Uuid::parse_str(&decoded.file_id)?,
-    //                 operations: decoded.operations,
-    //                 sequence_num: decoded.sequence_num,
-    //             })
-    //         }
-    //         _ => bail!("Invalid transaction version: {}", version.version),
-    //     }
-    // }
-
-    /// Decompress and deserialize the transaction's operations, removing the
-    /// version header.
-    ///
-    /// When we start to add different transaction versions, we will need to
-    /// match the version and handle the versions separately.
-    pub fn decode<T: Message + Default>(operations: &[u8]) -> Result<T> {
-        let (header, data) = remove_header(operations)?;
-
-        // We're currently not doing anything with the transaction version, but will in
-        // the future as we use different serialization and compression methods and/or
-        // different operation types.
-        let _version = deserialize::<TransactionVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
-
-        Message::decode(data).map_err(|e| anyhow::anyhow!(e))
     }
 }
 
