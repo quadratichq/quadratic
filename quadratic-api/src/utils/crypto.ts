@@ -82,7 +82,7 @@ export const generateSshKeys = async (
   } = options;
 
   // Create unique filenames for this run
-  const unique = crypto.randomBytes(32);
+  const unique = crypto.randomUUID().replace(/-/g, '');
   const privateKeyPath = path.join(outputDir, `id_${type}_${unique}`);
   const publicKeyPath = `${privateKeyPath}.pub`;
 
