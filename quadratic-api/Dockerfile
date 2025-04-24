@@ -18,7 +18,7 @@ COPY quadratic-shared ./quadratic-shared
 FROM node:23-slim AS runtime
 WORKDIR /quadratic
 COPY --from=builder /quadratic .
-RUN apt-get update && apt install -y openssl
+RUN apt-get update && apt install -y openssl && apt install -y openssl-client
 RUN npm run postinstall --workspace=quadratic-api
 RUN npm run build --workspace=quadratic-api
 CMD ["npm", "run", "start:prod"]
