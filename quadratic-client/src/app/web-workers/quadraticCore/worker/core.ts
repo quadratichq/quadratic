@@ -7,6 +7,7 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -1571,11 +1572,11 @@ class Core {
     }
   }
 
-  resizeColumns(sheetId: string, columns: number[], size: number, cursor: string) {
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const sizes: JsColumnWidth[] = columns.map((column) => ({
-      column: BigInt(column),
-      width: size,
+      column: BigInt(column.index),
+      width: column.size,
     }));
     try {
       this.gridController.resizeColumns(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
@@ -1584,11 +1585,11 @@ class Core {
     }
   }
 
-  resizeRows(sheetId: string, rows: number[], size: number, cursor: string) {
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const sizes: JsRowHeight[] = rows.map((row) => ({
-      row: BigInt(row),
-      height: size,
+      row: BigInt(row.index),
+      height: row.size,
     }));
     try {
       this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);

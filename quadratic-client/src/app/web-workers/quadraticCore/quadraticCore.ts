@@ -7,6 +7,7 @@
 import { debug, debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   BorderSelection,
@@ -1548,22 +1549,20 @@ class QuadraticCore {
   }
   //#endregion
 
-  resizeColumns(sheetId: string, columns: number[], size: number, cursor: string) {
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
     this.send({
       type: 'clientCoreResizeColumns',
       sheetId,
       columns,
-      size,
       cursor,
     });
   }
 
-  resizeRows(sheetId: string, rows: number[], size: number, cursor: string) {
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
     this.send({
       type: 'clientCoreResizeRows',
       sheetId,
       rows,
-      size,
       cursor,
     });
   }

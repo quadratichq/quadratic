@@ -721,11 +721,11 @@ class CoreClient {
         return;
 
       case 'clientCoreResizeColumns':
-        core.resizeColumns(e.data.sheetId, e.data.columns, e.data.size, e.data.cursor);
+        core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;
 
       case 'clientCoreResizeRows':
-        core.resizeRows(e.data.sheetId, e.data.rows, e.data.size, e.data.cursor);
+        core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor);
         return;
 
       default:

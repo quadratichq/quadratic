@@ -26,9 +26,15 @@ import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
+export interface ColumnRowResize {
+  index: number;
+  size: number;
+}
+
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
 }
+
 export class PointerHeading {
   private downTimeout: number | undefined;
   cursor?: string;
@@ -368,9 +374,13 @@ export class PointerHeading {
         const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
         const rows = sheets.sheet.cursor.getSelectedRowsFinite();
         if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
-          quadraticCore.resizeColumns(sheets.current, columns, this.resizing.width, sheets.getCursorPosition());
+          const size = this.resizing.width;
+          const columnSizes = columns.map((column) => ({ index: column, size }));
+          quadraticCore.resizeColumns(sheets.current, columnSizes, sheets.getCursorPosition());
         } else if (this.resizing.row && rows.length !== 1 && this.resizing.height !== undefined) {
-          quadraticCore.resizeRows(sheets.current, rows, this.resizing.height, sheets.getCursorPosition());
+          const size = this.resizing.height;
+          const rowSizes = rows.map((row) => ({ index: row, size }));
+          quadraticCore.resizeRows(sheets.current, rowSizes, sheets.getCursorPosition());
         }
 
         // otherwise work with the transient resize (if available)
@@ -399,28 +409,48 @@ export class PointerHeading {
   }
 
   async autoResizeColumn(column: number) {
-    const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
-    let size: number;
-    if (maxWidth === 0) {
-      size = CELL_WIDTH;
-    } else {
-      const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-      size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+    const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
+    if (!columns.includes(column)) {
+      columns.push(column);
     }
-    const sheetId = sheets.current;
-    const originalSize = sheets.sheet.getCellOffsets(column, 0);
-    if (originalSize.width !== size) {
-      quadraticCore.commitSingleResize(sheetId, column, undefined, size);
+    const resizing: ColumnRowResize[] = [];
+    for (const column of columns) {
+      const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+      let size: number;
+      if (maxWidth === 0) {
+        size = CELL_WIDTH;
+      } else {
+        const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+        size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+      }
+      const originalSize = sheets.sheet.getCellOffsets(column, 0);
+      if (originalSize.width !== size) {
+        resizing.push({ index: column, size });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
     }
   }
 
   async autoResizeRow(row: number) {
-    const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-    const size = Math.max(maxHeight, CELL_HEIGHT);
-    const sheetId = sheets.current;
-    const originalSize = sheets.sheet.getCellOffsets(0, row);
-    if (originalSize.height !== size) {
-      quadraticCore.commitSingleResize(sheetId, undefined, row, size);
+    const rows = sheets.sheet.cursor.getSelectedRowsFinite();
+    if (!rows.includes(row)) {
+      rows.push(row);
+    }
+    const resizing: ColumnRowResize[] = [];
+    for (const row of rows) {
+      const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+      const size = Math.max(maxHeight, CELL_HEIGHT);
+      const originalSize = sheets.sheet.getCellOffsets(0, row);
+      if (originalSize.height !== size) {
+        resizing.push({ index: row, size });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
     }
   }
 

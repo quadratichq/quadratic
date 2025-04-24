@@ -1,3 +1,4 @@
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -1278,16 +1279,14 @@ export interface CoreClientCoreError {
 export interface ClientCoreResizeColumns {
   type: 'clientCoreResizeColumns';
   sheetId: string;
-  columns: number[];
-  size: number;
+  columns: ColumnRowResize[];
   cursor: string;
 }
 
 export interface ClientCoreResizeRows {
   type: 'clientCoreResizeRows';
   sheetId: string;
-  rows: number[];
-  size: number;
+  rows: ColumnRowResize[];
   cursor: string;
 }
 
