@@ -139,7 +139,7 @@ pub(crate) async fn handle_message(
             // only broadcast if the user is new to the room
             if is_new {
                 let room = state.get_room(&file_id).await?;
-                let response = MessageResponse::from((room.users, &state.settings.min_version));
+                let response = MessageResponse::from((room.users, &state.settings.version));
 
                 broadcast(vec![], file_id, Arc::clone(&state), response);
             }
@@ -158,7 +158,7 @@ pub(crate) async fn handle_message(
             let room = state.get_room(&file_id).await?;
 
             if is_not_empty {
-                let response = MessageResponse::from((room.users, &state.settings.min_version));
+                let response = MessageResponse::from((room.users, &state.settings.version));
                 broadcast(vec![session_id], file_id, Arc::clone(&state), response);
             }
 
@@ -311,7 +311,8 @@ pub(crate) mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::state::settings::MinVersion;
+    use crate::message::response::MinVersion;
+    use crate::state::settings::version;
     use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::{integration_test_receive, new_user, setup};
 
@@ -438,7 +439,12 @@ pub(crate) mod tests {
 
         let response = MessageResponse::UsersInRoom {
             users: vec![user_2.clone()],
-            min_version: MinVersion::new().unwrap(),
+            version: version(),
+            // TODO: to be deleted after next version
+            min_version: MinVersion {
+                required_version: 5,
+                recommended_version: 5,
+            },
         };
 
         let users_in_room = state.get_room(&file_id).await.unwrap().users;

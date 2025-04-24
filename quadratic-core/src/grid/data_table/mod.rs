@@ -648,8 +648,8 @@ impl DataTable {
     ///
     /// This is used when a single value data table is created from a code run
     /// and is a code cell.
-    pub fn apply_single_value_settings(&mut self) {
-        if self.is_single_value() {
+    pub fn apply_single_value_settings(&mut self, first_run: bool) {
+        if self.is_single_value() && first_run {
             self.show_name = false;
             self.show_columns = false;
             self.header_is_first_row = false;

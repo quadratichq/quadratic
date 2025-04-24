@@ -30,7 +30,9 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
             className={linkClassName}
             onClick={(e) => {
               e.stopPropagation();
-              mixpanel.track('[AI].UsageExceeded.upgrade', { ab_test: 'control' });
+              mixpanel.track('[AI].UsageExceeded.clickUpgrade', {
+                ab_test: 'control',
+              });
             }}
           >
             upgrade to Quadratic Pro
@@ -48,7 +50,9 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
             className={linkClassName}
             onClick={(e) => {
               e.stopPropagation();
-              mixpanel.track('[AI].UsageExceeded.upgrade', { ab_test: 'variant' });
+              mixpanel.track('[AI].UsageExceeded.clickUpgrade', {
+                ab_test: 'variant',
+              });
             }}
           >
             upgrade to Quadratic Pro
