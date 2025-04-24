@@ -1290,6 +1290,20 @@ export interface ClientCoreResizeRows {
   cursor: string;
 }
 
+export interface ClientCoreResizeAllColumns {
+  type: 'clientCoreResizeAllColumns';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
+export interface ClientCoreResizeAllRows {
+  type: 'clientCoreResizeAllRows';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1388,7 +1402,9 @@ export type ClientCoreMessage =
   | ClientCoreMoveColumns
   | ClientCoreMoveRows
   | ClientCoreResizeColumns
-  | ClientCoreResizeRows;
+  | ClientCoreResizeRows
+  | ClientCoreResizeAllColumns
+  | ClientCoreResizeAllRows;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

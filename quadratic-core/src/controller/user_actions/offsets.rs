@@ -35,4 +35,14 @@ impl GridController {
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ResizeRows);
     }
+
+    pub fn resize_all_columns(&mut self, sheet_id: SheetId, size: u32, cursor: Option<String>) {
+        let ops = vec![Operation::ResizeColumns { sheet_id, size }];
+        self.start_user_transaction(ops, cursor, TransactionName::ResizeColumns);
+    }
+
+    pub fn resize_all_rows(&mut self, sheet_id: SheetId, size: u32, cursor: Option<String>) {
+        let ops = vec![Operation::ResizeRows { sheet_id, size }];
+        self.start_user_transaction(ops, cursor, TransactionName::ResizeRows);
+    }
 }

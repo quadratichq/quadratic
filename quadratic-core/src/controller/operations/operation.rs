@@ -295,6 +295,18 @@ pub enum Operation {
         row_heights: Vec<JsRowHeight>,
     },
 
+    /// Changes the default row size
+    DefaultRowSize {
+        sheet_id: SheetId,
+        size: f64,
+    },
+
+    /// Changes the default column size
+    DefaultColumnSize {
+        sheet_id: SheetId,
+        size: f64,
+    },
+
     /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
     SetCursor {
         sheet_rect: SheetRect,

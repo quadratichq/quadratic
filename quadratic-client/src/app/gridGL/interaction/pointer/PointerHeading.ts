@@ -373,7 +373,13 @@ export class PointerHeading {
         // if multiple columns or rows are selected, we need to resize all of them
         const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
         const rows = sheets.sheet.cursor.getSelectedRowsFinite();
-        if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
+        if (sheets.sheet.cursor.isSelectAll()) {
+          if (this.resizing.column && this.resizing.width !== undefined) {
+            quadraticCore.resizeAllColumns(sheets.current, this.resizing.width);
+          } else if (this.resizing.row && this.resizing.height !== undefined) {
+            quadraticCore.resizeAllRows(sheets.current, this.resizing.height);
+          }
+        } else if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
           const size = this.resizing.width;
           const columnSizes = columns.map((column) => ({ index: column, size }));
           quadraticCore.resizeColumns(sheets.current, columnSizes, sheets.getCursorPosition());

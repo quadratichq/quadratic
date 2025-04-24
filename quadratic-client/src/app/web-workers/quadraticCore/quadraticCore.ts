@@ -1566,6 +1566,24 @@ class QuadraticCore {
       cursor,
     });
   }
+
+  resizeAllColumns(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllColumns',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  resizeAllRows(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllRows',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();
