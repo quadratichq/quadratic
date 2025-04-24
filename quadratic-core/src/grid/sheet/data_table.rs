@@ -368,15 +368,12 @@ impl Sheet {
                     .data_table(data_table_left.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
-                        if data_table.readonly {
+                        if data_table.is_code() {
                             return false;
                         }
 
                         // don't expand if the position is at the data table's name
-                        if data_table.get_show_ui()
-                            && data_table.get_show_name()
-                            && data_table_left.min.y == pos.y
-                        {
+                        if data_table.get_show_name() && data_table_left.min.y == pos.y {
                             return false;
                         }
 
@@ -432,7 +429,7 @@ impl Sheet {
                     .data_table(data_table_above.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
-                        if data_table.readonly {
+                        if data_table.is_code() {
                             return false;
                         }
 
@@ -472,10 +469,8 @@ impl Sheet {
     }
 
     /// Returns true if the cell at pos is a source cell
-    /// If the show_name=false and show_columns=false, it cannot be the source cell
     pub fn is_source_cell(&self, pos: Pos) -> bool {
-        self.data_table(pos)
-            .is_some_and(|data_table| data_table.get_show_name() || data_table.get_show_columns())
+        self.data_table(pos).is_some()
     }
 
     /// You shouldn't be able to create a data table that includes a data table.
@@ -530,9 +525,8 @@ mod test {
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
-            Some(false),
-            Some(true),
-            Some(true),
+            None,
+            None,
             None,
         );
 

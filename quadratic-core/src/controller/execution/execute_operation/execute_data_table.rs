@@ -8,7 +8,7 @@ use crate::{
         operations::operation::Operation,
     },
     grid::{
-        DataTable, DataTableKind, SheetId,
+        DataTable, SheetId,
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
         unique_data_table_name,
@@ -286,7 +286,7 @@ impl GridController {
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
 
-            if data_table.readonly {
+            if data_table.is_code() {
                 dbgjs!(format!("Data table {} is readonly", data_table.name));
                 return Ok(());
             }
@@ -444,25 +444,24 @@ impl GridController {
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
 
-            let show_ui = data_table.get_show_ui();
             let show_name = data_table.get_show_name();
             let show_columns = data_table.get_show_columns();
 
             let mut values = data_table.display_value(false)?.into_array()?;
             let ArraySize { w, h } = values.size();
 
-            if !data_table.header_is_first_row && show_ui && show_columns {
+            if !data_table.header_is_first_row && show_columns {
                 let headers = data_table.column_headers_to_cell_values();
                 values.insert_row(0, headers)?;
             }
 
             // delete the heading row if toggled off
-            if data_table.header_is_first_row && (!show_ui || !show_columns) {
+            if data_table.header_is_first_row && !show_columns {
                 values.delete_row(0)?;
             }
 
             // insert the heading row if toggled on
-            if show_ui && show_name {
+            if show_name {
                 let mut table_row = vec![CellValue::Blank; w.get() as usize];
                 table_row[0] = data_table.name.to_owned();
                 values.insert_row(0, Some(table_row))?;
@@ -555,10 +554,6 @@ impl GridController {
             let old_data_table_kind = data_table.kind.to_owned();
             let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
-            data_table.readonly = match &kind {
-                DataTableKind::Import(_) => false,
-                DataTableKind::CodeRun(_) => true,
-            };
             data_table.kind = kind;
 
             sheet.set_cell_value(data_table_pos, value);
@@ -609,9 +604,11 @@ impl GridController {
                 DataTable::from((import.to_owned(), old_values.to_owned(), context));
 
             // show_ui false is required for correct mapping of formats, values will shift when show_ui is true
-            data_table.show_ui = Some(false);
+            data_table.show_name = Some(false);
+            data_table.show_columns = Some(false);
             let format_update = data_table.transfer_formats_from_sheet(rect.min, sheet, rect)?;
-            data_table.show_ui = Some(true);
+            data_table.show_name = Some(true);
+            data_table.show_columns = Some(true);
 
             if !format_update.is_default() {
                 data_table.formats.apply_updates(&format_update);
@@ -684,18 +681,26 @@ impl GridController {
             show_ui,
             show_name,
             show_columns,
-            readonly,
+            ..
         } = op
         {
+            let hide_ui = show_ui.is_some_and(|show_ui| !show_ui);
+
             let new_op = Operation::DataTableOptionMeta {
                 sheet_pos,
                 name,
                 alternating_colors,
                 columns,
-                show_ui: show_ui.map(Some),
-                show_name: show_name.map(Some),
-                show_columns: show_columns.map(Some),
-                readonly,
+                show_name: if hide_ui {
+                    Some(Some(false))
+                } else {
+                    show_name.map(Some)
+                },
+                show_columns: if hide_ui {
+                    Some(Some(false))
+                } else {
+                    show_columns.map(Some)
+                },
             };
             self.execute_data_table_option_meta(transaction, new_op)?;
 
@@ -715,10 +720,8 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_ui,
             show_name,
             show_columns,
-            readonly,
         } = op.to_owned()
         {
             // do grid mutations first to keep the borrow checker happy
@@ -817,11 +820,7 @@ impl GridController {
                 std::mem::replace(&mut data_table.alternating_colors, alternating_colors)
             });
 
-            if show_ui.is_some()
-                || show_name.is_some()
-                || show_columns.is_some()
-                || columns.is_some()
-            {
+            if show_name.is_some() || show_columns.is_some() || columns.is_some() {
                 data_table.add_dirty_fills_and_borders(transaction, sheet_id);
                 transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
             }
@@ -834,10 +833,6 @@ impl GridController {
                 old_columns
             });
 
-            let old_show_ui = show_ui
-                .as_ref()
-                .map(|show_ui| std::mem::replace(&mut data_table.show_ui, *show_ui));
-
             let old_show_name = show_name
                 .as_ref()
                 .map(|show_name| std::mem::replace(&mut data_table.show_name, *show_name));
@@ -846,20 +841,12 @@ impl GridController {
                 .as_ref()
                 .map(|show_columns| std::mem::replace(&mut data_table.show_columns, *show_columns));
 
-            let old_readonly = readonly
-                .as_ref()
-                .map(|readonly| std::mem::replace(&mut data_table.readonly, *readonly));
-
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
             // changing these options shifts the entire data table, need to mark the entire data table as dirty
-            if show_ui.is_some()
-                || show_name.is_some()
-                || show_columns.is_some()
-                || columns.is_some()
-            {
+            if show_name.is_some() || show_columns.is_some() || columns.is_some() {
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
                 self.send_updated_bounds(transaction, sheet_id);
             }
@@ -870,10 +857,8 @@ impl GridController {
                 name: Some(old_name),
                 alternating_colors: old_alternating_colors,
                 columns: old_columns,
-                show_ui: old_show_ui,
                 show_name: old_show_name,
                 show_columns: old_show_columns,
-                readonly: old_readonly,
             }];
             self.data_table_operations(
                 transaction,
@@ -981,10 +966,9 @@ impl GridController {
 
                 if swallow && column_header.is_none() && values.is_none() {
                     let display_index = data_table.get_display_index_from_column_index(index, true);
-                    let show_ui = data_table.get_show_ui();
                     let show_name = data_table.get_show_name();
                     let show_columns = data_table.get_show_columns();
-                    let y_adjustment = if show_ui && show_name { 1 } else { 0 };
+                    let y_adjustment = if show_name { 1 } else { 0 };
 
                     let values_rect = Rect::from_numbers(
                         data_table_pos.x + display_index,
@@ -1012,7 +996,7 @@ impl GridController {
                         transaction.operations.clear();
                         bail!("Cannot add code cell to table");
                     } else {
-                        if show_ui && show_columns {
+                        if show_columns {
                             let header = if data_table.header_is_first_row {
                                 cell_values[0].to_string()
                             } else {
@@ -1156,11 +1140,10 @@ impl GridController {
             let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
             old_data_table_rect.min.x += 1; // cannot flatten the first column
 
-            let show_ui = data_table.get_show_ui();
             let show_name = data_table.get_show_name();
             let show_columns = data_table.get_show_columns();
 
-            let y_adjustment = if show_ui && show_name { 1 } else { 0 };
+            let y_adjustment = if show_name { 1 } else { 0 };
             old_data_table_rect.min.y += y_adjustment;
 
             let mut sheet_cell_values =
@@ -1182,14 +1165,13 @@ impl GridController {
                 if flatten {
                     // collect values to flatten
                     let old_values = old_values.to_owned();
-                    let y_adjustment = if show_ui && show_columns && !data_table.header_is_first_row
-                    {
+                    let y_adjustment = if show_columns && !data_table.header_is_first_row {
                         1
                     } else {
                         0
                     };
                     for (y, old_value) in old_values.into_iter().enumerate() {
-                        if y == 0 && data_table.header_is_first_row && (!show_ui || !show_columns) {
+                        if y == 0 && data_table.header_is_first_row && !show_columns {
                             continue;
                         }
 
@@ -1201,7 +1183,7 @@ impl GridController {
                         }
                     }
 
-                    if show_ui && show_columns {
+                    if show_columns {
                         if let Some(column_header) = &old_column_header {
                             if let (Ok(value_x), Ok(value_y)) =
                                 (u32::try_from(display_index - 1), u32::try_from(0))
@@ -2019,7 +2001,6 @@ mod tests {
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,

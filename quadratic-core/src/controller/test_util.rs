@@ -80,8 +80,7 @@ impl GridController {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
 
@@ -100,7 +99,8 @@ impl GridController {
         w: u32,
         h: u32,
         header_is_first_row: bool,
-        show_ui: bool,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
     ) {
         let cell_value = CellValue::Import(Import {
             file_name: "test".to_string(),
@@ -114,9 +114,8 @@ impl GridController {
             value,
             false,
             header_is_first_row,
-            Some(show_ui),
-            Some(true),
-            Some(true),
+            show_name,
+            show_columns,
             None,
         );
 
@@ -145,19 +144,16 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
         show_name: Option<bool>,
         show_columns: Option<bool>,
     ) {
-        let op = Operation::DataTableMeta {
+        let op = Operation::DataTableOptionMeta {
             sheet_pos,
             name: None,
             alternating_colors: None,
             columns,
-            show_ui,
-            show_name,
-            show_columns,
-            readonly: None,
+            show_name: show_name.map(Some),
+            show_columns: show_columns.map(Some),
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }

@@ -242,7 +242,6 @@ mod test {
             false,
             Some(true),
             Some(true),
-            Some(true),
             // make the chart take up 5x5 cells
             Some((100.0 * 5.0, 20.0 * 5.0)),
         );

@@ -70,7 +70,8 @@ mod tests {
             _ => panic!("expected code cell"),
         }
         let data_table = sheet.data_tables.get_mut(&pos).unwrap();
-        data_table.show_ui = Some(false);
+        data_table.show_name = Some(false);
+        data_table.show_columns = Some(false);
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
             data_table.cell_value_at(0, 1),

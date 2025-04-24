@@ -370,7 +370,6 @@ impl GridController {
             None,
             None,
             None,
-            None,
         );
 
         self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
@@ -419,7 +418,6 @@ impl GridController {
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
-                None,
                 None,
                 None,
                 None,
@@ -495,7 +493,6 @@ impl GridController {
             false,
             js_code_result.has_headers,
             None,
-            None,
             show_column,
             js_code_result.chart_pixel_output,
         );
@@ -567,7 +564,6 @@ mod test {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
@@ -603,7 +599,6 @@ mod test {
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,

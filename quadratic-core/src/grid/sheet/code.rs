@@ -71,8 +71,7 @@ impl Sheet {
     pub fn table_header_at(&self, pos: Pos) -> Option<(Pos, Rect)> {
         for (code_cell_pos, data_table) in &self.data_tables {
             let output_rect = data_table.output_rect(*code_cell_pos, false);
-            if data_table.get_show_ui()
-                && data_table.get_show_name()
+            if data_table.get_show_name()
                 && pos.y == output_rect.min.y
                 && pos.x >= output_rect.min.x
                 && pos.x <= output_rect.max.x
@@ -89,7 +88,7 @@ impl Sheet {
     /// If ignore_readonly is true, it will ignore readonly tables.
     pub fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
         self.data_tables.iter().any(|(code_cell_pos, data_table)| {
-            if ignore_readonly && data_table.readonly {
+            if ignore_readonly && data_table.is_code() {
                 return false;
             }
 
@@ -113,7 +112,7 @@ impl Sheet {
                     })
                     || data_table.is_html_or_image()
                     // also check if its the table name (the entire width of the table is valid for content)
-                    || (data_table.get_show_ui() && data_table.get_show_name() && pos.y == code_cell_pos.y))
+                    || (data_table.get_show_name() && pos.y == code_cell_pos.y))
         })
     }
 
@@ -385,8 +384,7 @@ mod test {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
@@ -485,8 +483,7 @@ mod test {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
@@ -524,8 +521,7 @@ mod test {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
@@ -553,8 +549,7 @@ mod test {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         dt.chart_output = Some((2, 2));

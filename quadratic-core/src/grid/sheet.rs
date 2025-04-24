@@ -307,13 +307,10 @@ impl Sheet {
                 return true;
             }
 
-            let show_ui = dt.get_show_ui();
             let show_name = dt.get_show_name();
             let show_columns = dt.get_show_columns();
 
-            if bounds.min.y
-                + (if show_ui && show_name { 1 } else { 0 })
-                + (if show_ui && show_columns { 1 } else { 0 })
+            if bounds.min.y + (if show_name { 1 } else { 0 }) + (if show_columns { 1 } else { 0 })
                 == pos.y
             {
                 // ignore column header--just go to first line of data or table name
@@ -1146,7 +1143,6 @@ mod test {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
         sheet.data_tables.insert(pos, dt.clone());
@@ -1396,7 +1392,6 @@ mod test {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
         sheet.data_tables.insert(anchor_pos, dt);
@@ -1425,8 +1420,7 @@ mod test {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         dt_no_ui.show_name = Some(false);
@@ -1468,7 +1462,6 @@ mod test {
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,

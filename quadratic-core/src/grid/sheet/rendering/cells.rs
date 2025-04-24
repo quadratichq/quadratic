@@ -139,9 +139,8 @@ impl Sheet {
                 if let Some(intersection) = code_rect.intersection(render_rect) {
                     for x in intersection.x_range() {
                         for y in intersection.y_range() {
-                            let is_header = data_table.get_show_ui()
-                                && data_table.get_show_columns()
-                                && y == code_rect_start_y - 1;
+                            let is_header =
+                                data_table.get_show_columns() && y == code_rect_start_y - 1;
 
                             // We skip rendering the header rows because we render it separately.
                             if y < code_rect_start_y && !is_header {
@@ -337,7 +336,6 @@ mod tests {
                 Value::Single(CellValue::Text("hello".to_string())),
                 false,
                 false,
-                Some(true),
                 Some(true),
                 Some(true),
                 None,

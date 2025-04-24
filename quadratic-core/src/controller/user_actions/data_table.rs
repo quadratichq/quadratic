@@ -43,9 +43,8 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
-        show_name: Option<bool>,
-        show_columns: Option<bool>,
+        show_name: Option<Option<bool>>,
+        show_columns: Option<Option<bool>>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_meta_operations(
@@ -53,7 +52,6 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_ui,
             show_name,
             show_columns,
         );
@@ -193,7 +191,6 @@ mod tests {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
 
@@ -279,7 +276,6 @@ mod tests {
             None,
             None,
             None,
-            None,
             cursor,
         );
 
@@ -339,7 +335,6 @@ mod tests {
             None,
             None,
             Some(new_column_headers),
-            None,
             None,
             None,
             cursor,

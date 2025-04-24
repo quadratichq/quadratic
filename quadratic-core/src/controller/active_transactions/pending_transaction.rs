@@ -655,7 +655,6 @@ mod tests {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
@@ -680,7 +679,6 @@ mod tests {
             Value::Single(CellValue::Image("image".to_string())),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,

@@ -75,8 +75,7 @@ impl Sheet {
                 false,
                 false,
                 Some(false),
-                Some(true),
-                Some(true),
+                Some(false),
                 None,
             )),
         );
@@ -137,8 +136,7 @@ impl Sheet {
                 false,
                 false,
                 Some(false),
-                Some(true),
-                Some(true),
+                Some(false),
                 None,
             )),
         );
@@ -188,8 +186,7 @@ impl Sheet {
                 false,
                 false,
                 Some(false),
-                Some(true),
-                Some(true),
+                Some(false),
                 None,
             )),
         );
@@ -222,7 +219,6 @@ impl Sheet {
                 Value::Single(CellValue::Image("chart".to_string())),
                 false,
                 false,
-                Some(true),
                 Some(true),
                 Some(true),
                 Some((1.0, 1.0)),
@@ -260,7 +256,6 @@ impl Sheet {
                 false,
                 Some(true),
                 Some(true),
-                Some(true),
                 Some((1.0, 1.0)),
             )),
         );
@@ -274,7 +269,8 @@ impl Sheet {
         w: u32,
         h: u32,
         header_is_first_row: bool,
-        show_ui: bool,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
     ) {
         self.set_cell_value(
             pos,
@@ -293,9 +289,8 @@ impl Sheet {
                 value,
                 false,
                 header_is_first_row,
-                Some(show_ui),
-                Some(true),
-                Some(true),
+                show_name,
+                show_columns,
                 None,
             )),
         );

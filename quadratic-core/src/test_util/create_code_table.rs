@@ -25,7 +25,7 @@ pub fn test_create_code_table(
 ) {
     let values: Vec<String> = (0..w * h).map(|i| i.to_string()).collect();
     let values: Vec<&str> = values.iter().map(|s| s.as_str()).collect();
-    test_create_code_table_with_values(gc, sheet_id, pos, w, h, values);
+    test_create_code_table_with_values(gc, sheet_id, pos, w, h, &values);
 }
 
 /// Creates a Python code table with output of w x h cells with values.
@@ -36,7 +36,7 @@ pub fn test_create_code_table_with_values(
     pos: Pos,
     w: u32,
     h: u32,
-    values: Vec<&str>,
+    values: &[&str],
 ) {
     let cell_value = CellValue::Code(CodeCellValue {
         language: CodeCellLanguage::Python,
@@ -74,8 +74,7 @@ pub fn test_create_code_table_with_values(
         false,
         false,
         Some(false),
-        Some(true),
-        Some(true),
+        Some(false),
         None,
     );
 
@@ -101,7 +100,7 @@ mod tests {
         let sheet_id = SheetId::TEST;
 
         // Test 2x2 table with numbers
-        test_create_code_table_with_values(&mut gc, sheet_id, pos, 2, 2, vec!["1", "2", "3", "4"]);
+        test_create_code_table_with_values(&mut gc, sheet_id, pos, 2, 2, &["1", "2", "3", "4"]);
 
         let sheet = sheet(&gc, sheet_id);
 
@@ -131,7 +130,7 @@ mod tests {
             pos,
             2,
             2,
-            vec!["1", "text", "3.14", ""],
+            &["1", "text", "3.14", ""],
         );
 
         let sheet = sheet(&gc, sheet_id);

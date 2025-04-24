@@ -12,7 +12,6 @@ pub struct TableMapEntry {
     pub visible_columns: Vec<String>,
     pub all_columns: Vec<String>,
     pub bounds: Rect,
-    pub show_ui: bool,
     pub show_name: bool,
     pub show_columns: bool,
     pub is_html_image: bool,
@@ -29,7 +28,6 @@ impl TableMapEntry {
                 visible_columns: table.columns_map(false),
                 all_columns: table.columns_map(true),
                 bounds: table.output_rect(pos, false),
-                show_ui: false,
                 show_name: false,
                 show_columns: false,
                 is_html_image: false,
@@ -43,7 +41,6 @@ impl TableMapEntry {
                 visible_columns: table.columns_map(false),
                 all_columns: table.columns_map(true),
                 bounds: table.output_rect(pos, false),
-                show_ui: table.get_show_ui(),
                 show_name: table.get_show_name(),
                 show_columns: table.get_show_columns(),
                 is_html_image: table.is_html() || table.is_image(),
@@ -176,13 +173,12 @@ impl TableMapEntry {
     pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
 
-        if self.show_ui {
-            if self.show_name {
-                y_adjustment += 1;
-            }
-            if !self.is_html_image && self.show_columns {
-                y_adjustment += 1;
-            }
+        if self.show_name {
+            y_adjustment += 1;
+        }
+
+        if !self.is_html_image && self.show_columns {
+            y_adjustment += 1;
         }
 
         if self.header_is_first_row && adjust_for_header_is_first_row {
@@ -210,7 +206,6 @@ impl TableMapEntry {
             visible_columns,
             all_columns,
             bounds,
-            show_ui: true,
             show_name: true,
             show_columns: true,
             is_html_image: false,
@@ -291,7 +286,8 @@ mod tests {
         assert_eq!(entry.y_adjustment(false), 2);
 
         // Hide UI
-        entry.show_ui = false;
+        entry.show_name = false;
+        entry.show_columns = false;
         assert_eq!(entry.y_adjustment(false), 0);
 
         // Test header_is_first_row

@@ -80,7 +80,6 @@ mod test {
                 false,
                 Some(true),
                 Some(true),
-                Some(true),
                 None,
             )),
         );

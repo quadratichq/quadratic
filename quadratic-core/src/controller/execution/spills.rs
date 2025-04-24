@@ -456,7 +456,6 @@ mod tests {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
         let pos = Pos { x: 0, y: 0 };

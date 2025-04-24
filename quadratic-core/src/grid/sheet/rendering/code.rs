@@ -105,13 +105,12 @@ impl Sheet {
             name: data_table.name().to_string(),
             columns: data_table.send_columns(),
             first_row_header: data_table.header_is_first_row,
-            show_ui: data_table.get_show_ui(),
             show_name: data_table.get_show_name(),
             show_columns: data_table.get_show_columns(),
             sort: data_table.sort.clone(),
             sort_dirty: data_table.sort_dirty,
             alternating_colors,
-            readonly: data_table.readonly,
+            is_code: data_table.is_code(),
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
         })
@@ -329,8 +328,7 @@ mod tests {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
 
@@ -388,8 +386,7 @@ mod tests {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         let code_cells = sheet.get_code_cells(
@@ -430,18 +427,16 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        let mut data_table = DataTable::new(
+        let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(2.into())),
             false,
             false,
-            Some(true),
-            Some(true),
-            Some(true),
+            None,
+            None,
             None,
         );
-        data_table.show_ui = Some(false);
 
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -459,13 +454,12 @@ mod tests {
                 name: "Table 1".to_string(),
                 columns: vec![], // single values don't have column headers
                 first_row_header: false,
-                show_ui: false,
-                show_name: true,
-                show_columns: true,
+                show_name: false,
+                show_columns: false,
                 sort: None,
                 sort_dirty: false,
                 alternating_colors: true,
-                readonly: true,
+                is_code: true,
                 is_html: false,
                 is_html_image: false,
             })
@@ -505,8 +499,7 @@ mod tests {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         sheet.set_data_table(pos, Some(data_table));
@@ -545,7 +538,6 @@ mod tests {
                 Value::Single(CellValue::Image("image".to_string())),
                 false,
                 false,
-                Some(true),
                 Some(true),
                 Some(true),
                 None,

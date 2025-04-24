@@ -246,8 +246,7 @@ mod tests {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         dt.chart_output = Some((3, 3));
@@ -566,8 +565,10 @@ mod tests {
     fn test_jump_left_table_from_name() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3"], false);
-        sheet.data_table_mut(pos![B2]).unwrap().show_ui = Some(true);
-        sheet.data_table_mut(pos![B2]).unwrap().show_name = Some(true);
+
+        let dt = sheet.data_table_mut(pos![B2]).unwrap();
+        dt.show_name = Some(true);
+        dt.show_columns = Some(true);
 
         assert_eq!(sheet.jump_left(pos![D2]), pos![A2]);
     }

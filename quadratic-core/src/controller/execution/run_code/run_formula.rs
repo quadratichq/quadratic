@@ -42,7 +42,6 @@ impl GridController {
                     None,
                     None,
                     None,
-                    None,
                 );
                 self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
             }
@@ -269,7 +268,6 @@ mod test {
                 None,
                 None,
                 None,
-                None,
             )
             .with_last_modified(result.last_modified)
         );
@@ -343,7 +341,6 @@ mod test {
             Value::Array(array),
             false,
             false,
-            None,
             None,
             None,
             None,

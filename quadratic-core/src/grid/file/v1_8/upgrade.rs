@@ -63,15 +63,21 @@ fn upgrade_data_tables(
                     kind: upgrade_data_table_kind(data_table.kind, language),
                     name: data_table.name,
                     header_is_first_row: data_table.header_is_first_row,
-                    show_ui: Some(data_table.show_ui),
-                    show_name: Some(data_table.show_name),
-                    show_columns: Some(data_table.show_columns),
+                    show_name: if data_table.show_ui {
+                        Some(data_table.show_name)
+                    } else {
+                        Some(false)
+                    },
+                    show_columns: if data_table.show_columns {
+                        Some(data_table.show_name)
+                    } else {
+                        Some(false)
+                    },
                     columns: data_table.columns,
                     sort: data_table.sort,
                     sort_dirty: data_table.sort_dirty,
                     display_buffer: data_table.display_buffer,
                     value: data_table.value,
-                    readonly: data_table.readonly,
                     spill_error: data_table.spill_error,
                     last_modified: data_table.last_modified,
                     alternating_colors: data_table.alternating_colors,

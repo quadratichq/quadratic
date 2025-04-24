@@ -596,7 +596,7 @@ mod test {
         let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
-        gc.test_data_table_update_meta(sheet_pos, Some(column_headers), None, None, None);
+        gc.test_data_table_update_meta(sheet_pos, Some(column_headers), None, None);
 
         print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 10, 13));
         // assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));

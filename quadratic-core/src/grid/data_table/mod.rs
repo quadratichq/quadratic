@@ -144,14 +144,12 @@ pub struct DataTable {
     pub sort_dirty: bool,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
-    pub readonly: bool,
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
     pub formats: SheetFormatting,
     pub borders: Borders,
 
-    pub show_ui: Option<bool>,
     pub show_name: Option<bool>,
     pub show_columns: Option<bool>,
 
@@ -170,9 +168,8 @@ impl From<(Import, Array, &A1Context)> for DataTable {
             Value::Array(cell_values),
             false,
             false,
-            Some(true),
-            Some(true),
-            Some(true),
+            None,
+            None,
             None,
         )
     }
@@ -189,28 +186,20 @@ impl DataTable {
         value: Value,
         spill_error: bool,
         header_is_first_row: bool,
-        show_ui: Option<bool>,
         show_name: Option<bool>,
         show_columns: Option<bool>,
         chart_pixel_output: Option<(f32, f32)>,
     ) -> Self {
-        let readonly = match kind {
-            DataTableKind::CodeRun(_) => true,
-            DataTableKind::Import(_) => false,
-        };
-
         let mut data_table = DataTable {
             kind,
             name: name.into(),
             header_is_first_row,
             chart_pixel_output,
             value,
-            readonly,
             spill_error,
             last_modified: Utc::now(),
             alternating_colors: true,
 
-            show_ui,
             show_name,
             show_columns,
 
@@ -244,14 +233,12 @@ impl DataTable {
             sort_dirty: self.sort_dirty,
             display_buffer: self.display_buffer.clone(),
             value: Value::Single(CellValue::Blank),
-            readonly: self.readonly,
             spill_error: self.spill_error,
             last_modified: self.last_modified,
             alternating_colors: self.alternating_colors,
             formats: self.formats.clone(),
             borders: self.borders.clone(),
 
-            show_ui: self.show_ui,
             show_name: self.show_name,
             show_columns: self.show_columns,
 
@@ -279,20 +266,11 @@ impl DataTable {
         self
     }
 
-    pub fn get_show_ui(&self) -> bool {
-        if let Some(show_ui) = self.show_ui {
-            return show_ui;
+    pub fn is_code(&self) -> bool {
+        match &self.kind {
+            DataTableKind::CodeRun(_) => true,
+            DataTableKind::Import(_) => false,
         }
-
-        if self.get_language() == CodeCellLanguage::Import {
-            return true;
-        }
-
-        if self.is_single_value() {
-            return false;
-        }
-
-        true
     }
 
     pub fn get_show_name(&self) -> bool {
@@ -679,13 +657,12 @@ impl DataTable {
     pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
 
-        if self.get_show_ui() {
-            if self.get_show_name() {
-                y_adjustment += 1;
-            }
-            if !self.is_html_or_image() && self.get_show_columns() {
-                y_adjustment += 1;
-            }
+        if self.get_show_name() {
+            y_adjustment += 1;
+        }
+
+        if !self.is_html_or_image() && self.get_show_columns() {
+            y_adjustment += 1;
         }
 
         if adjust_for_header_is_first_row && self.header_is_first_row {
@@ -746,21 +723,20 @@ impl DataTable {
     /// Returns the rows that are part of the data table's UI.
     pub fn ui_rows(&self, pos: Pos) -> Vec<i64> {
         let mut rows = vec![];
-        let show_ui = self.get_show_ui();
         let show_name = self.get_show_name();
+        if show_name || self.is_html_or_image() {
+            rows.push(pos.y);
+        }
+
         let show_columns = self.get_show_columns();
-        if show_ui {
-            if show_name || self.is_html_or_image() {
+        if show_columns && !self.is_html_or_image() {
+            if show_name {
+                rows.push(pos.y + 1);
+            } else {
                 rows.push(pos.y);
             }
-            if show_columns && !self.is_html_or_image() {
-                if show_name {
-                    rows.push(pos.y + 1);
-                } else {
-                    rows.push(pos.y);
-                }
-            }
         }
+
         rows
     }
 }
@@ -813,9 +789,8 @@ pub mod test {
             expected_values,
             false,
             false,
-            Some(true),
-            Some(true),
-            Some(true),
+            None,
+            None,
             None,
         )
         .with_last_modified(data_table.last_modified);
@@ -852,8 +827,7 @@ pub mod test {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
 
@@ -887,7 +861,6 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,
@@ -927,7 +900,6 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             true,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,
@@ -974,7 +946,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
         assert!(!data_table.is_single_column());
@@ -987,7 +958,6 @@ pub mod test {
             Value::Array(single_column),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,
@@ -1004,7 +974,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
         assert!(!data_table.is_single_column());
@@ -1017,7 +986,6 @@ pub mod test {
             Value::Single(CellValue::Html("test".into())),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,
@@ -1034,7 +1002,6 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,
@@ -1067,7 +1034,6 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,
@@ -1107,8 +1073,7 @@ pub mod test {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
@@ -1120,7 +1085,6 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
-            Some(true),
             Some(true),
             Some(true),
             None,
@@ -1313,7 +1277,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            Some(true),
             None,
         );
 
@@ -1326,16 +1289,18 @@ pub mod test {
         assert_eq!(data_table.ui_rows(pos), vec![2]);
 
         // Test with show_columns = false
-        data_table.show_columns = Some(false);
         data_table.show_name = Some(true);
+        data_table.show_columns = Some(false);
         assert_eq!(data_table.ui_rows(pos), vec![2]);
 
         // Test with show_ui = false
-        data_table.show_ui = Some(false);
+        data_table.show_name = Some(false);
+        data_table.show_columns = Some(false);
         assert_eq!(data_table.ui_rows(pos), Vec::<i64>::new());
 
         // Test with HTML content
-        data_table.show_ui = Some(true);
+        data_table.show_name = Some(true);
+        data_table.show_columns = Some(false);
         data_table.value = Value::Single(CellValue::Html("test".into()));
         assert_eq!(data_table.ui_rows(pos), vec![2]);
 

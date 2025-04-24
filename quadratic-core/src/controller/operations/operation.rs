@@ -85,6 +85,7 @@ pub enum Operation {
     GridToDataTable {
         sheet_rect: SheetRect,
     },
+    // **Deprecated** and replaced with DataTableOptionMeta
     DataTableMeta {
         sheet_pos: SheetPos,
         name: Option<String>,
@@ -100,10 +101,8 @@ pub enum Operation {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<Option<bool>>,
         show_name: Option<Option<bool>>,
         show_columns: Option<Option<bool>>,
-        readonly: Option<bool>,
     },
     DataTableFormats {
         sheet_pos: SheetPos,

@@ -258,7 +258,6 @@ impl GridController {
                 None,
                 None,
                 None,
-                None,
             );
 
             self.finalize_data_table(&mut transaction, current_sheet_pos, Some(data_table), None);

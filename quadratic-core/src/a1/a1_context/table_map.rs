@@ -87,7 +87,6 @@ impl TableMap {
                     x: x as i64,
                     y: y as i64,
                 })
-                && table.show_ui
                 && y < (table.bounds.min.y as u32)
                     + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
                         as u32
@@ -354,7 +353,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(0, 0, 2, 3),
-            show_ui: true,
             show_name: true,
             show_columns: true,
             is_html_image: false,
@@ -390,7 +388,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(5, 5, 7, 8),
-            show_ui: true,
             show_name: false,
             show_columns: true,
             is_html_image: false,

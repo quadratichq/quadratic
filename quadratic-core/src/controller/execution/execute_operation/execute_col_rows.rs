@@ -459,8 +459,7 @@ mod tests {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         let transaction = &mut PendingTransaction::default();
@@ -544,8 +543,7 @@ mod tests {
             false,
             false,
             Some(false),
-            Some(true),
-            Some(true),
+            Some(false),
             None,
         );
         let transaction = &mut PendingTransaction::default();
