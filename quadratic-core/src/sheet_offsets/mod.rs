@@ -307,6 +307,26 @@ impl SheetOffsets {
     pub fn defaults(&self) -> (f64, f64) {
         (self.column_width(0), self.row_height(0))
     }
+
+    /// Sets the default column widths. Does not change any set sizes.
+    pub fn set_default_width(&mut self, size: f64) -> f64 {
+        self.column_widths.set_default(size)
+    }
+
+    /// Sets the default row heights. Does not change any set sizes.
+    pub fn set_default_height(&mut self, size: f64) -> f64 {
+        self.row_heights.set_default(size)
+    }
+
+    /// Clears all column widths and resets to the default.
+    pub fn clear_widths(&mut self) -> Vec<(i64, f64)> {
+        self.column_widths.clear()
+    }
+
+    /// Clears all row heights and resets to the default.
+    pub fn clear_heights(&mut self) -> Vec<(i64, f64)> {
+        self.row_heights.clear()
+    }
 }
 
 #[cfg(test)]
@@ -387,5 +407,107 @@ mod test {
 
         assert_eq!(sheet.total_columns_width(1, 3), default_col * 2.0 + 150.0);
         assert_eq!(sheet.total_rows_height(1, 3), default_row * 2.0 + 30.0);
+    }
+
+    #[test]
+    fn test_set_default_width() {
+        let mut sheet = SheetOffsets::default();
+        let original_default = sheet.defaults().0;
+
+        // Test setting a new default width
+        let new_width = 150.0;
+        let old_width = sheet.set_default_width(new_width);
+        assert_eq!(old_width, original_default);
+        assert_eq!(sheet.defaults().0, new_width);
+
+        // Test that new columns use the new default width
+        assert_eq!(sheet.column_width(100), new_width);
+
+        // Test that existing custom widths are preserved
+        sheet.set_column_width(1, 200.0);
+        sheet.set_default_width(180.0);
+        assert_eq!(sheet.column_width(1), 200.0);
+        assert_eq!(sheet.column_width(2), 180.0);
+    }
+
+    #[test]
+    fn test_set_default_height() {
+        let mut sheet = SheetOffsets::default();
+        let original_default = sheet.defaults().1;
+
+        // Test setting a new default height
+        let new_height = 30.0;
+        let old_height = sheet.set_default_height(new_height);
+        assert_eq!(old_height, original_default);
+        assert_eq!(sheet.defaults().1, new_height);
+
+        // Test that new rows use the new default height
+        assert_eq!(sheet.row_height(100), new_height);
+
+        // Test that existing custom heights are preserved
+        sheet.set_row_height(1, 40.0);
+        sheet.set_default_height(35.0);
+        assert_eq!(sheet.row_height(1), 40.0);
+        assert_eq!(sheet.row_height(2), 35.0);
+    }
+
+    #[test]
+    fn test_clear_widths() {
+        let mut offsets = SheetOffsets::default();
+        let default_width = offsets.defaults().0;
+
+        // Set some custom widths
+        offsets.set_column_width(1, 150.0);
+        offsets.set_column_width(2, 200.0);
+        offsets.set_column_width(3, 250.0);
+
+        // Verify custom widths were set
+        assert_eq!(offsets.column_width(1), 150.0);
+        assert_eq!(offsets.column_width(2), 200.0);
+        assert_eq!(offsets.column_width(3), 250.0);
+
+        // Clear all widths
+        let cleared = offsets.clear_widths();
+
+        // Verify all widths are reset to default
+        assert_eq!(offsets.column_width(1), default_width);
+        assert_eq!(offsets.column_width(2), default_width);
+        assert_eq!(offsets.column_width(3), default_width);
+
+        // Verify returned vector contains the cleared values
+        assert_eq!(cleared.len(), 3);
+        assert!(cleared.contains(&(1, 150.0)));
+        assert!(cleared.contains(&(2, 200.0)));
+        assert!(cleared.contains(&(3, 250.0)));
+    }
+
+    #[test]
+    fn test_clear_heights() {
+        let mut sheet = SheetOffsets::default();
+        let default_height = sheet.defaults().1;
+
+        // Set some custom heights
+        sheet.set_row_height(1, 30.0);
+        sheet.set_row_height(2, 40.0);
+        sheet.set_row_height(3, 50.0);
+
+        // Verify custom heights were set
+        assert_eq!(sheet.row_height(1), 30.0);
+        assert_eq!(sheet.row_height(2), 40.0);
+        assert_eq!(sheet.row_height(3), 50.0);
+
+        // Clear all heights
+        let cleared = sheet.clear_heights();
+
+        // Verify all heights are reset to default
+        assert_eq!(sheet.row_height(1), default_height);
+        assert_eq!(sheet.row_height(2), default_height);
+        assert_eq!(sheet.row_height(3), default_height);
+
+        // Verify returned vector contains the cleared values
+        assert_eq!(cleared.len(), 3);
+        assert!(cleared.contains(&(1, 30.0)));
+        assert!(cleared.contains(&(2, 40.0)));
+        assert!(cleared.contains(&(3, 50.0)));
     }
 }

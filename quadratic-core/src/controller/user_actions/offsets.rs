@@ -13,12 +13,12 @@ impl GridController {
     pub fn resize_columns(
         &mut self,
         sheet_id: SheetId,
-        column_heights: Vec<JsColumnWidth>,
+        column_widths: Vec<JsColumnWidth>,
         cursor: Option<String>,
     ) {
         let ops = vec![Operation::ResizeColumns {
             sheet_id,
-            column_heights,
+            column_widths,
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ResizeColumns);
     }
@@ -36,13 +36,13 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::ResizeRows);
     }
 
-    pub fn resize_all_columns(&mut self, sheet_id: SheetId, size: u32, cursor: Option<String>) {
-        let ops = vec![Operation::ResizeColumns { sheet_id, size }];
+    pub fn resize_all_columns(&mut self, sheet_id: SheetId, size: f64, cursor: Option<String>) {
+        let ops = vec![Operation::DefaultColumnSize { sheet_id, size }];
         self.start_user_transaction(ops, cursor, TransactionName::ResizeColumns);
     }
 
-    pub fn resize_all_rows(&mut self, sheet_id: SheetId, size: u32, cursor: Option<String>) {
-        let ops = vec![Operation::ResizeRows { sheet_id, size }];
+    pub fn resize_all_rows(&mut self, sheet_id: SheetId, size: f64, cursor: Option<String>) {
+        let ops = vec![Operation::DefaultRowSize { sheet_id, size }];
         self.start_user_transaction(ops, cursor, TransactionName::ResizeRows);
     }
 }

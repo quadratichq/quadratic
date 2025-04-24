@@ -190,6 +190,24 @@ impl Offsets {
             old,
         )
     }
+
+    /// Changes the default size
+    pub fn set_default(&mut self, size: f64) -> f64 {
+        let current = self.default;
+        self.default = size;
+        current
+    }
+
+    /// Clears all sizes and resets to the default.
+    pub fn clear(&mut self) -> Vec<(i64, f64)> {
+        let changed: Vec<(i64, f64)> = self
+            .sizes
+            .iter()
+            .map(|(&index, &size)| (index, size))
+            .collect();
+        self.sizes.clear();
+        changed
+    }
 }
 
 #[cfg(test)]
@@ -324,5 +342,55 @@ mod tests {
         assert_eq!(offsets.get_size(3), 30.0);
         assert_eq!(offsets.get_size(4), 10.0);
         assert_eq!(offsets.get_size(5), 50.0);
+    }
+
+    #[test]
+    fn test_set_default() {
+        let mut offsets = Offsets::new(10.0);
+
+        // Verify initial default value
+        assert_eq!(offsets.get_size(1), 10.0);
+
+        // Change default and verify return value
+        assert_eq!(offsets.set_default(20.0), 10.0);
+
+        // Verify new default is applied to existing entries
+        assert_eq!(offsets.get_size(1), 20.0);
+
+        // Verify new default is applied to new entries
+        assert_eq!(offsets.get_size(100), 20.0);
+
+        // Change default again and verify
+        assert_eq!(offsets.set_default(30.0), 20.0);
+        assert_eq!(offsets.get_size(1), 30.0);
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut offsets = Offsets::new(10.0);
+
+        // Set some custom sizes
+        offsets.set_size(1, 20.0);
+        offsets.set_size(2, 30.0);
+        offsets.set_size(3, 40.0);
+
+        // Verify sizes are set correctly
+        assert_eq!(offsets.get_size(1), 20.0);
+        assert_eq!(offsets.get_size(2), 30.0);
+        assert_eq!(offsets.get_size(3), 40.0);
+
+        // Clear all sizes
+        let changes = offsets.clear();
+
+        // Verify changes returned
+        assert_eq!(changes, vec![(1, 20.0), (2, 30.0), (3, 40.0)]);
+
+        // Verify all sizes are reset to default
+        assert_eq!(offsets.get_size(1), 10.0);
+        assert_eq!(offsets.get_size(2), 10.0);
+        assert_eq!(offsets.get_size(3), 10.0);
+
+        // Verify new entries also use default
+        assert_eq!(offsets.get_size(100), 10.0);
     }
 }

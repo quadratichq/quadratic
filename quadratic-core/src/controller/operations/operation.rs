@@ -286,7 +286,7 @@ pub enum Operation {
     /// Resizes multiple columns.
     ResizeColumns {
         sheet_id: SheetId,
-        column_heights: Vec<JsColumnWidth>,
+        column_widths: Vec<JsColumnWidth>,
     },
 
     /// Resizes several rows.

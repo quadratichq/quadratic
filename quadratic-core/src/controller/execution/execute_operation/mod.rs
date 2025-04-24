@@ -164,6 +164,11 @@ impl GridController {
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
                 Operation::ResizeRows { .. } => self.execute_resize_rows(transaction, op),
                 Operation::ResizeColumns { .. } => self.execute_resize_columns(transaction, op),
+                Operation::DefaultColumnSize { .. } => {
+                    self.execute_default_column_size(transaction, op)
+                }
+                Operation::DefaultRowSize { .. } => self.execute_default_row_size(transaction, op),
+
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
                     self.execute_set_cursor_selection(transaction, op);

@@ -1597,6 +1597,24 @@ class Core {
       this.handleCoreError('resizeRows', e);
     }
   }
+
+  resizeAllColumns(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllColumns(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllColumns', e);
+    }
+  }
+
+  resizeAllRows(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllRows(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllRows', e);
+    }
+  }
 }
 
 export const core = new Core();

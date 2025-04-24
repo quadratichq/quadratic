@@ -194,7 +194,7 @@ impl GridController {
     pub fn execute_resize_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeColumns {
             sheet_id,
-            column_heights,
+            column_widths: column_heights,
         } = op
         {
             let Some(sheet) = self.try_sheet_mut(sheet_id) else {
@@ -223,14 +223,14 @@ impl GridController {
                 .forward_operations
                 .push(Operation::ResizeColumns {
                     sheet_id,
-                    column_heights: column_heights.clone(),
+                    column_widths: column_heights.clone(),
                 });
 
             transaction
                 .reverse_operations
                 .push(Operation::ResizeColumns {
                     sheet_id,
-                    column_heights: old_column_heights,
+                    column_widths: old_column_heights,
                 });
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -250,6 +250,78 @@ impl GridController {
                     });
                     transaction.generate_thumbnail
                 });
+            }
+        }
+    }
+
+    pub fn execute_default_column_size(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        unwrap_op!(let DefaultColumnSize { sheet_id, size } = op);
+        transaction.forward_operations.push(op);
+
+        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            let existing_offsets = sheet.offsets.clear_widths();
+
+            transaction
+                .reverse_operations
+                .push(Operation::ResizeColumns {
+                    sheet_id,
+                    column_widths: existing_offsets
+                        .into_iter()
+                        .map(|(i, size)| JsColumnWidth {
+                            column: i,
+                            width: size,
+                        })
+                        .collect(),
+                });
+            let old_size = sheet.offsets.set_default_width(size);
+            transaction
+                .reverse_operations
+                .push(Operation::DefaultColumnSize {
+                    sheet_id,
+                    size: old_size,
+                });
+
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                transaction.sheet_info.insert(sheet_id);
+            }
+        }
+    }
+
+    pub fn execute_default_row_size(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        unwrap_op!(let DefaultRowSize { sheet_id, size } = op);
+        transaction.forward_operations.push(op);
+
+        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            let existing_offsets = sheet.offsets.clear_heights();
+
+            transaction.reverse_operations.push(Operation::ResizeRows {
+                sheet_id,
+                row_heights: existing_offsets
+                    .into_iter()
+                    .map(|(i, size)| JsRowHeight {
+                        row: i,
+                        height: size,
+                    })
+                    .collect(),
+            });
+            let old_size = sheet.offsets.set_default_height(size);
+            transaction
+                .reverse_operations
+                .push(Operation::DefaultRowSize {
+                    sheet_id,
+                    size: old_size,
+                });
+
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                transaction.sheet_info.insert(sheet_id);
             }
         }
     }

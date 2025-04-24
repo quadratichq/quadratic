@@ -118,4 +118,34 @@ impl GridController {
             dbgjs!("Failed to parse values in resizeRows");
         }
     }
+
+    #[wasm_bindgen(js_name = "resizeAllColumns")]
+    pub fn js_resize_all_columns(
+        &mut self,
+        sheet_id: String,
+        size: f64,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            self.resize_all_columns(sheet_id, size, cursor);
+            Ok(())
+        } else {
+            Err(JsValue::from_str("Failed to parse sheet_id"))
+        }
+    }
+
+    #[wasm_bindgen(js_name = "resizeAllRows")]
+    pub fn js_resize_all_rows(
+        &mut self,
+        sheet_id: String,
+        size: f64,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            self.resize_all_rows(sheet_id, size, cursor);
+            Ok(())
+        } else {
+            Err(JsValue::from_str("Failed to parse sheet_id"))
+        }
+    }
 }
