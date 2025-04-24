@@ -146,16 +146,6 @@ pub fn remove_header(data: &[u8]) -> Result<(&[u8], &[u8])> {
     Ok((header, data))
 }
 
-pub fn read_header(data: &[u8]) -> Result<&[u8]> {
-    let index = data
-        .iter()
-        .position(|&r| r == HEADER_DELIMITER)
-        .ok_or_else(|| anyhow!("Could not find the file header delimiter"))?;
-    let header = &data[0..=index];
-
-    Ok(header)
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
