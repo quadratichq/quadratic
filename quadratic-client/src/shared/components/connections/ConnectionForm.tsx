@@ -128,6 +128,7 @@ function ConnectionFormWrapper({
       const { connected, message } = await connectionClient.test.run({
         type,
         typeDetails,
+        teamUuid,
       });
       if (connected === false) {
         form.setError('root', { message: message ?? 'Unknown error' });
