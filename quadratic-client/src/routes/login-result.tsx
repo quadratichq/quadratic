@@ -46,7 +46,7 @@ export const loader = async () => {
       // For new users coming directly to `/`, we'll send them to a new file
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
-        return redirect('/files/create');
+        return redirect('/files/create?private=false');
       }
       return redirect(redirectTo);
     }
