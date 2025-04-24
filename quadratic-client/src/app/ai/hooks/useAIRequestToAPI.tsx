@@ -53,6 +53,48 @@ export function useAIRequestToAPI() {
             body: JSON.stringify({ ...args, fileUuid }),
           });
 
+          // Log the request in OpenAI fine-tuning format
+          const fineTuningFormat = {
+            messages: args.messages.map((msg) => {
+              // Convert content array to single string
+              const contentString = msg.content
+                .map((c) => {
+                  if ('text' in c && typeof c.text === 'string') {
+                    return c.text;
+                  }
+                  if ('id' in c && typeof c.text === 'string') {
+                    return c.text;
+                  }
+                  return '';
+                })
+                .filter(Boolean)
+                .join('\n');
+
+              const baseMessage = {
+                role: msg.role,
+                content: contentString,
+              };
+
+              // Add tool_calls if present in assistant messages
+              if (msg.role === 'assistant' && 'toolCalls' in msg && msg.toolCalls?.length > 0) {
+                return {
+                  ...baseMessage,
+                  tool_calls: msg.toolCalls.map((tool) => ({
+                    id: tool.id,
+                    type: 'function',
+                    function: {
+                      name: tool.name,
+                      arguments: tool.arguments,
+                    },
+                  })),
+                };
+              }
+
+              return baseMessage;
+            }),
+          };
+          console.log('[AI.FineTuningFormat]', JSON.stringify(fineTuningFormat, null, 2));
+
           if (!response.ok) {
             const data = await response.json();
             let text = '';
@@ -116,6 +158,48 @@ export function useAIRequestToAPI() {
             const newResponseMessage = AIMessagePromptSchema.parse(data);
             setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
             responseMessage = newResponseMessage;
+
+            // Log the complete conversation in OpenAI fine-tuning format
+            const completedFineTuningFormat = {
+              messages: args.messages.map((msg) => {
+                // Convert content array to single string
+                const contentString = msg.content
+                  .map((c) => {
+                    if ('text' in c && typeof c.text === 'string') {
+                      return c.text;
+                    }
+                    if ('id' in c && typeof c.text === 'string') {
+                      return c.text;
+                    }
+                    return '';
+                  })
+                  .filter(Boolean)
+                  .join('\n');
+
+                const baseMessage = {
+                  role: msg.role,
+                  content: contentString,
+                };
+
+                // Add tool_calls if present in assistant messages
+                if (msg.role === 'assistant' && 'toolCalls' in msg && msg.toolCalls?.length > 0) {
+                  return {
+                    ...baseMessage,
+                    tool_calls: msg.toolCalls.map((tool) => ({
+                      id: tool.id,
+                      type: 'function',
+                      function: {
+                        name: tool.name,
+                        arguments: tool.arguments,
+                      },
+                    })),
+                  };
+                }
+
+                return baseMessage;
+              }),
+            };
+            console.log('[AI.CompletedConversation]', JSON.stringify(completedFineTuningFormat, null, 2));
 
             return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
           }
