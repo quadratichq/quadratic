@@ -254,6 +254,9 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
       - uses: useblacksmith/rust-cache@v3
 
       - uses: jetli/wasm-pack-action@v0.4.0
