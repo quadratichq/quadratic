@@ -256,7 +256,6 @@ export class MultiplayerServer {
     };
 
     const data: ReceiveMessages = isBinary ? await parseProtoMessage(e.data) : JSON.parse(e.data);
-    console.log('data', data);
 
     switch (data.type) {
       case 'UsersInRoom':
