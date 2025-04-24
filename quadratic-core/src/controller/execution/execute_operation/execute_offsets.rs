@@ -329,6 +329,7 @@ mod tests {
                     width: 400.0,
                 },
             ],
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(2), 200.0);
