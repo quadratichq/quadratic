@@ -3,13 +3,13 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
+import { debugFlag } from '@/app/ui/QuaraticAppDebugSettings';
 import { cn } from '@/shared/shadcn/utils';
 import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -98,7 +98,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!debugFlag('debugShowAIInternalContext') && message.contextType !== 'userPrompt') {
           return null;
         }
 

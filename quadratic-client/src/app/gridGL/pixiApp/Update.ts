@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
-import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
+import { debugFlag } from '@/app/ui/QuaraticAppDebugSettings';
+import { debugShowFPS } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
@@ -75,7 +76,7 @@ export class Update {
       pixiApp.validations.dirty ||
       pixiApp.copy.dirty;
 
-    if (rendererDirty && debugShowWhyRendering) {
+    if (rendererDirty && debugFlag('debugShowWhyRendering')) {
       console.log(
         `dirty: ${[
           pixiApp.viewport.dirty && 'viewport',
