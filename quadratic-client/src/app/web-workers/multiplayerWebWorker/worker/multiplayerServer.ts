@@ -239,6 +239,7 @@ export class MultiplayerServer {
   private async handleMessage(e: MessageEvent<string | Blob>) {
     const isBinary = e.data instanceof Blob;
 
+    // brute force parsing of the message to determine the type
     const parseProtoMessage = async (data: Blob): Promise<ReceiveMessages> => {
       const buffer = await data.arrayBuffer();
       const messageTypes = [ReceiveProtoTransaction, ReceiveProtoTransactions];
@@ -255,6 +256,7 @@ export class MultiplayerServer {
     };
 
     const data: ReceiveMessages = isBinary ? await parseProtoMessage(e.data) : JSON.parse(e.data);
+    console.log('data', data);
 
     switch (data.type) {
       case 'UsersInRoom':

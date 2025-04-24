@@ -3794,7 +3794,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-connection"
-version = "0.6.13"
+version = "0.6.14"
 dependencies = [
  "arrow 51.0.0",
  "arrow-schema 51.0.0",
@@ -3835,7 +3835,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.13"
+version = "0.6.14"
 dependencies = [
  "arrow 54.2.1",
  "arrow-array 54.2.1",

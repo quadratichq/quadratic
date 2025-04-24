@@ -2720,7 +2720,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.6.11"
+version = "0.6.14"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -2779,7 +2779,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.13"
+version = "0.6.14"
 dependencies = [
  "async-trait",
  "bigdecimal",
