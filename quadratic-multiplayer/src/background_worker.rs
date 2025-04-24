@@ -84,6 +84,7 @@ async fn broadcast_sequence_num(state: Arc<State>, file_id: &Uuid) -> Result<Joi
         file_id.to_owned(),
         Arc::clone(&state),
         MessageResponse::CurrentTransaction { sequence_num },
+        false,
     ))
 }
 
@@ -117,6 +118,7 @@ async fn remove_stale_users_in_room(
         file_id.to_owned(),
         Arc::clone(&state),
         message,
+        false,
     )))
 }
 

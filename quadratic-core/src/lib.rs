@@ -70,13 +70,3 @@ pub const DEFAULT_ROW_HEIGHT: f64 = 21.0;
 
 const THUMBNAIL_WIDTH: f64 = 1280f64;
 const THUMBNAIL_HEIGHT: f64 = THUMBNAIL_WIDTH / (16f64 / 9f64);
-
-#[cfg(not(target_arch = "wasm32"))]
-mod native_io {
-    // Native platform I/O code
-}
-
-#[cfg(target_arch = "wasm32")]
-mod wasm_io {
-    // WebAssembly-specific I/O code
-}

@@ -58,6 +58,7 @@ pub(crate) fn broadcast(
     file_id: Uuid,
     state: Arc<State>,
     message: MessageResponse,
+    is_binary: bool,
 ) -> JoinHandle<()> {
     tracing::trace!(
         "Broadcasting message to room {}, excluding {:?}: {:?}",
@@ -78,77 +79,23 @@ pub(crate) fn broadcast(
                     return Ok::<_, MpError>(());
                 }
 
-                let serialized_message = serde_json::to_string(&message)?;
-
-                for user in included_users {
-                    if let Some(sender) = &user.socket {
-                        let sent = sender
-                            .lock()
-                            .await
-                            .send(Message::Text(serialized_message.clone().into()))
-                            .await
-                            .map_err(|e| MpError::SendingMessage(e.to_string()));
-
-                        if let Err(error) = sent {
-                            tracing::warn!(
-                                "Error broadcasting to user {} in room {}: {:?}",
-                                user.session_id,
-                                file_id,
-                                error,
-                            );
-
-                            // the user's socket is stale, so remove them from the room
-                            state.leave_room(file_id, &user.session_id).await?;
-                        }
+                let send_message = match is_binary {
+                    true => {
+                        let serialized_message = encode_message(message)?;
+                        Message::Binary(serialized_message.into())
                     }
-                }
-
-                Ok::<_, MpError>(())
-            };
-
-            if let Err(e) = result.await {
-                tracing::warn!("Error broadcasting message: {:?}", e.to_string());
-            }
-        }
-    })
-}
-
-/// Broadcast a message to all users in a room except the sender.
-/// All messages are sent in a separate thread.
-#[tracing::instrument(level = "trace")]
-pub(crate) fn broadcast_binary(
-    exclude: Vec<Uuid>,
-    file_id: Uuid,
-    state: Arc<State>,
-    message: MessageResponse,
-) -> JoinHandle<()> {
-    tracing::trace!(
-        "Broadcasting message to room {}, excluding {:?}: {:?}",
-        file_id,
-        exclude,
-        message
-    );
-
-    tokio::spawn(async move {
-        if let Ok(room) = state.get_room(&file_id).await {
-            let result = async {
-                let included_users = room
-                    .users
-                    .iter()
-                    .filter(|user| !exclude.contains(&user.session_id));
-
-                if included_users.clone().count() == 0 {
-                    return Ok::<_, MpError>(());
-                }
-
-                let binary_response = encode_message(message)?;
+                    false => {
+                        let serialized_message = serde_json::to_string(&message)?;
+                        Message::Text(serialized_message.into())
+                    }
+                };
 
                 for user in included_users {
                     if let Some(sender) = &user.socket {
                         let sent = sender
                             .lock()
                             .await
-                            .send(Message::Binary(binary_response.to_owned().into()))
+                            .send(send_message.to_owned())
                             .await
                             .map_err(|e| MpError::SendingMessage(e.to_string()));
 

@@ -34,6 +34,7 @@ impl PubSub {
         Ok(connection)
     }
 
+    // TODO: remove this function once all clients are updated
     pub(crate) async fn push(
         &mut self,
         id: Uuid,
@@ -47,15 +48,14 @@ impl PubSub {
             operations,
             sequence_num,
         };
-        let now = std::time::Instant::now();
         let transaction_compressed = Transaction::serialize_and_compress(&transaction)
             .map_err(|e| MpError::Serialization(e.to_string()))?;
-        tracing::info!("Serialized and compressed in {:?}", now.elapsed());
+
         let active_channels = match self.config {
             PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
             _ => "active_channels",
         };
-        let now = std::time::Instant::now();
+
         self.connection
             .publish(
                 &file_id.to_string(),
@@ -64,7 +64,6 @@ impl PubSub {
                 Some(active_channels),
             )
             .await?;
-        tracing::info!("Published in {:?}", now.elapsed());
         Ok(sequence_num)
     }
 
@@ -142,6 +141,7 @@ impl State {
     }
 
     /// Push a transaction to the transaction queue
+    // TODO: remove this function once all clients are updated
     pub(crate) async fn push_pubsub(
         &self,
         id: Uuid,
@@ -156,6 +156,8 @@ impl State {
             .await
     }
 
+    /// Push a transaction to the transaction queue
+    // TODO: rename to `push` once all clients are updated
     pub(crate) async fn push_protobuf_pubsub(
         &self,
         id: Uuid,

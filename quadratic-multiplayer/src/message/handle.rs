@@ -12,7 +12,6 @@ use uuid::Uuid;
 
 use crate::error::{ErrorLevel, MpError, Result};
 use crate::get_mut_room;
-use crate::message::broadcast_binary;
 use crate::message::response::{BinaryTransaction, Transaction};
 use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
@@ -140,7 +139,7 @@ pub(crate) async fn handle_message(
                 let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from((room.users, &state.settings.version));
 
-                broadcast(vec![], file_id, Arc::clone(&state), response);
+                broadcast(vec![], file_id, Arc::clone(&state), response, false);
             }
 
             Ok(None)
@@ -158,13 +157,20 @@ pub(crate) async fn handle_message(
 
             if is_not_empty {
                 let response = MessageResponse::from((room.users, &state.settings.version));
-                broadcast(vec![session_id], file_id, Arc::clone(&state), response);
+                broadcast(
+                    vec![session_id],
+                    file_id,
+                    Arc::clone(&state),
+                    response,
+                    false,
+                );
             }
 
             Ok(None)
         }
 
         // User sends transactions
+        // TODO(ddimaria): remove this once all clients are updated
         MessageRequest::Transaction {
             id,
             session_id,
@@ -205,7 +211,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
 
-            broadcast(vec![], file_id, Arc::clone(&state), response);
+            broadcast(vec![], file_id, Arc::clone(&state), response, false);
 
             Ok(None)
         }
@@ -248,7 +254,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
 
-            broadcast_binary(vec![], file_id, Arc::clone(&state), response);
+            broadcast(vec![], file_id, Arc::clone(&state), response, true);
 
             Ok(None)
         }
@@ -374,7 +380,13 @@ pub(crate) async fn handle_message(
                 update,
             };
 
-            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
+            broadcast(
+                vec![session_id],
+                file_id,
+                Arc::clone(&state),
+                response,
+                false,
+            );
 
             Ok(None)
         }

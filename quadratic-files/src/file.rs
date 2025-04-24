@@ -1,5 +1,4 @@
 use chrono::Utc;
-use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -152,7 +151,8 @@ pub(crate) async fn process_queue_for_room(
             //     transaction.sequence_num
             // );
 
-            decompress_and_deserialize_serde::<Vec<Operation>>(transaction.operations)
+            Transaction::decompress_and_deserialize::<Vec<Operation>>(&transaction.operations)
+                .map_err(|e| FilesError::Serialization(e.to_string()))
         })
         .flatten()
         .collect::<Vec<Operation>>();
@@ -264,11 +264,6 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     }
 
     Ok(())
-}
-
-fn decompress_and_deserialize_serde<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
-    Transaction::decompress_and_deserialize::<T>(&data)
-        .map_err(|e| FilesError::Serialization(e.to_string()))
 }
 
 #[cfg(test)]
