@@ -48,6 +48,7 @@ pub enum ArrowType {
     Json(Value),
     Jsonb(Value),
     Void,
+    Null,
     Unsupported,
 }
 
@@ -129,6 +130,8 @@ impl ArrowType {
             ArrowType::Jsonb(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Jsonb, values),
             ArrowType::Uuid(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Uuid, values),
             // ArrowType::Void => Arc::new(NullArray::new(1)),
+            // generic null for any arrow type
+            ArrowType::Null => Arc::new(StringArray::new_null(1)),
             ArrowType::Unsupported => Arc::new(StringArray::new_null(1)),
             _ => {
                 tracing::trace!("Unsupported ArrowType: {:?}", values[0]);

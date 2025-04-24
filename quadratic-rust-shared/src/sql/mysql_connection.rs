@@ -19,11 +19,11 @@ use sqlx::{
     mysql::{MySqlColumn, MySqlConnectOptions, MySqlRow /* , MySqlTypeInfo*/},
 };
 
-use crate::convert_mysql_type;
 use crate::error::{Result, SharedError};
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
+use crate::{convert_sqlx_type, to_arrow_type};
 
 /// MySQL connection
 #[derive(Debug, Serialize, Deserialize)]
@@ -197,46 +197,37 @@ impl Connection for MySqlConnection {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
-                ArrowType::Utf8(convert_mysql_type!(String, row, index))
+                to_arrow_type!(ArrowType::Utf8, String, row, index)
             }
-            "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),
-            "SMALLINT" => ArrowType::Int16(convert_mysql_type!(i16, row, index)),
-            "MEDIUMINT" | "INT" => ArrowType::Int32(convert_mysql_type!(i32, row, index)),
-            "BIGINT" => ArrowType::Int64(convert_mysql_type!(i64, row, index)),
-            "TINYINT UNSIGNED" => ArrowType::UInt8(convert_mysql_type!(u8, row, index)),
-            "SMALLINT UNSIGNED" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
+            "TINYINT" => to_arrow_type!(ArrowType::Int8, i8, row, index),
+            "SMALLINT" => to_arrow_type!(ArrowType::Int16, i16, row, index),
+            "MEDIUMINT" | "INT" => to_arrow_type!(ArrowType::Int32, i32, row, index),
+            "BIGINT" => to_arrow_type!(ArrowType::Int64, i64, row, index),
+            "TINYINT UNSIGNED" => to_arrow_type!(ArrowType::UInt8, u8, row, index),
+            "SMALLINT UNSIGNED" => to_arrow_type!(ArrowType::UInt16, u16, row, index),
             "INT UNSIGNED" | "MEDIUMINT UNSIGNED" => {
-                ArrowType::UInt32(convert_mysql_type!(u32, row, index))
+                to_arrow_type!(ArrowType::UInt32, u32, row, index)
             }
-            "BIGINT UNSIGNED" | "BIT" => ArrowType::UInt64(convert_mysql_type!(u64, row, index)),
-            "BOOL" | "BOOLEAN" => ArrowType::Boolean(convert_mysql_type!(bool, row, index)),
-            "FLOAT" => ArrowType::Float32(convert_mysql_type!(f32, row, index)),
-            "DOUBLE" => ArrowType::Float64(convert_mysql_type!(f64, row, index)),
-            "DECIMAL" => ArrowType::BigDecimal(convert_mysql_type!(BigDecimal, row, index)),
-            "TIMESTAMP" => ArrowType::TimestampTz(convert_mysql_type!(DateTime<Local>, row, index)),
-            "DATETIME" => ArrowType::Timestamp(convert_mysql_type!(NaiveDateTime, row, index)),
-            "DATE" => {
-                let naive_date = convert_mysql_type!(NaiveDate, row, index);
-                ArrowType::Date32(Date32Type::from_naive_date(naive_date))
-            }
-            "TIME" => ArrowType::Time32(convert_mysql_type!(NaiveTime, row, index)),
-            "YEAR" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
-            "JSON" => ArrowType::Json(convert_mysql_type!(Value, row, index)),
-            "UUID" => ArrowType::Uuid(convert_mysql_type!(Uuid, row, index)),
+            "BIGINT UNSIGNED" | "BIT" => to_arrow_type!(ArrowType::UInt64, u64, row, index),
+            "BOOL" | "BOOLEAN" => to_arrow_type!(ArrowType::Boolean, bool, row, index),
+            "FLOAT" => to_arrow_type!(ArrowType::Float32, f32, row, index),
+            "DOUBLE" => to_arrow_type!(ArrowType::Float64, f64, row, index),
+            "DECIMAL" => to_arrow_type!(ArrowType::BigDecimal, BigDecimal, row, index),
+            "TIMESTAMP" => to_arrow_type!(ArrowType::TimestampTz, DateTime<Local>, row, index),
+            "DATETIME" => to_arrow_type!(ArrowType::Timestamp, NaiveDateTime, row, index),
+            "DATE" => match convert_sqlx_type!(NaiveDate, row, index) {
+                Some(naive_date) => ArrowType::Date32(Date32Type::from_naive_date(naive_date)),
+                None => ArrowType::Null,
+            },
+            "TIME" => to_arrow_type!(ArrowType::Time32, NaiveTime, row, index),
+            "YEAR" => to_arrow_type!(ArrowType::UInt16, u16, row, index),
+            "JSON" => to_arrow_type!(ArrowType::Json, Value, row, index),
+            "UUID" => to_arrow_type!(ArrowType::Uuid, Uuid, row, index),
             "NULL" => ArrowType::Void,
             // try to convert others to a string
             _ => ArrowType::Unsupported,
         }
     }
-}
-
-#[macro_export]
-macro_rules! convert_mysql_type {
-    ( $kind:ty, $row:ident, $index:ident ) => {{
-        $row.try_get::<$kind, usize>($index)
-            .ok()
-            .unwrap_or_default()
-    }};
 }
 
 #[cfg(test)]

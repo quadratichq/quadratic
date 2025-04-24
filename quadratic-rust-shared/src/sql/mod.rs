@@ -167,3 +167,21 @@ pub trait Connection {
 
 //     Ok(schema)
 // }
+
+/// Convert a column data to an ArrowType into an Arrow type
+#[macro_export]
+macro_rules! convert_sqlx_type {
+    ( $kind:ty, $row:ident, $index:ident ) => {{ $row.try_get::<$kind, usize>($index).ok() }};
+}
+
+/// Convert a column data to an ArrowType into an Arrow type
+/// else return a null value
+#[macro_export]
+macro_rules! to_arrow_type {
+    ( $arrow_type:path, $kind:ty, $row:ident, $index:ident ) => {{
+        match convert_sqlx_type!($kind, $row, $index) {
+            Some(value) => $arrow_type(value),
+            None => ArrowType::Null,
+        }
+    }};
+}
