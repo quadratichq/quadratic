@@ -1,8 +1,10 @@
+import { connectionFormSshAtom } from '@/shared/atom/connectionFormSshAtom';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { useEffect } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
+import { useSetRecoilState } from 'recoil';
 
 interface ConnectionFormSshProps {
   form: UseFormReturn<any>;
@@ -68,16 +70,16 @@ export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
   const name = 'useSsh';
   const useSsh: boolean = form.getValues(name);
 
-  // We use this to signal up the tree when the user has this enabled.
-  // It's a little hacky, but it makes it so we dno't have to elevate form state
-  // all the way to the top of the parent Connections component.
+  const setUseSsh = useSetRecoilState(connectionFormSshAtom);
+
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('changeUseSsh', { detail: useSsh }));
+    setUseSsh(useSsh);
 
     return () => {
-      window.dispatchEvent(new CustomEvent('changeUseSsh', { detail: false }));
+      setUseSsh(false);
     };
-  }, [useSsh]);
+  }, [setUseSsh, useSsh]);
+
   return (
     <>
       <FormField
