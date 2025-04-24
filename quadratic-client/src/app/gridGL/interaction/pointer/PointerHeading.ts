@@ -128,6 +128,7 @@ export class PointerHeading {
     } else if (
       !isRightClick &&
       !cursor.isMultiRange() &&
+      !cursor.isAllSelected() &&
       (intersects.column == null || cursor.isEntireColumnSelected(intersects.column)) &&
       (intersects.row == null || cursor.isEntireRowSelected(intersects.row))
     ) {
