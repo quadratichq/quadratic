@@ -54,6 +54,49 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const { chatId, fileUuid, modelKey, ...args } = body;
   const source = args.source;
 
+  // Log the request in OpenAI fine-tuning format
+  const fineTuningFormat = {
+    messages: args.messages.map((msg) => {
+      // Base message with role
+      const baseMessage = {
+        role: msg.role,
+        content: msg.content
+          .filter(
+            (c): c is { type: 'text'; text: string } => 'type' in c && c.type === 'text' && typeof c.text === 'string'
+          )
+          .map((c) => c.text)
+          .join('\n'),
+      };
+
+      // Add tool_calls for assistant messages
+      if (msg.role === 'assistant' && msg.contextType === 'userPrompt' && msg.toolCalls?.length > 0) {
+        return {
+          ...baseMessage,
+          tool_calls: msg.toolCalls.map((tool) => ({
+            id: tool.id,
+            type: 'function',
+            function: {
+              name: tool.name,
+              arguments: tool.arguments,
+            },
+          })),
+        };
+      }
+
+      // Add tool responses
+      if (msg.role === 'user' && msg.contextType === 'toolResult') {
+        return {
+          role: 'tool',
+          tool_call_id: msg.content[0]?.id,
+          content: msg.content[0]?.text || '',
+        };
+      }
+
+      return baseMessage;
+    }),
+  };
+  console.log('[AI.FineTuningFormat]', JSON.stringify(fineTuningFormat, null, 2));
+
   if (args.useToolsPrompt) {
     const toolUseContext = getToolUseContext(source);
     args.messages.unshift(...toolUseContext);
@@ -84,6 +127,22 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
   if (parsedResponse) {
     args.messages.push(parsedResponse.responseMessage);
+
+    // Log the complete conversation in OpenAI fine-tuning format
+    const completedFineTuningFormat = {
+      messages: args.messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content
+          .map((c) => {
+            if ('text' in c && typeof c.text === 'string') {
+              return c.text;
+            }
+            return '';
+          })
+          .join('\n'),
+      })),
+    };
+    console.log('[AI.CompletedConversation]', JSON.stringify(completedFineTuningFormat, null, 2));
   }
 
   if (DEBUG) {
