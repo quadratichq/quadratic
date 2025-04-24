@@ -1,5 +1,6 @@
 use crate::{
     SheetPos,
+    a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -284,9 +285,18 @@ impl GridController {
                     sheet_id,
                     size: old_size,
                 });
+        } else {
+            return;
+        }
 
-            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
                 transaction.sheet_info.insert(sheet_id);
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    &self.a1_context,
+                    vec![A1Selection::all(sheet_id)],
+                );
             }
         }
     }
@@ -319,9 +329,18 @@ impl GridController {
                     sheet_id,
                     size: old_size,
                 });
+        } else {
+            return;
+        }
 
-            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
                 transaction.sheet_info.insert(sheet_id);
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    &self.a1_context,
+                    vec![A1Selection::all(sheet_id)],
+                );
             }
         }
     }
