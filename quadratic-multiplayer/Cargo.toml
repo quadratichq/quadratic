@@ -25,8 +25,12 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
     "console_error_panic_hook",
     "js",
 ] }
-quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
+    "auth",
+    "aws","environment",
     "protobuf",
+    "pubsub",
+    "quadratic-api"
 ] }
 rayon = "1.8.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }

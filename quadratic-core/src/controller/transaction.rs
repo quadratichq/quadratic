@@ -98,6 +98,31 @@ impl Transaction {
         decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, data)
     }
 
+    // pub fn decompress_and_deserialize(operations: &[u8]) -> Result<TransactionServer> {
+    //     let (header, data) = remove_header(operations)?;
+    //     let version = deserialize::<TransactionVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
+
+    //     match version.version.as_str() {
+    //         "1.0" => decompress_and_deserialize::<TransactionServer>(
+    //             &SERIALIZATION_FORMAT,
+    //             &COMPRESSION_FORMAT,
+    //             data,
+    //         ),
+    //         "2.0" => {
+    //             let decoded: TransactionServer =
+    //                 Message::decode(data).map_err(|e| anyhow::anyhow!(e))?;
+
+    //             Ok(TransactionServer {
+    //                 id: Uuid::parse_str(&decoded.id)?,
+    //                 file_id: Uuid::parse_str(&decoded.file_id)?,
+    //                 operations: decoded.operations,
+    //                 sequence_num: decoded.sequence_num,
+    //             })
+    //         }
+    //         _ => bail!("Invalid transaction version: {}", version.version),
+    //     }
+    // }
+
     /// Decompress and deserialize the transaction's operations, removing the
     /// version header.
     ///

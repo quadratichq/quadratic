@@ -348,6 +348,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "asn1-rs"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f6fd5ddaf0351dff5b8da21b2fb4ff8e08ddd02857f0bf69c47639106c0fff0"
+dependencies = [
+ "asn1-rs-derive",
+ "asn1-rs-impl",
+ "displaydoc",
+ "nom",
+ "num-traits",
+ "rusticata-macros",
+ "thiserror 1.0.69",
+ "time",
+]
+
+[[package]]
+name = "asn1-rs-derive"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "726535892e8eae7e70657b4c8ea93d26b8553afb1ce617caee529ef96d7dee6c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+ "synstructure 0.12.6",
+]
+
+[[package]]
+name = "asn1-rs-impl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2777730b2039ac0f95f093556e61b6d26cebed5393ca6f152717777cec3a42ed"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "assert-json-diff"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -631,7 +670,7 @@ dependencies = [
  "fastrand",
  "hex",
  "http 1.3.1",
- "ring",
+ "ring 0.17.14",
  "time",
  "tokio",
  "tracing",
@@ -826,7 +865,7 @@ dependencies = [
  "once_cell",
  "p256",
  "percent-encoding",
- "ring",
+ "ring 0.17.14",
  "sha2",
  "subtle",
  "time",
@@ -1781,6 +1820,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "der-parser"
+version = "8.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbd676fbbab537128ef0278adb5576cf363cff6aa22a7b24effe97347cfab61e"
+dependencies = [
+ "asn1-rs",
+ "displaydoc",
+ "nom",
+ "num-bigint",
+ "num-traits",
+ "rusticata-macros",
+]
+
+[[package]]
 name = "deranged"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2016,7 +2069,7 @@ checksum = "da0e4dd2a88388a1f4ccc7c9ce104604dab68d9f408dc34cd45823d5a9069095"
 dependencies = [
  "futures-core",
  "futures-sink",
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -2520,8 +2573,10 @@ dependencies = [
  "lazy_static",
  "log",
  "path-tree",
+ "rcgen",
  "regex",
  "rustls 0.23.25",
+ "rustls-pemfile 2.2.0",
  "serde",
  "serde_json",
  "serde_regex",
@@ -2530,7 +2585,9 @@ dependencies = [
  "stringmetrics",
  "tabwriter",
  "thiserror 1.0.69",
+ "tls-detect",
  "tokio",
+ "tokio-rustls 0.26.2",
  "url",
 ]
 
@@ -2935,7 +2992,7 @@ dependencies = [
  "base64 0.22.1",
  "js-sys",
  "pem",
- "ring",
+ "ring 0.17.14",
  "serde",
  "serde_json",
  "simple_asn1",
@@ -2956,7 +3013,7 @@ version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 dependencies = [
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -3339,7 +3396,7 @@ dependencies = [
  "quick-xml",
  "rand 0.8.5",
  "reqwest 0.12.12",
- "ring",
+ "ring 0.17.14",
  "serde",
  "serde_json",
  "snafu",
@@ -3347,6 +3404,15 @@ dependencies = [
  "tracing",
  "url",
  "walkdir",
+]
+
+[[package]]
+name = "oid-registry"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bedf36ffb6ba96c2eb7144ef6270557b52e54b20c0a8e1eb2ff99a6c6959bff"
+dependencies = [
+ "asn1-rs",
 ]
 
 [[package]]
@@ -3925,7 +3991,7 @@ dependencies = [
  "bytes",
  "getrandom 0.3.2",
  "rand 0.9.0",
- "ring",
+ "ring 0.17.14",
  "rustc-hash 2.1.1",
  "rustls 0.23.25",
  "rustls-pki-types",
@@ -4090,6 +4156,19 @@ checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "rcgen"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48406db8ac1f3cbc7dcdb56ec355343817958a356ff430259bb07baf7607e1e1"
+dependencies = [
+ "pem",
+ "ring 0.17.14",
+ "time",
+ "x509-parser",
+ "yasna",
 ]
 
 [[package]]
@@ -4337,6 +4416,21 @@ dependencies = [
 
 [[package]]
 name = "ring"
+version = "0.16.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
+dependencies = [
+ "cc",
+ "libc",
+ "once_cell",
+ "spin 0.5.2",
+ "untrusted 0.7.1",
+ "web-sys",
+ "winapi",
+]
+
+[[package]]
+name = "ring"
 version = "0.17.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7"
@@ -4345,7 +4439,7 @@ dependencies = [
  "cfg-if",
  "getrandom 0.2.15",
  "libc",
- "untrusted",
+ "untrusted 0.9.0",
  "windows-sys 0.52.0",
 ]
 
@@ -4451,6 +4545,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusticata-macros"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "faf0c4a6ece9950b9abdb62b1cfcf2a68b3b67a10ba445b3bb85be2a293d0632"
+dependencies = [
+ "nom",
+]
+
+[[package]]
 name = "rustix"
 version = "0.38.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4483,7 +4586,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f56a14d1f48b391359b22f731fd4bd7e43c97f3c50eee276f3aa09c94784d3e"
 dependencies = [
  "log",
- "ring",
+ "ring 0.17.14",
  "rustls-webpki 0.101.7",
  "sct",
 ]
@@ -4497,7 +4600,7 @@ dependencies = [
  "aws-lc-rs",
  "log",
  "once_cell",
- "ring",
+ "ring 0.17.14",
  "rustls-pki-types",
  "rustls-webpki 0.103.1",
  "subtle",
@@ -4561,8 +4664,8 @@ version = "0.101.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765"
 dependencies = [
- "ring",
- "untrusted",
+ "ring 0.17.14",
+ "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -4572,9 +4675,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fef8b8769aaccf73098557a87cd1816b4f9c7c16811c9c77142aa695c16f2c03"
 dependencies = [
  "aws-lc-rs",
- "ring",
+ "ring 0.17.14",
  "rustls-pki-types",
- "untrusted",
+ "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -4619,8 +4722,8 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
 dependencies = [
- "ring",
- "untrusted",
+ "ring 0.17.14",
+ "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -4960,6 +5063,12 @@ dependencies = [
 
 [[package]]
 name = "spin"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
+
+[[package]]
+name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
@@ -5280,6 +5389,18 @@ dependencies = [
 
 [[package]]
 name = "synstructure"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+ "unicode-xid",
+]
+
+[[package]]
+name = "synstructure"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8af7666ab7b6390ab78131fb5b0fce11d6b7a6951602017c35fa82800708971"
@@ -5528,6 +5649,15 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tls-detect"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e1800cba3e521412d15e88358ddda292fa8f157f06a66a418fed5e1b8ecb166"
+dependencies = [
+ "async-trait",
+]
 
 [[package]]
 name = "tokio"
@@ -5821,10 +5951,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fc81956842c57dac11422a97c3b8195a1ff727f06e85c84ed2e8aa277c9a0fd"
 
 [[package]]
+name = "unicode-xid"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
 name = "unsafe-libyaml"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
+
+[[package]]
+name = "untrusted"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "untrusted"
@@ -6455,6 +6597,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "x509-parser"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7069fba5b66b9193bd2c5d3d4ff12b839118f6bcbef5328efafafb5395cf63da"
+dependencies = [
+ "asn1-rs",
+ "data-encoding",
+ "der-parser",
+ "lazy_static",
+ "nom",
+ "oid-registry",
+ "ring 0.16.20",
+ "rusticata-macros",
+ "thiserror 1.0.69",
+ "time",
+]
+
+[[package]]
 name = "xmlparser"
 version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6465,6 +6625,15 @@ name = "yansi"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
+
+[[package]]
+name = "yasna"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e17bb3549cc1321ae1296b9cdc2698e2b6cb1992adfa19a8c72e5b7a738f44cd"
+dependencies = [
+ "time",
+]
 
 [[package]]
 name = "yoke"
@@ -6487,7 +6656,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.100",
- "synstructure",
+ "synstructure 0.13.1",
 ]
 
 [[package]]
@@ -6548,7 +6717,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.100",
- "synstructure",
+ "synstructure 0.13.1",
 ]
 
 [[package]]

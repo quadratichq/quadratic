@@ -123,7 +123,7 @@ pub(crate) async fn process_queue_for_room(
         .into_iter()
         .flat_map(|(_, message)| match Transaction::read_header(&message) {
             Ok(header) => match header.version.as_str() {
-                "1.0" => decompress_and_deserialize_serde::<TransactionServer>(message),
+                "1.0" => Transaction::decompress_and_deserialize(&message)?,
                 "2.0" => {
                     let decoded = decode_protobuf(message)?;
 

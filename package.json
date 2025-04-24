@@ -33,7 +33,7 @@
     "client:download:pyodide": "npm run download:pyodide --workspace=quadratic-client",
     "build:wasm:types": "cd quadratic-core && CC=clang AR=llvm-ar cargo run --bin export_types --features js --target-dir=target/quadratic-core-types",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
-    "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
+    "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build:wasm:perf:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
