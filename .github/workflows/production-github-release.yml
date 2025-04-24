@@ -1,0 +1,33 @@
+name: Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  github_release:
+    name: github_release
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    concurrency:
+      group: production-github-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read version
+        id: read-version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.read-version.outputs.version }}
+          release_name: v${{ steps.read-version.outputs.version }}
+          body: |
+            Release version ${{ steps.read-version.outputs.version }}
