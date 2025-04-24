@@ -20,6 +20,7 @@ export const Component = () => {
     activeTeam: {
       connections,
       userMakingRequest: { teamPermissions },
+      team: { sshPublicKey },
     },
   } = useDashboardRouteLoaderData();
 
@@ -30,7 +31,9 @@ export const Component = () => {
   return (
     <>
       <DashboardHeader title="Team connections" />
-      <Connections connections={connections} teamUuid={teamUuid} staticIps={staticIps} />
+      <div className="max-w-4xl">
+        <Connections connections={connections} teamUuid={teamUuid} staticIps={staticIps} sshPublicKey={sshPublicKey} />
+      </div>
     </>
   );
 };

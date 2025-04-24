@@ -1,6 +1,6 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'vertexai-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:claude:thinking-toggle-on';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
@@ -11,7 +11,7 @@ export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gem
 export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-03-25';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 10;
+export const DEFAULT_MODEL_VERSION = 12;
 
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
@@ -23,7 +23,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinkingToggle: false,
@@ -35,7 +35,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -106,7 +106,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
@@ -118,7 +118,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,

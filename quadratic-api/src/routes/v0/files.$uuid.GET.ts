@@ -11,6 +11,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { generateSshKeys } from '../../utils/crypto';
 
 export default [
   validateRequestSchema(
@@ -36,6 +37,16 @@ async function handler(
   } = await getFile({ uuid: req.params.uuid, userId });
 
   const thumbnailSignedUrl = thumbnail ? await getFileUrl(thumbnail) : null;
+
+  if (ownerTeam.sshPublicKey === null) {
+    const { privateKey, publicKey } = await generateSshKeys();
+    await dbClient.team.update({
+      where: { id: ownerTeam.id },
+      data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
+    });
+
+    ownerTeam.sshPublicKey = publicKey;
+  }
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -89,6 +100,7 @@ async function handler(
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },
+      sshPublicKey: ownerTeam.sshPublicKey,
     },
     userMakingRequest: {
       id: userId,

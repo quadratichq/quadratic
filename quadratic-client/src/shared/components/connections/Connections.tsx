@@ -5,7 +5,6 @@ import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/co
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
-import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
@@ -20,6 +19,7 @@ export type ConnectionsListConnection = {
 };
 type Props = {
   teamUuid: string;
+  sshPublicKey: string;
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
@@ -35,6 +35,7 @@ export const Connections = ({
   teamUuid,
   staticIps,
   handleNavigateToDetailsViewOverride,
+  sshPublicKey,
 }: Props) => {
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
@@ -137,8 +138,8 @@ export const Connections = ({
   };
 
   return (
-    <div className={cn('flex w-full max-w-4xl flex-col gap-8 md:flex-row')}>
-      <div className="md:w-2/3">
+    <div className={'grid-cols-12 gap-12 md:grid'}>
+      <div className="col-span-8">
         {activeConnectionState && activeConnectionType ? (
           activeConnectionState.view === 'edit' ? (
             <ConnectionFormEdit
@@ -171,9 +172,8 @@ export const Connections = ({
           />
         )}
       </div>
-      <div className="h-[1px] w-full bg-border md:h-auto md:w-[1px]"></div>
-      <div className="md:w-1/3">
-        <ConnectionsSidebar staticIps={staticIps} />
+      <div className="col-span-4 mt-12 md:mt-0">
+        <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
       </div>
     </div>
   );

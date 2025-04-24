@@ -24,7 +24,6 @@ export function ConnectionFormActions({
 }) {
   const submit = useSubmit();
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
-
   const formData = form.watch();
 
   // If the user changed some data, reset the state of the connection so they
