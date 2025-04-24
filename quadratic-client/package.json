@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.6.13",
+  "version": "0.6.14",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -129,7 +129,7 @@
     ]
   },
   "devDependencies": {
-    "@sentry/vite-plugin": "^3.2.2",
+    "@sentry/vite-plugin": "^3.3.1",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
     "@types/fontfaceobserver": "^2.1.3",
