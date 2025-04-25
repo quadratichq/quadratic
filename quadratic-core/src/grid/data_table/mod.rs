@@ -336,7 +336,7 @@ impl DataTable {
             return false;
         }
 
-        true
+        self.column_headers.is_some()
     }
 
     pub fn name(&self) -> &str {
