@@ -35,8 +35,8 @@ fn upgrade_data_tables(
     for (x, column) in columns {
         for (y, cell) in column {
             match cell {
-                current::CellValueSchema::Code(code_cel) => {
-                    code_cells.insert(current::PosSchema { x: *x, y: *y }, code_cel.to_owned());
+                current::CellValueSchema::Code(code_cell) => {
+                    code_cells.insert(current::PosSchema { x: *x, y: *y }, code_cell.to_owned());
                 }
                 current::CellValueSchema::Import(import) => {
                     code_cells.insert(
