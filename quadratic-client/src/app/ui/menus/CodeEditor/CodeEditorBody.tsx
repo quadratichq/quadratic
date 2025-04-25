@@ -417,34 +417,38 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
         <CodeEditorPlaceholder />
       </div>
 
-      <div className={`${!loading && showDiffEditor ? 'h-full w-full' : 'h-0 w-0 opacity-0'}`}>
-        <DiffEditor
-          height="100%"
-          width="100%"
-          language={monacoLanguage}
-          original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
-          modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
-          onMount={onMountDiff}
-          loading={<SpinnerIcon className="text-primary" />}
-          theme="light"
-          options={{
-            readOnly: true,
-            minimap: { enabled: true },
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            scrollbar: {
-              horizontal: 'hidden',
-            },
-            wordWrap: 'on',
+      {!loading && showDiffEditor && (
+        <div className="h-full w-full">
+          <DiffEditor
+            height="100%"
+            width="100%"
+            language={monacoLanguage}
+            original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
+            originalLanguage={monacoLanguage}
+            modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
+            modifiedLanguage={monacoLanguage}
+            onMount={onMountDiff}
+            loading={<SpinnerIcon className="text-primary" />}
+            theme="light"
+            options={{
+              readOnly: true,
+              minimap: { enabled: true },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                horizontal: 'hidden',
+              },
+              wordWrap: 'on',
 
-            // need to ignore unused b/c of the async wrapper around the code and import code
-            showUnused: codeCell.language === 'Javascript' ? false : true,
+              // need to ignore unused b/c of the async wrapper around the code and import code
+              showUnused: codeCell.language === 'Javascript' ? false : true,
 
-            renderSideBySide: false,
-          }}
-        />
-      </div>
+              renderSideBySide: false,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 });
