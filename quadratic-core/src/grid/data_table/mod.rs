@@ -328,7 +328,7 @@ impl DataTable {
             return true;
         }
 
-        if self.is_list() || self.is_series() || self.is_dataframe() {
+        if self.is_list_series_dataframe() {
             return false;
         }
 
@@ -601,6 +601,11 @@ impl DataTable {
                 }
             }
         }
+    }
+
+    /// Returns true if the data table output is a list, series, or dataframe.
+    fn is_list_series_dataframe(&self) -> bool {
+        self.is_list() || self.is_series() || self.is_dataframe()
     }
 
     /// Returns true if the data table is an html.
