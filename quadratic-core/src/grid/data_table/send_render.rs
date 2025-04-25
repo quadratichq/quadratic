@@ -89,16 +89,18 @@ impl DataTable {
         let formats_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
         for y in rect.y_range() {
             for x in rect.x_range() {
-                if (include_blanks
+                let check_value = include_blanks
                     || self
                         .cell_value_at((x - data_table_pos.x) as u32, (y - data_table_pos.y) as u32)
-                        .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string()))
-                    && self
-                        .formats
-                        .wrap
-                        .get((x - formats_x_offset, y - formats_y_offset).into())
-                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
+                        .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string());
+
+                let check_wrap = self
+                    .formats
+                    .wrap
+                    .get((x - formats_x_offset, y - formats_y_offset).into())
+                    .is_some_and(|wrap| wrap == CellWrap::Wrap);
+
+                if check_value && check_wrap {
                     rows.push(y);
                     break;
                 }
@@ -148,9 +150,10 @@ impl DataTable {
         dirty_hashes: &mut HashSet<Pos>,
         resize_rows: &mut HashSet<i64>,
     ) {
-        let data_table_rect = self.output_rect((1, 1).into(), true);
+        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
+        let data_table_formats_rect = self.output_rect((1, 1).into(), true);
         if let Some(wrap) = wrap {
-            wrap.to_rects_with_rect_bounds(data_table_rect)
+            wrap.to_rects_with_rect_bounds(data_table_formats_rect)
                 .for_each(|(x1, y1, x2, y2, value)| {
                     let formats_rect = Rect::new(x1, y1, x2, y2);
                     let formats_rect_x_offset = data_table_pos.x - 1;
