@@ -1,7 +1,6 @@
 import { events } from '@/app/events/events';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import { debugFlag } from '@/app/ui/QuaraticAppDebugSettings';
-import { debugShowFPS } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
@@ -22,7 +21,7 @@ export class Update {
   firstRenderComplete = false;
 
   constructor() {
-    if (debugShowFPS) {
+    if (debugFlag('debugShowFPS')) {
       this.fps = new FPS();
     }
     events.on('scrollBarsHandler', this.setScrollBarsHandler);
