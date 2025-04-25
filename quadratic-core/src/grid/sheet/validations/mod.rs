@@ -159,7 +159,7 @@ impl Validations {
             v.selection.might_contain_pos(pos, a1_context)
                 && !v
                     .rule
-                    .validate(sheet, sheet.cell_value_ref(pos), a1_context)
+                    .validate(sheet, sheet.display_value(pos).as_ref(), a1_context)
         })
     }
 
