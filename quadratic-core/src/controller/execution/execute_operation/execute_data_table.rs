@@ -170,6 +170,7 @@ impl GridController {
             // insert the data table into the sheet
             let (old_index, old_data_table) = if let Some(index) = index {
                 // if the index is provided, insert the data table at the index
+                let index = index.min(sheet.data_tables.len());
                 sheet
                     .data_tables
                     .insert_before(index, data_table_pos, data_table.to_owned())
