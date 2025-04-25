@@ -90,7 +90,7 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, DEFAULT_ROW_HEIGHT, Pos,
+        CellValue, Pos,
         a1::A1Context,
         grid::sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
     };
@@ -245,7 +245,7 @@ mod test {
 
         sheet.insert_row(&mut transaction, 2, CopyFormats::None, &context);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
-        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(2), 200.0);
         assert_eq!(sheet.offsets.row_height(3), 200.0);
         assert_eq!(sheet.offsets.row_height(5), 400.0);
     }
