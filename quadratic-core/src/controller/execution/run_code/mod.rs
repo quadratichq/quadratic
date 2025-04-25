@@ -486,12 +486,6 @@ impl GridController {
             cells_accessed: std::mem::take(&mut transaction.cells_accessed),
         };
 
-        let show_column = if js_code_result.has_headers {
-            Some(true)
-        } else {
-            None
-        };
-
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
@@ -499,7 +493,7 @@ impl GridController {
             false,
             js_code_result.has_headers,
             None,
-            show_column,
+            None,
             js_code_result.chart_pixel_output,
         );
 
