@@ -21,6 +21,12 @@ pub struct TransactionHeader {
     pub version: String,
 }
 
+impl Default for TransactionHeader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransactionHeader {
     pub fn new() -> Self {
         Self {
@@ -39,7 +45,7 @@ impl TransactionHeader {
 
     pub fn parse_version(header: &[u8]) -> Result<String> {
         let transaction_version = Self::parse(header)?;
-        Ok(transaction_version.version.into())
+        Ok(transaction_version.version)
     }
 }
 
@@ -113,7 +119,7 @@ impl Transaction {
 
     pub fn process_incoming(operations: &[u8]) -> Result<TransactionServer> {
         let (header, data) = remove_header(operations)?;
-        let version = TransactionHeader::parse(&header)?.version;
+        let version = TransactionHeader::parse(header)?.version;
 
         match version.as_str() {
             "1.0" => decompress_and_deserialize::<TransactionServer>(
