@@ -23,7 +23,7 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
   const setDelaySeconds = useSetRecoilState(aiAnalystDelaySecondsAtom);
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
 
-  const showVariant = showABTest(teamUuid, 0.5) || true;
+  const showVariant = showABTest(teamUuid, 0.5);
 
   useEffect(() => {
     if (showVariant) {
