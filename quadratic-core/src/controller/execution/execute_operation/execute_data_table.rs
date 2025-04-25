@@ -604,7 +604,7 @@ impl GridController {
             let mut data_table =
                 DataTable::from((import.to_owned(), old_values.to_owned(), context));
 
-            // show_ui false is required for correct mapping of formats, values will shift when show_ui is true
+            // show_name & show_columns false is required for correct mapping of formats, values will shift when show_ui is true
             data_table.show_name = Some(false);
             data_table.show_columns = Some(false);
             let format_update = data_table.transfer_formats_from_sheet(rect.min, sheet, rect)?;
@@ -687,21 +687,25 @@ impl GridController {
         {
             let hide_ui = show_ui.is_some_and(|show_ui| !show_ui);
 
+            let show_name = if hide_ui {
+                Some(ClearOption::Some(false))
+            } else {
+                show_name.map(|show_name| Some(show_name).into())
+            };
+
+            let show_columns = if hide_ui {
+                Some(ClearOption::Some(false))
+            } else {
+                show_columns.map(|show_columns| Some(show_columns).into())
+            };
+
             let new_op = Operation::DataTableOptionMeta {
                 sheet_pos,
                 name,
                 alternating_colors,
                 columns,
-                show_name: if hide_ui {
-                    Some(ClearOption::Some(false))
-                } else {
-                    show_name.map(|show_name| Some(show_name).into())
-                },
-                show_columns: if hide_ui {
-                    Some(ClearOption::Some(false))
-                } else {
-                    show_columns.map(|show_columns| Some(show_columns).into())
-                },
+                show_name,
+                show_columns,
             };
             self.execute_data_table_option_meta(transaction, new_op)?;
 
