@@ -184,7 +184,7 @@ RUN if [ -z "$ENV_HASH" ]; then \
 FROM fholzer/nginx-brotli
 
 # Install curl for healthcheck
-RUN apk add --no-cache curl brotli-libs pigz
+RUN apk add --no-cache curl brotli pigz
 
 # Copy build directory
 COPY --from=vite-builder /quadratic/build /usr/share/nginx/html
