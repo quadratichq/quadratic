@@ -54,7 +54,7 @@ export class TableOutline extends Graphics {
     // create the drag handles
 
     if (pixiApp.initialized) {
-      const world = pixiApp.viewport.toWorld(pixiApp.renderer.events.pointer.global);
+      const world = pixiApp.viewport.getWorld();
       if (this.table.checkHover(world) && !this.table.codeCell.is_code) {
         const cornerHandle = new Rectangle(
           this.table.tableBounds.x + this.table.tableBounds.width - 4,
