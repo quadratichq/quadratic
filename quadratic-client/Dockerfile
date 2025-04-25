@@ -5,7 +5,7 @@ FROM node:23 AS core-builder
 
 ARG CLIENT_DEV
 
-# Install build-essential, llvm, and clang
+# Install build-essential, llvm, clang and protobuf-compiler
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
 
 # Install rustup
@@ -43,7 +43,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 FROM node:23 AS ts-rust-types-builder
 
-# Install build-essential, llvm, and clang
+# Install build-essential, llvm, clang and protobuf-compiler
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
 
 # Install rustup
