@@ -1,7 +1,7 @@
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, CodeCellValue},
 };
 
 impl GridController {
@@ -17,12 +17,16 @@ impl GridController {
                 sheet_pos.x as i32,
                 sheet_pos.y as i32,
                 sheet_pos.sheet_id.to_string(),
-                code,
+                code.clone(),
             );
         }
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        transaction.waiting_for_async = Some(CodeCellLanguage::Python);
+        let code_cell = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code,
+        };
+        transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
     }
 }
@@ -70,7 +74,8 @@ mod tests {
             _ => panic!("expected code cell"),
         }
         let data_table = sheet.data_tables.get_mut(&pos).unwrap();
-        data_table.show_ui = false;
+        data_table.show_name = Some(false);
+        data_table.show_columns = Some(false);
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
             data_table.cell_value_at(0, 1),
@@ -291,6 +296,7 @@ mod tests {
                 success: true,
                 output_value: None,
                 output_array: Some(python_array(vec![1, 2, 3])),
+                output_display_type: Some("list".into()),
                 ..Default::default()
             })
             .is_ok()

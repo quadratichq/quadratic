@@ -1436,7 +1436,6 @@ class Core {
     name?: string,
     alternatingColors?: boolean,
     columns?: JsDataTableColumnHeader[],
-    showUI?: boolean,
     showName?: boolean,
     showColumns?: boolean,
     cursor?: string
@@ -1449,7 +1448,6 @@ class Core {
         name,
         alternatingColors,
         JSON.stringify(columns),
-        showUI,
         showName,
         showColumns,
         cursor
