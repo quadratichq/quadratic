@@ -9,6 +9,7 @@ import type {
   ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
+import { createFileForFineTuning } from './fineTuning';
 
 export const handleBedrockRequest = async (
   modelKey: BedrockModelKey,
@@ -43,6 +44,9 @@ export const handleBedrockRequest = async (
       const chunks = (await bedrock.send(command)).stream ?? [];
 
       const parsedResponse = await parseBedrockStream(chunks, response, modelKey);
+
+      createFileForFineTuning(response, modelKey, args, parsedResponse);
+
       return parsedResponse;
     } else {
       const command = new ConverseCommand(apiArgs);

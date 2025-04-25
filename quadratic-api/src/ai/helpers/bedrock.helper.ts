@@ -244,12 +244,6 @@ export async function parseBedrockStream(
     }));
   }
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-
-  if (!response.writableEnded) {
-    response.end();
-  }
-
   return { responseMessage, usage };
 }
 

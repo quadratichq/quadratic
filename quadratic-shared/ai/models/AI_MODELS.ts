@@ -1,6 +1,6 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'vertexai-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_MODEL: ModelKey = 'openai:ft:gpt-4.1-2025-04-14:quadratic::BPtX6N63';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
@@ -11,7 +11,7 @@ export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gem
 export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-03-25';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 10;
+export const DEFAULT_MODEL_VERSION = 13;
 
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
@@ -23,7 +23,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinkingToggle: false,
@@ -35,7 +35,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -236,10 +236,10 @@ export const MODELS_CONFIGURATION: {
     model: 'ft:gpt-4.1-2025-04-14:quadratic::BPtX6N63',
     displayName: 'gpt 4.1 fine-tuned',
     temperature: 0,
-    max_tokens: 16384, // this is needed for fine-tuned
+    max_tokens: 16384,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -248,7 +248,7 @@ export const MODELS_CONFIGURATION: {
     model: 'gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
     temperature: 0,
-    max_tokens: 16384, // not used for openai
+    max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -260,7 +260,7 @@ export const MODELS_CONFIGURATION: {
     model: 'o4-mini-2025-04-16',
     displayName: 'o4 mini',
     temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 100000, // not used for openai
+    max_tokens: 100000,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -272,7 +272,7 @@ export const MODELS_CONFIGURATION: {
     model: 'o3-2025-04-16',
     displayName: 'o3',
     temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 100000, // not used for openai
+    max_tokens: 100000,
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
     enabled: false,
