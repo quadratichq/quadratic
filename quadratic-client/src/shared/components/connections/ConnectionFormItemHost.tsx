@@ -16,7 +16,7 @@ export function isLocalHostAddress(host: string): boolean {
   return false;
 }
 
-export const ConnectionInputHost = ({ form }: { form: UseFormReturn<any> }) => {
+export const ConnectionFormItemHost = ({ form }: { form: UseFormReturn<any> }) => {
   const useSsh = form.watch('useSsh');
 
   return (
