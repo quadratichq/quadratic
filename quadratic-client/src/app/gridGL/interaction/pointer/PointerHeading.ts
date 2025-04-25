@@ -371,7 +371,7 @@ export class PointerHeading {
         // if multiple columns or rows are selected, we need to resize all of them
         const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
         const rows = sheets.sheet.cursor.getSelectedRowsFinite();
-        if (sheets.sheet.cursor.isSelectAll()) {
+        if (sheets.sheet.cursor.isAllSelected()) {
           if (this.resizing.column && this.resizing.width !== undefined) {
             quadraticCore.resizeAllColumns(sheets.current, this.resizing.width);
           } else if (this.resizing.row && this.resizing.height !== undefined) {
