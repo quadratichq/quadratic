@@ -274,9 +274,17 @@ impl DataTable {
     }
 
     pub fn get_show_name(&self) -> bool {
+        // always show table name for charts
+        if self.is_html_or_image() {
+            return true;
+        }
+
+        // user set value
         if let Some(show_name) = self.show_name {
             return show_name;
         }
+
+        // defaults show_name for different languages and outputs
 
         let language = self.get_language();
         if language == CodeCellLanguage::Import {
@@ -295,13 +303,17 @@ impl DataTable {
     }
 
     pub fn get_show_columns(&self) -> bool {
+        // always hide column headers for charts
         if self.is_html_or_image() {
             return false;
         }
 
+        // user set value
         if let Some(show_columns) = self.show_columns {
             return show_columns;
         }
+
+        // defaults show_columns for different languages and outputs
 
         let language = self.get_language();
         if language == CodeCellLanguage::Import {
@@ -316,7 +328,7 @@ impl DataTable {
             return true;
         }
 
-        if self.is_list() || self.is_series() {
+        if self.is_list() || self.is_series() || self.is_dataframe() {
             return false;
         }
 
