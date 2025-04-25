@@ -109,6 +109,7 @@ impl Sheet {
         data_table: &DataTable,
         render_rect: &Rect,
         code_rect: &Rect,
+        context: &A1Context,
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
 
@@ -176,10 +177,13 @@ impl Sheet {
                                     None
                                 };
 
-                                let special = match value {
-                                    CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
-                                    _ => None,
-                                };
+                                let special = self
+                                    .validations
+                                    .render_special_pos(Pos { x, y }, context)
+                                    .or(match value {
+                                        CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
+                                        _ => None,
+                                    });
 
                                 let mut render_cell =
                                     self.get_render_cell(x, y, &value, format, language, special);
@@ -240,6 +244,7 @@ impl Sheet {
                         data_table,
                         &rect,
                         &data_table_rect,
+                        a1_context,
                     ));
                 }
             });
@@ -284,6 +289,11 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
+    use crate::grid::sheet::validations::validation::Validation;
+    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::test_util::*;
     use crate::{
         SheetPos, Value,
         a1::A1Selection,
@@ -605,5 +615,28 @@ mod tests {
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
             true,
         );
+    }
+
+    #[test]
+    fn test_get_code_cell_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
+
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context()),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.get_render_cells(Rect::test_a1("b2:b7"), &gc.a1_context());
+        dbg!(&code_cell);
     }
 }

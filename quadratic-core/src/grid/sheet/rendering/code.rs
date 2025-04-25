@@ -331,12 +331,15 @@ mod tests {
             None,
         );
 
+        let context = A1Context::default();
+
         // render rect is larger than code rect
         let code_cells = sheet.get_code_cells(
             &code_cell,
             &data_table,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 3, 2),
+            &context,
         );
         assert_eq!(code_cells.len(), 6);
         assert_eq!(code_cells[0].value, "1".to_string());
@@ -351,6 +354,7 @@ mod tests {
             &data_table,
             &Rect::from_numbers(2, 1, 10, 10),
             &Rect::from_numbers(0, 0, 3, 2),
+            &context,
         );
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "6".to_string());
@@ -362,6 +366,7 @@ mod tests {
             &data_table,
             &Rect::from_numbers(0, 0, 3, 2),
             &Rect::from_numbers(2, 1, 10, 10),
+            &context,
         );
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "1".to_string());
@@ -391,6 +396,7 @@ mod tests {
             &code_run,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 1, 1),
+            &context,
         );
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
