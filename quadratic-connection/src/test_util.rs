@@ -138,6 +138,7 @@ pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType
 
     for (count, expect) in expected.iter().enumerate() {
         let (data_type, value) = output.get(count).unwrap().to_owned();
+        println!("data_type: {:?}, value: {:?}", data_type, value);
 
         assert_eq!(data_type, expect.0);
         assert_eq!(value, expect.1);
