@@ -1,5 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { AI_FREE_TIER_WAIT_TIME_SECONDS, useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
@@ -202,7 +202,8 @@ export function useSubmitAIAnalystPrompt() {
         const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
           await apiClient.teams.billing.aiUsage(teamUuid);
         if (exceededBillingLimit) {
-          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
+          // let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
+          let localDelaySeconds = 999999999;
           set(aiAnalystDelaySecondsAtom, localDelaySeconds);
           set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
 
