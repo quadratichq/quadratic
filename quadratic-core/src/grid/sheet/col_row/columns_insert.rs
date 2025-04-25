@@ -70,7 +70,11 @@ impl Sheet {
                 .insert_column(transaction, self.id, column, a1_context);
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
-        let changes = self.offsets.insert_column(column);
+        dbgjs!(format!(
+            "insert_column: {}, copy_formats: {:?}",
+            column, copy_formats
+        ));
+        let changes = self.offsets.insert_column(column, copy_formats);
         if !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));

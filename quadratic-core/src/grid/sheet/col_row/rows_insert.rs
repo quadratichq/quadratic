@@ -65,7 +65,7 @@ impl Sheet {
             .insert_row(transaction, self.id, row, a1_context);
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
-        let changes = self.offsets.insert_row(row);
+        let changes = self.offsets.insert_row(row, copy_formats);
         changes.iter().for_each(|(index, size)| {
             transaction.offsets_modified(self.id, None, Some(*index), Some(*size));
         });

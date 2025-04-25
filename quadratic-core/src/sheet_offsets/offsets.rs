@@ -128,28 +128,63 @@ impl Offsets {
         self.sizes.into_iter()
     }
 
-    /// Inserts an offset at the specified index and increments all later indices.
+    /// Inserts an offset at the specified index and increments all later
+    /// indices. If source_width is provided, it sets the inserted offset at
+    /// that value; otherwise it sets it at the default value.
     ///
-    /// Returns a vector of changes made to the offsets structure, where each change
-    /// is represented as a tuple (index, new_size).
-    pub fn insert(&mut self, index: i64) -> Vec<(i64, f64)> {
-        let mut changed = HashMap::new();
+    /// Returns a vector of changes made to the offsets structure, where each
+    /// change is represented as a tuple (index, new_size).
+    pub fn insert(&mut self, index: i64, source_width: Option<f64>) -> Vec<(i64, f64)> {
         let mut sizes = BTreeMap::new();
-        let keys = self.sizes.keys().sorted_by_key(|k| -**k);
+        let mut keys = self.sizes.keys().collect_vec();
 
+        // ensure the new column is included in the list
+        if !keys.contains(&&index) {
+            keys.push(&index);
+        }
+        keys.sort();
+
+        // iterate over the keys and push set sizes one to the right if >= than
+        // the index
         for k in keys {
             if let Some(size) = self.sizes.get(k) {
                 if *k >= index {
-                    changed.insert(*k + 1, *size);
-                    changed.insert(*k, self.default);
                     sizes.insert(*k + 1, *size);
+
+                    // if the key is the index, set the size
+                    if *k == index {
+                        if let Some(source_width) = source_width {
+                            sizes.insert(*k, source_width);
+                        }
+                    }
                 } else {
                     sizes.insert(*k, *size);
                 }
+            } else if *k == index {
+                // if the key is on an unset index, then set the size
+                if let Some(source_width) = source_width {
+                    sizes.insert(*k, source_width);
+                }
             }
         }
+
+        // compare sizes to self.sizes to collect changes
+        let mut changed = Vec::new();
+        if let (Some(min), Some(max)) = (
+            self.sizes.keys().min().min(sizes.keys().min()),
+            self.sizes.keys().max().max(sizes.keys().max()),
+        ) {
+            for k in *min..=*max {
+                let current = sizes.get(&k);
+                let old = self.sizes.get(&k);
+                if current != old {
+                    changed.push((k, *current.unwrap_or(&self.default)));
+                }
+            }
+        }
+
         self.sizes = sizes;
-        changed.into_iter().sorted_by_key(|(k, _)| *k).collect()
+        changed
     }
 
     /// Removes an offset at the specified index and decrements all later
@@ -269,21 +304,39 @@ mod tests {
     fn test_insert() {
         let mut offsets = Offsets::new(10.0);
 
-        assert_eq!(offsets.insert(1), vec![]);
+        assert_eq!(offsets.insert(1, None), vec![]);
 
         offsets.set_size(1, 20.0);
         offsets.set_size(2, 30.0);
         offsets.set_size(3, 40.0);
 
         assert_eq!(
-            offsets.insert(2),
-            vec![(2, offsets.default), (3, 30.0), (4, 40.0)]
+            offsets.insert(2, Some(5.0)),
+            vec![(2, 5.0), (3, 30.0), (4, 40.0)]
         );
 
         assert_eq!(offsets.get_size(1), 20.0);
-        assert_eq!(offsets.get_size(2), 10.0);
+        assert_eq!(offsets.get_size(2), 5.0);
         assert_eq!(offsets.get_size(3), 30.0);
         assert_eq!(offsets.get_size(4), 40.0);
+    }
+
+    #[test]
+    fn test_insert_defaults() {
+        let mut offsets = Offsets::new(10.0);
+        offsets.set_size(1, 20.0);
+        offsets.set_size(10, 30.0);
+
+        assert_eq!(
+            offsets.insert(2, Some(20.0)),
+            vec![(2, 20.0), (10, 10.0), (11, 30.0)]
+        );
+
+        assert_eq!(offsets.get_size(1), 20.0);
+        assert_eq!(offsets.get_size(2), 20.0);
+        assert_eq!(offsets.get_size(3), 10.0);
+        assert_eq!(offsets.get_size(10), 10.0);
+        assert_eq!(offsets.get_size(11), 30.0);
     }
 
     #[test]

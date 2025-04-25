@@ -1,4 +1,4 @@
-use crate::{Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
+use crate::{CopyFormats, Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -265,8 +265,13 @@ impl SheetOffsets {
     ///
     /// Returns a vector of changes made to the offsets structure, where each change
     /// is represented as a tuple (index, new_size).
-    pub fn insert_column(&mut self, column: i64) -> Vec<(i64, f64)> {
-        self.column_widths.insert(column)
+    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) -> Vec<(i64, f64)> {
+        let source_width = self.column_width(if copy_formats == CopyFormats::Before {
+            column - 1
+        } else {
+            column
+        });
+        self.column_widths.insert(column, Some(source_width))
     }
 
     /// Deletes a column offset at the given column index.
@@ -282,8 +287,13 @@ impl SheetOffsets {
     ///
     /// Returns a vector of changes made to the offsets structure, where each change
     /// is represented as a tuple (index, new_size).
-    pub fn insert_row(&mut self, row: i64) -> Vec<(i64, f64)> {
-        self.row_heights.insert(row)
+    pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) -> Vec<(i64, f64)> {
+        let source_height = self.row_height(if copy_formats == CopyFormats::Before {
+            row - 1
+        } else {
+            row
+        });
+        self.row_heights.insert(row, Some(source_height))
     }
 
     /// Deletes a row offset at the given row index.
