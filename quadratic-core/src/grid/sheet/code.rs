@@ -369,6 +369,7 @@ mod test {
         );
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
+            code: "=".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -468,6 +469,7 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -506,6 +508,7 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),

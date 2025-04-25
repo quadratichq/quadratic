@@ -7,13 +7,14 @@ use crate::grid::file::v1_8_1;
 
 fn upgrade_data_table_kind(
     data_table_kind: current::DataTableKindSchema,
-    language: current::CodeCellLanguageSchema,
+    code_cell: current::CodeCellSchema,
 ) -> v1_8_1::DataTableKindSchema {
     match data_table_kind {
         current::DataTableKindSchema::Import(import) => v1_8_1::DataTableKindSchema::Import(import),
         current::DataTableKindSchema::CodeRun(code_run) => {
             v1_8_1::DataTableKindSchema::CodeRun(v1_8_1::CodeRunSchema {
-                language,
+                language: code_cell.language,
+                code: code_cell.code,
                 std_out: code_run.std_out,
                 std_err: code_run.std_err,
                 cells_accessed: code_run.cells_accessed,
@@ -30,21 +31,20 @@ fn upgrade_data_tables(
     data_tables: current::DataTablesSchema,
     columns: &current::ColumnsSchema,
 ) -> v1_8_1::DataTablesSchema {
-    let mut data_tables_language =
-        HashMap::<current::PosSchema, current::CodeCellLanguageSchema>::new();
+    let mut code_cells = HashMap::<current::PosSchema, current::CodeCellSchema>::new();
     for (x, column) in columns {
         for (y, cell) in column {
             match cell {
-                current::CellValueSchema::Code(code) => {
-                    data_tables_language.insert(
-                        current::PosSchema { x: *x, y: *y },
-                        code.language.to_owned(),
-                    );
+                current::CellValueSchema::Code(code_cel) => {
+                    code_cells.insert(current::PosSchema { x: *x, y: *y }, code_cel.to_owned());
                 }
-                current::CellValueSchema::Import(_) => {
-                    data_tables_language.insert(
+                current::CellValueSchema::Import(import) => {
+                    code_cells.insert(
                         current::PosSchema { x: *x, y: *y },
-                        current::CodeCellLanguageSchema::Import,
+                        current::CodeCellSchema {
+                            language: current::CodeCellLanguageSchema::Import,
+                            code: import.file_name.to_owned(),
+                        },
                     );
                 }
                 _ => {}
@@ -55,12 +55,12 @@ fn upgrade_data_tables(
     data_tables
         .into_iter()
         .filter_map(|(pos, data_table)| {
-            let language = data_tables_language.remove(&pos)?;
+            let code_cell = code_cells.remove(&pos)?;
 
             Some((
                 pos,
                 v1_8_1::DataTableSchema {
-                    kind: upgrade_data_table_kind(data_table.kind, language),
+                    kind: upgrade_data_table_kind(data_table.kind, code_cell),
                     name: data_table.name,
                     header_is_first_row: data_table.header_is_first_row,
                     show_name: if data_table.show_ui {

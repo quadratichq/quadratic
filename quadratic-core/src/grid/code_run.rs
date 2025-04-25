@@ -15,6 +15,8 @@ use super::cells_accessed::CellsAccessed;
 pub struct CodeRun {
     pub language: CodeCellLanguage,
 
+    pub code: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
 

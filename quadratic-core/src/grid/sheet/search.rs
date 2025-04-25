@@ -530,7 +530,8 @@ mod test {
             }),
         );
         let code_run = CodeRun {
-            language: CodeCellLanguage::Formula,
+            language: CodeCellLanguage::Python,
+            code: "hello".into(),
             error: None,
             std_out: None,
             std_err: None,
@@ -577,6 +578,7 @@ mod test {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
+            code: "".into(),
             error: None,
             std_out: None,
             std_err: None,

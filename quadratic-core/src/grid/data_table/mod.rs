@@ -812,6 +812,7 @@ pub mod test {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -846,6 +847,7 @@ pub mod test {
 
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -886,6 +888,7 @@ pub mod test {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -928,6 +931,7 @@ pub mod test {
     fn test_is_single_column() {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -1056,6 +1060,7 @@ pub mod test {
     fn test_output_size_single_value() {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

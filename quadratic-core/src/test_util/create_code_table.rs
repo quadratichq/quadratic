@@ -58,6 +58,7 @@ pub fn test_create_code_table_with_values(
 
     let code_run = CodeRun {
         language: CodeCellLanguage::Python,
+        code: "code".to_string(),
         std_out: None,
         std_err: None,
         cells_accessed: Default::default(),

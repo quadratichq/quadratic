@@ -258,8 +258,8 @@ impl GridController {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
-            Some(language) => {
-                if !language.is_code_language() {
+            Some(code_cell) => {
+                if !code_cell.language.is_code_language() {
                     return Err(CoreError::UnhandledLanguage(
                         "Transaction.complete called for an unhandled language".into(),
                     ));
@@ -269,7 +269,8 @@ impl GridController {
                     transaction,
                     result,
                     current_sheet_pos,
-                    language.clone(),
+                    code_cell.language.clone(),
+                    code_cell.code.clone(),
                 );
 
                 self.finalize_data_table(
@@ -331,6 +332,7 @@ impl GridController {
             Some(old_code_run) => {
                 CodeRun {
                     language: code_cell_value.language.to_owned(),
+                    code: code_cell_value.code.to_owned(),
                     error: Some(error.to_owned()),
                     return_type: None,
                     line_number: old_code_run.line_number,
@@ -344,6 +346,7 @@ impl GridController {
             }
             None => CodeRun {
                 language: code_cell_value.language.to_owned(),
+                code: code_cell_value.code.to_owned(),
                 error: Some(error.to_owned()),
                 return_type: None,
                 line_number: error
@@ -384,6 +387,7 @@ impl GridController {
         js_code_result: JsCodeResult,
         start: SheetPos,
         language: CodeCellLanguage,
+        code: String,
     ) -> DataTable {
         let table_name = match language {
             CodeCellLanguage::Formula => "Formula1",
@@ -398,6 +402,7 @@ impl GridController {
             // sheet may have been deleted before the async operation completed
             let code_run = CodeRun {
                 language,
+                code,
                 error: Some(RunError {
                     span: None,
                     msg: RunErrorMsg::CodeRunError(
@@ -471,6 +476,7 @@ impl GridController {
 
         let code_run = CodeRun {
             language,
+            code,
             error,
             return_type,
             line_number: js_code_result.line_number,
@@ -548,6 +554,7 @@ mod test {
         // test finalize_code_cell
         let new_code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "delete me".to_string(),
             std_err: None,
             std_out: None,
             error: None,
@@ -585,6 +592,7 @@ mod test {
         // test finalize_code_cell
         let new_code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "replace me".to_string(),
             std_err: None,
             std_out: None,
             error: None,

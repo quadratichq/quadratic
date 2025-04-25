@@ -64,6 +64,7 @@ impl GridController {
 
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
+            code: "code".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

@@ -311,6 +311,7 @@ mod tests {
         });
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -370,6 +371,7 @@ mod tests {
 
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -419,6 +421,7 @@ mod tests {
         });
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "1 + 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -484,6 +487,7 @@ mod tests {
         let code = CellValue::Image(image.clone());
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -522,6 +526,7 @@ mod tests {
         let pos = pos![A1];
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

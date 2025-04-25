@@ -510,6 +510,7 @@ mod test {
     pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
+            code: "=1".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),

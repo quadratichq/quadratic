@@ -77,6 +77,7 @@ pub type ValidationsSchema = v1_8::ValidationsSchema;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CodeRunSchema {
     pub language: CodeCellLanguageSchema,
+    pub code: String,
     pub std_out: Option<String>,
     pub std_err: Option<String>,
     pub cells_accessed: CellsAccessedSchema,

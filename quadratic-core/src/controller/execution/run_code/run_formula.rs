@@ -24,6 +24,7 @@ impl GridController {
                 let errors = output.inner.errors();
                 let new_code_run = CodeRun {
                     language: CodeCellLanguage::Formula,
+                    code,
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
@@ -250,9 +251,11 @@ mod test {
             result,
             sheet_pos,
             CodeCellLanguage::Javascript,
+            r#"return "12";"#.to_string(),
         );
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
+            code: r#"return "12";"#.to_string(),
             return_type: Some("number".into()),
             output_type: Some("number".into()),
             ..Default::default()
@@ -327,9 +330,11 @@ mod test {
             result,
             sheet_pos,
             CodeCellLanguage::Javascript,
+            r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
         );
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
+            code: r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
             return_type: Some("array".into()),
             output_type: Some("array".into()),
             ..Default::default()

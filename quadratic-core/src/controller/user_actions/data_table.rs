@@ -175,6 +175,7 @@ mod tests {
     fn test_code_data_table_to_data_table() {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
+            code: "return [1,2,3]".into(),
             std_err: None,
             std_out: None,
             error: None,

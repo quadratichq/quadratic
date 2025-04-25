@@ -15,7 +15,7 @@ use crate::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellLanguage, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -62,7 +62,7 @@ pub struct PendingTransaction {
     pub current_sheet_pos: Option<SheetPos>,
 
     /// whether we are awaiting an async call
-    pub waiting_for_async: Option<CodeCellLanguage>,
+    pub waiting_for_async: Option<CodeCellValue>,
 
     /// whether transaction is complete
     pub complete: bool,
@@ -509,7 +509,7 @@ mod tests {
     use crate::{
         CellValue, Value,
         controller::operations::operation::Operation,
-        grid::{CodeRun, DataTable, DataTableKind, Sheet, SheetId},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, Sheet, SheetId},
     };
 
     use super::*;
@@ -638,6 +638,7 @@ mod tests {
 
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -664,6 +665,7 @@ mod tests {
 
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

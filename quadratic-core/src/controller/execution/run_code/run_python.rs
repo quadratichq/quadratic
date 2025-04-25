@@ -1,7 +1,7 @@
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, CodeCellValue},
 };
 
 impl GridController {
@@ -17,12 +17,16 @@ impl GridController {
                 sheet_pos.x as i32,
                 sheet_pos.y as i32,
                 sheet_pos.sheet_id.to_string(),
-                code,
+                code.clone(),
             );
         }
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        transaction.waiting_for_async = Some(CodeCellLanguage::Python);
+        let code_cell = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code,
+        };
+        transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
     }
 }

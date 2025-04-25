@@ -251,6 +251,7 @@ fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> 
     };
     let code_run = CodeRun {
         language: import_code_cell_language(code_run.language),
+        code: code_run.code,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -449,6 +450,7 @@ fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
 
     current::CodeRunSchema {
         language: export_code_cell_language(code_run.language),
+        code: code_run.code,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,

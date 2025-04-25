@@ -62,6 +62,7 @@ mod test {
         cells_accessed.add_sheet_rect(sheet_rect);
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
+            code: r#"test"#.to_string(),
             std_err: None,
             std_out: None,
             error: None,
