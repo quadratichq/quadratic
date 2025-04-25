@@ -1,5 +1,5 @@
 use crate::{
-    ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
+    ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     cellvalue::Import,
@@ -692,14 +692,14 @@ impl GridController {
                 alternating_colors,
                 columns,
                 show_name: if hide_ui {
-                    Some(Some(false))
+                    Some(ClearOption::Some(false))
                 } else {
-                    show_name.map(Some)
+                    show_name.map(|show_name| Some(show_name).into())
                 },
                 show_columns: if hide_ui {
-                    Some(Some(false))
+                    Some(ClearOption::Some(false))
                 } else {
-                    show_columns.map(Some)
+                    show_columns.map(|show_columns| Some(show_columns).into())
                 },
             };
             self.execute_data_table_option_meta(transaction, new_op)?;
@@ -834,12 +834,11 @@ impl GridController {
             });
 
             let old_show_name = show_name
-                .as_ref()
-                .map(|show_name| std::mem::replace(&mut data_table.show_name, *show_name));
+                .map(|show_name| std::mem::replace(&mut data_table.show_name, show_name.into()));
 
-            let old_show_columns = show_columns
-                .as_ref()
-                .map(|show_columns| std::mem::replace(&mut data_table.show_columns, *show_columns));
+            let old_show_columns = show_columns.map(|show_columns| {
+                std::mem::replace(&mut data_table.show_columns, show_columns.into())
+            });
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
@@ -857,8 +856,8 @@ impl GridController {
                 name: Some(old_name),
                 alternating_colors: old_alternating_colors,
                 columns: old_columns,
-                show_name: old_show_name,
-                show_columns: old_show_columns,
+                show_name: old_show_name.map(|old_show_name| old_show_name.into()),
+                show_columns: old_show_columns.map(|old_show_columns| old_show_columns.into()),
             }];
             self.data_table_operations(
                 transaction,

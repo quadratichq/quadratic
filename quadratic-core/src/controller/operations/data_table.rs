@@ -63,8 +63,8 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_name,
-            show_columns,
+            show_name: show_name.map(|show_name| show_name.into()),
+            show_columns: show_columns.map(|show_columns| show_columns.into()),
         }]
     }
 

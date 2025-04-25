@@ -153,8 +153,8 @@ impl GridController {
             name: None,
             alternating_colors: None,
             columns,
-            show_name: show_name.map(Some),
-            show_columns: show_columns.map(Some),
+            show_name: show_name.map(|show_name| Some(show_name).into()),
+            show_columns: show_columns.map(|show_columns| Some(show_columns).into()),
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }

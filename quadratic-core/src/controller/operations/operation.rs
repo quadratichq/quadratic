@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, CopyFormats, SheetPos, SheetRect,
+    CellValue, ClearOption, CopyFormats, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -101,8 +101,8 @@ pub enum Operation {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_name: Option<Option<bool>>,
-        show_columns: Option<Option<bool>>,
+        show_name: Option<ClearOption<bool>>,
+        show_columns: Option<ClearOption<bool>>,
     },
     DataTableFormats {
         sheet_pos: SheetPos,
