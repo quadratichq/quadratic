@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::Claims,
-    connection::{add_key_to_connection, get_api_connection, get_api_team},
+    connection::{add_key_to_connection, get_api_connection},
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse, test_connection},

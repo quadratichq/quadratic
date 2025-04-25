@@ -1,3 +1,4 @@
+import { ConnectionInputHost } from '@/shared/components/connections/ConnectionFormItemHost';
 import { ConnectionFormSsh } from '@/shared/components/connections/ConnectionFormSsh';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
@@ -66,19 +67,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           )}
         />
         <div className="grid grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="host"
-            render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>Hostname (IP or domain)</FormLabel>
-                <FormControl>
-                  <Input autoComplete="off" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <ConnectionInputHost form={form} />
           <FormField
             control={form.control}
             name="port"
