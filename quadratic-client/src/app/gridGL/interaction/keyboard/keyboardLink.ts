@@ -7,7 +7,7 @@ export function keyboardLink(event: React.KeyboardEvent<HTMLElement>): boolean {
     if (!pixiApp.cellsSheets.current) {
       throw new Error('Expected cellsSheets.current to be defined in PointerLink');
     }
-    const world = pixiApp.viewport.toWorld(pixiApp.renderer.events.pointer.global);
+    const world = pixiApp.viewport.getWorld();
     const link = pixiApp.cellsSheets.current.cellsLabels.intersectsLink(world);
     pixiApp.canvas.style.cursor = link ? 'pointer' : 'unset';
   } else {

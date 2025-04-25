@@ -86,9 +86,8 @@ export async function doubleClickCell(options: {
         else {
           const isSpillOrError =
             codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
-          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
-          const isColumnHeader =
-            codeCell.show_ui && codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
+          const isTableName = codeCell.show_name && row === codeCell.y;
+          const isColumnHeader = codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
 
           if (isSpillOrError) {
             return;

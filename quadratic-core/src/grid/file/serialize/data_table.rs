@@ -21,7 +21,9 @@ use crate::{
 
 use super::{
     borders::{export_borders, import_borders},
-    cell_value::{export_cell_value, import_cell_value},
+    cell_value::{
+        export_cell_value, export_code_cell_language, import_cell_value, import_code_cell_language,
+    },
     current,
     formats::{export_formats, import_formats},
 };
@@ -42,7 +44,7 @@ fn import_col_range(range: current::ColRangeSchema) -> ColRange {
     }
 }
 
-pub(crate) fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
+fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
     TableRef {
         table_name: table_ref.table_name,
         data: table_ref.data,
@@ -88,9 +90,7 @@ fn import_cells_accessed(
     Ok(imported_cells)
 }
 
-pub(crate) fn import_run_error_msg_builder(
-    run_error_msg: current::RunErrorMsgSchema,
-) -> Result<RunErrorMsg> {
+fn import_run_error_msg_builder(run_error_msg: current::RunErrorMsgSchema) -> Result<RunErrorMsg> {
     let run_error_msg = match run_error_msg {
         current::RunErrorMsgSchema::CodeRunError(msg) => RunErrorMsg::CodeRunError(msg),
         current::RunErrorMsgSchema::Unexpected(msg) => RunErrorMsg::Unexpected(msg),
@@ -235,7 +235,7 @@ fn export_cells_accessed(
         .collect()
 }
 
-pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
+fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
     let cells_accessed = code_run.cells_accessed;
 
     let error = if let Some(error) = code_run.error {
@@ -250,6 +250,8 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
         None
     };
     let code_run = CodeRun {
+        language: import_code_cell_language(code_run.language),
+        code: code_run.code,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -295,10 +297,8 @@ pub(crate) fn import_data_table_builder(
             },
             name: CellValue::Text(data_table.name),
             header_is_first_row: data_table.header_is_first_row,
-            show_ui: data_table.show_ui,
             show_name: data_table.show_name,
             show_columns: data_table.show_columns,
-            readonly: data_table.readonly,
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
             value,
@@ -343,7 +343,7 @@ pub(crate) fn import_data_table_builder(
     Ok(new_data_tables)
 }
 
-pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
+fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
     match run_error_msg {
         RunErrorMsg::CodeRunError(msg) => current::RunErrorMsgSchema::CodeRunError(msg),
         RunErrorMsg::Unexpected(msg) => current::RunErrorMsgSchema::Unexpected(msg),
@@ -435,7 +435,7 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
     }
 }
 
-pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
+fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     let error = if let Some(error) = code_run.error {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {
@@ -449,6 +449,8 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     };
 
     current::CodeRunSchema {
+        language: export_code_cell_language(code_run.language),
+        code: code_run.code,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -530,14 +532,12 @@ pub(crate) fn export_data_tables(
                 kind,
                 name,
                 header_is_first_row: data_table.header_is_first_row,
-                show_ui: data_table.show_ui,
                 show_name: data_table.show_name,
                 show_columns: data_table.show_columns,
                 columns,
                 sort,
                 sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
-                readonly: data_table.readonly,
                 last_modified: Some(data_table.last_modified),
                 spill_error: data_table.spill_error,
                 value,
