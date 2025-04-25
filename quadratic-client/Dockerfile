@@ -6,7 +6,7 @@ FROM node:23 AS core-builder
 ARG CLIENT_DEV
 
 # Install build-essential, llvm, and clang
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -32,10 +32,10 @@ COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build core
 RUN if [ "$CLIENT_DEV" = "true" ]; then \
-    echo 'Building core in dev mode...' && npm run build:dev --workspace=quadratic-core; \
-    else \
-    echo 'Building core...' && npm run build --workspace=quadratic-core; \
-    fi
+  echo 'Building core in dev mode...' && npm run build:dev --workspace=quadratic-core; \
+  else \
+  echo 'Building core...' && npm run build --workspace=quadratic-core; \
+  fi
 
 
 ###########################################################################################
@@ -44,7 +44,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 FROM node:23 AS ts-rust-types-builder
 
 # Install build-essential, llvm, and clang
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -85,10 +85,10 @@ COPY --link --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/qua
 
 # Install system brotli instead of Rust version
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python-is-python3 \
-    python3-pip \
-    brotli \
-    pigz
+  python-is-python3 \
+  python3-pip \
+  brotli \
+  pigz
 
 # Copy all package.json files
 COPY --link package.json .
@@ -115,23 +115,23 @@ ARG ENV_HASH
 
 # If ENV_HASH is set, copy the client.env, otherwise create default .env
 RUN if [ ! -z "$ENV_HASH" ]; then \
-    echo "ENV_HASH is set, renaming client.env to .env" && \
-    mv ./quadratic-client/client.env ./quadratic-client/.env; \
-    else \
-    echo "ENV_HASH is not set, creating default .env" && \
-    echo "VITE_DEBUG=VITE_DEBUG_VAL" > ./quadratic-client/.env && \
-    echo "VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_ORY_HOST=VITE_ORY_HOST_VAL" >> ./quadratic-client/.env && \
-    echo "VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL" >> ./quadratic-client/.env; \
-    fi
+  echo "ENV_HASH is set, renaming client.env to .env" && \
+  mv ./quadratic-client/client.env ./quadratic-client/.env; \
+  else \
+  echo "ENV_HASH is not set, creating default .env" && \
+  echo "VITE_DEBUG=VITE_DEBUG_VAL" > ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_ORY_HOST=VITE_ORY_HOST_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL" >> ./quadratic-client/.env; \
+  fi
 
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
@@ -139,43 +139,43 @@ RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
 # Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
 # Compress files only when ENV_HASH is not set, i.e. when env variables are not set in the github action
 RUN if [ -z "$ENV_HASH" ]; then \
-    find /quadratic/build -type f \
-    \( \
-    -name "*.wasm" -o \
-    -name "*.whl" -o \
-    -name "*.json" -o \
-    -name "*.css" -o \
-    -name "*.html" -o \
-    -name "*.svg" -o \
-    -name "*.txt" -o \
-    -name "*.map" -o \
-    -name "*.py" -o \
-    -name "*.pyc" -o \
-    -name "*.pyi" -o \
-    -name "*.pth" -o \
-    -name "*.data" -o \
-    -name "*.mem" -o \
-    -name "*.wat" -o \
-    -name "*.md" -o \
-    -name "*.rst" -o \
-    -name "*.rtf" -o \
-    -name "*.csv" -o \
-    -name "*.tsv" -o \
-    -name "*.eot" -o \
-    -name "*.ttf" -o \
-    -name "*.otf" -o \
-    -name "*.woff" -o \
-    -name "*.woff2" -o \
-    -name "*.font" -o \
-    -name "*.font-sfnt" \
-    \) -print0 | \
-    xargs -0 -n1 -P$(nproc) -I {} sh -c '\
-    echo "Compressing: {}" && \
-    brotli -q 9 -w 24 -f "{}" && \
-    pigz -6kf "{}" && \
-    echo "Created: {}.br and {}.gz" \
-    '; \
-    fi
+  find /quadratic/build -type f \
+  \( \
+  -name "*.wasm" -o \
+  -name "*.whl" -o \
+  -name "*.json" -o \
+  -name "*.css" -o \
+  -name "*.html" -o \
+  -name "*.svg" -o \
+  -name "*.txt" -o \
+  -name "*.map" -o \
+  -name "*.py" -o \
+  -name "*.pyc" -o \
+  -name "*.pyi" -o \
+  -name "*.pth" -o \
+  -name "*.data" -o \
+  -name "*.mem" -o \
+  -name "*.wat" -o \
+  -name "*.md" -o \
+  -name "*.rst" -o \
+  -name "*.rtf" -o \
+  -name "*.csv" -o \
+  -name "*.tsv" -o \
+  -name "*.eot" -o \
+  -name "*.ttf" -o \
+  -name "*.otf" -o \
+  -name "*.woff" -o \
+  -name "*.woff2" -o \
+  -name "*.font" -o \
+  -name "*.font-sfnt" \
+  \) -print0 | \
+  xargs -0 -n1 -P$(nproc) -I {} sh -c '\
+  echo "Compressing: {}" && \
+  brotli -q 9 -w 24 -f "{}" && \
+  pigz -6kf "{}" && \
+  echo "Created: {}.br and {}.gz" \
+  '; \
+  fi
 
 
 ###########################################################################################
@@ -184,7 +184,7 @@ RUN if [ -z "$ENV_HASH" ]; then \
 FROM fholzer/nginx-brotli
 
 # Install curl for healthcheck
-RUN apk add --no-cache curl brotli pigz
+RUN apk add --no-cache curl brotli-libs pigz
 
 # Copy build directory
 COPY --from=vite-builder /quadratic/build /usr/share/nginx/html

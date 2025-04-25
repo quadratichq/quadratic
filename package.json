@@ -31,7 +31,7 @@
     "clean": "npm i -g rimraf && npm exec --workspaces -- npm run clean && npx rimraf node_modules dist build target && npm cache clean --force",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
     "client:download:pyodide": "npm run download:pyodide --workspace=quadratic-client",
-    "build:wasm:types": "cd quadratic-core && CC=clang AR=llvm-ar cargo run --bin export_types --features js --target-dir=target/quadratic-core-types",
+    "build:wasm:types": "npm run export_types --workspace=quadratic-core",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
