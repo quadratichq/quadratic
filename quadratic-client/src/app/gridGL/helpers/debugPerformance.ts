@@ -1,4 +1,5 @@
-import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '@/app/debugFlags';
+import { debugShowCountRenderedObjects, debugShowTime } from '@/app/debugFlags';
+import { debugFlag } from '@/app/ui/QuaraticAppDebugSettings';
 import { Container } from 'pixi.js';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
@@ -19,7 +20,7 @@ export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): v
 }
 
 export function debugRendererLight(on: boolean): void {
-  if (!debugShowFPS) return;
+  if (!debugFlag('debugShowFPS')) return;
   const span = document.querySelector('.debug-show-renderer') as HTMLSpanElement;
   if (span) {
     span.style.backgroundColor = on ? '#aa0000' : '#00aa00';

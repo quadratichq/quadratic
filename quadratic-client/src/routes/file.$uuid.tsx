@@ -22,6 +22,7 @@ import { useCallback } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
 
+import { QuaraticAppDebugSettings } from '@/app/ui/QuaraticAppDebugSettings';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../shared/components/Empty';
@@ -168,6 +169,7 @@ export const Component = () => {
     <RecoilRoot initializeState={initializeState}>
       <QuadraticApp />
       <Outlet />
+      <QuaraticAppDebugSettings />
     </RecoilRoot>
   );
 };

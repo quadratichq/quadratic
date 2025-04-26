@@ -8,7 +8,6 @@ import {
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -17,6 +16,7 @@ import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUser
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { debugFlag } from '@/app/ui/QuaraticAppDebugSettings';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -155,7 +155,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!debugFlag('debugShowAIInternalContext') && message.contextType !== 'userPrompt') {
           return null;
         }
 
