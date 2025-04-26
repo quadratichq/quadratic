@@ -6,6 +6,7 @@ use crate::{Pos, grid::SheetId};
 use super::CellRefRange;
 
 mod create;
+mod delete;
 mod display;
 mod exclude;
 mod intersects;

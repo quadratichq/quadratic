@@ -47,18 +47,18 @@ use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
-use quadratic_core::grid::sheet::validations::validation_rules::validation_date_time::{
+use quadratic_core::grid::sheet::validations::rules::ValidationRule;
+use quadratic_core::grid::sheet::validations::rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::validation_list::{
+use quadratic_core::grid::sheet::validations::rules::validation_list::{
     ValidationList, ValidationListSource,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
-use quadratic_core::grid::sheet::validations::validation_rules::validation_number::{
+use quadratic_core::grid::sheet::validations::rules::validation_logical::ValidationLogical;
+use quadratic_core::grid::sheet::validations::rules::validation_number::{
     NumberRange, ValidationNumber,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::validation_text::{
+use quadratic_core::grid::sheet::validations::rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
 use quadratic_core::grid::sort::DataTableSort;

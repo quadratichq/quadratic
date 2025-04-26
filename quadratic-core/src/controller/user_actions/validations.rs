@@ -11,7 +11,7 @@ use crate::{
         SheetId,
         sheet::validations::{
             validation::{Validation, ValidationStyle},
-            validation_rules::ValidationRule,
+            rules::ValidationRule,
         },
     },
 };
@@ -118,7 +118,7 @@ mod tests {
     use crate::{
         grid::sheet::validations::{
             validation::ValidationError,
-            validation_rules::{
+            rules::{
                 ValidationRule,
                 validation_list::{ValidationList, ValidationListSource},
                 validation_logical::ValidationLogical,

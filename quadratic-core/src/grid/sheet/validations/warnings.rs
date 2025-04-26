@@ -39,7 +39,7 @@ mod tests {
             Sheet,
             sheet::validations::{
                 validation::Validation,
-                validation_rules::{ValidationRule, validation_logical::ValidationLogical},
+                rules::{ValidationRule, validation_logical::ValidationLogical},
             },
         },
     };

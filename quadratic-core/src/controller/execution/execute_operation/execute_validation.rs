@@ -238,7 +238,7 @@ impl GridController {
 mod tests {
     use super::*;
 
-    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, a1::A1Selection};
 

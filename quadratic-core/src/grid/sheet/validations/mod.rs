@@ -15,11 +15,12 @@ use crate::{
 
 use super::Sheet;
 
+pub mod clipboard;
+pub mod col_row;
+mod delete;
+pub mod rules;
 pub mod validation;
-pub mod validation_col_row;
-pub mod validation_rules;
-pub mod validation_warnings;
-pub mod validations_clipboard;
+pub mod warnings;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Validations {
@@ -86,7 +87,7 @@ impl Validations {
         for v in &self.validations {
             if v.selection.might_contain_pos(pos, a1_context) {
                 match v.rule {
-                    validation_rules::ValidationRule::List(ref validation_list) => {
+                    rules::ValidationRule::List(ref validation_list) => {
                         if validation_list.drop_down {
                             list = true;
                             checkbox = false;
@@ -95,7 +96,7 @@ impl Validations {
                             checkbox = false;
                         }
                     }
-                    validation_rules::ValidationRule::Logical(ref logical) => {
+                    rules::ValidationRule::Logical(ref logical) => {
                         if logical.show_checkbox {
                             checkbox = true;
                             list = false;
@@ -187,7 +188,7 @@ impl Validations {
 
 #[cfg(test)]
 mod tests {
-    use validation_rules::{ValidationRule, validation_logical::ValidationLogical};
+    use rules::{ValidationRule, validation_logical::ValidationLogical};
 
     use crate::{SheetRect, a1::CellRefRange, grid::SheetId};
 

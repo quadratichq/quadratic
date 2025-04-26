@@ -291,7 +291,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::grid::sheet::validations::validation::Validation;
-    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::test_util::*;
     use crate::{
         SheetPos, Value,

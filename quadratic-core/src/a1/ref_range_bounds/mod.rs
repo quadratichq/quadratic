@@ -7,6 +7,7 @@ use crate::{Pos, Rect};
 
 mod contains;
 mod create;
+mod delete;
 mod intersects;
 mod normalize;
 mod query;

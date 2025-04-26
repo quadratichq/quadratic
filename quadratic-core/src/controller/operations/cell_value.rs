@@ -314,6 +314,17 @@ impl GridController {
             }
         }
 
+        ops.extend(self.delete_validations_operations(selection));
+
+        ops
+    }
+
+    pub fn delete_validations_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            // sheet.validations
+        }
         ops
     }
 
