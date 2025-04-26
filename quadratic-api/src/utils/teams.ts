@@ -1,6 +1,29 @@
-import type { Team } from '@prisma/client';
+import type { Prisma, Team } from '@prisma/client';
 import dbClient from '../dbClient';
-import { generateSshKeys } from './crypto';
+import { encryptFromEnv, generateSshKeys } from './crypto';
+
+export async function createTeam<T extends Prisma.TeamSelect>(
+  name: string,
+  ownerUserId: number,
+  select: T
+): Promise<unknown> {
+  const { privateKey, publicKey } = await generateSshKeys();
+
+  return await dbClient.team.create({
+    data: {
+      name,
+      sshPublicKey: encryptFromEnv(publicKey),
+      sshPrivateKey: encryptFromEnv(privateKey),
+      UserTeamRole: {
+        create: {
+          userId: ownerUserId,
+          role: 'OWNER',
+        },
+      },
+    },
+    select,
+  });
+}
 
 /**
  * Applies SSH keys to a team if they don't already exist.
@@ -12,9 +35,13 @@ export async function applySshKeys(team: Team) {
 
     await dbClient.team.update({
       where: { id: team.id },
-      data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
+      data: {
+        sshPublicKey: encryptFromEnv(publicKey),
+        sshPrivateKey: encryptFromEnv(privateKey),
+      },
     });
 
+    // only set the public key to keep the private key from being exposed
     team.sshPublicKey = publicKey;
   }
 }

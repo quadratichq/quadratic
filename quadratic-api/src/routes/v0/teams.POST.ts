@@ -1,12 +1,12 @@
+import type { Team } from '@prisma/client';
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
-import { generateSshKeys } from '../../utils/crypto';
+import { createTeam } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -27,22 +27,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams.P
     name: true,
   };
 
-  const { privateKey, publicKey } = await generateSshKeys();
-
-  const team = await dbClient.team.create({
-    data: {
-      name,
-      sshPublicKey: publicKey,
-      sshPrivateKey: privateKey,
-      UserTeamRole: {
-        create: {
-          userId,
-          role: 'OWNER',
-        },
-      },
-    },
-    select,
-  });
+  const team = (await createTeam(name, userId, select)) as Pick<Team, keyof typeof select>;
 
   return res.status(201).json({ uuid: team.uuid, name: team.name });
 }

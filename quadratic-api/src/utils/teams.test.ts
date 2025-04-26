@@ -1,7 +1,7 @@
 import type { Team, User } from '@prisma/client';
 import dbClient from '../dbClient';
 import { clearDb } from '../tests/testDataGenerator';
-import { applySshKeys } from './teams';
+import { applySshKeys, createTeam } from './teams';
 
 const TEAM_ID = '00000000-0000-9000-8000-000000000001';
 export const TEAM_OWNER_AUTH0_ID = 'teamOwner';
@@ -23,9 +23,9 @@ export async function createTeamOwner(): Promise<User> {
   });
 }
 
-export async function createTeamWithOwner(name: string, teamId: string): Promise<Team> {
+export async function createTeamWithOwner(name: string, teamId: string): Promise<User> {
   const teamOwner = await createTeamOwner();
-  return await dbClient.team.create({
+  await dbClient.team.create({
     data: {
       name,
       uuid: teamId,
@@ -39,12 +39,27 @@ export async function createTeamWithOwner(name: string, teamId: string): Promise
       },
     },
   });
+  return teamOwner;
 }
 
+let teamOwner: User | null = null;
+
 beforeEach(async () => {
-  await createTeamWithOwner('Test Team 1', TEAM_ID);
+  teamOwner = await createTeamWithOwner('Test Team 1', TEAM_ID);
 });
 afterEach(clearDb);
+
+describe('createTeam', () => {
+  it('should create a team', async () => {
+    if (!teamOwner) throw new Error('teamOwner is null');
+    const select = {
+      uuid: true,
+      name: true,
+    };
+    const team = await createTeam('Test Team 2', teamOwner.id, select);
+    expect(team).toBeDefined();
+  });
+});
 
 describe('applySshKeys', () => {
   it('should apply SSH keys to a team', async () => {
