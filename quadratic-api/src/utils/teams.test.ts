@@ -1,0 +1,93 @@
+import type { Team, User } from '@prisma/client';
+import dbClient from '../dbClient';
+import { clearDb } from '../tests/testDataGenerator';
+import { applySshKeys } from './teams';
+
+const TEAM_ID = '00000000-0000-9000-8000-000000000001';
+export const TEAM_OWNER_AUTH0_ID = 'teamOwner';
+
+/**
+ * TEAM TEST UTLITIES
+ */
+export async function getTeam(teamId: string): Promise<Team | null> {
+  return await dbClient.team.findUnique({
+    where: { uuid: teamId },
+  });
+}
+
+export async function createTeamOwner(): Promise<User> {
+  return await dbClient.user.create({
+    data: {
+      auth0Id: TEAM_OWNER_AUTH0_ID,
+    },
+  });
+}
+
+export async function createTeamWithOwner(name: string, teamId: string): Promise<Team> {
+  const teamOwner = await createTeamOwner();
+  return await dbClient.team.create({
+    data: {
+      name,
+      uuid: teamId,
+      UserTeamRole: {
+        create: [
+          {
+            userId: teamOwner.id,
+            role: 'OWNER',
+          },
+        ],
+      },
+    },
+  });
+}
+
+beforeEach(async () => {
+  await createTeamWithOwner('Test Team 1', TEAM_ID);
+});
+afterEach(clearDb);
+
+describe('applySshKeys', () => {
+  it('should apply SSH keys to a team', async () => {
+    const team = await getTeam(TEAM_ID);
+
+    if (!team) {
+      throw new Error(`Team not found in applySshKeys: ${TEAM_ID}`);
+    }
+
+    expect(team?.sshPublicKey).toBeNull();
+    expect(team?.sshPrivateKey).toBeNull();
+
+    await applySshKeys(team);
+
+    const updatedTeam = await getTeam(TEAM_ID);
+
+    expect(updatedTeam?.sshPublicKey).not.toBeNull();
+    expect(updatedTeam?.sshPrivateKey).not.toBeNull();
+  });
+
+  it('should not apply SSH keys to a team if they already exist', async () => {
+    const team = await getTeam(TEAM_ID);
+
+    if (!team) {
+      throw new Error(`Team not found in applySshKeys: ${TEAM_ID}`);
+    }
+
+    expect(team?.sshPublicKey).toBeNull();
+    expect(team?.sshPrivateKey).toBeNull();
+
+    await applySshKeys(team);
+
+    const updatedTeam = await getTeam(TEAM_ID);
+    const sshPublicKey = updatedTeam?.sshPublicKey;
+    const sshPrivateKey = updatedTeam?.sshPrivateKey;
+
+    await applySshKeys(team);
+
+    const updatedTeam2 = await getTeam(TEAM_ID);
+    const sshPublicKey2 = updatedTeam2?.sshPublicKey;
+    const sshPrivateKey2 = updatedTeam2?.sshPrivateKey;
+
+    expect(sshPublicKey).toBe(sshPublicKey2);
+    expect(sshPrivateKey).toBe(sshPrivateKey2);
+  });
+});
