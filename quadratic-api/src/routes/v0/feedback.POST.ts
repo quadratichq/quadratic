@@ -44,6 +44,8 @@ async function handler(req: RequestWithUser, res: express.Response) {
     },
   });
 
+  const payingUser = userPaidTeams.length > 0 ? '*💰 Paying user*' : '';
+
   // Post to Slack
   // SLACK_FEEDBACK_URL is the Quadratic product feedback slack app webhook URL
   // We filter out spammy feedback by requiring at least 30 characters
@@ -51,10 +53,9 @@ async function handler(req: RequestWithUser, res: express.Response) {
     const payload = {
       text: [
         `📣 ${NODE_ENV === 'production' ? '' : '[STAGING]'} New product feedback`,
-        `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0Id})`,
+        `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0Id}) ${payingUser}`,
         '*Message*:',
         feedback,
-        userPaidTeams.length > 1 ? '*$$ Paying User $$*' : '',
       ].join('\n\n'),
     };
     axios.post(SLACK_FEEDBACK_URL, payload).catch((e: Error) => {
