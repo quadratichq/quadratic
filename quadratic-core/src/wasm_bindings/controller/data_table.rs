@@ -99,7 +99,6 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns_js: Option<String>,
-        show_ui: Option<bool>,
         show_name: Option<bool>,
         show_columns: Option<bool>,
         cursor: Option<String>,
@@ -120,9 +119,8 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_ui,
-            show_name,
-            show_columns,
+            show_name.map(Some),
+            show_columns.map(Some),
             cursor,
         );
 

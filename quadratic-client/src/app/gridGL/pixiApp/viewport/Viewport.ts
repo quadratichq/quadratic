@@ -158,7 +158,7 @@ export class Viewport extends PixiViewport {
     this.dirty = true;
   };
 
-  getWorld = () => {
+  getWorld = (): Point => {
     return this.toWorld(this.pixiApp.renderer.events.pointer.global);
   };
 

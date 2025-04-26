@@ -69,7 +69,14 @@ mod tests {
     fn test_render_borders_table_1x1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 1, 1, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            1,
+            1,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(
@@ -90,7 +97,14 @@ mod tests {
     fn test_render_borders_table_3x3() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(
@@ -111,7 +125,14 @@ mod tests {
     fn test_render_borders_table_3x3_two_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(
@@ -132,7 +153,14 @@ mod tests {
     fn test_render_borders_table_3x3_outer() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(
