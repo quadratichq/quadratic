@@ -14,8 +14,8 @@ import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
-import { generateSshKeys } from '../../utils/crypto';
 import { getFilePermissions } from '../../utils/permissions';
+import { applySshKeys } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -121,14 +121,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
-  if (dbTeam.sshPublicKey === null) {
-    const { privateKey, publicKey } = await generateSshKeys();
-    await dbClient.team.update({
-      where: { id: dbTeam.id },
-      data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
-    });
+  // Apply SSH keys to the team if they don't already exist.
+  await applySshKeys(dbTeam);
 
-    dbTeam.sshPublicKey = publicKey;
+  if (dbTeam.sshPublicKey === null) {
+    throw new ApiError(500, 'Unable to retrieve SSH keys');
   }
 
   // Get signed thumbnail URLs

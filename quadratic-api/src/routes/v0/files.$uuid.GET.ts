@@ -11,7 +11,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { generateSshKeys } from '../../utils/crypto';
+import { applySshKeys } from '../../utils/teams';
 
 export default [
   validateRequestSchema(
@@ -38,14 +38,11 @@ async function handler(
 
   const thumbnailSignedUrl = thumbnail ? await getFileUrl(thumbnail) : null;
 
-  if (ownerTeam.sshPublicKey === null) {
-    const { privateKey, publicKey } = await generateSshKeys();
-    await dbClient.team.update({
-      where: { id: ownerTeam.id },
-      data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
-    });
+  // Apply SSH keys to the team if they don't already exist.
+  await applySshKeys(ownerTeam);
 
-    ownerTeam.sshPublicKey = publicKey;
+  if (ownerTeam.sshPublicKey === null) {
+    throw new ApiError(500, 'Unable to retrieve SSH keys');
   }
 
   // Get the most recent checkpoint for the file
