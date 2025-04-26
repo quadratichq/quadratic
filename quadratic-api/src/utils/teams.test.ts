@@ -1,7 +1,7 @@
 import type { Team, User } from '@prisma/client';
 import dbClient from '../dbClient';
 import { clearDb } from '../tests/testDataGenerator';
-import { applySshKeys, createTeam } from './teams';
+import { applySshKeys, createTeam, decryptSshKeys } from './teams';
 
 const TEAM_ID = '00000000-0000-9000-8000-000000000001';
 export const TEAM_OWNER_AUTH0_ID = 'teamOwner';
@@ -104,5 +104,34 @@ describe('applySshKeys', () => {
 
     expect(sshPublicKey).toBe(sshPublicKey2);
     expect(sshPrivateKey).toBe(sshPrivateKey2);
+  });
+});
+
+describe('decryptSshKeys', () => {
+  it('should decrypt the SSH keys of a team', async () => {
+    const team = await getTeam(TEAM_ID);
+
+    if (!team) {
+      throw new Error(`Team not found in decryptSshKeys: ${TEAM_ID}`);
+    }
+
+    await applySshKeys(team);
+
+    const updatedTeam = await getTeam(TEAM_ID);
+
+    if (!updatedTeam) {
+      throw new Error(`Team not found in decryptSshKeys: ${TEAM_ID}`);
+    }
+
+    // these keys should be encrypted
+    const sshPublicKey = updatedTeam.sshPublicKey;
+    const sshPrivateKey = updatedTeam.sshPrivateKey;
+
+    // decrypt the keys
+    const decryptedTeam = decryptSshKeys(updatedTeam);
+
+    // the encrypted keys should not match the decrypted keys
+    expect(decryptedTeam.sshPublicKey).not.toBe(sshPublicKey);
+    expect(decryptedTeam.sshPrivateKey).not.toBe(sshPrivateKey);
   });
 });

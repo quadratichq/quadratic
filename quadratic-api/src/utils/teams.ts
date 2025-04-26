@@ -1,6 +1,6 @@
 import type { Prisma, Team } from '@prisma/client';
 import dbClient from '../dbClient';
-import { encryptFromEnv, generateSshKeys } from './crypto';
+import { decryptFromEnv, encryptFromEnv, generateSshKeys } from './crypto';
 
 export async function createTeam<T extends Prisma.TeamSelect>(
   name: string,
@@ -44,4 +44,20 @@ export async function applySshKeys(team: Team) {
     // only set the public key to keep the private key from being exposed
     team.sshPublicKey = publicKey;
   }
+}
+
+/**
+ * Decrypts the SSH keys of a team.
+ * @param team - The team to decrypt the SSH keys of.
+ * @returns The team with the decrypted SSH keys.
+ */
+export function decryptSshKeys(team: Team): Team {
+  if (team.sshPublicKey === null || team.sshPrivateKey === null) {
+    throw new Error('SSH keys are not set');
+  }
+
+  team.sshPublicKey = decryptFromEnv(team.sshPublicKey);
+  team.sshPrivateKey = decryptFromEnv(team.sshPrivateKey);
+
+  return team;
 }
