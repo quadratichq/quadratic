@@ -56,6 +56,16 @@ fn upgrade_data_tables(
         .into_iter()
         .filter_map(|(pos, data_table)| {
             let code_cell = code_cells.remove(&pos)?;
+            let show_name = if data_table.show_ui {
+                Some(data_table.show_name)
+            } else {
+                Some(false)
+            };
+            let show_columns = if data_table.show_ui {
+                Some(data_table.show_columns)
+            } else {
+                Some(false)
+            };
 
             Some((
                 pos,
@@ -63,16 +73,8 @@ fn upgrade_data_tables(
                     kind: upgrade_data_table_kind(data_table.kind, code_cell),
                     name: data_table.name,
                     header_is_first_row: data_table.header_is_first_row,
-                    show_name: if data_table.show_ui {
-                        Some(data_table.show_name)
-                    } else {
-                        Some(false)
-                    },
-                    show_columns: if data_table.show_columns {
-                        Some(data_table.show_name)
-                    } else {
-                        Some(false)
-                    },
+                    show_name,
+                    show_columns,
                     columns: data_table.columns,
                     sort: data_table.sort,
                     sort_dirty: data_table.sort_dirty,
