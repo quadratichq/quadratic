@@ -6,6 +6,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { generateSshKeys } from '../../utils/crypto';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -26,9 +27,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams.P
     name: true,
   };
 
+  const { privateKey, publicKey } = await generateSshKeys();
+
   const team = await dbClient.team.create({
     data: {
       name,
+      sshPublicKey: publicKey,
+      sshPrivateKey: privateKey,
       UserTeamRole: {
         create: {
           userId,
