@@ -572,7 +572,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run e2e tests
+      - name: Run tests e2e
         uses: ./.github/actions/tests-e2e
         with:
           e2e_url: "https://${{ env.e2e_url }}"

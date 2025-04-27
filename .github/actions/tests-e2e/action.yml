@@ -1,4 +1,5 @@
 name: Tests E2E
+
 inputs:
   e2e_url:
     description: "Base url of deployment"
@@ -6,16 +7,17 @@ inputs:
   artifacts_sub_dir:
     description: "Sub directory for test artifacts"
     required: true
+
 runs:
   using: "composite"
   steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup node 23
+    - name: Setup node
       uses: actions/setup-node@v4
       with:
-        node-version: 23
+        node-version: lts/*
 
     - name: Install Dependencies
       run: cd tests-e2e && npm ci
