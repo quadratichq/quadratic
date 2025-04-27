@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, SheetPos,
-    grid::{CodeCellLanguage, DataTable, SheetId},
+    grid::{DataTable, SheetId},
     util::case_fold_ascii,
 };
 
@@ -31,15 +31,9 @@ impl TableMap {
         self.tables.remove(&table_name_folded)
     }
 
-    pub fn insert_table(
-        &mut self,
-        sheet_id: SheetId,
-        pos: Pos,
-        table: &DataTable,
-        language: CodeCellLanguage,
-    ) {
+    pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
         let table_name_folded = case_fold_ascii(table.name());
-        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
+        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
@@ -93,7 +87,6 @@ impl TableMap {
                     x: x as i64,
                     y: y as i64,
                 })
-                && table.show_ui
                 && y < (table.bounds.min.y as u32)
                     + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
                         as u32
@@ -140,7 +133,7 @@ impl TableMap {
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: crate::Rect,
-        language: CodeCellLanguage,
+        language: crate::grid::CodeCellLanguage,
     ) {
         let table_name_folded = case_fold_ascii(table_name);
         self.tables.insert(
@@ -160,7 +153,7 @@ impl TableMap {
 mod tests {
     use super::*;
 
-    use crate::Rect;
+    use crate::{Rect, grid::CodeCellLanguage};
 
     #[test]
     fn test_try_col_index() {
@@ -360,7 +353,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(0, 0, 2, 3),
-            show_ui: true,
             show_name: true,
             show_columns: true,
             is_html_image: false,
@@ -396,7 +388,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(5, 5, 7, 8),
-            show_ui: true,
             show_name: false,
             show_columns: true,
             is_html_image: false,

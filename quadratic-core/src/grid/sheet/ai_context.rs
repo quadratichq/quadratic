@@ -241,8 +241,8 @@ impl Sheet {
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
-                    show_name: table.show_name,
-                    show_columns: table.show_columns,
+                    show_name: table.get_show_name(),
+                    show_columns: table.get_show_columns(),
                     language: code_cell_value.language.to_owned(),
                     code_string: code_cell_value.code.to_owned(),
                     std_err: code_run.std_err.to_owned(),
@@ -258,8 +258,8 @@ impl Sheet {
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
-                    show_name: table.show_name,
-                    show_columns: table.show_columns,
+                    show_name: table.get_show_name(),
+                    show_columns: table.get_show_columns(),
                 });
             }
         }
@@ -380,6 +380,8 @@ mod tests {
         let mut sheet = Sheet::test();
 
         let code_run_1 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "abcd".to_string(),
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -406,12 +408,15 @@ mod tests {
                 Default::default(),
                 false,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let code_run_2 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "abcd".to_string(),
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -438,12 +443,15 @@ mod tests {
                 Default::default(),
                 false,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let code_run_3 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "[[1, 2], [3, 4]]".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -474,7 +482,8 @@ mod tests {
                 ])),
                 true,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );

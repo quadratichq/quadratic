@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn test_table_header_navigation() {
         let mut sheet = Sheet::test();
-        sheet.test_set_data_table(pos![C3], 2, 2, false, true);
+        sheet.test_set_data_table(pos![C3], 2, 2, false, Some(true), Some(true));
 
         // move right into header
         assert_eq!(sheet.move_cursor(pos![B3], Direction::Right), pos![C3]);
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn test_table_header_navigation_no_name() {
         let mut sheet = Sheet::test();
-        sheet.test_set_data_table(pos![C3], 2, 2, false, false);
+        sheet.test_set_data_table(pos![C3], 2, 2, false, Some(false), Some(false));
 
         // move right with no name
         assert_eq!(sheet.move_cursor(pos![B3], Direction::Right), pos![C3]);

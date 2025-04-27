@@ -305,9 +305,12 @@ impl Sheet {
             if bounds.min.y == pos.y {
                 // table name, or column header if no table name, or top of data if no column header or table name
                 return true;
-            } else if bounds.min.y
-                + (if dt.show_ui && dt.show_name { 1 } else { 0 })
-                + (if dt.show_ui && dt.show_columns { 1 } else { 0 })
+            }
+
+            let show_name = dt.get_show_name();
+            let show_columns = dt.get_show_columns();
+
+            if bounds.min.y + (if show_name { 1 } else { 0 }) + (if show_columns { 1 } else { 0 })
                 == pos.y
             {
                 // ignore column header--just go to first line of data or table name
@@ -1138,7 +1141,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert(pos, dt.clone());
@@ -1386,7 +1390,8 @@ mod test {
             ])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert(anchor_pos, dt);
@@ -1414,10 +1419,11 @@ mod test {
             Value::Array(Array::from(vec![vec!["a", "b"], vec!["c", "d"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
-        dt_no_ui.show_name = false;
+        dt_no_ui.show_name = Some(false);
         sheet.data_tables.insert(pos![E5], dt_no_ui);
 
         // Test edges without UI
@@ -1456,7 +1462,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert(pos, dt.clone());

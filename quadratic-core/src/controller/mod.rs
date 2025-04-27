@@ -129,12 +129,9 @@ impl GridController {
                     continue;
                 };
 
-                if let Some(language) = sheet.get_table_language(*pos, table) {
-                    let table_name = case_fold_ascii(table.name());
-                    let table_map_entry =
-                        TableMapEntry::from_table(*sheet_id, *pos, table, language);
-                    to_insert.push((table_name, table_map_entry));
-                }
+                let table_name = case_fold_ascii(table.name());
+                let table_map_entry = TableMapEntry::from_table(*sheet_id, *pos, table);
+                to_insert.push((table_name, table_map_entry));
             }
 
             for pos in to_remove.into_iter() {
