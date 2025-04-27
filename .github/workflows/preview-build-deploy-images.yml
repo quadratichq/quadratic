@@ -576,4 +576,4 @@ jobs:
         uses: ./.github/actions/tests-e2e
         with:
           e2e_url: "https://${{ env.e2e_url }}"
-          test_results_name: pr-${{ github.event.pull_request.number }}-e2e
+          playwright_report_name: pr-${{ github.event.pull_request.number }}-e2e

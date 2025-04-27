@@ -4,8 +4,8 @@ inputs:
   e2e_url:
     description: "Base url of deployment"
     required: true
-  test_results_name:
-    description: "Name of test results artifact uploaded to GitHub"
+  playwright_report_name:
+    description: "Name of playwright report artifact uploaded to GitHub"
     required: true
 runs:
   using: "composite"
@@ -36,7 +36,7 @@ runs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-browsers-${{ steps.playwright_version.outputs.PLAYWRIGHT_VERSION }}
+        key: playwright-browsers-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
 
     - name: Setup Playwright
       if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
@@ -51,6 +51,6 @@ runs:
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
-        name: ${{ inputs.test_results_name }}
+        name: ${{ inputs.playwright_report_name }}
         path: tests-e2e/playwright-report/
         retention-days: 3
