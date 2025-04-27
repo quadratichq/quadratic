@@ -1,5 +1,5 @@
 name: Tests E2E
-
+description: "E2E tests"
 inputs:
   e2e_url:
     description: "Base url of deployment"
@@ -7,7 +7,6 @@ inputs:
   artifacts_sub_dir:
     description: "Sub directory for test artifacts"
     required: true
-
 runs:
   using: "composite"
   steps:
@@ -21,12 +20,15 @@ runs:
 
     - name: Install Dependencies
       run: cd tests-e2e && npm ci
+      shell: bash
 
     - name: Install Playwright Browsers
       run: cd tests-e2e && npx playwright install --with-deps
+      shell: bash
 
     - name: Run E2E tests
       run: export E2E_URL=${{ inputs.e2e_url }} && cd tests-e2e && npx playwright test
+      shell: bash
 
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
