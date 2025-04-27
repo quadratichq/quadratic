@@ -125,7 +125,16 @@ impl GridController {
         );
 
         let old_data_table = if let Some(new_data_table) = &new_data_table {
-            let index = index.min(sheet.data_tables.len());
+            let index = index.min(sheet.data_tables.len() - 1);
+
+            if index > sheet.data_tables.len() - 1 {
+                dbgjs!(format!(
+                    "Index is greater than the number of data tables: {}",
+                    index
+                ));
+                return;
+            }
+
             sheet
                 .data_tables
                 .shift_insert(index, pos, new_data_table.to_owned())
