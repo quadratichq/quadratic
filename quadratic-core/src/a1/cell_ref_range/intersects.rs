@@ -24,16 +24,14 @@ impl CellRefRange {
 
     /// Deletes the given range from the current range. Returns the remaining
     /// range or None if the current range is completely deleted.
-    pub fn delete(
+    pub fn delete_range(
         &self,
         range_to_delete: &CellRefRange,
         a1_context: &A1Context,
     ) -> Vec<CellRefRange> {
         match self {
             Self::Sheet { range } => range.delete(range_to_delete, a1_context),
-
-            // todo: ***
-            Self::Table { .. } => vec![],
+            Self::Table { range } => range.delete(range_to_delete, a1_context),
         }
     }
 }

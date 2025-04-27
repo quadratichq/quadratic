@@ -8,8 +8,8 @@ use super::Validations;
 impl Validations {
     pub fn delete_operations(
         &mut self,
-        selection: &A1Selection,
-        a1_context: &A1Context,
+        _selection: &A1Selection,
+        _a1_context: &A1Context,
     ) -> Vec<Operation> {
         // self.validations.iter().filter_map(|validation| {
         //     if let Some(to_remove) = validation.selection.intersection(selection, a1_context) {

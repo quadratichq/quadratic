@@ -6,6 +6,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::CodeCellLanguage;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::grid::sheet::validations::validation::Validation;
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use anyhow::{Result, bail};
 
@@ -323,7 +324,26 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            // sheet.validations
+            for validation in sheet.validations.validations.iter() {
+                if let Some(selection) = validation
+                    .selection
+                    .delete_selection(selection, &self.a1_context)
+                {
+                    if selection != validation.selection {
+                        ops.push(Operation::SetValidation {
+                            validation: Validation {
+                                selection,
+                                ..validation.clone()
+                            },
+                        });
+                    }
+                } else {
+                    ops.push(Operation::RemoveValidation {
+                        sheet_id: validation.selection.sheet_id,
+                        validation_id: validation.id,
+                    });
+                }
+            }
         }
         ops
     }

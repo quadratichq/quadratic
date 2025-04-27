@@ -1,102 +1,21 @@
-use crate::a1::{A1Context, CellRefCoord, CellRefRange, CellRefRangeEnd};
+use crate::a1::{A1Context, A1Selection, CellRefRange};
 
 use super::RefRangeBounds;
 
 impl RefRangeBounds {
     fn delete_ref_range_bounds(&self, range: &RefRangeBounds) -> Vec<CellRefRange> {
-        // find any parts that need removing
-        if let Some(intersection) = self.intersection(range) {
-            // if the intersection is the same as the original range, then delete
-            // everything
-            if intersection == *self {
-                vec![]
-            } else {
-                // otherwise, we need to delete the intersection
-                let mut ranges = Vec::new();
-
-                // check if there is a part above the intersection
-                if intersection.start.row.coord > self.start.row.coord {
-                    ranges.push(CellRefRange::Sheet {
-                        range: RefRangeBounds {
-                            start: CellRefRangeEnd {
-                                col: self.start.col,
-                                row: self.start.row,
-                            },
-                            end: CellRefRangeEnd {
-                                col: self.end.col,
-                                row: CellRefCoord {
-                                    coord: intersection.start.row.coord - 1,
-                                    is_absolute: self.start.row.is_absolute,
-                                },
-                            },
-                        },
-                    });
-                }
-
-                // check if there is a part below the intersection
-                if intersection.end.row.coord < self.end.row.coord {
-                    ranges.push(CellRefRange::Sheet {
-                        range: RefRangeBounds {
-                            start: CellRefRangeEnd {
-                                col: self.start.col,
-                                row: CellRefCoord {
-                                    coord: intersection.end.row.coord + 1,
-                                    is_absolute: self.start.row.is_absolute,
-                                },
-                            },
-                            end: CellRefRangeEnd {
-                                col: self.end.col,
-                                row: self.end.row,
-                            },
-                        },
-                    });
-                }
-
-                // check if there is a part to the left of the intersection
-                if intersection.start.col.coord > self.start.col.coord {
-                    ranges.push(CellRefRange::Sheet {
-                        range: RefRangeBounds {
-                            start: CellRefRangeEnd {
-                                col: self.start.col,
-                                row: self.start.row,
-                            },
-                            end: CellRefRangeEnd {
-                                col: CellRefCoord {
-                                    coord: intersection.start.col.coord - 1,
-                                    is_absolute: self.start.col.is_absolute,
-                                },
-                                row: self.end.row,
-                            },
-                        },
-                    });
-                }
-
-                // check if there is a part to the right of the intersection
-                if intersection.end.col.coord < self.end.col.coord {
-                    ranges.push(CellRefRange::Sheet {
-                        range: RefRangeBounds {
-                            start: CellRefRangeEnd {
-                                col: CellRefCoord {
-                                    coord: intersection.end.col.coord + 1,
-                                    is_absolute: self.start.col.is_absolute,
-                                },
-                                row: self.start.row,
-                            },
-                            end: CellRefRangeEnd {
-                                col: self.end.col,
-                                row: self.end.row,
-                            },
-                        },
-                    });
-                }
-
-                ranges
-            }
-        } else {
-            vec![CellRefRange::Sheet {
+        // if there is no intersection, return the original range
+        if self.intersection(range).is_none() {
+            return vec![CellRefRange::Sheet {
                 range: self.clone(),
-            }]
+            }];
         }
+
+        // find any parts that need removing
+        let exclude = range.to_rect_unbounded();
+
+        // we need a copy since we mutate it to normalize it
+        A1Selection::find_excluded_rects(self.clone(), exclude)
     }
 
     /// Deletes the given range from the current range. Returns the remaining
@@ -122,10 +41,7 @@ impl RefRangeBounds {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        TableRef,
-        a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange},
-    };
+    use crate::{TableRef, a1::A1Context};
 
     #[test]
     fn test_delete_complete_overlap() {
@@ -216,6 +132,7 @@ mod tests {
             };
             *range == RefRangeBounds::new_relative(1, 5, 5, 5)
         }));
+
         // Left part
         assert!(result.iter().any(|r| {
             let CellRefRange::Sheet { range } = r else {
@@ -232,23 +149,20 @@ mod tests {
         }));
     }
 
-    //     #[test]
-    //     fn test_delete_with_table_range() {
-    //         let range = RefRangeBounds::new_relative(1, 1, 5, 5);
-    //         let table_range = CellRefRange::Table {
-    //             range: TableRef {
-    //                 table_name: "TestTable".to_string(),
-    //                 col_range: ColRange::All,
-    //             },
-    //         };
-    //         let a1_context = A1Context::default();
-    //         let result = range.delete(&table_range, &a1_context);
-    //         assert_eq!(result.len(), 1);
-    //         let CellRefRange::Sheet { range: remaining } = result[0] else {
-    //             panic!("expected a sheet range");
-    //         };
-    //         assert_eq!(remaining, range);
-    //     }
+    #[test]
+    fn test_delete_with_table_range() {
+        let range = RefRangeBounds::new_relative(1, 1, 5, 5);
+        let table_range = CellRefRange::Table {
+            range: TableRef::new("TestTable"),
+        };
+        let a1_context = A1Context::default();
+        let result = range.delete(&table_range, &a1_context);
+        assert_eq!(result.len(), 1);
+        let CellRefRange::Sheet { range: remaining } = result[0] else {
+            panic!("expected a sheet range");
+        };
+        assert_eq!(remaining, range);
+    }
 
     // #[test]
     // fn test_delete_with_absolute_references() {
