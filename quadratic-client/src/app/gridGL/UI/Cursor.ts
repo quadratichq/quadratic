@@ -112,6 +112,8 @@ export class Cursor extends Container {
     const inlineShowing = inlineEditorHandler.getShowing();
     if (showInput) {
       if (inlineShowing) {
+        x = inlineEditorHandler.x - CURSOR_THICKNESS;
+        y = inlineEditorHandler.y - CURSOR_THICKNESS;
         width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * 2, width);
         height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * 2, height);
       } else {
@@ -261,9 +263,14 @@ export class Cursor extends Container {
     const { visible, editMode, formula } = pixiAppSettings.inlineEditorState;
     if (!visible || !editMode) return;
 
-    let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
+    let { x, y } = inlineEditorHandler;
+    x = inlineEditorHandler.x - CURSOR_THICKNESS;
+    y = inlineEditorHandler.y - CURSOR_THICKNESS;
+
+    let { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
+
     const color = formula ? getCSSVariableTint('primary') : pixiApp.accentColor;
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;

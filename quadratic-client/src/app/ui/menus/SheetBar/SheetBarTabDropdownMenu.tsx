@@ -50,10 +50,8 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         {numberOfSheets > 1 && (
           <DropdownMenuItem
             onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
-                mixpanel.track('[Sheets].delete');
-                sheets.userDeleteSheet(sheets.current);
-              }
+              mixpanel.track('[Sheets].delete');
+              sheets.userDeleteSheet(sheets.current);
               setTimeout(focusGrid);
             }}
           >

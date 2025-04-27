@@ -46,19 +46,14 @@ impl TableRef {
         if !force_table_bounds {
             y_start += if !self.headers && !force_columns {
                 table.y_adjustment(false)
-            } else if table.show_ui && table.show_name {
+            } else if table.show_name {
                 1
             } else {
                 0
             };
         } else if self.headers && !self.data {
             // this is the case where we only want the header row and can ignore force_table_bounds
-            y_start = table.bounds.min.y
-                + if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                };
+            y_start = table.bounds.min.y + if table.show_name { 1 } else { 0 };
         }
         // this is for the clipboard, we don't want to copy the table name when it's a full column
         else if let ColRange::Col(_) = &self.col_range {
@@ -164,13 +159,9 @@ mod tests {
     #[test]
     fn test_convert_all_columns_without_header() {
         let mut context = create_test_context(Rect::test_a1("A1:C3"));
-        context
-            .table_map
-            .tables
-            .values_mut()
-            .next()
-            .unwrap()
-            .show_ui = false;
+        let table = context.table_map.tables.values_mut().next().unwrap();
+        table.show_name = false;
+        table.show_columns = false;
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),

@@ -19,9 +19,6 @@
 //
 // This is a bit of an edge case, but it's good to be aware of how this works.
 import { apiClient } from '@/shared/api/apiClient';
-import { ROUTES } from '@/shared/constants/routes';
-import { isMobile } from 'react-device-detect';
-import { redirect } from 'react-router';
 
 const KEY = 'activeTeamUuid';
 
@@ -77,17 +74,6 @@ export async function getOrInitializeActiveTeam(): Promise<string> {
     const newTeam = await apiClient.teams.create({ name: 'My Team' });
     const newTeamUuid = newTeam.uuid;
     localStorage.setItem(KEY, newTeamUuid);
-    // Handle new users specially
-    // (because we use this in loaders, we can throw redirects)
-    // If it's mobile, send them to the dashboard.
-    // If they're going to the root, create a new file for them and send them there.
-    // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...)
-    if (isMobile) {
-      throw redirect(ROUTES.TEAM(newTeamUuid));
-    }
-    if (window.location.pathname === '/') {
-      throw redirect(ROUTES.CREATE_FILE(newTeamUuid));
-    }
     return newTeamUuid;
   })();
 

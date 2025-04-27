@@ -32,8 +32,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const redirectUrl = ROUTES.CREATE_FILE(activeTeamUuid, {
     // Are they creating a new file with a prompt?
     prompt: url.searchParams.get('prompt'),
-    // Creating via this route is _always_ private
-    private: true,
+    // Creating via this route is _always_ private unless explicitly stated
+    private: url.searchParams.get('private') === 'false' ? false : true,
   });
   return redirect(redirectUrl);
 };
