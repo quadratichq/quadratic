@@ -25,6 +25,7 @@ runs:
     - name: Get Playwright's Version
       id: playwright-version
       run: |
+        cd tests-e2e
         PLAYWRIGHT_VERSION=$(npm ls @playwright/test | grep @playwright | sed 's/.*@//')
         echo "Playwright's Version: $PLAYWRIGHT_VERSION"
         echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
@@ -51,7 +52,5 @@ runs:
       if: ${{ !cancelled() }}
       with:
         name: ${{ inputs.test_results_name }}
-        path: |
-          tests-e2e/playwright-report/
-          tests-e2e/test-results/
+        path: tests-e2e/playwright-report/
         retention-days: 3
