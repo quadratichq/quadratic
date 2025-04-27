@@ -15,6 +15,12 @@ impl Validations {
         self.warnings.contains_key(&pos)
     }
 
+    pub fn has_warning_for_validation(&self, pos: Pos, validation_id: Uuid) -> bool {
+        self.warnings
+            .iter()
+            .any(|(warning_pos, id)| *warning_pos == pos && *id == validation_id)
+    }
+
     /// Sets a validation warning. Removes the validation if None is passed.
     pub fn set_warning(&mut self, sheet_pos: SheetPos, validation_id: Option<Uuid>) -> Operation {
         let old = if let Some(validation_id) = validation_id {
@@ -38,8 +44,8 @@ mod tests {
         grid::{
             Sheet,
             sheet::validations::{
-                validation::Validation,
                 rules::{ValidationRule, validation_logical::ValidationLogical},
+                validation::Validation,
             },
         },
     };
@@ -108,5 +114,31 @@ mod tests {
 
         validations.set_warning(sheet_pos, None);
         assert!(!validations.has_warning(sheet_pos.into()));
+    }
+
+    #[test]
+    fn has_warning_for_validation() {
+        let mut validations = Validations::default();
+        let mut sheet = Sheet::test();
+        let validation1 = create_validation();
+        let validation2 = create_validation();
+        sheet.validations.set(validation1.clone());
+        sheet.validations.set(validation2.clone());
+
+        let sheet_pos = SheetPos::new(sheet.id, 0, 0);
+        assert!(!validations.has_warning_for_validation(sheet_pos.into(), validation1.id));
+        assert!(!validations.has_warning_for_validation(sheet_pos.into(), validation2.id));
+
+        validations.set_warning(sheet_pos, Some(validation1.id));
+        assert!(validations.has_warning_for_validation(sheet_pos.into(), validation1.id));
+        assert!(!validations.has_warning_for_validation(sheet_pos.into(), validation2.id));
+
+        validations.set_warning(sheet_pos, Some(validation2.id));
+        assert!(!validations.has_warning_for_validation(sheet_pos.into(), validation1.id));
+        assert!(validations.has_warning_for_validation(sheet_pos.into(), validation2.id));
+
+        validations.set_warning(sheet_pos, None);
+        assert!(!validations.has_warning_for_validation(sheet_pos.into(), validation1.id));
+        assert!(!validations.has_warning_for_validation(sheet_pos.into(), validation2.id));
     }
 }

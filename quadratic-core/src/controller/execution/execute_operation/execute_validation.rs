@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+use crate::SheetRect;
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
@@ -8,6 +9,28 @@ use crate::grid::js_types::JsValidationWarning;
 use crate::grid::sheet::validations::validation::Validation;
 
 impl GridController {
+    pub(crate) fn check_validations(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_rect: &SheetRect,
+    ) {
+        let validations: Vec<Validation>;
+        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
+            validations = sheet
+                .validations
+                .in_rect((*sheet_rect).into(), &self.a1_context())
+                .iter()
+                .map(|v| (*v).clone())
+                .collect();
+        } else {
+            validations = vec![];
+        };
+
+        for validation in validations {
+            self.apply_validation_warnings(transaction, sheet_rect.sheet_id, validation);
+        }
+    }
+
     // Remove old warnings from the validation. Adds to client_warnings as necessary.
     fn remove_validation_warnings(
         &mut self,
@@ -50,6 +73,7 @@ impl GridController {
             return;
         };
         let mut warnings = vec![];
+        let mut remove_warnings = vec![];
         let context = self.a1_context();
         if let Some(values) =
             sheet.selection_values(&validation.selection, None, false, true, &self.a1_context)
@@ -57,6 +81,11 @@ impl GridController {
             values.iter().for_each(|(pos, _)| {
                 if let Some(validation) = sheet.validations.validate(sheet, *pos, context) {
                     warnings.push((*pos, validation.id));
+                } else if sheet
+                    .validations
+                    .has_warning_for_validation(*pos, validation.id)
+                {
+                    remove_warnings.push(*pos);
                 }
             });
         }
@@ -89,6 +118,19 @@ impl GridController {
                     validation: Some(*validation_id),
                 },
             );
+        });
+
+        remove_warnings.iter().for_each(|pos| {
+            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let old = sheet.validations.set_warning(sheet_pos, None);
+            transaction
+                .forward_operations
+                .push(Operation::SetValidationWarning {
+                    sheet_pos,
+                    validation_id: None,
+                });
+            transaction.reverse_operations.push(old);
+            transaction.validation_warning_deleted(sheet_id, *pos);
         });
     }
 
@@ -239,6 +281,7 @@ mod tests {
     use super::*;
 
     use crate::grid::sheet::validations::rules::ValidationRule;
+    use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, a1::A1Selection};
 
@@ -438,6 +481,44 @@ mod tests {
             "jsValidationWarning",
             format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
             true,
+        );
+    }
+
+    #[test]
+    fn test_remove_validation_warnings() {
+        clear_js_calls();
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None);
+
+        let validation = test_checkbox(&mut gc, A1Selection::test_a1("A1"));
+
+        // hack changing the sheet without updating the validations
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(pos![A1], "".to_string());
+
+        let mut transaction = PendingTransaction::default();
+        gc.check_validations(
+            &mut transaction,
+            &SheetRect::single_sheet_pos(pos![sheet_id!A1]),
+        );
+
+        assert_eq!(
+            transaction.forward_operations,
+            vec![Operation::SetValidationWarning {
+                sheet_pos: pos![sheet_id!A1],
+                validation_id: None,
+            }]
+        );
+
+        assert_eq!(
+            transaction.reverse_operations,
+            vec![Operation::SetValidationWarning {
+                sheet_pos: pos![sheet_id!A1],
+                validation_id: Some(validation.id),
+            }]
         );
     }
 }

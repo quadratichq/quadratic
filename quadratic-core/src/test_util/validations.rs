@@ -1,0 +1,107 @@
+#[cfg(test)]
+use uuid::Uuid;
+
+#[cfg(test)]
+use crate::{
+    SheetPos,
+    a1::A1Selection,
+    controller::GridController,
+    grid::sheet::validations::{
+        rules::{ValidationRule, validation_logical::ValidationLogical},
+        validation::Validation,
+    },
+};
+
+/// Creates a checkbox validation for a given selection. show_checkbox = true
+/// and ignore_blank = true. Returns a clone of the validation.
+#[cfg(test)]
+pub fn test_checkbox(gc: &mut GridController, selection: A1Selection) -> Validation {
+    let validation = Validation {
+        id: Uuid::new_v4(),
+        selection,
+        rule: ValidationRule::Logical(ValidationLogical {
+            show_checkbox: true,
+            ignore_blank: true,
+        }),
+        message: Default::default(),
+        error: Default::default(),
+    };
+    gc.update_validation(validation.clone(), None);
+    validation
+}
+
+#[track_caller]
+#[cfg(test)]
+pub fn assert_validation_warning(
+    gc: &GridController,
+    sheet_pos: SheetPos,
+    expected_validation: Option<Validation>,
+) {
+    let expected_validation_id = expected_validation.map(|v| v.id);
+    let sheet = gc.sheet(sheet_pos.sheet_id);
+    let validation = sheet.validations.warnings.get(&sheet_pos.into());
+    if let Some(validation_id) = validation {
+        assert_eq!(
+            expected_validation_id,
+            Some(*validation_id),
+            "Wrong validation warning, the validation_ids do not match",
+        );
+    } else {
+        if expected_validation_id.is_some() {
+            panic!("Expected validation warning, but received none");
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::*;
+
+    #[test]
+    fn test_create_checkbox() {
+        let mut gc = test_create_gc();
+        let sheet_id = gc.sheet_ids()[0];
+        let selection = A1Selection::test_a1("A1");
+        test_checkbox(&mut gc, selection.clone());
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+        assert_eq!(sheet.validations.validations[0].selection, selection);
+        assert_eq!(
+            sheet.validations.validations[0].rule,
+            ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: true,
+            })
+        );
+    }
+
+    #[test]
+    fn test_assert_validation_warning() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!A1];
+
+        // Test case 1: No validation warning expected, none present
+        assert_validation_warning(&gc, sheet_pos, None);
+
+        // Test case 2: Create a validation and ensure it fails
+        let validation = test_checkbox(&mut gc, A1Selection::test_a1("A1"));
+        gc.set_cell_value(sheet_pos, "a".to_string(), None);
+        assert_validation_warning(&gc, sheet_pos, Some(validation.clone()));
+
+        // Test case 3: Wrong validation warning (should panic)
+        let wrong_validation = test_checkbox(&mut gc, A1Selection::test_a1("A2"));
+        let result = std::panic::catch_unwind(|| {
+            assert_validation_warning(&gc, sheet_pos, Some(wrong_validation));
+        });
+        assert!(result.is_err());
+
+        // Test case 4: Expected validation warning but none present (should panic)
+        let result = std::panic::catch_unwind(|| {
+            assert_validation_warning(&gc, pos![sheet_id!b1], Some(validation));
+        });
+        assert!(result.is_err());
+    }
+}

@@ -366,13 +366,14 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
+    use crate::Rect;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::controller::user_actions::import::tests::simple_csv;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
+    use crate::test_util::print_table_sheet;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
-    use crate::{Rect, print_table_sheet};
 
     #[test]
     fn test() {

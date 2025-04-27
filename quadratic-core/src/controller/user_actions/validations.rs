@@ -10,8 +10,8 @@ use crate::{
     grid::{
         SheetId,
         sheet::validations::{
-            validation::{Validation, ValidationStyle},
             rules::ValidationRule,
+            validation::{Validation, ValidationStyle},
         },
     },
 };
@@ -114,15 +114,16 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-
+    use crate::grid::js_types::JsRenderCellSpecial;
+    use crate::{Rect, test_util::*};
     use crate::{
         grid::sheet::validations::{
-            validation::ValidationError,
             rules::{
                 ValidationRule,
                 validation_list::{ValidationList, ValidationListSource},
                 validation_logical::ValidationLogical,
             },
+            validation::ValidationError,
         },
         wasm_bindings::js::expect_js_call,
     };
@@ -380,5 +381,40 @@ mod tests {
             gc.validate_input(sheet_id, (1, 3).into(), "random"),
             Some(validation.id)
         );
+    }
+
+    #[test]
+    fn test_validate_checkbox_in_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = gc.sheet_ids()[0];
+
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![b2], 2, 2, &["", "", "", ""]);
+        let validation = test_checkbox(&mut gc, A1Selection::test_a1("c4"));
+
+        let sheet = gc.sheet(sheet_id);
+
+        // ensure the checkbox is rendered
+        let cells = sheet.get_render_cells(Rect::test_a1("c4"), &gc.a1_context());
+        assert_eq!(cells[0].special, Some(JsRenderCellSpecial::Checkbox));
+
+        // there should be no warning since the contents is empty in the table
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
+
+        // set the contents to true
+        gc.set_cell_value(pos![sheet_id!c4], "true".to_string(), None);
+
+        // there should be no warning since the content is true
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
+
+        // set the contents to a, causing a validation error
+        gc.set_cell_value(pos![sheet_id!c4], "a".to_string(), None);
+
+        // there should be a warning since the content is not true, false, or empty
+        assert_validation_warning(&gc, pos![sheet_id!c4], Some(validation));
+
+        gc.set_cell_value(pos![sheet_id!c4], "false".to_string(), None);
+
+        // there should be no warning since the content is false
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
     }
 }
