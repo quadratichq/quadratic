@@ -1,4 +1,4 @@
-name: Preview Build
+name: Preview Deploy
 
 on:
   pull_request:
@@ -559,3 +559,21 @@ jobs:
 
           echo "::error::${{ matrix.service.name }} version check failed after ${{ env.MAX_ATTEMPTS }} attempts"
           exit 1
+
+  test-e2e:
+    name: Test E2E
+    needs: [build_images, deploy_images, verify_deployed_version]
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    timeout-minutes: 30
+    env:
+      e2e_url: ${{ needs.deploy_images.outputs.website_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run e2e tests
+        uses: ./.github/actions/tests-e2e
+        with:
+          e2e_url: "https://${{ env.e2e_url }}"
+          artifacts_sub_dir: pr-${{ github.event.pull_request.number }}

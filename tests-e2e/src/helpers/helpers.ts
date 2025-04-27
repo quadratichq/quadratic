@@ -47,6 +47,7 @@ export const logIn = async (page: Page, options: LogInOptions) => {
   await page.locator(`#username`).fill(email);
   await page.locator(`#password`).fill(password);
   await page.locator(`button:text("Continue")`).click();
+  await page.waitForLoadState("networkidle");
 
   // assert that we are logged in
   await expect(page.getByText(email)).toBeVisible();
@@ -165,6 +166,7 @@ export const navigateIntoFile = async (
     .fill(fileName);
   await page.waitForTimeout(2000);
   await page.locator(`h2 :text("${fileName}")`).click();
+  await page.waitForLoadState("networkidle");
 
   // Assert we navigate into the file
   await expect(page.locator(`button:text("${fileName}")`)).toBeVisible();
