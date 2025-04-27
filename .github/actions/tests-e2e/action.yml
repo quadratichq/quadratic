@@ -4,8 +4,8 @@ inputs:
   e2e_url:
     description: "Base url of deployment"
     required: true
-  artifacts_sub_dir:
-    description: "Sub directory for test artifacts"
+  test_results_name:
+    description: "Name of test results artifact uploaded to GitHub"
     required: true
 runs:
   using: "composite"
@@ -33,6 +33,6 @@ runs:
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
-        name: test-e2e-report
-        path: test-e2e-report/${{ inputs.artifacts_sub_dir }}/
+        name: ${{ inputs.test_results_name }}
+        path: tests-e2e/test-results/
         retention-days: 3
