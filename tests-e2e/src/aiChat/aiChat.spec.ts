@@ -70,4 +70,6 @@ test("AI Chat Insert Code, Clear Query, View History", async ({ page }) => {
     ["./ai_chat_insert_code_5_prime.png"],
     { maxDiffPixels: 100 },
   );
+
+  throw "fail";
 });
