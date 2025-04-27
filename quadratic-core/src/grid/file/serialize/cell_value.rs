@@ -7,6 +7,24 @@ use crate::{
 use bigdecimal::BigDecimal;
 use std::str::FromStr;
 
+pub fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCellLanguageSchema {
+    match language {
+        CodeCellLanguage::Python => current::CodeCellLanguageSchema::Python,
+        CodeCellLanguage::Formula => current::CodeCellLanguageSchema::Formula,
+        CodeCellLanguage::Javascript => current::CodeCellLanguageSchema::Javascript,
+        CodeCellLanguage::Connection { kind, id } => current::CodeCellLanguageSchema::Connection {
+            kind: match kind {
+                ConnectionKind::Postgres => current::ConnectionKindSchema::Postgres,
+                ConnectionKind::Mysql => current::ConnectionKindSchema::Mysql,
+                ConnectionKind::Mssql => current::ConnectionKindSchema::Mssql,
+                ConnectionKind::Snowflake => current::ConnectionKindSchema::Snowflake,
+            },
+            id,
+        },
+        CodeCellLanguage::Import => current::CodeCellLanguageSchema::Import,
+    }
+}
+
 pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
     match cell_value {
         CellValue::Blank => current::CellValueSchema::Blank,
@@ -15,23 +33,7 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
         CellValue::Html(html) => current::CellValueSchema::Html(html),
         CellValue::Code(cell_code) => current::CellValueSchema::Code(current::CodeCellSchema {
             code: cell_code.code,
-            language: match cell_code.language {
-                CodeCellLanguage::Python => current::CodeCellLanguageSchema::Python,
-                CodeCellLanguage::Formula => current::CodeCellLanguageSchema::Formula,
-                CodeCellLanguage::Javascript => current::CodeCellLanguageSchema::Javascript,
-                CodeCellLanguage::Connection { kind, id } => {
-                    current::CodeCellLanguageSchema::Connection {
-                        kind: match kind {
-                            ConnectionKind::Postgres => current::ConnectionKindSchema::Postgres,
-                            ConnectionKind::Mysql => current::ConnectionKindSchema::Mysql,
-                            ConnectionKind::Mssql => current::ConnectionKindSchema::Mssql,
-                            ConnectionKind::Snowflake => current::ConnectionKindSchema::Snowflake,
-                        },
-                        id,
-                    }
-                }
-                CodeCellLanguage::Import => current::CodeCellLanguageSchema::Import,
-            },
+            language: export_code_cell_language(cell_code.language),
         }),
         CellValue::Logical(logical) => current::CellValueSchema::Logical(logical),
         CellValue::Instant(instant) => current::CellValueSchema::Instant(instant.to_string()),
@@ -61,6 +63,24 @@ pub fn import_cell_value_number(number: String) -> CellValue {
     CellValue::Number(BigDecimal::from_str(&number).unwrap_or_default())
 }
 
+pub fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> CodeCellLanguage {
+    match language {
+        current::CodeCellLanguageSchema::Python => CodeCellLanguage::Python,
+        current::CodeCellLanguageSchema::Formula => CodeCellLanguage::Formula,
+        current::CodeCellLanguageSchema::Javascript => CodeCellLanguage::Javascript,
+        current::CodeCellLanguageSchema::Connection { kind, id } => CodeCellLanguage::Connection {
+            kind: match kind {
+                current::ConnectionKindSchema::Postgres => ConnectionKind::Postgres,
+                current::ConnectionKindSchema::Mysql => ConnectionKind::Mysql,
+                current::ConnectionKindSchema::Mssql => ConnectionKind::Mssql,
+                current::ConnectionKindSchema::Snowflake => ConnectionKind::Snowflake,
+            },
+            id,
+        },
+        current::CodeCellLanguageSchema::Import => CodeCellLanguage::Import,
+    }
+}
+
 pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
     match value {
         current::CellValueSchema::Blank => CellValue::Blank,
@@ -69,23 +89,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::Html(html) => CellValue::Html(html),
         current::CellValueSchema::Code(code_cell) => CellValue::Code(CodeCellValue {
             code: code_cell.code,
-            language: match code_cell.language {
-                current::CodeCellLanguageSchema::Python => CodeCellLanguage::Python,
-                current::CodeCellLanguageSchema::Formula => CodeCellLanguage::Formula,
-                current::CodeCellLanguageSchema::Javascript => CodeCellLanguage::Javascript,
-                current::CodeCellLanguageSchema::Connection { kind, id } => {
-                    CodeCellLanguage::Connection {
-                        kind: match kind {
-                            current::ConnectionKindSchema::Postgres => ConnectionKind::Postgres,
-                            current::ConnectionKindSchema::Mysql => ConnectionKind::Mysql,
-                            current::ConnectionKindSchema::Mssql => ConnectionKind::Mssql,
-                            current::ConnectionKindSchema::Snowflake => ConnectionKind::Snowflake,
-                        },
-                        id,
-                    }
-                }
-                current::CodeCellLanguageSchema::Import => CodeCellLanguage::Import,
-            },
+            language: import_code_cell_language(code_cell.language),
         }),
         current::CellValueSchema::Logical(logical) => CellValue::Logical(logical),
         current::CellValueSchema::Instant(instant) => {

@@ -60,7 +60,6 @@ impl GridController {
 
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
-                Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
                     self.execute_set_chart_size(transaction, op),
                 ),
@@ -88,6 +87,9 @@ impl GridController {
                 ),
                 Operation::DataTableMeta { .. } => Self::handle_execution_operation_result(
                     self.execute_data_table_meta(transaction, op),
+                ),
+                Operation::DataTableOptionMeta { .. } => Self::handle_execution_operation_result(
+                    self.execute_data_table_option_meta(transaction, op),
                 ),
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
@@ -127,9 +129,6 @@ impl GridController {
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
-                }
-                Operation::SetCodeRunVersion { .. } => {
-                    self.execute_set_code_run_version(transaction, op);
                 }
                 Operation::SetDataTable { .. } => {
                     self.execute_set_data_table(transaction, op);

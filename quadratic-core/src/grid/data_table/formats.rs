@@ -188,7 +188,7 @@ pub mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // show name
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false), None);
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, Some(false), None);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -207,7 +207,7 @@ pub mod test {
         assert_eq!(data_table_format.bold, Some(true));
 
         // show column headers
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, None, Some(false));
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false));
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -272,7 +272,6 @@ pub mod test {
             Some(column_headers),
             None,
             None,
-            None,
         );
 
         // check formats after hiding first column
@@ -333,7 +332,6 @@ pub mod test {
         gc.test_data_table_update_meta(
             pos.to_sheet_pos(sheet_id),
             Some(column_headers),
-            None,
             None,
             None,
         );

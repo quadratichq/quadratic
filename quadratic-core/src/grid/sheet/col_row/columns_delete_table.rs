@@ -19,7 +19,7 @@ impl Sheet {
         let mut dt_to_delete = Vec::new();
         for (pos, table) in self.data_tables.iter() {
             // delete code tables where the code cell is in the deleted columns
-            let code_cell_anchor_deleted = ((table.readonly && !table.is_html_or_image())
+            let code_cell_anchor_deleted = ((table.is_code() && !table.is_html_or_image())
                 || table.spill_error)
                 && columns.contains(&pos.x);
 
@@ -65,7 +65,7 @@ impl Sheet {
         let mut dt_to_update = Vec::new();
 
         for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
-            if (dt.readonly && !dt.is_html_or_image()) || dt.spill_error {
+            if (dt.is_code() && !dt.is_html_or_image()) || dt.spill_error {
                 continue;
             }
             let output_rect = dt.output_rect(*pos, false);
