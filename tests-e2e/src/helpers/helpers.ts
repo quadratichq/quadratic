@@ -35,7 +35,6 @@ export const logIn = async (page: Page, options: LogInOptions) => {
 
   // Try to navigate to our URL
   try {
-    console.log(`E2E_URL: ${process.env.E2E_URL}`);
     await page.goto(buildUrl(options.route ? options.route : "/"), {
       waitUntil: "domcontentloaded",
     });
