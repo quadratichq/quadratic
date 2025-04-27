@@ -1,0 +1,25 @@
+{
+  "name": "tests-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for Quadratic",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:update-snapshots": "npx playwright test --update-snapshots"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Ayush Agrawal",
+    "email": "ayush.agrawal@quadratichq.com",
+    "url": "https://quadratichq.com"
+  },
+  "engines": {
+    "node": "23.x"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.2"
+  }
+}

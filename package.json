@@ -18,7 +18,8 @@
     "quadratic-client",
     "quadratic-kernels/python-wasm",
     "quadratic-rust-shared",
-    "quadratic-connection"
+    "quadratic-connection",
+    "tests-e2e"
   ],
   "type": "module",
   "scripts": {
@@ -50,6 +51,9 @@
     "test:api": "npm run docker:test:dev --workspace=quadratic-api",
     "test:multiplayer": "npm run test --workspace=quadratic-multiplayer",
     "test:python": "cd quadratic-kernels/python-wasm && ./test.sh",
+    "test:e2e": "npm run test --workspace=tests-e2e",
+    "test:e2e:headed": "npm run test:headed --workspace=tests-e2e",
+    "test:e2e:update-snapshots": "npm run test:update-snapshots --workspace=tests-e2e",
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:rust": "cargo clippy --all-targets --all-features -- -D warnings",
     "lint:ts": "npm run lint:ts --workspace=quadratic-client",
