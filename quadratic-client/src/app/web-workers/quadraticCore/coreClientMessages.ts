@@ -1168,7 +1168,6 @@ export interface ClientCoreDataTableMeta {
   columns?: JsDataTableColumnHeader[];
   showName?: boolean;
   showColumns?: boolean;
-  showUI?: boolean;
   cursor: string;
 }
 

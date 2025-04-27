@@ -443,6 +443,8 @@ mod tests {
         let mut cells_accessed = CellsAccessed::default();
         cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: r#"q.cells("B1:B2")"#.into(),
             std_err: None,
             std_out: None,
             error: None,
@@ -457,7 +459,8 @@ mod tests {
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         let transaction = &mut PendingTransaction::default();
@@ -525,6 +528,8 @@ mod tests {
         cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: r#"return q.cells("B1:B2");"#.into(),
             std_err: None,
             std_out: None,
             error: None,
@@ -539,7 +544,8 @@ mod tests {
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         let transaction = &mut PendingTransaction::default();

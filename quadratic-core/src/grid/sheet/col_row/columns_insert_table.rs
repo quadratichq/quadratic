@@ -37,7 +37,7 @@ impl Sheet {
             } else {
                 // Adds columns to data tables if the column is inserted inside the
                 // table. Code is not impacted by this change.
-                if !dt.readonly
+                if !dt.is_code()
                     && source_column >= pos.x
                     && (column < pos.x + output_rect.width() as i64
                         || (CopyFormats::Before == copy_formats
@@ -85,7 +85,7 @@ impl Sheet {
             // first column. That should insert a table column and not push the
             // table over. data_tables_to_move_left handles this case. Note: we
             // treat charts differently and they are moved over.
-            if (!dt.readonly || dt.is_html_or_image())
+            if (!dt.is_code() || dt.is_html_or_image())
                 && copy_formats == CopyFormats::Before
                 && pos.x == column
             {
