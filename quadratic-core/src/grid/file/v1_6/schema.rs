@@ -38,7 +38,7 @@ impl Display for Id {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Pos {
     pub x: i64,
     pub y: i64,

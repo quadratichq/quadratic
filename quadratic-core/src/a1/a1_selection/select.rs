@@ -369,12 +369,12 @@ impl A1Selection {
                         match &range.col_range {
                             // all gets the entire table selection
                             ColRange::All => {
-                                if table.show_ui && table.show_name {
+                                if table.show_name {
                                     start = Some((table.bounds.min.x, table.bounds.min.y));
                                 }
                             }
                             ColRange::Col(col) => {
-                                if table.show_ui && table.show_columns {
+                                if table.show_columns {
                                     if let Some(col_index) = table.try_col_index(col) {
                                         start = Some((
                                             table.bounds.min.x + col_index,

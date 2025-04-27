@@ -38,52 +38,6 @@ impl GridController {
             });
     }
 
-    pub(super) fn execute_set_code_run(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) {
-        if let Operation::SetCodeRun {
-            sheet_pos,
-            code_run,
-            index,
-        } = op
-        {
-            let op = Operation::SetCodeRunVersion {
-                sheet_pos,
-                code_run,
-                index,
-                version: 1,
-            };
-            self.execute_set_code_run_version(transaction, op);
-        }
-    }
-
-    pub(super) fn execute_set_code_run_version(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) {
-        if let Operation::SetCodeRunVersion {
-            sheet_pos,
-            code_run,
-            index,
-            version,
-        } = op
-        {
-            if version == 1 {
-                self.finalize_data_table(
-                    transaction,
-                    sheet_pos,
-                    code_run.map(|code_run| code_run.into()),
-                    Some(index),
-                );
-            } else {
-                dbgjs!("Expected SetCodeRunVersion version to be 1");
-            }
-        }
-    }
-
     /// **Deprecated** and replaced with SetChartCellSize
     pub(super) fn execute_set_chart_size(
         &mut self,

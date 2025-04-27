@@ -4086,7 +4086,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.6.14"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -4139,7 +4139,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-multiplayer"
-version = "0.6.14"
+version = "0.7.0"
 dependencies = [
  "axum",
  "axum-extra",
@@ -4174,7 +4174,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.14"
+version = "0.7.0"
 dependencies = [
  "aes",
  "arrow",

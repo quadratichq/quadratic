@@ -28,14 +28,14 @@ export class PointerTableResize {
   cursor?: string;
   active = false;
 
-  pointerDown(world: Point): boolean {
+  pointerDown = (world: Point): boolean => {
     if (isMobile) return false;
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
     return this.applyState(world, true);
-  }
+  };
 
-  private reset(): void {
+  private reset = (): void => {
     if (this.active) {
       events.emit('cellMoving', false);
       this.stateHorizontal = undefined;
@@ -51,9 +51,9 @@ export class PointerTableResize {
       this.setCursorDirection(undefined);
       this.tableBounds = undefined;
     }
-  }
+  };
 
-  setCursorDirection(dragDirection: DragDirection): void {
+  private setCursorDirection = (dragDirection: DragDirection): void => {
     switch (dragDirection) {
       case 'bottom':
         this.cursor = 'row-resize';
@@ -68,9 +68,9 @@ export class PointerTableResize {
         this.cursor = undefined;
         break;
     }
-  }
+  };
 
-  applyState(world: Point, isPointerDown: boolean = false): boolean {
+  private applyState = (world: Point, isPointerDown: boolean = false): boolean => {
     if (!this.selection || !this.tableBounds || !this.selectionRight || !this.selectionBottom) return false;
 
     const setValues = (direction: DragDirection) => {
@@ -106,9 +106,9 @@ export class PointerTableResize {
     if (isPointerDown) this.dragDirection = undefined;
 
     return false;
-  }
+  };
 
-  pointerMove(world: Point): boolean {
+  pointerMove = (world: Point): boolean => {
     if (isMobile) return false;
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
@@ -243,9 +243,9 @@ export class PointerTableResize {
     }
 
     return false;
-  }
+  };
 
-  pointerUp(): boolean {
+  pointerUp = (): boolean => {
     if (this.active) {
       if (!this.selection || !this.selectionRight || !this.selectionBottom || !this.tableBounds) return true;
 
@@ -270,17 +270,14 @@ export class PointerTableResize {
           newRectangle.width !== width ||
           newRectangle.height !== height
         ) {
-          let columnsToAdd = Math.max(0, newWidth - width);
-          let columnsToRemove = Math.max(0, width - newWidth);
-          let rowsToAdd = Math.max(0, newHeight - height);
-          let rowsToRemove = Math.max(0, height - newHeight);
-          let toArray = (size: number, base: number, fn: (i: number, base: number) => number) =>
+          const columnsToAdd = Math.max(0, newWidth - width);
+          const columnsToRemove = Math.max(0, width - newWidth);
+          const rowsToAdd = Math.max(0, newHeight - height);
+          const rowsToRemove = Math.max(0, height - newHeight);
+          const toArray = (size: number, base: number, fn: (i: number, base: number) => number) =>
             Array(size)
               .fill(0)
               .map((_, i) => fn(i, base));
-
-          let show_header = this.codeCell?.show_ui || false;
-          let adjustHeight = show_header ? 1 : 0;
 
           // update the table
           quadraticCore.dataTableMutations({
@@ -291,7 +288,7 @@ export class PointerTableResize {
             columns_to_add: toArray(columnsToAdd, width, (i, base) => base + i),
             columns_to_remove: toArray(columnsToRemove, width, (i, base) => base - i - 1),
             rows_to_add: toArray(rowsToAdd, height, (i, base) => base + i),
-            rows_to_remove: toArray(rowsToRemove, height, (i, base) => base - i - adjustHeight),
+            rows_to_remove: toArray(rowsToRemove, height, (i, base) => base - i - 1),
             flatten_on_delete: true,
             swallow_on_insert: true,
             cursor: sheets.getCursorPosition(),
@@ -302,13 +299,13 @@ export class PointerTableResize {
       return true;
     }
     return false;
-  }
+  };
 
-  handleEscape(): boolean {
+  handleEscape = (): boolean => {
     if (this.active) {
       this.reset();
       return true;
     }
     return false;
-  }
+  };
 }
