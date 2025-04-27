@@ -439,6 +439,8 @@ mod tests {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_err: None,
             std_out: None,
             error: None,
@@ -453,7 +455,8 @@ mod tests {
             Value::Array(Array::from(vec![vec!["1"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         let pos = Pos { x: 0, y: 0 };

@@ -52,35 +52,39 @@ export class TableOutline extends Graphics {
     }
 
     // create the drag handles
-    if (this.table.active && this.table && !this.table.codeCell.readonly) {
-      const cornerHandle = new Rectangle(
-        this.table.tableBounds.x + this.table.tableBounds.width - 4,
-        this.table.tableBounds.y + this.table.tableBounds.height - 4,
-        8,
-        8
-      );
-      const rightHandle = new Rectangle(
-        this.table.tableBounds.x + this.table.tableBounds.width - 4,
-        this.table.tableBounds.y,
-        8,
-        this.table.tableBounds.height - 8
-      );
-      const bottomHandle = new Rectangle(
-        this.table.tableBounds.x,
-        this.table.tableBounds.y + this.table.tableBounds.height - 4,
-        this.table.tableBounds.width - 8,
-        8
-      );
 
-      pixiApp.pointer.pointerTableResize.selection = cornerHandle;
-      pixiApp.pointer.pointerTableResize.selectionRight = rightHandle;
-      pixiApp.pointer.pointerTableResize.selectionBottom = bottomHandle;
-      pixiApp.pointer.pointerTableResize.tableBounds = this.table.sheet.getColumnRowFromScreen(
-        this.table.tableBounds.x,
-        this.table.tableBounds.y
-      );
-      pixiApp.pointer.pointerTableResize.codeCell = this.table.codeCell;
-      pixiApp.setViewportDirty();
+    if (pixiApp.initialized) {
+      const world = pixiApp.viewport.getWorld();
+      if (this.table.checkHover(world) && !this.table.codeCell.is_code) {
+        const cornerHandle = new Rectangle(
+          this.table.tableBounds.x + this.table.tableBounds.width - 4,
+          this.table.tableBounds.y + this.table.tableBounds.height - 4,
+          8,
+          8
+        );
+        const rightHandle = new Rectangle(
+          this.table.tableBounds.x + this.table.tableBounds.width - 4,
+          this.table.tableBounds.y,
+          8,
+          this.table.tableBounds.height - 8
+        );
+        const bottomHandle = new Rectangle(
+          this.table.tableBounds.x,
+          this.table.tableBounds.y + this.table.tableBounds.height - 4,
+          this.table.tableBounds.width - 8,
+          8
+        );
+
+        pixiApp.pointer.pointerTableResize.selection = cornerHandle;
+        pixiApp.pointer.pointerTableResize.selectionRight = rightHandle;
+        pixiApp.pointer.pointerTableResize.selectionBottom = bottomHandle;
+        pixiApp.pointer.pointerTableResize.tableBounds = this.table.sheet.getColumnRowFromScreen(
+          this.table.tableBounds.x,
+          this.table.tableBounds.y
+        );
+        pixiApp.pointer.pointerTableResize.codeCell = this.table.codeCell;
+        pixiApp.setViewportDirty();
+      }
     }
 
     // draw the spill error boundaries

@@ -198,7 +198,7 @@ impl GridController {
                 };
 
                 // there is no pasting on top of code cell output
-                if !data_table.readonly && !contains_source_cell && !is_table_being_deleted {
+                if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
                     let adjusted_rect = Rect::from_numbers(
                         intersection_rect.min.x - start_pos.x,
                         intersection_rect.min.y - start_pos.y,
@@ -240,7 +240,7 @@ impl GridController {
                         return Err(Error::msg(message));
                     }
 
-                    let contains_header = data_table.show_columns
+                    let contains_header = data_table.get_show_columns()
                         && intersection_rect.y_range().contains(&output_rect.min.y);
                     let headers = data_table.column_headers.to_owned();
 
@@ -1684,7 +1684,6 @@ mod test {
             Some(column_headers),
             None,
             None,
-            None,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -1763,7 +1762,6 @@ mod test {
             Some(column_headers),
             None,
             None,
-            None,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -1823,7 +1821,6 @@ mod test {
         gc.test_data_table_update_meta(
             pos.to_sheet_pos(sheet_id),
             Some(column_headers),
-            None,
             None,
             None,
         );
@@ -1889,7 +1886,6 @@ mod test {
         gc.test_data_table_update_meta(
             pos.to_sheet_pos(sheet_id),
             Some(column_headers),
-            None,
             None,
             None,
         );
