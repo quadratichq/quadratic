@@ -213,15 +213,6 @@ impl GridController {
                 msg: RunErrorMsg::CodeRunError(msg.into()),
             });
 
-            let code_run = CodeRun {
-                error,
-                return_type: Some(return_type.to_owned()),
-                line_number: Some(1),
-                output_type: Some(return_type),
-                std_out,
-                std_err: std_err.to_owned(),
-                cells_accessed: transaction.cells_accessed.to_owned(),
-            };
             let value = if std_err.is_some() {
                 Value::default() // TODO(ddimaria): this will be an empty vec
             } else {
@@ -235,6 +226,18 @@ impl GridController {
                 return Err(CoreError::CodeCellSheetError(
                     "Code cell not found".to_string(),
                 ));
+            };
+
+            let code_run = CodeRun {
+                language: code.language.to_owned(),
+                code: code.code.to_owned(),
+                error,
+                return_type: Some(return_type.to_owned()),
+                line_number: Some(1),
+                output_type: Some(return_type),
+                std_out,
+                std_err: std_err.to_owned(),
+                cells_accessed: transaction.cells_accessed.to_owned(),
             };
 
             let name = match code.language {
@@ -253,7 +256,8 @@ impl GridController {
                 value,
                 false,
                 true,
-                true,
+                None,
+                None,
                 None,
             );
 
