@@ -17,7 +17,6 @@ use super::Sheet;
 
 pub mod clipboard;
 pub mod col_row;
-mod delete;
 pub mod rules;
 pub mod validation;
 pub mod warnings;
