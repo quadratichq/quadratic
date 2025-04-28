@@ -22,7 +22,12 @@ const BedrockAnthropicModelSchema = z.enum([
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']);
-const OpenAIModelSchema = z.enum(['gpt-4.1-2025-04-14', 'o4-mini-2025-04-16', 'o3-2025-04-16']);
+const OpenAIModelSchema = z.enum([
+  'ft:gpt-4.1-2025-04-14:quadratic::BRLVVZOv',
+  'gpt-4.1-2025-04-14',
+  'o4-mini-2025-04-16',
+  'o3-2025-04-16',
+]);
 const XAIModelSchema = z.enum(['grok-3-beta']);
 const AIModelSchema = z.union([
   VertexAnthropicModelSchema,
@@ -68,7 +73,12 @@ const AnthropicModelKeySchema = z.enum([
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
-const OpenAIModelKeySchema = z.enum(['openai:gpt-4.1-2025-04-14', 'openai:o4-mini-2025-04-16', 'openai:o3-2025-04-16']);
+const OpenAIModelKeySchema = z.enum([
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BRLVVZOv',
+  'openai:gpt-4.1-2025-04-14',
+  'openai:o4-mini-2025-04-16',
+  'openai:o3-2025-04-16',
+]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
@@ -289,6 +299,7 @@ export const AIMessagePromptSchema = z.object({
     })
   ),
   model: AIModelSchema,
+  fineTuningInput: z.string().optional(),
 });
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
