@@ -816,7 +816,7 @@ test("Upgrade to the Pro Plan", async ({ page }) => {
   await cancelProPlan(page);
 });
 
-test.only("Upgrade to the Pro Plan with an Invalid Card", async ({ page }) => {
+test("Upgrade to the Pro Plan with an Invalid Card", async ({ page }) => {
   //--------------------------------
   // Upgrade to the Pro Plan with an Invalid Card
   //--------------------------------
