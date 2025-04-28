@@ -1,6 +1,5 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { getActionFileDelete } from '@/routes/api.files.$uuid';
-import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
@@ -88,25 +87,21 @@ export const deleteFile = {
   isAvailable: ({ filePermissions }: IsAvailableArgs) => filePermissions.includes(FILE_DELETE),
   // TODO: (enhancement) handle this async operation in the UI similar to /files/create
   async run({
+    confirmFn,
     fileUuid,
-    userEmail,
     redirect,
     submit,
-    addGlobalSnackbar,
+    userEmail,
   }: {
+    confirmFn: () => Promise<boolean>;
     fileUuid: string;
-    userEmail: string;
     redirect: boolean;
     submit: SubmitFunction;
-    addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
+    userEmail: string;
   }) {
-    if (window.confirm('Please confirm you want to delete this file.')) {
-      try {
-        const data = getActionFileDelete({ userEmail, redirect });
-        submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
-      } catch (e) {
-        addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
-      }
+    if (await confirmFn()) {
+      const data = getActionFileDelete({ userEmail, redirect });
+      submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
     }
   },
 };

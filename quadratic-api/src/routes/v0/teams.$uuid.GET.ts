@@ -102,7 +102,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const authUsersById = await getUsers(dbUsers.map(({ user }) => user));
 
   // IDEA: (enhancement) we could put this in /sharing and just return the userCount
-  // then require the data for the team share modal to be a seaparte network request
+  // then require the data for the team share modal to be a separate network request
   const users = dbUsers
     .filter(({ userId: id }) => authUsersById[id])
     .map(({ userId: id, role }) => {

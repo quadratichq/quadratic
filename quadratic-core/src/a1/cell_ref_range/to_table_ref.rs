@@ -39,20 +39,11 @@ impl CellRefRange {
                     return None;
                 }
                 let b = table.bounds;
-                let adjust_for_name = if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                };
-                let adjust_for_columns = if table.show_ui && table.show_columns {
-                    1
-                } else {
-                    0
-                };
+                let adjust_for_name = if table.show_name { 1 } else { 0 };
+                let adjust_for_columns = if table.show_columns { 1 } else { 0 };
 
                 // if we're in the name cell of the table, then we should return the table ref
                 if start == end
-                    && table.show_ui
                     && table.show_name
                     && start.x >= b.min.x
                     && start.x <= b.max.x
@@ -100,8 +91,7 @@ impl CellRefRange {
                 };
 
                 // only column headers
-                if table.show_ui
-                    && table.show_columns
+                if table.show_columns
                     && start.y == b.min.y + adjust_for_name
                     && end.y == b.min.y + adjust_for_name
                 {
@@ -306,7 +296,7 @@ mod tests {
 
         // Modify the table to hide UI elements
         if let Some(table) = context.table_mut("Table1") {
-            table.show_ui = false;
+            table.show_name = false;
             table.show_columns = false;
         }
 
@@ -334,7 +324,7 @@ mod tests {
 
         // Modify the table to hide only columns but keep UI
         if let Some(table) = context.table_mut("Table1") {
-            table.show_ui = true;
+            table.show_name = true;
             table.show_columns = false;
         }
 

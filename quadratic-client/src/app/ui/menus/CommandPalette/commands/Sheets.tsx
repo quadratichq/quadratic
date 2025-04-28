@@ -50,9 +50,7 @@ const ListItems = () => {
               <CommandPaletteListItem
                 {...props}
                 action={() => {
-                  if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
-                    quadraticCore.deleteSheet(currentSheet, sheets.getCursorPosition());
-                  }
+                  quadraticCore.deleteSheet(currentSheet, sheets.getCursorPosition());
                   setTimeout(focusGrid);
                 }}
                 icon={<SheetIcon />}
