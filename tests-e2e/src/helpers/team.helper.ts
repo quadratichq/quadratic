@@ -43,7 +43,8 @@ export const createNewTeam = async (
   ).toBeVisible();
 
   // Return the URL for the team to verify it's visible
-  await page.waitForTimeout(3000);
+  await page.waitForLoadState("domcontentloaded");
+
   const teamUrl = page.url().split("/teams/")[1];
   return { teamUrl };
 };

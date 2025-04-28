@@ -42,6 +42,13 @@ test("AI Message Counter", async ({ page }) => {
   // Log into Quadratic
   await logIn(page, { emailPrefix });
 
+  // Create new team
+  const teamName = `AI Counter - ${Date.now()}`;
+  await createNewTeam(page, { teamName });
+
+  // Upgrade to Pro plan
+  await upgradeToProPlan(page, {});
+
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
 
@@ -349,7 +356,7 @@ test("Add user to a Team with existing Pro Plan", async ({ page }) => {
   const emailAddress = await logIn(page, {});
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
+  const teamName = `Add user to team - ${Date.now()}`;
   await createNewTeam(page, { teamName });
 
   // Upgrade to Pro plan
@@ -835,7 +842,7 @@ test("Upgrade to the Pro Plan with an Invalid Card", async ({ page }) => {
   await logIn(page, {});
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
+  const teamName = `Invalid - ${Date.now()}`;
   await createNewTeam(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
@@ -936,6 +943,8 @@ test("Upgrade to the Pro Plan with an Invalid Card", async ({ page }) => {
 
   // Click 'Subscribe' button to upgrade the count to a Pro plan
   await page.locator(`[data-testid="hosted-payment-submit-button"]`).click();
+
+  await page.waitForLoadState("domcontentloaded");
 
   //--------------------------------
   // Assert:

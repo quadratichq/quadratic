@@ -282,7 +282,7 @@ export const upgradeToProPlan = async (
       page.getByRole(`button`, { name: `Manage billing` }),
     ).toBeVisible();
 
-    await page.goto(buildUrl(), { waitUntil: "domcontentloaded" });
+    await page.goto(buildUrl(), { waitUntil: "networkidle" });
   } catch (error) {
     console.log(
       `An error occurred while upgrading to the Pro plan: ${error.message}`,
@@ -311,7 +311,7 @@ export const inviteUserToTeam = async (
     await page.locator(`[role="option"] :text("${permission}")`).last().click();
   }
   await page.locator(`button:text("Invite")`).click();
-  await page.waitForTimeout(2000);
+  await page.waitForLoadState("networkidle");
   await expect(page.locator(`div.text-sm:has-text("${email}")`)).toBeVisible();
 };
 
@@ -402,6 +402,8 @@ export const deleteMemberFromProPlan = async (
 
       // Navigate to homepage
       await page.locator(`[data-testid="return-to-business-link"]`).click();
+
+      await page.waitForLoadState("domcontentloaded");
     }
   } catch (error) {
     console.log(
@@ -566,6 +568,8 @@ export const cancelProPlan = async (page: Page) => {
 
     // End cleanup by navigating to the homepage
     await page.locator(`[data-testid="return-to-business-link"]`).click();
+
+    await page.waitForLoadState("domcontentloaded");
   } catch (error) {
     console.log(
       `An error occurred while cancelling the Pro plan: ${error.message}`,
