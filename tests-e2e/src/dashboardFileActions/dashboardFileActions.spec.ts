@@ -793,7 +793,7 @@ test("Share File - Dashboard", async ({ page: user1Page, context }) => {
   await cleanUpFiles(user1Page, { fileName, skipFilterClear: false });
 });
 
-test.only("Upload Large File", async ({ page }) => {
+test("Upload Large File", async ({ page }) => {
   //--------------------------------
   // Upload Large File
   //--------------------------------
