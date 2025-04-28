@@ -86,24 +86,29 @@ export const AIToolsArgsSchema = {
     chat_name: z.string(),
   }),
   [AITool.AddDataTable]: z.object({
+    sheetId: z.string(),
     top_left_position: z.string(),
     table_name: z.string(),
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
+    sheetId: z.string(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
+    sheetId: z.string(),
     top_left_position: z.string(),
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
+    sheetId: z.string(),
     source_selection_rect: z.string(),
     target_top_left_position: z.string(),
   }),
   [AITool.DeleteCells]: z.object({
+    sheetId: z.string(),
     selection: z.string(),
   }),
   [AITool.UpdateCodeCell]: z.object({
