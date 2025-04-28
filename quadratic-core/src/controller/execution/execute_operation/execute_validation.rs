@@ -18,7 +18,7 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
             validations = sheet
                 .validations
-                .in_rect((*sheet_rect).into(), &self.a1_context())
+                .in_rect((*sheet_rect).into(), self.a1_context())
                 .iter()
                 .map(|v| (*v).clone())
                 .collect();

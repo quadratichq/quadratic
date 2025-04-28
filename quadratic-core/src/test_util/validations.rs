@@ -46,10 +46,8 @@ pub fn assert_validation_warning(
             Some(*validation_id),
             "Wrong validation warning, the validation_ids do not match",
         );
-    } else {
-        if expected_validation_id.is_some() {
-            panic!("Expected validation warning, but received none");
-        }
+    } else if expected_validation_id.is_some() {
+        panic!("Expected validation warning, but received none");
     }
 }
 

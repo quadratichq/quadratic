@@ -394,7 +394,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
 
         // ensure the checkbox is rendered
-        let cells = sheet.get_render_cells(Rect::test_a1("c4"), &gc.a1_context());
+        let cells = sheet.get_render_cells(Rect::test_a1("c4"), gc.a1_context());
         assert_eq!(cells[0].special, Some(JsRenderCellSpecial::Checkbox));
 
         // there should be no warning since the contents is empty in the table

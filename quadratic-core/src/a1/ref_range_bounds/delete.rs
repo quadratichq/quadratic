@@ -6,16 +6,14 @@ impl RefRangeBounds {
     fn delete_ref_range_bounds(&self, range: &RefRangeBounds) -> Vec<CellRefRange> {
         // if there is no intersection, return the original range
         if self.intersection(range).is_none() {
-            return vec![CellRefRange::Sheet {
-                range: self.clone(),
-            }];
+            return vec![CellRefRange::Sheet { range: *self }];
         }
 
         // find any parts that need removing
         let exclude = range.to_rect_unbounded();
 
         // we need a copy since we mutate it to normalize it
-        A1Selection::find_excluded_rects(self.clone(), exclude)
+        A1Selection::find_excluded_rects(*self, exclude)
     }
 
     /// Deletes the given range from the current range. Returns the remaining
@@ -29,9 +27,7 @@ impl RefRangeBounds {
                 {
                     self.delete_ref_range_bounds(&bounds)
                 } else {
-                    vec![CellRefRange::Sheet {
-                        range: self.clone(),
-                    }]
+                    vec![CellRefRange::Sheet { range: *self }]
                 }
             }
         }

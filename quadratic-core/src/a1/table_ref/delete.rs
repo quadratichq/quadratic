@@ -74,7 +74,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
 
-        let selection = A1Selection::test_a1_context("test_table", &gc.a1_context());
+        let selection = A1Selection::test_a1_context("test_table", gc.a1_context());
         let CellRefRange::Table { range: table_range } = &selection.ranges[0] else {
             panic!("Expected a table ref");
         };
@@ -88,7 +88,7 @@ mod tests {
 
         let remove_all = A1Selection::test_a1("*");
 
-        let result = table_range.delete(&remove_all.ranges[0], &gc.a1_context());
+        let result = table_range.delete(&remove_all.ranges[0], gc.a1_context());
         assert_eq!(result.len(), 0);
     }
 
@@ -98,7 +98,7 @@ mod tests {
 
         let remove_all = A1Selection::test_a1("A1:E10");
 
-        let result = table_range.delete(&remove_all.ranges[0], &gc.a1_context());
+        let result = table_range.delete(&remove_all.ranges[0], gc.a1_context());
         assert_eq!(result.len(), 0);
     }
 
@@ -107,7 +107,7 @@ mod tests {
         let (gc, table_range) = setup_3x3_test_table_at_b2();
         let remove_first_column = A1Selection::test_a1("B1:B6");
 
-        let result = table_range.delete(&remove_first_column.ranges[0], &gc.a1_context());
+        let result = table_range.delete(&remove_first_column.ranges[0], gc.a1_context());
         assert_eq!(result.len(), 1);
         let CellRefRange::Table { range: table_range } = &result[0] else {
             panic!("Expected a table ref");
@@ -129,7 +129,7 @@ mod tests {
         let (gc, table_range) = setup_3x3_test_table_at_b2();
         let remove_second_column = A1Selection::test_a1("C1:C6");
 
-        let result = table_range.delete(&remove_second_column.ranges[0], &gc.a1_context());
+        let result = table_range.delete(&remove_second_column.ranges[0], gc.a1_context());
         assert_eq!(result.len(), 2);
         assert_eq!(
             result[0],
@@ -162,7 +162,7 @@ mod tests {
         let (gc, table_range) = setup_3x3_test_table_at_b2();
         let remove_first_row = A1Selection::test_a1("B4:D4");
 
-        let result = table_range.delete(&remove_first_row.ranges[0], &gc.a1_context());
+        let result = table_range.delete(&remove_first_row.ranges[0], gc.a1_context());
         assert_eq!(result.len(), 1);
         assert_eq!(
             result[0],
@@ -176,9 +176,9 @@ mod tests {
     fn test_delete_table_column_from_selection() {
         let (gc, table_range) = setup_3x3_test_table_at_b2();
         let remove_first_column =
-            A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context());
+            A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
 
-        let result = table_range.delete(&remove_first_column.ranges[0], &gc.a1_context());
+        let result = table_range.delete(&remove_first_column.ranges[0], gc.a1_context());
         assert_eq!(result.len(), 1);
         let CellRefRange::Table { range: table_range } = &result[0] else {
             panic!("Expected a table ref");

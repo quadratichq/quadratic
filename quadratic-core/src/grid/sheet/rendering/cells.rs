@@ -290,8 +290,8 @@ impl Sheet {
 mod tests {
     use uuid::Uuid;
 
-    use crate::grid::sheet::validations::validation::Validation;
     use crate::grid::sheet::validations::rules::ValidationRule;
+    use crate::grid::sheet::validations::validation::Validation;
     use crate::test_util::*;
     use crate::{
         SheetPos, Value,
@@ -629,7 +629,7 @@ mod tests {
         gc.update_validation(
             Validation {
                 id: Uuid::new_v4(),
-                selection: A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context()),
+                selection: A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
@@ -638,7 +638,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let code_cell = sheet.get_render_cells(Rect::test_a1("b2:b7"), &gc.a1_context());
+        let code_cell = sheet.get_render_cells(Rect::test_a1("b2:b7"), gc.a1_context());
         dbg!(&code_cell);
     }
 }
