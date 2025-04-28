@@ -125,7 +125,7 @@ impl GridController {
         );
 
         let old_data_table = if let Some(new_data_table) = &new_data_table {
-            let index = index.min(sheet.data_tables.len() - 1);
+            let index = index.min(sheet.data_tables.len());
             sheet
                 .data_tables
                 .insert_before(index, pos, new_data_table.to_owned())
