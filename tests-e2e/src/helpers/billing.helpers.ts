@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { SWIPE_TEST_CARD } from "../constant/billing";
+import { buildUrl } from "./buildUrl.helpers";
 
 /**
  * Cleans up the provided payment method by:
@@ -280,9 +281,294 @@ export const upgradeToProPlan = async (
     await expect(
       page.getByRole(`button`, { name: `Manage billing` }),
     ).toBeVisible();
+
+    await page.goto(buildUrl(), { waitUntil: "domcontentloaded" });
   } catch (error) {
     console.log(
       `An error occurred while upgrading to the Pro plan: ${error.message}`,
+    );
+  }
+};
+
+type InviteUserToTeamOptions = {
+  email: string;
+  permission: string;
+};
+
+export const inviteUserToTeam = async (
+  page: Page,
+  { email, permission }: InviteUserToTeamOptions,
+) => {
+  // Navigate to Members page
+  await page.locator(`nav :text-is("Members")`).click();
+  await page.locator(`[aria-label="Email"]`).fill(email);
+  const currentPermission = await page
+    .locator(`button[role="combobox"]`)
+    .first()
+    .textContent();
+  if (currentPermission !== permission) {
+    await page.locator(`button[role="combobox"]`).first().click();
+    await page.locator(`[role="option"] :text("${permission}")`).last().click();
+  }
+  await page.locator(`button:text("Invite")`).click();
+  await page.waitForTimeout(2000);
+  await expect(page.locator(`div.text-sm:has-text("${email}")`)).toBeVisible();
+};
+
+/**
+ * Starts at the Quadratic homepage.
+ * Removes a team member from the Pro Plan and verifies billing and member count details.
+ *
+ * @param {object} page - The Page object representing the browser page.
+ * @param {string} emailAddress - The account email for billing verification.
+ * @param {string} additionalUserEmail - The email of the member to remove.
+ */
+
+type DeleteMemberFromProPlanOptions = {
+  emailAddress: string;
+  additionalUserEmail: string;
+};
+
+export const deleteMemberFromProPlan = async (
+  page: Page,
+  { emailAddress, additionalUserEmail }: DeleteMemberFromProPlanOptions,
+) => {
+  try {
+    // Navigate to the Team Members page by clicking 'Members'
+    await page.getByRole(`link`, { name: `group Members` }).click();
+
+    // Assert that we've navigated to the team management page
+    await expect(
+      page.getByRole(`heading`, { name: `Team members` }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/members/);
+
+    // Only execute cleanup if the additional user's email is on the team members page
+    const isVisible = await page
+      .getByText(additionalUserEmail)
+      .first()
+      .isVisible();
+    if (isVisible) {
+      // Click 'Can Edit' to open the dropdown menu
+      await page.locator(`[role="combobox"]`).last().click();
+
+      // Select 'Remove' to delete this user from the team
+      await page
+        .getByRole(`option`, { name: `Remove` })
+        .locator(`span`)
+        .first()
+        .click();
+
+      await page
+        .locator('[role="alertdialog"] button:has-text("Remove")')
+        .click();
+
+      // Assert that the team member that was added earlier in the WF is now removed
+      await expect(
+        page.getByText(additionalUserEmail).first(),
+      ).not.toBeVisible();
+
+      // Navigate back to Settings page
+      await page.getByRole(`link`, { name: `settings Settings` }).click();
+
+      // Locate the text element that starts with 'Team members (manage)' followed by a number
+      // Store the text content (e.g., 'Team members (manage)1'
+      const afterCleanupMemberCountText = await page
+        .locator("text=/^Team members \\(manage\\)\\d+$/")
+        .textContent();
+      const afterCleanupMemberCount = Number(
+        afterCleanupMemberCountText?.match(/\d+/)?.[0],
+      );
+
+      // Assert that the team member count should be back to 1
+      expect(afterCleanupMemberCount).toBe(1);
+
+      // Navigate to billing management page
+      await page.getByRole(`button`, { name: `Manage billing` }).click();
+
+      // Assert the account email address is displayed on the billing page
+      await expect(page.getByText(emailAddress)).toBeVisible();
+
+      // Assert that the 'Cancel Subscription' button appears
+      await expect(
+        page.locator(`[data-test="cancel-subscription"]`),
+      ).toBeVisible();
+
+      // Assert that the page reflects the base Pro plan cost
+      await expect(page.getByText(`$20.00 per month`)).toBeVisible();
+
+      // Assert that the page does not include the Pro plan cost + 1 extra member
+      await expect(page.getByText(`$40.00 per month`)).not.toBeVisible();
+
+      // Navigate to homepage
+      await page.locator(`[data-testid="return-to-business-link"]`).click();
+    }
+  } catch (error) {
+    console.log(
+      `There was an error when deleting the team member from the Pro Plan: ${error.message}`,
+    );
+  }
+};
+
+/**
+ * Starts at the 'Billing Management' page and resets the billing information to default values by:
+ * - Navigating to the billing information section.
+ * - Filling the fields with default values (e.g., 'My Team' for Name, 'N/A' for Address).
+ * - Saving the changes.
+ *
+ * @param {object} page - The Page object representing the browser page.
+ */
+
+type ResetBillingInformationOptions = {};
+
+export const resetBillingInformation = async (
+  page: Page,
+  options: ResetBillingInformationOptions,
+) => {
+  try {
+    // Click 'Update information' to update the billing info
+    await page.getByRole(`button`, { name: `Update information` }).click();
+
+    // Assert that the page displays 'Billing Information'
+    await expect(
+      page.locator(`form`).getByText(`Billing information`),
+    ).toBeVisible();
+
+    // Assert that 'Name', 'Email', 'Address' and 'Phone Number' fields are available to update
+    await expect(
+      page
+        .locator(`div`)
+        .filter({ hasText: /^Name$/ })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator(`div`)
+        .filter({ hasText: /^Email$/ })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      page.locator(`div`).filter({ hasText: /^Address$/ }),
+    ).toBeVisible();
+    await expect(
+      page.locator(`div`).filter({ hasText: /^Phone number$/ }),
+    ).toBeVisible();
+
+    // Assert that there are options to 'Save' or 'Cancel' any changes
+    await expect(page.locator(`[data-testid="confirm"]`)).toBeVisible();
+    await expect(page.locator(`[data-test="cancel"]`)).toBeVisible();
+
+    // Fill 'Name' textbox with the default name: 'My Team'
+    await page.getByRole(`textbox`, { name: `Name` }).fill("My Team");
+
+    // Update the remaining billing information (address, city, state, zip)
+    await page.getByRole(`textbox`, { name: `Address line 1` }).fill(`N/A`);
+    await page.getByRole(`textbox`, { name: `Address line 2` }).fill(``);
+    await page.getByRole(`textbox`, { name: `City` }).fill(`N/A`);
+    await page.getByLabel(`State`).click();
+    await page.getByLabel(`State`).type(`Alabama`);
+    await page.getByLabel(`State`).press("Enter");
+    await page.getByRole(`textbox`, { name: `ZIP` }).fill(`95014`);
+
+    // Click 'Save' button to confirm the changes
+    await page.locator(`[data-testid="confirm"]`).click();
+
+    // Assert that the name is back to the original 'My Team'
+    await expect(page.getByText(`NameMy Team`)).toBeVisible();
+
+    // Assert that the billing address is just placeholder text
+    await expect(page.getByText(`N/A`, { exact: true })).toBeVisible();
+    await expect(page.getByText(`N/A, AL 95014 US`)).toBeVisible();
+  } catch (error) {
+    console.log(
+      `There was an error cleaning up the billing information: ${error.message}.`,
+    );
+  }
+};
+
+/**
+ * Starts at the Quadratic 'Team settings' page
+ * Cancels a user's Pro subscription and performs various assertions throughout the process.
+ * This function simulates the steps for cancelling an active Pro plan subscription, including:
+ *
+ * 1. Verifying the user's current page is the 'Settings' page.
+ * 2. Navigating to the 'Billing' management page and ensuring key sections are visible (current subscription, payment methods, etc.).
+ * 3. Clicking the 'Cancel subscription' button to initiate cancellation.
+ * 4. Verifying that the cancellation confirmation page appears.
+ * 5. Confirming that the subscription cancellation is completed and displayed correctly in the dialog.
+ * 6. Ensuring that the 'Renew Subscription' button appears, confirming the cancellation.
+ * 7. Validating that the cancellation date is displayed.
+ * 8. Returning to the homepage to complete the process.
+ */
+export const cancelProPlan = async (page: Page) => {
+  try {
+    // Assert page is currently displaying Settings
+    await expect(page).toHaveURL(/settings/);
+    await expect(page).toHaveTitle(/settings/);
+    await expect(
+      page.getByRole(`heading`, { name: `Team settings` }),
+    ).toBeVisible();
+
+    // Click 'Manage billing' to reach the billing management page
+    await page.getByRole(`button`, { name: `Manage billing` }).click();
+
+    // Assert that the current page is the billing management page
+    // Check for information that includes: current subscription, payment methods, billing info and invoice history
+    await expect(page).toHaveTitle(/Billing/);
+    await expect(page.getByText(`Current subscription`)).toBeVisible();
+    await expect(
+      page.getByText(/Payment method[s]?/, { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText(`Billing information`)).toBeVisible();
+    await expect(page.getByText(`Invoice history`)).toBeVisible();
+
+    // Click 'Cancel subscription' button
+    await page.locator(`[data-test="cancel-subscription"]`).click();
+
+    // Assert that the page to confirm the cancellation appears
+    await expect(page).toHaveTitle(/Cancel subscription/);
+    await expect(page.getByText(`Cancel your subscription`)).toBeVisible();
+
+    // Store the text content of the main page container and remove the extra spaces
+    const cancelSubscriptionRawText = await page
+      .locator('[data-testid="page-container-main"]')
+      .textContent();
+    const cancelSubscriptionText = cancelSubscriptionRawText
+      ?.replace(/\s+/g, " ")
+      ?.trim();
+
+    // Assert that the normalized text contains the expected phrase
+    expect(cancelSubscriptionText).toContain("subscription will be canceled");
+
+    // Click 'Cancel subscription" to confirm the cancellation
+    await page.locator(`[data-testid="confirm"]`).click();
+
+    // Wait for the cancellation confirmation dialog to appear
+    await page.getByRole(`dialog`).waitFor();
+
+    // Assert that the dialog contains the text "Subscription has been cancelled" to confirm cancellation
+    await expect(page.locator(`[role="dialog"] span`).nth(1)).toHaveText(
+      `Subscription has been canceled`,
+    );
+
+    // Click 'No thanks' to exit the dialog
+    await page.locator(`[data-testid="cancellation_reason_cancel"]`).click();
+
+    // Assert that the subscription has been cancelled by checking for 'Renew Subscription' button to appear
+    await expect(
+      page.locator(`[data-test="renew-subscription"]`),
+    ).toBeVisible();
+
+    // Assert that the cancellation date is visible
+    await expect(
+      page.locator(`[data-test="subscription-cancel-at-period-end-badge"]`),
+    ).toBeVisible();
+
+    // End cleanup by navigating to the homepage
+    await page.locator(`[data-testid="return-to-business-link"]`).click();
+  } catch (error) {
+    console.log(
+      `An error occurred while cancelling the Pro plan: ${error.message}`,
     );
   }
 };

@@ -1,7 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { DUMMY_USER_EMAIL } from "../constant/auth";
 import { logIn } from "../helpers/auth.helpers";
 import {
+  cancelProPlan,
   cleanupPaymentMethod,
+  deleteMemberFromProPlan,
+  inviteUserToTeam,
+  resetBillingInformation,
   upgradeToProPlan,
 } from "../helpers/billing.helpers";
 import {
@@ -333,4 +338,640 @@ test("Manage Billing - Add Payment Method", async ({ page }) => {
 
   // **Cleanup** Remove the newly added payment method from this account
   await cleanupPaymentMethod(page, { paymentMethod });
+});
+
+test("Add user to a Team with existing Pro Plan", async ({ page }) => {
+  //--------------------------------
+  // Add user to a Team with existing Pro Plan
+  //--------------------------------
+
+  // Log into Quadratic
+  const emailAddress = await logIn(page, {});
+
+  // Create new team
+  const teamName = `Team - ${Date.now()}`;
+  await createNewTeam(page, { teamName });
+
+  // Upgrade to Pro plan
+  await upgradeToProPlan(page, {});
+
+  // Cleanup the team member's email if it exists
+  await deleteMemberFromProPlan(page, {
+    emailAddress,
+    additionalUserEmail: DUMMY_USER_EMAIL,
+  });
+
+  // Navigate to the Settings page by clicking the 'Settings' link
+  await page.getByRole("link", { name: "settings Settings" }).click();
+
+  // Assert page is currently displaying Settings
+  await expect(page).toHaveURL(/settings/);
+  await expect(page).toHaveTitle(/settings/);
+  await expect(
+    page.getByRole(`heading`, { name: `Team settings` }),
+  ).toBeVisible();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Locate and store the parent div containing 'Pro plan' details
+  const proPlanParentEl = page
+    .locator(`:text("Pro plan")`)
+    .locator("..")
+    .locator("..");
+
+  // Extract the cost from the parent div of 'Pro plan' (the number between `$` and `/user/month`)
+  const proPlanCostText = await proPlanParentEl.textContent();
+  const proPlanCost = Number(
+    proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1],
+  );
+
+  // Assert that the Pro plan cost is $20 per user per month
+  expect(proPlanCost).toBe(20);
+
+  // Locate the text element that starts with 'Team members (manage)' followed by a number
+  // Store the text content (e.g., 'Team members (manage)1'
+  await page.getByText(`Team members (manage)`).waitFor();
+  const memberCountText = await page
+    .locator("text=/^Team members \\(manage\\)\\d+$/")
+    .textContent();
+  const memberCount = Number(memberCountText?.match(/\d+/)?.[0]);
+
+  // Assert that there is currently 1 team member
+  expect(memberCount).toBe(1);
+
+  // Click 'manage' link to manage team members
+  await page.getByRole(`link`, { name: `manage` }).click();
+
+  // Assert that we've navigated to the team management page
+  await expect(
+    page.getByRole(`heading`, { name: `Team members` }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/members/);
+
+  // Invite the new user to the team with 'Can Edit' permission
+  await inviteUserToTeam(page, {
+    email: DUMMY_USER_EMAIL,
+    permission: "Can Edit",
+  });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that invited user is added as a team member
+  await expect(page.getByText(DUMMY_USER_EMAIL).first()).toBeVisible();
+
+  // Navigate to 'Settings' to check team member count again
+  await page.getByRole(`link`, { name: `settings Settings` }).click();
+
+  // Locate the text element that starts with 'Team members (manage)' followed by a number
+  // Store the text content (e.g., 'Team members (manage)1'
+  const newMemberCountText = await page
+    .locator("text=/^Team members \\(manage\\)\\d+$/")
+    .textContent();
+  const newMemberCount = Number(newMemberCountText?.match(/\d+/)?.[0]);
+
+  // Assert that the team member count increased to 2
+  expect(newMemberCount).toBe(2);
+
+  // Navigate to the billing management page
+  await page.getByRole(`button`, { name: `Manage billing` }).click();
+
+  // Assert that the current page is the billing management page
+  await expect(page).toHaveTitle(/Billing/);
+
+  // Assert a couple of key elements that confirm we're on the correct page
+  await expect(page.getByText(`Current subscription`)).toBeVisible();
+  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible();
+
+  // Assert the account email address is displayed on the billing page
+  await expect(page.getByText(emailAddress)).toBeVisible();
+
+  // Assert that the 'Cancel Subscription' button appears
+  await expect(page.locator(`[data-test="cancel-subscription"]`)).toBeVisible();
+
+  // Assert that the page reflects the increased cost due to new members
+  await expect(
+    page.getByText(`$${newMemberCount * proPlanCost}.00 per month`),
+  ).toBeVisible();
+
+  // Expand and check the first accordion element for invoice details
+  await page.locator(`[data-test="show-cost-details"]`).first().click();
+  const invoiceTotalText = await page
+    .locator('[data-testid="expanded-invoice-details"] span[data-test="value"]')
+    .first()
+    .innerText();
+
+  // Extract and assert the invoice total cost (to equal the number of members * pro plan cost)
+  const invoiceTotal = invoiceTotalText.split(".")[0].replace(/[^0-9]/g, "");
+  expect(Number(invoiceTotal)).toBe(newMemberCount * proPlanCost);
+
+  // Close the first accordion
+  await page.locator(`[data-test="hide-cost-details"]`).click();
+
+  // Wait for the accordion to close before interacting with the second one
+  await page.waitForTimeout(500);
+
+  // Expand and check the second accordion for invoice details
+  await page.locator(`[data-test="show-cost-details"]`).last().click();
+  const secondInvoiceText = await page
+    .locator(`[data-testid="expanded-invoice-details"]`)
+    .last()
+    .innerText();
+
+  // Check if the text includes a prorated charge for team
+  expect(secondInvoiceText).toContain(
+    `Prorated charge for Team\nQty 1 → ${newMemberCount}`,
+  );
+
+  // Assert that the second accordion contains "Qty 2" for the two team members
+  expect(secondInvoiceText).toContain(`Qty ${newMemberCount}`);
+
+  // Close the second accordion
+  await page.locator(`[data-test="hide-cost-details"]`).click();
+
+  // **Cleanup**
+  // Remove the team member from the team and check monthly cost is back to $20
+  // Navigate to Quadratic home page (files page)
+  await page.locator(`[data-testid="return-to-business-link"]`).click();
+
+  // Remove the team member from the team
+  await deleteMemberFromProPlan(page, {
+    emailAddress,
+    additionalUserEmail: DUMMY_USER_EMAIL,
+  });
+});
+
+test("Manage Billing - Cancel Subscription", async ({ page }) => {
+  //--------------------------------
+  // Manage Billing - Cancel Subscription
+  //--------------------------------
+
+  // Log into Quadratic
+  const emailAddress = await logIn(page, {});
+
+  // Create new team
+  const teamName = `Team - ${Date.now()}`;
+  await createNewTeam(page, { teamName });
+
+  // Upgrade to Pro plan
+  await upgradeToProPlan(page, {});
+
+  // Navigate to the Settings page by clicking the 'Settings' link
+  await page.getByRole("link", { name: "settings Settings" }).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Assert page is currently displaying Settings
+  await expect(page).toHaveURL(/settings/);
+  await expect(page).toHaveTitle(/settings/);
+  await expect(
+    page.getByRole(`heading`, { name: `Team settings` }),
+  ).toBeVisible();
+
+  // Click 'Manage billing' to reach the billing management page
+  await page.getByRole(`button`, { name: `Manage billing` }).click();
+
+  // Assert that the current page is the billing management page
+  await expect(page).toHaveTitle(/Billing/);
+
+  // Assert a couple of key elements that confirm we're on the correct page
+  await expect(page.getByText(`Current subscription`)).toBeVisible();
+  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible();
+
+  // Assert that the billing management page includes the account email address
+  await expect(page.getByText(emailAddress)).toBeVisible();
+
+  // Click 'Cancel subscription' button
+  await page.locator(`[data-test="cancel-subscription"]`).click();
+
+  // Assert that the page to confirm the cancellation appears
+  await expect(page).toHaveTitle(/Cancel subscription/);
+  await expect(page.getByText(`Cancel your subscription`)).toBeVisible();
+
+  // Store the text content of the main page container and remove the extra spaces
+  const cancelSubscriptionRawText = await page
+    .locator('[data-testid="page-container-main"]')
+    .textContent();
+  const cancelSubscriptionText = cancelSubscriptionRawText
+    ?.replace(/\s+/g, " ")
+    ?.trim();
+
+  // Assert that the normalized text contains the expected phrase (indicating cancellation of plan)
+  expect(cancelSubscriptionText).toContain("subscription will be canceled");
+
+  // Click 'Cancel subscription" to confirm the cancellation
+  await page.locator(`[data-testid="confirm"]`).click();
+
+  // Wait for the cancellation confirmation dialog to appear
+  await page.getByRole(`dialog`).waitFor();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the cancellation dialog contains confirmation message
+  await expect(page.locator('[role="dialog"] span').nth(1)).toHaveText(
+    "Subscription has been canceled",
+  );
+});
+
+test("Manage Billing - Update Billing Information", async ({ page }) => {
+  //--------------------------------
+  // Manage Billing - Update Billing Information
+  //--------------------------------
+
+  // Store billing information to update to
+  const billingInfo = {
+    name: "My Updated Billing Name",
+    address1: "1234 Elm Street",
+    address2: "Apt 567",
+    city: "Springfield",
+    state: "Illinois",
+    stateAbbr: "IL",
+    zip: "62701",
+    // Need valid phone number in order to update phone #
+  };
+
+  // Log into Quadratic
+  const emailAddress = await logIn(page, {});
+
+  // Create new team
+  const teamName = `Team - ${Date.now()}`;
+  await createNewTeam(page, { teamName });
+
+  // Upgrade to Pro plan
+  await upgradeToProPlan(page, {});
+
+  // Navigate to the Settings page by clicking the 'Settings' link
+  await page.getByRole("link", { name: "settings Settings" }).click();
+
+  // Assert page is currently displaying Settings
+  await expect(page).toHaveURL(/settings/);
+  await expect(page).toHaveTitle(/settings/);
+  await expect(
+    page.getByRole(`heading`, { name: `Team settings` }),
+  ).toBeVisible();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Locate the parent divs that contains 'Pro plan' and 'Free plan' details
+  const proPlanParentEl = page
+    .locator(`:text("Pro plan")`)
+    .locator("..")
+    .locator("..");
+  const freePlanParentEl = page.locator(`:text("Free plan")`).locator("..");
+
+  // Assert that the 'Free plan' is not accompanied by the 'Current plan' flag
+  // freePlanParentEl is declared 'Arrange' step
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible();
+  await expect(
+    freePlanParentEl.locator(`:text("Current plan")`),
+  ).not.toBeVisible();
+
+  // Assert that the 'Pro plan' container includes the 'Current plan' flag
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible();
+  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible();
+
+  // Assert that the 'Upgrade to Pro' button is no longer visible
+  await expect(
+    page.getByRole(`button`, { name: `Upgrade to Pro` }),
+  ).not.toBeVisible();
+
+  // Click 'Manage billing' to reach the billing management page
+  await page.getByRole(`button`, { name: `Manage billing` }).click();
+
+  // Assert that the current page is the billing management page
+  await expect(page).toHaveTitle(/Billing/);
+
+  // Assert a couple of key elements that confirm we're on the correct page
+  await expect(page.getByText(`Current subscription`)).toBeVisible();
+  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible();
+
+  // Assert the account email address is displayed on the billing page
+  await expect(page.getByText(emailAddress)).toBeVisible();
+
+  // Click 'Update Information' under 'Billing Information'
+  await page.getByRole(`button`, { name: `Update information` }).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the page displays 'Billing Information'
+  await expect(
+    page.locator(`form`).getByText(`Billing information`),
+  ).toBeVisible();
+
+  // Assert that 'Name', 'Email', 'Address' and 'Phone Number' fields are available to update
+  await expect(
+    page
+      .locator(`div`)
+      .filter({ hasText: /^Name$/ })
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(`div`)
+      .filter({ hasText: /^Email$/ })
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page.locator(`div`).filter({ hasText: /^Address$/ }),
+  ).toBeVisible();
+  await expect(
+    page.locator(`div`).filter({ hasText: /^Phone number$/ }),
+  ).toBeVisible();
+
+  // Assert that there are options to 'Save' or 'Cancel' any changes
+  await expect(page.locator(`[data-testid="confirm"]`)).toBeVisible();
+  await expect(page.locator(`[data-test="cancel"]`)).toBeVisible();
+
+  // Fill 'Name' textbox with an updated name: 'My Updated Billing Name'
+  await page.getByRole(`textbox`, { name: `Name` }).fill(billingInfo.name);
+
+  // Update the remaining billing information (address, city, state, zip)
+  await page
+    .getByRole(`textbox`, { name: `Address line 1` })
+    .fill(billingInfo.address1);
+  await page
+    .getByRole(`textbox`, { name: `Address line 2` })
+    .fill(billingInfo.address2);
+  await page.getByRole(`textbox`, { name: `City` }).fill(billingInfo.city);
+  await page.getByLabel(`State`).click();
+  await page.getByLabel(`State`).type(billingInfo.state);
+  await page.getByLabel(`State`).press("Enter");
+  await page.getByRole(`textbox`, { name: `ZIP` }).fill(billingInfo.zip);
+
+  // Click 'Save' button to confirm the changes
+  await page.locator(`[data-testid="confirm"]`).click();
+
+  // Assert that the new name is the updated name
+  await expect(page.getByText(`Name${billingInfo.name}`)).toBeVisible();
+
+  // Assert that the billing address is the updated address
+  await expect(page.getByText(billingInfo.address1)).toBeVisible();
+  await expect(page.getByText(billingInfo.address2)).toBeVisible();
+  await expect(
+    page.getByText(
+      `${billingInfo.city}, ${billingInfo.stateAbbr} ${billingInfo.zip} US`,
+    ),
+  ).toBeVisible();
+
+  // **Cleanup** Reset billing information from 'Billing management' page
+  await resetBillingInformation(page, {});
+});
+
+test("Upgrade to the Pro Plan", async ({ page }) => {
+  //--------------------------------
+  // Upgrade to the Pro Plan
+  //--------------------------------
+
+  // Log into Quadratic
+  await logIn(page, {});
+
+  // Create new team
+  const teamName = `Team - ${Date.now()}`;
+  await createNewTeam(page, { teamName });
+
+  // Navigate to the Settings page by clicking the 'Settings' link
+  await page.getByRole("link", { name: "settings Settings" }).click();
+
+  // Assert page is currently displaying Settings
+  await expect(page).toHaveURL(/settings/);
+  await expect(page).toHaveTitle(/settings/);
+  await expect(
+    page.getByRole(`heading`, { name: `Team settings` }),
+  ).toBeVisible();
+
+  // Locate the parent div that contains 'Free plan'
+  const freePlanParentEl = page.locator(`:text("Free plan")`).locator("..");
+
+  // Assert both 'Free plan' and 'Current plan' texts are within the same parent div
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible();
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible();
+
+  // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
+  await expect(
+    page.getByRole(`button`, { name: `Upgrade to Pro` }),
+  ).toBeVisible();
+
+  // Locate the parent div that contains 'Pro plan' details
+  const proPlanParentEl = page
+    .locator(`:text("Pro plan")`)
+    .locator("..")
+    .locator("..");
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Upgrade to Pro plan
+  await upgradeToProPlan(page, {});
+
+  // Navigate to the Settings page by clicking the 'Settings' link
+  await page.getByRole("link", { name: "settings Settings" }).click();
+
+  // Assert page is currently displaying Settings
+  await expect(page).toHaveURL(/settings/);
+  await expect(page).toHaveTitle(/settings/);
+  await expect(
+    page.getByRole(`heading`, { name: `Team settings` }),
+  ).toBeVisible();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the 'Free plan' is no longer accompanied by the 'Current plan' flag
+  // freePlanParentEl is declared in the 'Arrange' step
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible();
+  await expect(
+    freePlanParentEl.locator(`:text("Current plan")`),
+  ).not.toBeVisible();
+
+  // Assert that the 'Pro plan' container includes the 'Current plan' flag
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible();
+  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible();
+
+  // Assert that the 'Upgrade to Pro' button is no longer visible
+  await expect(
+    page.getByRole(`button`, { name: `Upgrade to Pro` }),
+  ).not.toBeVisible();
+
+  // Assert that the 'Manage billing' button is visible
+  // This indicates that the user has an active subscription to manage
+  await expect(
+    page.getByRole(`button`, { name: `Manage billing` }),
+  ).toBeVisible();
+
+  // **CLEANUP**
+  // Cancel the Pro plan subscription for this account
+  await cancelProPlan(page);
+});
+
+test.only("Upgrade to the Pro Plan with an Invalid Card", async ({ page }) => {
+  //--------------------------------
+  // Upgrade to the Pro Plan with an Invalid Card
+  //--------------------------------
+
+  // Dummy credit card credentials to be used in the checkout page
+  // Invalid card number is main error to be tested
+  const creditCard = {
+    name: "Inavalid card",
+    number: "0000 0000 0000 0000",
+    expiration: "03/30",
+    cvc: "424",
+    zipCode: "90210",
+  };
+
+  // Log into Quadratic
+  await logIn(page, {});
+
+  // Create new team
+  const teamName = `Team - ${Date.now()}`;
+  await createNewTeam(page, { teamName });
+
+  // Navigate to the Settings page by clicking the 'Settings' link
+  await page.getByRole("link", { name: "settings Settings" }).click();
+
+  // Assert page is currently displaying Settings
+  await expect(page).toHaveURL(/settings/);
+  await expect(page).toHaveTitle(/settings/);
+  await expect(
+    page.getByRole(`heading`, { name: `Team settings` }),
+  ).toBeVisible();
+
+  // Locate the parent div that contains 'Free plan'
+  const freePlanParentEl = page.locator(`:text("Free plan")`).locator("..");
+
+  // Assert both 'Free plan' and 'Current plan' texts are within the same parent div
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible();
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible();
+
+  // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
+  await expect(
+    page.getByRole(`button`, { name: `Upgrade to Pro` }),
+  ).toBeVisible();
+
+  // Locate the parent div that contains 'Pro plan' details
+  const proPlanParentEl = page
+    .locator(`:text("Pro plan")`)
+    .locator("..")
+    .locator("..");
+
+  // Assert that 'Current plan' is not within the 'Pro plan' div
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible();
+  await expect(
+    proPlanParentEl.locator(`:text("Current plan")`),
+  ).not.toBeVisible();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click 'Upgrade to Pro' to upgrade the account
+  await page.getByRole(`button`, { name: `Upgrade to Pro` }).click();
+
+  // Assert that page was redirected to a Stripe integrated payment page
+  await expect(
+    page.getByRole(`link`, { name: `Powered by Stripe` }),
+  ).toBeVisible();
+
+  // Assert that subscription page is for Team billing
+  await expect(page.locator(`[data-testid="product-summary-name"]`)).toHaveText(
+    `Subscribe to Team`,
+  );
+  await expect(
+    page.locator(`[data-testid="line-item-product-name"]`),
+  ).toHaveText(`Team`);
+
+  // Assert that the 'Total due today' text is visible, indicating that we're on a checkout page
+  await expect(page.getByText(`Total due today`)).toBeVisible();
+
+  // Assert that the bank account textbox is not visible
+  // This ensures that we will be filling in credit card details and not bank details (debit)
+  await expect(
+    page.getByRole(`textbox`, { name: `Bank account` }),
+  ).not.toBeVisible();
+
+  // Assert the border color of the card number input is as expected (dark gray) using toHaveCSS
+  await expect(
+    page.locator('[data-qa="FormFieldGroup-cardForm"] #cardNumber'),
+  ).toHaveCSS("border-color", "rgba(26, 26, 26, 0.9)");
+
+  // Fill the card number in the input for 'Card Information'
+  await page
+    .getByRole(`textbox`, { name: `Card number` })
+    .fill(creditCard.number);
+
+  // Fill the expiration date in the input for 'Expiration'
+  await page
+    .getByRole(`textbox`, { name: `Expiration` })
+    .fill(creditCard.expiration);
+
+  // Fill the 3-digit CVC number in the input for 'CVC'
+  await page.getByRole(`textbox`, { name: `CVC` }).fill(creditCard.cvc);
+
+  // Fill the cardholder's name in the input for 'Cardholder Name'
+  await page
+    .getByRole(`textbox`, { name: `Cardholder name` })
+    .fill(creditCard.name);
+
+  // Select United States
+  await page
+    .getByRole(`combobox`, {
+      name: `Country or region`,
+    })
+    .selectOption({ label: `United States` });
+
+  // Fill the zip code in the input for 'Zip Code'
+  await page.getByRole(`textbox`, { name: `ZIP` }).fill(creditCard.zipCode);
+
+  // Click 'Subscribe' button to upgrade the count to a Pro plan
+  await page.locator(`[data-testid="hosted-payment-submit-button"]`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that page was NOT redirected and we're still on the Stripe-integrated payment page
+  await expect(
+    page.getByRole(`link`, { name: `Powered by Stripe` }),
+  ).toBeVisible();
+
+  // Assert that the 'Total due today' text is visible, indicating that we're *still* on the checkout page
+  await expect(page.getByText(`Total due today`)).toBeVisible();
+
+  // Ensure that the textbox with the card number is visible
+  await page
+    .locator('[data-qa="FormFieldGroup-cardForm"] #cardNumber')
+    .scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+
+  // Assert that the border color of the card number input is NOT the color it was before invalid credentials were submitted
+  await expect(
+    page.locator('[data-qa="FormFieldGroup-cardForm"] #cardNumber'),
+  ).not.toHaveCSS("border-color", "rgba(26, 26, 26, 0.9)");
+
+  // Assert that the textbox border color is now the expected red color
+  await expect(
+    page.locator('[data-qa="FormFieldGroup-cardForm"] #cardNumber'),
+  ).toHaveCSS("border-color", "rgb(220, 39, 39)");
+
+  // Assert that the invalid card number is still in the 'Card Information' textbox
+  await expect(page.getByRole(`textbox`, { name: `Card number` })).toHaveValue(
+    creditCard.number,
+  );
+
+  // Assert that an error message indicating an issue with the card number is visible
+  await expect(
+    page.locator(`[data-qa="FormFieldGroup-cardForm"] [role="alert"]`),
+  ).toHaveText(`Your card number is incorrect.`);
 });
