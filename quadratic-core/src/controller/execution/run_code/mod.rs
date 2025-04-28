@@ -129,6 +129,7 @@ impl GridController {
             sheet
                 .data_tables
                 .insert_before(index, pos, new_data_table.to_owned())
+                .1
         } else {
             sheet.data_tables.shift_remove(&pos)
         };
