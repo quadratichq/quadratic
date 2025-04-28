@@ -52,7 +52,7 @@ mod tests {
         sheet.test_set_chart(pos![B5], 3, 3);
 
         // normal data tables should be ignored
-        sheet.test_set_data_table(pos![A20], 6, 6, false, false);
+        sheet.test_set_data_table(pos![A20], 6, 6, false, Some(false), Some(false));
 
         assert_eq!(sheet.charts_in_column(1).len(), 1);
         assert_eq!(sheet.charts_in_column(2).len(), 2);
@@ -68,7 +68,7 @@ mod tests {
         sheet.test_set_chart(pos![E2], 3, 3);
 
         // normal data tables should be ignored
-        sheet.test_set_data_table(pos![G1], 6, 6, false, false);
+        sheet.test_set_data_table(pos![G1], 6, 6, false, Some(false), Some(false));
 
         assert_eq!(sheet.charts_in_row(1).len(), 1);
         assert_eq!(sheet.charts_in_row(2).len(), 2);

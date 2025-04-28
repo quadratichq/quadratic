@@ -54,7 +54,7 @@ impl Sheet {
         let mut dt_to_update = vec![];
 
         for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
-            if (dt.readonly && !dt.is_html_or_image()) || dt.spill_error {
+            if (dt.is_code() && !dt.is_html_or_image()) || dt.spill_error {
                 continue;
             }
             let output_rect = dt.output_rect(*pos, false);
@@ -140,7 +140,7 @@ impl Sheet {
                 transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                 transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
 
-                output_rect.translate(0, -shift_table);
+                output_rect.translate_in_place(0, -shift_table);
                 transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                 transaction.add_from_code_run(
                     self.id,
@@ -174,6 +174,7 @@ mod tests {
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
+        test_create_code_table_with_values,
         test_util::{
             assert_data_table_size, first_sheet_id, test_create_data_table_with_values,
             test_create_js_chart,
@@ -371,7 +372,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Create a data table and make it readonly
-        test_create_data_table_with_values(
+        test_create_code_table_with_values(
             &mut gc,
             sheet_id,
             pos![A1],
@@ -382,7 +383,8 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         if let Some((_, dt)) = sheet.data_tables.iter_mut().next() {
-            dt.readonly = true;
+            dt.show_name = Some(true);
+            dt.show_columns = Some(true);
         }
 
         let mut transaction = PendingTransaction::default();
