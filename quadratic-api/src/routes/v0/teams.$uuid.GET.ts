@@ -14,6 +14,7 @@ import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
+import { decryptFromEnv } from '../../utils/crypto';
 import { getFilePermissions } from '../../utils/permissions';
 import { applySshKeys } from '../../utils/teams';
 
@@ -147,7 +148,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
-      sshPublicKey: dbTeam.sshPublicKey,
+      sshPublicKey: decryptFromEnv(dbTeam.sshPublicKey),
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

@@ -6,6 +6,7 @@ import { getTeamConnection } from '../../middleware/getTeamConnection';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { ApiError } from '../../utils/ApiError';
 import { decryptFromEnv } from '../../utils/crypto';
+import { decryptSshKeys } from '../../utils/teams';
 
 export default [validateM2MAuth(), handler];
 
@@ -35,6 +36,9 @@ async function handler(req: Request, res: Response) {
   if (!team.userMakingRequest.permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'You do not have permission to view this connection.');
   }
+
+  // decrypt the ssh keys
+  const decryptedTeam = decryptSshKeys(team.team);
 
   const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString('utf-8')));
 
