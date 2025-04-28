@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import path from "path";
 
 type CreateFileOptions = {
   fileName: string;
@@ -112,4 +113,71 @@ export const navigateIntoFile = async (
       console.log(e);
     }
   }
+};
+
+/**
+ * Upload File Function. Defaults to .grid
+ * Can take spreadsheet naming parameter in options
+ */
+
+type UploadFileOptions = {
+  fileName: string;
+  fileType: string;
+};
+
+export const uploadFile = async (
+  page: Page,
+  { fileName, fileType }: UploadFileOptions,
+) => {
+  // Click Import
+  await page.locator(`button:text-is("Import ")`).click();
+
+  // If options include filepath use that, otherwise use default
+  const filePath = path.join(
+    process.cwd(),
+    "./data/",
+    `${fileName}.${fileType}`,
+  );
+
+  // Select file
+  page.once("filechooser", (chooser) => {
+    chooser.setFiles(filePath).catch(console.error);
+  });
+
+  // Click Local File option
+  await page.locator(`[role="menuitem"]:has-text("Local File")`).click();
+
+  await page.waitForTimeout(2000);
+
+  // Wait for file import dialog to finish loading
+  await expect(
+    page.locator(`[role="alertdialog"] h2:has-text("Import files")`),
+  ).not.toBeVisible({
+    timeout: 1 * 60 * 1000,
+  });
+
+  await page.waitForLoadState("domcontentloaded");
+
+  // Confirm file is uploaded
+  await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible({
+    timeout: 1 * 60 * 1000,
+  });
+
+  // Close Chat
+  try {
+    await page.getByRole(`button`, { name: `close` }).first().click();
+  } catch (_err) {}
+
+  // Close negative rows and columns warning tooltip
+  try {
+    await page.getByLabel(`Close`).click({ timeout: 3000 });
+  } catch (_err) {}
+
+  // Close 'File automatically updated...' alert
+  try {
+    await page
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 3000 });
+  } catch (_err) {}
 };

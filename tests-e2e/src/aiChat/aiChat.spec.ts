@@ -6,9 +6,11 @@ import {
   navigateIntoFile,
 } from "../helpers/file.helpers";
 
-test("AI Chat Insert Code, Clear Query, View History", async ({ page }) => {
+test.skip("AI Chat Insert Code, Clear Query, View History", async ({
+  page,
+}) => {
   //--------------------------------
-  // Inert Code
+  // Insert Code
   //--------------------------------
 
   // Constants

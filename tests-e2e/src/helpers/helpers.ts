@@ -93,91 +93,6 @@
 // }
 
 // /**
-//  * Navigates to a specified [Column, Row] in a spreadsheet-like interface on a webpage.
-//  *
-//  * @param {Page} page - The Page object representing the browser page.
-//  * @param {number} targetColumn - The target column number to navigate to. Columns are zero-indexed.
-//  * @param {number} targetRow - The target row number to navigate to. Rows are zero-indexed.
-//  */
-// async function navigateOnSheet(page, targetColumn, targetRow, options = {}) {
-//   // Convert letter-based column to 0-based number
-//   const columnToNumber = (col) => {
-//     if (typeof col === "number") return col - 1; // If a number, use it as is
-//     return col.toUpperCase().charCodeAt(0) - 65; // Convert 'A' to 0, 'B' to 1, etc.
-//   };
-
-//   // Adjust column for numerical input (increment to move one ahead)
-//   const adjustColumn = (col) => (typeof col === "number" ? col + 1 : col);
-
-//   // Parse position string (e.g., "E13" -> column: 4, row: 13 for 1-based indexing)
-//   const parsePosition = (position) => {
-//     if (typeof position !== "string") {
-//       throw new Error(
-//         `Invalid position type: expected string, got ${typeof position}`,
-//       );
-//     }
-
-//     const match = position.match(/^([A-Z]+)(\d+)$/i); // Match column letters and row numbers
-//     if (!match) {
-//       throw new Error(`Invalid position format: ${position}`);
-//     }
-//     return {
-//       column: columnToNumber(match[1]), // Convert column letters to 0-based index
-//       row: parseInt(match[2], 10), // Row remains 1-based here
-//     };
-//   };
-
-//   // Adjust target column and row
-//   targetColumn = adjustColumn(targetColumn);
-//   const adjustedRow = targetRow + 1;
-
-//   // Click canvas if needed
-//   if (!options.skipCanvasClick) {
-//     try {
-//       await page.locator(`#QuadraticCanvasID`).click();
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   }
-
-//   // Get our current position
-//   let position = await page
-//     .locator('div:has(button[aria-haspopup="dialog"]) >> input >> nth = 0')
-//     .inputValue();
-
-//   // Ensure the position is a string
-//   position = position?.trim();
-//   if (!position) {
-//     throw new Error("Failed to retrieve the current position.");
-//   }
-
-//   // Parse the current position
-//   const { column: currentColumn, row: currentRow } = parsePosition(position);
-
-//   // Determine the direction and magnitude for column navigation
-//   const columnDifference = columnToNumber(targetColumn) - currentColumn;
-//   const columnDirection = columnDifference > 0 ? "ArrowRight" : "ArrowLeft";
-
-//   // Navigate columns
-//   for (let i = 0; i < Math.abs(columnDifference); i++) {
-//     await page.waitForTimeout(100);
-//     await page.keyboard.press(columnDirection);
-//   }
-
-//   // Determine the direction and magnitude for row navigation
-//   const rowDifference = adjustedRow - currentRow; // Adjusted target row
-//   const rowDirection = rowDifference > 0 ? "ArrowDown" : "ArrowUp";
-
-//   // Navigate rows
-//   for (let j = 0; j < Math.abs(rowDifference); j++) {
-//     await page.waitForTimeout(100);
-//     await page.keyboard.press(rowDirection);
-//   }
-
-//   await page.waitForTimeout(3000);
-// }
-
-// /**
 //  * Selects a range of cells in a spreadsheet-like interface by navigating from a starting
 //  * cell to an ending cell.
 //  *
@@ -199,25 +114,6 @@
 //     skipCanvasClick: true,
 //   });
 //   await page.keyboard.up("Shift");
-// }
-
-// /*
-//  * Navigates to a specified [Column, Row] in a spreadsheet-like interface on a webpage, then fills in the cell with desired text
-//  * and arrows down to the next cell
-//  *
-//  * @param {object} page - The Page object representing the browser page.
-//  * @param {number} targetColumn - The target column number to navigate to. Columns are zero-indexed.
-//  * @param {number} targetRow - The target row number to navigate to. Rows are zero-indexed.
-//  * @param {string} text - The text desired to be filled in cell
-//  */
-// async function typeInCell(page, targetColumn, targetRow, text) {
-//   await navigateOnSheet(page, targetColumn, targetRow);
-//   // type some text
-//   await page.keyboard.press("Enter");
-//   await page.waitForTimeout(3000);
-//   await page.keyboard.type(text);
-//   await page.keyboard.press("ArrowDown");
-//   await page.mouse.up();
 // }
 
 // /**
@@ -533,80 +429,6 @@
 //         percentageDifference * 100
 //       ).toFixed(1)}%`,
 //     );
-//   }
-// }
-
-// /**
-//  * Upload File Function. Defaults to .grid
-//  * Can take spreadsheet naming parameter in options
-//  */
-// /*
-//  * Upload File Function. Defaults to .grid
-//  * Can take spreadsheet naming parameter in options
-//  *
-//  * @param {object} page - The Page object representing the browser page.
-//  * @param {string} fileName - The path of the file
-//  * @param {Object} options The options object that can contain fileType, spreadsheet (renaming of file name), or basePath
-//  *
-//  */
-// async function uploadFile(page, fileName, options = {}) {
-//   // Click Import
-//   await page.locator(`button:text-is("Import ")`).click();
-
-//   // Convert file to .{format} if not passed
-//   var noFormatFileName;
-//   if (!fileName.includes(`${options.fileType || ".grid"}`)) {
-//     // If the filename does not contain our passed fileType or grid, add it
-//     noFormatFileName = fileName;
-//     fileName = fileName + `${options.fileType || ".grid"}`;
-//   } else {
-//     noFormatFileName = fileName.split(".")[0];
-//   }
-
-//   // If options include filepath use that, otherwise use default
-//   let filePath = options.filePath ?? "/home/wolf/team-storage/";
-
-//   // Select file
-//   page.once("filechooser", (chooser) => {
-//     chooser.setFiles(`${filePath}${fileName}`).catch(console.error);
-//   });
-
-//   // Click Local File option
-//   await page.locator(`[role="menuitem"]:has-text("Local File")`).click();
-
-//   // Confirm file is uploaded
-//   await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible();
-
-//   // Rename file
-//   if (options.spreadsheet) {
-//     await page.locator(`button:text("${noFormatFileName}")`).click();
-//     await page.keyboard.type(options.spreadsheet, { delay: 250 });
-//     await page.keyboard.press("Enter");
-//     await page.waitForTimeout(3000);
-//   }
-
-//   // Close Chat
-//   try {
-//     await page.getByRole(`button`, { name: `close` }).first().click();
-//   } catch (err) {
-//     console.error(err);
-//   }
-
-//   // Close negative rows and columns warning tooltip
-//   try {
-//     await page.getByLabel(`Close`).click({ timeout: 3000 });
-//   } catch (err) {
-//     console.error(err);
-//   }
-
-//   // Close 'File automatically updated...' alert
-//   try {
-//     await page
-//       .getByRole(`button`, { name: `close` })
-//       .first()
-//       .click({ timeout: 3000 });
-//   } catch (err) {
-//     console.error(err);
 //   }
 // }
 

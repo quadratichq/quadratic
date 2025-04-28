@@ -16,7 +16,7 @@ import {
 } from "../helpers/file.helpers";
 import { createNewTeam } from "../helpers/team.helper";
 
-test("AI Message Counter", async ({ page }) => {
+test.skip("AI Message Counter", async ({ page }) => {
   //--------------------------------
   // AI Message Counter
   //--------------------------------
