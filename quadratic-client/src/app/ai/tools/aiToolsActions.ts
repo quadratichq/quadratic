@@ -312,10 +312,14 @@ export const aiToolsActions: AIToolActionsRecord = {
     return `PDF import tool executed successfully.`;
   },
   [AITool.Validation]: async (args) => {
-    const { selection, rule, message, error } = args;
+    const { sheet_name, selection, rule, message, error } = args;
+    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
-      const jsSelection = stringToSelection(selection, sheets.current, sheets.a1Context);
-      quadraticCore.updateValidation(sheets.current);
-    } catch (e) {}
+      const jsSelection = stringToSelection(selection, sheetId, sheets.a1Context);
+      quadraticCore.updateValidation(sheetId, jsSelection.save(), rule, message, error);
+      return 'Validation tool executed successfully.';
+    } catch (e) {
+      return `Error executing validation tool: ${e}`;
+    }
   },
 } as const;

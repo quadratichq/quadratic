@@ -188,7 +188,8 @@ Always prefer using this tool to add structured data to the current open sheet. 
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
+          description:
+            'The sheet name of the current sheet as defined in the context, or as defined by the user in the prompt.',
         },
         top_left_position: {
           type: 'string',
@@ -243,7 +244,8 @@ To clear the values of a cell, set the value to an empty string.\n
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
+          description:
+            'The sheet name of the current sheet as defined in the context, or as defined by the user in the prompt.',
         },
         top_left_position: {
           type: 'string',
@@ -287,7 +289,8 @@ Always refer to the data from cell by its position in a1 notation from respectiv
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
+          description:
+            'The sheet name of the current sheet as defined in the context, or as defined by the user in the prompt.',
         },
         code_cell_language: {
           type: 'string',
@@ -341,7 +344,7 @@ Target location is the top left corner of the target location on the current ope
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The sheet name of the current sheet in the context',
+          description: 'The sheet name of the current sheet in the context, or as defined by the user in the prompt.',
         },
         source_selection_rect: {
           type: 'string',
@@ -376,7 +379,8 @@ delete_cells functions requires a string representation (in a1 notation) of a se
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
+          description:
+            'The sheet name of the current sheet as defined in the context, or as defined by the user in the prompt.',
         },
         selection: {
           type: 'string',
@@ -540,21 +544,33 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
   [AITool.Validation]: {
     sources: ['AIAssistant'],
     description: `
-This tool creates a validation, which includes options for a checkbox and dropdown, on the current open sheet.\n
-You should use the validation tool to create a validation at the selection indicated at the prompt, or at the current selection.\n
+This tool creates a validation, which includes options for a checkbox and dropdown, as well as validation of data on the current open sheet.\n
+You should use the validation tool to create a validation at the selection indicated within the prompt, or at the current selection.\n
 The validation tool requires the selection, rule, message and error.\n
 `,
     parameters: {
       type: 'object',
       properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name of the current sheet as defined in the context, or as defined by the user in the prompt.',
+        },
         selection: {
           type: 'string',
           description:
             'The selection of the cells to create the validation on, in a1 notation (e.g., "a1:b10" or "TableName[Column 1]")',
         },
         rule: {
-          type: 'string',
+          type: 'object',
           description: 'The rule for the validation, this can be one of "checkbox" or "dropdown"',
+          properties: {
+            type: {
+              type: 'string',
+              description:
+                'The type of the rule, this can be "List", "Logical", "Text", "Number", or "DateTime". These types are case sensitive.',
+            },
+          },
         },
       },
       required: ['selection', 'rule', 'message', 'error'],
