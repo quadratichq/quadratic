@@ -3,7 +3,7 @@ import {
   EDIT_USER_PREFIX,
   FREE_USER_PREFIX,
   VIEW_USER_PREFIX,
-} from "../constant/auth";
+} from "../constants/auth";
 import { navigateOnSheet, typeInCell } from "../helpers/app.helper";
 import { logIn } from "../helpers/auth.helpers";
 import {
@@ -105,7 +105,7 @@ test("Edit Share File Permissions", async ({ page }) => {
   const teamName = `${fileName} - ${Date.now()}`;
   await createNewTeam(page, { teamName });
 
-  const recipientBrowser = await chromium.launch(); // launch browser
+  const recipientBrowser = await chromium.launch();
   const recipientPage = await recipientBrowser.newPage();
   const recipientEmail = await logIn(recipientPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -411,8 +411,6 @@ test("File Actions - Dashboard", async ({ page }) => {
       .nth(1)
       .innerText()
   ).split("Move to ")[1];
-
-  console.log(teamMovedTo);
 
   await page
     .locator('[role="menuitem"]:below([role="menuitem"]:text-is("Download"))')

@@ -5,8 +5,8 @@
 //     ? options.password
 //     : process.env.DEFAULT_PASSWORD;
 
-//   // launch browser, create page, and navigate to log in page
-//   const { context, browser } = await launch(options); // launch browser
+//  , create page, and navigate to log in page
+//   const { context, browser } = await launch(options);
 //   const page = await context.newPage(); // create page
 
 //   // Use CDP session to simulate network throttling
@@ -114,35 +114,6 @@
 //     skipCanvasClick: true,
 //   });
 //   await page.keyboard.up("Shift");
-// }
-
-// /**
-//  * Creates a new file with a given name, and shares it to another account with given email.
-//  *
-//  * @param {object]} page current user Playwright page
-//  * @param {string} fileName Name of file
-//  * @param {string} email of account to share to
-//  */
-// async function createSharedFile(page, fileName, email) {
-//   // Navigate into a team workspace
-//   try {
-//     await page
-//       .locator(`[href*="/teams"]:has-text("File Actions")`)
-//       .click({ timeout: 5000 });
-//   } catch (error) {
-//     console.error(error);
-//   }
-//   await page.waitForTimeout(2000);
-
-//   await createFile(page, fileName);
-//   await page
-//     .locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`)
-//     .click();
-
-//   await page.locator('[role="menuitem"]:has-text("Share")').click();
-//   await page.locator(`[placeholder="Email"]`).fill(email);
-//   await page.locator(`[type="submit"]:text('Invite')`).click();
-//   await page.locator(`[role="dialog"] button:nth-of-type(2)`).click();
 // }
 
 // // Stagger function

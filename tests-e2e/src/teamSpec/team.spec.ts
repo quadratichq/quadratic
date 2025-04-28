@@ -4,7 +4,7 @@ import {
   FREE_USER_PREFIX,
   MANAGE_USER_PREFIX,
   VIEW_USER_PREFIX,
-} from "../constant/auth";
+} from "../constants/auth";
 import { logIn } from "../helpers/auth.helpers";
 import { inviteUserToTeam } from "../helpers/billing.helpers";
 import { buildUrl } from "../helpers/buildUrl.helpers";
@@ -61,7 +61,7 @@ test("Rename Team", async ({ page: adminPage }) => {
 
   await logIn(adminPage, {});
 
-  const testUserBrowser = await chromium.launch(); // launch browser
+  const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
   const testUserEmail = await logIn(testUserPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -178,7 +178,7 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   // Login with dedicated users
   await logIn(adminPage, {});
 
-  const ownerBrowser = await chromium.launch(); // launch browser
+  const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
   const ownerEmail = await logIn(ownerPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -227,7 +227,7 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   const editPermission = "Can edit";
 
   // Login edit user
-  const editUserBrowser = await chromium.launch(); // launch browser
+  const editUserBrowser = await chromium.launch();
   const editUserPage = await editUserBrowser.newPage();
   const editUserEmail = await logIn(editUserPage, {
     emailPrefix: EDIT_USER_PREFIX,
@@ -272,7 +272,7 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   const viewPermission = "Can view";
 
   // Login viewUserEmail
-  const viewUserBrowser = await chromium.launch(); // launch browser
+  const viewUserBrowser = await chromium.launch();
   const viewUserPage = await viewUserBrowser.newPage();
   const viewUserEmail = await logIn(viewUserPage, {
     emailPrefix: VIEW_USER_PREFIX,
@@ -324,7 +324,7 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   // Login with dedicated users
   await logIn(adminPage, {});
 
-  const manageUserbrowser = await chromium.launch(); // launch browser
+  const manageUserbrowser = await chromium.launch();
   const manageUserPage = await manageUserbrowser.newPage();
   const manageUserEmail = await logIn(manageUserPage, {
     emailPrefix: MANAGE_USER_PREFIX,
@@ -543,19 +543,19 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
 
   await logIn(adminPage, {});
 
-  const ownerBrowser = await chromium.launch(); // launch browser
+  const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
   const ownerEmail = await logIn(ownerPage, {
     emailPrefix: FREE_USER_PREFIX,
   });
 
-  const editUserBrowser = await chromium.launch(); // launch browser
+  const editUserBrowser = await chromium.launch();
   const editUserPage = await editUserBrowser.newPage();
   const editUserEmail = await logIn(editUserPage, {
     emailPrefix: EDIT_USER_PREFIX,
   });
 
-  const viewUserbrowser = await chromium.launch(); // launch browser
+  const viewUserbrowser = await chromium.launch();
   const viewUserPage = await viewUserbrowser.newPage();
   const viewUserEmail = await logIn(viewUserPage, {
     emailPrefix: VIEW_USER_PREFIX,
@@ -731,7 +731,7 @@ test("Removed Member No Longer Can Access Team Files", async ({
 
   await logIn(adminPage, {});
 
-  const testUserBrowser = await chromium.launch(); // launch browser
+  const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
   const testUserEmail = await logIn(testUserPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -846,7 +846,7 @@ test("Can Edit Member are Able to Change Permissions", async ({
   // Register new users and get their pages
   await logIn(adminUserPage, {});
 
-  const browser = await chromium.launch(); // launch browser
+  const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
   const canEditUserEmail = await logIn(canEditUserPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -915,7 +915,7 @@ test("Can Edit Members are Able to Invite", async ({ page: adminUserPage }) => {
   // Register new users and get their pages
   await logIn(adminUserPage, {});
 
-  const browser = await chromium.launch(); // launch browser
+  const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
   const canEditUserEmail = await logIn(canEditUserPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -984,7 +984,7 @@ test("Can Edit Team Member Can Edit Files", async ({ page: adminUserPage }) => {
   // Register new users and get their pages
   await logIn(adminUserPage, {});
 
-  const browser = await chromium.launch(); // launch browser
+  const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
   const canEditUserEmail = await logIn(canEditUserPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -1079,7 +1079,7 @@ test("Can View Members are Unable to Invite Members", async ({
   // Register new users and get their pages
   await logIn(adminUserPage, {});
 
-  const browser = await chromium.launch(); // launch browser
+  const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();
   const canViewUserEmail = await logIn(canViewUserPage, {
     emailPrefix: FREE_USER_PREFIX,
@@ -1155,7 +1155,7 @@ test("Can View Team Member Cannot Edit Files", async ({
   // Register new users and get their pages
   await logIn(adminUserPage, {});
 
-  const browser = await chromium.launch(); // launch browser
+  const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();
   const canViewUserEmail = await logIn(canViewUserPage, {
     emailPrefix: FREE_USER_PREFIX,

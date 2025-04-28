@@ -181,3 +181,33 @@ export const uploadFile = async (
       .click({ timeout: 3000 });
   } catch (_err) {}
 };
+
+/**
+ * Creates a new file with a given name, and shares it to another account with given email.
+ */
+type CreateSharedFileOptions = {
+  fileName: string;
+  email: string;
+};
+export const createSharedFile = async (
+  page: Page,
+  { fileName, email }: CreateSharedFileOptions,
+) => {
+  // Navigate into a team workspace
+  try {
+    await page
+      .locator(`[href*="/teams"]:has-text("File Actions")`)
+      .click({ timeout: 5000 });
+  } catch (error) {}
+  await page.waitForTimeout(2000);
+
+  await createFile(page, { fileName });
+  await page
+    .locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`)
+    .click();
+
+  await page.locator('[role="menuitem"]:has-text("Share")').click();
+  await page.locator(`[placeholder="Email"]`).fill(email);
+  await page.locator(`[type="submit"]:text('Invite')`).click();
+  await page.locator(`[role="dialog"] button:nth-of-type(2)`).click();
+};

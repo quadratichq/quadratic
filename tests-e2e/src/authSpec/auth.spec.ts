@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { USER_PASSWORD } from "../constant/auth";
+import { USER_PASSWORD } from "../constants/auth";
 import { logIn } from "../helpers/auth.helpers";
 import { buildUrl } from "../helpers/buildUrl.helpers";
 

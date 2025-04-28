@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { SWIPE_TEST_CARD } from "../constant/billing";
+import { SWIPE_TEST_CARD } from "../constants/billing";
 import { buildUrl } from "./buildUrl.helpers";
 
 /**

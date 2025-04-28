@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { DUMMY_USER_EMAIL } from "../constant/auth";
+import { DUMMY_USER_EMAIL } from "../constants/auth";
 import { logIn } from "../helpers/auth.helpers";
 import {
   cancelProPlan,

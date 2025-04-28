@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { PRO_USER_PREFIX, USER_PASSWORD } from "../constant/auth";
+import { PRO_USER_PREFIX, USER_PASSWORD } from "../constants/auth";
 import { buildUrl } from "./buildUrl.helpers";
 
 type LogInOptions = {
