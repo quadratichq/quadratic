@@ -28,19 +28,9 @@ impl TableRef {
         let (mut y_start, y_end) = table.to_sheet_rows();
         if self.headers && !self.data {
             // this is the case where we only want the header row and can ignore force_table_bounds
-            y_start = table.bounds.min.y
-                + if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                };
+            y_start = table.bounds.min.y + if table.show_name { 1 } else { 0 };
         } else if show_table_headers_for_python {
-            y_start = table.bounds.min.y
-                + if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                };
+            y_start = table.bounds.min.y + if table.show_name { 1 } else { 0 };
         } else {
             y_start += table.y_adjustment(false);
         }
@@ -501,9 +491,8 @@ mod tests {
             None,
             None,
             None,
-            Some(true),
-            Some(true),
-            Some(true),
+            Some(Some(true)),
+            Some(Some(true)),
             None,
         );
 
