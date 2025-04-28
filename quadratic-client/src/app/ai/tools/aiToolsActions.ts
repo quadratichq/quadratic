@@ -108,8 +108,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     return `Executed set chat name tool successfully with name: ${args.chat_name}`;
   },
   [AITool.AddDataTable]: async (args) => {
-    const { sheetId, top_left_position, table_name, table_data } = args;
-
+    const { sheet_name, top_left_position, table_name, table_data } = args;
+    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
       const selection = stringToSelection(top_left_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
@@ -139,7 +139,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetCellValues]: async (args) => {
-    const { sheetId, top_left_position, cell_values } = args;
+    const { sheet_name, top_left_position, cell_values } = args;
+    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
       const selection = stringToSelection(top_left_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
@@ -161,7 +162,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
-    let { sheetId, code_cell_language, code_string, code_cell_position } = args;
+    let { sheet_name, code_cell_language, code_string, code_cell_position } = args;
+    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
       const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
@@ -203,7 +205,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.MoveCells]: async (args) => {
-    const { sheetId, source_selection_rect, target_top_left_position } = args;
+    const { sheet_name, source_selection_rect, target_top_left_position } = args;
+    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
       const sourceSelection = stringToSelection(source_selection_rect, sheetId, sheets.a1Context);
       const sourceRect = sourceSelection.getSingleRectangleOrCursor();
@@ -238,7 +241,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.DeleteCells]: async (args) => {
-    const { sheetId, selection } = args;
+    const { sheet_name, selection } = args;
+    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
       const sourceSelection = stringToSelection(selection, sheetId, sheets.a1Context);
 
