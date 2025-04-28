@@ -169,6 +169,7 @@ The added table on the sheet contains an extra row with the name of the data tab
 Always use this tool when adding a new tabular data to the current open sheet. Don't use set_cell_values function to add tabular data.\n
 Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
 Always prefer using this tool to add structured data to the current open sheet. Don't use set_cell_values or set_code_cell_value function to add structured data.\n
+Don't use this tool for adding formulas or code. Do not reserve columns for adding formulas or code. They do not work in tables.\n 
 `,
     parameters: {
       type: 'object',
@@ -208,7 +209,7 @@ Always use this tool when adding a new tabular data to the current open sheet. D
 Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
-Don't attempt to add formulas or code to data tables.\n
+Don't use this tool for adding formulas or code. Do not reserve columns for adding formulas or code. They do not work in tables.\n
 `,
   },
   [AITool.SetCellValues]: {
@@ -220,6 +221,7 @@ Values are string representation of text, number, logical, time instant, duratio
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
     parameters: {
       type: 'object',
@@ -250,6 +252,7 @@ Use this function to add data to the current open sheet. Don't use code cell for
 This function requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
@@ -260,6 +263,7 @@ Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Do not attempt to add formulas or code to data tables, it will result in an error.\n
 `,
     parameters: {
       type: 'object',
@@ -301,6 +305,7 @@ The required location code_cell_position for this code cell is one which satisfi
  - Do not use conditional returns in python code cells.\n
  - Do not attempt to return data using conditionals in code cells. Even if the conditional is the last line, it will not be returned if buried in a conditional.
  - Don't prefix formulas with \`=\` in code cells.\n
+ - Do not attempt to add formulas or code to data tables, it will result in an error.\n
  `,
   },
   [AITool.MoveCells]: {
