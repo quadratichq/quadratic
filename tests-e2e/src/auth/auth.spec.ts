@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { logIn, USER_PASSWORD } from "../helpers/auth.helpers";
+import { USER_PASSWORD } from "../constant/auth";
+import { logIn } from "../helpers/auth.helpers";
 import { buildUrl } from "../helpers/buildUrl.helpers";
 
 test("Log In", async ({ page }) => {

@@ -1,9 +1,6 @@
 import { expect, type Page } from "@playwright/test";
+import { PRO_USER_PREFIX, USER_PASSWORD } from "../constant/auth";
 import { buildUrl } from "./buildUrl.helpers";
-
-export const FREE_USER_PREFIX = "e2e_free";
-export const PRO_USER_PREFIX = "e2e_pro";
-export const USER_PASSWORD = "E2E_test";
 
 type LogInOptions = {
   emailPrefix?: string;

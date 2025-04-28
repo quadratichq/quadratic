@@ -31,9 +31,9 @@ runs:
         echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
       shell: bash
 
-    - name: Cache Playwright Browsers for Playwright's Version
+    - name: Cache Playwright Browsers
       id: cache-playwright-browsers
-      uses: actions/cache@v3
+      uses: useblacksmith/cache@v5
       with:
         path: ~/.cache/ms-playwright
         key: playwright-browsers-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}

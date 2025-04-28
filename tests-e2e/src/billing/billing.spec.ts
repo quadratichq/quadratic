@@ -1,11 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { logIn } from "../helpers/auth.helpers";
-import { cleanupPaymentMethod } from "../helpers/billing.helpers";
+import {
+  cleanupPaymentMethod,
+  upgradeToProPlan,
+} from "../helpers/billing.helpers";
 import {
   cleanUpFiles,
   createFile,
   navigateIntoFile,
 } from "../helpers/file.helpers";
+import { createNewTeam } from "../helpers/team.helper";
 
 test("AI Message Counter", async ({ page }) => {
   //--------------------------------
@@ -182,6 +186,13 @@ test("Manage Billing - Add Payment Method", async ({ page }) => {
   // Log into Quadratic
   const emailAddress = await logIn(page, {});
 
+  // Create new team
+  const teamName = `Team - ${Date.now()}`;
+  await createNewTeam(page, { teamName });
+
+  // Upgrade to Pro plan
+  await upgradeToProPlan(page, {});
+
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
 
@@ -238,9 +249,10 @@ test("Manage Billing - Add Payment Method", async ({ page }) => {
   // Store the credit card details from the initial payment method used to upgrade to Pro
   const initialPaymentEl = await page
     .locator(`[data-testid="page-container-main"] .Box-hideIfEmpty`)
-    .nth(21)
+    .nth(23)
     .innerText();
-  const [initialPaymentNum, _, initialPaymentExpiry] =
+
+  const [_, initialPaymentNum, initialPaymentExpiry] =
     initialPaymentEl.split("\n");
 
   // Click 'Add payment method' to add an additional payment method
@@ -261,7 +273,6 @@ test("Manage Billing - Add Payment Method", async ({ page }) => {
   await iframe.locator('input[name="number"]').waitFor();
   await iframe.locator('input[name="expiry"]').waitFor();
   await iframe.locator('input[name="cvc"]').waitFor();
-  // await iframe.locator('input[name="postalCode"]').waitFor();
   await page.locator(`[data-testid="confirm"]`).waitFor({ state: "attached" });
 
   // Fill the card details in the iframe

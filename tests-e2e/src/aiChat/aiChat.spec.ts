@@ -10,6 +10,7 @@ test("AI Chat Insert Code, Clear Query, View History", async ({ page }) => {
   //--------------------------------
   // Inert Code
   //--------------------------------
+
   // Constants
   const fileName = `AI Chat Insert Code, Clear Query, View History`;
 
@@ -77,7 +78,6 @@ test("AI Chat Insert Code, Clear Query, View History", async ({ page }) => {
   //--------------------------------
   // SETUP for test 3
   const chatText = await page.locator(`[data-gramm_editor]`).textContent();
-  console.log({ chatText });
 
   // Click on history icon in chat
   await page.getByRole(`button`, { name: `history`, exact: true }).click();
@@ -88,7 +88,6 @@ test("AI Chat Insert Code, Clear Query, View History", async ({ page }) => {
       `div[class*="h-full w-full grid"] div[class*="text-sm text-foreground"]`,
     )
     .innerText();
-  console.log({ chatName });
 
   // Click on history icon in chat to close
   await page.getByRole(`button`, { name: `history`, exact: true }).click();
@@ -139,7 +138,6 @@ test("AI Chat Insert Code, Clear Query, View History", async ({ page }) => {
   const chatTextHistory = await page
     .locator(`[data-gramm_editor]`)
     .textContent();
-  console.log({ chatText });
-  console.log({ chatTextHistory });
+
   expect(chatText).toContain(chatTextHistory);
 });
