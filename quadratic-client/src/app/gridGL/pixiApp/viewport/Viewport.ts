@@ -158,6 +158,10 @@ export class Viewport extends PixiViewport {
     this.dirty = true;
   };
 
+  getWorld = (): Point => {
+    return this.toWorld(this.pixiApp.renderer.events.pointer.global);
+  };
+
   enableMouseEdges = (world?: Point, direction?: 'horizontal' | 'vertical') => {
     this.lastMouse = world;
     const mouseEdges = this.plugins.get('mouse-edges');

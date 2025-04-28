@@ -107,6 +107,7 @@ export const BorderMenu = () => {
             onClear={() => {
               borders.clearBorders();
             }}
+            removeColor
           />
         </div>
       </div>
