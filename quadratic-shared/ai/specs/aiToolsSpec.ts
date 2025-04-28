@@ -12,6 +12,7 @@ export enum AITool {
   CodeEditorCompletions = 'code_editor_completions',
   UserPromptSuggestions = 'user_prompt_suggestions',
   PDFImport = 'pdf_import',
+  Validation = 'validation',
 }
 
 export const AIToolSchema = z.enum([
@@ -25,6 +26,7 @@ export const AIToolSchema = z.enum([
   AITool.CodeEditorCompletions,
   AITool.UserPromptSuggestions,
   AITool.PDFImport,
+  AITool.Validation,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -123,6 +125,12 @@ export const AIToolsArgsSchema = {
   [AITool.PDFImport]: z.object({
     file_name: z.string(),
     prompt: z.string(),
+  }),
+  [AITool.Validation]: z.object({
+    selection: z.string(),
+    rule: z.string(),
+    message: z.string(),
+    error: z.string(),
   }),
 } as const;
 
@@ -503,5 +511,32 @@ Never extract data from PDF files that are not relevant to the user's prompt. Ne
 Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
 `,
+  },
+  [AITool.Validation]: {
+    sources: ['AIAssistant'],
+    description: `
+This tool creates a validation, which includes options for a checkbox and dropdown, on the current open sheet.\n
+You should use the validation tool to create a validation at the selection indicated at the prompt, or at the current selection.\n
+The validation tool requires the selection, rule, message and error.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        selection: {
+          type: 'string',
+          description:
+            'The selection of the cells to create the validation on, in a1 notation (e.g., "a1:b10" or "TableName[Column 1]")',
+        },
+        rule: {
+          type: 'string',
+          description: 'The rule for the validation, this can be one of "checkbox" or "dropdown"',
+        },
+      },
+      required: ['selection', 'rule', 'message', 'error'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.Validation],
+    prompt: `
+This tool adds validations and UI elements (such as a checkbox or dropdown list) to a selection on the current open sheet.\n`,
   },
 } as const;

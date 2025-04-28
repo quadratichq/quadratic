@@ -35,7 +35,7 @@ const setCodeCellResult = async (
   sheetId: string,
   x: number,
   y: number,
-  messageMetaData: AIToolMesageMetaData
+  messageMetaData: AIToolMessageMetaData
 ): Promise<string> => {
   const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
   const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
@@ -89,7 +89,7 @@ ${
 `;
 };
 
-type AIToolMesageMetaData = {
+type AIToolMessageMetaData = {
   source: AISource;
   chatId: string;
   messageIndex: number;
@@ -98,7 +98,7 @@ type AIToolMesageMetaData = {
 export type AIToolActionsRecord = {
   [K in AITool]: (
     args: z.infer<(typeof AIToolsArgsSchema)[K]>,
-    messageMetaData: AIToolMesageMetaData
+    messageMetaData: AIToolMessageMetaData
   ) => Promise<string>;
 };
 
@@ -307,5 +307,12 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.PDFImport]: async () => {
     return `PDF import tool executed successfully.`;
+  },
+  [AITool.Validation]: async (args) => {
+    const { selection, rule, message, error } = args;
+    try {
+      const jsSelection = stringToSelection(selection, sheets.current, sheets.a1Context);
+      quadraticCore.updateValidation(sheets.current);
+    } catch (e) {}
   },
 } as const;
