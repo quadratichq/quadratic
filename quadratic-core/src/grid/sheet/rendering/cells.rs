@@ -156,7 +156,7 @@ impl Sheet {
                             let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                             if let Some(value) = value {
-                                let format = if is_header {
+                                let mut format = if is_header {
                                     // column headers are always clipped and bold
                                     Format {
                                         wrap: Some(CellWrap::Clip),
@@ -184,6 +184,8 @@ impl Sheet {
                                         _ => None,
                                     });
 
+                                Self::ensure_lists_are_clipped(&mut format, &special);
+
                                 let mut render_cell =
                                     self.get_render_cell(x, y, &value, format, language, special);
                                 if is_header {
@@ -198,6 +200,18 @@ impl Sheet {
         }
 
         cells
+    }
+
+    /// ensure that list cells are always clipped or wrapped (so the dropdown icon is visible)
+    fn ensure_lists_are_clipped(format: &mut Format, special: &Option<JsRenderCellSpecial>) {
+        if special
+            .as_ref()
+            .is_some_and(|s| matches!(s, JsRenderCellSpecial::List))
+        {
+            if !format.wrap.is_some_and(|w| matches!(w, CellWrap::Wrap)) {
+                format.wrap = Some(CellWrap::Clip);
+            }
+        }
     }
 
     /// Returns cell data in a format useful for rendering. This includes only
@@ -223,7 +237,9 @@ impl Sheet {
                                 }
                             });
 
-                        let format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+
+                        Self::ensure_lists_are_clipped(&mut format, &special);
 
                         render_cells.push(self.get_render_cell(x, y, value, format, None, special));
                     }
@@ -640,5 +656,53 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let code_cell = sheet.get_render_cells(Rect::test_a1("b2:b7"), gc.a1_context());
         dbg!(&code_cell);
+    }
+
+    #[test]
+    fn test_ensure_lists_are_clipped() {
+        // Test case 1: List cell with no wrap setting
+        let mut format = Format::default();
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Clip));
+
+        // Test case 2: List cell with wrap setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Wrap),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Wrap));
+
+        // Test case 3: List cell with clip setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Clip),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Clip));
+
+        // Test case 4: Non-list cell with no wrap setting
+        let mut format = Format::default();
+        let special = Some(JsRenderCellSpecial::Logical);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, None);
+
+        // Test case 5: Non-list cell with wrap setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Wrap),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::Logical);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Wrap));
+
+        // Test case 6: No special type
+        let mut format = Format::default();
+        let special = None;
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, None);
     }
 }
