@@ -1,6 +1,6 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'openai:ft:gpt-4.1-2025-04-14:quadratic::BRLVVZOv';
+export const DEFAULT_MODEL: ModelKey = 'openai:ft:gpt-4.1-2025-04-14:quadratic::BRXnCpLK';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
@@ -232,8 +232,8 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'anthropic',
   },
-  'openai:ft:gpt-4.1-2025-04-14:quadratic::BRLVVZOv': {
-    model: 'ft:gpt-4.1-2025-04-14:quadratic::BRLVVZOv',
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BRXnCpLK': {
+    model: 'ft:gpt-4.1-2025-04-14:quadratic::BRXnCpLK',
     displayName: 'gpt 4.1 fine-tuned',
     temperature: 0,
     max_tokens: 16384,
