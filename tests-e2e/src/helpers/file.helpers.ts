@@ -36,12 +36,12 @@ export const createFile = async (
 
 type CleanUpFilesOptions = {
   fileName: string;
-  skipFilterClear: boolean;
+  skipFilterClear?: boolean;
 };
 
 export const cleanUpFiles = async (
   page: Page,
-  { fileName, skipFilterClear }: CleanUpFilesOptions,
+  { fileName, skipFilterClear = false }: CleanUpFilesOptions,
 ) => {
   // filter file by name
   await page

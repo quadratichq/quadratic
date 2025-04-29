@@ -81,6 +81,40 @@ export const navigateOnSheet = async (
   await page.waitForTimeout(1000);
 };
 
+/**
+ * Selects a range of cells in a spreadsheet-like interface by navigating from a starting
+ * cell to an ending cell.
+ */
+type SelectCellsOptions = {
+  startXY: [number, number];
+  endXY: [number, number];
+};
+export const selectCells = async (
+  page: Page,
+  { startXY, endXY }: SelectCellsOptions,
+) => {
+  if (startXY.length !== 2 || endXY.length !== 2) {
+    throw new Error("Invalid range");
+  }
+
+  // Navigate into the first cell
+  await navigateOnSheet(page, {
+    targetColumn: startXY[0],
+    targetRow: startXY[1],
+  });
+
+  // Select all Cells until the final one
+  await page.keyboard.down("Shift");
+
+  await navigateOnSheet(page, {
+    targetColumn: endXY[0],
+    targetRow: endXY[1],
+    skipCanvasClick: true,
+  });
+
+  await page.keyboard.up("Shift");
+};
+
 // Parse position string (e.g., "E13" -> column: 5, row: 13)
 const parsePosition = (position: string) => {
   const match = position.match(/^([A-Z]+)(\d+)$/i); // Match column letters and row numbers

@@ -92,30 +92,6 @@
 //   }
 // }
 
-// /**
-//  * Selects a range of cells in a spreadsheet-like interface by navigating from a starting
-//  * cell to an ending cell.
-//  *
-//  * @param {Page} page - The Page object representing the browser page, used for executing navigation
-//  * @param {Array<number>} startingCell - An array containing two elements: the starting
-//  *                                       column index and the starting row index of the range
-//  *                                       to be selected. Indices are zero-based.
-//  * @param {Array<number>} endCell - An array containing two elements: the ending column index
-//  *                                   and the ending row index of the range to be selected.
-//  *                                   Indices are zero-based.
-//  */
-// async function selectCells(page, startingCell, endCell) {
-//   // Navigate into the first cell
-//   await navigateOnSheet(page, startingCell[0], startingCell[1]);
-
-//   // Select all Cells until the final one
-//   await page.keyboard.down("Shift");
-//   await navigateOnSheet(page, endCell[0], endCell[1], {
-//     skipCanvasClick: true,
-//   });
-//   await page.keyboard.up("Shift");
-// }
-
 // // Stagger function
 // async function staggerStart(context, options = {}) {
 //   const staggerPage = await context.newPage();
