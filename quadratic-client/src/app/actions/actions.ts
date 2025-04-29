@@ -152,7 +152,6 @@ export enum Action {
   RenameTable = 'rename_table',
   ToggleTableName = 'toggle_table_name',
   ToggleTableColumns = 'toggle_table_columns',
-  ToggleTableUI = 'toggle_table_ui',
   DeleteDataTable = 'delete_table',
   CodeToDataTable = 'code_to_data_table',
   SortTable = 'table_sort',

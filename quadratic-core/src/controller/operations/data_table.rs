@@ -49,26 +49,22 @@ impl GridController {
         ops
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn data_table_meta_operations(
         &self,
         sheet_pos: SheetPos,
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
-        show_name: Option<bool>,
-        show_columns: Option<bool>,
+        show_name: Option<Option<bool>>,
+        show_columns: Option<Option<bool>>,
     ) -> Vec<Operation> {
-        vec![Operation::DataTableMeta {
+        vec![Operation::DataTableOptionMeta {
             sheet_pos,
             name,
             alternating_colors,
             columns,
-            show_ui,
-            show_name,
-            show_columns,
-            readonly: None,
+            show_name: show_name.map(|show_name| show_name.into()),
+            show_columns: show_columns.map(|show_columns| show_columns.into()),
         }]
     }
 
@@ -280,7 +276,8 @@ impl GridController {
             cell_values.into(),
             false,
             first_row_is_header,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         data_table.formats.apply_updates(&sheet_format_updates);

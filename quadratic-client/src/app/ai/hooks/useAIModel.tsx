@@ -19,6 +19,11 @@ export function useAIModel(): [ModelKey, SetValue<ModelKey>, ModelConfig, boolea
     if (version !== DEFAULT_MODEL_VERSION) {
       window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL));
       window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
+
+      const modelConfig = MODELS_CONFIGURATION[DEFAULT_MODEL];
+      if ('thinkingToggle' in modelConfig) {
+        window.localStorage.setItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY, JSON.stringify(!!modelConfig.thinking));
+      }
     }
   }, [version]);
 
