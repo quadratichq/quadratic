@@ -89,14 +89,18 @@ impl From<&ArrowType> for DataType {
 }
 
 impl ArrowType {
-    /// Convert a vector of ArrowType to an Arrow ArrayRef
-    pub fn to_array_ref(values: Vec<ArrowType>) -> ArrayRef {
-        // go through each column and find the first non-null value to derive
-        // the arrow data type
-        let data_type = values
+    // Search values of a column to find the first non-null value to derive
+    // the arrow data type
+    pub fn data_type(values: &[ArrowType]) -> DataType {
+        values
             .iter()
             .find(|value| value != &&ArrowType::Null)
-            .map_or(DataType::Null, |value| DataType::from(value));
+            .map_or(DataType::Null, |value| DataType::from(value))
+    }
+
+    /// Convert a vector of ArrowType to an Arrow ArrayRef
+    pub fn to_array_ref(values: Vec<ArrowType>) -> ArrayRef {
+        let data_type = ArrowType::data_type(&values);
 
         match data_type {
             DataType::Int8 => {
