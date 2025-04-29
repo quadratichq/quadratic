@@ -492,6 +492,11 @@ mod tests {
                 r#type: "json".into(),
                 is_nullable: true,
             },
+            SchemaColumn {
+                name: "null_bool_col".into(),
+                r#type: "tinyint".into(),
+                is_nullable: true,
+            },
         ];
 
         let columns = &schema.tables.get("all_native_data_types").unwrap().columns;
