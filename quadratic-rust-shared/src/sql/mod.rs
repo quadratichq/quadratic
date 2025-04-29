@@ -119,6 +119,7 @@ pub trait Connection {
 
         let schema = ArrowSchema::new(fields);
         let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)?;
+
         let record_batch = RecordBatch::try_new(Arc::new(schema), cols)?;
         let record_count = record_batch.num_rows();
         writer.write(&record_batch)?;

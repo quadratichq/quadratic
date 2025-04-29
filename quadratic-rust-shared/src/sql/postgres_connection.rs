@@ -148,7 +148,6 @@ impl Connection for PostgresConnection {
         }
 
         let (bytes, num_records) = Self::to_parquet(rows)?;
-
         Ok((bytes, over_the_limit, num_records))
     }
 
