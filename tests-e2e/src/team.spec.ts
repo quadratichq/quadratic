@@ -9,7 +9,7 @@ import { logIn } from "./helpers/auth.helpers";
 import { inviteUserToTeam } from "./helpers/billing.helpers";
 import { buildUrl } from "./helpers/buildUrl.helpers";
 import { cleanUpFiles, createFile } from "./helpers/file.helpers";
-import { createNewTeam } from "./helpers/team.helper";
+import { createNewTeamByURL } from "./helpers/team.helper";
 
 test("Create a Team", async ({ page }) => {
   //--------------------------------
@@ -30,7 +30,7 @@ test("Create a Team", async ({ page }) => {
   await expect(page.locator(`:text("${teamName}")`)).not.toBeVisible();
 
   // Create a new team
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Click team dropdown
   await page
@@ -69,7 +69,7 @@ test("Rename Team", async ({ page: adminPage }) => {
 
   // Admin creates a new team
   await adminPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminPage, {
+  const { teamUrl } = await createNewTeamByURL(adminPage, {
     teamName: originalTeamName,
   });
 
@@ -139,7 +139,7 @@ test("Create File for Team", async ({ page }) => {
   await logIn(page, {});
 
   // Create a new team
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   //--------------------------------
   // Act:
@@ -187,8 +187,10 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   // Admin creates a new team
   await adminPage.bringToFront();
 
-  // await createNewTeam(adminPage, newTeamName);
-  const { teamUrl } = await createNewTeam(adminPage, { teamName: newTeamName });
+  // await createNewTeamByURL(adminPage, newTeamName);
+  const { teamUrl } = await createNewTeamByURL(adminPage, {
+    teamName: newTeamName,
+  });
 
   //--------------------------------
   // Act:
@@ -333,8 +335,10 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   // Admin creates a new team
   await adminPage.bringToFront();
 
-  // await createNewTeam(adminPage, newTeamName);
-  const { teamUrl } = await createNewTeam(adminPage, { teamName: newTeamName });
+  // await createNewTeamByURL(adminPage, newTeamName);
+  const { teamUrl } = await createNewTeamByURL(adminPage, {
+    teamName: newTeamName,
+  });
   await adminPage
     .locator('[placeholder="Filter by file or creator name…"]')
     .waitFor();
@@ -563,7 +567,9 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
 
   // Admin creates a new team
   await adminPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminPage, { teamName: newTeamName });
+  const { teamUrl } = await createNewTeamByURL(adminPage, {
+    teamName: newTeamName,
+  });
 
   // Invite users with different permissions
   await inviteUserToTeam(adminPage, {
@@ -739,7 +745,9 @@ test("Removed Member No Longer Can Access Team Files", async ({
 
   // Admin creates a new team
   await adminPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminPage, { teamName: newTeamName });
+  const { teamUrl } = await createNewTeamByURL(adminPage, {
+    teamName: newTeamName,
+  });
   await adminPage
     .locator('[placeholder="Filter by file or creator name…"]')
     .waitFor();
@@ -854,7 +862,7 @@ test("Can Edit Member are Able to Change Permissions", async ({
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminUserPage, { teamName });
+  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can edit" permission
@@ -922,7 +930,7 @@ test("Can Edit Members are Able to Invite", async ({ page: adminUserPage }) => {
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminUserPage, { teamName });
+  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can edit" permission
@@ -990,7 +998,7 @@ test("Can Edit Team Member Can Edit Files", async ({ page: adminUserPage }) => {
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminUserPage, { teamName });
+  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can edit" permission
@@ -1084,7 +1092,7 @@ test("Can View Members are Unable to Invite Members", async ({
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminUserPage, { teamName });
+  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can view" permission
@@ -1159,7 +1167,7 @@ test("Can View Team Member Cannot Edit Files", async ({
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeam(adminUserPage, { teamName });
+  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canViewUser to the team with "Can view" permission

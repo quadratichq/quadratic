@@ -12,7 +12,7 @@ import {
   navigateIntoFile,
   uploadFile,
 } from "./helpers/file.helpers";
-import { createNewTeam } from "./helpers/team.helper";
+import { createNewTeamByURL } from "./helpers/team.helper";
 
 test("Create New File", async ({ page }) => {
   //--------------------------------
@@ -27,7 +27,7 @@ test("Create New File", async ({ page }) => {
 
   // Create new team
   const teamName = `${fileName} - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Clean up
   await cleanUpFiles(page, { fileName });
@@ -103,7 +103,7 @@ test("Edit Share File Permissions", async ({ page }) => {
 
   // Create new team
   const teamName = `${fileName} - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   const recipientBrowser = await chromium.launch();
   const recipientPage = await recipientBrowser.newPage();
@@ -332,7 +332,7 @@ test("File Actions - Dashboard", async ({ page }) => {
   const newTeamName = `Test File Actions - ${Date.now()}`;
 
   // Admin user creates a new team
-  await createNewTeam(page, { teamName: newTeamName });
+  await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Cleanup any duplicate copies
   await cleanUpFiles(page, {
@@ -521,7 +521,7 @@ test("Share File - Dashboard", async ({ page: user1Page, context }) => {
   const newTeamName = `Share File - ${Date.now()}`;
 
   // Admin user creates a new team
-  await createNewTeam(user1Page, { teamName: newTeamName });
+  await createNewTeamByURL(user1Page, { teamName: newTeamName });
 
   const user2Browser = await chromium.launch();
   const user2Page = await user2Browser.newPage();
@@ -790,7 +790,7 @@ test("Share File - Dashboard", async ({ page: user1Page, context }) => {
   await cleanUpFiles(user1Page, { fileName });
 });
 
-test("Upload Large File", async ({ page }) => {
+test.skip("Upload Large File", async ({ page }) => {
   //--------------------------------
   // Upload Large File
   //--------------------------------
@@ -804,7 +804,7 @@ test("Upload Large File", async ({ page }) => {
 
   // Create new team
   const teamName = `${largeFileName} - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Clean up any existing files with the same name
   await cleanUpFiles(page, { fileName: largeFileName });

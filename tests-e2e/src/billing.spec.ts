@@ -14,7 +14,7 @@ import {
   createFile,
   navigateIntoFile,
 } from "./helpers/file.helpers";
-import { createNewTeam } from "./helpers/team.helper";
+import { createNewTeamByURL } from "./helpers/team.helper";
 
 test.skip("AI Message Counter", async ({ page }) => {
   //--------------------------------
@@ -44,7 +44,7 @@ test.skip("AI Message Counter", async ({ page }) => {
 
   // Create new team
   const teamName = `AI Counter - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page, {});
@@ -200,7 +200,7 @@ test("Manage Billing - Add Payment Method", async ({ page }) => {
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page, {});
@@ -357,7 +357,7 @@ test("Add user to a Team with existing Pro Plan", async ({ page }) => {
 
   // Create new team
   const teamName = `Add user to team - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page, {});
@@ -521,7 +521,7 @@ test("Manage Billing - Cancel Subscription", async ({ page }) => {
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page, {});
@@ -609,7 +609,7 @@ test("Manage Billing - Update Billing Information", async ({ page }) => {
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page, {});
@@ -745,7 +745,7 @@ test("Upgrade to the Pro Plan", async ({ page }) => {
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
@@ -843,7 +843,7 @@ test("Upgrade to the Pro Plan with an Invalid Card", async ({ page }) => {
 
   // Create new team
   const teamName = `Invalid - ${Date.now()}`;
-  await createNewTeam(page, { teamName });
+  await createNewTeamByURL(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();

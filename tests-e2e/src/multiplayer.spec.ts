@@ -5,7 +5,7 @@ import { logIn } from "./helpers/auth.helpers";
 import { inviteUserToTeam } from "./helpers/billing.helpers";
 import { buildUrl } from "./helpers/buildUrl.helpers";
 import { cleanUpFiles, createFile } from "./helpers/file.helpers";
-import { createNewTeam } from "./helpers/team.helper";
+import { createNewTeamByURL } from "./helpers/team.helper";
 
 test("Action Visibility", async ({ page: userPage1 }) => {
   //--------------------------------
@@ -20,7 +20,7 @@ test("Action Visibility", async ({ page: userPage1 }) => {
   await logIn(userPage1, {});
 
   // Admin user creates a new team
-  await createNewTeam(userPage1, { teamName: newTeamName });
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
 
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
@@ -36,7 +36,9 @@ test("Action Visibility", async ({ page: userPage1 }) => {
 
   // First user creates a new team and file
   await userPage1.bringToFront();
-  const { teamUrl } = await createNewTeam(userPage1, { teamName: newTeamName });
+  const { teamUrl } = await createNewTeamByURL(userPage1, {
+    teamName: newTeamName,
+  });
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 
@@ -382,6 +384,1027 @@ test("Action Visibility", async ({ page: userPage1 }) => {
   );
 
   // Clean up
+  await userPage1.bringToFront();
+  await userPage1.locator(`nav a svg`).click();
+  await userPage1.waitForTimeout(2000);
+  await cleanUpFiles(userPage1, { fileName });
+});
+
+test("Connection goes down in Multiplayer Session", async ({
+  page: userPage1,
+}) => {
+  //--------------------------------
+  // Make Changes to File while Network is off
+  //--------------------------------
+
+  /*
+    Test if sheets still sync after user 3's connection goes down.
+  */
+
+  // Constants
+  const newTeamName = `File Actions - ${Date.now()}`;
+  const fileName = "MultiUser_Connection_Down";
+
+  // Log in to user 1 and give page unique name (ie userPage1)
+  await logIn(userPage1, {});
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
+
+  const user2Browser = await chromium.launch();
+  const userPage2 = await user2Browser.newPage();
+  const user2Email = await logIn(userPage2, {
+    emailPrefix: EDIT_USER_PREFIX,
+  });
+
+  const user3Browser = await chromium.launch();
+  const userPage3 = await user3Browser.newPage();
+  const user3Email = await logIn(userPage3, {
+    emailPrefix: VIEW_USER_PREFIX,
+  });
+
+  // First user creates a new team and file
+  await userPage1.bringToFront();
+  const { teamUrl } = await createNewTeamByURL(userPage1, {
+    teamName: newTeamName,
+  });
+  await cleanUpFiles(userPage1, { fileName });
+  await createFile(userPage1, { fileName });
+
+  // Invite second and third users to the team
+  await inviteUserToTeam(userPage1, {
+    email: user2Email,
+    permission: "Can edit",
+  });
+  await inviteUserToTeam(userPage1, {
+    email: user3Email,
+    permission: "Can edit",
+  });
+
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.reload();
+
+  // Navigate to team URL
+  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.locator(`a:has-text("${fileName}")`).click();
+
+  // Third user navigates into file
+  await userPage3.bringToFront();
+  await userPage3.reload();
+  // Navigate to team URL
+  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.waitForTimeout(2000);
+  await userPage3.locator(`a:has-text("${fileName}")`).click();
+
+  // First user navigates into file
+  await userPage1.bringToFront();
+  await userPage1
+    .locator(`h3:text-is("Team") + div a:text-is("Files")`)
+    .click();
+  await userPage1.locator(`a:has-text("${fileName}")`).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Bring userPage1 to front
+  await userPage1.bringToFront();
+
+  // User 1 to type in cell and fill color some cells
+  await typeInCell(userPage1, {
+    targetColumn: 2,
+    targetRow: 4,
+    text: "User 1 - Test",
+  });
+  await typeInCell(userPage1, {
+    targetColumn: 3,
+    targetRow: 4,
+    text: "User 1 - Test",
+  });
+  await navigateOnSheet(userPage1, { targetColumn: 3, targetRow: 4 });
+  await userPage1.keyboard.press("Control+i");
+
+  await selectCells(userPage1, { startXY: [1, 1], endXY: [2, 5] });
+  await userPage1.locator(`button span:text-is("format_color_fill")`).click();
+  await userPage1.locator(`div[title="#9B59B6"]`).click();
+  await userPage1.waitForTimeout(2000);
+
+  // Bring user 3 to the front, assert screenshot prior to connection going down
+  await userPage3.bringToFront();
+  await expect(userPage3.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    "userPage3-initial.png",
+    { maxDiffPixelRatio: 0.01 },
+  );
+
+  // Bring userPage3 offline
+  await userPage3.context().setOffline(true);
+
+  // User 1 and User 2 will type text and format items
+  await userPage2.bringToFront();
+  await typeInCell(userPage2, {
+    targetColumn: 2,
+    targetRow: 8,
+    text: "User 2 - Test",
+  });
+  await typeInCell(userPage2, {
+    targetColumn: 2,
+    targetRow: 9,
+    text: "User 2 - Test",
+  });
+  await navigateOnSheet(userPage2, { targetColumn: 2, targetRow: 8 });
+  await userPage2.keyboard.press("Control+b");
+  await typeInCell(userPage2, {
+    targetColumn: 5,
+    targetRow: 9,
+    text: "User 2 - Test",
+  });
+
+  await userPage1.bringToFront();
+  await userPage1.waitForTimeout(2000);
+  await selectCells(userPage1, { startXY: [5, 9], endXY: [0, 3] });
+  await userPage1.waitForTimeout(2000);
+  await userPage1.locator(`button span:text-is("format_color_fill")`).click();
+  await userPage1.locator(`div[title="#7BE9D3"]`).click();
+  await userPage1.mouse.click(300, 0);
+
+  // Assert userPage3 has the same screenshot as earlier
+  await userPage3.bringToFront();
+  await expect(userPage3.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    "userPage3-initial-off.png",
+    { maxDiffPixelRatio: 0.01 },
+  );
+
+  // Bring userPage3 connection back up, wait 10 seconds to allow sync
+  await userPage3.context().setOffline(false);
+  await userPage3.waitForTimeout(10_000);
+  await userPage3.mouse.move(300, 0);
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Confirm Third User can see changes made on sheet after network is back online
+  await expect(userPage3.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    "userPage3-after-connection.png",
+    { maxDiffPixelRatio: 0.001 },
+  );
+
+  // Cleanup newly created files
+  await userPage1.bringToFront();
+  await userPage1.locator(`nav a svg`).click();
+  await cleanUpFiles(userPage1, { fileName });
+});
+
+test("Make Changes while Network is off", async ({ page: userPage1 }) => {
+  //--------------------------------
+  // Make Changes while Network is off
+  //--------------------------------
+
+  /*
+    Test if sheets still sync after user 3's connection goes down &
+    user 3 makes changes while network is off
+  */
+
+  // Constants
+  const newTeamName = `MultiUser - ${Date.now()}`;
+  const fileName = "MultiUser_Offline_Changes";
+
+  // Log in to user 1 and give page unique name (ie userPage1)
+  await logIn(userPage1, {});
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
+
+  const user2Browser = await chromium.launch();
+  const userPage2 = await user2Browser.newPage();
+  const user2Email = await logIn(userPage2, {
+    emailPrefix: EDIT_USER_PREFIX,
+  });
+
+  const user3Browser = await chromium.launch();
+  const userPage3 = await user3Browser.newPage();
+  const user3Email = await logIn(userPage3, {
+    emailPrefix: VIEW_USER_PREFIX,
+  });
+
+  // First user creates a new team and file
+  await userPage1.bringToFront();
+  const { teamUrl } = await createNewTeamByURL(userPage1, {
+    teamName: newTeamName,
+  });
+  await cleanUpFiles(userPage1, { fileName });
+  await createFile(userPage1, { fileName });
+
+  // Invite second and third users to the team
+  await inviteUserToTeam(userPage1, {
+    email: user2Email,
+    permission: "Can edit",
+  });
+  await inviteUserToTeam(userPage1, {
+    email: user3Email,
+    permission: "Can edit",
+  });
+
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.reload();
+
+  // Navigate to team URL
+  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.locator(`a:has-text("${fileName}")`).click();
+
+  // Third user navigates into file
+  await userPage3.bringToFront();
+  await userPage3.reload();
+
+  // Navigate to team URL
+  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.waitForTimeout(2000);
+  await userPage3.locator(`a:has-text("${fileName}")`).click();
+
+  // First user navigates into file
+  await userPage1.bringToFront();
+  await userPage1
+    .locator(`h3:text-is("Team") + div a:text-is("Files")`)
+    .click();
+  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // User 1 to type in cell and fill color some cells
+  await userPage1.bringToFront();
+  await typeInCell(userPage1, {
+    targetColumn: 2,
+    targetRow: 4,
+    text: "User 1 - Test",
+  });
+  await typeInCell(userPage1, {
+    targetColumn: 3,
+    targetRow: 4,
+    text: "User 1 - Test",
+  });
+  await navigateOnSheet(userPage1, {
+    targetColumn: 3,
+    targetRow: 4,
+  });
+  await userPage1.keyboard.press("Control+i");
+
+  await selectCells(userPage1, {
+    startXY: [1, 1],
+    endXY: [2, 5],
+  });
+  await userPage1.locator(`button span:text-is("format_color_fill")`).click();
+  await userPage1.locator(`div[title="#9B59B6"]`).click();
+  await userPage1.waitForTimeout(2000);
+  await userPage1.mouse.click(300, 0);
+  await userPage1.waitForTimeout(2000);
+
+  // Assert userPage3 initial screenshot
+  await userPage3.bringToFront();
+  await expect(userPage3.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    `${fileName}-userPage3-initial.png`,
+    { maxDiffPixelRatio: 0.01 },
+  );
+
+  // Bring userPage3 connection down, user3 types and edits the sheet
+  await userPage3.context().setOffline(true);
+
+  await typeInCell(userPage3, {
+    targetColumn: 2,
+    targetRow: 8,
+    text: "User 3 - Test",
+  });
+  await typeInCell(userPage3, {
+    targetColumn: 2,
+    targetRow: 9,
+    text: "User 3 - Test",
+  });
+  await navigateOnSheet(userPage3, { targetColumn: 2, targetRow: 8 });
+  await userPage3.keyboard.press("Control+b");
+  await typeInCell(userPage3, {
+    targetColumn: 5,
+    targetRow: 9,
+    text: "User 3 - Test",
+  });
+
+  await userPage3.waitForTimeout(2000);
+  await selectCells(userPage3, { startXY: [1, 3], endXY: [5, 9] });
+  await userPage3.waitForTimeout(2000);
+  await userPage3.locator(`button span:text-is("format_color_fill")`).click();
+  await userPage3.locator(`div[title="#7BE9D3"]`).click();
+  await userPage3.mouse.click(300, 0);
+  await userPage3.waitForTimeout(5000);
+
+  // Assert user3's screenshot after making changes
+  await expect(userPage3.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    `${fileName}-userPage3-post.png`,
+    { maxDiffPixelRatio: 0.01 },
+  );
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert user1 and user2 cannot see user3's edits
+  await userPage2.waitForTimeout(20 * 1000);
+  await userPage1.bringToFront();
+  await expect(userPage1.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    `${fileName}-userPage1-initial.png`,
+    { maxDiffPixelRatio: 0.02 },
+  );
+
+  await userPage2.bringToFront();
+  await expect(userPage2.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    `${fileName}-userPage2-initial.png`,
+    { maxDiffPixelRatio: 0.02 },
+  );
+
+  //--------------------------------
+  // Changes sync when Network is back on
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Bring user3 back online
+  await userPage3.bringToFront();
+  await userPage3.context().setOffline(false);
+  await userPage3.waitForTimeout(10_000);
+
+  // Assert there are no changes to user3's page
+  await expect(userPage3.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    `${fileName}-userPage3-post-on.png`,
+    { maxDiffPixelRatio: 0.01 },
+  );
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert user1 and user2 can see user3's changes
+  await userPage2.waitForTimeout(20 * 1000);
+  await userPage1.bringToFront();
+  await expect(userPage1.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    `${fileName}-userPage1-post.png`,
+    { maxDiffPixelRatio: 0.02 },
+  );
+
+  await userPage2.bringToFront();
+  await expect(userPage2.locator("#QuadraticCanvasID")).toHaveScreenshot(
+    `${fileName}-userPage2-post.png`,
+    { maxDiffPixelRatio: 0.02 },
+  );
+
+  // Cleanup newly created files
+  await userPage1.bringToFront();
+  await userPage1.locator(`nav a svg`).click();
+  await cleanUpFiles(userPage1, { fileName });
+});
+
+test("Mouse Visibility", async ({ page: userPage1 }) => {
+  //--------------------------------
+  // Can See User 1 Mouse
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Test Mouse Visibility - ${Date.now()}`;
+  const fileName = "Mouse_Visibility";
+
+  // Log in to user 1 and give page unique name (ie userPage1)
+  await logIn(userPage1, {});
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
+
+  const user2Browser = await chromium.launch();
+  const userPage2 = await user2Browser.newPage();
+  const user2Email = await logIn(userPage2, {
+    emailPrefix: EDIT_USER_PREFIX,
+  });
+
+  const user3Browser = await chromium.launch();
+  const userPage3 = await user3Browser.newPage();
+  const user3Email = await logIn(userPage3, {
+    emailPrefix: VIEW_USER_PREFIX,
+  });
+
+  // First user creates a new team and file
+  await userPage1.bringToFront();
+  const { teamUrl } = await createNewTeamByURL(userPage1, {
+    teamName: newTeamName,
+  });
+  await cleanUpFiles(userPage1, { fileName });
+  await createFile(userPage1, { fileName });
+
+  // Invite second and third users to the team
+  await inviteUserToTeam(userPage1, {
+    email: user2Email,
+    permission: "Can edit",
+  });
+  await inviteUserToTeam(userPage1, {
+    email: user3Email,
+    permission: "Can edit",
+  });
+
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.reload();
+
+  // Navigate to team URL
+  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.locator(`a:has-text("${fileName}")`).click();
+
+  // Close AI chat box as needed
+  try {
+    await userPage2
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 10000 });
+  } catch (e) {
+    console.error(e);
+  }
+
+  // Third user navigates into file
+  await userPage3.bringToFront();
+  await userPage3.reload();
+
+  // Navigate to team URL
+  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.waitForTimeout(2000);
+  await userPage3.locator(`a:has-text("${fileName}")`).click();
+
+  // Close AI chat box as needed
+  try {
+    await userPage3
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 10000 });
+  } catch (e) {
+    console.error(e);
+  }
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Move Mouse as the first user
+  await userPage1.bringToFront();
+  await userPage1
+    .locator(`h3:text-is("Team") + div a:text-is("Files")`)
+    .click();
+  await userPage1.locator(`a:has-text("${fileName}")`).click();
+
+  // Close AI chat box as needed
+  try {
+    await userPage1
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 10000 });
+  } catch (e) {
+    console.error(e);
+  }
+
+  await navigateOnSheet(userPage1, { targetColumn: 5, targetRow: 1 });
+  await userPage1.keyboard.press("1");
+  await userPage1.waitForTimeout(3000);
+  await userPage1.keyboard.press("Enter");
+
+  // Dedicated wait for timeout
+  await userPage1.waitForTimeout(5000);
+  await navigateOnSheet(userPage1, { targetColumn: 1, targetRow: 1 });
+  await userPage1.mouse.move(0, 0);
+  await userPage1.mouse.down();
+  await userPage1.mouse.up();
+
+  for (let i = 1; i < 5; i += 0.5) {
+    // Move the mouse
+    await userPage1.mouse.move(i * 100, i * 100);
+    await userPage1.mouse.down();
+    await userPage2.waitForTimeout(3000);
+
+    //--------------------------------
+    // Assert:
+    //--------------------------------
+
+    // Confirm the mouse is at the expected position
+    await userPage2.bringToFront();
+    console.log(`This is loop ${i}`);
+    await expect(userPage2.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
+      `mouse-diff-img-position-${i}.A.png`,
+      {
+        maxDiffPixelRatio: 0.01,
+      },
+    );
+    // Wait 10 seconds
+    await userPage2.waitForTimeout(10000);
+
+    // Confirm mouse is still at the expected position
+    await expect(userPage2.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
+      `mouse-diff-img-position-${i}.A.png`,
+      {
+        maxDiffPixelRatio: 0.01,
+      },
+    );
+
+    // Move the mouse up
+    await userPage1.mouse.up();
+  }
+
+  //--------------------------------
+  // Can see multiple User's Mouse move
+  //--------------------------------
+
+  // Bring the third user's page to the front
+  await userPage3.bringToFront();
+  await userPage3.goBack();
+  await userPage3.reload();
+  await userPage3.locator(`a:has-text("${fileName}")`).click();
+  // Close AI chat box as needed
+  try {
+    await userPage3
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 10000 });
+  } catch (e) {
+    console.error(e);
+  }
+
+  // Reload both first and second user's pages
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.goBack();
+  await userPage2.reload();
+  await userPage2.locator(`a:has-text("${fileName}")`).click();
+  // Close AI chat box as needed
+  try {
+    await userPage2
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 10000 });
+  } catch (e) {
+    console.error(e);
+  }
+
+  // Third user navigates into file
+  await userPage1.bringToFront();
+  await userPage1.goBack();
+  await userPage1.reload();
+  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  try {
+    await userPage1
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 10000 });
+  } catch (e) {
+    console.error(e);
+  }
+  // Dedicated wait for timeout
+  await userPage1.waitForTimeout(5000);
+  await userPage1.mouse.move(300, 0);
+  await userPage1.mouse.down();
+  await userPage1.mouse.up();
+  await userPage2.mouse.move(300, 0);
+  await userPage2.mouse.down();
+  await userPage2.mouse.up();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  for (let i = 1; i < 5; i += 0.5) {
+    // Move the mouse as the first user
+    await userPage1.mouse.move(i * 50, i * 100);
+    await userPage1.mouse.down();
+    await userPage1.waitForTimeout(3000);
+
+    // Move the mouse as the second user
+    await userPage2.mouse.move(i * 150, i * 100);
+    await userPage2.mouse.down();
+    await userPage2.waitForTimeout(3000);
+
+    //--------------------------------
+    // Assert:
+    //--------------------------------
+
+    // Confirm the mouse is at the expected position
+    await userPage3.bringToFront();
+    await expect(userPage3.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
+      `multiple-mouse-diff-img-position-${i}.A2.png`,
+      { maxDiffPixelRatio: 0.01 },
+    );
+    // Wait 10 seconds
+    await userPage3.waitForTimeout(10000);
+
+    // Confirm the mouse is still at the expected position
+    await expect(userPage3.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
+      `multiple-mouse-diff-img-position-${i}.A2.png`,
+      { maxDiffPixelRatio: 0.01 },
+    );
+
+    // Move the mouse up
+    await userPage1.mouse.up();
+    await userPage2.mouse.up();
+  }
+});
+
+test("Switching Tabs Persists Cursor", async ({ page: userPage1 }) => {
+  //--------------------------------
+  // Switching Tabs Persists Cursor
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Test MultiUser Tab Switch - ${Date.now()}`;
+  const fileName = "MultiUser_Tab_Switch_Persists";
+
+  // Log in to user 1 and give page unique name (ie userPage1)
+  await logIn(userPage1, {});
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
+
+  const user2Browser = await chromium.launch();
+  const userPage2 = await user2Browser.newPage();
+  const user2Email = await logIn(userPage2, {
+    emailPrefix: EDIT_USER_PREFIX,
+  });
+
+  const user3Browser = await chromium.launch();
+  const userPage3 = await user3Browser.newPage();
+  const user3Email = await logIn(userPage3, {
+    emailPrefix: VIEW_USER_PREFIX,
+  });
+
+  // First user creates a new team and file
+  await userPage1.bringToFront();
+  const { teamUrl } = await createNewTeamByURL(userPage1, {
+    teamName: newTeamName,
+  });
+  await userPage1
+    .locator('[placeholder*="Filter by file or creator name"]')
+    .waitFor();
+  await cleanUpFiles(userPage1, { fileName });
+  await createFile(userPage1, { fileName });
+
+  // Invite second and third users to the team
+  await inviteUserToTeam(userPage1, {
+    email: user2Email,
+    permission: "Can edit",
+  });
+  await inviteUserToTeam(userPage1, {
+    email: user3Email,
+    permission: "Can edit",
+  });
+
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.reload();
+
+  // Navigate to team URL
+  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.locator(`a:has-text("${fileName}")`).click();
+
+  // Third user navigates into file
+  await userPage3.bringToFront();
+  await userPage3.reload();
+
+  // Navigate to team URL
+  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.waitForTimeout(2000);
+  await userPage3.locator(`a:has-text("${fileName}")`).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // User 2 to make Sheet2
+  await userPage2.bringToFront();
+  await userPage2.getByRole(`button`, { name: `add` }).nth(2).click();
+
+  // User 3 to make Sheet3
+  await userPage3.bringToFront();
+  await userPage3.getByRole(`button`, { name: `add` }).nth(2).click();
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Switch to first user's page, assert that squares are present in Sheet3
+  await userPage1.bringToFront();
+  await userPage1
+    .locator(`h3:text-is("Team") + div a:text-is("Files")`)
+    .click();
+  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  await expect(
+    userPage1.locator(
+      `[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage1.locator(
+      `[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage1.locator(
+      `[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+
+  // Switch to second user's page, assert that squares are present in Sheet1 and Sheet3
+  await userPage2.bringToFront();
+  await expect(
+    userPage2.locator(
+      `[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+  await expect(
+    userPage2.locator(
+      `[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage2.locator(
+      `[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+
+  // Switch to third user's page, assert that squares are present in Sheet1 and Sheet2
+  await userPage3.bringToFront();
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+
+  // User 1 clicks on Sheet2
+  await userPage1.bringToFront();
+  await userPage1.locator(`[data-title='Sheet 2']`).click();
+
+  // Sheet1 square is not visible
+  await expect(
+    userPage1.locator(
+      `[data-title='Sheet 1'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage1.locator(
+      `[data-title='Sheet 2'] + div  [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+  await expect(
+    userPage1.locator(
+      `[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+
+  // Switch to second user
+  await userPage2.bringToFront();
+  await expect(
+    userPage2.locator(
+      `[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage2.locator(
+      `[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage2.locator(
+      `[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).toBeVisible();
+
+  // Switch to third user
+  await userPage3.bringToFront();
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).toHaveCount(2);
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+
+  // Switch to third user's page, third user enters Sheet2.
+  await userPage3.locator(`[data-title='Sheet 2']`).click();
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+  await expect(
+    userPage3
+      .locator(
+        `[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`,
+      )
+      .first(),
+  ).toBeVisible();
+  await expect(
+    userPage3.locator(
+      `[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`,
+    ),
+  ).not.toBeVisible();
+
+  // Clean up Files
+  await userPage1.bringToFront();
+  await userPage1.locator(`nav a svg`).click();
+
+  await userPage1.waitForTimeout(2000);
+  await cleanUpFiles(userPage1, { fileName });
+});
+
+test("User Can See Other Users on File", async ({ page: userPage1 }) => {
+  //--------------------------------
+  // User Can See Other Users on File
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Test User Visibility - ${Date.now()}`;
+  const fileName = "User_Visibility";
+
+  // Log in to user 1 and give page unique name (ie userPage1)
+  const user1Email = await logIn(userPage1, {});
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
+
+  const user2Browser = await chromium.launch();
+  const userPage2 = await user2Browser.newPage();
+  const user2Email = await logIn(userPage2, {
+    emailPrefix: EDIT_USER_PREFIX,
+  });
+
+  const user3Browser = await chromium.launch();
+  const userPage3 = await user3Browser.newPage();
+  const user3Email = await logIn(userPage3, {
+    emailPrefix: VIEW_USER_PREFIX,
+  });
+
+  // First user creates a new team and file
+  await userPage1.bringToFront();
+  const { teamUrl } = await createNewTeamByURL(userPage1, {
+    teamName: newTeamName,
+  });
+  await cleanUpFiles(userPage1, { fileName });
+  await createFile(userPage1, { fileName });
+
+  // Invite second and third users to the team
+  await inviteUserToTeam(userPage1, {
+    email: user2Email,
+    permission: "Can edit",
+  });
+  await inviteUserToTeam(userPage1, {
+    email: user3Email,
+    permission: "Can edit",
+  });
+
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.reload();
+
+  // Navigate to team URL
+  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.locator(`a:has-text("${fileName}")`).click();
+
+  // Third user navigates into file
+  await userPage3.bringToFront();
+  await userPage3.reload();
+
+  // Navigate to team URL
+  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.waitForTimeout(2000);
+  await userPage3.locator(`a:has-text("${fileName}")`).click();
+
+  // Reload all pages so that user icons will show on each one
+  await userPage1.reload();
+  await userPage2.reload();
+  await userPage3.reload();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // User2 can see both user1 and user3 at the top right
+  await userPage1.bringToFront();
+  await userPage1
+    .locator(`h3:text-is("Team") + div a:text-is("Files")`)
+    .click();
+  await userPage1.locator(`a:has-text("${fileName}")`).click();
+
+  await userPage2.bringToFront();
+  const userPage2_user1_icon = userPage2.locator(`[alt="${user1Email}"]`);
+  const userPage2_user3_icon = userPage2.locator(`[alt="${user3Email}"]`);
+
+  await expect(userPage2_user1_icon).toBeVisible();
+  await expect(userPage2_user3_icon).toBeVisible();
+
+  // Hover over users
+  // User2 can see both user1 and user3's email on toast
+  await userPage2.mouse.move(0, 0);
+  await userPage2.mouse.move(0, 100);
+  await userPage2_user1_icon.hover();
+  await expect(
+    userPage2.getByRole("tooltip").locator(`:has-text('${user1Email}')`),
+  ).toBeVisible();
+
+  await userPage2.mouse.move(0, 0);
+  await userPage2.mouse.move(0, 100);
+  await userPage2.waitForTimeout(3000);
+  await userPage2_user3_icon.hover();
+  await userPage2.waitForTimeout(3000);
+
+  await expect(
+    userPage2.getByRole("tooltip").locator(`:has-text('${user3Email}')`),
+  ).toBeVisible();
+
+  // Wait for 30 seconds
+  await userPage2.waitForTimeout(30 * 1000);
+
+  // Confirm we can still see active users
+  await expect(userPage2_user1_icon).toBeVisible();
+  await expect(userPage2_user3_icon).toBeVisible();
+
+  // User1 can also see this
+  await userPage1.bringToFront();
+  const userPage1_user2_icon = userPage1.locator(`[alt="${user2Email}"]`);
+  const userPage1_user3_icon = userPage1.locator(`[alt="${user3Email}"]`);
+
+  await expect(userPage1_user2_icon).toBeVisible();
+  await expect(userPage1_user3_icon).toBeVisible();
+
+  // Hover over users
+  // User1 can see both user2 and user3's email on toast
+  await userPage1.mouse.move(0, 0);
+  await userPage1.mouse.move(0, 100);
+  await userPage1_user2_icon.hover();
+  await expect(
+    userPage1.getByRole("tooltip").locator(`:has-text('${user2Email}')`),
+  ).toBeVisible();
+
+  await userPage1.mouse.move(0, 0);
+  await userPage1.mouse.move(0, 300);
+  await userPage1.waitForTimeout(3000);
+  await userPage1_user3_icon.hover();
+  await userPage1.waitForTimeout(3000);
+
+  await expect(
+    userPage1.getByRole("tooltip").locator(`:has-text('${user3Email}')`),
+  ).toBeVisible();
+
+  // Wait for 30 seconds
+  await userPage1.waitForTimeout(30 * 1000);
+
+  // Confirm we can still see active users
+  await expect(userPage1_user2_icon).toBeVisible();
+  await expect(userPage1_user3_icon).toBeVisible();
+
+  // User3 can also see this
+  await userPage3.bringToFront();
+  const userPage3_user1_icon = userPage3.locator(`[alt="${user1Email}"]`);
+  const userPage3_user2_icon = userPage3.locator(`[alt="${user2Email}"]`);
+
+  await expect(userPage3_user1_icon).toBeVisible();
+  await expect(userPage3_user2_icon).toBeVisible();
+
+  // Hover over users
+  // User3 can see both user1 and user2's email on toast
+  await userPage3.mouse.move(0, 0);
+  await userPage3.mouse.move(0, 100);
+  await userPage3_user1_icon.hover();
+  await expect(
+    userPage3.getByRole("tooltip").locator(`:has-text('${user1Email}')`),
+  ).toBeVisible();
+  await userPage3.mouse.move(0, 0);
+  await userPage3.mouse.move(0, 100);
+  await userPage3.waitForTimeout(2000);
+  await userPage3_user2_icon.hover();
+  await expect(
+    userPage3.getByRole("tooltip").locator(`:has-text('${user2Email}')`),
+  ).toBeVisible();
+
+  // Wait for 30 seconds
+  await userPage3.waitForTimeout(30 * 1000);
+
+  // Confirm we can still see active users
+  await expect(userPage3_user1_icon).toBeVisible();
+  await expect(userPage3_user2_icon).toBeVisible();
+
+  // Clean up Files
   await userPage1.bringToFront();
   await userPage1.locator(`nav a svg`).click();
   await userPage1.waitForTimeout(2000);

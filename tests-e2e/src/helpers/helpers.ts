@@ -177,7 +177,7 @@
 //   return { email, context, browser, page };
 // }
 
-// async function createNewTeam(page, newTeamName) {
+// async function createNewTeamByURL(page, newTeamName) {
 //   // Click on the "My Team" button
 //   await page.locator(`nav :text("arrow_drop_down"):visible`).click();
 

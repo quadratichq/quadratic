@@ -16,7 +16,7 @@ type CreateNewTeamOptions = {
   teamName: string;
 };
 
-export const createNewTeam = async (
+export const createNewTeamByURL = async (
   page: Page,
   { teamName }: CreateNewTeamOptions,
 ) => {
