@@ -237,6 +237,33 @@ impl SheetFormatUpdates {
         Self::translate_rect_item(&mut self.strike_through, x, y);
     }
 
+    pub fn merge(&mut self, other: &SheetFormatUpdates) {
+        Self::merge_item(&mut self.align, &other.align);
+        Self::merge_item(&mut self.vertical_align, &other.vertical_align);
+        Self::merge_item(&mut self.wrap, &other.wrap);
+        Self::merge_item(&mut self.numeric_format, &other.numeric_format);
+        Self::merge_item(&mut self.numeric_decimals, &other.numeric_decimals);
+        Self::merge_item(&mut self.numeric_commas, &other.numeric_commas);
+        Self::merge_item(&mut self.bold, &other.bold);
+        Self::merge_item(&mut self.italic, &other.italic);
+        Self::merge_item(&mut self.text_color, &other.text_color);
+        Self::merge_item(&mut self.fill_color, &other.fill_color);
+        Self::merge_item(&mut self.date_time, &other.date_time);
+        Self::merge_item(&mut self.underline, &other.underline);
+        Self::merge_item(&mut self.strike_through, &other.strike_through);
+    }
+
+    pub fn merge_item<T>(item: &mut SheetFormatUpdatesType<T>, other: &SheetFormatUpdatesType<T>)
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        if let (Some(item), Some(other)) = (item, other) {
+            item.update_from(other, |value, new_value| {
+                std::mem::replace(value, Some(new_value.clone()))
+            });
+        }
+    }
+
     /// Whether the update includes any fill color changes
     pub fn has_fills(&self) -> bool {
         self.fill_color
