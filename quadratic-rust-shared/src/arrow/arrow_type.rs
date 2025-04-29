@@ -95,7 +95,7 @@ impl ArrowType {
         values
             .iter()
             .find(|value| value != &&ArrowType::Null)
-            .map_or(DataType::Null, |value| DataType::from(value))
+            .map_or(DataType::Null, DataType::from)
     }
 
     /// Convert a vector of ArrowType to an Arrow ArrayRef
