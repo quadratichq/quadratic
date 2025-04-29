@@ -37,7 +37,24 @@ impl GridController {
 
     /// Creates or updates a validation.
     pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
-        let ops = vec![Operation::SetValidation { validation }];
+        // Update the selection to take advantage of any table-based selections.
+        // DF: This helps validations work better with tables--there are still
+        // edge cases where it doesn't work, like setting individual cells
+        // within a table, and then hiding that column--one way to fix this is
+        // to provide a1 notation for entries within tables, eg, Table1[Column
+        // 2][3], and using that for validations. Alternatively, we could
+        // provide a data_table.validations, similar to what we do for
+        // formatting (but that makes it more difficult to work with the
+        // validations DOM UI)
+        let mut selection = validation.selection.clone();
+        selection.change_to_table_refs(validation.selection.sheet_id, &self.a1_context);
+
+        let ops = vec![Operation::SetValidation {
+            validation: Validation {
+                selection,
+                ..validation
+            },
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::Validation);
     }
 
