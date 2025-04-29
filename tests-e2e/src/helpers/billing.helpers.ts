@@ -127,7 +127,7 @@ type UpgradeToProPlanOptions = {};
 
 export const upgradeToProPlan = async (
   page: Page,
-  options: UpgradeToProPlanOptions,
+  options?: UpgradeToProPlanOptions,
 ) => {
   try {
     // Navigate to the Settings page by clicking the 'Settings' link
@@ -425,7 +425,7 @@ type ResetBillingInformationOptions = {};
 
 export const resetBillingInformation = async (
   page: Page,
-  options: ResetBillingInformationOptions,
+  options?: ResetBillingInformationOptions,
 ) => {
   try {
     // Click 'Update information' to update the billing info

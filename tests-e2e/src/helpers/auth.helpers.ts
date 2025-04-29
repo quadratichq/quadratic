@@ -7,13 +7,15 @@ type LogInOptions = {
   teamName?: string;
   route?: string;
 };
-
 export const logIn = async (
   page: Page,
-  options: LogInOptions,
+  options?: LogInOptions,
 ): Promise<string> => {
+  // grant clipboard permissions
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+
   // extract email and password if available otherwise use env vars
-  const email = `${options.emailPrefix ?? PRO_USER_PREFIX}_chrome@quadratichq.com`;
+  const email = `${options?.emailPrefix ?? PRO_USER_PREFIX}_chrome@quadratichq.com`;
 
   // setup dialog alerts to be yes
   page.on("dialog", (dialog) => {
@@ -24,7 +26,7 @@ export const logIn = async (
 
   // Try to navigate to our URL
   try {
-    await page.goto(buildUrl(options.route ? options.route : "/"), {
+    await page.goto(buildUrl(options?.route ? options.route : "/"), {
       waitUntil: "domcontentloaded",
     });
   } catch (error) {
@@ -49,7 +51,7 @@ export const logIn = async (
   await expect(page.getByText(email)).toBeVisible();
 
   // Click team dropdown
-  if (options.teamName) {
+  if (options?.teamName) {
     await page
       .locator(`nav`)
       .getByRole(`button`, { name: `arrow_drop_down` })

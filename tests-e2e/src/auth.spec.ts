@@ -8,7 +8,7 @@ test("Log In", async ({ page }) => {
   // Log In
   //--------------------------------
 
-  await logIn(page, {});
+  await logIn(page);
 
   //--------------------------------
   // Assert:
@@ -24,7 +24,7 @@ test("Log Out", async ({ page }) => {
   //--------------------------------
 
   // Login
-  await logIn(page, {});
+  await logIn(page);
 
   //--------------------------------
   // Act:

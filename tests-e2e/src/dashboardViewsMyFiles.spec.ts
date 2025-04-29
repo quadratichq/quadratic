@@ -41,7 +41,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Log in
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `Dashboard Views - ${Date.now()}`;
@@ -441,7 +441,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Log in
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `Shared with me - ${Date.now()}`;
@@ -854,7 +854,7 @@ test("Filter Files by Name - My Files", async ({ page }) => {
   // Filter Files by Name - My Files
   //--------------------------------
   // Login
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `Filter Files - ${Date.now()}`;
@@ -945,7 +945,7 @@ test("Filter Files by Name - Shared with me", async ({ page: user1Page }) => {
   const file3 = `shared_${string2}_${string1}_3`;
 
   // Login
-  const user1Email = await logIn(user1Page, {});
+  const user1Email = await logIn(user1Page);
 
   const user2Browser = await chromium.launch();
   const user2Page = await user2Browser.newPage();
@@ -1057,7 +1057,7 @@ test.skip("Import Files", async ({ page }) => {
   const excelFileName = "Import_File_Excel";
 
   // Login with dedicated user
-  await logIn(page, {});
+  await logIn(page);
 
   // Wait for load
   await page
@@ -1154,7 +1154,7 @@ test.skip("Resources Examples - Dashboard Views", async ({ page }) => {
   //--------------------------------
 
   // Log in
-  await logIn(page, {});
+  await logIn(page);
 
   // Click into examples under resources
   await page.getByRole(`link`, { name: `view_carousel Examples` }).click();
@@ -1219,7 +1219,7 @@ test.skip("Search - Search File Examples", async ({ page }) => {
   //--------------------------------
 
   // Log in
-  await logIn(page, {});
+  await logIn(page);
 
   // Go to examples under resources
   await page.getByRole(`link`, { name: `view_carousel Examples` }).click();

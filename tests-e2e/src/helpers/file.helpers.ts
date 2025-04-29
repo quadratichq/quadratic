@@ -84,12 +84,12 @@ export const cleanUpFiles = async (
 
 type NavigateIntoFileOptions = {
   fileName: string;
-  skipClose: boolean;
+  skipClose?: boolean;
 };
 
 export const navigateIntoFile = async (
   page: Page,
-  { fileName, skipClose }: NavigateIntoFileOptions,
+  { fileName, skipClose = false }: NavigateIntoFileOptions,
 ) => {
   // Search for the file
   await page

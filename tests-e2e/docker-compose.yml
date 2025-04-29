@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    container_name: postgres_for_e2e
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres-connection
+    networks:
+      - quadratic
+
+networks:
+  quadratic:

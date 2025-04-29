@@ -17,7 +17,7 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   const fileName = `AI Chat Insert Code, Clear Query, View History`;
 
   // Log in
-  await logIn(page, {});
+  await logIn(page);
 
   // Clean up files created by this workflow
   await cleanUpFiles(page, { fileName });
@@ -26,7 +26,7 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   await createFile(page, { fileName });
 
   // Navigate into new file
-  await navigateIntoFile(page, { fileName, skipClose: false });
+  await navigateIntoFile(page, { fileName });
 
   //--------------------------------
   // Act:

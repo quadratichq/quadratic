@@ -23,7 +23,7 @@ test("Create New File", async ({ page }) => {
   const fileName = "CreateNewFile";
 
   // Login
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `${fileName} - ${Date.now()}`;
@@ -99,7 +99,7 @@ test("Edit Share File Permissions", async ({ page }) => {
   const fileEditText = "FileEditText";
 
   // Login
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `${fileName} - ${Date.now()}`;
@@ -326,7 +326,7 @@ test("File Actions - Dashboard", async ({ page }) => {
   const renamedFile = "Renamed Actions";
 
   // Login
-  await logIn(page, {});
+  await logIn(page);
 
   // Define team name
   const newTeamName = `Test File Actions - ${Date.now()}`;
@@ -515,7 +515,7 @@ test("Share File - Dashboard", async ({ page: user1Page, context }) => {
   //--------------------------------
 
   // Log in to user 1 and give page unique name (ie user1Page)
-  await logIn(user1Page, {});
+  await logIn(user1Page);
 
   // Define team name
   const newTeamName = `Share File - ${Date.now()}`;
@@ -572,7 +572,7 @@ test("Share File - Dashboard", async ({ page: user1Page, context }) => {
   await expect(user2Page.locator(`h2:text-is("${fileName}")`)).toBeVisible();
 
   // Navigate into file, assert the page is editable
-  await navigateIntoFile(user2Page, { fileName, skipClose: false });
+  await navigateIntoFile(user2Page, { fileName });
   await typeInCell(user2Page, {
     targetColumn: 4,
     targetRow: 4,
@@ -582,7 +582,7 @@ test("Share File - Dashboard", async ({ page: user1Page, context }) => {
 
   // Bring user 1 to front
   await user1Page.bringToFront();
-  await navigateIntoFile(user1Page, { fileName, skipClose: false });
+  await navigateIntoFile(user1Page, { fileName });
 
   // Assert the page is editted by user 2
   await expect(user1Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -800,7 +800,7 @@ test.skip("Upload Large File", async ({ page }) => {
   const fileType = "csv";
 
   // Login
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `${largeFileName} - ${Date.now()}`;

@@ -26,7 +26,7 @@ export const typeInCell = async (
  * Navigates to a specified [Column, Row] in a spreadsheet-like interface on a webpage.
  */
 type NavigateOnSheetOptions = {
-  targetColumn: number;
+  targetColumn: number | string;
   targetRow: number;
   skipCanvasClick?: boolean;
 };
@@ -59,7 +59,11 @@ export const navigateOnSheet = async (
   const { column: currentColumn, row: currentRow } = parsePosition(position);
 
   // Determine the direction and magnitude for column navigation
-  const columnDifference = targetColumn - currentColumn;
+  const targetColumnNumber =
+    typeof targetColumn === "string"
+      ? targetColumn.toUpperCase().charCodeAt(0) - 65 + 1
+      : targetColumn;
+  const columnDifference = targetColumnNumber - currentColumn;
   const columnDirection = columnDifference > 0 ? "ArrowRight" : "ArrowLeft";
 
   // Navigate columns
@@ -86,8 +90,8 @@ export const navigateOnSheet = async (
  * cell to an ending cell.
  */
 type SelectCellsOptions = {
-  startXY: [number, number];
-  endXY: [number, number];
+  startXY: [number | string, number];
+  endXY: [number | string, number];
 };
 export const selectCells = async (
   page: Page,
@@ -127,4 +131,91 @@ const parsePosition = (position: string) => {
     column: column.toUpperCase().charCodeAt(0) - 65 + 1,
     row: parseInt(row, 10),
   };
+};
+
+export const displayMouseCoords = async (page: Page) => {
+  await page.evaluate(() => {
+    const positionDisplay = document.createElement("div");
+    positionDisplay.id = "mousePosition";
+    positionDisplay.style.cssText = `
+      position: fixed;
+      background-color: white;
+      z-index: 1000;
+      bottom: 250px;
+      left: 250px;
+      padding: 2px;
+      font-size: '10px';
+    `;
+    positionDisplay.textContent = "X: -, Y: -"; // Initial text
+    document.body.appendChild(positionDisplay);
+
+    document.addEventListener("mousemove", (event) => {
+      const { clientX: x, clientY: y } = event;
+
+      positionDisplay.textContent = `X: ${x}, Y: ${y}`;
+    });
+  });
+};
+
+/**
+ * Helper Function to clear code editor
+ */
+type ClearCodeEditorOptions = {};
+export const clearCodeEditor = async (
+  page: Page,
+  options?: ClearCodeEditorOptions,
+) => {
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  // Click Control + A to Select All, then Backspace to Clear
+  await page.keyboard.press("Control+A");
+  await page.keyboard.press("Backspace");
+};
+
+/**
+ * Clean up server connections: requires user to be inside a sheet and clicked on an empty cell
+ */
+type CleanUpServerConnectionsOptions = {
+  connectionName: string;
+};
+export const cleanUpServerConnections = async (
+  page: Page,
+  { connectionName }: CleanUpServerConnectionsOptions,
+) => {
+  // setup dialog alerts to be yes
+  page.on("dialog", (dialog) => {
+    dialog.accept().catch((error) => {
+      console.error("Failed to accept the dialog:", error);
+    });
+  });
+
+  // Press "/"
+  await page.keyboard.press("/");
+  await page.locator(`span:text-is("Manage connections")`).click();
+
+  if (await page.getByRole(`heading`, { name: `No connections` }).isVisible()) {
+    return;
+  }
+
+  // filter file by name
+  await page.locator('[placeholder="Filter by name"]').waitFor();
+  await page.locator('[placeholder="Filter by name"]').fill(connectionName);
+  await page.waitForTimeout(2500);
+
+  // loop through and delete all the connections
+  const connectionCount = await page.locator(`form + div > div`).count();
+  for (let i = 0; i < connectionCount; i++) {
+    await page
+      .locator(`button:has-text("${connectionName}") + button `)
+      .first()
+      .click();
+    await page.getByRole(`button`, { name: `Delete` }).click();
+    await page.waitForTimeout(1000);
+    // Confirm delete action
+    await page
+      .locator('[role="alertdialog"] button:has-text("Delete")')
+      .click();
+    await page.waitForTimeout(1000);
+  }
+
+  await page.getByRole(`button`, { name: `Close` }).click();
 };

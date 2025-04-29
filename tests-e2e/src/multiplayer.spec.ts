@@ -17,7 +17,7 @@ test("Action Visibility", async ({ page: userPage1 }) => {
   const fileName = "Action_Visibility";
 
   // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, {});
+  await logIn(userPage1);
 
   // Admin user creates a new team
   await createNewTeamByURL(userPage1, { teamName: newTeamName });
@@ -406,7 +406,7 @@ test("Connection goes down in Multiplayer Session", async ({
   const fileName = "MultiUser_Connection_Down";
 
   // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, {});
+  await logIn(userPage1);
 
   // Admin user creates a new team
   await createNewTeamByURL(userPage1, { teamName: newTeamName });
@@ -569,7 +569,7 @@ test("Make Changes while Network is off", async ({ page: userPage1 }) => {
   const fileName = "MultiUser_Offline_Changes";
 
   // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, {});
+  await logIn(userPage1);
 
   // Admin user creates a new team
   await createNewTeamByURL(userPage1, { teamName: newTeamName });
@@ -770,7 +770,7 @@ test("Mouse Visibility", async ({ page: userPage1 }) => {
   const fileName = "Mouse_Visibility";
 
   // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, {});
+  await logIn(userPage1);
 
   // Admin user creates a new team
   await createNewTeamByURL(userPage1, { teamName: newTeamName });
@@ -1015,7 +1015,7 @@ test("Switching Tabs Persists Cursor", async ({ page: userPage1 }) => {
   const fileName = "MultiUser_Tab_Switch_Persists";
 
   // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, {});
+  await logIn(userPage1);
 
   // Admin user creates a new team
   await createNewTeamByURL(userPage1, { teamName: newTeamName });
@@ -1238,7 +1238,7 @@ test("User Can See Other Users on File", async ({ page: userPage1 }) => {
   const fileName = "User_Visibility";
 
   // Log in to user 1 and give page unique name (ie userPage1)
-  const user1Email = await logIn(userPage1, {});
+  const user1Email = await logIn(userPage1);
 
   // Admin user creates a new team
   await createNewTeamByURL(userPage1, { teamName: newTeamName });

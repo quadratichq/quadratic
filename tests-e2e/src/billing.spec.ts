@@ -47,7 +47,7 @@ test.skip("AI Message Counter", async ({ page }) => {
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
-  await upgradeToProPlan(page, {});
+  await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
@@ -88,7 +88,7 @@ test.skip("AI Message Counter", async ({ page }) => {
   await createFile(page, { fileName });
 
   // Navigate into new file
-  await navigateIntoFile(page, { fileName, skipClose: false });
+  await navigateIntoFile(page, { fileName });
 
   //--------------------------------
   // Act:
@@ -196,14 +196,14 @@ test("Manage Billing - Add Payment Method", async ({ page }) => {
   };
 
   // Log into Quadratic
-  const emailAddress = await logIn(page, {});
+  const emailAddress = await logIn(page);
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
-  await upgradeToProPlan(page, {});
+  await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
@@ -353,14 +353,14 @@ test("Add user to a Team with existing Pro Plan", async ({ page }) => {
   //--------------------------------
 
   // Log into Quadratic
-  const emailAddress = await logIn(page, {});
+  const emailAddress = await logIn(page);
 
   // Create new team
   const teamName = `Add user to team - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
-  await upgradeToProPlan(page, {});
+  await upgradeToProPlan(page);
 
   // Cleanup the team member's email if it exists
   await deleteMemberFromProPlan(page, {
@@ -517,14 +517,14 @@ test("Manage Billing - Cancel Subscription", async ({ page }) => {
   //--------------------------------
 
   // Log into Quadratic
-  const emailAddress = await logIn(page, {});
+  const emailAddress = await logIn(page);
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
-  await upgradeToProPlan(page, {});
+  await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
@@ -605,14 +605,14 @@ test("Manage Billing - Update Billing Information", async ({ page }) => {
   };
 
   // Log into Quadratic
-  const emailAddress = await logIn(page, {});
+  const emailAddress = await logIn(page);
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
-  await upgradeToProPlan(page, {});
+  await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
@@ -732,7 +732,7 @@ test("Manage Billing - Update Billing Information", async ({ page }) => {
   ).toBeVisible();
 
   // **Cleanup** Reset billing information from 'Billing management' page
-  await resetBillingInformation(page, {});
+  await resetBillingInformation(page);
 });
 
 test("Upgrade to the Pro Plan", async ({ page }) => {
@@ -741,7 +741,7 @@ test("Upgrade to the Pro Plan", async ({ page }) => {
   //--------------------------------
 
   // Log into Quadratic
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `Team - ${Date.now()}`;
@@ -780,7 +780,7 @@ test("Upgrade to the Pro Plan", async ({ page }) => {
   //--------------------------------
 
   // Upgrade to Pro plan
-  await upgradeToProPlan(page, {});
+  await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole("link", { name: "settings Settings" }).click();
@@ -839,7 +839,7 @@ test("Upgrade to the Pro Plan with an Invalid Card", async ({ page }) => {
   };
 
   // Log into Quadratic
-  await logIn(page, {});
+  await logIn(page);
 
   // Create new team
   const teamName = `Invalid - ${Date.now()}`;

@@ -5,7 +5,10 @@
   "description": "E2E tests for Quadratic",
   "main": "index.js",
   "scripts": {
+    "docker:up": "docker compose up -d && sleep 3",
+    "docker:down": "docker compose down",
     "test": "npx playwright test",
+    "test:ci": "npm run docker:up && npm run test && npm run docker:down",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
     "test:fix": "npx playwright test --update-snapshots",

@@ -14,9 +14,10 @@ runs:
       uses: actions/checkout@v4
 
     - name: Setup node
-      uses: actions/setup-node@v4
+      uses: useblacksmith/setup-node@v5
       with:
-        node-version: lts/*
+        node-version: 23
+        cache: "npm"
 
     - name: Install Dependencies
       run: cd tests-e2e && npm ci
@@ -44,7 +45,7 @@ runs:
       shell: bash
 
     - name: Run E2E tests
-      run: export E2E_URL=${{ inputs.e2e_url }} && cd tests-e2e && npx playwright test
+      run: export E2E_URL=${{ inputs.e2e_url }} && cd tests-e2e && npm run test:ci
       shell: bash
 
     - name: Store Artifacts

@@ -20,7 +20,7 @@ test("Create a Team", async ({ page }) => {
   const teamName = `Test Team Creation - ${Date.now()}`;
 
   // Login
-  await logIn(page, {});
+  await logIn(page);
 
   //--------------------------------
   // Act:
@@ -59,7 +59,7 @@ test("Rename Team", async ({ page: adminPage }) => {
   const newTeamName = `New Team Name - ${randomNum}`;
   const editPermission = "Can edit";
 
-  await logIn(adminPage, {});
+  await logIn(adminPage);
 
   const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
@@ -136,7 +136,7 @@ test("Create File for Team", async ({ page }) => {
   const newFileName = "Test File Creation";
 
   // Log into Quadratic
-  await logIn(page, {});
+  await logIn(page);
 
   // Create a new team
   await createNewTeamByURL(page, { teamName });
@@ -176,7 +176,7 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   const ownerPermission = "Owner";
 
   // Login with dedicated users
-  await logIn(adminPage, {});
+  await logIn(adminPage);
 
   const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
@@ -324,7 +324,7 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   const ownerPermission = "Owner";
 
   // Login with dedicated users
-  await logIn(adminPage, {});
+  await logIn(adminPage);
 
   const manageUserbrowser = await chromium.launch();
   const manageUserPage = await manageUserbrowser.newPage();
@@ -545,7 +545,7 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   const editPermission = "Can edit";
   const viewPermission = "Can view";
 
-  await logIn(adminPage, {});
+  await logIn(adminPage);
 
   const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
@@ -735,7 +735,7 @@ test("Removed Member No Longer Can Access Team Files", async ({
   const editPermission = "Can edit";
   const fileName = "Test_File";
 
-  await logIn(adminPage, {});
+  await logIn(adminPage);
 
   const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
@@ -852,7 +852,7 @@ test("Can Edit Member are Able to Change Permissions", async ({
   const permission = "Can edit";
 
   // Register new users and get their pages
-  await logIn(adminUserPage, {});
+  await logIn(adminUserPage);
 
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
@@ -920,7 +920,7 @@ test("Can Edit Members are Able to Invite", async ({ page: adminUserPage }) => {
   const permission = "Can edit";
 
   // Register new users and get their pages
-  await logIn(adminUserPage, {});
+  await logIn(adminUserPage);
 
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
@@ -988,7 +988,7 @@ test("Can Edit Team Member Can Edit Files", async ({ page: adminUserPage }) => {
   const permission = "Can edit";
 
   // Register new users and get their pages
-  await logIn(adminUserPage, {});
+  await logIn(adminUserPage);
 
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
@@ -1082,7 +1082,7 @@ test("Can View Members are Unable to Invite Members", async ({
   const permission = "Can view";
 
   // Register new users and get their pages
-  await logIn(adminUserPage, {});
+  await logIn(adminUserPage);
 
   const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();
@@ -1157,7 +1157,7 @@ test("Can View Team Member Cannot Edit Files", async ({
   const permission = "Can view";
 
   // Register new users and get their pages
-  await logIn(adminUserPage, {});
+  await logIn(adminUserPage);
 
   const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();

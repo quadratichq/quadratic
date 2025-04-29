@@ -42,7 +42,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup node
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: 23
           cache: "npm"
@@ -124,7 +125,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup node
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: 23
           cache: "npm"
@@ -169,7 +171,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup node
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: 23
           cache: "npm"
@@ -191,7 +194,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup node
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: 23
           cache: "npm"
@@ -235,7 +239,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup node
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: 23
           cache: "npm"

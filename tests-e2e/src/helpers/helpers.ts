@@ -251,30 +251,6 @@
 //   await page.waitForSelector(`:text("No team files yet")`);
 // }
 
-// async function displayMouseCoords(page) {
-//   await page.evaluate(() => {
-//     const positionDisplay = document.createElement("div");
-//     positionDisplay.id = "mousePosition";
-//     positionDisplay.style.cssText = `
-//       position: fixed;
-//       background-color: white;
-//       z-index: 1000;
-//       bottom: 250px;
-//       left: 250px;
-//       padding: 2px;
-//       font-size: '10px';
-//     `;
-//     positionDisplay.textContent = "X: -, Y: -"; // Initial text
-//     document.body.appendChild(positionDisplay);
-
-//     document.addEventListener("mousemove", (event) => {
-//       const { clientX: x, clientY: y } = event;
-
-//       positionDisplay.textContent = `X: ${x}, Y: ${y}`;
-//     });
-//   });
-// }
-
 // // Helper function to save a performance measurement
 // async function saveMeasurement(name, value) {
 //   const res = await fetch(
@@ -376,45 +352,6 @@
 //         percentageDifference * 100
 //       ).toFixed(1)}%`,
 //     );
-//   }
-// }
-
-// /**
-//  * Clean up server connections: requires user to be inside a sheet and clicked on an empty cell
-
-//  * @param {object} page - The Page object representing the browser page.
-//  * @param {string} connectionName - The prefix of the connection
-//  *
-//  */
-// async function cleanUpServerConnections(page, connectionName) {
-//   // setup dialog alerts to be yes
-//   page.on("dialog", (dialog) => {
-//     dialog.accept().catch((error) => {
-//       console.error("Failed to accept the dialog:", error);
-//     });
-//   });
-
-//   // Press "/"
-//   await page.keyboard.press("/");
-//   await page.locator(`span:text-is("Manage connections")`).click();
-
-//   if (await page.getByRole(`heading`, { name: `No connections` }).isVisible()) {
-//     console.log("No connections to clean up");
-//     return;
-//   }
-//   // filter file by name
-//   await page.locator('[placeholder="Filter by name"]').waitFor();
-//   await page.locator('[placeholder="Filter by name"]').fill(connectionName);
-//   await page.waitForTimeout(2500);
-
-//   // loop through and delete all the files
-//   const connectionCount = await page.locator(`form + div > div`).count();
-//   for (let i = 0; i < connectionCount; i++) {
-//     await page
-//       .locator(`button:has-text("${connectionName}") + button `)
-//       .first()
-//       .click();
-//     await page.getByRole(`button`, { name: `Delete` }).click();
 //   }
 // }
 
