@@ -128,7 +128,7 @@ export const aiToolsActions: AIToolActionsRecord = {
           cursor: sheets.getCursorPosition(),
         });
 
-        ensureRectVisible({ x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
+        ensureRectVisible(sheetId, { x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
 
         return `Executed add data table tool successfully with name: ${table_name}`;
       } else {
@@ -151,7 +151,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (cell_values.length > 0 && cell_values[0].length > 0) {
         await quadraticCore.setCellValues(sheetId, x, y, cell_values, sheets.getCursorPosition());
 
-        ensureRectVisible({ x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
+        ensureRectVisible(sheetId, { x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
 
         return 'Executed set cell values tool successfully';
       } else {
@@ -192,7 +192,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         if (table) {
           const width = table.codeCell.w;
           const height = table.codeCell.h;
-          ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
         }
 
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
