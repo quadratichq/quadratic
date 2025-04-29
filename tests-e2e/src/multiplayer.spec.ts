@@ -7,7 +7,7 @@ import { buildUrl } from "./helpers/buildUrl.helpers";
 import { cleanUpFiles, createFile } from "./helpers/file.helpers";
 import { createNewTeam } from "./helpers/team.helper";
 
-test.only("Action Visibility", async ({ page: userPage1 }) => {
+test("Action Visibility", async ({ page: userPage1 }) => {
   //--------------------------------
   // Can See Another User Type
   //--------------------------------
@@ -249,24 +249,24 @@ test.only("Action Visibility", async ({ page: userPage1 }) => {
   //--------------------------------
   // Zoom in all pages to screenshot smaller field
   await userPage1.bringToFront();
-  await selectCells(userPage1, { startXY: [0, 0], endXY: [4, 19] });
+  await selectCells(userPage1, { startXY: [1, 1], endXY: [4, 19] });
   await userPage1.locator(`button:text("%")`).click();
   await userPage1.locator(`:text("Zoom to selection")`).click();
 
   await userPage2.bringToFront();
-  await selectCells(userPage2, { startXY: [0, 0], endXY: [4, 19] });
+  await selectCells(userPage2, { startXY: [1, 1], endXY: [4, 19] });
   await userPage2.locator(`button:text("%")`).click();
   await userPage2.locator(`:text("Zoom to selection")`).click();
 
   await userPage3.bringToFront();
-  await selectCells(userPage3, { startXY: [0, 0], endXY: [4, 19] });
+  await selectCells(userPage3, { startXY: [1, 1], endXY: [4, 19] });
   await userPage3.locator(`button:text("%")`).click();
   await userPage3.locator(`:text("Zoom to selection")`).click();
 
   // User 2: click and drag cell to cover multiple cells
   await userPage2.bringToFront();
   await userPage2.mouse.click(400, 400);
-  await selectCells(userPage2, { startXY: [0, 14], endXY: [2, 16] });
+  await selectCells(userPage2, { startXY: [1, 14], endXY: [2, 16] });
   await userPage2.waitForTimeout(1000);
   await userPage2.mouse.move(100, 100);
   await userPage2.waitForTimeout(1000);
