@@ -64,7 +64,10 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
   await page.waitForTimeout(2000);
   await page.locator(`h2 :text("${fileName}")`).click();
-  await page.waitForLoadState('networkidle');
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert we navigate into the file
   await expect(page.locator(`button:text("${fileName}")`)).toBeVisible({

@@ -33,7 +33,9 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await page.locator(`#username`).fill(email);
   await page.locator(`#password`).fill(USER_PASSWORD);
   await page.locator(`button:text("Continue")`).click();
-  await page.waitForLoadState('networkidle');
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('domcontentloaded');
 
   // go to dashboard if in app
   let dashboardLink = page.locator('nav a[href="/"]');

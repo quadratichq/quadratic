@@ -213,6 +213,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Navigate to the billing management page
   await page.getByRole(`button`, { name: `Manage billing` }).click();
 
+  await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
 
   // **Cleanup** Remove the extra payment method if it was leftover from previous WF
@@ -271,6 +272,9 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(page.locator(`[data-testid="confirm"]`)).toBeEnabled();
   await page.locator(`[data-testid="confirm"]`).scrollIntoViewIfNeeded();
   await page.locator(`[data-testid="confirm"]`).click();
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('domcontentloaded');
 
   // Assert that the current page is the billing management page (redirected from the previous page)
   await expect(page).toHaveTitle(/Billing/);
@@ -394,6 +398,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Navigate to the billing management page
   await page.getByRole(`button`, { name: `Manage billing` }).click();
 
+  await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
 
   // Assert that the current page is the billing management page
@@ -484,6 +489,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   // Click 'Manage billing' to reach the billing management page
   await page.getByRole(`button`, { name: `Manage billing` }).click();
 
+  await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
 
   // Assert that the current page is the billing management page
@@ -582,6 +588,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   // Click 'Manage billing' to reach the billing management page
   await page.getByRole(`button`, { name: `Manage billing` }).click();
 
+  await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
 
   // Assert that the current page is the billing management page

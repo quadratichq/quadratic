@@ -179,6 +179,9 @@ export const upgradeToProPlan = async (page: Page) => {
     // Wait for the page to redirect to the Team files page
     await navigationPromise;
 
+    await page.waitForTimeout(5 * 1000);
+    await page.waitForLoadState('domcontentloaded');
+
     // Assert that page has redirected to the Team files page
     await expect(page).toHaveTitle(/Team files/);
     await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
@@ -391,6 +394,9 @@ export const cancelProPlan = async (page: Page) => {
 
     // Click 'Manage billing' to reach the billing management page
     await page.getByRole(`button`, { name: `Manage billing` }).click();
+
+    await page.waitForTimeout(5 * 1000);
+    await page.waitForLoadState('domcontentloaded');
 
     // Assert that the current page is the billing management page
     // Check for information that includes: current subscription, payment methods, billing info and invoice history

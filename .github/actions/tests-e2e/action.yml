@@ -24,7 +24,7 @@ runs:
         cache: "npm"
 
     - name: Install Dependencies
-      run: cd tests-e2e && npm ci
+      run: cd tests-e2e && npm install
       shell: bash
 
     - name: Get Playwright's Version

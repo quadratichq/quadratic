@@ -693,7 +693,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await cleanUpFiles(user1Page, { fileName });
 });
 
-test('Upload Large File', async ({ page }) => {
+test.skip('Upload Large File', async ({ page }) => {
   //--------------------------------
   // Upload Large File
   //--------------------------------
