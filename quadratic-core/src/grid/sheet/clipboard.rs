@@ -255,7 +255,6 @@ mod tests {
     use crate::controller::GridController;
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::user_actions::import::tests::simple_csv;
-    use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
 
@@ -325,11 +324,7 @@ mod tests {
 
     #[test]
     fn clipboard_formats() {
-        let (mut gc, sheet_id, data_table_pos, _) = simple_csv();
-        let format_update = FormatUpdate {
-            bold: Some(Some(true)),
-            ..Default::default()
-        };
+        let (mut gc, sheet_id, _, _) = simple_csv();
         let get_format = |pos: Pos, clipboard: &Clipboard| {
             clipboard
                 .formats
@@ -340,48 +335,37 @@ mod tests {
                 .get(pos)
                 .unwrap()
         };
-
-        // format on the sheet at k1
-        let mut updates = SheetFormatUpdates::default();
-        updates.set_format_cell(pos![K1], format_update.clone());
-        gc.sheet_mut(sheet_id).set_formats_a1(&updates);
-
-        let context = gc.a1_context().to_owned();
-        let JsClipboard { html, .. } = gc
-            .sheet_mut(sheet_id)
-            .copy_to_clipboard(
-                &A1Selection::test_a1("K1"),
-                &context,
-                ClipboardOperation::Copy,
-                false,
+        let set_bold = |gc: &mut GridController, pos: &str| {
+            gc.set_bold(
+                &A1Selection::test_a1_sheet_id(pos, sheet_id),
+                Some(true),
+                None,
             )
             .unwrap();
+        };
+        let set_clipboard = |gc: &mut GridController, pos: &str| {
+            let context = gc.a1_context().to_owned();
+            let JsClipboard { html, .. } = gc
+                .sheet_mut(sheet_id)
+                .copy_to_clipboard(
+                    &A1Selection::test_a1(pos),
+                    &context,
+                    ClipboardOperation::Copy,
+                    false,
+                )
+                .unwrap();
 
-        let clipboard = Clipboard::decode(&html).unwrap();
+            Clipboard::decode(&html).unwrap()
+        };
 
+        // format on the sheet at k1
+        set_bold(&mut gc, "K1");
+        let clipboard = set_clipboard(&mut gc, "K1");
         assert_eq!(get_format(pos![K1], &clipboard).unwrap(), true);
 
         // format on a data table at A3
-        let mut updates = SheetFormatUpdates::default();
-        updates.set_format_cell(pos![A3], format_update);
-        gc.sheet_mut(sheet_id)
-            .data_table_mut(data_table_pos)
-            .unwrap()
-            .formats
-            .apply_updates(&updates);
-
-        let context = gc.a1_context().to_owned();
-        let JsClipboard { html, .. } = gc
-            .sheet_mut(sheet_id)
-            .copy_to_clipboard(
-                &A1Selection::test_a1("A3"),
-                &context,
-                ClipboardOperation::Copy,
-                false,
-            )
-            .unwrap();
-
-        let clipboard = Clipboard::decode(&html).unwrap();
+        set_bold(&mut gc, "A3");
+        let clipboard = set_clipboard(&mut gc, "A3");
         assert_eq!(get_format(pos![A3], &clipboard).unwrap(), true);
     }
 }

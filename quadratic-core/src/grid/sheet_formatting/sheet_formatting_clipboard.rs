@@ -23,28 +23,24 @@ impl SheetFormatting {
         let mut sheet_format_updates =
             SheetFormatUpdates::from_sheet_formatting_selection(selection, &self);
 
+        // get the largest rect that is finite of the selection
+        let rect = selection.largest_rect_finite(&a1_context);
+
         // determine if the selection overlaps with data tables
-        let data_tables_within =
-            sheet.data_tables_within_rect(selection.largest_rect_finite(&a1_context), false)?;
+        let data_tables_within = sheet.data_tables_within_rect(rect, false)?;
 
         // get the formats from the data table and merge them with the sheet formats
         for data_table_pos in data_tables_within {
             let data_table = sheet.data_table_result(data_table_pos)?;
 
-            // clone is required
-            selection
-                .clone()
-                .saturating_translate(data_table_pos.x, data_table_pos.y)
-                .map(|offset_selection| {
-                    let data_table_formats = SheetFormatUpdates::from_sheet_formatting_selection(
-                        &offset_selection,
-                        &data_table.formats,
-                    );
-                    dbgjs!(format!("offset_selection: {:?}", offset_selection));
-                    dbgjs!(format!("data_table_formats: {:?}", data_table_formats.bold));
-                    sheet_format_updates.merge(&data_table_formats);
-                })
-                .unwrap();
+            // update the sheet format updates with the formats from the data
+            // table we send in the full rect, and the function just looks at
+            // the overlapping area
+            data_table.transfer_formats_to_sheet(
+                data_table_pos,
+                rect,
+                &mut sheet_format_updates,
+            )?;
         }
 
         Ok(sheet_format_updates)
