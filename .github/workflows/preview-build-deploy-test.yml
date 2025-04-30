@@ -613,8 +613,42 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-        shardTotal: [16]
+        shardIndex:
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+          ]
+        shardTotal: [32]
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
     steps:
@@ -644,7 +678,7 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    if: always() && (github.head_ref != 'qa' || github.base_ref != 'main')
     timeout-minutes: 15
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
