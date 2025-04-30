@@ -23,3 +23,4 @@ export const SCHEDULE_MEETING = 'https://calendly.com/d/ckz9-g8t-stb/quadratic-d
 export const COMMUNITY_A1_FILE_UPDATE_URL =
   'https://community.quadratichq.com/t/switch-to-a1-notation-from-x-y-coordinates/';
 export const PRICING_URL = 'https://www.quadratichq.com/pricing';
+export const COMMUNITY_FORUMS = 'https://community.quadratichq.com';
