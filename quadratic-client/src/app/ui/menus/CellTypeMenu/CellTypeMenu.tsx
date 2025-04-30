@@ -4,10 +4,10 @@ import {
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { DatabaseIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
