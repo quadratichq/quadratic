@@ -1,6 +1,7 @@
 use uuid::Uuid;
 
 use crate::SheetRect;
+use crate::a1::A1Selection;
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
@@ -9,6 +10,49 @@ use crate::grid::js_types::JsValidationWarning;
 use crate::grid::sheet::validations::validation::Validation;
 
 impl GridController {
+    /// Updates validations that need to be updated or deleted when a selection
+    /// is deleted from the sheet. Returns the reverse operations to undo the
+    /// change.
+    pub(crate) fn check_deleted_validations(
+        &mut self,
+        sheet_id: SheetId,
+        remove_selection: A1Selection,
+    ) -> Vec<Operation> {
+        // not great, but the borrow issues are a pain below
+        let a1_context = self.a1_context.clone();
+
+        let mut reverse_operations = vec![];
+        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            // Collect validations that need to be processed first
+            let validations_to_process: Vec<_> = sheet
+                .validations
+                .validation_overlaps_selection(&remove_selection, &a1_context)
+                .iter()
+                .map(|v| (v.id, v.selection.clone()))
+                .collect();
+
+            for (validation_id, selection) in validations_to_process {
+                if let Some(new_selection) =
+                    selection.delete_selection(&remove_selection, &a1_context)
+                {
+                    // if the selection is different, then update the validation
+                    if selection != new_selection {
+                        let validation = Validation {
+                            selection: new_selection,
+                            ..sheet.validations.validation(validation_id).unwrap().clone()
+                        };
+                        reverse_operations.extend(sheet.validations.set(validation));
+                    }
+                } else {
+                    // this handles the case where the selection completely
+                    // overlaps the validation
+                    reverse_operations.extend(sheet.validations.remove(validation_id));
+                }
+            }
+        }
+        reverse_operations
+    }
+
     pub(crate) fn check_validations(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -493,7 +537,7 @@ mod tests {
 
         gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None);
 
-        let validation = test_checkbox(&mut gc, A1Selection::test_a1("A1"));
+        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
 
         // hack changing the sheet without updating the validations
         let sheet = gc.sheet_mut(sheet_id);
@@ -520,5 +564,53 @@ mod tests {
                 validation_id: Some(validation.id),
             }]
         );
+    }
+
+    #[test]
+    fn test_check_deleted_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
+
+        let reverse = gc.check_deleted_validations(sheet_id, A1Selection::test_a1("A1"));
+
+        // check reverse operations
+        assert_eq!(reverse.len(), 1);
+        assert_eq!(
+            reverse[0],
+            Operation::SetValidation {
+                validation: validation.clone()
+            }
+        );
+
+        // check that A1 was deleted from A1:B2
+        assert_validation_id(&gc, pos![sheet_id!A1], None);
+        assert_validation_id(&gc, pos![sheet_id!B2], Some(validation.id));
+    }
+
+    #[test]
+    fn test_check_validations_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
+
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+        let validation = test_create_checkbox(&mut gc, selection);
+        assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
+
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+        let reverse = gc.check_deleted_validations(sheet_id, selection);
+
+        assert_eq!(reverse.len(), 1);
+        assert_eq!(
+            reverse[0],
+            Operation::SetValidation {
+                validation: validation.clone()
+            }
+        );
+
+        assert_validation_id(&gc, pos![sheet_id!B4], None);
     }
 }

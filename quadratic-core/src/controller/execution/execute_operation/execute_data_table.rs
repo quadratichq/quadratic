@@ -1162,7 +1162,7 @@ impl GridController {
             let mut sheet_cell_values =
                 CellValues::new(old_data_table_rect.width(), old_data_table_rect.height());
             let mut sheet_format_updates = SheetFormatUpdates::default();
-            let mut data_table_formats_rects = vec![];
+            let mut rects_to_remove = vec![];
 
             for &index in columns.iter() {
                 let display_index = data_table.get_display_index_from_column_index(index, true);
@@ -1226,7 +1226,7 @@ impl GridController {
 
                 let formats_rect =
                     Rect::from_numbers(index as i64 + 1, 1, 1, data_table.height(true) as i64);
-                data_table_formats_rects.push(formats_rect);
+                rects_to_remove.push(formats_rect);
 
                 let old_values = data_table.get_column_sorted(index as usize)?;
                 reverse_columns.push((index, old_column_header, Some(old_values)));
@@ -1236,10 +1236,11 @@ impl GridController {
             let data_table = sheet.data_table_result(data_table_pos)?;
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
+            let remove_selection =
+                A1Selection::from_rects(rects_to_remove, sheet_id, &self.a1_context);
+
             // delete table formats
-            if let Some(formats_selection) =
-                A1Selection::from_rects(data_table_formats_rects, sheet_id, &self.a1_context)
-            {
+            if let Some(remove_selection) = remove_selection {
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let data_table = sheet.data_table_mut(data_table_pos)?;
 
@@ -1247,7 +1248,7 @@ impl GridController {
                     data_table
                         .formats
                         .apply_updates(&SheetFormatUpdates::from_selection(
-                            &formats_selection,
+                            &remove_selection,
                             FormatUpdate::cleared(),
                         ));
                 if !data_table_reverse_format.is_default() {
@@ -1256,6 +1257,9 @@ impl GridController {
                         formats: data_table_reverse_format,
                     });
                 }
+
+                reverse_operations
+                    .extend(self.check_deleted_validations(sheet_id, remove_selection));
             }
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
