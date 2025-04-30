@@ -27,58 +27,69 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
+  // TODO: decide on the right threshold
+  const highlightStartFresh = messagesCount > 2 && !showChatHistory;
+
   return (
-    <div className="flex items-center justify-between px-4 py-2">
-      <span className="flex items-center text-sm font-bold">
-        {viewActionsSpec[Action.ToggleAIAnalyst].label()}
-        {showChatHistory && ' history'}
-      </span>
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between px-4 py-2">
+        <span className="flex items-center text-sm font-bold">
+          {viewActionsSpec[Action.ToggleAIAnalyst].label()}
+          {showChatHistory && ' history'}
+        </span>
 
-      <div className="flex items-center gap-2">
-        <TooltipPopover label="New chat">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground hover:text-foreground"
-            disabled={loading || messagesCount === 0}
-            onClick={() => {
-              setCurrentChat({
-                id: '',
-                name: '',
-                lastUpdated: Date.now(),
-                messages: [],
-              });
-              textareaRef.current?.focus();
-            }}
-          >
-            <AddIcon />
-          </Button>
-        </TooltipPopover>
+        <div className="flex items-center gap-2">
+          <TooltipPopover label="New chat">
+            <Button
+              variant={highlightStartFresh ? 'outline' : 'ghost'}
+              size="icon-sm"
+              className="text-muted-foreground hover:text-foreground"
+              disabled={loading || messagesCount === 0}
+              onClick={() => {
+                setCurrentChat({
+                  id: '',
+                  name: '',
+                  lastUpdated: Date.now(),
+                  messages: [],
+                });
+                textareaRef.current?.focus();
+              }}
+            >
+              <AddIcon />
+            </Button>
+          </TooltipPopover>
 
-        <TooltipPopover label="Previous chats">
-          <Button
-            variant={showChatHistory ? 'default' : 'ghost'}
-            size="icon-sm"
-            className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
-            disabled={!showChatHistory && (loading || chatsCount === 0)}
-            onClick={() => setShowChatHistory((prev) => !prev)}
-          >
-            <HistoryIcon />
-          </Button>
-        </TooltipPopover>
+          <TooltipPopover label="Previous chats">
+            <Button
+              variant={showChatHistory ? 'default' : 'ghost'}
+              size="icon-sm"
+              className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
+              disabled={!showChatHistory && (loading || chatsCount === 0)}
+              onClick={() => setShowChatHistory((prev) => !prev)}
+            >
+              <HistoryIcon />
+            </Button>
+          </TooltipPopover>
 
-        <TooltipPopover label="Close" side="bottom">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground hover:text-foreground"
-            disabled={loading}
-            onClick={() => setShowAIAnalyst(false)}
-          >
-            <CloseIcon />
-          </Button>
-        </TooltipPopover>
+          <TooltipPopover label="Close" side="bottom">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-foreground"
+              disabled={loading}
+              onClick={() => setShowAIAnalyst(false)}
+            >
+              <CloseIcon />
+            </Button>
+          </TooltipPopover>
+        </div>
       </div>
+      {highlightStartFresh && (
+        <p className="relative mx-2 mb-1.5 rounded bg-foreground px-2 py-1.5 text-center text-xs text-background">
+          Fresh chats = better results. Try starting anew.
+          <span className="absolute -top-2 right-[86px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-foreground border-l-transparent border-r-transparent" />
+        </p>
+      )}
     </div>
   );
 });
