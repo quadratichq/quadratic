@@ -318,12 +318,14 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Add user to a Team with existing Pro Plan
   //--------------------------------
 
-  // Log into Quadratic
-  const emailAddress = await logIn(page, { emailPrefix: 'e2e_add_to_pro' });
-
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
-  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_added_to_pro' });
+
+  // login 2 users
+  const [emailAddress, user2Email] = await Promise.all([
+    logIn(page, { emailPrefix: 'e2e_add_to_pro' }),
+    logIn(userPage2, { emailPrefix: 'e2e_added_to_pro' }),
+  ]);
 
   // Create new team
   const teamName = `Add user to team - ${Date.now()}`;

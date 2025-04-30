@@ -376,15 +376,20 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
 
   // Log in
-  await logIn(page, { emailPrefix: 'e2e_dashboard_shared_files_1' });
 
   // Create new team
   const teamName = `Shared with me - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
 
   const sharedUserBrowser = await chromium.launch();
   const sharedUserPage = await sharedUserBrowser.newPage();
-  const sharedUserEmail = await logIn(sharedUserPage, { emailPrefix: 'e2e_dashboard_shared_files_2' });
+
+  // login 2 users
+  const [, sharedUserEmail] = await Promise.all([
+    logIn(page, { emailPrefix: 'e2e_dashboard_shared_files_1' }),
+    logIn(sharedUserPage, { emailPrefix: 'e2e_dashboard_shared_files_2' }),
+  ]);
+
+  await createNewTeamByURL(page, { teamName });
 
   // Define test file names
   const testFile1 = 'C - Test File 1';
@@ -799,12 +804,14 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   const file2 = `shared_${string2}_file_2`;
   const file3 = `shared_${string2}_${string1}_3`;
 
-  // Login
-  const user1Email = await logIn(user1Page, { emailPrefix: 'e2e_dashboard_filter_files_shared_1' });
-
   const user2Browser = await chromium.launch();
   const user2Page = await user2Browser.newPage();
-  await logIn(user2Page, { emailPrefix: 'e2e_dashboard_filter_files_shared_2' });
+
+  // login 2 users
+  const [user1Email] = await Promise.all([
+    logIn(user1Page, { emailPrefix: 'e2e_dashboard_filter_files_shared_1' }),
+    logIn(user2Page, { emailPrefix: 'e2e_dashboard_filter_files_shared_2' }),
+  ]);
 
   // Create new team
   const teamName = `Filter Shared - ${Date.now()}`;

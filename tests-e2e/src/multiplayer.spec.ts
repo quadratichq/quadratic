@@ -15,19 +15,21 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   const newTeamName = `File Actions - ${Date.now()}`;
   const fileName = 'Action_Visibility';
 
-  // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, { emailPrefix: 'e2e_action_visibility_1' });
-
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
-  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_action_visibility_2' });
 
   const user3Browser = await chromium.launch();
   const userPage3 = await user3Browser.newPage();
-  const user3Email = await logIn(userPage3, { emailPrefix: 'e2e_action_visibility_3' });
+
+  // login 3 users
+  const [, user2Email, user3Email] = await Promise.all([
+    logIn(userPage1, { emailPrefix: 'e2e_action_visibility_1' }),
+    logIn(userPage2, { emailPrefix: 'e2e_action_visibility_2' }),
+    logIn(userPage3, { emailPrefix: 'e2e_action_visibility_3' }),
+  ]);
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
 
   // First user creates a new team and file
   await userPage1.bringToFront();
@@ -383,19 +385,21 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   const newTeamName = `File Actions - ${Date.now()}`;
   const fileName = 'MultiUser_Connection_Down';
 
-  // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, { emailPrefix: 'e2e_connection_down_1' });
-
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
-  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_connection_down_2' });
 
   const user3Browser = await chromium.launch();
   const userPage3 = await user3Browser.newPage();
-  const user3Email = await logIn(userPage3, { emailPrefix: 'e2e_connection_down_3' });
+
+  // login 3 users
+  const [, user2Email, user3Email] = await Promise.all([
+    logIn(userPage1, { emailPrefix: 'e2e_connection_down_1' }),
+    logIn(userPage2, { emailPrefix: 'e2e_connection_down_2' }),
+    logIn(userPage3, { emailPrefix: 'e2e_connection_down_3' }),
+  ]);
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
 
   // First user creates a new team and file
   await userPage1.bringToFront();
@@ -537,19 +541,21 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   const newTeamName = `MultiUser - ${Date.now()}`;
   const fileName = 'MultiUser_Offline_Changes';
 
-  // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, { emailPrefix: 'e2e_changes_off_network_1' });
-
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
-  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_changes_off_network_2' });
 
   const user3Browser = await chromium.launch();
   const userPage3 = await user3Browser.newPage();
-  const user3Email = await logIn(userPage3, { emailPrefix: 'e2e_changes_off_network_3' });
+
+  // login 3 users
+  const [, user2Email, user3Email] = await Promise.all([
+    logIn(userPage1, { emailPrefix: 'e2e_changes_off_network_1' }),
+    logIn(userPage2, { emailPrefix: 'e2e_changes_off_network_2' }),
+    logIn(userPage3, { emailPrefix: 'e2e_changes_off_network_3' }),
+  ]);
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
 
   // First user creates a new team and file
   await userPage1.bringToFront();
@@ -725,19 +731,20 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   const newTeamName = `Test Mouse Visibility - ${Date.now()}`;
   const fileName = 'Mouse_Visibility';
 
-  // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, { emailPrefix: 'e2e_mouse_visibility_1' });
-
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
-  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_mouse_visibility_2' });
 
   const user3Browser = await chromium.launch();
   const userPage3 = await user3Browser.newPage();
-  const user3Email = await logIn(userPage3, { emailPrefix: 'e2e_mouse_visibility_3' });
+
+  // login 3 users
+  const [, user2Email, user3Email] = await Promise.all([
+    logIn(userPage1, { emailPrefix: 'e2e_mouse_visibility_1' }),
+    logIn(userPage2, { emailPrefix: 'e2e_mouse_visibility_2' }),
+    logIn(userPage3, { emailPrefix: 'e2e_mouse_visibility_3' }),
+  ]);
+
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
 
   // First user creates a new team and file
   await userPage1.bringToFront();
@@ -939,19 +946,21 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   const newTeamName = `Test MultiUser Tab Switch - ${Date.now()}`;
   const fileName = 'MultiUser_Tab_Switch_Persists';
 
-  // Log in to user 1 and give page unique name (ie userPage1)
-  await logIn(userPage1, { emailPrefix: 'e2e_switch_tab_1' });
-
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
-  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_switch_tab_2' });
 
   const user3Browser = await chromium.launch();
   const userPage3 = await user3Browser.newPage();
-  const user3Email = await logIn(userPage3, { emailPrefix: 'e2e_switch_tab_3' });
+
+  // login 3 users
+  const [, user2Email, user3Email] = await Promise.all([
+    logIn(userPage1, { emailPrefix: 'e2e_switch_tab_1' }),
+    logIn(userPage2, { emailPrefix: 'e2e_switch_tab_2' }),
+    logIn(userPage3, { emailPrefix: 'e2e_switch_tab_3' }),
+  ]);
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
 
   // First user creates a new team and file
   await userPage1.bringToFront();
@@ -1108,19 +1117,21 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   const newTeamName = `Test User Visibility - ${Date.now()}`;
   const fileName = 'User_Visibility';
 
-  // Log in to user 1 and give page unique name (ie userPage1)
-  const user1Email = await logIn(userPage1, { emailPrefix: 'e2e_see_users_1' });
-
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
-  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_see_users_2' });
 
   const user3Browser = await chromium.launch();
   const userPage3 = await user3Browser.newPage();
-  const user3Email = await logIn(userPage3, { emailPrefix: 'e2e_see_users_3' });
+
+  // login 3 users
+  const [user1Email, user2Email, user3Email] = await Promise.all([
+    logIn(userPage1, { emailPrefix: 'e2e_see_users_1' }),
+    logIn(userPage2, { emailPrefix: 'e2e_see_users_2' }),
+    logIn(userPage3, { emailPrefix: 'e2e_see_users_3' }),
+  ]);
+
+  // Admin user creates a new team
+  await createNewTeamByURL(userPage1, { teamName: newTeamName });
 
   // First user creates a new team and file
   await userPage1.bringToFront();

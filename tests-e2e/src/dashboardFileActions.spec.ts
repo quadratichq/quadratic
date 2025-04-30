@@ -85,18 +85,20 @@ test('Edit Share File Permissions', async ({ page }) => {
   const fileType = 'grid';
   const fileEditText = 'FileEditText';
 
-  // Login
-  await logIn(page, { emailPrefix: `e2e_edit_share` });
+  const recipientBrowser = await chromium.launch();
+  const recipientPage = await recipientBrowser.newPage();
+
+  // login 2 users
+  const [, recipientEmail] = await Promise.all([
+    logIn(page, { emailPrefix: `e2e_edit_share` }),
+    logIn(recipientPage, {
+      emailPrefix: `e2e_edit_share_recipient`,
+    }),
+  ]);
 
   // Create new team
   const teamName = `${fileName} - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
-
-  const recipientBrowser = await chromium.launch();
-  const recipientPage = await recipientBrowser.newPage();
-  const recipientEmail = await logIn(recipientPage, {
-    emailPrefix: `e2e_edit_share_recipient`,
-  });
 
   await page.locator('[placeholder*="Filter by file or creator name"]').waitFor();
 
@@ -450,25 +452,29 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   //--------------------------------
 
   // Log in to user 1 and give page unique name (ie user1Page)
-  await logIn(user1Page, { emailPrefix: `e2e_share_dashboard_1` });
 
   // Define team name
   const newTeamName = `Share File - ${Date.now()}`;
 
-  // Admin user creates a new team
-  await createNewTeamByURL(user1Page, { teamName: newTeamName });
-
   const user2Browser = await chromium.launch();
   const user2Page = await user2Browser.newPage();
-  const user2Email = await logIn(user2Page, {
-    emailPrefix: `e2e_share_dashboard_2`,
-  });
 
   const user3Browser = await chromium.launch();
   const user3Page = await user3Browser.newPage();
-  await logIn(user3Page, {
-    emailPrefix: `e2e_share_dashboard_3`,
-  });
+
+  // login 3 users
+  const [, user2Email] = await Promise.all([
+    logIn(user1Page, { emailPrefix: `e2e_share_dashboard_1` }),
+    logIn(user2Page, {
+      emailPrefix: `e2e_share_dashboard_2`,
+    }),
+    logIn(user3Page, {
+      emailPrefix: `e2e_share_dashboard_3`,
+    }),
+  ]);
+
+  // Admin user creates a new team
+  await createNewTeamByURL(user1Page, { teamName: newTeamName });
 
   await user1Page.bringToFront();
   const date = Date.now();

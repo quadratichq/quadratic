@@ -48,11 +48,14 @@ test('Rename Team', async ({ page: adminPage }) => {
   const newTeamName = `New Team Name - ${randomNum}`;
   const editPermission = 'Can edit';
 
-  await logIn(adminPage, { emailPrefix: 'e2e_rename_team_admin' });
-
   const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
-  const testUserEmail = await logIn(testUserPage, { emailPrefix: 'e2e_rename_team_user' });
+
+  // login 2 users
+  const [, testUserEmail] = await Promise.all([
+    logIn(adminPage, { emailPrefix: 'e2e_rename_team_admin' }),
+    logIn(testUserPage, { emailPrefix: 'e2e_rename_team_user' }),
+  ]);
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -156,12 +159,14 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   const newTeamName = `File Sharing Team - ${randomNum}`;
   const ownerPermission = 'Owner';
 
-  // Login with dedicated users
-  await logIn(adminPage, { emailPrefix: 'e2e_invite_admin' });
-
   const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
-  const ownerEmail = await logIn(ownerPage, { emailPrefix: 'e2e_invite_owner' });
+
+  // login 2 users
+  const [, ownerEmail] = await Promise.all([
+    logIn(adminPage, { emailPrefix: 'e2e_invite_admin' }),
+    logIn(ownerPage, { emailPrefix: 'e2e_invite_owner' }),
+  ]);
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -295,12 +300,14 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   const newTeamName = `Test Team for Permissions - ${randomNum}`;
   const ownerPermission = 'Owner';
 
-  // Login with dedicated users
-  await logIn(adminPage, { emailPrefix: 'e2e_manage_admin' });
-
   const manageUserBrowser = await chromium.launch();
   const manageUserPage = await manageUserBrowser.newPage();
-  const manageUserEmail = await logIn(manageUserPage, { emailPrefix: 'e2e_manage_user' });
+
+  // login 2 users
+  const [, manageUserEmail] = await Promise.all([
+    logIn(adminPage, { emailPrefix: 'e2e_manage_admin' }),
+    logIn(manageUserPage, { emailPrefix: 'e2e_manage_user' }),
+  ]);
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -493,19 +500,22 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   const editPermission = 'Can edit';
   const viewPermission = 'Can view';
 
-  await logIn(adminPage, { emailPrefix: 'e2e_leave_team_admin' });
-
   const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
-  const ownerEmail = await logIn(ownerPage, { emailPrefix: 'e2e_leave_team_owner' });
 
   const editUserBrowser = await chromium.launch();
   const editUserPage = await editUserBrowser.newPage();
-  const editUserEmail = await logIn(editUserPage, { emailPrefix: 'e2e_leave_team_edit' });
 
   const viewUserBrowser = await chromium.launch();
   const viewUserPage = await viewUserBrowser.newPage();
-  const viewUserEmail = await logIn(viewUserPage, { emailPrefix: 'e2e_leave_team_view' });
+
+  // login 4 users
+  const [, ownerEmail, editUserEmail, viewUserEmail] = await Promise.all([
+    logIn(adminPage, { emailPrefix: 'e2e_leave_team_admin' }),
+    logIn(ownerPage, { emailPrefix: 'e2e_leave_team_owner' }),
+    logIn(editUserPage, { emailPrefix: 'e2e_leave_team_edit' }),
+    logIn(viewUserPage, { emailPrefix: 'e2e_leave_team_view' }),
+  ]);
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -657,11 +667,14 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   const editPermission = 'Can edit';
   const fileName = 'Test_File';
 
-  await logIn(adminPage, { emailPrefix: 'e2e_remove_member_admin' });
-
   const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
-  const testUserEmail = await logIn(testUserPage, { emailPrefix: 'e2e_remove_member_user' });
+
+  // login 2 users
+  const [, testUserEmail] = await Promise.all([
+    logIn(adminPage, { emailPrefix: 'e2e_remove_member_admin' }),
+    logIn(testUserPage, { emailPrefix: 'e2e_remove_member_user' }),
+  ]);
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -694,7 +707,8 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
 
   // Navigate to team URL
   await testUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await testUserPage.waitForTimeout(2000);
+  await testUserPage.waitForTimeout(5 * 1000);
+  await testUserPage.waitForLoadState('networkidle');
 
   // Verify that testUser can access the team files
   await expect(testUserPage.getByRole('button', { name: newTeamName })).toBeVisible({ timeout: 30 * 1000 });
@@ -755,12 +769,14 @@ test('Can Edit Member are Able to Change Permissions', async ({ page: adminUserP
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can edit';
 
-  // Register new users and get their pages
-  await logIn(adminUserPage, { emailPrefix: 'e2e_change_permission_admin' });
-
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
-  const canEditUserEmail = await logIn(canEditUserPage, { emailPrefix: 'e2e_change_permission_edit' });
+
+  // login 2 users
+  const [, canEditUserEmail] = await Promise.all([
+    logIn(adminUserPage, { emailPrefix: 'e2e_change_permission_admin' }),
+    logIn(canEditUserPage, { emailPrefix: 'e2e_change_permission_edit' }),
+  ]);
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -817,12 +833,14 @@ test('Can Edit Members are Able to Invite', async ({ page: adminUserPage }) => {
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can edit';
 
-  // Register new users and get their pages
-  await logIn(adminUserPage, { emailPrefix: 'e2e_member_invite_admin' });
-
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
-  const canEditUserEmail = await logIn(canEditUserPage, { emailPrefix: 'e2e_member_invite_edit' });
+
+  // login 2 users
+  const [, canEditUserEmail] = await Promise.all([
+    logIn(adminUserPage, { emailPrefix: 'e2e_member_invite_admin' }),
+    logIn(canEditUserPage, { emailPrefix: 'e2e_member_invite_edit' }),
+  ]);
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -879,12 +897,14 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can edit';
 
-  // Register new users and get their pages
-  await logIn(adminUserPage, { emailPrefix: 'e2e_team_edit_admin' });
-
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
-  const canEditUserEmail = await logIn(canEditUserPage, { emailPrefix: 'e2e_team_edit_edit' });
+
+  // login 2 users
+  const [, canEditUserEmail] = await Promise.all([
+    logIn(adminUserPage, { emailPrefix: 'e2e_team_edit_admin' }),
+    logIn(canEditUserPage, { emailPrefix: 'e2e_team_edit_edit' }),
+  ]);
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -956,12 +976,14 @@ test('Can View Members are Unable to Invite Members', async ({ page: adminUserPa
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can view';
 
-  // Register new users and get their pages
-  await logIn(adminUserPage, { emailPrefix: 'e2e_team_view_admin' });
-
   const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();
-  const canViewUserEmail = await logIn(canViewUserPage, { emailPrefix: 'e2e_team_view_view' });
+
+  // login 2 users
+  const [, canViewUserEmail] = await Promise.all([
+    logIn(adminUserPage, { emailPrefix: 'e2e_team_view_admin' }),
+    logIn(canViewUserPage, { emailPrefix: 'e2e_team_view_view' }),
+  ]);
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -1021,12 +1043,14 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can view';
 
-  // Register new users and get their pages
-  await logIn(adminUserPage, { emailPrefix: 'e2e_cannot_edit_admin' });
-
   const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();
-  const canViewUserEmail = await logIn(canViewUserPage, { emailPrefix: 'e2e_cannot_edit_view' });
+
+  // login 2 users
+  const [, canViewUserEmail] = await Promise.all([
+    logIn(adminUserPage, { emailPrefix: 'e2e_cannot_edit_admin' }),
+    logIn(canViewUserPage, { emailPrefix: 'e2e_cannot_edit_view' }),
+  ]);
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
