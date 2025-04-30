@@ -34,15 +34,15 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await page.locator(`#password`).fill(USER_PASSWORD);
   await page.locator(`button:text("Continue")`).click();
 
-  await page.waitForTimeout(5 * 1000);
-  await page.waitForLoadState('domcontentloaded');
+  const quadraticLoading = page.locator('html[data-loading-start]');
+  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   // go to dashboard if in app
-  let dashboardLink = page.locator('nav a[href="/"]');
+  const dashboardLink = page.locator('nav a[href="/"]');
   while (await dashboardLink.isVisible()) {
     await dashboardLink.click();
     await page.waitForLoadState('domcontentloaded');
-    dashboardLink = page.locator('nav a[href="/"]');
+    await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
   }
 
   // assert that we are logged in

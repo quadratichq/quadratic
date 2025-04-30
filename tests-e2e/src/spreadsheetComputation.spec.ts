@@ -102,8 +102,9 @@ test('Basic Formula Creation', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 2 });
   await page.waitForTimeout(1000);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5000);
   await page.keyboard.type('=');
+  await page.waitForTimeout(5000);
 
   // Assertion with formula cell visible (purple outline with button)
   await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
