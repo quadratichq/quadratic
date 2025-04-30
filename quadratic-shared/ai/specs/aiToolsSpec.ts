@@ -155,7 +155,7 @@ Provide a concise name for this conversation based on the user's goal or topic. 
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
     description: `
-Adds a new data table to the current open sheet. Requires a top-left anchor position (A1 notation), a unique table name, and a 2D array of string values. The first row of data is used as the table header, and all rows must be the same length. This tool should be used only for adding new tabular data—not for modifying existing tables, inserting formulas, or adding results summaries.
+Adds a new data table to the current open sheet. Requires a top-left anchor position (A1 notation), a unique table name, and a 2D array of string values. The first row of data is used as the table header, and all rows must be the same length. This tool should be used only for adding new tabular data—not for modifying existing tables, inserting formulas, or adding results summaries. When adding sample data always fill in all the sample data cells, unless the user asks you to leave space. NEVER leave space for Formula inputs since they can't be added to data tables.
 `,
     parameters: {
       type: 'object',
@@ -191,7 +191,7 @@ Use this tool to add a new structured data table to the current open sheet. Prov
 - A unique table name (e.g., "customer_orders")
 - A 2D array of string values, where the first row is the header
 
-All rows must have the same number of columns. Leave two rows of space below and two columns of space to the right. Do not use this tool for summaries, formulas, or existing tables.
+When adding sample data always fill in all the sample data cells, unless the user asks you to leave space. NEVER leave space for Formula inputs since they can't be added to data tables.\n
 `,
   },
   [AITool.SetCellValues]: {
