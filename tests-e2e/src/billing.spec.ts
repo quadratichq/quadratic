@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { chromium, expect, test } from '@playwright/test';
 import { DUMMY_USER_EMAIL } from './constants/auth';
 import { logIn } from './helpers/auth.helpers';
 import {
@@ -9,6 +9,7 @@ import {
   resetBillingInformation,
   upgradeToProPlan,
 } from './helpers/billing.helpers';
+import { buildUrl } from './helpers/buildUrl.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
 import { createNewTeamByURL } from './helpers/team.helper';
 
@@ -320,9 +321,15 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Log into Quadratic
   const emailAddress = await logIn(page, { emailPrefix: 'e2e_add_to_pro' });
 
+  const user2Browser = await chromium.launch();
+  const userPage2 = await user2Browser.newPage();
+  const user2Email = await logIn(userPage2, { emailPrefix: 'e2e_added_to_pro' });
+
   // Create new team
   const teamName = `Add user to team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  const { teamUrl } = await createNewTeamByURL(page, {
+    teamName,
+  });
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -373,7 +380,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
 
   // Invite the new user to the team with 'Can Edit' permission
   await inviteUserToTeam(page, {
-    email: DUMMY_USER_EMAIL,
+    email: user2Email,
     permission: 'Can Edit',
   });
 
@@ -382,7 +389,15 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   //--------------------------------
 
   // Assert that invited user is added as a team member
-  await expect(page.getByText(DUMMY_USER_EMAIL).first()).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(user2Email).first()).toBeVisible({ timeout: 30 * 1000 });
+
+  // Second user navigates into file
+  await userPage2.bringToFront();
+  await userPage2.reload();
+
+  // Navigate to team URL
+  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForLoadState('networkidle');
 
   // Navigate to 'Settings' to check team member count again
   await page.getByRole(`link`, { name: `settings Settings` }).click();

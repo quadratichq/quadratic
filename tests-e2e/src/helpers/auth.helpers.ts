@@ -49,7 +49,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   }
 
   // assert that we are logged in
-  await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click team dropdown
   if (options?.teamName) {
