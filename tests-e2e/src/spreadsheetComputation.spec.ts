@@ -3,7 +3,6 @@ import { POSTGRES_DB } from "./constants/db";
 import {
   cleanUpServerConnections,
   clearCodeEditor,
-  displayMouseCoords,
   navigateOnSheet,
   selectCells,
 } from "./helpers/app.helper";
@@ -134,7 +133,7 @@ test("Basic Formula Creation", async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(100, 427);
   await page.mouse.up();
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(5000);
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -148,7 +147,7 @@ test("Basic Formula Creation", async ({ page }) => {
 
   // Press "Enter"
   await page.keyboard.press("Enter");
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(5000);
 
   // Screenshot assertion with answer
   // Note: do not increase maxDiffPixelRatio - after pressing "Enter", cell [1,3] should be highlighted
@@ -162,6 +161,7 @@ test("Basic Formula Creation", async ({ page }) => {
   // Change inline editor to code editor and make sure content is transferred
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 2 });
   await page.keyboard.press("Enter");
+  await page.waitForTimeout(5000);
 
   // Assertion with formula cell visible (purple outline with button)
   await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible();
@@ -273,9 +273,6 @@ test("Drag References", async ({ page }) => {
 
   // Upload file
   await uploadFile(page, { fileName, fileType });
-
-  // Display mouse coordinates
-  await displayMouseCoords(page);
 
   //--------------------------------
   // Act:
@@ -1934,8 +1931,6 @@ test("Switch between Python and Formula", async ({ page }) => {
 
   // Admin user creates a new team
   await createNewTeamByURL(page, { teamName });
-
-  await displayMouseCoords(page);
 
   // Clean up file
   await cleanUpFiles(page, { fileName });

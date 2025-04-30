@@ -887,7 +887,6 @@ test("Mouse Visibility", async ({ page: userPage1 }) => {
 
     // Confirm the mouse is at the expected position
     await userPage2.bringToFront();
-    console.log(`This is loop ${i}`);
     await expect(userPage2.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
       `mouse-diff-img-position-${i}.A.png`,
       {

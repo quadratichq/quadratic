@@ -17,7 +17,7 @@ export const typeInCell = async (
   // type some text
   await page.keyboard.press("Enter");
   await page.waitForTimeout(1000);
-  await page.keyboard.type(text);
+  await page.keyboard.type(text, { delay: 250 });
   await page.keyboard.press("Enter");
   await page.waitForTimeout(1000);
 };

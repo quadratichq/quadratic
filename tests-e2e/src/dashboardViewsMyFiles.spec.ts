@@ -1048,7 +1048,7 @@ test("Filter Files by Name - Shared with me", async ({ page: user1Page }) => {
   await cleanUpFiles(user2Page, { fileName: file3, skipFilterClear: true });
 });
 
-test.skip("Import Files", async ({ page }) => {
+test("Import Files", async ({ page }) => {
   //--------------------------------
   // .grid File
   //--------------------------------
@@ -1100,22 +1100,6 @@ test.skip("Import Files", async ({ page }) => {
   // .xlsx File
   //--------------------------------
 
-  // Clean up old file if needed
-  const oldFile_excel = page.locator(`li:has-text("${excelFileName}")`);
-
-  while (await oldFile_excel.count()) {
-    await page
-      .locator(
-        `li:has-text("${excelFileName.split(".")[0]}") >> button >> nth=0`,
-      )
-      .click();
-    await page.locator(`[role="menuitem"]:has-text("Delete")`).click();
-  }
-
-  await expect(
-    page.locator(`li:has-text("${excelFileName}")`),
-  ).not.toBeVisible();
-
   //--------------------------------
   // Act:
   //--------------------------------
@@ -1124,13 +1108,6 @@ test.skip("Import Files", async ({ page }) => {
   //--------------------------------
   // Assert:
   //--------------------------------
-
-  // Close Chat
-  try {
-    await page.getByRole(`button`, { name: `close` }).first().click();
-  } catch (err) {
-    console.error(err);
-  }
 
   // Assert file is successfully uploaded and displayed
   await expect(page.locator(`:text("${excelFileName}"):visible`)).toBeVisible();

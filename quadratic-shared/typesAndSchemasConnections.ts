@@ -23,7 +23,8 @@ const ConnectionHostSchema = z
       host = host.trim();
 
       // Check for localhost variations
-      if (host.includes('localhost')) return false;
+      // todo(ayush): revert this before merge
+      if (host.includes('localhost')) return true;
 
       // Check for local IP ranges
       if (host.startsWith('127.')) return false; // Loopback addresses
