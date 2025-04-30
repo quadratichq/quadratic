@@ -308,12 +308,16 @@ jobs:
           while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
 
-            RESPONSE=$(curl -s -k \
+            set +e  # Don't exit on error
+
+            curl -s -k \
               --connect-timeout 10 \
               --max-time 30 \
               -w "\n%{http_code}" \
-              "${{ matrix.service.url }}" 2>&1)
+              "${{ matrix.service.url }}" > response.txt 2>error.txt
             CURL_EXIT_CODE=$?
+
+            set -e  # Resume normal error handling
 
             # If curl failed, retry
             if [ $CURL_EXIT_CODE -ne 0 ]; then
@@ -321,6 +325,9 @@ jobs:
               [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ] && sleep 30
               continue
             fi
+
+            # Process the response if curl succeeded
+            RESPONSE=$(cat response.txt)
 
             # Extract HTTP code and body
             HTTP_BODY=$(echo "$RESPONSE" | head -n 1)
