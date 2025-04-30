@@ -35,6 +35,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await page.locator(`button:text("Continue")`).click();
 
   const quadraticLoading = page.locator('html[data-loading-start]');
+  await page.waitForTimeout(10 * 1000);
+  await page.waitForLoadState('networkidle');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   // go to dashboard if in app
