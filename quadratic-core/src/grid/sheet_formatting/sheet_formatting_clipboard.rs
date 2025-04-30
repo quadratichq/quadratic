@@ -21,10 +21,10 @@ impl SheetFormatting {
     ) -> Result<SheetFormatUpdates> {
         // first, get formats for the sheet of the selection
         let mut sheet_format_updates =
-            SheetFormatUpdates::from_sheet_formatting_selection(selection, &self);
+            SheetFormatUpdates::from_sheet_formatting_selection(selection, self);
 
         // get the largest rect that is finite of the selection
-        let rect = selection.largest_rect_finite(&a1_context);
+        let rect = selection.largest_rect_finite(a1_context);
 
         // determine if the selection overlaps with data tables
         let data_tables_within = sheet.data_tables_within_rect(rect, false)?;
@@ -64,7 +64,7 @@ mod tests {
         let a1_context = gc.a1_context();
         let clipboard = sheet
             .formats
-            .to_clipboard(&A1Selection::test_a1("A1:C3"), sheet, &a1_context)
+            .to_clipboard(&A1Selection::test_a1("A1:C3"), sheet, a1_context)
             .unwrap();
 
         assert_eq!(

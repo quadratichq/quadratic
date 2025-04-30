@@ -217,7 +217,7 @@ impl Sheet {
             data_tables.extend(data_tables_in_rect);
         }
 
-        let formats = self.formats.to_clipboard(selection, &self, a1_context).ok();
+        let formats = self.formats.to_clipboard(selection, self, a1_context).ok();
         let borders = self.borders.to_clipboard(selection);
         let validations = self
             .validations
@@ -361,11 +361,11 @@ mod tests {
         // format on the sheet at k1
         set_bold(&mut gc, "K1");
         let clipboard = set_clipboard(&mut gc, "K1");
-        assert_eq!(get_format(pos![K1], &clipboard).unwrap(), true);
+        assert!(get_format(pos![K1], &clipboard).unwrap());
 
         // format on a data table at A3
         set_bold(&mut gc, "A3");
         let clipboard = set_clipboard(&mut gc, "A3");
-        assert_eq!(get_format(pos![A3], &clipboard).unwrap(), true);
+        assert!(get_format(pos![A3], &clipboard).unwrap());
     }
 }

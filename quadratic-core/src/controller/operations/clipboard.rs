@@ -116,7 +116,7 @@ impl Clipboard {
             Err(e) => Err(error(e.to_string(), "Regex creation error")),
             Ok(re) => {
                 let data = re
-                    .captures(&html)
+                    .captures(html)
                     .ok_or_else(|| error("".into(), "Regex capture error"))?;
 
                 let result = data.get(1).map_or("", |m| m.as_str());
