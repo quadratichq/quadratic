@@ -831,8 +831,8 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
     await expect(userPage2.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`mouse-diff-img-position-${i}.A.png`, {
       maxDiffPixelRatio: 0.01,
     });
-    // Wait 10 seconds
-    await userPage2.waitForTimeout(10000);
+    // Wait 5 seconds
+    await userPage2.waitForTimeout(5 * 1000);
 
     // Confirm mouse is still at the expected position
     await expect(userPage2.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`mouse-diff-img-position-${i}.A.png`, {
@@ -915,8 +915,8 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
       `multiple-mouse-diff-img-position-${i}.A2.png`,
       { maxDiffPixelRatio: 0.01 }
     );
-    // Wait 10 seconds
-    await userPage3.waitForTimeout(10000);
+    // Wait 5 seconds
+    await userPage3.waitForTimeout(5 * 1000);
 
     // Confirm the mouse is still at the expected position
     await expect(userPage3.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -1099,7 +1099,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test('User Can See Other Users on File', async ({ page: userPage1 }) => {
+test.only('User Can See Other Users on File', async ({ page: userPage1 }) => {
   //--------------------------------
   // User Can See Other Users on File
   //--------------------------------

@@ -5,8 +5,6 @@
   "description": "E2E tests for Quadratic",
   "main": "index.js",
   "scripts": {
-    "docker:up": "docker compose up -d && sleep 3",
-    "docker:down": "docker compose down",
     "lint:ts": "tsc --noemit",
     "test": "npm run lint:ts && npx playwright test",
     "test:headed": "npx playwright test --headed",
