@@ -85,9 +85,9 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
         </div>
       </div>
       {highlightStartFresh && (
-        <p className="relative mx-2 mb-1.5 rounded bg-foreground px-2 py-1.5 text-center text-xs text-background">
+        <p className="relative mx-2 mb-1.5 rounded bg-primary px-2 py-1.5 text-center text-xs text-background">
           Fresh chats = better results. Try starting anew.
-          <span className="absolute -top-2 right-[86px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-foreground border-l-transparent border-r-transparent" />
+          <span className="absolute -top-2 right-[86px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-primary border-l-transparent border-r-transparent" />
         </p>
       )}
     </div>
