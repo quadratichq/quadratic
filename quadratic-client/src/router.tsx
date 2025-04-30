@@ -16,6 +16,7 @@ export const router = createBrowserRouter(
         loader={RootRoute.loader}
         Component={RootRoute.Component}
         ErrorBoundary={RootRoute.ErrorBoundary}
+        HydrateFallback={EmptyComponent}
       >
         {/**
          * ----------------------------------------------------------------
@@ -101,9 +102,20 @@ export const router = createBrowserRouter(
         </Route>
         <Route path="*" Component={Page404.Component} />
       </Route>
-      <Route path={ROUTES.LOGIN} loader={Login.loader} />
-      <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />
-      <Route path={ROUTES.LOGOUT} loader={Logout.loader} action={Logout.action} />
+      <Route path={ROUTES.LOGIN} loader={Login.loader} Component={EmptyComponent} HydrateFallback={EmptyComponent} />
+      <Route
+        path={ROUTES.LOGIN_RESULT}
+        loader={LoginResult.loader}
+        Component={EmptyComponent}
+        HydrateFallback={EmptyComponent}
+      />
+      <Route
+        path={ROUTES.LOGOUT}
+        loader={Logout.loader}
+        action={Logout.action}
+        Component={EmptyComponent}
+        HydrateFallback={EmptyComponent}
+      />
     </>
   ),
   {}
@@ -117,4 +129,15 @@ function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunction
     return false;
   }
   return true;
+}
+
+// Because our `index.html` starts with a loading state, which we remove when
+// the app loads, we're fine rendering an empty component in various places.
+// This is an explicit way to say what's implicitly happening.
+// Otherwise, if we don't include thise, we get a bunch of console.warn()
+// messages like "No HydrateFallback provided" or
+// "Matched leaf route at location ... does not have an element..." which
+// blog up sentry.
+function EmptyComponent() {
+  return null;
 }
