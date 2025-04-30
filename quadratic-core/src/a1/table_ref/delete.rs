@@ -194,4 +194,17 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn test_delete_sheet_from_table_selection() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
+
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+        let to_delete = A1Selection::test_a1_context("B4:C5", gc.a1_context());
+        let result = selection.delete_selection(&to_delete, gc.a1_context());
+        assert!(result.is_none());
+    }
 }

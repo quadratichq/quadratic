@@ -69,7 +69,7 @@ impl Validations {
     ) -> Option<&Validation> {
         self.validations
             .iter()
-            .find(|v| v.selection.overlaps_a1_selection(&selection, a1_context))
+            .find(|v| v.selection.overlaps_a1_selection(selection, a1_context))
     }
 
     /// Gets all validations in the Sheet.
@@ -525,6 +525,28 @@ mod tests {
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .validations
+                .validation_overlaps_selection(&selection, gc.a1_context()),
+            Some(&validation)
+        );
+    }
+
+    #[test]
+    fn test_validation_overlaps_selection_table_sheet() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
+
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+        let validation = test_create_checkbox(&mut gc, selection);
+        assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
+
+        let selection = A1Selection::test_a1_context("B4:C5", gc.a1_context());
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

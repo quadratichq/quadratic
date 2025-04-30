@@ -41,7 +41,7 @@ pub fn assert_validation_id(
     let sheet = gc.sheet(sheet_pos.sheet_id);
     let validation = sheet
         .validations
-        .get_validation_from_pos(sheet_pos.into(), &gc.a1_context());
+        .get_validation_from_pos(sheet_pos.into(), gc.a1_context());
     assert_eq!(
         expected_validation,
         validation.map(|v| v.id),

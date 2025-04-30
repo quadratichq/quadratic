@@ -207,10 +207,9 @@ impl Sheet {
         if special
             .as_ref()
             .is_some_and(|s| matches!(s, JsRenderCellSpecial::List))
+            && !format.wrap.is_some_and(|w| matches!(w, CellWrap::Wrap))
         {
-            if !format.wrap.is_some_and(|w| matches!(w, CellWrap::Wrap)) {
-                format.wrap = Some(CellWrap::Clip);
-            }
+            format.wrap = Some(CellWrap::Clip);
         }
     }
 
