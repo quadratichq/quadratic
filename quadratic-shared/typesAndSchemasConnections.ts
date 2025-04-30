@@ -16,15 +16,15 @@ const ConnectionHostSchema = z
   .min(1, { message: 'Required' })
   .refine(
     (host) => {
-      // If we're running locally, allow localhost
-      if (window?.location?.hostname === 'localhost') return true;
+      // Allow all for localhost and previews
+      const hostname = window?.location?.hostname;
+      if (hostname && (hostname === 'localhost' || hostname.endsWith('quadratic-preview.com'))) return true;
 
       // Otherwise, disallow specific hosts
       host = host.trim();
 
       // Check for localhost variations
-      // todo(ayush): revert this before merge
-      if (host.includes('localhost')) return true;
+      if (host.includes('localhost')) return false;
 
       // Check for local IP ranges
       if (host.startsWith('127.')) return false; // Loopback addresses

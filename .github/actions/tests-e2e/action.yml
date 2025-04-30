@@ -7,6 +7,10 @@ inputs:
   playwright_report_name:
     description: "Name of playwright report artifact uploaded to GitHub"
     required: true
+outputs:
+  playwright_report_url:
+    description: "URL of playwright report artifact uploaded to GitHub"
+    value: ${{ steps.upload-playwright-report.outputs.artifact_url }}
 runs:
   using: "composite"
   steps:
@@ -48,9 +52,10 @@ runs:
       run: export E2E_URL=${{ inputs.e2e_url }} && cd tests-e2e && npm run test:ci
       shell: bash
 
-    - name: Store Artifacts
+    - name: Upload Playwright Report
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
+      id: upload-playwright-report
       with:
         name: ${{ inputs.playwright_report_name }}
         path: tests-e2e/playwright-report/

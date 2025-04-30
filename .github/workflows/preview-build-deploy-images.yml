@@ -39,6 +39,7 @@ jobs:
             ## Preview - Build & Deploy Images
             ⏳ Building images...
             ⏳ Deploy images
+            ⏳ Test E2E
 
             🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
@@ -213,6 +214,7 @@ jobs:
             ## Preview - Build & Deploy Images
             ❌ Build images
             ❌ Deploy images
+            ❌ Test E2E
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
@@ -243,7 +245,8 @@ jobs:
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
     outputs:
-      website_url: ${{ steps.deploy-metadata.outputs.website_url }}
+      WEBSITE_URL: ${{ steps.deploy-metadata.outputs.WEBSITE_URL }}
+      DEPLOY_TIME: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
       MAX_ATTEMPTS: 50
@@ -265,6 +268,7 @@ jobs:
             ## Preview - Build & Deploy Images
             ✅ Build images
             ⏳ Deploying images...
+            ⏳ Test E2E
 
             🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
@@ -407,7 +411,7 @@ jobs:
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
           SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//')
 
-          echo "website_url=${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
+          echo "WEBSITE_URL=${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
           echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
@@ -429,10 +433,11 @@ jobs:
             ## Preview - Build & Deploy Images
             ✅ Build images
             ✅ Deploy images
+            ⏳ Test E2E
 
             🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
-
-            🔗 URL: https://${{ steps.deploy-metadata.outputs.website_url }}
+            🔗 URL: https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
 
       - name: Update comment on deploy images failure
@@ -445,6 +450,7 @@ jobs:
             ## Preview - Build & Deploy Images
             ✅ Build images
             ❌ Deploy images
+            ❌ Test E2E
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
@@ -457,7 +463,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="success" \
-            -f environment_url="https://${{ steps.deploy-metadata.outputs.website_url }}" \
+            -f environment_url="https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}" \
             -f description="Deployment successful!" \
             -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -488,15 +494,15 @@ jobs:
       matrix:
         service:
           - name: client
-            url: "https://${{ needs.deploy_images.outputs.website_url }}/version.json"
+            url: "https://${{ needs.deploy_images.outputs.WEBSITE_URL }}/version.json"
           - name: api
-            url: "https://api.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://api.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
           - name: multiplayer
-            url: "https://multiplayer.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://multiplayer.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
           - name: connection
-            url: "https://connection.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://connection.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
           - name: files
-            url: "https://files.${{ needs.deploy_images.outputs.website_url }}/health"
+            url: "https://files.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_images.outputs.version }}
@@ -563,17 +569,62 @@ jobs:
   test-e2e:
     name: Test E2E
     needs: [build_images, deploy_images, verify_deployed_version]
-    runs-on: blacksmith-16vcpu-ubuntu-2204
+    runs-on: blacksmith-32vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
     env:
-      e2e_url: ${{ needs.deploy_images.outputs.website_url }}
+      e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
+      deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run tests e2e
         uses: ./.github/actions/tests-e2e
+        id: run-tests-e2e
         with:
           e2e_url: "https://${{ env.e2e_url }}"
           playwright_report_name: pr-${{ github.event.pull_request.number }}-e2e
+
+      - name: Find Build & Deploy Images Comment
+        if: always()
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
+      - name: Update comment on E2E tests success
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build & Deploy Images
+            ✅ Build images
+            ✅ Deploy images
+            ✅ Test E2E
+
+            🕒 Last deployed: ${{ env.deploy_time }}
+            🔗 URL: https://${{ env.e2e_url }}
+            🔍 E2E Test Report [download](${{ steps.run-tests-e2e.outputs.playwright_report_url }}).
+          edit-mode: replace
+
+      - name: Update comment on E2E tests failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build & Deploy Images
+            ✅ Build images
+            ✅ Deploy images
+            ❌ Test E2E
+
+            🕒 Last deployed: ${{ env.deploy_time }}
+            🔗 URL: https://${{ env.e2e_url }}
+            🔍 E2E Test Report [download](${{ steps.run-tests-e2e.outputs.playwright_report_url }}).
+          edit-mode: replace
