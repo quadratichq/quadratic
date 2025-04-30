@@ -1099,7 +1099,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test.only('User Can See Other Users on File', async ({ page: userPage1 }) => {
+test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   //--------------------------------
   // User Can See Other Users on File
   //--------------------------------
