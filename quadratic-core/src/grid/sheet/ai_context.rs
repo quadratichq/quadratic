@@ -212,7 +212,7 @@ impl Sheet {
                 bounds.min.x,
                 bounds.min.y + table.y_adjustment(false),
                 bounds.width() as i64,
-                1,
+                75,
             );
             let first_row_visible_values = self
                 .js_cell_value_pos_in_rect(first_row_rect, Some(75))
