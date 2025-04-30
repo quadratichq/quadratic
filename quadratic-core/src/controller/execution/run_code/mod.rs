@@ -128,7 +128,8 @@ impl GridController {
             let index = index.min(sheet.data_tables.len());
             sheet
                 .data_tables
-                .shift_insert(index, pos, new_data_table.to_owned())
+                .insert_before(index, pos, new_data_table.to_owned())
+                .1
         } else {
             sheet.data_tables.shift_remove(&pos)
         };

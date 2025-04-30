@@ -4,7 +4,7 @@ import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { openLink } from '@/app/helpers/links';
 import { ExternalLinkIcon, FeedbackIcon } from '@/shared/components/Icons';
-import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 
 type HelpActionSpec = Pick<
   ActionSpecRecord,
@@ -41,11 +41,11 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpCommunity]: {
-    label: () => 'Community',
-    labelVerbose: 'Visit Community',
+    label: () => 'Forum',
+    labelVerbose: 'Visit Forum',
     Icon: ExternalLinkIcon,
     run: () => {
-      openLink('https://community.quadratichq.com/');
+      openLink(COMMUNITY_FORUMS);
     },
   },
   [Action.HelpChangelog]: {
