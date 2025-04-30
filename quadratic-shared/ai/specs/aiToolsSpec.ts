@@ -134,11 +134,7 @@ export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
     description: `
-Set the name of the user chat with AI assistant, this is the name of the chat in the chat history\n
-You should use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
-This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
-The chat name should be based on user's messages and should reflect his/her queries and goals.\n
-This name should be from user's perspective, not the assistant's.\n
+Sets the name of the user's chat session. The name should be concise, user-facing, and reflect the conversation's topic or goal based on the user's queries.
 `,
     parameters: {
       type: 'object',
@@ -153,22 +149,13 @@ This name should be from user's perspective, not the assistant's.\n
     },
     responseSchema: AIToolsArgsSchema[AITool.SetChatName],
     prompt: `
-You can use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
-This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
-The chat name should be based on user's messages and should reflect his/her queries and goals.\n
-This name should be from user's perspective, not the assistant's.\n
+Provide a concise name for this conversation based on the user's goal or topic. Use plain language from the user's perspective, such as "Predictive Analytics" or "Help with budgeting".
 `,
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
     description: `
-Adds a data table to the current open sheet, requires the top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
-The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
-All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
-Always use this tool when adding a new tabular data to the current open sheet. Don't use set_cell_values function to add tabular data.\n
-Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
-Always prefer using this tool to add structured data to the current open sheet. Don't use set_cell_values or set_code_cell_value function to add structured data.\n
+Adds a new data table to the current open sheet. Requires a top-left anchor position (A1 notation), a unique table name, and a 2D array of string values. The first row of data is used as the table header, and all rows must be the same length. This tool should be used only for adding new tabular data—not for modifying existing tables, inserting formulas, or adding results summaries.
 `,
     parameters: {
       type: 'object',
@@ -199,27 +186,18 @@ Always prefer using this tool to add structured data to the current open sheet. 
     },
     responseSchema: AIToolsArgsSchema[AITool.AddDataTable],
     prompt: `
-Adds a data table to the current open sheet, requires the top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
-top_left_position is the anchor position of the data table.\n
-The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
-The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
-All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Always use this tool when adding a new tabular data to the current open sheet. Don't use set_cell_values function to add tabular data.\n
-Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
-All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
-To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
-Don't attempt to add formulas or code to data tables.\n
+Use this tool to add a new structured data table to the current open sheet. Provide:
+- A top-left position in A1 notation (e.g., "B2")
+- A unique table name (e.g., "customer_orders")
+- A 2D array of string values, where the first row is the header
+
+All rows must have the same number of columns. Leave two rows of space below and two columns of space to the right. Do not use this tool for summaries, formulas, or existing tables.
 `,
   },
   [AITool.SetCellValues]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
-Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
-Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
-top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
-All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
-To clear the values of a cell, set the value to an empty string.\n
+Sets values in the current open sheet using a 2D array of strings, starting at a specified top-left cell (in A1 notation). Each sub-array represents a row. Values can include text, numbers, booleans, dates, durations, or be blank. This tool is for general cell data entry, not formulas or code.
 `,
     parameters: {
       type: 'object',
@@ -245,21 +223,16 @@ To clear the values of a cell, set the value to an empty string.\n
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
-You should use the set_cell_values function to set the values of the current open sheet cells to a 2d array of strings.\n
-Use this function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
-This function requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
-Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
-To clear the values of a cell, set the value to an empty string.\n
+Use this tool to set cell values in the current open sheet. Provide:
+- A top-left position (e.g., "A1") to anchor the data
+- A 2D array of string values (each sub-array is a row)
+Values may include text, numbers, dates, or blanks. To clear a cell, pass an empty string. Do not use this tool for adding formulas or code — use set_code_cell_value for that.
 `,
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the value of a code cell and runs it in the current open sheet, requires the language, cell position (in a1 notation), and code string.\n
-Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
-You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
-Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
-Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Inserts code into a specified code cell and executes it on the current open sheet. Requires the code language, the cell position (A1 notation), and the code string. Only use this tool for adding executable code — not for adding raw data, formulas, or values to tables. Code output may include visualizations or results that spill into adjacent cells.
 `,
     parameters: {
       type: 'object',
@@ -284,32 +257,30 @@ Always refer to the data from cell by its position in a1 notation from respectiv
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
-You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value instead of responding with code.\n
-Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
-set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
-Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
-The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
- - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
- - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
- - If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
- - If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n
- - Always leave a blank row / column between the code cell and the data it references.\n
- - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
- - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
- - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
- - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
- - Do not use conditional returns in python code cells.\n
- - Do not attempt to return data using conditionals in code cells. Even if the conditional is the last line, it will not be returned if buried in a conditional.
- - Don't prefix formulas with \`=\` in code cells.\n
+Use this tool to insert code into the current open sheet. Provide:
+- The code cell position (a single, empty cell in A1 notation)
+- The code language: "Python", "Javascript", or "Formula"
+- The code string
+
+Placement rules:
+- Place the code cell **near the data it references**:
+  - For portrait tables → use the top-right corner
+  - For landscape tables → use the bottom-left corner
+- Leave a blank row or column between the code cell and the data it references
+- Avoid placing the code cell where outputs may collide with existing content
+- Code outputs (e.g. plots) require 7 columns × 23 rows of free space
+
+Do not:
+- Use this to add static values or formulas (use set_cell_values instead)
+- Place code inside data tables
+- Use conditionals to return data (Python only returns final unconditional expression)
+- Prefix formulas with = (omit it in Formula cells)
  `,
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],
     description: `
-Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
-move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
-Target location is the top left corner of the target location on the current open sheet.\n
+Moves a rectangular block of cells from one location to another on the current open sheet. Requires the source selection (in A1 range format) and the target position (top-left cell). The source defines the area to move; the target defines where its top-left corner should end up.
 `,
     parameters: {
       type: 'object',
@@ -330,17 +301,18 @@ Target location is the top left corner of the target location on the current ope
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveCells],
     prompt: `
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
-move_cells function requires the source selection and target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
-Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
+Use this tool to move a rectangular selection of cells from one place to another in the current open sheet.
+
+- **source_selection_rect**: a rectangular A1 range (e.g., "B2:D5")
+- **target_top_left_position**: a single cell (e.g., "G2") that will become the new top-left corner
+
+All cell contents will be moved — not copied — and the original area will be cleared.
 `,
   },
   [AITool.DeleteCells]: {
     sources: ['AIAnalyst'],
     description: `
-Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
-You should use the delete_cells function to delete the value(s) of a selection of cells on the current open sheet.\n
-delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+Clears the values from a selection of cells on the current open sheet. Accepts a single cell, a range (e.g., "B2:D5"), or multiple ranges (e.g., "A1,A3,B2:D4") in A1 notation.
 `,
     parameters: {
       type: 'object',
@@ -356,18 +328,15 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     },
     responseSchema: AIToolsArgsSchema[AITool.DeleteCells],
     prompt: `
-You should use the delete_cells function to delete value(s) on the current open sheet.\n
-delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+Use this tool to clear the contents of one or more cells on the current open sheet.
+
+- selection: A1-style reference to a single cell, a range, or multiple ranges (e.g., "A1", "B2:D4", "A1,C3,F2:G4")
 `,
   },
   [AITool.UpdateCodeCell]: {
     sources: ['AIAssistant'],
     description: `
-This tool updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
-The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
-New code runs in the cell immediately, so the user can see output of the code cell after it is updates.\n
-Never include code in the chat when using this tool, always explain brief what changes are made and why.\n
-When using this tool, make sure this is the only tool used in the response.\n
+Replaces the full contents of the code cell currently being edited with a new code string. The new code is immediately executed, and the user will see a diff view showing the changes. Only use this tool to replace the entire code block, not to append or partially modify. Do not include the code in the assistant message — only use this tool, and briefly describe the change.
 `,
     parameters: {
       type: 'object',
@@ -420,13 +389,7 @@ Completion is the delta that will be inserted at the cursor position in the code
   [AITool.UserPromptSuggestions]: {
     sources: ['GetUserPromptSuggestions', 'AIAnalyst'],
     description: `
-This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
-Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
-The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
-Use the internal context and the chat history to provide the prompt suggestions.\n
-Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+Generates an array of three follow-up prompt suggestions for the user. Each suggestion includes a short label (max 40 characters) and a full prompt string. Use the user's chat history and internal context to generate relevant, helpful next steps. This tool should only be called after all tool calls are complete and the assistant response has been delivered.
 `,
     parameters: {
       type: 'object',
@@ -455,26 +418,23 @@ This tool should always be called after you have provided the response to the us
     },
     responseSchema: AIToolsArgsSchema[AITool.UserPromptSuggestions],
     prompt: `
-This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
-Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
-The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
-Use the internal context and the chat history to provide the prompt suggestions.\n
-Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+Suggest three helpful follow-up prompts based on the user’s recent query and the internal context.
+
+Each suggestion must include:
+- A concise label (≤40 characters) summarizing the action
+- A full prompt string to run when selected
+
+Examples:
+- Label: “Add growth forecast” → Prompt: “Can you project future growth based on this data?”
+- Label: “Visualize sales trends” → Prompt: “Generate a chart of monthly sales trends.”
+
+Only use this tool after the main response is complete and all tool calls are finished.
 `,
   },
   [AITool.PDFImport]: {
     sources: ['AIAnalyst'],
     description: `
-This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
-This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
-Forward the actual user prompt as much as possible that is related to the PDF file.\n
-Always capture user intention exactly and give a clear and explicit prompt to extract data from PDF files.\n
-Use this tool only if there is a PDF file that needs to be extracted. If there is no PDF file, do not use this tool.\n
-Never extract data from PDF files that are not relevant to the user's prompt. Never try to extract data from PDF files on your own. Always use the pdf_import tool when dealing with PDF files.\n
-Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
-Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
+Extracts structured data from an attached PDF and converts it into one or more Data Tables on the current sheet. Requires the file name and a prompt that clearly reflects the user's intent. Use only when a relevant PDF is attached and the user has asked to extract data from it.
 `,
     parameters: {
       type: 'object',
@@ -494,14 +454,15 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
     },
     responseSchema: AIToolsArgsSchema[AITool.PDFImport],
     prompt: `
-This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
-This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
-Forward the actual user prompt as much as possible that is related to the PDF file.\n
-Always capture user intention exactly and give a clear and explicit prompt to extract data from PDF files.\n
-Use this tool only if there is a PDF file that needs to be extracted. If there is no PDF file, do not use this tool.\n
-Never extract data from PDF files that are not relevant to the user's prompt. Never try to extract data from PDF files on your own. Always use the pdf_import tool when dealing with PDF files.\n
-Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
-Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
+Use this tool only when the user has attached a PDF **and** asked to extract structured data from it.
+
+- Use the **exact file name** of the attached PDF.
+- The prompt must clearly express **what the user wants extracted** (e.g., “Extract the revenue table on page 2”).
+- Forward the user's wording as much as possible — capture their intention accurately.
+- Do not guess or extract anything not explicitly requested.
+- Only include this tool in your response — analysis comes **after** the data is imported.
+
+Never use this tool if no relevant PDF is attached or the user's prompt doesn’t call for extraction.
 `,
   },
 } as const;
