@@ -1,4 +1,4 @@
-name: Preview Deploy
+name: Preview
 
 on:
   pull_request:
@@ -435,8 +435,8 @@ jobs:
             ✅ Deploy images
             ⏳ Test E2E
 
-            🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
             🔗 URL: https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}
+            🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
 
@@ -599,8 +599,8 @@ jobs:
             ✅ Deploy images
             ⏳ Test E2E running...
 
-            🕒 Last deployed: ${{ env.deploy_time }}
             🔗 URL: https://${{ env.e2e_url }}
+            🕒 Last deployed: ${{ env.deploy_time }}
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
 
@@ -615,7 +615,7 @@ jobs:
           playwright_report_name: pr-${{ github.event.pull_request.number }}-e2e
 
       - name: Update comment on E2E tests success
-        if: success()
+        if: always()
         uses: peter-evans/create-or-update-comment@v3
         with:
           comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
@@ -624,24 +624,8 @@ jobs:
             ## Preview - Build, Deploy & Test E2E
             ✅ Build images
             ✅ Deploy images
-            ✅ Test E2E [report download](${{ steps.run-tests-e2e.outputs.playwright_report_url }}).
+            ${{ steps.run-tests-e2e.conclusion == 'success' && '✅' || '❌' }} Test E2E [download report](${{ steps.run-tests-e2e.outputs.playwright_report_url }}).
 
-            🕒 Last deployed: ${{ env.deploy_time }}
             🔗 URL: https://${{ env.e2e_url }}
-          edit-mode: replace
-
-      - name: Update comment on E2E tests failure
-        if: failure()
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Build, Deploy & Test E2E
-            ✅ Build images
-            ✅ Deploy images
-            ❌ Test E2E [report download](${{ steps.run-tests-e2e.outputs.playwright_report_url }}).
-
             🕒 Last deployed: ${{ env.deploy_time }}
-            🔗 URL: https://${{ env.e2e_url }}
           edit-mode: replace

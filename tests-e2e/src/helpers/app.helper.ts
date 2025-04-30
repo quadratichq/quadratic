@@ -1,4 +1,4 @@
-import { type Page } from "@playwright/test";
+import { type Page } from '@playwright/test';
 
 /*
  * Navigates to a specified [Column, Row] in a spreadsheet-like interface on a webpage, then fills in the cell with desired text
@@ -9,16 +9,13 @@ type TypeInCellOptions = {
   targetRow: number;
   text: string;
 };
-export const typeInCell = async (
-  page: Page,
-  { targetColumn, targetRow, text }: TypeInCellOptions,
-) => {
+export const typeInCell = async (page: Page, { targetColumn, targetRow, text }: TypeInCellOptions) => {
   await navigateOnSheet(page, { targetColumn, targetRow });
   // type some text
-  await page.keyboard.press("Enter");
+  await page.keyboard.press('Enter');
   await page.waitForTimeout(1000);
   await page.keyboard.type(text, { delay: 250 });
-  await page.keyboard.press("Enter");
+  await page.keyboard.press('Enter');
   await page.waitForTimeout(1000);
 };
 
@@ -32,7 +29,7 @@ type NavigateOnSheetOptions = {
 };
 export const navigateOnSheet = async (
   page: Page,
-  { targetColumn, targetRow, skipCanvasClick }: NavigateOnSheetOptions,
+  { targetColumn, targetRow, skipCanvasClick }: NavigateOnSheetOptions
 ) => {
   // Click canvas if needed
   if (!skipCanvasClick) {
@@ -45,14 +42,12 @@ export const navigateOnSheet = async (
   }
 
   // Get our current position
-  let position = await page
-    .locator('div:has(button[aria-haspopup="dialog"]) >> input >> nth = 0')
-    .inputValue();
+  let position = await page.locator('div:has(button[aria-haspopup="dialog"]) >> input >> nth = 0').inputValue();
 
   // Ensure the position is a string
   position = position?.trim();
   if (!position) {
-    throw new Error("Failed to retrieve the current position.");
+    throw new Error('Failed to retrieve the current position.');
   }
 
   // Parse the current position
@@ -60,11 +55,9 @@ export const navigateOnSheet = async (
 
   // Determine the direction and magnitude for column navigation
   const targetColumnNumber =
-    typeof targetColumn === "string"
-      ? targetColumn.toUpperCase().charCodeAt(0) - 65 + 1
-      : targetColumn;
+    typeof targetColumn === 'string' ? targetColumn.toUpperCase().charCodeAt(0) - 65 + 1 : targetColumn;
   const columnDifference = targetColumnNumber - currentColumn;
-  const columnDirection = columnDifference > 0 ? "ArrowRight" : "ArrowLeft";
+  const columnDirection = columnDifference > 0 ? 'ArrowRight' : 'ArrowLeft';
 
   // Navigate columns
   for (let i = 0; i < Math.abs(columnDifference); i++) {
@@ -74,7 +67,7 @@ export const navigateOnSheet = async (
 
   // Determine the direction and magnitude for row navigation
   const rowDifference = targetRow - currentRow; // Adjusted target row
-  const rowDirection = rowDifference > 0 ? "ArrowDown" : "ArrowUp";
+  const rowDirection = rowDifference > 0 ? 'ArrowDown' : 'ArrowUp';
 
   // Navigate rows
   for (let j = 0; j < Math.abs(rowDifference); j++) {
@@ -93,12 +86,9 @@ type SelectCellsOptions = {
   startXY: [number | string, number];
   endXY: [number | string, number];
 };
-export const selectCells = async (
-  page: Page,
-  { startXY, endXY }: SelectCellsOptions,
-) => {
+export const selectCells = async (page: Page, { startXY, endXY }: SelectCellsOptions) => {
   if (startXY.length !== 2 || endXY.length !== 2) {
-    throw new Error("Invalid range");
+    throw new Error('Invalid range');
   }
 
   // Navigate into the first cell
@@ -108,7 +98,7 @@ export const selectCells = async (
   });
 
   // Select all Cells until the final one
-  await page.keyboard.down("Shift");
+  await page.keyboard.down('Shift');
 
   await navigateOnSheet(page, {
     targetColumn: endXY[0],
@@ -116,7 +106,7 @@ export const selectCells = async (
     skipCanvasClick: true,
   });
 
-  await page.keyboard.up("Shift");
+  await page.keyboard.up('Shift');
 };
 
 // Parse position string (e.g., "E13" -> column: 5, row: 13)
@@ -135,8 +125,8 @@ const parsePosition = (position: string) => {
 
 export const displayMouseCoords = async (page: Page) => {
   await page.evaluate(() => {
-    const positionDisplay = document.createElement("div");
-    positionDisplay.id = "mousePosition";
+    const positionDisplay = document.createElement('div');
+    positionDisplay.id = 'mousePosition';
     positionDisplay.style.cssText = `
       position: fixed;
       background-color: white;
@@ -146,10 +136,10 @@ export const displayMouseCoords = async (page: Page) => {
       padding: 2px;
       font-size: '10px';
     `;
-    positionDisplay.textContent = "X: -, Y: -"; // Initial text
+    positionDisplay.textContent = 'X: -, Y: -'; // Initial text
     document.body.appendChild(positionDisplay);
 
-    document.addEventListener("mousemove", (event) => {
+    document.addEventListener('mousemove', (event) => {
       const { clientX: x, clientY: y } = event;
 
       positionDisplay.textContent = `X: ${x}, Y: ${y}`;
@@ -160,15 +150,11 @@ export const displayMouseCoords = async (page: Page) => {
 /**
  * Helper Function to clear code editor
  */
-type ClearCodeEditorOptions = {};
-export const clearCodeEditor = async (
-  page: Page,
-  options?: ClearCodeEditorOptions,
-) => {
+export const clearCodeEditor = async (page: Page) => {
   await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
   // Click Control + A to Select All, then Backspace to Clear
-  await page.keyboard.press("Control+A");
-  await page.keyboard.press("Backspace");
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Backspace');
 };
 
 /**
@@ -177,19 +163,16 @@ export const clearCodeEditor = async (
 type CleanUpServerConnectionsOptions = {
   connectionName: string;
 };
-export const cleanUpServerConnections = async (
-  page: Page,
-  { connectionName }: CleanUpServerConnectionsOptions,
-) => {
+export const cleanUpServerConnections = async (page: Page, { connectionName }: CleanUpServerConnectionsOptions) => {
   // setup dialog alerts to be yes
-  page.on("dialog", (dialog) => {
+  page.on('dialog', (dialog) => {
     dialog.accept().catch((error) => {
-      console.error("Failed to accept the dialog:", error);
+      console.error('Failed to accept the dialog:', error);
     });
   });
 
   // Press "/"
-  await page.keyboard.press("/");
+  await page.keyboard.press('/');
   await page.locator(`span:text-is("Manage connections")`).click();
 
   if (await page.getByRole(`heading`, { name: `No connections` }).isVisible()) {
@@ -204,16 +187,11 @@ export const cleanUpServerConnections = async (
   // loop through and delete all the connections
   const connectionCount = await page.locator(`form + div > div`).count();
   for (let i = 0; i < connectionCount; i++) {
-    await page
-      .locator(`button:has-text("${connectionName}") + button `)
-      .first()
-      .click();
+    await page.locator(`button:has-text("${connectionName}") + button `).first().click();
     await page.getByRole(`button`, { name: `Delete` }).click();
     await page.waitForTimeout(1000);
     // Confirm delete action
-    await page
-      .locator('[role="alertdialog"] button:has-text("Delete")')
-      .click();
+    await page.locator('[role="alertdialog"] button:has-text("Delete")').click();
     await page.waitForTimeout(1000);
   }
 

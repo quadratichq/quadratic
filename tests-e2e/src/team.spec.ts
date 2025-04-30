@@ -1,17 +1,11 @@
-import { chromium, expect, test } from "@playwright/test";
-import {
-  EDIT_USER_PREFIX,
-  FREE_USER_PREFIX,
-  MANAGE_USER_PREFIX,
-  VIEW_USER_PREFIX,
-} from "./constants/auth";
-import { logIn } from "./helpers/auth.helpers";
-import { inviteUserToTeam } from "./helpers/billing.helpers";
-import { buildUrl } from "./helpers/buildUrl.helpers";
-import { cleanUpFiles, createFile } from "./helpers/file.helpers";
-import { createNewTeamByURL } from "./helpers/team.helper";
+import { chromium, expect, test } from '@playwright/test';
+import { logIn } from './helpers/auth.helpers';
+import { inviteUserToTeam } from './helpers/billing.helpers';
+import { buildUrl } from './helpers/buildUrl.helpers';
+import { cleanUpFiles, createFile } from './helpers/file.helpers';
+import { createNewTeamByURL } from './helpers/team.helper';
 
-test("Create a Team", async ({ page }) => {
+test('Create a Team', async ({ page }) => {
   //--------------------------------
   // Create a Team
   //--------------------------------
@@ -20,35 +14,30 @@ test("Create a Team", async ({ page }) => {
   const teamName = `Test Team Creation - ${Date.now()}`;
 
   // Login
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_create_team' });
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Assert the team is not visible since not yet created
-  await expect(page.locator(`:text("${teamName}")`)).not.toBeVisible();
+  await expect(page.locator(`:text("${teamName}")`)).not.toBeVisible({ timeout: 30 * 1000 });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName });
 
   // Click team dropdown
-  await page
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click();
+  await page.locator(`nav`).getByRole(`button`, { name: `arrow_drop_down` }).click();
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert that the new team is created and visible in the list of teams
-  await expect(
-    page.locator(`[role="menuitem"] :text("${teamName}")`),
-  ).toBeVisible();
+  await expect(page.locator(`[role="menuitem"] :text("${teamName}")`)).toBeVisible({ timeout: 30 * 1000 });
 });
 
-test("Rename Team", async ({ page: adminPage }) => {
+test('Rename Team', async ({ page: adminPage }) => {
   //--------------------------------
   // Rename Team
   //--------------------------------
@@ -57,15 +46,13 @@ test("Rename Team", async ({ page: adminPage }) => {
   const randomNum = Date.now().toString().slice(-6);
   const originalTeamName = `Original Team Name - ${randomNum}`;
   const newTeamName = `New Team Name - ${randomNum}`;
-  const editPermission = "Can edit";
+  const editPermission = 'Can edit';
 
-  await logIn(adminPage);
+  await logIn(adminPage, { emailPrefix: 'e2e_rename_team_admin' });
 
   const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
-  const testUserEmail = await logIn(testUserPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const testUserEmail = await logIn(testUserPage, { emailPrefix: 'e2e_rename_team_user' });
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -92,11 +79,9 @@ test("Rename Team", async ({ page: adminPage }) => {
   await testUserPage.waitForTimeout(2000);
 
   // Verify that testUser can see the original team name
-  await expect(
-    testUserPage.locator(
-      `nav button[aria-haspopup="menu"] :text("${originalTeamName}")`,
-    ),
-  ).toBeVisible();
+  await expect(testUserPage.locator(`nav button[aria-haspopup="menu"] :text("${originalTeamName}")`)).toBeVisible({
+    timeout: 30 * 1000,
+  });
 
   //--------------------------------
   // Act: Admin Renames the Team
@@ -105,9 +90,7 @@ test("Rename Team", async ({ page: adminPage }) => {
   // Admin renames the team
   await adminPage.bringToFront();
   await adminPage.locator(`nav :text-is("Settings")`).click();
-  await adminPage
-    .locator(`input[value="${originalTeamName}"]`)
-    .fill(newTeamName);
+  await adminPage.locator(`input[value="${originalTeamName}"]`).fill(newTeamName);
   await adminPage.locator(`:text("Save")`).click();
 
   //--------------------------------
@@ -119,24 +102,22 @@ test("Rename Team", async ({ page: adminPage }) => {
   await testUserPage.reload();
 
   // Verify that the team name has been updated for testUser
-  await expect(
-    testUserPage.locator(
-      `nav button[aria-haspopup="menu"] :text("${newTeamName}")`,
-    ),
-  ).toBeVisible();
+  await expect(testUserPage.locator(`nav button[aria-haspopup="menu"] :text("${newTeamName}")`)).toBeVisible({
+    timeout: 30 * 1000,
+  });
 });
 
-test("Create File for Team", async ({ page }) => {
+test('Create File for Team', async ({ page }) => {
   //--------------------------------
   // Create File for Team
   //--------------------------------
 
   // Constants
   const teamName = `Test Team Creation - ${Date.now()}`;
-  const newFileName = "Test File Creation";
+  const newFileName = 'Test File Creation';
 
   // Log into Quadratic
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_create_file' });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName });
@@ -147,7 +128,7 @@ test("Create File for Team", async ({ page }) => {
 
   // Create a new file in the newly created team
   await cleanUpFiles(page, { fileName: newFileName });
-  await expect(page.locator(`a:has-text("${newFileName}")`)).not.toBeVisible();
+  await expect(page.locator(`a:has-text("${newFileName}")`)).not.toBeVisible({ timeout: 30 * 1000 });
   await createFile(page, { fileName: newFileName });
 
   //--------------------------------
@@ -155,7 +136,7 @@ test("Create File for Team", async ({ page }) => {
   //--------------------------------
 
   // Assert that the new file is created and visible in the list of files
-  await expect(page.locator(`a:has-text("${newFileName}")`)).toBeVisible();
+  await expect(page.locator(`a:has-text("${newFileName}")`)).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Clean up:
@@ -165,7 +146,7 @@ test("Create File for Team", async ({ page }) => {
   await cleanUpFiles(page, { fileName: newFileName });
 });
 
-test("Invite Member to Team", async ({ page: adminPage }) => {
+test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
   // Invite Member to Team
   //--------------------------------
@@ -173,16 +154,14 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   // Constants
   const randomNum = Date.now().toString().slice(-6);
   const newTeamName = `File Sharing Team - ${randomNum}`;
-  const ownerPermission = "Owner";
+  const ownerPermission = 'Owner';
 
   // Login with dedicated users
-  await logIn(adminPage);
+  await logIn(adminPage, { emailPrefix: 'e2e_invite_admin' });
 
   const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
-  const ownerEmail = await logIn(ownerPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const ownerEmail = await logIn(ownerPage, { emailPrefix: 'e2e_invite_owner' });
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -215,10 +194,7 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
 
   // Assert that the ownerUser has been invited with Owner permissions
   await expect(
-    ownerPage
-      .locator(`:text("${ownerEmail} (You)${ownerEmail}")`)
-      .locator("..")
-      .locator('button[role="combobox"] span'),
+    ownerPage.locator(`:text("${ownerEmail} (You)${ownerEmail}")`).locator('..').locator('button[role="combobox"] span')
   ).toHaveText(ownerPermission);
 
   //--------------------------------
@@ -226,14 +202,12 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   //--------------------------------
 
   // Constants
-  const editPermission = "Can edit";
+  const editPermission = 'Can edit';
 
   // Login edit user
   const editUserBrowser = await chromium.launch();
   const editUserPage = await editUserBrowser.newPage();
-  const editUserEmail = await logIn(editUserPage, {
-    emailPrefix: EDIT_USER_PREFIX,
-  });
+  const editUserEmail = await logIn(editUserPage, { emailPrefix: 'e2e_invite_edit' });
 
   // Admin invites new user with "Can edit" permission
   await adminPage.bringToFront();
@@ -263,22 +237,20 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   await expect(
     editUserPage
       .locator(`:text("${editUserEmail} (You)${editUserEmail}")`)
-      .locator("..")
-      .locator('button[role="combobox"] span'),
+      .locator('..')
+      .locator('button[role="combobox"] span')
   ).toHaveText(editPermission);
 
   //--------------------------------
   // Arrange:
   //--------------------------------
   // Constants
-  const viewPermission = "Can view";
+  const viewPermission = 'Can view';
 
   // Login viewUserEmail
   const viewUserBrowser = await chromium.launch();
   const viewUserPage = await viewUserBrowser.newPage();
-  const viewUserEmail = await logIn(viewUserPage, {
-    emailPrefix: VIEW_USER_PREFIX,
-  });
+  const viewUserEmail = await logIn(viewUserPage, { emailPrefix: 'e2e_invite_view' });
 
   // Admin invites new user with "Can view" permission
   await adminPage.bringToFront();
@@ -308,12 +280,12 @@ test("Invite Member to Team", async ({ page: adminPage }) => {
   await expect(
     viewUserPage
       .locator(`:text("${viewUserEmail} (You)${viewUserEmail}")`)
-      .locator("..")
-      .locator('button[role="combobox"] span'),
+      .locator('..')
+      .locator('button[role="combobox"] span')
   ).toHaveText(viewPermission);
 });
 
-test("Manage Members", async ({ page: adminPage, context }) => {
+test('Manage Members', async ({ page: adminPage, context }) => {
   //--------------------------------
   // Manage Members
   //--------------------------------
@@ -321,16 +293,14 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   // Constants
   const randomNum = Date.now().toString().slice(-6);
   const newTeamName = `Test Team for Permissions - ${randomNum}`;
-  const ownerPermission = "Owner";
+  const ownerPermission = 'Owner';
 
   // Login with dedicated users
-  await logIn(adminPage);
+  await logIn(adminPage, { emailPrefix: 'e2e_manage_admin' });
 
-  const manageUserbrowser = await chromium.launch();
-  const manageUserPage = await manageUserbrowser.newPage();
-  const manageUserEmail = await logIn(manageUserPage, {
-    emailPrefix: MANAGE_USER_PREFIX,
-  });
+  const manageUserBrowser = await chromium.launch();
+  const manageUserPage = await manageUserBrowser.newPage();
+  const manageUserEmail = await logIn(manageUserPage, { emailPrefix: 'e2e_manage_user' });
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -339,9 +309,7 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   const { teamUrl } = await createNewTeamByURL(adminPage, {
     teamName: newTeamName,
   });
-  await adminPage
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .waitFor();
+  await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
 
   //--------------------------------
   // Act: Owner Permission
@@ -369,15 +337,15 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   await expect(
     manageUserPage
       .locator(`:text("${manageUserEmail} (You)${manageUserEmail}")`)
-      .locator("..")
-      .locator('button[role="combobox"] span'),
+      .locator('..')
+      .locator('button[role="combobox"] span')
   ).toHaveText(ownerPermission);
 
   //--------------------------------
   // Arrange:
   //--------------------------------
   // Constants
-  const editPermission = "Can edit";
+  const editPermission = 'Can edit';
 
   //--------------------------------
   // Act: Change to Can Edit Permission
@@ -388,17 +356,15 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   await manageUserPage.locator(`nav :text-is("Members")`).click();
   await adminPage
     .locator(`:text("${manageUserEmail} ${manageUserEmail}")`)
-    .locator("..")
+    .locator('..')
     .locator('button[role="combobox"]')
     .click();
   // Wait for the dropdown to be visible
   await adminPage.waitForSelector('[role="listbox"][data-state="open"]', {
-    state: "visible",
+    state: 'visible',
   });
   // Select the desired permission (e.g., "Can edit")
-  await adminPage
-    .locator(`[role="option"]:has-text("${editPermission}")`)
-    .click();
+  await adminPage.locator(`[role="option"]:has-text("${editPermission}")`).click();
 
   //--------------------------------
   // Assert
@@ -407,13 +373,8 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   // TestUser accepts the invitation and navigates to the team to check permission
   await manageUserPage.bringToFront();
   await manageUserPage.reload();
-  await manageUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click();
-  await manageUserPage
-    .locator(`[role="menuitem"] :text("${newTeamName}")`)
-    .click();
+  await manageUserPage.locator(`nav`).getByRole(`button`, { name: `arrow_drop_down` }).click();
+  await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click();
   await manageUserPage.waitForTimeout(1000);
   await manageUserPage.locator(`nav :text-is("Members")`).click();
 
@@ -421,15 +382,15 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   await expect(
     manageUserPage
       .locator(`:text("${manageUserEmail} (You)${manageUserEmail}")`)
-      .locator("..")
-      .locator('button[role="combobox"] span'),
+      .locator('..')
+      .locator('button[role="combobox"] span')
   ).toHaveText(editPermission);
 
   //--------------------------------
   // Arrange:
   //--------------------------------
   // Constants
-  const viewPermission = "Can view";
+  const viewPermission = 'Can view';
 
   //--------------------------------
   // Act: Change to Can View Permission
@@ -440,17 +401,15 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   await manageUserPage.locator(`nav :text-is("Members")`).click();
   await adminPage
     .locator(`:text("${manageUserEmail} ${manageUserEmail}")`)
-    .locator("..")
+    .locator('..')
     .locator('button[role="combobox"]')
     .click();
   // Wait for the dropdown to be visible
   await adminPage.waitForSelector('[role="listbox"][data-state="open"]', {
-    state: "visible",
+    state: 'visible',
   });
   // Select the desired permission (e.g., "Can view")
-  await adminPage
-    .locator(`[role="option"]:has-text("${viewPermission}")`)
-    .click();
+  await adminPage.locator(`[role="option"]:has-text("${viewPermission}")`).click();
 
   //--------------------------------
   // Assert
@@ -459,13 +418,8 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   // TestUser navigates to the team to check permission
   await manageUserPage.bringToFront();
   await manageUserPage.reload();
-  await manageUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click();
-  await manageUserPage
-    .locator(`[role="menuitem"] :text("${newTeamName}")`)
-    .click();
+  await manageUserPage.locator(`nav`).getByRole(`button`, { name: `arrow_drop_down` }).click();
+  await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click();
   await manageUserPage.waitForTimeout(1000);
   await manageUserPage.locator(`nav :text-is("Members")`).click();
 
@@ -473,15 +427,15 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   await expect(
     manageUserPage
       .locator(`:text("${manageUserEmail} (You)${manageUserEmail}")`)
-      .locator("..")
-      .locator('button[role="combobox"] span'),
+      .locator('..')
+      .locator('button[role="combobox"] span')
   ).toHaveText(viewPermission);
 
   //--------------------------------
   // Arrange:
   //--------------------------------
   // Constants
-  const removePermission = "Remove";
+  const removePermission = 'Remove';
 
   //--------------------------------
   // Act: Remove Test User
@@ -492,23 +446,21 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   await adminPage.locator(`nav :text-is("Members")`).click();
   await adminPage
     .locator(`:text("${manageUserEmail} ${manageUserEmail}")`)
-    .locator("..")
+    .locator('..')
     .locator('button[role="combobox"]')
     .click();
   // Wait for the dropdown to be visible
   await adminPage.waitForSelector('[role="listbox"][data-state="open"]', {
-    state: "visible",
+    state: 'visible',
   });
 
   // Monitor browser alert messages that may pop up and click accept button
-  context.on("dialog", async (dialog) => {
+  context.on('dialog', async (dialog) => {
     await dialog.accept();
   });
 
   // Click on Remove member option
-  await adminPage
-    .locator(`[role="option"]:has-text("${removePermission}")`)
-    .click();
+  await adminPage.locator(`[role="option"]:has-text("${removePermission}")`).click();
 
   // Confirm by clicking "Remove" again
   await adminPage.getByRole(`button`, { name: `Remove` }).click();
@@ -520,20 +472,16 @@ test("Manage Members", async ({ page: adminPage, context }) => {
   // TestUser tries to access the team to verify removal
   await manageUserPage.bringToFront();
   await manageUserPage.reload();
-  await expect(
-    manageUserPage.locator("text=You don’t have access to this team"),
-  ).toBeVisible();
+  await expect(manageUserPage.locator('text=You don’t have access to this team')).toBeVisible({ timeout: 30 * 1000 });
 
   // Admin verifies that the testUser is no longer in the team
   await adminPage.bringToFront();
   await adminPage.reload();
   await adminPage.locator(`nav :text-is("Members")`).click();
-  await expect(
-    adminPage.locator(`:text("${manageUserEmail}")`),
-  ).not.toBeVisible();
+  await expect(adminPage.locator(`:text("${manageUserEmail}")`)).not.toBeVisible({ timeout: 30 * 1000 });
 });
 
-test("Members Can Leave Team", async ({ page: adminPage, context }) => {
+test('Members Can Leave Team', async ({ page: adminPage }) => {
   //--------------------------------
   // Members Can Leave Team
   //--------------------------------
@@ -541,29 +489,23 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   // Constants
   const randomNum = `${Date.now().toString().slice(-6)}`;
   const newTeamName = `Test Team for Leave Functionality - ${randomNum}`;
-  const ownerPermission = "Owner";
-  const editPermission = "Can edit";
-  const viewPermission = "Can view";
+  const ownerPermission = 'Owner';
+  const editPermission = 'Can edit';
+  const viewPermission = 'Can view';
 
-  await logIn(adminPage);
+  await logIn(adminPage, { emailPrefix: 'e2e_leave_team_admin' });
 
   const ownerBrowser = await chromium.launch();
   const ownerPage = await ownerBrowser.newPage();
-  const ownerEmail = await logIn(ownerPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const ownerEmail = await logIn(ownerPage, { emailPrefix: 'e2e_leave_team_owner' });
 
   const editUserBrowser = await chromium.launch();
   const editUserPage = await editUserBrowser.newPage();
-  const editUserEmail = await logIn(editUserPage, {
-    emailPrefix: EDIT_USER_PREFIX,
-  });
+  const editUserEmail = await logIn(editUserPage, { emailPrefix: 'e2e_leave_team_edit' });
 
-  const viewUserbrowser = await chromium.launch();
-  const viewUserPage = await viewUserbrowser.newPage();
-  const viewUserEmail = await logIn(viewUserPage, {
-    emailPrefix: VIEW_USER_PREFIX,
-  });
+  const viewUserBrowser = await chromium.launch();
+  const viewUserPage = await viewUserBrowser.newPage();
+  const viewUserEmail = await logIn(viewUserPage, { emailPrefix: 'e2e_leave_team_view' });
 
   // Admin creates a new team
   await adminPage.bringToFront();
@@ -601,7 +543,7 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   // Owner leaves the team
   await ownerPage
     .locator(`:text("${ownerEmail} (You)${ownerEmail}")`)
-    .locator("..")
+    .locator('..')
     .locator('button[role="combobox"]')
     .click();
   await ownerPage.locator(`[role="option"]:has-text("Leave")`).click();
@@ -615,14 +557,11 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   await expect(
     ownerPage.getByRole(`heading`, {
       name: `You don’t have access to this team`,
-    }),
-  ).toBeVisible();
+    })
+  ).toBeVisible({ timeout: 30 * 1000 });
   await ownerPage.getByRole(`link`, { name: `Go home` }).click();
-  await ownerPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click();
-  await expect(ownerPage.locator(`:text("${newTeamName}")`)).not.toBeVisible();
+  await ownerPage.locator(`nav`).getByRole(`button`, { name: `arrow_drop_down` }).click();
+  await expect(ownerPage.locator(`:text("${newTeamName}")`)).not.toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act & Assert: Can Edit User Leaves the Team
@@ -639,7 +578,7 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   // Can edit user leaves the team
   await editUserPage
     .locator(`:text("${editUserEmail} (You)${editUserEmail}")`)
-    .locator("..")
+    .locator('..')
     .locator('button[role="combobox"]')
     .click();
   await editUserPage.locator(`[role="option"]:has-text("Leave")`).click();
@@ -653,16 +592,11 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   await expect(
     editUserPage.getByRole(`heading`, {
       name: `You don’t have access to this team`,
-    }),
-  ).toBeVisible();
+    })
+  ).toBeVisible({ timeout: 30 * 1000 });
   await editUserPage.getByRole(`link`, { name: `Go home` }).click();
-  await editUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click();
-  await expect(
-    editUserPage.locator(`:text("${newTeamName}")`),
-  ).not.toBeVisible();
+  await editUserPage.locator(`nav`).getByRole(`button`, { name: `arrow_drop_down` }).click();
+  await expect(editUserPage.locator(`:text("${newTeamName}")`)).not.toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act & Assert: Can View User Leaves the Team
@@ -679,7 +613,7 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   // Can view user leaves the team
   await viewUserPage
     .locator(`:text("${viewUserEmail} (You)${viewUserEmail}")`)
-    .locator("..")
+    .locator('..')
     .locator('button[role="combobox"]')
     .click();
   await viewUserPage.locator(`[role="option"]:has-text("Leave")`).click();
@@ -693,16 +627,11 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   await expect(
     viewUserPage.getByRole(`heading`, {
       name: `You don’t have access to this team`,
-    }),
-  ).toBeVisible();
+    })
+  ).toBeVisible({ timeout: 30 * 1000 });
   await viewUserPage.getByRole(`link`, { name: `Go home` }).click();
-  await viewUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click();
-  await expect(
-    viewUserPage.locator(`:text("${newTeamName}")`),
-  ).not.toBeVisible();
+  await viewUserPage.locator(`nav`).getByRole(`button`, { name: `arrow_drop_down` }).click();
+  await expect(viewUserPage.locator(`:text("${newTeamName}")`)).not.toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Admin Verifies Users Have Left
@@ -712,19 +641,12 @@ test("Members Can Leave Team", async ({ page: adminPage, context }) => {
   await adminPage.bringToFront();
   await adminPage.reload();
   await adminPage.locator(`nav :text-is("Members")`).click();
-  await expect(adminPage.locator(`:text("${ownerEmail}")`)).not.toBeVisible();
-  await expect(
-    adminPage.locator(`:text("${editUserEmail}")`),
-  ).not.toBeVisible();
-  await expect(
-    adminPage.locator(`:text("${viewUserEmail}")`),
-  ).not.toBeVisible();
+  await expect(adminPage.locator(`:text("${ownerEmail}")`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(adminPage.locator(`:text("${editUserEmail}")`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(adminPage.locator(`:text("${viewUserEmail}")`)).not.toBeVisible({ timeout: 30 * 1000 });
 });
 
-test("Removed Member No Longer Can Access Team Files", async ({
-  page: adminPage,
-  context,
-}) => {
+test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage }) => {
   //--------------------------------
   // Removed Member No Longer Can Access Team Files
   //--------------------------------
@@ -732,35 +654,29 @@ test("Removed Member No Longer Can Access Team Files", async ({
   // Constants
   const randomNum = `${Date.now().toString().slice(-6)}`;
   const newTeamName = `Test Team for Removal - ${randomNum}`;
-  const editPermission = "Can edit";
-  const fileName = "Test_File";
+  const editPermission = 'Can edit';
+  const fileName = 'Test_File';
 
-  await logIn(adminPage);
+  await logIn(adminPage, { emailPrefix: 'e2e_remove_member_admin' });
 
   const testUserBrowser = await chromium.launch();
   const testUserPage = await testUserBrowser.newPage();
-  const testUserEmail = await logIn(testUserPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const testUserEmail = await logIn(testUserPage, { emailPrefix: 'e2e_remove_member_user' });
 
   // Admin creates a new team
   await adminPage.bringToFront();
   const { teamUrl } = await createNewTeamByURL(adminPage, {
     teamName: newTeamName,
   });
-  await adminPage
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .waitFor();
+  await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
 
   // Create a new file in the newly created team
   await cleanUpFiles(adminPage, { fileName });
-  await expect(
-    adminPage.locator(`a:has-text("${fileName}")`),
-  ).not.toBeVisible();
+  await expect(adminPage.locator(`a:has-text("${fileName}")`)).not.toBeVisible({ timeout: 30 * 1000 });
   await createFile(adminPage, { fileName });
 
   // Assert that the new file is created and visible in the list of files
-  await expect(adminPage.locator(`a:has-text("${fileName}")`)).toBeVisible();
+  await expect(adminPage.locator(`a:has-text("${fileName}")`)).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act: Invite Test User with "Can edit" Permission
@@ -781,24 +697,20 @@ test("Removed Member No Longer Can Access Team Files", async ({
   await testUserPage.waitForTimeout(2000);
 
   // Verify that testUser can access the team files
-  await expect(
-    testUserPage.getByRole("button", { name: newTeamName }),
-  ).toBeVisible();
+  await expect(testUserPage.getByRole('button', { name: newTeamName })).toBeVisible({ timeout: 30 * 1000 });
   await testUserPage.locator(`nav :text-is("Members")`).click();
   await expect(
     testUserPage
       .locator(`:text("${testUserEmail} (You)${testUserEmail}")`)
-      .locator("..")
-      .locator('button[role="combobox"] span'),
+      .locator('..')
+      .locator('button[role="combobox"] span')
   ).toHaveText(editPermission);
 
   // Navigate to Files
-  await testUserPage
-    .locator(`:text-is("Files"):below(:text("Team")) >> nth=0`)
-    .click();
+  await testUserPage.locator(`:text-is("Files"):below(:text("Team")) >> nth=0`).click();
 
   // Assert user is able to see test file
-  await expect(testUserPage.locator(`a:has-text("${fileName}")`)).toBeVisible();
+  await expect(testUserPage.locator(`a:has-text("${fileName}")`)).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act: Remove Test User
@@ -807,9 +719,7 @@ test("Removed Member No Longer Can Access Team Files", async ({
   // Admin removes the testUser from the team
   await adminPage.bringToFront();
   await adminPage.locator(`nav :text-is("Members")`).click();
-  await adminPage
-    .locator(`.flex-row:has-text("${testUserEmail}") button[role="combobox"]`)
-    .click();
+  await adminPage.locator(`.flex-row:has-text("${testUserEmail}") button[role="combobox"]`).click();
   await adminPage.locator(`[role="option"]:has-text("Remove")`).click();
 
   // Confirm by clicking "Remove" again
@@ -827,38 +737,30 @@ test("Removed Member No Longer Can Access Team Files", async ({
   await testUserPage.locator(`a:has-text("${fileName}")`).click();
 
   // Assert test user can't access file within team anymore
+  await expect(testUserPage.locator(`:text("Permission denied")`)).toBeVisible({ timeout: 30 * 1000 });
   await expect(
-    testUserPage.locator(`:text("Permission denied")`),
-  ).toBeVisible();
-  await expect(
-    testUserPage.locator(
-      `:text("You do not have permission to view this file. Try reaching out to the file owner.")`,
-    ),
-  ).toBeVisible();
-  await expect(testUserPage.locator(`:text("Get help")`)).toBeVisible();
-  await expect(testUserPage.locator(`:text("Go home")`)).toBeVisible();
+    testUserPage.locator(`:text("You do not have permission to view this file. Try reaching out to the file owner.")`)
+  ).toBeVisible({ timeout: 30 * 1000 });
+  await expect(testUserPage.locator(`:text("Get help")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(testUserPage.locator(`:text("Go home")`)).toBeVisible({ timeout: 30 * 1000 });
 });
 
-test("Can Edit Member are Able to Change Permissions", async ({
-  page: adminUserPage,
-}) => {
+test('Can Edit Member are Able to Change Permissions', async ({ page: adminUserPage }) => {
   //--------------------------------
   // Can Edit Member are Able to Change Permissions
   //--------------------------------
 
   // Define team name and file details
   const teamName = `Edit Permissions - ${Date.now()}`;
-  const testPermissionFile = "test-permissions-can-edit-can-change";
-  const permission = "Can edit";
+  const testPermissionFile = 'test-permissions-can-edit-can-change';
+  const permission = 'Can edit';
 
   // Register new users and get their pages
-  await logIn(adminUserPage);
+  await logIn(adminUserPage, { emailPrefix: 'e2e_change_permission_admin' });
 
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
-  const canEditUserEmail = await logIn(canEditUserPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const canEditUserEmail = await logIn(canEditUserPage, { emailPrefix: 'e2e_change_permission_edit' });
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -880,20 +782,18 @@ test("Can Edit Member are Able to Change Permissions", async ({
   await canEditUserPage.reload();
   // Navigate to team URL
   await canEditUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await canEditUserPage.waitForLoadState("domcontentloaded");
+  await canEditUserPage.waitForLoadState('domcontentloaded');
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert that the "Create file" button is visible for canEditUser
-  await expect(canEditUserPage.locator(`:text("New File")`)).toBeVisible();
+  await expect(canEditUserPage.locator(`:text("New File")`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Verify that canEditUser has "Can edit" permission
   await canEditUserPage.locator(`:text("Members")`).click();
-  await expect(
-    canEditUserPage.locator("form").getByRole("combobox"),
-  ).toHaveText("Can edit");
+  await expect(canEditUserPage.locator('form').getByRole('combobox')).toHaveText('Can edit');
 
   //--------------------------------
   // Clean up:
@@ -901,32 +801,28 @@ test("Can Edit Member are Able to Change Permissions", async ({
 
   // Clean up the created files
   await adminUserPage.bringToFront();
-  await adminUserPage
-    .locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`)
-    .click();
+  await adminUserPage.locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`).click();
   await cleanUpFiles(adminUserPage, {
     fileName: testPermissionFile,
   });
 });
 
-test("Can Edit Members are Able to Invite", async ({ page: adminUserPage }) => {
+test('Can Edit Members are Able to Invite', async ({ page: adminUserPage }) => {
   //--------------------------------
   // Can Edit Members are Able to Invite
   //--------------------------------
 
   // Define team name and file details
   const teamName = `Edit Invite - ${Date.now()}`;
-  const testPermissionFile = "test-permissions-can-edit-can-change";
-  const permission = "Can edit";
+  const testPermissionFile = 'test-permissions-can-edit-can-change';
+  const permission = 'Can edit';
 
   // Register new users and get their pages
-  await logIn(adminUserPage);
+  await logIn(adminUserPage, { emailPrefix: 'e2e_member_invite_admin' });
 
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
-  const canEditUserEmail = await logIn(canEditUserPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const canEditUserEmail = await logIn(canEditUserPage, { emailPrefix: 'e2e_member_invite_edit' });
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -955,13 +851,11 @@ test("Can Edit Members are Able to Invite", async ({ page: adminUserPage }) => {
   // Assert:
   //--------------------------------
   // Assert that the "Create file" button is visible for canEditUser
-  await expect(canEditUserPage.locator(`:text("New file")`)).toBeVisible();
+  await expect(canEditUserPage.locator(`:text("New file")`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Verify that canEditUser has "Can edit" permission
   await canEditUserPage.locator(`:text("Members")`).click();
-  await expect(
-    canEditUserPage.locator('button:has-text("Invite")'),
-  ).toBeVisible();
+  await expect(canEditUserPage.locator('button[role="tab"]:has-text("Invite")')).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Clean up:
@@ -969,32 +863,28 @@ test("Can Edit Members are Able to Invite", async ({ page: adminUserPage }) => {
 
   // Clean up the created files
   await adminUserPage.bringToFront();
-  await adminUserPage
-    .locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`)
-    .click();
+  await adminUserPage.locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`).click();
   await cleanUpFiles(adminUserPage, {
     fileName: testPermissionFile,
   });
 });
 
-test("Can Edit Team Member Can Edit Files", async ({ page: adminUserPage }) => {
+test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   //--------------------------------
   // Can Edit Team Member Can Edit Files
   //--------------------------------
 
   // Define team name and file details
   const teamName = `Edit Edit - ${Date.now()}`;
-  const testPermissionFile = "test-permissions-can-edit-can-change";
-  const permission = "Can edit";
+  const testPermissionFile = 'test-permissions-can-edit-can-change';
+  const permission = 'Can edit';
 
   // Register new users and get their pages
-  await logIn(adminUserPage);
+  await logIn(adminUserPage, { emailPrefix: 'e2e_team_edit_admin' });
 
   const browser = await chromium.launch();
   const canEditUserPage = await browser.newPage();
-  const canEditUserEmail = await logIn(canEditUserPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const canEditUserEmail = await logIn(canEditUserPage, { emailPrefix: 'e2e_team_edit_edit' });
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -1020,38 +910,27 @@ test("Can Edit Team Member Can Edit Files", async ({ page: adminUserPage }) => {
   await canEditUserPage.waitForTimeout(1000);
 
   // Click on Filter by name
-  await canEditUserPage
-    .locator(`[placeholder="Filter by file or creator name…"]`)
-    .click();
+  await canEditUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click();
 
   // Filter by filename
-  await canEditUserPage
-    .locator(`[placeholder="Filter by file or creator name…"]`)
-    .fill(`test-permissions`);
+  await canEditUserPage.locator(`[placeholder="Filter by file or creator name…"]`).fill(`test-permissions`);
 
   // Click into permissions file
-  await canEditUserPage
-    .locator(`:text("${testPermissionFile}Modified")`)
-    .first()
-    .click();
+  await canEditUserPage.locator(`:text("${testPermissionFile}Modified")`).first().click();
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert test permissions file is not read-only for canEditUser
-  await expect(canEditUserPage.locator("text=Read-only.")).not.toBeVisible();
+  await expect(canEditUserPage.locator('text=Read-only.')).not.toBeVisible({ timeout: 30 * 1000 });
 
   // Assert file can be renamed with edit permission
-  await canEditUserPage
-    .getByRole(`button`, { name: testPermissionFile })
-    .click();
+  await canEditUserPage.getByRole(`button`, { name: testPermissionFile }).click();
   const fileEditName = `${testPermissionFile}-edit`;
   await canEditUserPage.keyboard.type(fileEditName);
   await canEditUserPage.keyboard.press(`Enter`);
-  await expect(
-    canEditUserPage.getByRole(`button`, { name: fileEditName }),
-  ).toBeVisible();
+  await expect(canEditUserPage.getByRole(`button`, { name: fileEditName })).toBeVisible({ timeout: 30 * 1000 });
 
   await canEditUserPage.goBack();
 
@@ -1061,34 +940,28 @@ test("Can Edit Team Member Can Edit Files", async ({ page: adminUserPage }) => {
 
   // Clean up the created files
   await adminUserPage.bringToFront();
-  await adminUserPage
-    .locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`)
-    .click();
+  await adminUserPage.locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`).click();
   await cleanUpFiles(adminUserPage, {
     fileName: fileEditName,
   });
 });
 
-test("Can View Members are Unable to Invite Members", async ({
-  page: adminUserPage,
-}) => {
+test('Can View Members are Unable to Invite Members', async ({ page: adminUserPage }) => {
   //--------------------------------
   // Can View Members are Unable to Invite Members
   //--------------------------------
 
   // Define team name and file details
   const teamName = `ViewPermission - ${Date.now()}`;
-  const testPermissionFile = "test-permissions-can-edit-can-change";
-  const permission = "Can view";
+  const testPermissionFile = 'test-permissions-can-edit-can-change';
+  const permission = 'Can view';
 
   // Register new users and get their pages
-  await logIn(adminUserPage);
+  await logIn(adminUserPage, { emailPrefix: 'e2e_team_view_admin' });
 
   const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();
-  const canViewUserEmail = await logIn(canViewUserPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const canViewUserEmail = await logIn(canViewUserPage, { emailPrefix: 'e2e_team_view_view' });
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -1119,16 +992,12 @@ test("Can View Members are Unable to Invite Members", async ({
   //--------------------------------
 
   // Assert that the "Create file" button is not visible for canViewUser
-  await expect(
-    canViewUserPage.locator(`:text("Create file")`),
-  ).not.toBeVisible();
+  await expect(canViewUserPage.locator(`:text("Create file")`)).not.toBeVisible({ timeout: 30 * 1000 });
 
   // Verify that canViewUser does not have the "Invite" button visible for "Can view" permission
   await canViewUserPage.locator(`:text("Members")`).click();
-  await canViewUserPage.waitForLoadState("domcontentloaded");
-  await expect(
-    canViewUserPage.locator(`button:has-text("Invite")`),
-  ).not.toBeVisible();
+  await canViewUserPage.waitForLoadState('domcontentloaded');
+  await expect(canViewUserPage.locator(`button:has-text("Invite")`)).not.toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Clean up:
@@ -1136,34 +1005,28 @@ test("Can View Members are Unable to Invite Members", async ({
 
   // Clean up the created files
   await adminUserPage.bringToFront();
-  await adminUserPage
-    .locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`)
-    .click();
+  await adminUserPage.locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`).click();
   await cleanUpFiles(adminUserPage, {
     fileName: testPermissionFile,
   });
 });
 
-test("Can View Team Member Cannot Edit Files", async ({
-  page: adminUserPage,
-}) => {
+test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) => {
   //--------------------------------
   // Can View Team Member Cannot Edit Files
   //--------------------------------
 
   // Define team name and file details
   const teamName = `ViewFiles- ${Date.now()}`;
-  const testPermissionFile = "test-permissions-can-edit-can-change";
-  const permission = "Can view";
+  const testPermissionFile = 'test-permissions-can-edit-can-change';
+  const permission = 'Can view';
 
   // Register new users and get their pages
-  await logIn(adminUserPage);
+  await logIn(adminUserPage, { emailPrefix: 'e2e_cannot_edit_admin' });
 
   const browser = await chromium.launch();
   const canViewUserPage = await browser.newPage();
-  const canViewUserEmail = await logIn(canViewUserPage, {
-    emailPrefix: FREE_USER_PREFIX,
-  });
+  const canViewUserEmail = await logIn(canViewUserPage, { emailPrefix: 'e2e_cannot_edit_view' });
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
@@ -1173,22 +1036,15 @@ test("Can View Team Member Cannot Edit Files", async ({
   // Invite canViewUser to the team with "Can view" permission
   // Click the "add" button by class and text
   await adminUserPage
-    .locator(
-      'span.material-symbols-outlined.material-symbols-20.text-background:has-text("add")',
-    )
+    .locator('span.material-symbols-outlined.material-symbols-20.text-background:has-text("add")')
     .click();
   await adminUserPage.locator(`[aria-label="Email"]`).fill(canViewUserEmail);
 
-  const currentPermission = await adminUserPage
-    .locator(`button[role="combobox"]`)
-    .textContent();
+  const currentPermission = await adminUserPage.locator(`button[role="combobox"]`).textContent();
 
   if (currentPermission !== permission) {
     await adminUserPage.locator(`button[role="combobox"]`).click();
-    await adminUserPage
-      .locator(`[role="option"] :text("${permission}")`)
-      .last()
-      .click();
+    await adminUserPage.locator(`[role="option"] :text("${permission}")`).last().click();
   }
 
   await adminUserPage.locator(`button:text("Invite")`).click();
@@ -1208,20 +1064,13 @@ test("Can View Team Member Cannot Edit Files", async ({
   await canViewUserPage.waitForTimeout(1000);
 
   // Click on Filter by name
-  await canViewUserPage
-    .locator(`[placeholder="Filter by file or creator name…"]`)
-    .click();
+  await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click();
 
   // Filter by filename
-  await canViewUserPage
-    .locator(`[placeholder="Filter by file or creator name…"]`)
-    .fill(`test-permissions`);
+  await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).fill(`test-permissions`);
 
   // Click into permissions file
-  await canViewUserPage
-    .locator(`:text("${testPermissionFile}Modified")`)
-    .first()
-    .click();
+  await canViewUserPage.locator(`:text("${testPermissionFile}Modified")`).first().click();
 
   //--------------------------------
   // Assert:
@@ -1229,10 +1078,8 @@ test("Can View Team Member Cannot Edit Files", async ({
 
   // Assert test permissions file is read-only for canViewUser
   await expect(
-    canViewUserPage.locator(
-      `:text("Read-only. Duplicate or ask the owner for permission to edit.") >> nth=0`,
-    ),
-  ).toBeVisible();
+    canViewUserPage.locator(`:text("Read-only. Duplicate or ask the owner for permission to edit.") >> nth=0`)
+  ).toBeVisible({ timeout: 30 * 1000 });
 
   await canViewUserPage.goBack();
 
@@ -1242,9 +1089,7 @@ test("Can View Team Member Cannot Edit Files", async ({
 
   // Clean up the created files
   await adminUserPage.bringToFront();
-  await adminUserPage
-    .locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`)
-    .click();
+  await adminUserPage.locator(`nav :text-is("Files"):below(:text("Team")) >> nth=0`).click();
   await cleanUpFiles(adminUserPage, {
     fileName: testPermissionFile,
   });

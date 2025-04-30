@@ -1,14 +1,8 @@
-import { expect, test } from "@playwright/test";
-import { logIn } from "./helpers/auth.helpers";
-import {
-  cleanUpFiles,
-  createFile,
-  navigateIntoFile,
-} from "./helpers/file.helpers";
+import { expect, test } from '@playwright/test';
+import { logIn } from './helpers/auth.helpers';
+import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
 
-test.skip("AI Chat Insert Code, Clear Query, View History", async ({
-  page,
-}) => {
+test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => {
   //--------------------------------
   // Insert Code
   //--------------------------------
@@ -17,7 +11,7 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   const fileName = `AI Chat Insert Code, Clear Query, View History`;
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: `e2e_ai_chat` });
 
   // Clean up files created by this workflow
   await cleanUpFiles(page, { fileName });
@@ -35,9 +29,7 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   await page.getByRole(`button`, { name: `auto_awesome` }).click();
 
   // Fill in codeGenerate prompt in chat
-  await page
-    .getByPlaceholder(`Ask a question...`)
-    .fill(`generate first 5 prime numbers using python in A1`);
+  await page.getByPlaceholder(`Ask a question...`).fill(`generate first 5 prime numbers using python in A1`);
 
   // Click Send button (blue arrow icon)
   await page.getByRole(`button`, { name: `arrow_upward` }).click();
@@ -46,16 +38,11 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   await expect(page.locator(`:text("Cancel generating")`).first()).toBeVisible({
     timeout: 60 * 2 * 1000,
   });
-  await expect(
-    page.locator(`:text("Cancel generating")`).first(),
-  ).not.toBeVisible({ timeout: 60 * 2 * 1000 });
+  await expect(page.locator(`:text("Cancel generating")`).first()).not.toBeVisible({ timeout: 60 * 2 * 1000 });
   await page.waitForTimeout(2000);
 
   // Click on Python button to 'Open diff in editor'
-  await page
-    .locator(`#main`)
-    .getByRole(`button`, { name: `code`, exact: true })
-    .click();
+  await page.locator(`#main`).getByRole(`button`, { name: `code`, exact: true }).click();
 
   //--------------------------------
   // Assert:
@@ -65,15 +52,12 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   await page.waitForTimeout(2000);
 
   // Assert prime function
-  await expect(page.locator(`[id="QuadraticCodeEditorID"]`)).toContainText(
-    `def is_prime`,
-  );
+  await expect(page.locator(`[id="QuadraticCodeEditorID"]`)).toContainText(`def is_prime`);
 
   // Assert the first 5 prime numbers were applied to cells from chat prompt
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    ["ai_chat_insert_code_5_prime.png"],
-    { maxDiffPixels: 100 },
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(['ai_chat_insert_code_5_prime.png'], {
+    maxDiffPixels: 100,
+  });
 
   //--------------------------------
   // Clear Query
@@ -86,9 +70,7 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
 
   // Save a reference to the chat name
   const chatName = await page
-    .locator(
-      `div[class*="h-full w-full grid"] div[class*="text-sm text-foreground"]`,
-    )
+    .locator(`div[class*="h-full w-full grid"] div[class*="text-sm text-foreground"]`)
     .innerText();
 
   // Click on history icon in chat to close
@@ -104,18 +86,10 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   // Assert:
   //--------------------------------
   // Assert new chat is present
-  await expect(
-    page.getByRole(`heading`, { name: `What can I help with?` }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole(`button`, { name: `Give me sample data` }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole(`button`, { name: `Generate code` }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole(`button`, { name: `Build a chart` }),
-  ).toBeVisible();
+  await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Give me sample data` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Generate code` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Build a chart` })).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // View History
@@ -131,15 +105,13 @@ test.skip("AI Chat Insert Code, Clear Query, View History", async ({
   // Assert:
   //--------------------------------
   // Assert the previous chat is visible
-  await expect(page.getByText(`${chatName}`)).toBeVisible();
+  await expect(page.getByText(`${chatName}`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Click on the previous chat
   await page.getByText(`${chatName}`).click();
 
   // Assert this opens up the previous chat and contains its previous response
-  const chatTextHistory = await page
-    .locator(`[data-gramm_editor]`)
-    .textContent();
+  const chatTextHistory = await page.locator(`[data-gramm_editor]`).textContent();
 
   expect(chatText).toContain(chatTextHistory);
 });

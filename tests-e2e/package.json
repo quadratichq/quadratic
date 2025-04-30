@@ -7,7 +7,8 @@
   "scripts": {
     "docker:up": "docker compose up -d && sleep 3",
     "docker:down": "docker compose down",
-    "test": "npx playwright test",
+    "lint:ts": "tsc --noemit",
+    "test": "npm run lint:ts && npx playwright test",
     "test:ci": "npm run docker:up && npm run test && npm run docker:down",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
@@ -21,6 +22,7 @@
   "type": "module",
   "devDependencies": {
     "@playwright/test": "^1.52.0",
-    "@types/node": "^22.15.2"
+    "@types/node": "^22.15.2",
+    "typescript": "^5.8.2"
   }
 }

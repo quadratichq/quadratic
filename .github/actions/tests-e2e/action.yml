@@ -10,7 +10,7 @@ inputs:
 outputs:
   playwright_report_url:
     description: "URL of playwright report artifact uploaded to GitHub"
-    value: ${{ steps.upload-playwright-report.outputs.artifact_url }}
+    value: ${{ steps.upload-playwright-report.outputs.artifact-url }}
 runs:
   using: "composite"
   steps:
@@ -60,3 +60,6 @@ runs:
         name: ${{ inputs.playwright_report_name }}
         path: tests-e2e/playwright-report/
         retention-days: 3
+        overwrite: true
+        include-hidden-files: true
+        if-no-files-found: warn

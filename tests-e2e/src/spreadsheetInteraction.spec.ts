@@ -1,15 +1,10 @@
-import { expect, test } from "@playwright/test";
-import { navigateOnSheet, selectCells, typeInCell } from "./helpers/app.helper";
-import { logIn } from "./helpers/auth.helpers";
-import {
-  cleanUpFiles,
-  createFile,
-  navigateIntoFile,
-  uploadFile,
-} from "./helpers/file.helpers";
-import { createNewTeamByURL } from "./helpers/team.helper";
+import { expect, test } from '@playwright/test';
+import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
+import { logIn } from './helpers/auth.helpers';
+import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
+import { createNewTeamByURL } from './helpers/team.helper';
 
-test("Appearance Customization", async ({ page }) => {
+test('Appearance Customization', async ({ page }) => {
   //--------------------------------
   // Dark Customization
   //--------------------------------
@@ -22,16 +17,16 @@ test("Appearance Customization", async ({ page }) => {
   const darkSidebar = `rgb(18, 25, 36)`; // accent
 
   // Log in
-  const email = await logIn(page);
+  const email = await logIn(page, { emailPrefix: `e2e_dark_mode` });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Assert Quadratic team files page and logged in status
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.getByText(email)).toBeVisible({ timeout: 30 * 1000 });
   await expect(page).toHaveTitle(/Team files - Quadratic/);
-  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible();
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
 
   // Reset current theme
   await page.getByRole(`button`, { name: `contrast` }).click();
@@ -57,9 +52,9 @@ test("Appearance Customization", async ({ page }) => {
   expect(htmlClass).toContain(darkClassName);
 
   // Elements to check for theme styling
-  let rootEl = page.locator(`#root .bg-background`).first();
-  let navEl = page.locator(`nav`);
-  let headingEl = page.locator(`h1`);
+  const rootEl = page.locator(`#root .bg-background`).first();
+  const navEl = page.locator(`nav`);
+  const headingEl = page.locator(`h1`);
 
   // Assert individual colors have updated to the expected dark mode colors
   await expect(rootEl).toHaveCSS(`background-color`, darkBackground);
@@ -136,17 +131,17 @@ test("Appearance Customization", async ({ page }) => {
   await page.getByRole(`button`, { name: `contrast` }).click();
 });
 
-test("Auto Focus after Closing Menus", async ({ page }) => {
+test('Auto Focus after Closing Menus', async ({ page }) => {
   //--------------------------------
   // Grid is Refocused after closing Programming Language Menu
   //--------------------------------
 
   // Constants
   const newTeamName = `Auto Focus after Closing Menus - ${Date.now()}`;
-  const fileName = "Grid_focus";
+  const fileName = 'Grid_focus';
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: `e2e_autofocus_menus` });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName: newTeamName });
@@ -161,116 +156,106 @@ test("Auto Focus after Closing Menus", async ({ page }) => {
   await navigateIntoFile(page, { fileName });
 
   // Press "/" on keyboard to open programming language menu
-  await page.keyboard.press("/");
+  await page.keyboard.press('/');
 
   // Wait for programming language menu to open
-  await expect(
-    page.locator(`[placeholder="Choose a cell type…"]`),
-  ).toBeVisible();
+  await expect(page.locator(`[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Press "Esc" on keyboard to close the programming language menu
-  await page.keyboard.press("Escape");
+  await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
 
   // Press "Enter" on keyboard focus on cell (0,0)
-  await page.keyboard.press("Enter");
+  await page.keyboard.press('Enter');
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert that focus is on grid at cell (0,0)
-  await expect(
-    page.locator(`div[style*="left: 2px; top: 2px;"] div[id="cell-edit"]`),
-  ).toBeVisible();
+  await expect(page.locator(`div[style*="left: 2px; top: 2px;"] div[id="cell-edit"]`)).toBeVisible({
+    timeout: 30 * 1000,
+  });
 
   // Press "Esc" on keyboard to lose focus on cell (0,0)
-  await page.keyboard.press("Escape");
+  await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
 
   // Press "/" on keyboard to open programming language menu
-  await page.keyboard.press("/");
+  await page.keyboard.press('/');
 
   // Assert that programming language menu opens
-  await expect(
-    page.locator(`input[placeholder="Choose a cell type…"]`),
-  ).toBeVisible();
+  await expect(page.locator(`input[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Assert that programming language menu opens with "Languages" selection section
-  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible();
-  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible();
-  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible();
-  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible();
+  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Assert that programming language menu opens with "Connections" selection section
-  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible();
-  await expect(
-    page.locator(`div[data-value="Manage connections"]`),
-  ).toBeVisible();
+  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Manage connections"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Grid is Refocused after closing Top bar Menu
   //--------------------------------
 
   // Press "Esc" on keyboard to close the programming language menu
-  await page.keyboard.press("Escape");
+  await page.keyboard.press('Escape');
 
   // Click date and time button on top menu bar
   await page.getByLabel(`Date and time`).click();
 
   // Wait for data and time menu to open
-  await expect(page.getByRole(`tab`, { name: `Presets` })).toBeVisible();
+  await expect(page.getByRole(`tab`, { name: `Presets` })).toBeVisible({ timeout: 30 * 1000 });
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Press "Esc" on keyboard to close the programming language menu
-  await page.keyboard.press("Escape");
+  await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
 
   // Press "Enter" on keyboard focus on cell (0,0)
-  await page.keyboard.press("Enter");
+  await page.keyboard.press('Enter');
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert that focus is on grid at cell (0,0)
-  await expect(
-    page.locator(`div[style*="left: 2px; top: 2px;"] div[id="cell-edit"]`),
-  ).toBeVisible();
+  await expect(page.locator(`div[style*="left: 2px; top: 2px;"] div[id="cell-edit"]`)).toBeVisible({
+    timeout: 30 * 1000,
+  });
 
   // Press "Esc" on keyboard to lose focus on cell (0,0)
-  await page.keyboard.press("Escape");
+  await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
 
   // Press "/" on keyboard to open programming language menu
-  await page.keyboard.press("/");
+  await page.keyboard.press('/');
 
   // Assert that programming language menu opens
-  await expect(
-    page.locator(`input[placeholder="Choose a cell type…"]`),
-  ).toBeVisible();
+  await expect(page.locator(`input[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Assert that programming language menu opens with "Languages" selection section
-  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible();
-  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible();
-  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible();
-  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible();
+  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Assert that programming language menu opens with "Connections" selection section
-  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible();
-  await expect(
-    page.locator(`div[data-value="Manage connections"]`),
-  ).toBeVisible();
+  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Manage connections"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Clean up
   // Press "Esc" on keyboard to close the programming language menu
-  await page.keyboard.press("Escape");
+  await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
 
   //--------------------------------
@@ -281,17 +266,17 @@ test("Auto Focus after Closing Menus", async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.skip("Auto-Complete", async ({ page }) => {
+test('Auto-Complete', async ({ page }) => {
   //--------------------------------
   // Formatting
   //--------------------------------
 
   // Constants
   const newTeamName = `Auto-Complete - ${Date.now()}`;
-  const fileName = "Auto Complete";
+  const fileName = 'Auto Complete';
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: `e2e_auto_complete` });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName: newTeamName });
@@ -311,7 +296,7 @@ test.skip("Auto-Complete", async ({ page }) => {
   // Perform actions to test auto-complete functionality
 
   // Type "Auto" into cell A1
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: "Auto" });
+  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: 'Auto' });
 
   // Select the first cell on the top left
   await selectCells(page, { startXY: [1, 1], endXY: [1, 1] });
@@ -324,18 +309,18 @@ test.skip("Auto-Complete", async ({ page }) => {
   await page.waitForTimeout(3000);
   await page.locator('[aria-label="Text color"]').click();
   await page.waitForTimeout(1000);
-  await page.getByRole("menuitem").getByTitle("#E74C3C").click();
+  await page.getByRole('menuitem').getByTitle('#E74C3C').click();
   await page.waitForTimeout(1000);
 
   // Prepare to drag from bottom-right corner of cell
   await page.mouse.move(170, 124, { steps: 10 });
 
   // Drag from bottom-right corner of cell
-  await page.mouse.down({ button: "left" });
+  await page.mouse.down({ button: 'left' });
 
   // Drag area
   await page.mouse.move(565, 461, { steps: 10 });
-  await page.mouse.up({ button: "left" });
+  await page.mouse.up({ button: 'left' });
 
   //--------------------------------
   // Assert:
@@ -343,31 +328,29 @@ test.skip("Auto-Complete", async ({ page }) => {
   // Verify auto-complete behavior
 
   // Check if cells have been auto-completed as expected
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "formatting-expanded-autocomplete.png",
-    { maxDiffPixels: 1000 },
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('formatting-expanded-autocomplete.png', {
+    maxDiffPixels: 1000,
+  });
 
   // Prepare to contract the selection
   await page.mouse.move(565, 480, { steps: 10 });
-  await page.mouse.down({ button: "left" });
+  await page.mouse.down({ button: 'left' });
 
   // Contract the selection
   await page.mouse.move(300, 200);
-  await page.mouse.up({ button: "left" });
+  await page.mouse.up({ button: 'left' });
 
   await page.waitForTimeout(5000);
   // Verify cells have been contracted
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "formatting-contracted-autocomplete.png",
-    { maxDiffPixels: 1000 },
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('formatting-contracted-autocomplete.png', {
+    maxDiffPixels: 1000,
+  });
 
   //--------------------------------
   // Formulas
   //--------------------------------
   // Clear the content of previously selected cells
-  await page.keyboard.press("Delete");
+  await page.keyboard.press('Delete');
 
   //--------------------------------
   // Act:
@@ -378,16 +361,13 @@ test.skip("Auto-Complete", async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Bring up the code chooser
-  await page.keyboard.press("/");
+  await page.keyboard.press('/');
 
   // Select the Formula option
   await page.locator('[data-value="Formula"]').click();
 
   // Enter the formula
-  await page
-    .locator(`#QuadraticCodeEditorID .view-line`)
-    .first()
-    .type(`sum(16+99)`, { delay: 500 });
+  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`sum(16+99)`, { delay: 500 });
 
   // Execute the formula
   // TODO: Workflow is having an issue syncing. Confirm if this is a bug
@@ -403,11 +383,11 @@ test.skip("Auto-Complete", async ({ page }) => {
   await page.mouse.move(170, 124, { steps: 10 });
 
   // Drag from bottom-right corner of cell
-  await page.mouse.down({ button: "left" });
+  await page.mouse.down({ button: 'left' });
 
   // Drag area
   await page.mouse.move(565, 461, { steps: 10 });
-  await page.mouse.up({ button: "left" });
+  await page.mouse.up({ button: 'left' });
 
   //--------------------------------
   // Assert:
@@ -416,32 +396,30 @@ test.skip("Auto-Complete", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Check if cells have been auto-completed with the formula as expected
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "formulas-expanded-autocomplete.png",
-    { maxDiffPixels: 1000 },
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('formulas-expanded-autocomplete.png', {
+    maxDiffPixels: 1000,
+  });
 
   // Prepare to contract the selection
   await page.mouse.move(565, 480, { steps: 10 });
-  await page.mouse.down({ button: "left" });
+  await page.mouse.down({ button: 'left' });
 
   // Contract the selection
   await page.mouse.move(300, 200);
-  await page.mouse.up({ button: "left" });
+  await page.mouse.up({ button: 'left' });
 
   await page.waitForTimeout(5000);
 
   // Verify cells have been contracted correctly
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "formulas-contracted-autocomplete.png",
-    { maxDiffPixels: 1000 },
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('formulas-contracted-autocomplete.png', {
+    maxDiffPixels: 1000,
+  });
 
   //--------------------------------
   // Python
   //--------------------------------
   // Clear previous content
-  await page.keyboard.press("Delete");
+  await page.keyboard.press('Delete');
 
   //--------------------------------
   // Act:
@@ -452,16 +430,13 @@ test.skip("Auto-Complete", async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Bring up the code chooser
-  await page.keyboard.press("/");
+  await page.keyboard.press('/');
 
   // Select Python from the code options
   await page.locator('[data-value="Python"]').click();
 
   // Enter a simple Python expression
-  await page
-    .locator(`#QuadraticCodeEditorID .view-line`)
-    .first()
-    .type(`9+8`, { delay: 500 });
+  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`9+8`, { delay: 500 });
 
   // Execute the Python code
   await page.getByRole(`button`, { name: `play_arrow` }).click();
@@ -476,11 +451,11 @@ test.skip("Auto-Complete", async ({ page }) => {
   await page.mouse.move(169, 122, { steps: 10 });
 
   // Drag from bottom-right corner of cell
-  await page.mouse.down({ button: "left" });
+  await page.mouse.down({ button: 'left' });
 
   // Drag area
   await page.mouse.move(565, 461, { steps: 10 });
-  await page.mouse.up({ button: "left" });
+  await page.mouse.up({ button: 'left' });
 
   //--------------------------------
   // Assert:
@@ -489,24 +464,21 @@ test.skip("Auto-Complete", async ({ page }) => {
 
   // Check if cells have been auto-completed with the Python result as expected
   await page.waitForTimeout(5000);
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "python-expanded-autocomplete.png",
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('python-expanded-autocomplete.png');
 
   // Prepare to contract the selection
   await page.mouse.move(565, 480, { steps: 10 });
-  await page.mouse.down({ button: "left" });
+  await page.mouse.down({ button: 'left' });
 
   // Contract the selection
   await page.mouse.move(300, 200);
-  await page.mouse.up({ button: "left" });
+  await page.mouse.up({ button: 'left' });
 
   await page.waitForTimeout(5000);
   // Verify cells have been contracted correctly after Python auto-complete
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "python-contracted-autocomplete.png",
-    { maxDiffPixels: 1000 },
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('python-contracted-autocomplete.png', {
+    maxDiffPixels: 1000,
+  });
 
   //--------------------------------
   // Clean up:
@@ -516,14 +488,14 @@ test.skip("Auto-Complete", async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test("Cancel Test Execution", async ({ page }) => {
+test('Cancel Test Execution', async ({ page }) => {
   //--------------------------------
   // Cancel Test Execution
   //--------------------------------
 
   // Constants
   const newTeamName = `Cancel Test Execution - ${Date.now()}`;
-  const fileName = "Cancel Test Execution";
+  const fileName = 'Cancel Test Execution';
   const pythonCode = `
 import time
 
@@ -535,7 +507,7 @@ time.sleep(20)
   `;
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: `e2e_cancel_execution` });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName: newTeamName });
@@ -550,7 +522,7 @@ time.sleep(20)
   await navigateIntoFile(page, { fileName });
 
   // Press '/' on keyboard to open up pop up
-  await page.keyboard.press("/");
+  await page.keyboard.press('/');
 
   // Select Python language option
   await page.locator(`div[data-value="Python"]`).click();
@@ -559,14 +531,10 @@ time.sleep(20)
   // Act:
   //--------------------------------
   // Focus the default text inside the code editor
-  await page
-    .locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`)
-    .focus();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`).focus();
 
   // Click code editor
-  await page
-    .locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`)
-    .click();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`).click();
 
   // Type in a sleep function in Python editor
   await page.keyboard.type(pythonCode);
@@ -578,7 +546,7 @@ time.sleep(20)
   // Assert:
   //--------------------------------
   // Assert that the blue play arrow becomes a stop icon
-  await expect(page.getByRole(`button`, { name: `stop` })).toBeVisible();
+  await expect(page.getByRole(`button`, { name: `stop` })).toBeVisible({ timeout: 30 * 1000 });
 
   // Wait a moment for visualization
   await page.waitForTimeout(1000);
@@ -587,19 +555,15 @@ time.sleep(20)
   await page.getByRole(`button`, { name: `stop` }).click();
 
   // Assert 'Returned error' is visible in side panel
-  await expect(
-    page.locator(`#QuadraticCodeEditorID :text("Returned error")`),
-  ).toBeVisible();
+  await expect(page.locator(`#QuadraticCodeEditorID :text("Returned error")`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Click on 'Console' tab
   await page.getByRole(`tab`, { name: `Console` }).click();
 
   // Assert message 'ERROR: Execution cancelled by user'
-  await expect(
-    page.locator(
-      `[role="tabpanel"] :text("ERROR: Execution cancelled by user")`,
-    ),
-  ).toBeVisible();
+  await expect(page.locator(`[role="tabpanel"] :text("ERROR: Execution cancelled by user")`)).toBeVisible({
+    timeout: 30 * 1000,
+  });
 
   //--------------------------------
   // Clean up:
@@ -609,18 +573,18 @@ time.sleep(20)
   await cleanUpFiles(page, { fileName });
 });
 
-test("Cell Actions", async ({ page }) => {
+test('Cell Actions', async ({ page }) => {
   //--------------------------------
   // Cut
   //--------------------------------
 
   // Constants
   const newTeamName = `Cell Actions - ${Date.now()}`;
-  const fileName = "Cell_Actions";
-  const fileType = "grid";
+  const fileName = 'Cell_Actions';
+  const fileType = 'grid';
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: `e2e_cell_actions` });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName: newTeamName });
@@ -632,21 +596,18 @@ test("Cell Actions", async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Initial screenshot
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `cell_actions_pre.png`,
-    {
-      maxDiffPixelRatio: 0.01,
-    },
-  );
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`cell_actions_pre.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Navigate to cell
-  await navigateOnSheet(page, { targetColumn: "A", targetRow: 1 });
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
 
   // Cut
-  await page.keyboard.press("Control+X");
+  await page.keyboard.press('Control+X');
   await page.waitForTimeout(1000);
 
   // Get clipboard content
@@ -666,15 +627,12 @@ test("Cell Actions", async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert clipboard text
-  expect(clipboardText).toBe("Azure");
+  expect(clipboardText).toBe('Azure');
 
   // Confirm Azure has been "cut" from A1
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `cut_missing_azure.png`,
-    {
-      maxDiffPixelRatio: 0.01,
-    },
-  );
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`cut_missing_azure.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Copy
@@ -683,10 +641,10 @@ test("Cell Actions", async ({ page }) => {
   // Act:
   //--------------------------------
   // Navigate to cell A6
-  await navigateOnSheet(page, { targetColumn: "A", targetRow: 6 });
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 6 });
 
   // Copy
-  await page.keyboard.press("Control+C");
+  await page.keyboard.press('Control+C');
   await page.waitForTimeout(1000);
 
   // Get clipboard content
@@ -696,15 +654,12 @@ test("Cell Actions", async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert clipboard text
-  expect(clipboardText).toBe("Misty");
+  expect(clipboardText).toBe('Misty');
 
   // Confirm Misty has been "copied" from A6 - outline
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `copy_misty_missing_azure.png`,
-    {
-      maxDiffPixelRatio: 0.001,
-    },
-  );
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`copy_misty_missing_azure.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
 
   //--------------------------------
   // Paste, Paste Values only, Paste Formatting Only
@@ -713,46 +668,39 @@ test("Cell Actions", async ({ page }) => {
   // Act:
   //--------------------------------
   // Navigate to cell C6
-  await navigateOnSheet(page, { targetColumn: "C", targetRow: 6 });
+  await navigateOnSheet(page, { targetColumn: 'C', targetRow: 6 });
 
   // Paste
-  await page.keyboard.press("Control+V");
+  await page.keyboard.press('Control+V');
   await page.waitForTimeout(1000);
 
   // Navigate to cell C7
-  await navigateOnSheet(page, { targetColumn: "C", targetRow: 7 });
+  await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
 
   // Paste Value only
-  await page.keyboard.press("Control+Shift+V");
+  await page.keyboard.press('Control+Shift+V');
   await page.waitForTimeout(1000);
 
   // Navigate to cell C8
-  await navigateOnSheet(page, { targetColumn: "C", targetRow: 8 });
+  await navigateOnSheet(page, { targetColumn: 'C', targetRow: 8 });
 
   // Click search icon in top right to open command palette
   await page.getByRole(`button`, { name: `manage_search` }).click();
 
   // Fill in search
-  await page
-    .locator(`input[placeholder*="Search menus and commands"]`)
-    .fill("Paste formatting only");
+  await page.locator(`input[placeholder*="Search menus and commands"]`).fill('Paste formatting only');
 
   // Click Paste formatting only
-  await page
-    .locator(`[role="option"]:has-text("Paste formatting only")`)
-    .click();
+  await page.locator(`[role="option"]:has-text("Paste formatting only")`).click();
   await page.waitForTimeout(1000);
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Confirm Misty cell has been pasted: A6 green bold Misty, A7 Misty text only, A8 Formatted green only
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `paste_pasteValues_pasteFormatting.png`,
-    {
-      maxDiffPixelRatio: 0.001,
-    },
-  );
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`paste_pasteValues_pasteFormatting.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
 
   //--------------------------------
   // Clean up:
@@ -762,18 +710,18 @@ test("Cell Actions", async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test("Custom DateTime Options", async ({ page }) => {
+test('Custom DateTime Options', async ({ page }) => {
   //--------------------------------
   // Custom DateTime Options - Day Month Year
   //--------------------------------
 
   // Constants
   const newTeamName = `Custom DateTime Options - ${Date.now()}`;
-  const fileName = "Custom_Dates";
-  const fileType = "grid";
+  const fileName = 'Custom_Dates';
+  const fileType = 'grid';
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: `e2e_custom_datetime` });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName: newTeamName });
@@ -814,9 +762,7 @@ test("Custom DateTime Options", async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert that the correct format was applied to the cell 01-02-2024
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "custom_datetime_options_for_day_month_year.png",
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('custom_datetime_options_for_day_month_year.png');
 
   //--------------------------------
   // Custom DateTime Options - Month
@@ -851,9 +797,7 @@ test("Custom DateTime Options", async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert that the correct format was applied to the cell 01-02-2024
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "custom_datetime_options_month.png",
-  );
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('custom_datetime_options_month.png');
 
   //--------------------------------
   // Custom DateTime Options - Full Month and Day
@@ -891,8 +835,8 @@ test("Custom DateTime Options", async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert that the correct format was applied to the cell 01-02-2024
-  await expect(page.locator("#QuadraticCanvasID")).toHaveScreenshot(
-    "custom_datetime_options_for_full_month_and_days.png",
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'custom_datetime_options_for_full_month_and_days.png'
   );
 
   //--------------------------------

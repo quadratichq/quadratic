@@ -1,17 +1,12 @@
-import { chromium, expect, Page, test } from "@playwright/test";
-import { EDIT_USER_PREFIX, VIEW_USER_PREFIX } from "./constants/auth";
-import { logIn } from "./helpers/auth.helpers";
-import {
-  cleanUpFiles,
-  createFile,
-  createSharedFile,
-  uploadFile,
-} from "./helpers/file.helpers";
-import { createNewTeamByURL } from "./helpers/team.helper";
+import type { Page } from '@playwright/test';
+import { chromium, expect, test } from '@playwright/test';
+import { logIn } from './helpers/auth.helpers';
+import { cleanUpFiles, createFile, createSharedFile, uploadFile } from './helpers/file.helpers';
+import { createNewTeamByURL } from './helpers/team.helper';
 
 const getViewCharacteristics = async (page: Page) => {
-  const ulElement = page.locator("ul").first();
-  const liElements = await page.locator("ul > li").all();
+  const ulElement = page.locator('ul').first();
+  const liElements = await page.locator('ul > li').all();
 
   let firstLiStructure: {
     hasAspectVideo: boolean;
@@ -22,9 +17,9 @@ const getViewCharacteristics = async (page: Page) => {
   if (liElements.length > 0) {
     const firstLi = liElements[0];
     firstLiStructure = await firstLi.evaluate((el) => ({
-      hasAspectVideo: el.querySelector(".aspect-video") !== null,
-      hasFlexRow: el.querySelector(".flex.flex-row") !== null,
-      imgWidth: el.querySelector("img")?.getAttribute("width") || null,
+      hasAspectVideo: el.querySelector('.aspect-video') !== null,
+      hasFlexRow: el.querySelector('.flex.flex-row') !== null,
+      imgWidth: el.querySelector('img')?.getAttribute('width') || null,
     }));
   }
 
@@ -35,22 +30,22 @@ const getViewCharacteristics = async (page: Page) => {
   };
 };
 
-test("Dashboard Views - My Files", async ({ page }) => {
+test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
   // Grid View
   //--------------------------------
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_dashboard_my_files' });
 
   // Create new team
   const teamName = `Dashboard Views - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Define test file names
-  const testFile1 = "C - Test File 1";
-  const testFile2 = "A - Test file 2";
-  const testFile3 = "b - Test file 3";
+  const testFile1 = 'C - Test File 1';
+  const testFile2 = 'A - Test file 2';
+  const testFile3 = 'b - Test file 3';
 
   // Clean up default file
   await cleanUpFiles(page, { fileName: testFile1, skipFilterClear: true });
@@ -66,7 +61,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   const gridButton = page.locator('button:has(span:text-is("grid_view"))');
 
   // Wait for the grid button to be visible
-  await gridButton.waitFor({ state: "visible", timeout: 10000 });
+  await gridButton.waitFor({ state: 'visible', timeout: 10000 });
 
   //--------------------------------
   // Act:
@@ -87,19 +82,17 @@ test("Dashboard Views - My Files", async ({ page }) => {
   // Assert that grid elements appear in the DOM
 
   // Assert presence of all three files
-  const gridFileNames = await page.locator("ul > li h2").allTextContents();
-  expect(gridFileNames).toEqual(
-    expect.arrayContaining([testFile1, testFile2, testFile3]),
-  );
+  const gridFileNames = await page.locator('ul > li h2').allTextContents();
+  expect(gridFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
 
   // Assert the correct number of list items
-  const liGridCount = await page.locator("ul > li h2").count();
+  const liGridCount = await page.locator('ul > li h2').count();
   expect(liGridCount).toBe(3);
 
   // Get and check grid view characteristics
   const gridViewCharacteristics = await getViewCharacteristics(page);
 
-  expect(gridViewCharacteristics.ulClasses).toContain("grid");
+  expect(gridViewCharacteristics.ulClasses).toContain('grid');
   expect(gridViewCharacteristics.firstLiStructure?.hasAspectVideo).toBe(true);
   expect(gridViewCharacteristics.firstLiStructure?.imgWidth).toBeNull();
 
@@ -127,22 +120,20 @@ test("Dashboard Views - My Files", async ({ page }) => {
   // Assert that list elements appear in the DOM
 
   // Check for the presence of all three files
-  const listFileNames = await page.locator("ul > li h2").allTextContents();
-  expect(listFileNames).toEqual(
-    expect.arrayContaining([testFile1, testFile2, testFile3]),
-  );
+  const listFileNames = await page.locator('ul > li h2').allTextContents();
+  expect(listFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
 
   // Verify the correct number of list items
-  const liListCount = await page.locator("ul > li h2").count();
+  const liListCount = await page.locator('ul > li h2').count();
   expect(liListCount).toBe(3);
 
   // Get and check list view characteristics
   const listViewCharacteristics = await getViewCharacteristics(page);
 
   // Assert list view specific properties
-  expect(listViewCharacteristics.ulClasses).not.toContain("grid");
+  expect(listViewCharacteristics.ulClasses).not.toContain('grid');
   expect(listViewCharacteristics.firstLiStructure?.hasFlexRow).toBe(true);
-  expect(listViewCharacteristics.firstLiStructure?.imgWidth).toBe("80");
+  expect(listViewCharacteristics.firstLiStructure?.imgWidth).toBe('80');
 
   //--------------------------------
   // Sort by Last updated, Oldest first
@@ -153,10 +144,10 @@ test("Dashboard Views - My Files", async ({ page }) => {
 
   await page.locator(`#QuadraticCanvasID`).click();
 
-  await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.type("test", { delay: 500 });
-  await page.keyboard.press("Enter");
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.type('test', { delay: 500 });
+  await page.keyboard.press('Enter');
   await page.waitForTimeout(2000);
 
   await page.locator(`nav a svg`).click();
@@ -166,9 +157,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Last modified" as the sorting criterion
   await page.locator(`[role="menu"] :text("Last modified")`).click();
@@ -177,9 +166,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Oldest first" as the sorting order
   await page.locator(`[role="menu"] :text("Oldest first")`).click();
@@ -192,16 +179,10 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesLastUpdatedOldestFirst = await page
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesLastUpdatedOldestFirst = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (oldest first)
-  expect(fileNamesLastUpdatedOldestFirst).toEqual([
-    testFile2,
-    testFile3,
-    testFile1,
-  ]);
+  expect(fileNamesLastUpdatedOldestFirst).toEqual([testFile2, testFile3, testFile1]);
 
   //--------------------------------
   // Sort by Last updated, Newest first
@@ -212,9 +193,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Last modified" as the sorting criterion (if not already selected)
   await page.locator(`[role="menu"] :text("Last modified")`).click();
@@ -223,9 +202,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Newest first" as the sorting order
   await page.locator(`[role="menu"] :text("Newest first")`).click();
@@ -238,16 +215,10 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesLastUpdatedNewestFirst = await page
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesLastUpdatedNewestFirst = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (newest first)
-  expect(fileNamesLastUpdatedNewestFirst).toEqual([
-    testFile1,
-    testFile3,
-    testFile2,
-  ]);
+  expect(fileNamesLastUpdatedNewestFirst).toEqual([testFile1, testFile3, testFile2]);
 
   //--------------------------------
   // Sort by Date created, Newest first
@@ -258,9 +229,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Date created" as the sorting criterion
   await page.locator(`[role="menu"] :text("Date created")`).click();
@@ -269,9 +238,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Newest first" as the sorting order (if not already selected)
   await page.locator(`[role="menu"] :text("Newest first")`).click();
@@ -284,16 +251,10 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesDateCreatedNewestFirst = await page
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesDateCreatedNewestFirst = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (newest created first)
-  expect(fileNamesDateCreatedNewestFirst).toEqual([
-    testFile3,
-    testFile2,
-    testFile1,
-  ]);
+  expect(fileNamesDateCreatedNewestFirst).toEqual([testFile3, testFile2, testFile1]);
 
   //--------------------------------
   // Sort by Date created, Oldest first
@@ -304,9 +265,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Date created" as the sorting criterion (if not already selected)
   await page.locator(`[role="menu"] :text("Date created")`).click();
@@ -315,9 +274,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Oldest first" as the sorting order
   await page.locator(`[role="menu"] :text("Oldest first")`).click();
@@ -330,16 +287,10 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesDateCreatedOldestFirst = await page
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesDateCreatedOldestFirst = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (oldest created first)
-  expect(fileNamesDateCreatedOldestFirst).toEqual([
-    testFile1,
-    testFile2,
-    testFile3,
-  ]);
+  expect(fileNamesDateCreatedOldestFirst).toEqual([testFile1, testFile2, testFile3]);
 
   //--------------------------------
   // Sort by Alphabetical, Z-A
@@ -350,9 +301,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Alphabetical" as the sorting criterion
   await page.locator(`[role="menu"] :text("Alphabetical")`).click();
@@ -361,9 +310,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page
-    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
 
   // Select "Z to A" as the sorting order
   await page.locator(`[role="menu"] :text("Z-A")`).click();
@@ -376,16 +323,10 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesAlphabeticalReverse = await page
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesAlphabeticalReverse = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct reverse alphabetical order (Z to A)
-  expect(fileNamesAlphabeticalReverse).toEqual([
-    testFile1,
-    testFile3,
-    testFile2,
-  ]);
+  expect(fileNamesAlphabeticalReverse).toEqual([testFile1, testFile3, testFile2]);
 
   //--------------------------------
   // Sort by Alphabetical, A-Z
@@ -396,9 +337,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page
-    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
 
   // Select "Alphabetical" as the sorting criterion (if not already selected)
   await page.locator(`[role="menu"] :text("Alphabetical")`).click();
@@ -407,9 +346,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page
-    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
-    .click();
+  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
 
   // Select "A to Z" as the sorting order
   await page.locator(`[role="menu"] :text("A-Z")`).click();
@@ -422,9 +359,7 @@ test("Dashboard Views - My Files", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesAlphabetical = await page
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesAlphabetical = await page.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct alphabetical order (A to Z)
   expect(fileNamesAlphabetical).toEqual([testFile2, testFile3, testFile1]);
@@ -435,13 +370,13 @@ test("Dashboard Views - My Files", async ({ page }) => {
   await cleanUpFiles(page, { fileName: testFile3, skipFilterClear: true });
 });
 
-test("Dashboard Views - Shared with me", async ({ page }) => {
+test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
   // Grid View
   //--------------------------------
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_dashboard_shared_files_1' });
 
   // Create new team
   const teamName = `Shared with me - ${Date.now()}`;
@@ -449,14 +384,12 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
 
   const sharedUserBrowser = await chromium.launch();
   const sharedUserPage = await sharedUserBrowser.newPage();
-  const sharedUserEmail = await logIn(sharedUserPage, {
-    emailPrefix: VIEW_USER_PREFIX,
-  });
+  const sharedUserEmail = await logIn(sharedUserPage, { emailPrefix: 'e2e_dashboard_shared_files_2' });
 
   // Define test file names
-  const testFile1 = "C - Test File 1";
-  const testFile2 = "A - Test file 2";
-  const testFile3 = "b - Test file 3";
+  const testFile1 = 'C - Test File 1';
+  const testFile2 = 'A - Test file 2';
+  const testFile3 = 'b - Test file 3';
 
   await cleanUpFiles(page, { fileName: testFile1, skipFilterClear: true });
   await cleanUpFiles(page, { fileName: testFile2, skipFilterClear: true });
@@ -474,12 +407,10 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click();
 
   // Locate the grid button
-  const gridButton = sharedUserPage.locator(
-    'button:has(span:text-is("grid_view"))',
-  );
+  const gridButton = sharedUserPage.locator('button:has(span:text-is("grid_view"))');
 
   // Wait for the grid button to be visible
-  await gridButton.waitFor({ state: "visible", timeout: 10000 });
+  await gridButton.waitFor({ state: 'visible', timeout: 10000 });
 
   //--------------------------------
   // Act:
@@ -501,21 +432,17 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   // Assert that grid elements appear in the DOM
 
   // Assert presence of all three files
-  const gridFileNames = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
-  expect(gridFileNames).toEqual(
-    expect.arrayContaining([testFile1, testFile2, testFile3]),
-  );
+  const gridFileNames = await sharedUserPage.locator('ul > li h2').allTextContents();
+  expect(gridFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
 
   // Assert the correct number of list items
-  const liGridCount = await sharedUserPage.locator("ul > li h2").count();
+  const liGridCount = await sharedUserPage.locator('ul > li h2').count();
   expect(liGridCount).toBe(3);
 
   // Get and check grid view characteristics
   const gridViewCharacteristics = await getViewCharacteristics(sharedUserPage);
 
-  expect(gridViewCharacteristics.ulClasses).toContain("grid");
+  expect(gridViewCharacteristics.ulClasses).toContain('grid');
   expect(gridViewCharacteristics.firstLiStructure?.hasAspectVideo).toBe(true);
   expect(gridViewCharacteristics.firstLiStructure?.imgWidth).toBeNull();
 
@@ -542,24 +469,20 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   // Assert that list elements appear in the DOM
 
   // Check for the presence of all three files
-  const listFileNames = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
-  expect(listFileNames).toEqual(
-    expect.arrayContaining([testFile1, testFile2, testFile3]),
-  );
+  const listFileNames = await sharedUserPage.locator('ul > li h2').allTextContents();
+  expect(listFileNames).toEqual(expect.arrayContaining([testFile1, testFile2, testFile3]));
 
   // Verify the correct number of list items
-  const liListCount = await sharedUserPage.locator("ul > li h2").count();
+  const liListCount = await sharedUserPage.locator('ul > li h2').count();
   expect(liListCount).toBe(3);
 
   // Get and check list view characteristics
   const listViewCharacteristics = await getViewCharacteristics(sharedUserPage);
 
   // Assert list view specific properties
-  expect(listViewCharacteristics.ulClasses).not.toContain("grid");
+  expect(listViewCharacteristics.ulClasses).not.toContain('grid');
   expect(listViewCharacteristics.firstLiStructure?.hasFlexRow).toBe(true);
-  expect(listViewCharacteristics.firstLiStructure?.imgWidth).toBe("80");
+  expect(listViewCharacteristics.firstLiStructure?.imgWidth).toBe('80');
 
   //--------------------------------
   // Sort by Last Updated (Oldest First)
@@ -570,10 +493,10 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
 
   await sharedUserPage.locator(`#QuadraticCanvasID`).click();
 
-  await sharedUserPage.keyboard.press("ArrowRight");
-  await sharedUserPage.keyboard.press("ArrowDown");
-  await sharedUserPage.keyboard.type("test", { delay: 500 });
-  await sharedUserPage.keyboard.press("Enter");
+  await sharedUserPage.keyboard.press('ArrowRight');
+  await sharedUserPage.keyboard.press('ArrowDown');
+  await sharedUserPage.keyboard.type('test', { delay: 500 });
+  await sharedUserPage.keyboard.press('Enter');
 
   await sharedUserPage.locator(`nav a svg`).click();
 
@@ -586,9 +509,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Last modified" as the sorting criterion
   await sharedUserPage.locator(`[role="menu"] :text("Last modified")`).click();
@@ -597,9 +518,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Oldest first" as the sorting order
   await sharedUserPage.locator(`[role="menu"] :text("Oldest first")`).click();
@@ -612,16 +531,10 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesLastUpdatedOldestFirst = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesLastUpdatedOldestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (oldest first)
-  expect(fileNamesLastUpdatedOldestFirst).toEqual([
-    testFile2,
-    testFile3,
-    testFile1,
-  ]);
+  expect(fileNamesLastUpdatedOldestFirst).toEqual([testFile2, testFile3, testFile1]);
 
   //--------------------------------
   // Sort by Last Updated (Newest First)
@@ -631,9 +544,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Last modified" as the sorting criterion (if not already selected)
   await sharedUserPage.locator(`[role="menu"] :text("Last modified")`).click();
@@ -642,9 +553,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Newest first" as the sorting order
   await sharedUserPage.locator(`[role="menu"] :text("Newest first")`).click();
@@ -657,16 +566,10 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesLastUpdatedNewestFirst = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesLastUpdatedNewestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (newest first)
-  expect(fileNamesLastUpdatedNewestFirst).toEqual([
-    testFile1,
-    testFile3,
-    testFile2,
-  ]);
+  expect(fileNamesLastUpdatedNewestFirst).toEqual([testFile1, testFile3, testFile2]);
 
   //--------------------------------
   // Sort by Date Created (Oldest First)
@@ -676,9 +579,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
 
   // Select "Date created" as the sorting criterion (if not already selected)
   await sharedUserPage.locator(`[role="menu"] :text("Date created")`).click();
@@ -687,9 +588,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Oldest first" as the sorting order
   await sharedUserPage.locator(`[role="menu"] :text("Oldest first")`).click();
@@ -702,16 +601,10 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesDateCreatedOldestFirst = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesDateCreatedOldestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (oldest created first)
-  expect(fileNamesDateCreatedOldestFirst).toEqual([
-    testFile1,
-    testFile2,
-    testFile3,
-  ]);
+  expect(fileNamesDateCreatedOldestFirst).toEqual([testFile1, testFile2, testFile3]);
 
   //--------------------------------
   // Sort by Date Created (Newest First)
@@ -721,9 +614,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Date created" as the sorting criterion
   await sharedUserPage.locator(`[role="menu"] :text("Date created")`).click();
@@ -732,9 +623,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Newest first" as the sorting order (if not already selected)
   await sharedUserPage.locator(`[role="menu"] :text("Newest first")`).click();
@@ -747,16 +636,10 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesDateCreatedNewestFirst = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesDateCreatedNewestFirst = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct order (newest created first)
-  expect(fileNamesDateCreatedNewestFirst).toEqual([
-    testFile3,
-    testFile2,
-    testFile1,
-  ]);
+  expect(fileNamesDateCreatedNewestFirst).toEqual([testFile3, testFile2, testFile1]);
 
   //--------------------------------
   // Sort by Alphabetical
@@ -766,9 +649,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
 
   // Select "Alphabetical" as the sorting criterion
   await sharedUserPage.locator(`[role="menu"] :text("Alphabetical")`).click();
@@ -777,9 +658,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
 
   // Select "Z to A" as the sorting order
   await sharedUserPage.locator(`[role="menu"] :text("Z-A")`).click();
@@ -792,25 +671,17 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesAlphabeticalReverse = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesAlphabeticalReverse = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct reverse alphabetical order (Z to A)
-  expect(fileNamesAlphabeticalReverse).toEqual([
-    testFile1,
-    testFile3,
-    testFile2,
-  ]);
+  expect(fileNamesAlphabeticalReverse).toEqual([testFile1, testFile3, testFile2]);
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
 
   // Select "Alphabetical" as the sorting criterion (if not already selected)
   await sharedUserPage.locator(`[role="menu"] :text("Alphabetical")`).click();
@@ -819,9 +690,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage
-    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
-    .click();
+  await sharedUserPage.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
 
   // Select "A to Z" as the sorting order
   await sharedUserPage.locator(`[role="menu"] :text("A-Z")`).click();
@@ -834,9 +703,7 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   //--------------------------------
 
   // Retrieve all file names
-  const fileNamesAlphabetical = await sharedUserPage
-    .locator("ul > li h2")
-    .allTextContents();
+  const fileNamesAlphabetical = await sharedUserPage.locator('ul > li h2').allTextContents();
 
   // Assert the files are in the correct alphabetical order (A to Z)
   expect(fileNamesAlphabetical).toEqual([testFile2, testFile3, testFile1]);
@@ -849,19 +716,19 @@ test("Dashboard Views - Shared with me", async ({ page }) => {
   await cleanUpFiles(page, { fileName: testFile3, skipFilterClear: true });
 });
 
-test("Filter Files by Name - My Files", async ({ page }) => {
+test('Filter Files by Name - My Files', async ({ page }) => {
   //--------------------------------
   // Filter Files by Name - My Files
   //--------------------------------
   // Login
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_dashboard_filter_files_my' });
 
   // Create new team
   const teamName = `Filter Files - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
-  const string1 = "Test";
-  const string2 = "Random";
+  const string1 = 'Test';
+  const string2 = 'Random';
   const file1 = `${string1}_file_1`;
   const file2 = `${string2}_file_2`;
   const file3 = `${string2}_${string1}_3`;
@@ -881,53 +748,41 @@ test("Filter Files by Name - My Files", async ({ page }) => {
   //--------------------------------
 
   // Filter by file 1
-  await page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(file1);
+  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file1);
   await page.waitForTimeout(2500);
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert file 1 are visible
-  await expect(page.getByRole("heading", { name: file1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by file 2 and assert file 2 are visible
-  await page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(file2);
+  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole("heading", { name: file2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by file 3 and assert file 2 are visible
-  await page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(file3);
+  await page.locator('[placeholder="Filter by file or creator name…"]').fill(file3);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole("heading", { name: file3 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (file 1 and 3)
 
-  await page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(string1);
+  await page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole("heading", { name: file1 })).toBeVisible();
-  await expect(page.getByRole("heading", { name: file3 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by string2 and assert files including string2 are visible (file 2 and 3)
 
-  await page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(string2);
+  await page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole("heading", { name: file2 })).toBeVisible();
-  await expect(page.getByRole("heading", { name: file3 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Clean up files
-  await page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill("");
+  await page.locator('[placeholder="Filter by file or creator name…"]').fill('');
   await page.waitForTimeout(2500);
 
   await cleanUpFiles(page, { fileName: file1, skipFilterClear: true });
@@ -935,23 +790,21 @@ test("Filter Files by Name - My Files", async ({ page }) => {
   await cleanUpFiles(page, { fileName: file3, skipFilterClear: true });
 });
 
-test("Filter Files by Name - Shared with me", async ({ page: user1Page }) => {
+test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   //--------------------------------
   // File variables
-  const string1 = "Test";
-  const string2 = "Random";
+  const string1 = 'Test';
+  const string2 = 'Random';
   const file1 = `shared_${string1}_file_1`;
   const file2 = `shared_${string2}_file_2`;
   const file3 = `shared_${string2}_${string1}_3`;
 
   // Login
-  const user1Email = await logIn(user1Page);
+  const user1Email = await logIn(user1Page, { emailPrefix: 'e2e_dashboard_filter_files_shared_1' });
 
   const user2Browser = await chromium.launch();
   const user2Page = await user2Browser.newPage();
-  const user2Email = await logIn(user2Page, {
-    emailPrefix: EDIT_USER_PREFIX,
-  });
+  await logIn(user2Page, { emailPrefix: 'e2e_dashboard_filter_files_shared_2' });
 
   // Create new team
   const teamName = `Filter Shared - ${Date.now()}`;
@@ -994,9 +847,7 @@ test("Filter Files by Name - Shared with me", async ({ page: user1Page }) => {
   //--------------------------------
 
   // Filter by file 1
-  await user1Page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(file1);
+  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file1);
   await user1Page.waitForTimeout(2500);
 
   //--------------------------------
@@ -1004,37 +855,29 @@ test("Filter Files by Name - Shared with me", async ({ page: user1Page }) => {
   //--------------------------------
 
   // Assert file 1 is visible
-  await expect(user1Page.getByRole("heading", { name: file1 })).toBeVisible();
+  await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by file 2 and assert file 2 is visible
-  await user1Page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(file2);
+  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole("heading", { name: file2 })).toBeVisible();
+  await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by file 3 and assert file 3 is visible
-  await user1Page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(file3);
+  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file3);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole("heading", { name: file3 })).toBeVisible();
+  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (file 1 and 3)
-  await user1Page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(string1);
+  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole("heading", { name: file1 })).toBeVisible();
-  await expect(user1Page.getByRole("heading", { name: file3 })).toBeVisible();
+  await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
 
   // Filter by string2 and assert files including string2 are visible (file 2 and 3)
-  await user1Page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .fill(string2);
+  await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole("heading", { name: file2 })).toBeVisible();
-  await expect(user1Page.getByRole("heading", { name: file3 })).toBeVisible();
+  await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Clean up:
@@ -1048,21 +891,19 @@ test("Filter Files by Name - Shared with me", async ({ page: user1Page }) => {
   await cleanUpFiles(user2Page, { fileName: file3, skipFilterClear: true });
 });
 
-test("Import Files", async ({ page }) => {
+test('Import Files', async ({ page }) => {
   //--------------------------------
   // .grid File
   //--------------------------------
   // Constants
-  const gridFileName = "Import_File_Grid";
-  const excelFileName = "Import_File_Excel";
+  const gridFileName = 'Import_File_Grid';
+  const excelFileName = 'Import_File_Excel';
 
   // Login with dedicated user
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_dashboard_import_files' });
 
   // Wait for load
-  await page
-    .locator('[placeholder="Filter by file or creator name…"]')
-    .waitFor();
+  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
 
   // Clean up files
   await cleanUpFiles(page, { fileName: gridFileName });
@@ -1072,23 +913,22 @@ test("Import Files", async ({ page }) => {
   // Act:
   //--------------------------------
   // Upload file
-  await uploadFile(page, { fileName: gridFileName, fileType: "grid" });
+  await uploadFile(page, { fileName: gridFileName, fileType: 'grid' });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert file is successfully uploaded and displayed
-  await expect(
-    page.locator(`:text("${gridFileName.split(".")[0]}"):visible >> nth=0`),
-  ).toBeVisible();
+  await expect(page.locator(`:text("${gridFileName.split('.')[0]}"):visible >> nth=0`)).toBeVisible({
+    timeout: 30 * 1000,
+  });
 
   await page.waitForTimeout(2000);
 
   // Assert sheet is displayed correctly
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    "import-files-grid.png",
-    { maxDiffPixelRatio: 0.001 },
-  );
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('import-files-grid.png', {
+    maxDiffPixelRatio: 0.001,
+  });
 
   // Head back to dashboard
   await page.locator(`nav a svg`).click();
@@ -1103,20 +943,19 @@ test("Import Files", async ({ page }) => {
   //--------------------------------
   // Act:
   //--------------------------------
-  await uploadFile(page, { fileName: excelFileName, fileType: "xlsx" });
+  await uploadFile(page, { fileName: excelFileName, fileType: 'xlsx' });
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert file is successfully uploaded and displayed
-  await expect(page.locator(`:text("${excelFileName}"):visible`)).toBeVisible();
+  await expect(page.locator(`:text("${excelFileName}"):visible`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Assert sheet is displayed correctly
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    "import-files-excel.png",
-    { maxDiffPixelRatio: 0.001 },
-  );
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('import-files-excel.png', {
+    maxDiffPixelRatio: 0.001,
+  });
 
   // Head back to dashboard
   await page.locator(`nav a svg`).click();
@@ -1125,13 +964,13 @@ test("Import Files", async ({ page }) => {
   await cleanUpFiles(page, { fileName: excelFileName });
 });
 
-test.skip("Resources Examples - Dashboard Views", async ({ page }) => {
+test.skip('Resources Examples - Dashboard Views', async ({ page }) => {
   //--------------------------------
   // List View
   //--------------------------------
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_dashboard_examples' });
 
   // Click into examples under resources
   await page.getByRole(`link`, { name: `view_carousel Examples` }).click();
@@ -1157,10 +996,10 @@ test.skip("Resources Examples - Dashboard Views", async ({ page }) => {
   expect(view.firstLiStructure?.hasFlexRow).toBe(true);
 
   // Assert that the files do NOT include "grid" in the ul classes
-  expect(view.ulClasses).not.toContain("grid");
+  expect(view.ulClasses).not.toContain('grid');
 
   // Assert that the image width is set to "80", something unique to the List view
-  expect(view.firstLiStructure?.imgWidth).toBe("80");
+  expect(view.firstLiStructure?.imgWidth).toBe('80');
 
   //--------------------------------
   // Grid View
@@ -1181,7 +1020,7 @@ test.skip("Resources Examples - Dashboard Views", async ({ page }) => {
   const gridViewCharacteristics = await getViewCharacteristics(page);
 
   // Assert the class names have "grid" in them.
-  expect(gridViewCharacteristics.ulClasses).toContain("grid");
+  expect(gridViewCharacteristics.ulClasses).toContain('grid');
 
   // Assert the image for each file has the class name "aspect-video" within it
   expect(gridViewCharacteristics.firstLiStructure?.hasAspectVideo).toBe(true);
@@ -1190,13 +1029,13 @@ test.skip("Resources Examples - Dashboard Views", async ({ page }) => {
   expect(gridViewCharacteristics.firstLiStructure?.imgWidth).toBeNull();
 });
 
-test.skip("Search - Search File Examples", async ({ page }) => {
+test.skip('Search - Search File Examples', async ({ page }) => {
   //--------------------------------
   // Search - Search File Examples
   //--------------------------------
 
   // Log in
-  await logIn(page);
+  await logIn(page, { emailPrefix: 'e2e_dashboard_examples_search' });
 
   // Go to examples under resources
   await page.getByRole(`link`, { name: `view_carousel Examples` }).click();
@@ -1205,14 +1044,12 @@ test.skip("Search - Search File Examples", async ({ page }) => {
   await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
 
   // Find the card with the title that includes "JavaScript"
-  const jsCard = page
-    .locator("ul > li", { has: page.locator("h2", { hasText: "JavaScript" }) })
-    .first();
+  const jsCard = page.locator('ul > li', { has: page.locator('h2', { hasText: 'JavaScript' }) }).first();
 
   // Get the title text of that card to search it
-  const exampleFile = await jsCard.locator("h2").textContent();
+  const exampleFile = await jsCard.locator('h2').textContent();
   if (!exampleFile) {
-    throw new Error("Failed to get example file title");
+    throw new Error('Failed to get example file title');
   }
 
   //--------------------------------
@@ -1220,28 +1057,21 @@ test.skip("Search - Search File Examples", async ({ page }) => {
   //--------------------------------
 
   // Search for an example file
-  await page
-    .getByRole(`textbox`, { name: `Filter by file or creator` })
-    .fill(exampleFile);
+  await page.getByRole(`textbox`, { name: `Filter by file or creator` }).fill(exampleFile);
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert the example file appears after searching for it
-  await expect(page.locator(`h2:has-text("${exampleFile}")`)).toBeVisible();
+  await expect(page.locator(`h2:has-text("${exampleFile}")`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Assert that "No matches" does not appear after searching for the file
-  await expect(
-    page.getByRole(`heading`, { name: `No matches` }),
-  ).not.toBeVisible();
-  await expect(page.getByText(`No files found with that`)).not.toBeVisible();
+  await expect(page.getByRole(`heading`, { name: `No matches` })).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`No files found with that`)).not.toBeVisible({ timeout: 30 * 1000 });
 
   // Assert that the correct file is visible
-  await expect(page.locator(`a:has-text("${exampleFile}") `)).toHaveScreenshot(
-    "Resources_JavaScript_Thumbnail.png",
-    {
-      maxDiffPixelRatio: 0.01,
-    },
-  );
+  await expect(page.locator(`a:has-text("${exampleFile}") `)).toHaveScreenshot('Resources_JavaScript_Thumbnail.png', {
+    maxDiffPixelRatio: 0.01,
+  });
 });

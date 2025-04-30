@@ -42,7 +42,7 @@
 //   await page.locator(`button:text("Continue")`).click();
 
 //   // assert that we are logged in
-//   await expect(page.locator(`button:has-text("${email}")`)).toBeVisible();
+//   await expect(page.locator(`button:has-text("${email}")`)).toBeVisible({ timeout: 30 * 1000 });
 
 //   // Click team dropdown
 //   if (options.teamName) {
@@ -170,7 +170,7 @@
 //   await page.locator(`button:text("Continue")`).click();
 
 //   // Assert that we were redirected to a new sheet
-//   await expect(page.getByText(`Sheet chat`)).toBeVisible();
+//   await expect(page.getByText(`Sheet chat`)).toBeVisible({ timeout: 30 * 1000 });
 //   await expect(page).toHaveURL(/file/);
 
 //   // Return the necessary information
@@ -191,10 +191,10 @@
 //   await page.locator(`[type="submit"]:text("Create team")`).click();
 
 //   // Assert that the new team name is visible on the page
-//   await expect(page.locator(`:text("${newTeamName}")`)).toBeVisible();
+//   await expect(page.locator(`:text("${newTeamName}")`)).toBeVisible({ timeout: 30 * 1000 });
 
 //   // Assert that the "No files" text is visible on the page
-//   await expect(page.locator(`:text("No files")`)).toBeVisible();
+//   await expect(page.locator(`:text("No files")`)).toBeVisible({ timeout: 30 * 1000 });
 // }
 
 // /**
