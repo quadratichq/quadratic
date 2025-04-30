@@ -9,7 +9,6 @@
     "docker:down": "docker compose down",
     "lint:ts": "tsc --noemit",
     "test": "npm run lint:ts && npx playwright test",
-    "test:ci": "npm run docker:up && npm run test && npm run docker:down",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
     "test:fix": "npx playwright test --update-snapshots",

@@ -567,7 +567,7 @@ jobs:
           exit 1
 
   test-e2e-start-comment:
-    name: Test E2E
+    name: Test E2E Start Comment
     needs: [build_images, deploy_images, verify_deployed_version]
     permissions:
       contents: read
@@ -605,7 +605,7 @@ jobs:
           edit-mode: replace
 
   test-e2e-matrix-run:
-    name: Test E2E
+    name: Test E2E Matrix Run
     needs: [build_images, deploy_images, verify_deployed_version]
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
@@ -630,12 +630,13 @@ jobs:
           shard_total: ${{ matrix.shardTotal }}
 
   test-e2e-merge-report-and-end-comment:
-    name: Test E2E
+    name: Test E2E Merge Report and End Comment
     needs:
       [
         build_images,
         deploy_images,
         verify_deployed_version,
+        test-e2e-start-comment,
         test-e2e-matrix-run,
       ]
     permissions:
