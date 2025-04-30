@@ -682,3 +682,11 @@ export const ArrowDownIcon: IconComponent = (props) => {
 export const ArrowDoubleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_down</Icon>;
 };
+
+export const SheetComeFromIcon: IconComponent = (props) => {
+  return <Icon {...props}>step_out</Icon>;
+};
+
+export const SheetGoToIcon: IconComponent = (props) => {
+  return <Icon {...props}>step_into</Icon>;
+};
