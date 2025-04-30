@@ -29,6 +29,8 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 
   // TODO: decide on the right threshold
   const highlightStartFresh = messagesCount > 2 && !showChatHistory;
+  // TODO: consider hiding this permanently once chat history is clicked once?
+  const highlightHistory = messagesCount === 0 && !showChatHistory;
 
   return (
     <div className="flex flex-col">
@@ -61,7 +63,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 
           <TooltipPopover label="Previous chats">
             <Button
-              variant={showChatHistory ? 'default' : 'ghost'}
+              variant={showChatHistory ? 'default' : highlightHistory ? 'outline' : 'ghost'}
               size="icon-sm"
               className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
               disabled={!showChatHistory && (loading || chatsCount === 0)}
@@ -88,6 +90,12 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
         <p className="relative mx-2 mb-1.5 rounded bg-primary px-2 py-1.5 text-center text-xs text-background">
           Fresh chats = better results. Try starting anew.
           <span className="absolute -top-2 right-[86px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-primary border-l-transparent border-r-transparent" />
+        </p>
+      )}
+      {highlightHistory && (
+        <p className="relative mx-2 mb-1.5 rounded bg-secondary px-2 py-1.5 text-center text-xs text-muted-foreground">
+          Previous chats are saved in history.
+          <span className="absolute -top-2 right-[50px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-secondary border-l-transparent border-r-transparent" />
         </p>
       )}
     </div>
