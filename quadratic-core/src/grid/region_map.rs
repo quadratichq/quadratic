@@ -247,6 +247,19 @@ mod tests {
                 HashSet::from_iter([pos![sheet1!A1], pos![sheet2!Q3]]),
             );
 
+            m.set_regions_for_pos(
+                pos![sheet1!A2],
+                vec![(sheet1, rect![F6:F10]), (sheet1, rect![H6:H10])],
+            );
+            assert_eq!(
+                m.get_positions_associated_with_region((sheet1, rect![H7:H7])),
+                HashSet::from_iter([pos![sheet1!A2]])
+            );
+            assert_eq!(
+                m.get_positions_associated_with_region((sheet2, rect![D4:F10])),
+                HashSet::from_iter([pos![sheet1!A1], pos![sheet2!C3]]),
+            );
+
             m.remove_pos(pos![sheet1!A2]);
             assert_eq!(
                 m.get_positions_associated_with_region((sheet2, rect![D4:F10])),
