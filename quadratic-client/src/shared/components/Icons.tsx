@@ -690,3 +690,7 @@ export const SheetComeFromIcon: IconComponent = (props) => {
 export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
 };
+
+export const GenericLanguageIcon: IconComponent = (props) => {
+  return <Icon {...props}>subject</Icon>;
+};
