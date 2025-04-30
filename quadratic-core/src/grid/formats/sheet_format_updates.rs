@@ -66,6 +66,7 @@ impl SheetFormatUpdates {
         }
     }
 
+    /// Constructs a format update that uses formats from every cell in the selection.
     pub fn from_sheet_formatting_selection(
         selection: &A1Selection,
         formats: &SheetFormatting,
@@ -87,6 +88,7 @@ impl SheetFormatUpdates {
         }
     }
 
+    /// Returns whether the format update intersects with the given rect.
     fn item_intersects<T>(item: &SheetFormatUpdatesType<T>, rect: Rect) -> bool
     where
         T: Clone + Debug + PartialEq,
@@ -143,6 +145,7 @@ impl SheetFormatUpdates {
                 .is_none_or(|a| a.is_all_default())
     }
 
+    /// Sets a single format for a cell
     fn set_format_cell_item<T>(
         pos: Pos,
         item: &mut SheetFormatUpdatesType<T>,
@@ -156,6 +159,7 @@ impl SheetFormatUpdates {
         });
     }
 
+    /// Sets all formats for a cell
     pub fn set_format_cell(&mut self, pos: Pos, update: FormatUpdate) {
         Self::set_format_cell_item(pos, &mut self.align, update.align);
         Self::set_format_cell_item(pos, &mut self.vertical_align, update.vertical_align);
@@ -172,6 +176,7 @@ impl SheetFormatUpdates {
         Self::set_format_cell_item(pos, &mut self.strike_through, update.strike_through);
     }
 
+    /// Returns the format for a cell within the SheetFormatUpdates.
     fn format_update_item<T>(item: &SheetFormatUpdatesType<T>, pos: Pos) -> Option<Option<T>>
     where
         T: Clone + Debug + PartialEq,
@@ -200,6 +205,7 @@ impl SheetFormatUpdates {
         }
     }
 
+    /// Sets a single format for a rect within the SheetFormatUpdates to a single value.
     fn set_format_rect_item<T>(
         item: &mut SheetFormatUpdatesType<T>,
         rect: Rect,
@@ -218,6 +224,7 @@ impl SheetFormatUpdates {
         };
     }
 
+    /// Sets all formats for a rect within the SheetFormatUpdates
     pub fn set_format_rect(&mut self, rect: Rect, update: FormatUpdate) {
         Self::set_format_rect_item(&mut self.align, rect, update.align);
         Self::set_format_rect_item(&mut self.vertical_align, rect, update.vertical_align);
@@ -258,6 +265,7 @@ impl SheetFormatUpdates {
         Self::translate_rect_item(&mut self.strike_through, x, y);
     }
 
+    /// Merges another SheetFormatUpdates into this one.
     pub fn merge(&mut self, other: &SheetFormatUpdates) {
         Self::merge_item(&mut self.align, &other.align);
         Self::merge_item(&mut self.vertical_align, &other.vertical_align);
@@ -274,7 +282,8 @@ impl SheetFormatUpdates {
         Self::merge_item(&mut self.strike_through, &other.strike_through);
     }
 
-    pub fn merge_item<T>(item: &mut SheetFormatUpdatesType<T>, other: &SheetFormatUpdatesType<T>)
+    /// Merges another SheetFormatUpdates into this one.
+    fn merge_item<T>(item: &mut SheetFormatUpdatesType<T>, other: &SheetFormatUpdatesType<T>)
     where
         T: Clone + Debug + PartialEq,
     {

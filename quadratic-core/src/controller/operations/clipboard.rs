@@ -109,29 +109,27 @@ pub struct Clipboard {
 }
 
 impl Clipboard {
+    /// Decode the clipboard html and return a Clipboard struct.
     pub fn decode(html: &str) -> Result<Self> {
         let error = |e, msg| Error::msg(format!("Clipboard decode {:?}: {:?}", msg, e));
 
         match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
             Err(e) => Err(error(e.to_string(), "Regex creation error")),
             Ok(re) => {
-                let data = re
+                // pull out the sub string
+                let sub_string = re
                     .captures(html)
-                    .ok_or_else(|| error("".into(), "Regex capture error"))?;
-
-                let result = data.get(1).map_or("", |m| m.as_str());
-                drop(data);
+                    .ok_or_else(|| error("".into(), "Regex capture error"))?
+                    .get(1)
+                    .map_or("", |m| m.as_str());
 
                 // decode html in attribute
-                let decoded = htmlescape::decode_html(result)
+                let decoded = htmlescape::decode_html(sub_string)
                     .map_err(|_| error("".into(), "Html decode error"))?;
 
                 // parse into Clipboard
-                let clipboard = serde_json::from_str::<Clipboard>(&decoded)
-                    .map_err(|e| error(e.to_string(), "Serialization error"))?;
-                drop(decoded);
-
-                Ok(clipboard)
+                serde_json::from_str::<Clipboard>(&decoded)
+                    .map_err(|e| error(e.to_string(), "Serialization error"))
             }
         }
     }
