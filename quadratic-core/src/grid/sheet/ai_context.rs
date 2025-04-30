@@ -215,7 +215,7 @@ impl Sheet {
                 1,
             );
             let first_row_visible_values = self
-                .js_cell_value_pos_in_rect(first_row_rect, Some(1))
+                .js_cell_value_pos_in_rect(first_row_rect, Some(75))
                 .into_iter()
                 .flatten()
                 .collect::<Vec<_>>();
