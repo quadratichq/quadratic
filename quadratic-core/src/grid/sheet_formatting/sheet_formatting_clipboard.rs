@@ -5,6 +5,8 @@ use crate::{
 
 use super::SheetFormatting;
 
+use anyhow::Result;
+
 // todo: this is wrong. it does not properly handle infinite selections (it cuts
 // them off at the bounds of the sheet)
 
@@ -16,54 +18,36 @@ impl SheetFormatting {
         selection: &A1Selection,
         sheet: &Sheet,
         a1_context: &A1Context,
-    ) -> Option<SheetFormatUpdates> {
-        let mut sheet_format_updates = SheetFormatUpdates {
-            align: Some(self.align.get_update_for_selection(selection)),
-            vertical_align: Some(self.vertical_align.get_update_for_selection(selection)),
-            wrap: Some(self.wrap.get_update_for_selection(selection)),
-            numeric_format: Some(self.numeric_format.get_update_for_selection(selection)),
-            numeric_decimals: Some(self.numeric_decimals.get_update_for_selection(selection)),
-            numeric_commas: Some(self.numeric_commas.get_update_for_selection(selection)),
-            bold: Some(self.bold.get_update_for_selection(selection)),
-            italic: Some(self.italic.get_update_for_selection(selection)),
-            text_color: Some(self.text_color.get_update_for_selection(selection)),
-            fill_color: Some(self.fill_color.get_update_for_selection(selection)),
-            date_time: Some(self.date_time.get_update_for_selection(selection)),
-            underline: Some(self.underline.get_update_for_selection(selection)),
-            strike_through: Some(self.strike_through.get_update_for_selection(selection)),
-        };
+    ) -> Result<SheetFormatUpdates> {
+        // first, get formats for the sheet of the selection
+        let mut sheet_format_updates =
+            SheetFormatUpdates::from_sheet_formatting_selection(selection, &self);
 
-        // determine if the selectoin overlaps with a data table
-        // if so, get the formats from the data table and merge them with the
-        // sheet formats
-        let data_tables_within = sheet
-            .data_tables_within_rect(selection.largest_rect_finite(&a1_context), false)
-            .unwrap();
+        // determine if the selection overlaps with data tables
+        let data_tables_within =
+            sheet.data_tables_within_rect(selection.largest_rect_finite(&a1_context), false)?;
+
+        // get the formats from the data table and merge them with the sheet formats
         for data_table_pos in data_tables_within {
-            let data_table = sheet.data_table(data_table_pos).unwrap();
-            let formats = &data_table.formats;
-            let data_table_formats = SheetFormatUpdates {
-                align: Some(data_table.formats.align.get_update_for_selection(selection)),
-                vertical_align: Some(formats.vertical_align.get_update_for_selection(selection)),
-                wrap: Some(data_table.formats.wrap.get_update_for_selection(selection)),
-                numeric_format: Some(formats.numeric_format.get_update_for_selection(selection)),
-                numeric_decimals: Some(
-                    formats.numeric_decimals.get_update_for_selection(selection),
-                ),
-                numeric_commas: Some(formats.numeric_commas.get_update_for_selection(selection)),
-                bold: Some(data_table.formats.bold.get_update_for_selection(selection)),
-                italic: Some(formats.italic.get_update_for_selection(selection)),
-                text_color: Some(formats.text_color.get_update_for_selection(selection)),
-                fill_color: Some(formats.fill_color.get_update_for_selection(selection)),
-                date_time: Some(formats.date_time.get_update_for_selection(selection)),
-                underline: Some(formats.underline.get_update_for_selection(selection)),
-                strike_through: Some(formats.strike_through.get_update_for_selection(selection)),
-            };
-            dbgjs!(format!("data_table_formats: {:?}", data_table_formats.bold));
-            sheet_format_updates.merge(&data_table_formats);
+            let data_table = sheet.data_table_result(data_table_pos)?;
+
+            // clone is required
+            selection
+                .clone()
+                .saturating_translate(data_table_pos.x, data_table_pos.y)
+                .map(|offset_selection| {
+                    let data_table_formats = SheetFormatUpdates::from_sheet_formatting_selection(
+                        &offset_selection,
+                        &data_table.formats,
+                    );
+                    dbgjs!(format!("offset_selection: {:?}", offset_selection));
+                    dbgjs!(format!("data_table_formats: {:?}", data_table_formats.bold));
+                    sheet_format_updates.merge(&data_table_formats);
+                })
+                .unwrap();
         }
 
-        Some(sheet_format_updates)
+        Ok(sheet_format_updates)
     }
 }
 

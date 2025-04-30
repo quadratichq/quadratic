@@ -7,7 +7,7 @@ use crate::{
     Pos, Rect,
     a1::A1Selection,
     clear_option::ClearOption,
-    grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat},
+    grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, SheetFormatting},
 };
 
 use super::FormatUpdate;
@@ -63,6 +63,27 @@ impl SheetFormatUpdates {
             date_time: Self::apply_selection(selection, update.date_time),
             underline: Self::apply_selection(selection, update.underline),
             strike_through: Self::apply_selection(selection, update.strike_through),
+        }
+    }
+
+    pub fn from_sheet_formatting_selection(
+        selection: &A1Selection,
+        formats: &SheetFormatting,
+    ) -> Self {
+        SheetFormatUpdates {
+            align: Some(formats.align.get_update_for_selection(selection)),
+            vertical_align: Some(formats.vertical_align.get_update_for_selection(selection)),
+            wrap: Some(formats.wrap.get_update_for_selection(selection)),
+            numeric_format: Some(formats.numeric_format.get_update_for_selection(selection)),
+            numeric_decimals: Some(formats.numeric_decimals.get_update_for_selection(selection)),
+            numeric_commas: Some(formats.numeric_commas.get_update_for_selection(selection)),
+            bold: Some(formats.bold.get_update_for_selection(selection)),
+            italic: Some(formats.italic.get_update_for_selection(selection)),
+            text_color: Some(formats.text_color.get_update_for_selection(selection)),
+            fill_color: Some(formats.fill_color.get_update_for_selection(selection)),
+            date_time: Some(formats.date_time.get_update_for_selection(selection)),
+            underline: Some(formats.underline.get_update_for_selection(selection)),
+            strike_through: Some(formats.strike_through.get_update_for_selection(selection)),
         }
     }
 

@@ -217,7 +217,7 @@ impl Sheet {
             data_tables.extend(data_tables_in_rect);
         }
 
-        let formats = self.formats.to_clipboard(selection, &self, a1_context);
+        let formats = self.formats.to_clipboard(selection, &self, a1_context).ok();
         let borders = self.borders.to_clipboard(selection);
         let validations = self
             .validations
