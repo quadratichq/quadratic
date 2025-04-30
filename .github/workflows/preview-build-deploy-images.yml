@@ -566,32 +566,32 @@ jobs:
           echo "::error::${{ matrix.service.name }} version check failed after ${{ env.MAX_ATTEMPTS }} attempts"
           exit 1
 
-  test-e2e:
+  test-e2e-start-comment:
     name: Test E2E
     needs: [build_images, deploy_images, verify_deployed_version]
     permissions:
       contents: read
       pull-requests: write
       issues: write
-    runs-on: blacksmith-32vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
-        id: preview-build-deploy-images-comment-update
+        id: test-e2e-start-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
           body-includes: "Preview - Build, Deploy & Test E2E"
 
-      - name: Update comment on E2E tests success
+      - name: Update comment on E2E tests start
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
+          comment-id: ${{ steps.test-e2e-start-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Test E2E
@@ -604,6 +604,20 @@ jobs:
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
 
+  test-e2e-matrix-run:
+    name: Test E2E
+    needs: [build_images, deploy_images, verify_deployed_version]
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shardTotal: [16]
+    env:
+      e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -612,19 +626,79 @@ jobs:
         id: run-tests-e2e
         with:
           e2e_url: "https://${{ env.e2e_url }}"
-          playwright_report_name: pr-${{ github.event.pull_request.number }}-e2e
+          shard_index: ${{ matrix.shardIndex }}
+          shard_total: ${{ matrix.shardTotal }}
 
-      - name: Update comment on E2E tests success
+  test-e2e-merge-report-and-end-comment:
+    name: Test E2E
+    needs:
+      [
+        build_images,
+        deploy_images,
+        verify_deployed_version,
+        test-e2e-matrix-run,
+      ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    timeout-minutes: 15
+    env:
+      e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
+      deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 23
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: cd tests-e2e && npm install
+
+      - name: Download blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        id: e2e-test-report
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 14
+
+      - name: Find Build & Deploy Images Comment
+        if: always()
+        uses: peter-evans/find-comment@v3
+        id: test-e2e-merge-report-and-end-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build, Deploy & Test E2E"
+
+      - name: Update comment on E2E tests end
         if: always()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
+          comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Test E2E
             ✅ Build images
             ✅ Deploy images
-            ${{ steps.run-tests-e2e.conclusion == 'success' && '✅' || '❌' }} Test E2E [download report](${{ steps.run-tests-e2e.outputs.playwright_report_url }}).
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Test E2E [download report](${{ steps.e2e-test-report.outputs.artifact-url }}).
 
             🔗 URL: https://${{ env.e2e_url }}
             🕒 Last deployed: ${{ env.deploy_time }}

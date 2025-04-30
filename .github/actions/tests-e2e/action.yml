@@ -4,13 +4,12 @@ inputs:
   e2e_url:
     description: "Base url of deployment"
     required: true
-  playwright_report_name:
-    description: "Name of playwright report artifact uploaded to GitHub"
+  shard_index:
+    description: "Index of the shard to run"
     required: true
-outputs:
-  playwright_report_url:
-    description: "URL of playwright report artifact uploaded to GitHub"
-    value: ${{ steps.upload-playwright-report.outputs.artifact-url }}
+  shard_total:
+    description: "Total number of shards"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -48,18 +47,18 @@ runs:
       run: npx playwright install --with-deps
       shell: bash
 
-    - name: Run E2E tests
-      run: export E2E_URL=${{ inputs.e2e_url }} && cd tests-e2e && npm run test:ci
+    - name: Run Playwright tests
+      run: export E2E_URL=${{ inputs.e2e_url }} && cd tests-e2e && npm run test:ci -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
       shell: bash
 
-    - name: Upload Playwright Report
+    - name: Upload blob report to GitHub Actions Artifacts
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       id: upload-playwright-report
       with:
-        name: ${{ inputs.playwright_report_name }}
-        path: tests-e2e/playwright-report/
-        retention-days: 3
+        name: blob-report-${{ matrix.shardIndex }}
+        path: tests-e2e/blob-report
+        retention-days: 1
         overwrite: true
         include-hidden-files: true
         if-no-files-found: warn
