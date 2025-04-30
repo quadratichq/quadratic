@@ -685,7 +685,7 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: always() && ${{needs.test-e2e-start-comment.result == 'success'}} && (github.head_ref != 'qa' || github.base_ref != 'main')
+    if: always() && needs.test-e2e-start-comment.result == 'success' && (github.head_ref != 'qa' || github.base_ref != 'main')
     timeout-minutes: 15
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}

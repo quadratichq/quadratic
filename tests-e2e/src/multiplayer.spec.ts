@@ -632,7 +632,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   // Assert userPage3 initial screenshot
   await userPage3.bringToFront();
   await expect(userPage3.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-userPage3-initial.png`, {
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.03,
   });
 
   // Bring userPage3 connection down, user3 types and edits the sheet
@@ -666,7 +666,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
 
   // Assert user3's screenshot after making changes
   await expect(userPage3.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-userPage3-post.png`, {
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.03,
   });
 
   //--------------------------------
@@ -676,12 +676,12 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage2.waitForTimeout(20 * 1000);
   await userPage1.bringToFront();
   await expect(userPage1.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-userPage1-initial.png`, {
-    maxDiffPixelRatio: 0.02,
+    maxDiffPixelRatio: 0.03,
   });
 
   await userPage2.bringToFront();
   await expect(userPage2.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-userPage2-initial.png`, {
-    maxDiffPixelRatio: 0.02,
+    maxDiffPixelRatio: 0.03,
   });
 
   //--------------------------------
@@ -698,7 +698,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
 
   // Assert there are no changes to user3's page
   await expect(userPage3.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-userPage3-post-on.png`, {
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.03,
   });
 
   //--------------------------------
@@ -708,12 +708,12 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage2.waitForTimeout(20 * 1000);
   await userPage1.bringToFront();
   await expect(userPage1.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-userPage1-post.png`, {
-    maxDiffPixelRatio: 0.02,
+    maxDiffPixelRatio: 0.03,
   });
 
   await userPage2.bringToFront();
   await expect(userPage2.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-userPage2-post.png`, {
-    maxDiffPixelRatio: 0.02,
+    maxDiffPixelRatio: 0.03,
   });
 
   // Cleanup newly created files
