@@ -99,9 +99,7 @@ impl A1Selection {
         columns: Vec<String>,
         a1_context: &A1Context,
     ) -> Option<Self> {
-        let Some(table_entry) = a1_context.try_table(table_name) else {
-            return None;
-        };
+        let table_entry = a1_context.try_table(table_name)?;
         if columns.is_empty() {
             return None;
         }

@@ -48,11 +48,9 @@ impl CellRefRange {
         match self {
             CellRefRange::Sheet { range } => {
                 let adjust = RefAdjust::new_translate(dx, dy);
-                if let Some(new_range) = range.saturating_adjust(adjust) {
-                    Some(Self::Sheet { range: new_range })
-                } else {
-                    None
-                }
+                range
+                    .saturating_adjust(adjust)
+                    .map(|new_range| Self::Sheet { range: new_range })
             }
             other => Some(other),
         }
