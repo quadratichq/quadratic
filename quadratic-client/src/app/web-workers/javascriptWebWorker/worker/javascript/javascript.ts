@@ -148,8 +148,8 @@ export class Javascript {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
             if (cellsBuffer) {
               const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
-              const length = cellsUint8Array.length;
-              Atomics.store(int32View, 1, length);
+              const byteLength = cellsUint8Array.byteLength;
+              Atomics.store(int32View, 1, byteLength);
               const id = this.id++;
               this.getCellsResponses[id] = cellsUint8Array;
               Atomics.store(int32View, 2, id);

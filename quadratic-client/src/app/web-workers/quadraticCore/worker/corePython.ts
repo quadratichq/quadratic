@@ -61,11 +61,7 @@ class CorePython {
     let responseUint8Array: Uint8Array;
     try {
       responseUint8Array = core.getCellsA1(transactionId, a1);
-      const decoder = new TextDecoder();
-      const resultsStringified = decoder.decode(responseUint8Array);
-      console.log(transactionId, a1, resultsStringified);
     } catch (e: any) {
-      console.log(transactionId, a1, JSON.stringify(e));
       const cellA1Response: JsCellsA1Response = {
         values: null,
         error: {
@@ -75,10 +71,10 @@ class CorePython {
       responseUint8Array = toUint8Array(cellA1Response);
     }
 
-    const length = responseUint8Array.length;
+    const byteLength = responseUint8Array.byteLength;
 
-    Atomics.store(int32View, 1, length);
-    if (length !== 0) {
+    Atomics.store(int32View, 1, byteLength);
+    if (byteLength !== 0) {
       const id = this.id++;
       this.getCellsResponses[id] = responseUint8Array;
       Atomics.store(int32View, 2, id);
