@@ -963,7 +963,7 @@ test('References', async ({ page }) => {
       await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-references-post.png');
     } catch (error) {
       // for debugging - start
-      await navigateOnSheet(page, { targetColumn: 'E', targetRow: 3 });
+      await navigateOnSheet(page, { targetColumn: 'I', targetRow: 5 });
       await page.keyboard.press('/');
       await page.getByRole(`tab`, { name: `Console` }).click();
       await page.waitForTimeout(10 * 1000);

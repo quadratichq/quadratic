@@ -28,7 +28,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build, Deploy & Test E2E"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
       - name: Create initial status comment
         uses: peter-evans/create-or-update-comment@v3
@@ -36,10 +36,10 @@ jobs:
           comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview - Build, Deploy & Test E2E
+            ## Preview - Build, Deploy & Tests-E2E
             ⏳ Building images...
             ⏳ Deploy images
-            ⏳ Test E2E
+            ⏳ Tests-E2E
 
             🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
@@ -202,7 +202,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build, Deploy & Test E2E"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
       - name: Update comment on build images failure
         if: failure()
@@ -211,10 +211,10 @@ jobs:
           comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview - Build, Deploy & Test E2E
+            ## Preview - Build, Deploy & Tests-E2E
             ❌ Build images
             ❌ Deploy images
-            ❌ Test E2E
+            ❌ Tests-E2E
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
@@ -257,7 +257,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build, Deploy & Test E2E"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
       - name: Update comment on deploy images start
         uses: peter-evans/create-or-update-comment@v3
@@ -265,10 +265,10 @@ jobs:
           comment-id: ${{ steps.preview-build-deploy-images-comment-start.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview - Build, Deploy & Test E2E
+            ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ⏳ Deploying images...
-            ⏳ Test E2E
+            ⏳ Tests-E2E
 
             🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
@@ -421,7 +421,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build, Deploy & Test E2E"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
       - name: Update comment on deploy images success
         if: success()
@@ -430,10 +430,10 @@ jobs:
           comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview - Build, Deploy & Test E2E
+            ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images
-            ⏳ Test E2E
+            ⏳ Tests-E2E
 
             🔗 URL: https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}
             🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
@@ -447,10 +447,10 @@ jobs:
           comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview - Build, Deploy & Test E2E
+            ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ❌ Deploy images
-            ❌ Test E2E
+            ❌ Tests-E2E
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
@@ -520,7 +520,7 @@ jobs:
           max_attempts: ${{ env.MAX_ATTEMPTS }}
 
   test-e2e-start-comment:
-    name: Test E2E Start Comment
+    name: Tests-E2E Start Comment
     needs: [build_images, deploy_images, verify_deployed_version]
     permissions:
       contents: read
@@ -539,7 +539,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build, Deploy & Test E2E"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
       - name: Update comment on E2E tests start
         uses: peter-evans/create-or-update-comment@v3
@@ -547,10 +547,10 @@ jobs:
           comment-id: ${{ steps.test-e2e-start-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview - Build, Deploy & Test E2E
+            ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images
-            ⏳ Test E2E running...
+            ⏳ Tests-E2E running...
 
             🔗 URL: https://${{ env.e2e_url }}
             🕒 Last deployed: ${{ env.deploy_time }}
@@ -558,7 +558,7 @@ jobs:
           edit-mode: replace
 
   test-e2e-matrix-run:
-    name: Test E2E Matrix Run
+    name: Tests-E2E Matrix Run
     needs: [build_images, deploy_images, verify_deployed_version]
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
@@ -617,7 +617,7 @@ jobs:
           shard_index: ${{ matrix.shardIndex }}
 
   test-e2e-merge-report-and-end-comment:
-    name: Test E2E Merge Report and End Comment
+    name: Tests-E2E Merge Report and End Comment
     needs:
       [
         build_images,
@@ -677,7 +677,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build, Deploy & Test E2E"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
       - name: Update comment on E2E tests end
         if: always()
@@ -686,10 +686,10 @@ jobs:
           comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview - Build, Deploy & Test E2E
+            ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images
-            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} [Test E2E](${{ steps.e2e-test-report.outputs.artifact-url }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} [Tests-E2E](${{ steps.e2e-test-report.outputs.artifact-url }})
 
             🔗 URL: https://${{ env.e2e_url }}
             🕒 Last deployed: ${{ env.deploy_time }}
