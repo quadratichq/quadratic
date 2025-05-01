@@ -414,6 +414,8 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
 
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
 
   // Navigate to 'Settings' to check team member count again

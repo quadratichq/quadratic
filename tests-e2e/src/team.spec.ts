@@ -80,6 +80,8 @@ test('Rename Team', async ({ page: adminPage }) => {
   // Navigate to team URL
   await testUserPage.goto(buildUrl(`/teams/${teamUrl}`));
   await testUserPage.waitForTimeout(2000);
+  await testUserPage.waitForLoadState('domcontentloaded');
+  await testUserPage.waitForLoadState('networkidle');
 
   // Verify that testUser can see the original team name
   await expect(testUserPage.locator(`nav button[aria-haspopup="menu"] :text("${originalTeamName}")`)).toBeVisible({
@@ -190,7 +192,9 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
 
   // Navigate to team URL
   await ownerPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await ownerPage.waitForTimeout(1000);
+  await ownerPage.waitForTimeout(2000);
+  await ownerPage.waitForLoadState('domcontentloaded');
+  await ownerPage.waitForLoadState('networkidle');
   await ownerPage.locator(`nav :text-is("Members")`).click();
 
   //--------------------------------
@@ -231,7 +235,9 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
 
   // Navigate to team URL
   await editUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await editUserPage.waitForTimeout(1000);
+  await editUserPage.waitForTimeout(2000);
+  await editUserPage.waitForLoadState('domcontentloaded');
+  await editUserPage.waitForLoadState('networkidle');
   await editUserPage.locator(`nav :text-is("Members")`).click();
 
   //--------------------------------
@@ -274,7 +280,9 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
 
   // Navigate to team URL
   await viewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await viewUserPage.waitForTimeout(1000);
+  await viewUserPage.waitForTimeout(2000);
+  await viewUserPage.waitForLoadState('domcontentloaded');
+  await viewUserPage.waitForLoadState('networkidle');
   await viewUserPage.locator(`nav :text-is("Members")`).click();
 
   //--------------------------------
@@ -332,8 +340,9 @@ test('Manage Members', async ({ page: adminPage, context }) => {
 
   // Navigate to tea, URL
   await manageUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-
-  await manageUserPage.waitForTimeout(1000);
+  await manageUserPage.waitForTimeout(2000);
+  await manageUserPage.waitForLoadState('domcontentloaded');
+  await manageUserPage.waitForLoadState('networkidle');
   await manageUserPage.locator(`nav :text-is("Members")`).click();
 
   //--------------------------------
@@ -548,6 +557,8 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   // Navigate to team URL
   await ownerPage.goto(buildUrl(`/teams/${teamUrl}`));
   await ownerPage.waitForTimeout(2000);
+  await ownerPage.waitForLoadState('domcontentloaded');
+  await ownerPage.waitForLoadState('networkidle');
   await ownerPage.locator(`nav :text-is("Members")`).click();
 
   // Owner leaves the team
@@ -583,6 +594,8 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   // Navigate to team URL
   await editUserPage.goto(buildUrl(`/teams/${teamUrl}`));
   await editUserPage.waitForTimeout(2000);
+  await editUserPage.waitForLoadState('domcontentloaded');
+  await editUserPage.waitForLoadState('networkidle');
   await editUserPage.locator(`nav :text-is("Members")`).click();
 
   // Can edit user leaves the team
@@ -618,6 +631,8 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   // Navigate to team URL
   await viewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
   await viewUserPage.waitForTimeout(2000);
+  await viewUserPage.waitForLoadState('domcontentloaded');
+  await viewUserPage.waitForLoadState('networkidle');
   await viewUserPage.locator(`nav :text-is("Members")`).click();
 
   // Can view user leaves the team
@@ -707,7 +722,8 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
 
   // Navigate to team URL
   await testUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await testUserPage.waitForTimeout(5 * 1000);
+  await testUserPage.waitForTimeout(2000);
+  await testUserPage.waitForLoadState('domcontentloaded');
   await testUserPage.waitForLoadState('networkidle');
 
   // Verify that testUser can access the team files
@@ -1013,6 +1029,8 @@ test('Can View Members are Unable to Invite Members', async ({ page: adminUserPa
   // Navigate to team URL
   await canViewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
   await canViewUserPage.waitForTimeout(2000);
+  await canViewUserPage.waitForLoadState('domcontentloaded');
+  await canViewUserPage.waitForLoadState('networkidle');
   await canViewUserPage.locator(`nav :text-is("Members")`).click();
 
   //--------------------------------
@@ -1091,7 +1109,9 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   await canViewUserPage.reload();
   // Navigate to team URL
   await canViewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await canViewUserPage.waitForTimeout(1000);
+  await canViewUserPage.waitForTimeout(2000);
+  await canViewUserPage.waitForLoadState('domcontentloaded');
+  await canViewUserPage.waitForLoadState('networkidle');
 
   // Click on Filter by name
   await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click();

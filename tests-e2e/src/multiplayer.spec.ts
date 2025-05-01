@@ -56,6 +56,8 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
+  await userPage2.waitForLoadState('networkidle');
   await userPage2.locator(`a:has-text("${fileName}")`).click();
 
   // Third user navigates into file
@@ -65,6 +67,8 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage3.waitForTimeout(2000);
+  await userPage3.waitForLoadState('domcontentloaded');
+  await userPage3.waitForLoadState('networkidle');
   await userPage3.locator(`a:has-text("${fileName}")`).click();
 
   // First user navigates into file
@@ -426,6 +430,8 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
+  await userPage2.waitForLoadState('networkidle');
   await userPage2.locator(`a:has-text("${fileName}")`).click();
 
   // Third user navigates into file
@@ -434,6 +440,8 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage3.waitForTimeout(2000);
+  await userPage3.waitForLoadState('domcontentloaded');
+  await userPage3.waitForLoadState('networkidle');
   await userPage3.locator(`a:has-text("${fileName}")`).click();
 
   // First user navigates into file
@@ -582,6 +590,8 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
+  await userPage2.waitForLoadState('networkidle');
   await userPage2.locator(`a:has-text("${fileName}")`).click();
 
   // Third user navigates into file
@@ -591,6 +601,8 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage3.waitForTimeout(2000);
+  await userPage3.waitForLoadState('domcontentloaded');
+  await userPage3.waitForLoadState('networkidle');
   await userPage3.locator(`a:has-text("${fileName}")`).click();
 
   // First user navigates into file
@@ -770,6 +782,8 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
   await navigateIntoFile(userPage2, { fileName });
 
@@ -779,6 +793,8 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.waitForTimeout(2000);
+  await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
   await navigateIntoFile(userPage3, { fileName });
 
@@ -956,6 +972,8 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
+  await userPage2.waitForLoadState('networkidle');
   await userPage2.locator(`a:has-text("${fileName}")`).click();
 
   // Third user navigates into file
@@ -965,6 +983,8 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage3.waitForTimeout(2000);
+  await userPage3.waitForLoadState('domcontentloaded');
+  await userPage3.waitForLoadState('networkidle');
   await userPage3.locator(`a:has-text("${fileName}")`).click();
 
   //--------------------------------
@@ -1126,6 +1146,8 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
+  await userPage2.waitForLoadState('networkidle');
   await userPage2.locator(`a:has-text("${fileName}")`).click();
 
   // Third user navigates into file
@@ -1135,6 +1157,9 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage3.waitForTimeout(2000);
+  await userPage3.waitForLoadState('domcontentloaded');
+  await userPage3.waitForLoadState('networkidle');
+
   await userPage3.locator(`a:has-text("${fileName}")`).click();
 
   // Reload all pages so that user icons will show on each one

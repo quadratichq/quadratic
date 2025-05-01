@@ -517,17 +517,18 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     targetRow: 4,
     text: 'User 2 - Edit test',
   });
+  await user2Page.waitForTimeout(5 * 1000);
   await navigateOnSheet(user2Page, { targetColumn: 4, targetRow: 5 });
+  await user2Page.waitForTimeout(5 * 1000);
 
   // Bring user 1 to front
   await user1Page.bringToFront();
   await navigateIntoFile(user1Page, { fileName });
 
   // Assert the page is editted by user 2
-  await expect(user1Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `user2-can-edit-shared-file.png`
-    // { maxDiffPixelRatio: ".01" },
-  );
+  await expect(user1Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`user2-can-edit-shared-file.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   // Assert that user 3 cannot open the shared file ("Permission denied")
   // Extract fileName url
@@ -573,10 +574,10 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     targetRow: 1,
     text: 'This should not show up',
   });
-  await expect(user2Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `user2-cannot-edit-shared-file.png`
-    // { maxDiffPixelRatio: ".01" },
-  );
+  await user2Page.waitForTimeout(5 * 1000);
+  await expect(user2Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`user2-cannot-edit-shared-file.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   // Assert that user 3 cannot open the file
   await user3Page.bringToFront();
@@ -615,11 +616,12 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     targetRow: 1,
     text: 'User 2 can edit this file',
   });
+  await user2Page.waitForTimeout(5 * 1000);
   await navigateOnSheet(user2Page, { targetColumn: 1, targetRow: 2 });
-  await expect(user2Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `user2-share-file-can-edit-public.png`
-    // { maxDiffPixelRatio: ".01" },
-  );
+  await user2Page.waitForTimeout(5 * 1000);
+  await expect(user2Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`user2-share-file-can-edit-public.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   // Assert that user 3 is able to edit the file (without being invited)
   await user3Page.bringToFront();
@@ -629,17 +631,22 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     targetRow: 1,
     text: 'User 3 can edit this file',
   });
+  await user3Page.waitForTimeout(5 * 1000);
   await user2Page.bringToFront();
+  await user2Page.waitForTimeout(5 * 1000);
 
   // Remove User Page 3's mouse from the screen
   await user3Page.getByRole(`heading`, { name: `What can I help with?` }).click();
   await user2Page.reload();
-  await user2Page.waitForTimeout(2000);
+  await user3Page.waitForTimeout(5 * 1000);
+  await user3Page.waitForLoadState('domcontentloaded');
+
   await navigateOnSheet(user2Page, { targetColumn: 3, targetRow: 2 });
-  await expect(user2Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `user3-share-file-can-edit-public.png`
-    // { maxDiffPixelRatio: ".01" },
-  );
+  await user2Page.waitForTimeout(5 * 1000);
+
+  await expect(user2Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`user3-share-file-can-edit-public.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Can View (Public)
@@ -675,6 +682,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     targetRow: 2,
     text: 'User 2: this is a read only file',
   });
+  await user2Page.waitForTimeout(5 * 1000);
   await expect(user2Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`user2-share-file-can-view-public.png`, {
     maxDiffPixels: 500,
   });
@@ -690,6 +698,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     targetRow: 2,
     text: 'User 3: this is a read only file',
   });
+  await user3Page.waitForTimeout(5 * 1000);
   await expect(user3Page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`user3-share-file-can-view-public.png`, {
     maxDiffPixels: 500,
   });

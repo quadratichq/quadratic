@@ -197,3 +197,24 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
 
   await page.getByRole(`button`, { name: `Close` }).click();
 };
+
+/**
+ * Opens code editor and the console tab for debugging
+ */
+type ShowCodeEditorConsoleOptions = {
+  targetColumn: number | string;
+  targetRow: number;
+};
+export const showCodeEditorConsole = async (page: Page, { targetColumn, targetRow }: ShowCodeEditorConsoleOptions) => {
+  // Move cursor to target cell
+  await navigateOnSheet(page, { targetColumn, targetRow });
+  await page.waitForTimeout(3000);
+
+  // Press / to open code editor
+  await page.keyboard.press('/');
+  await page.waitForTimeout(3000);
+
+  // Click on 'Console' tab
+  await page.getByRole(`tab`, { name: `Console` }).click();
+  await page.waitForTimeout(3000);
+};
