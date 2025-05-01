@@ -681,7 +681,7 @@ jobs:
       - name: Upload Report to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync playwright-report ${{ env.s3_dir }}/pr-${{ github.event.pull_request.number }} --delete --force
+          aws s3 sync playwright-report ${{ env.s3_dir }}/pr-${{ github.event.pull_request.number }} --delete
 
       - name: Find Build & Deploy Images Comment
         if: always()
