@@ -293,7 +293,10 @@ export class MultiplayerServer {
         break;
 
       case 'CurrentTransaction':
-        multiplayerCore.receiveCurrentTransaction(data.sequence_num);
+        // wait 2 seconds before sending the current transaction
+        setTimeout(() => {
+          multiplayerCore.receiveCurrentTransaction(data.sequence_num);
+        }, 2000);
         break;
 
       case 'Error':
