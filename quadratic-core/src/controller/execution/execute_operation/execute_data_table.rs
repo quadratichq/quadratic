@@ -1,6 +1,6 @@
 use crate::{
     ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
-    a1::A1Selection,
+    a1::{A1Context, A1Selection},
     cell_values::CellValues,
     cellvalue::Import,
     controller::{
@@ -1140,6 +1140,7 @@ impl GridController {
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_result(data_table_pos)?;
+            let table_name = data_table.name.to_display().clone();
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
@@ -1342,6 +1343,22 @@ impl GridController {
                 reverse_operations,
                 Some(&data_table_rect),
             );
+
+            if flatten {
+                // Move any validations that were tied to the table to the sheet
+                let mut a1_context = A1Context::default();
+                if let Some(table) = self.a1_context.try_table(&table_name) {
+                    // we only need the table in a separate a1_context (this is
+                    // done to avoid borrow issues below)
+                    a1_context.table_map.insert(table.clone());
+                    let sheet = self.try_sheet_mut_result(sheet_id)?;
+                    transaction.reverse_operations.extend(
+                        sheet
+                            .validations
+                            .transfer_to_sheet(&table_name, &a1_context),
+                    );
+                }
+            }
 
             return Ok(());
         };
