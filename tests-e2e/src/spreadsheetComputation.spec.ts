@@ -573,7 +573,6 @@ test('Javascript Formulas', async ({ page }) => {
   // Loop to run 5 times, fail the test if even one screenshot assertion fails
   // This is added due the flakiness of run all code cells in the current sheet, Quadratic is aware of this issue.
   for (let attempt = 1; attempt <= 5; attempt++) {
-    await page.waitForTimeout(6000);
     try {
       // Click search icon
       await page.getByRole(`button`, { name: `manage_search` }).click();
@@ -944,8 +943,6 @@ test('References', async ({ page }) => {
   // Loop to run 5 times, fail the test if even one screenshot assertion fails
   // This is added due the flakiness of run all code cells in the current sheet, Quadratic is aware of this issue.
   for (let attempt = 1; attempt <= 5; attempt++) {
-    await page.waitForTimeout(6000);
-
     try {
       // Click search icon
       await page.getByRole(`button`, { name: `manage_search` }).click();
