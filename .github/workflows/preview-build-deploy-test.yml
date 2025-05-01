@@ -681,7 +681,7 @@ jobs:
       - name: Upload Report to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync playwright-report ${{ env.s3_dir }}/pr-${{ github.event.pull_request.number }} --delete
+          aws s3 sync playwright-report ${{ env.s3_url }}/pr-${{ github.event.pull_request.number }} --delete
 
       - name: Find Build & Deploy Images Comment
         if: always()
@@ -702,7 +702,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images
-            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E [View](${{ env.s3_dir }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/) [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E [View](${{ env.s3_url }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/) [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
 
             🔗 URL: https://${{ env.e2e_url }}
             🕒 Last deployed: ${{ env.deploy_time }}
