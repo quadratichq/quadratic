@@ -191,6 +191,8 @@ Use this tool to add a new structured data table to the current open sheet. Prov
 - A unique table name (e.g., "customer_orders")
 - A 2D array of string values, where the first row is the header
 
+This tool is used for adding data, not for calculations. Use set_code_cell_value for calculations. In normal scenarios do not make calculations and place the results in a table using this tool; use set_code_cell_value for that. 
+
 When adding sample data always fill in all the sample data cells, unless the user asks you to leave space. NEVER leave space for Formula inputs since they can't be added to data tables.\n
 `,
   },
@@ -232,7 +234,7 @@ Values may include text, numbers, dates, or blanks. To clear a cell, pass an emp
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Inserts code into a specified code cell and executes it on the current open sheet. Requires the code language, the cell position (A1 notation), and the code string. Only use this tool for adding executable code. Do not use this for adding raw data to the sheet. Do not use this for adding formulas or code to tables; formulas and code do not work in tables. Code output may include visualizations or results that spill into adjacent cells; think about placement so as to not intersect existing content, avoid these so-called spills.
+Inserts code into a specified code cell and executes it on the current open sheet. Requires the code language, the cell position (A1 notation), and the code string. Use this tool when performing calculations; do not try to perform calculations using add_data_table tool. Only use this tool for adding executable code. Do not use this for adding raw data to the sheet. Do not use this for adding formulas or code to tables; formulas and code do not work in tables. Code output may include visualizations or results that spill into adjacent cells; think about placement so as to not intersect existing content, avoid these so-called spills.
 `,
     parameters: {
       type: 'object',
@@ -272,10 +274,10 @@ Placement rules:
 - Non-chart outputs should keep in mind the space they take up based on the corresponding data type 
 
 Do NOT:
-- Use this to add static values or formulas (use set_cell_values instead)
+- Use this to add static values (use set_cell_values for that instead)
 - Place code or formulas inside data tables
 - Use conditionals to return data (Python only returns final unconditional expression)
-- Prefix formulas with = (omit it in Formula cells)
+- Prefix formulas with = (omit it in Formula cells created in this tool)
  `,
   },
   [AITool.MoveCells]: {
