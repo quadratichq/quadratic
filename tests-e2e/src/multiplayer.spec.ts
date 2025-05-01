@@ -3,7 +3,7 @@ import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { inviteUserToTeam } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
-import { cleanUpFiles, createFile } from './helpers/file.helpers';
+import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
 import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Action Visibility', async ({ page: userPage1 }) => {
@@ -771,14 +771,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
   await userPage2.waitForLoadState('networkidle');
-  await userPage2.locator(`a:has-text("${fileName}")`).click();
-
-  // Close AI chat box as needed
-  try {
-    await userPage2.getByRole(`button`, { name: `close` }).first().click({ timeout: 10000 });
-  } catch (e) {
-    console.error(e);
-  }
+  await navigateIntoFile(userPage2, { fileName });
 
   // Third user navigates into file
   await userPage3.bringToFront();
@@ -786,15 +779,8 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
-  await userPage2.waitForLoadState('networkidle');
-  await userPage3.locator(`a:has-text("${fileName}")`).click();
-
-  // Close AI chat box as needed
-  try {
-    await userPage3.getByRole(`button`, { name: `close` }).first().click({ timeout: 10000 });
-  } catch (e) {
-    console.error(e);
-  }
+  await userPage3.waitForLoadState('networkidle');
+  await navigateIntoFile(userPage3, { fileName });
 
   //--------------------------------
   // Act:
@@ -802,14 +788,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   // Move Mouse as the first user
   await userPage1.bringToFront();
   await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click();
-  await userPage1.locator(`a:has-text("${fileName}")`).click();
-
-  // Close AI chat box as needed
-  try {
-    await userPage1.getByRole(`button`, { name: `close` }).first().click({ timeout: 10000 });
-  } catch (e) {
-    console.error(e);
-  }
+  await navigateIntoFile(userPage1, { fileName });
 
   await navigateOnSheet(userPage1, { targetColumn: 5, targetRow: 1 });
   await userPage1.keyboard.press('1');
@@ -859,37 +838,21 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage3.bringToFront();
   await userPage3.goBack();
   await userPage3.reload();
-  await userPage3.locator(`a:has-text("${fileName}")`).click();
-  // Close AI chat box as needed
-  try {
-    await userPage3.getByRole(`button`, { name: `close` }).first().click({ timeout: 10000 });
-  } catch (e) {
-    console.error(e);
-  }
+  await navigateIntoFile(userPage3, { fileName });
 
   // Reload both first and second user's pages
   // Second user navigates into file
   await userPage2.bringToFront();
   await userPage2.goBack();
   await userPage2.reload();
-  await userPage2.locator(`a:has-text("${fileName}")`).click();
-  // Close AI chat box as needed
-  try {
-    await userPage2.getByRole(`button`, { name: `close` }).first().click({ timeout: 10000 });
-  } catch (e) {
-    console.error(e);
-  }
+  await navigateIntoFile(userPage2, { fileName });
 
   // Third user navigates into file
   await userPage1.bringToFront();
   await userPage1.goBack();
   await userPage1.reload();
-  await userPage1.locator(`a:has-text("${fileName}")`).click();
-  try {
-    await userPage1.getByRole(`button`, { name: `close` }).first().click({ timeout: 10000 });
-  } catch (e) {
-    console.error(e);
-  }
+  await navigateIntoFile(userPage1, { fileName });
+
   // Dedicated wait for timeout
   await userPage1.waitForTimeout(5000);
   await userPage1.mouse.move(300, 0);

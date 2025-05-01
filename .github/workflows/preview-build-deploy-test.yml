@@ -560,7 +560,7 @@ jobs:
   test-e2e-matrix-run:
     name: Tests-E2E Matrix Run
     needs: [build_images, deploy_images, verify_deployed_version]
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 60
     strategy:

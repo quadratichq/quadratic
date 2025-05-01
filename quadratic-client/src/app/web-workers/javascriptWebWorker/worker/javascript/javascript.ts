@@ -27,7 +27,7 @@ export class Javascript {
   private id = 0;
   private getCellsResponses: Record<number, Uint8Array> = {};
 
-  state: LanguageState = 'loading';
+  private state: LanguageState = 'loading';
 
   // current running transaction
   transactionId?: string;

@@ -46,6 +46,9 @@ test.skip('AI Message Counter', async ({ page }) => {
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
 
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
@@ -119,6 +122,9 @@ test.skip('AI Message Counter', async ({ page }) => {
   await page.locator(`[href="/"]`).click();
   await page.getByRole(`link`, { name: `settings Settings` }).click();
 
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
@@ -186,6 +192,9 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
 
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
@@ -240,6 +249,9 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
 
   // Click 'Add payment method' to add an additional payment method
   await page.getByRole(`link`, { name: `Add payment method` }).click();
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('domcontentloaded');
 
   // Assert that we're currently on a page to add a new payment method
   await expect(page).toHaveURL(/pay/);
@@ -345,6 +357,9 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
 
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
@@ -403,6 +418,9 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
 
   // Navigate to 'Settings' to check team member count again
   await page.getByRole(`link`, { name: `settings Settings` }).click();
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Locate the text element that starts with 'Team members (manage)' followed by a number
   // Store the text content (e.g., 'Team members (manage)1'
@@ -494,6 +512,9 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
 
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
   //--------------------------------
   // Act:
   //--------------------------------
@@ -576,6 +597,9 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -692,6 +716,9 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
 
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
@@ -719,6 +746,9 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
@@ -774,6 +804,9 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
+
+  await page.waitForTimeout(5 * 1000);
+  await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);

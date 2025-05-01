@@ -97,6 +97,9 @@ export const upgradeToProPlan = async (page: Page) => {
     // Navigate to the Settings page by clicking the 'Settings' link
     await page.getByRole('link', { name: 'settings Settings' }).click();
 
+    await page.waitForTimeout(5 * 1000);
+    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
     // Assert page is currently displaying Settings
     await expect(page).toHaveURL(/settings/);
     await expect(page).toHaveTitle(/settings/);
@@ -189,6 +192,9 @@ export const upgradeToProPlan = async (page: Page) => {
     // Navigate to the Settings page by clicking the 'Settings' link
     await page.getByRole('link', { name: 'settings Settings' }).click();
 
+    await page.waitForTimeout(5 * 1000);
+    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+
     // Assert page is currently displaying Settings
     await expect(page).toHaveURL(/settings/);
     await expect(page).toHaveTitle(/settings/);
@@ -277,6 +283,9 @@ export const deleteMemberFromProPlan = async (
 
       // Navigate back to Settings page
       await page.getByRole(`link`, { name: `settings Settings` }).click();
+
+      await page.waitForTimeout(5 * 1000);
+      await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
 
       // Locate the text element that starts with 'Team members (manage)' followed by a number
       // Store the text content (e.g., 'Team members (manage)1'
