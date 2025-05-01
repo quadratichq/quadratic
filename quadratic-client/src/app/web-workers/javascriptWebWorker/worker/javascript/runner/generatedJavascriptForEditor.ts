@@ -259,7 +259,7 @@ export class q {
     self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
     let result = Atomics.wait(int32View, 0, 0);
     const length = int32View[1];
-    if (result !== 'ok' || length === 0) return [];
+    if (result !== 'ok' || length === 0) throw new Error('Error in get cells a1 length');
 
     const id = int32View[2];
 
@@ -270,7 +270,7 @@ export class q {
 
     self.postMessage({ type: 'getCellsData', id, sharedBuffer });
     result = Atomics.wait(int32View, 0, 0);
-    if (result !== 'ok') return [];
+    if (result !== 'ok')  throw new Error("Error in get cells a1 data");
 
     let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
 

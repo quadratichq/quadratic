@@ -29,8 +29,6 @@ export class Javascript {
 
   private state: LanguageState = 'loading';
 
-  // current running transaction
-  transactionId?: string;
   column?: number;
   row?: number;
   private withLineNumbers = true;
@@ -99,7 +97,6 @@ export class Javascript {
       current: this.coreJavascriptToCodeRun(message),
       awaitingExecution: this.awaitingExecution,
     });
-    this.transactionId = message.transactionId;
     this.column = message.x;
     this.row = message.y;
 
@@ -130,7 +127,7 @@ export class Javascript {
         // should catch all user code errors)
         javascriptErrorResult(message.transactionId, e.message);
         this.state = 'ready';
-        setTimeout(this.next, 0);
+        this.next();
       };
 
       runner.onmessage = (e: MessageEvent<RunnerJavascriptMessage>) => {
@@ -146,10 +143,10 @@ export class Javascript {
           );
           cleanup();
           this.state = 'ready';
-          setTimeout(this.next, 0);
+          this.next();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
-          this.api.getCellsA1(a1).then((cellsBuffer) => {
+          this.api.getCellsA1(message.transactionId, a1).then((cellsBuffer) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
             if (cellsBuffer) {
               const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
@@ -164,8 +161,6 @@ export class Javascript {
               Atomics.store(int32View, 1, 0);
               Atomics.store(int32View, 0, 1);
               Atomics.notify(int32View, 0, 1);
-              this.state = 'ready';
-              setTimeout(this.next, 0);
             }
           });
         } else if (e.data.type === 'getCellsData') {
@@ -208,19 +203,21 @@ export class Javascript {
           if (e.data.console) {
             errorMessage += '\n' + e.data.console;
           }
-          cleanup();
           javascriptErrorResult(message.transactionId, errorMessage, errorLine);
+          cleanup();
           this.state = 'ready';
-          setTimeout(this.next, 0);
+          this.next();
         } else {
           cleanup();
+          this.state = 'ready';
+          this.next();
           throw new Error('Unknown message type from javascript runner');
         }
       };
     } catch (e: any) {
       javascriptErrorResult(message.transactionId, e.message, e.stack);
       this.state = 'ready';
-      setTimeout(this.next, 0);
+      this.next();
       return;
     }
   };
