@@ -29,8 +29,6 @@ export class Javascript {
 
   private state: LanguageState = 'loading';
 
-  column?: number;
-  row?: number;
   private withLineNumbers = true;
 
   constructor() {
@@ -48,7 +46,7 @@ export class Javascript {
     });
 
     this.state = 'ready';
-    this.next();
+    return this.next();
   };
 
   private codeRunToCoreJavascript = (codeRun: CodeRun): CoreJavascriptRun => ({
@@ -66,39 +64,40 @@ export class Javascript {
     code: coreJavascriptRun.code,
   });
 
-  private next = async () => {
+  private next = (): Promise<void> | undefined => {
     if (this.state === 'ready' && this.awaitingExecution.length > 0) {
       const run = this.awaitingExecution.shift();
       if (run) {
-        await this.run(this.codeRunToCoreJavascript(run));
+        return this.run(this.codeRunToCoreJavascript(run));
       }
     } else {
       javascriptClient.sendState('ready');
     }
   };
 
-  run = async (message: CoreJavascriptRun, withLineNumbers = true) => {
+  run = async (message: CoreJavascriptRun, withLineNumbers = true): Promise<void> => {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
       return;
     }
+
+    this.state = 'running';
+    javascriptClient.sendState('running', {
+      current: this.coreJavascriptToCodeRun(message),
+      awaitingExecution: this.awaitingExecution,
+    });
+
+    this.withLineNumbers = withLineNumbers;
 
     const transformedCode = transformCode(message.code);
     if (withLineNumbers) {
       const error = await javascriptFindSyntaxError(transformedCode);
       if (error) {
         javascriptErrorResult(message.transactionId, error.text, error.lineNumber);
-        return;
+        this.state = 'ready';
+        return this.next();
       }
     }
-
-    this.withLineNumbers = withLineNumbers;
-    javascriptClient.sendState('running', {
-      current: this.coreJavascriptToCodeRun(message),
-      awaitingExecution: this.awaitingExecution,
-    });
-    this.column = message.x;
-    this.row = message.y;
 
     try {
       const proxyUrl = `${javascriptClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
@@ -119,15 +118,14 @@ export class Javascript {
         cleanup();
 
         if (this.withLineNumbers) {
-          this.run(message, false);
-          return;
+          return this.run(message, false);
         }
 
         // todo: handle worker errors (although there should not be any as the Worker
         // should catch all user code errors)
         javascriptErrorResult(message.transactionId, e.message);
         this.state = 'ready';
-        this.next();
+        return this.next();
       };
 
       runner.onmessage = (e: MessageEvent<RunnerJavascriptMessage>) => {
@@ -143,7 +141,7 @@ export class Javascript {
           );
           cleanup();
           this.state = 'ready';
-          this.next();
+          return this.next();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
           this.api.getCellsA1(message.transactionId, a1).then((cellsBuffer) => {
@@ -177,6 +175,8 @@ export class Javascript {
           Atomics.store(int32View, 0, 1);
           Atomics.notify(int32View, 0, 1);
         } else if (e.data.type === 'error') {
+          cleanup();
+
           let errorLine: number | undefined;
           let errorColumn: number | undefined;
           let errorMessage = e.data.error;
@@ -203,22 +203,21 @@ export class Javascript {
           if (e.data.console) {
             errorMessage += '\n' + e.data.console;
           }
+
           javascriptErrorResult(message.transactionId, errorMessage, errorLine);
-          cleanup();
           this.state = 'ready';
-          this.next();
+          return this.next();
         } else {
+          console.error('[javascript] Unknown message type:', e.data);
           cleanup();
           this.state = 'ready';
-          this.next();
-          throw new Error('Unknown message type from javascript runner');
+          return this.next();
         }
       };
     } catch (e: any) {
       javascriptErrorResult(message.transactionId, e.message, e.stack);
       this.state = 'ready';
-      this.next();
-      return;
+      return this.next();
     }
   };
 }
