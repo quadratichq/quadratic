@@ -341,6 +341,25 @@ class Core {
     });
   }
 
+  receiveTransactionAck(transaction_id: string, sequence_num: number) {
+    return new Promise(async (resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        this.gridController.receiveMultiplayerTransactionAck(transaction_id, sequence_num);
+        offline.markTransactionSent(transaction_id);
+
+        // sends multiplayer synced to the client, to proceed from file loading screen
+        coreClient.sendMultiplayerSynced();
+
+        // update the multiplayer state
+        await this.updateMultiplayerState();
+      } catch (e) {
+        this.handleCoreError('receiveTransactionAck', e);
+      }
+      resolve(undefined);
+    });
+  }
+
   receiveTransactions(receive_transactions: MultiplayerCoreReceiveTransactions) {
     return new Promise(async (resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -365,24 +384,6 @@ class Core {
         await this.updateMultiplayerState();
       } catch (e) {
         this.handleCoreError('receiveTransactions', e);
-      }
-      resolve(undefined);
-    });
-  }
-
-  receiveTransactionAck(transaction_id: string, sequence_num: number) {
-    return new Promise(async (resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        this.gridController.receiveMultiplayerTransactionAck(transaction_id, sequence_num);
-
-        // sends multiplayer synced to the client, to proceed from file loading screen
-        coreClient.sendMultiplayerSynced();
-
-        // update the multiplayer state
-        await this.updateMultiplayerState();
-      } catch (e) {
-        this.handleCoreError('receiveTransactionAck', e);
       }
       resolve(undefined);
     });
