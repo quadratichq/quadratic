@@ -195,7 +195,7 @@ impl GridController {
     pub fn execute_resize_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeColumns {
             sheet_id,
-            column_widths: column_heights,
+            column_widths,
         } = op
         {
             let Some(sheet) = self.try_sheet_mut(sheet_id) else {
@@ -203,7 +203,7 @@ impl GridController {
                 return;
             };
 
-            let mut old_column_heights: Vec<JsColumnWidth> = column_heights
+            let mut old_column_widths: Vec<JsColumnWidth> = column_widths
                 .iter()
                 .map(|JsColumnWidth { column, width }| {
                     let old_size = sheet.offsets.set_column_width(*column, *width);
@@ -214,9 +214,9 @@ impl GridController {
                 })
                 .collect();
 
-            old_column_heights.sort_by_key(|JsColumnWidth { column, .. }| *column);
+            old_column_widths.sort_by_key(|JsColumnWidth { column, .. }| *column);
 
-            if old_column_heights == column_heights {
+            if old_column_widths == column_widths {
                 return;
             }
 
@@ -224,18 +224,18 @@ impl GridController {
                 .forward_operations
                 .push(Operation::ResizeColumns {
                     sheet_id,
-                    column_widths: column_heights.clone(),
+                    column_widths: column_widths.clone(),
                 });
 
             transaction
                 .reverse_operations
                 .push(Operation::ResizeColumns {
                     sheet_id,
-                    column_widths: old_column_heights,
+                    column_widths: old_column_widths,
                 });
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-                column_heights
+                column_widths
                     .iter()
                     .for_each(|&JsColumnWidth { column, width }| {
                         transaction.offsets_modified(sheet_id, Some(column), None, Some(width));
@@ -243,7 +243,7 @@ impl GridController {
             }
 
             if !transaction.is_server() {
-                column_heights.iter().any(|JsColumnWidth { column, .. }| {
+                column_widths.iter().any(|JsColumnWidth { column, .. }| {
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: *column,
                         y: 0,
