@@ -962,26 +962,18 @@ test('References', async ({ page }) => {
       // Take final screenshot
       await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-references-post.png');
     } catch (error) {
+      // for debugging - start
+      await navigateOnSheet(page, { targetColumn: 'E', targetRow: 3 });
+      await page.keyboard.press('/');
+      await page.getByRole(`tab`, { name: `Console` }).click();
+      await page.waitForTimeout(10 * 1000);
+      // for debugging - end
+
       // Fail the entire test on the first failure
       void error;
       throw new Error(`Test failed: Screenshot assertion failed on attempt ${attempt}.`);
     }
   }
-
-  // for debugging - start
-  await navigateOnSheet(page, { targetColumn: 'J', targetRow: 4 });
-
-  // Press '/' on keyboard to open up pop up
-  await page.keyboard.press('/');
-
-  // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click();
-
-  // Assert formatting appears correct
-  await expect(page.locator(`[role="tabpanel"]`)).toHaveScreenshot(`javascript_console_log.png`, {
-    maxDiffPixels: 3000,
-  });
-  // for debugging - end
 
   //--------------------------------
   // Clean up:
@@ -1985,6 +1977,18 @@ test('Types: Numbers and Strings', async ({ page }) => {
     await page.locator(`[role="option"]`).click();
     await page.waitForTimeout(6000);
 
+    // for debugging - start
+    await navigateOnSheet(page, { targetColumn: 'E', targetRow: 12 });
+    await page.keyboard.press('/');
+    await page.getByRole(`tab`, { name: `Console` }).click();
+    await page.waitForTimeout(10 * 1000);
+
+    await navigateOnSheet(page, { targetColumn: 'E', targetRow: 3 });
+    await page.keyboard.press('/');
+    await page.getByRole(`tab`, { name: `Console` }).click();
+    await page.waitForTimeout(10 * 1000);
+    // for debugging - end
+
     //--------------------------------
     // Assert:
     //--------------------------------
@@ -1997,21 +2001,6 @@ test('Types: Numbers and Strings', async ({ page }) => {
       { maxDiffPixelRatio: 0.01 }
     );
   }
-
-  // for debugging - start
-  await navigateOnSheet(page, { targetColumn: 'E', targetRow: 3 });
-
-  // Press '/' on keyboard to open up pop up
-  await page.keyboard.press('/');
-
-  // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click();
-
-  // Assert formatting appears correct
-  await expect(page.locator(`[role="tabpanel"]`)).toHaveScreenshot(`javascript_console_log.png`, {
-    maxDiffPixels: 3000,
-  });
-  // for debugging - end
 
   //--------------------------------
   // Clean up:

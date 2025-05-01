@@ -511,7 +511,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify ${{ matrix.service.name }} Version
+      - name: Verify ${{ matrix.service.name }} version
         uses: ./.github/actions/verify-version
         with:
           service_name: ${{ matrix.service.name }}
