@@ -971,6 +971,7 @@ test('References', async ({ page }) => {
       await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 2 });
       await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 3 });
       await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 4 });
+      await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 5 });
       await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 18 });
       await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 25 });
 
