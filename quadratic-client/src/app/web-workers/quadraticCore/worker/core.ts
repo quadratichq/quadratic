@@ -1523,12 +1523,7 @@ class Core {
 
   getCellsA1(transactionId: string, a1: string): Uint8Array {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    try {
-      return this.gridController.calculationGetCellsA1(transactionId, a1);
-    } catch (e) {
-      this.handleCoreError('getCellsA1', e);
-      return toUint8Array(e);
-    }
+    return this.gridController.calculationGetCellsA1(transactionId, a1);
   }
 
   finiteRectFromSelection(selection: string): Rectangle | undefined {
