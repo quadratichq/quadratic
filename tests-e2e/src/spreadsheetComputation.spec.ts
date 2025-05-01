@@ -912,7 +912,7 @@ test('Read Python Output within Formula', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('References', async ({ page }) => {
+test('References', async ({ page }) => {
   //--------------------------------
   // References
   //--------------------------------

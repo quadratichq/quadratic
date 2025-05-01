@@ -638,8 +638,8 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Remove User Page 3's mouse from the screen
   await user3Page.getByRole(`heading`, { name: `What can I help with?` }).click();
   await user2Page.reload();
-  await user3Page.waitForTimeout(5 * 1000);
-  await user3Page.waitForLoadState('domcontentloaded');
+  await user2Page.waitForTimeout(5 * 1000);
+  await user2Page.waitForLoadState('domcontentloaded');
 
   await navigateOnSheet(user2Page, { targetColumn: 3, targetRow: 2 });
   await user2Page.waitForTimeout(5 * 1000);
