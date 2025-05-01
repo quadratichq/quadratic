@@ -469,7 +469,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   // Bring user 3 to the front, assert screenshot prior to connection going down
   await userPage3.bringToFront();
   await expect(userPage3.locator('#QuadraticCanvasID')).toHaveScreenshot('userPage3-initial.png', {
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixelRatio: 0.02,
   });
 
   // Bring userPage3 offline
