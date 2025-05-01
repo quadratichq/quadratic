@@ -853,14 +853,18 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage1.reload();
   await navigateIntoFile(userPage1, { fileName });
 
+  await userPage3.waitForTimeout(10 * 1000);
+
   // Dedicated wait for timeout
-  await userPage1.waitForTimeout(5000);
+  await userPage1.waitForTimeout(5 * 1000);
   await userPage1.mouse.move(300, 0);
   await userPage1.mouse.down();
   await userPage1.mouse.up();
   await userPage2.mouse.move(300, 0);
   await userPage2.mouse.down();
   await userPage2.mouse.up();
+
+  await userPage3.waitForTimeout(10 * 1000);
 
   //--------------------------------
   // Act:

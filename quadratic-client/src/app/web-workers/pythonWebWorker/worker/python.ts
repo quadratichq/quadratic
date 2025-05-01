@@ -304,10 +304,10 @@ class Python {
 
     codeResult = undefined;
 
+    pythonClient.sendPythonState('ready', { current: undefined });
     this.transactionId = undefined;
     this.state = 'ready';
-    pythonClient.sendPythonState('ready', { current: undefined });
-    setTimeout(this.next, 0);
+    await this.next();
   };
 }
 
