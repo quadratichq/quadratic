@@ -247,14 +247,13 @@ pub(crate) async fn handle_message(
             tracing::trace!("Pushed to pubsub in {:?}", start_push_pubsub.elapsed());
 
             // broadcast the transaction to all users in the room
-            let response = MessageResponse::BinaryTransaction {
+            let response = MessageResponse::TransactionAck {
                 id,
                 file_id,
-                operations,
                 sequence_num,
             };
 
-            broadcast(vec![], file_id, Arc::clone(&state), response, true);
+            broadcast(vec![], file_id, Arc::clone(&state), response, false);
 
             Ok(None)
         }
@@ -329,9 +328,9 @@ pub(crate) async fn handle_message(
                 .unwrap_or_default()
                 + 1;
 
-            tracing::info!("min_sequence_num: {}", min_sequence_num);
-            tracing::info!("sequence_num: {}", sequence_num);
-            tracing::info!("expected_num_transactions: {}", expected_num_transactions);
+            tracing::trace!("min_sequence_num: {}", min_sequence_num);
+            tracing::trace!("sequence_num: {}", sequence_num);
+            tracing::trace!("expected_num_transactions: {}", expected_num_transactions);
 
             let transactions = state
                 .get_messages_from_pubsub(&file_id, min_sequence_num)
@@ -340,7 +339,7 @@ pub(crate) async fn handle_message(
                 .map(|transaction| transaction.into())
                 .collect::<Vec<BinaryTransaction>>();
 
-            tracing::info!("got: {}", transactions.len());
+            tracing::trace!("got: {}", transactions.len());
 
             // we don't have the expected number of transactions
             // send an error to the client so they can reload

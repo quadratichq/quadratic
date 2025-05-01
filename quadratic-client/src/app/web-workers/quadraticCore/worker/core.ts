@@ -366,6 +366,27 @@ class Core {
     });
   }
 
+  receiveTransactionAck(transaction_id: string, sequence_num: number) {
+    return new Promise(async (resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        this.gridController.receiveMultiplayerTransactionAck(transaction_id, sequence_num);
+
+        // sends multiplayer synced to the client, to proceed from file loading screen
+        coreClient.sendMultiplayerSynced();
+
+        if (await offline.unsentTransactionsCount()) {
+          coreClient.sendMultiplayerState('syncing');
+        } else {
+          coreClient.sendMultiplayerState('connected');
+        }
+      } catch (e) {
+        this.handleCoreError('receiveTransactions', e);
+      }
+      resolve(undefined);
+    });
+  }
+
   summarizeSelection(message: ClientCoreSummarizeSelection): Promise<JsSummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

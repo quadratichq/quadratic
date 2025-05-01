@@ -15,21 +15,6 @@ use crate::controller::transaction::{Transaction, TransactionServer};
 const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
 
 impl GridController {
-    pub fn received_transaction(
-        &mut self,
-        transaction_id: Uuid,
-        sequence_num: u64,
-        operations: Vec<Operation>,
-    ) {
-        let transaction = PendingTransaction {
-            id: transaction_id,
-            source: TransactionSource::Multiplayer,
-            operations: operations.into(),
-            ..Default::default()
-        };
-        self.client_apply_transaction(transaction, sequence_num);
-    }
-
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
     fn rollback_unsaved_transactions(&mut self) {
         if self.transactions.unsaved_transactions.is_empty() {
@@ -211,6 +196,22 @@ impl GridController {
         }
     }
 
+    /// Received a transaction from the server
+    pub fn received_transaction(
+        &mut self,
+        transaction_id: Uuid,
+        sequence_num: u64,
+        operations: Vec<Operation>,
+    ) {
+        let transaction = PendingTransaction {
+            id: transaction_id,
+            source: TransactionSource::Multiplayer,
+            operations: operations.into(),
+            ..Default::default()
+        };
+        self.client_apply_transaction(transaction, sequence_num);
+    }
+
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
         self.rollback_unsaved_transactions();
@@ -221,15 +222,7 @@ impl GridController {
                 Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations);
 
             if let Ok(operations) = operations {
-                let transaction = PendingTransaction {
-                    id: t.id,
-                    source: TransactionSource::Multiplayer,
-                    operations: operations.into(),
-                    cursor: None,
-                    ..Default::default()
-                };
-
-                self.client_apply_transaction(transaction, t.sequence_num);
+                self.received_transaction(t.id, t.sequence_num, operations);
             } else {
                 dbgjs!(
                     "Unable to decompress and deserialize operations in received_transactions()"

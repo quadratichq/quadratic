@@ -93,6 +93,13 @@ export interface ReceiveTransaction {
   sequence_num: number;
 }
 
+export interface ReceiveTransactionAck {
+  type: 'TransactionAck';
+  id: string;
+  file_id: string;
+  sequence_num: number;
+}
+
 export interface SendTransaction {
   type: 'Transaction';
   id: string;
@@ -147,6 +154,7 @@ export type ReceiveMessages =
   | ReceiveRoom
   | MessageUserUpdate
   | ReceiveTransaction
+  | ReceiveTransactionAck
   | ReceiveEmpty
   | ReceiveTransactions
   | ReceiveEnterRoom

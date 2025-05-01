@@ -270,13 +270,16 @@ export class MultiplayerServer {
         multiplayerCore.receiveTransaction(data);
         break;
 
+      case 'TransactionAck':
+        multiplayerCore.receiveTransactionAck(data.id, data.sequence_num);
+        break;
+
       case 'BinaryTransaction':
-        const transaction = {
+        multiplayerCore.receiveTransaction({
           ...data,
           sequence_num: Number(data.sequence_num),
           type: 'Transaction',
-        } as ReceiveTransaction;
-        multiplayerCore.receiveTransaction(transaction);
+        } as ReceiveTransaction);
         break;
 
       case 'Transactions':
@@ -293,10 +296,7 @@ export class MultiplayerServer {
         break;
 
       case 'CurrentTransaction':
-        // wait 2 seconds before sending the current transaction
-        setTimeout(() => {
-          multiplayerCore.receiveCurrentTransaction(data.sequence_num);
-        }, 2000);
+        multiplayerCore.receiveCurrentTransaction(data.sequence_num);
         break;
 
       case 'Error':

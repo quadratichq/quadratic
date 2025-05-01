@@ -63,6 +63,11 @@ pub(crate) enum MessageResponse {
         sequence_num: u64,
         operations: Vec<u8>,
     },
+    TransactionAck {
+        id: Uuid,
+        file_id: Uuid,
+        sequence_num: u64,
+    },
     Transactions {
         transactions: Vec<Transaction>,
     },
