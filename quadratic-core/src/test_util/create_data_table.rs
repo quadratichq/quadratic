@@ -48,9 +48,8 @@ pub fn test_create_data_table_no_ui(
         None,
         None,
         None,
-        None,
-        Some(false),
-        Some(false),
+        Some(Some(false)),
+        Some(Some(false)),
         None,
     );
     dt

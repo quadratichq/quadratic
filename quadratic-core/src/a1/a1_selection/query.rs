@@ -453,8 +453,7 @@ impl A1Selection {
                 if table.sheet_id == self.sheet_id {
                     if let Some(rect) = range.to_rect() {
                         // if the selection intersects the name ui row of the table
-                        if (table.show_ui
-                            && table.show_name
+                        if (table.show_name
                             && rect.intersects(Rect::new(
                                 table.bounds.min.x,
                                 table.bounds.min.y,
