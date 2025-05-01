@@ -10,8 +10,9 @@ use crate::{
     state::State,
 };
 
+const BACKGROUND_WORKER_INTERVAL_MS: u64 = 2000;
+
 /// In a separate thread:
-///   * Process transaction queue for the room
 ///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
 #[tracing::instrument(level = "trace")]
@@ -23,7 +24,7 @@ pub(crate) fn start(
     let state = Arc::clone(&state);
 
     tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
+        let mut interval = time::interval(Duration::from_millis(BACKGROUND_WORKER_INTERVAL_MS));
 
         loop {
             // reconnect if pubsub connection is unhealthy
