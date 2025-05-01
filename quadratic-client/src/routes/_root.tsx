@@ -1,6 +1,7 @@
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
-import { Empty } from '@/shared/components/Empty';
+import { ConfirmProvider } from '@/shared/components/ConfirmProvider';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
@@ -29,11 +30,13 @@ export const Component = () => {
   return (
     <MuiTheme>
       <GlobalSnackbarProvider>
-        <>
-          <Outlet />
-          <ThemeAppearanceModeEffects />
-          <ThemeAccentColorEffects />
-        </>
+        <ConfirmProvider>
+          <>
+            <Outlet />
+            <ThemeAppearanceModeEffects />
+            <ThemeAccentColorEffects />
+          </>
+        </ConfirmProvider>
       </GlobalSnackbarProvider>
     </MuiTheme>
   );
@@ -43,13 +46,11 @@ export const ErrorBoundary = () => {
   const error = useRouteError();
 
   return (
-    <Empty
+    <EmptyPage
       title="Something went wrong"
       description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
       Icon={ExclamationTriangleIcon}
-      severity="error"
       error={error}
-      showLoggedInUser
     />
   );
 };

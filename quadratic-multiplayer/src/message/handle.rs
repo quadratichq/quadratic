@@ -329,9 +329,9 @@ pub(crate) async fn handle_message(
                 .unwrap_or_default()
                 + 1;
 
-            tracing::trace!("min_sequence_num: {}", min_sequence_num);
-            tracing::trace!("sequence_num: {}", sequence_num);
-            tracing::trace!("expected_num_transactions: {}", expected_num_transactions);
+            tracing::info!("min_sequence_num: {}", min_sequence_num);
+            tracing::info!("sequence_num: {}", sequence_num);
+            tracing::info!("expected_num_transactions: {}", expected_num_transactions);
 
             let transactions = state
                 .get_messages_from_pubsub(&file_id, min_sequence_num)
@@ -340,7 +340,7 @@ pub(crate) async fn handle_message(
                 .map(|transaction| transaction.into())
                 .collect::<Vec<BinaryTransaction>>();
 
-            tracing::trace!("got: {}", transactions.len());
+            tracing::info!("got: {}", transactions.len());
 
             // we don't have the expected number of transactions
             // send an error to the client so they can reload

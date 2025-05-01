@@ -1,5 +1,6 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -26,6 +27,7 @@ export function ConnectionFormActions({
   teamUuid: string;
 }) {
   const submit = useSubmit();
+  const confirmFn = useConfirmDialog('deleteConnection', undefined);
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
@@ -109,9 +111,8 @@ export function ConnectionFormActions({
             type="button"
             variant="outline-destructive"
             className="flex-shrink-0"
-            onClick={() => {
-              const doDelete = window.confirm('Please confirm you want delete this connection. This cannot be undone.');
-              if (doDelete) {
+            onClick={async () => {
+              if (await confirmFn()) {
                 mixpanel.track('[Connections].delete', { type: connectionType });
                 const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
                 submit(json, {

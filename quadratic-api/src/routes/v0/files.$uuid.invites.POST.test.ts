@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { auth0Mock } from '../../tests/auth0Mock';
 import { expectError } from '../../tests/helpers';
 import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
@@ -76,18 +77,7 @@ const auth0Users = [
     email: 'nodb@example.com',
   },
 ];
-jest.mock('auth0', () => ({
-  ManagementClient: jest.fn().mockImplementation(() => ({
-    getUsers: jest.fn().mockImplementation(({ q }: { q: string }) => {
-      // example value for `q`: "user_id:(user1 OR user2)"
-      return auth0Users.filter(({ user_id }) => user_id && q.includes(user_id));
-    }),
-    // auth0 doesn't match on case sensitivty, so we won't either
-    getUsersByEmail: jest.fn().mockImplementation((email: string) => {
-      return auth0Users.filter(({ email: userEmail }) => email.toLowerCase() === userEmail.toLowerCase());
-    }),
-  })),
-}));
+jest.mock('auth0', () => auth0Mock(auth0Users));
 
 const expectUser = (res: request.Response) => {
   expect(typeof res.body.userId).toBe('number');
