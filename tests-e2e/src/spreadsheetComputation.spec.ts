@@ -1688,9 +1688,13 @@ hire_date DATE);`);
   await page.locator(`div[data-value=JavaScript]`).click();
   await page.waitForTimeout(3000);
 
-  // Type the Javascript code
-  await page.keyboard.type("let data = q.cells('A3') + q.cells('A4') + q.cells('A5');");
-  await page.keyboard.press('Enter');
+  // Click on 'Console' tab
+  await page.getByRole(`tab`, { name: `Console` }).click();
+  await page.waitForTimeout(3000);
+
+  // Focus on the code editor
+  await page.locator('#QuadraticCodeEditorID div.monaco-editor div.view-lines.monaco-mouse-cursor-text').click();
+  await page.waitForTimeout(3000);
 
   // Add console logs for potential debugging
   await page.keyboard.type("console.log(q.cells('A3'))");
@@ -1698,6 +1702,10 @@ hire_date DATE);`);
   await page.keyboard.type("console.log(q.cells('A4'))");
   await page.keyboard.press('Enter');
   await page.keyboard.type("console.log(q.cells('A5'))");
+  await page.keyboard.press('Enter');
+
+  // Type the Javascript code
+  await page.keyboard.type("let data = q.cells('A3') + q.cells('A4') + q.cells('A5');");
   await page.keyboard.press('Enter');
 
   // Return the data to the cell
@@ -1728,7 +1736,7 @@ hire_date DATE);`);
   // Assert the copied text (or the sum) is 6
   expect(clipboardText).toBe(`6`); // Assert the clipboard content
 
-  // Intermittent bug here - sometimes shows "6" sometimes doesnt. Will hit play 50 times to test.
+  // Intermittent bug here - sometimes shows "6" sometimes doesnt. Will hit play 5 times to test.
   for (let i = 1; i < 5; i++) {
     // Click enter to open editor
     await page.keyboard.press('Enter');

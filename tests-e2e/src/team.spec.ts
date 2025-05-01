@@ -798,7 +798,9 @@ test('Can Edit Member are Able to Change Permissions', async ({ page: adminUserP
   await canEditUserPage.reload();
   // Navigate to team URL
   await canEditUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await canEditUserPage.waitForTimeout(5 * 1000);
   await canEditUserPage.waitForLoadState('domcontentloaded');
+  await canEditUserPage.waitForLoadState('networkidle');
 
   //--------------------------------
   // Assert:
@@ -863,7 +865,9 @@ test('Can Edit Members are Able to Invite', async ({ page: adminUserPage }) => {
 
   // Navigate to team URL
   await canEditUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await canEditUserPage.waitForTimeout(2000);
+  await canEditUserPage.waitForTimeout(5 * 1000);
+  await canEditUserPage.waitForLoadState('domcontentloaded');
+  await canEditUserPage.waitForLoadState('networkidle');
 
   //--------------------------------
   // Assert:
@@ -927,7 +931,9 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
 
   // Navigate to team URL
   await canEditUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await canEditUserPage.waitForTimeout(1000);
+  await canEditUserPage.waitForTimeout(5 * 1000);
+  await canEditUserPage.waitForLoadState('domcontentloaded');
+  await canEditUserPage.waitForLoadState('networkidle');
 
   // Click on Filter by name
   await canEditUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click();
