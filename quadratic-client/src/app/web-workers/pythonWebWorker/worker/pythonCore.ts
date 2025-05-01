@@ -55,10 +55,9 @@ export class PythonCore {
       Atomics.store(int32View, 0, 0);
 
       this.send({ type: 'pythonCoreGetCellsA1Length', sharedBuffer, transactionId, a1 });
-      let result = Atomics.wait(int32View, 0, 0);
+      Atomics.wait(int32View, 0, 0);
       const byteLength = int32View[1];
-      if (result !== 'ok' || byteLength === 0)
-        return { values: null, error: { core_error: 'Error in get cells a1 length' } };
+      if (byteLength === 0) return { values: null, error: { core_error: 'Error in get cells a1 length' } };
 
       const id = int32View[2];
 
@@ -68,8 +67,7 @@ export class PythonCore {
       Atomics.store(int32View, 0, 0);
 
       this.send({ type: 'pythonCoreGetCellsA1Data', id, sharedBuffer });
-      result = Atomics.wait(int32View, 0, 0);
-      if (result !== 'ok') return { values: null, error: { core_error: 'Error in get cells a1 data' } };
+      Atomics.wait(int32View, 0, 0);
 
       let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, byteLength);
 

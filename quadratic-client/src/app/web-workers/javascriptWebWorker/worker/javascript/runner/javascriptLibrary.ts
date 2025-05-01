@@ -256,9 +256,9 @@ export class q {
     Atomics.store(int32View, 0, 0);
 
     self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
-    let result = Atomics.wait(int32View, 0, 0);
+    Atomics.wait(int32View, 0, 0);
     const byteLength = int32View[1];
-    if (result !== 'ok' || byteLength === 0) throw new Error('Error in get cells a1 length');
+    if (byteLength === 0) throw new Error('Error in get cells a1 length');
 
     const id = int32View[2];
 
@@ -268,8 +268,7 @@ export class q {
     Atomics.store(int32View, 0, 0);
 
     self.postMessage({ type: 'getCellsData', id, sharedBuffer });
-    result = Atomics.wait(int32View, 0, 0);
-    if (result !== 'ok') throw new Error('Error in get cells a1 data');
+    Atomics.wait(int32View, 0, 0);
 
     let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, byteLength);
 
