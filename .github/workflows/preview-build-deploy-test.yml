@@ -520,7 +520,7 @@ jobs:
           max_attempts: ${{ env.MAX_ATTEMPTS }}
 
   test-e2e-start-comment:
-    name: Tests-E2E Start Comment
+    name: Tests-E2E - Start Comment
     needs: [build_images, deploy_images, verify_deployed_version]
     permissions:
       contents: read
@@ -558,9 +558,9 @@ jobs:
           edit-mode: replace
 
   test-e2e-matrix-run:
-    name: Tests-E2E Matrix Run
+    name: Tests-E2E - Matrix Run
     needs: [build_images, deploy_images, verify_deployed_version]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 60
     strategy:
@@ -617,7 +617,7 @@ jobs:
           shard_index: ${{ matrix.shardIndex }}
 
   test-e2e-merge-report-and-end-comment:
-    name: Tests-E2E Merge Report and End Comment
+    name: Tests-E2E - Generate Report and End Comment
     needs:
       [
         build_images,
@@ -636,6 +636,7 @@ jobs:
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
+      s3_url: s3://e2e.quadratic-preview.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -659,7 +660,7 @@ jobs:
       - name: Merge into HTML Report
         run: npx playwright merge-reports --reporter html ./all-blob-reports
 
-      - name: Upload HTML report
+      - name: Upload HTML report to GitHub Actions Artifacts
         uses: actions/upload-artifact@v4
         id: e2e-test-report
         with:
@@ -669,6 +670,18 @@ jobs:
           overwrite: true
           include-hidden-files: true
           if-no-files-found: warn
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload Report to S3
+        run: |
+          # Upload entire build directory to S3
+          aws s3 sync playwright-report ${{ env.s3_dir }}/pr-${{ github.event.pull_request.number }} --delete --force
 
       - name: Find Build & Deploy Images Comment
         if: always()
@@ -689,7 +702,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images
-            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} [Tests-E2E](${{ steps.e2e-test-report.outputs.artifact-url }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E [View](${{ env.s3_dir }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/) [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
 
             🔗 URL: https://${{ env.e2e_url }}
             🕒 Last deployed: ${{ env.deploy_time }}
