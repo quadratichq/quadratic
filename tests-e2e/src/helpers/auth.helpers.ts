@@ -27,6 +27,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   // Try to navigate to our URL
   await page.goto(buildUrl(options?.route ?? '/'), {
     waitUntil: 'domcontentloaded',
+    timeout: 2 * 60 * 1000,
   });
 
   // fill out log in page and log in

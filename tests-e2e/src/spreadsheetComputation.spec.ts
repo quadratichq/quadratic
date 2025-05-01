@@ -962,13 +962,6 @@ test('References', async ({ page }) => {
       // Take final screenshot
       await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-references-post.png');
     } catch (error) {
-      // for debugging - start
-      await navigateOnSheet(page, { targetColumn: 'I', targetRow: 5 });
-      await page.keyboard.press('/');
-      await page.getByRole(`tab`, { name: `Console` }).click();
-      await page.waitForTimeout(10 * 1000);
-      // for debugging - end
-
       // Fail the entire test on the first failure
       void error;
       throw new Error(`Test failed: Screenshot assertion failed on attempt ${attempt}.`);
@@ -1976,18 +1969,6 @@ test('Types: Numbers and Strings', async ({ page }) => {
     // Select option
     await page.locator(`[role="option"]`).click();
     await page.waitForTimeout(6000);
-
-    // for debugging - start
-    await navigateOnSheet(page, { targetColumn: 'E', targetRow: 12 });
-    await page.keyboard.press('/');
-    await page.getByRole(`tab`, { name: `Console` }).click();
-    await page.waitForTimeout(10 * 1000);
-
-    await navigateOnSheet(page, { targetColumn: 'E', targetRow: 3 });
-    await page.keyboard.press('/');
-    await page.getByRole(`tab`, { name: `Console` }).click();
-    await page.waitForTimeout(10 * 1000);
-    // for debugging - end
 
     //--------------------------------
     // Assert:

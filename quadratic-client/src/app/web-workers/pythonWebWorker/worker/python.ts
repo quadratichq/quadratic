@@ -23,7 +23,7 @@ function isEmpty(value: JsCellValueResult | string | null | undefined) {
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
-  state: LanguageState;
+  private state: LanguageState;
   private transactionId?: string;
 
   constructor() {
@@ -171,8 +171,6 @@ class Python {
       const run = this.awaitingExecution.shift();
       if (run) {
         await this.runPython(this.codeRunToCorePython(run));
-        this.transactionId = undefined;
-        this.state = 'ready';
       }
     }
   };
