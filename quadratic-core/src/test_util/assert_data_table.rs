@@ -100,12 +100,8 @@ pub fn assert_data_table_size(
     }
 
     let adjust_height = if !include_ui {
-        if data_table.show_ui {
-            (if data_table.show_name { 1 } else { 0 })
-                + (if data_table.show_columns { 1 } else { 0 })
-        } else {
-            0
-        }
+        (if data_table.get_show_name() { 1 } else { 0 })
+            + (if data_table.get_show_columns() { 1 } else { 0 })
     } else {
         0
     };

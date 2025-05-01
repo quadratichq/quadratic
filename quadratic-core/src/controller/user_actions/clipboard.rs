@@ -1425,7 +1425,8 @@ mod test {
 
         // first row is not header
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.show_ui = false;
+        data_table.show_name = Some(false);
+        data_table.show_columns = Some(false);
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1_sheet_id("E11", sheet_id),

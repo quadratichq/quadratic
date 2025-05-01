@@ -1441,9 +1441,8 @@ class QuadraticCore {
       name?: string;
       alternatingColors?: boolean;
       columns?: JsDataTableColumnHeader[];
-      showColumns?: boolean;
       showName?: boolean;
-      showUI?: boolean;
+      showColumns?: boolean;
     },
     cursor?: string
   ) {
@@ -1455,7 +1454,6 @@ class QuadraticCore {
       name: options.name,
       alternatingColors: options.alternatingColors,
       columns: options.columns,
-      showUI: options.showUI,
       showName: options.showName,
       showColumns: options.showColumns,
       cursor: cursor || '',
