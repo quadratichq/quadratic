@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.6.12"
+version = "0.7.1"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -101,7 +101,7 @@ arrow-schema = "54.2.1"
 arrow-buffer = "54.2.1"
 arrow-data = "54.2.1"
 half = "2.4.0"
-calamine = { version = "0.26.0", features = ["dates"] }
+calamine = { version = "0.27.0", features = ["dates"] }
 bincode = { version = "2.0.0", features = ["serde"] }
 flate2 = "1.0.30"
 serde_with = "3.8.1"
@@ -156,11 +156,3 @@ wasm-opt = ['-O0', '-g']
 debug-js-glue = false
 demangle-name-section = true
 dwarf-debug-info = true
-
-# patch for breaking changes in zip-rs/zip2 v2.6.0
-# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
-[patch.crates-io]
-zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
-
-[patch.'https://github.com/zip-rs/zip2']
-zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }

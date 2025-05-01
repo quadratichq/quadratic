@@ -13,7 +13,12 @@ impl ValidationLogical {
     // Validate a CellValue against the validation rule.
     pub fn validate(&self, value: Option<&CellValue>) -> bool {
         if let Some(value) = value {
-            matches!(value, CellValue::Logical(_))
+            // handle case where text input is empty
+            if *value == CellValue::Text("".to_string()) {
+                self.ignore_blank
+            } else {
+                matches!(value, CellValue::Logical(_))
+            }
         } else {
             self.ignore_blank
         }
@@ -45,5 +50,16 @@ mod tests {
         assert!(logical.validate(Some(&CellValue::Logical(false))));
         assert!(!logical.validate(Some(&CellValue::Number(1.into()))));
         assert!(!logical.validate(Some(&CellValue::Text("test".to_string()))));
+    }
+
+    #[test]
+    fn validate_logical_ignore_blank_text() {
+        // this test is used to simulate when clicking away from a checkbox that
+        // is currently being edited with an empty text input
+        let logical = ValidationLogical {
+            ignore_blank: true,
+            ..Default::default()
+        };
+        assert!(logical.validate(Some(&CellValue::Text("".to_string()))));
     }
 }

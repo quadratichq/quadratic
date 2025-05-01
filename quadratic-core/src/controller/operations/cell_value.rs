@@ -255,19 +255,17 @@ impl GridController {
                             data_table_rect.min.y += data_table.y_adjustment(true);
 
                             let is_full_table_selected = rect.contains_rect(&data_table_rect);
-                            let can_delete_table = is_full_table_selected || data_table.readonly;
+                            let can_delete_table = is_full_table_selected || data_table.is_code();
                             let table_column_selection = selection
                                 .table_column_selection(data_table.name(), self.a1_context());
-
                             can_delete_column = !is_full_table_selected
                                 && table_column_selection.is_some()
-                                && !data_table.readonly;
+                                && !data_table.is_code();
 
                             // we also delete a data table if it is not fully
                             // selected but any cell in the name ui is selected
                             if !is_full_table_selected
-                                && data_table.show_ui
-                                && data_table.show_name
+                                && data_table.get_show_name()
                                 // the selection intersects the name ui row
                                 && rect.intersects(Rect::new(
                                     data_table_full_rect.min.x,
@@ -287,7 +285,7 @@ impl GridController {
                             // is no name ui, then we delete its contents and
                             // save its anchor
                             if !is_full_table_selected
-                                && (!data_table.show_ui || !data_table.show_name)
+                                && !data_table.get_show_name()
                                 && rect.contains(data_table_pos)
                                 && matches!(data_table.kind, DataTableKind::Import(_))
                             {

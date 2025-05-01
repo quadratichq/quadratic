@@ -66,14 +66,7 @@ impl TableRef {
         if let Some(table) = a1_context.try_table(&self.table_name) {
             let bounds = table.bounds;
             if self.headers && !self.data {
-                rows.push(
-                    bounds.min.y
-                        + (if table.show_ui && table.show_name {
-                            1
-                        } else {
-                            0
-                        }),
-                );
+                rows.push(bounds.min.y + (if table.show_name { 1 } else { 0 }));
             } else {
                 let min_y = bounds.min.y + table.y_adjustment(false);
                 if min_y > to || bounds.max.y < from {
@@ -129,12 +122,8 @@ impl TableRef {
         };
 
         table_entry.bounds.height()
-            != if table_entry.show_ui {
-                1 + if table_entry.show_name { 1 } else { 0 }
-                    + if table_entry.show_columns { 1 } else { 0 }
-            } else {
-                1
-            }
+            != 1 + if table_entry.show_name { 1 } else { 0 }
+                + if table_entry.show_columns { 1 } else { 0 }
     }
 
     pub fn to_largest_rect(&self, a1_context: &A1Context) -> Option<Rect> {
@@ -177,11 +166,8 @@ impl TableRef {
         }
 
         let min_y = bounds.min.y
-            + if table.show_ui {
-                (if table.show_name { 1 } else { 0 }) + (if table.show_columns { 1 } else { 0 })
-            } else {
-                0
-            };
+            + (if table.show_name { 1 } else { 0 })
+            + (if table.show_columns { 1 } else { 0 });
         let max_y = bounds.max.y;
         Some(Rect::new(min_x, min_y, max_x, max_y))
     }
@@ -191,7 +177,10 @@ impl TableRef {
         if let Some(table) = a1_context.try_table(&self.table_name) {
             let x = table.bounds.min.x;
             let y = table.bounds.min.y
-                + if self.headers || !table.show_ui || table.bounds.height() == 1 {
+                + if self.headers
+                    || (!table.show_name && !table.show_columns)
+                    || table.bounds.height() == 1
+                {
                     0
                 } else {
                     1
@@ -231,7 +220,7 @@ impl TableRef {
             return None;
         }
         let table = a1_context.try_table(&self.table_name)?;
-        if !table.show_ui || !table.show_columns {
+        if !table.show_columns {
             return None;
         }
 
@@ -505,22 +494,14 @@ mod tests {
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
-        context
-            .table_map
-            .tables
-            .values_mut()
-            .next()
-            .unwrap()
-            .show_ui = false;
+        let table = context.table_map.tables.values_mut().next().unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
 
-        context
-            .table_map
-            .tables
-            .values_mut()
-            .next()
-            .unwrap()
-            .show_ui = true;
+        let table = context.table_map.tables.values_mut().next().unwrap();
+        table.show_name = true;
+        table.show_columns = true;
         table_ref.headers = true;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }
@@ -765,8 +746,9 @@ mod tests {
         assert!(table_ref.is_multi_cursor(&context));
 
         // Test headers only with show_ui false
-        let table = context.table_map.get_mut("test_table").unwrap();
-        table.show_ui = false;
+        let table = context.table_map.tables.values_mut().next().unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
@@ -829,7 +811,8 @@ mod tests {
         // Test when show_ui is false
         {
             let table = context.table_map.get_mut("test_table").unwrap();
-            table.show_ui = false;
+            table.show_name = false;
+            table.show_columns = false;
             assert_eq!(
                 table_ref.table_column_selection("test_table", &context),
                 None
@@ -839,7 +822,7 @@ mod tests {
         // Test when show_columns is false
         {
             let table = context.table_map.get_mut("test_table").unwrap();
-            table.show_ui = true;
+            table.show_name = false;
             table.show_columns = false;
             assert_eq!(
                 table_ref.table_column_selection("test_table", &context),

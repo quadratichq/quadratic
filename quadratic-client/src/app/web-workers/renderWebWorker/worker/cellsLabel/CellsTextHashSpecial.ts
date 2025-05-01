@@ -37,24 +37,24 @@ export class CellsTextHashSpecial {
     this.special = { checkboxes: [], dropdowns: [] };
   }
 
-  clear() {
+  clear = () => {
     this.special = { checkboxes: [], dropdowns: [] };
-  }
+  };
 
-  addCheckbox(column: number, row: number, x: number, y: number, value: boolean) {
+  addCheckbox = (column: number, row: number, x: number, y: number, value: boolean) => {
     this.special.checkboxes.push({ column, row, x, y, value });
-  }
+  };
 
-  addDropdown(column: number, row: number, x: number, y: number) {
+  addDropdown = (column: number, row: number, x: number, y: number) => {
     this.special.dropdowns.push({ column, row, x, y });
-  }
+  };
 
-  isEmpty() {
+  isEmpty = () => {
     return this.special.checkboxes.length === 0 && this.special.dropdowns.length === 0;
-  }
+  };
 
   // Extends the view rectangle (bounds) to include any special cells
-  extendViewRectangle(rectangle: Rectangle) {
+  extendViewRectangle = (rectangle: Rectangle) => {
     const bounds = new Bounds();
     bounds.addRectangle(rectangle);
     this.special.checkboxes.forEach((entry) => {
@@ -68,33 +68,91 @@ export class CellsTextHashSpecial {
       bounds.addRectangle(r);
     });
     bounds.updateRectangle(rectangle);
-  }
+  };
 
-  adjustWidth(column: number, delta: number) {
-    this.special.checkboxes.forEach((entry) => {
-      if (entry.column >= column) {
-        entry.x -= delta;
-      }
-    });
+  adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {
+    const { delta, column, row } = options;
 
-    this.special.dropdowns.forEach((entry) => {
-      if (entry.column >= column) {
-        entry.x -= delta;
-      }
-    });
-  }
+    let changed = false;
 
-  adjustHeight(row: number, delta: number) {
-    this.special.checkboxes.forEach((entry) => {
-      if (entry.row >= row) {
-        entry.y -= delta;
-      }
-    });
+    if (column !== undefined) {
+      this.special.checkboxes.forEach((checkbox) => {
+        if (checkbox.column === column) {
+          checkbox.x -= delta / 2;
+          changed = true;
+        } else {
+          if (column < 0) {
+            if (checkbox.column < column) {
+              checkbox.x += delta;
+              changed = true;
+            }
+          } else {
+            if (checkbox.column > column) {
+              checkbox.x -= delta;
+              changed = true;
+            }
+          }
+        }
+      });
 
-    this.special.dropdowns.forEach((entry) => {
-      if (entry.row >= row) {
-        entry.y -= delta;
-      }
-    });
-  }
+      this.special.dropdowns.forEach((dropdown) => {
+        if (dropdown.column === column) {
+          dropdown.x -= delta / 2;
+          changed = true;
+        } else {
+          if (column < 0) {
+            if (dropdown.column < column) {
+              dropdown.x += delta;
+              changed = true;
+            }
+          } else {
+            if (dropdown.column > column) {
+              dropdown.x -= delta;
+              changed = true;
+            }
+          }
+        }
+      });
+    } else if (row !== undefined) {
+      this.special.checkboxes.forEach((checkbox) => {
+        if (checkbox.row === row) {
+          checkbox.y -= delta / 2;
+          changed = true;
+        } else {
+          if (row < 0) {
+            if (checkbox.row < row) {
+              checkbox.y += delta;
+              changed = true;
+            }
+          } else {
+            if (checkbox.row > row) {
+              checkbox.y -= delta;
+              changed = true;
+            }
+          }
+        }
+      });
+
+      this.special.dropdowns.forEach((dropdown) => {
+        if (dropdown.row === row) {
+          dropdown.y -= delta / 2;
+          changed = true;
+        } else {
+          if (row < 0) {
+            if (dropdown.row < row) {
+              dropdown.y += delta;
+              changed = true;
+            }
+          } else {
+            if (dropdown.row > row) {
+              dropdown.y -= delta;
+              changed = true;
+            }
+          }
+        }
+      });
+    }
+
+    return changed;
+  };
 }

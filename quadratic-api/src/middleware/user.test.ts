@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
+import { auth0Mock } from '../tests/auth0Mock';
 import { clearDb, createFile } from '../tests/testDataGenerator';
 
 beforeEach(async () => {
@@ -57,29 +58,18 @@ beforeEach(async () => {
 
 afterEach(clearDb);
 
-jest.mock('auth0', () => {
-  return {
-    ManagementClient: jest.fn().mockImplementation(() => {
-      return {
-        getUsers: jest.fn().mockImplementation(({ q }: { q: string }) => {
-          // example value for `q`: "user_id:(user1 OR user2)"
-          const auth0Users = [
-            {
-              user_id: 'firstTimeUser',
-              email: 'johndoe@example.com',
-              name: 'Test User 1',
-            },
-            {
-              user_id: 'user1',
-              email: 'user1@example.com',
-            },
-          ];
-          return auth0Users.filter(({ user_id }) => q.includes(user_id));
-        }),
-      };
-    }),
-  };
-});
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'firstTimeUser',
+      email: 'johndoe@example.com',
+    },
+    {
+      user_id: 'user1',
+      email: 'user1@example.com',
+    },
+  ])
+);
 
 describe('A user coming in to the system for the first time and accessing _any_ endpoint', () => {
   describe('user with outstanding invite to team/file', () => {

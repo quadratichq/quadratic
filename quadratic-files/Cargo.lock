@@ -599,6 +599,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "atoi_simd"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4790f9e8961209112beb783d85449b508673cf4a6a419c8449b210743ac4dbe9"
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1412,16 +1418,18 @@ dependencies = [
 
 [[package]]
 name = "calamine"
-version = "0.26.1"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "138646b9af2c5d7f1804ea4bf93afc597737d2bd4f7341d67c48b03316976eb1"
+checksum = "6d80f81ba5c68206b9027e62346d49dc26fb32ffc4fe6ef7022a8ae21d348ccb"
 dependencies = [
+ "atoi_simd",
  "byteorder",
  "chrono",
  "codepage",
  "encoding_rs",
+ "fast-float2",
  "log",
- "quick-xml 0.31.0",
+ "quick-xml",
  "serde",
  "zip",
 ]
@@ -2165,6 +2173,12 @@ dependencies = [
  "regex-automata 0.4.9",
  "regex-syntax 0.8.5",
 ]
+
+[[package]]
+name = "fast-float2"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8eb564c5c7423d25c886fb561d1e4ee69f72354d16918afa32c08811f6b6a55"
 
 [[package]]
 name = "fastrand"
@@ -3601,7 +3615,7 @@ dependencies = [
  "md-5",
  "parking_lot 0.12.3",
  "percent-encoding",
- "quick-xml 0.37.4",
+ "quick-xml",
  "rand 0.8.5",
  "reqwest 0.12.12",
  "ring",
@@ -4052,7 +4066,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.6.12"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -4105,7 +4119,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-files"
-version = "0.6.12"
+version = "0.7.1"
 dependencies = [
  "axum",
  "axum-extra",
@@ -4139,7 +4153,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.12"
+version = "0.7.1"
 dependencies = [
  "aes",
  "arrow",
@@ -4177,20 +4191,11 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.31.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1004a344b30a54e2ee58d66a71b32d2db2feb0a31f9a2d302bf0536f15de2a33"
-dependencies = [
- "encoding_rs",
- "memchr",
-]
-
-[[package]]
-name = "quick-xml"
 version = "0.37.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4ce8c88de324ff838700f36fb6ab86c96df0e3c4ab6ef3a9b2044465cce1369"
 dependencies = [
+ "encoding_rs",
  "memchr",
  "serde",
 ]
@@ -6989,7 +6994,8 @@ dependencies = [
 [[package]]
 name = "zip"
 version = "2.5.0"
-source = "git+https://github.com/zip-rs/zip2?rev=77cde6a#77cde6a909feac44c75603811d78049a832a6fa2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27c03817464f64e23f6f37574b4fdc8cf65925b5bfd2b0f2aedf959791941f88"
 dependencies = [
  "arbitrary",
  "crc32fast",
@@ -7013,8 +7019,3 @@ dependencies = [
  "once_cell",
  "simd-adler32",
 ]
-
-[[patch.unused]]
-name = "zip"
-version = "2.5.0"
-source = "git+https://github.com//zip-rs/zip2?rev=77cde6a#77cde6a909feac44c75603811d78049a832a6fa2"

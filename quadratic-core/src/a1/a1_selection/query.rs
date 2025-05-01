@@ -188,11 +188,7 @@ impl A1Selection {
                             // we adjust the y to step over the table name so we
                             // don't end up with the same selection
                             let adjust_y = if let Some(table) = a1_context.try_table(&name) {
-                                if table.show_ui && table.show_name {
-                                    -1
-                                } else {
-                                    0
-                                }
+                                if table.show_name { -1 } else { 0 }
                             } else {
                                 0
                             };

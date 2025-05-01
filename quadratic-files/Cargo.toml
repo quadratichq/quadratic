@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.6.12"
+version = "0.7.1"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -51,11 +51,3 @@ fake = { version = "4.0.0", features = ["derive"] }
 default = ["files"]
 multiplayer = []
 files = []
-
-# patch for breaking changes in zip-rs/zip2 v2.6.0
-# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
-[patch.crates-io]
-zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
-
-[patch.'https://github.com/zip-rs/zip2']
-zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }
