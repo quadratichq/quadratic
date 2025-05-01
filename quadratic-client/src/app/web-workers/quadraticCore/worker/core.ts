@@ -308,6 +308,16 @@ class Core {
     });
   }
 
+  // Updates the multiplayer state
+  // This is called when a transaction is received from the server
+  async updateMultiplayerState() {
+    if (await offline.unsentTransactionsCount()) {
+      coreClient.sendMultiplayerState('syncing');
+    } else {
+      coreClient.sendMultiplayerState('connected');
+    }
+  }
+
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     return new Promise(async (resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -321,11 +331,8 @@ class Core {
         this.gridController.multiplayerTransaction(data.id, data.sequence_num, operations);
         offline.markTransactionSent(data.id);
 
-        if (await offline.unsentTransactionsCount()) {
-          coreClient.sendMultiplayerState('syncing');
-        } else {
-          coreClient.sendMultiplayerState('connected');
-        }
+        // update the multiplayer state
+        await this.updateMultiplayerState();
       } catch (e) {
         console.error('error', e);
         this.handleCoreError('receiveTransaction', e);
@@ -354,11 +361,8 @@ class Core {
         // sends multiplayer synced to the client, to proceed from file loading screen
         coreClient.sendMultiplayerSynced();
 
-        if (await offline.unsentTransactionsCount()) {
-          coreClient.sendMultiplayerState('syncing');
-        } else {
-          coreClient.sendMultiplayerState('connected');
-        }
+        // update the multiplayer state
+        await this.updateMultiplayerState();
       } catch (e) {
         this.handleCoreError('receiveTransactions', e);
       }
@@ -375,13 +379,10 @@ class Core {
         // sends multiplayer synced to the client, to proceed from file loading screen
         coreClient.sendMultiplayerSynced();
 
-        if (await offline.unsentTransactionsCount()) {
-          coreClient.sendMultiplayerState('syncing');
-        } else {
-          coreClient.sendMultiplayerState('connected');
-        }
+        // update the multiplayer state
+        await this.updateMultiplayerState();
       } catch (e) {
-        this.handleCoreError('receiveTransactions', e);
+        this.handleCoreError('receiveTransactionAck', e);
       }
       resolve(undefined);
     });
