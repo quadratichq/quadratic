@@ -15,6 +15,7 @@ impl GridController {
     /// change.
     pub(crate) fn check_deleted_validations(
         &mut self,
+        transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         remove_selection: A1Selection,
     ) -> Vec<Operation> {
@@ -42,11 +43,13 @@ impl GridController {
                             ..sheet.validations.validation(validation_id).unwrap().clone()
                         };
                         reverse_operations.extend(sheet.validations.set(validation));
+                        transaction.validations.insert(sheet_id);
                     }
                 } else {
                     // this handles the case where the selection completely
                     // overlaps the validation
                     reverse_operations.extend(sheet.validations.remove(validation_id));
+                    transaction.validations.insert(sheet_id);
                 }
             }
         }
@@ -573,9 +576,13 @@ mod tests {
 
         let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
 
-        let reverse = gc.check_deleted_validations(sheet_id, A1Selection::test_a1("A1"));
+        let mut transaction = PendingTransaction::default();
+        let reverse =
+            gc.check_deleted_validations(&mut transaction, sheet_id, A1Selection::test_a1("A1"));
 
         // check reverse operations
+        assert!(transaction.validations.contains(&sheet_id));
+
         assert_eq!(reverse.len(), 1);
         assert_eq!(
             reverse[0],
@@ -600,9 +607,11 @@ mod tests {
         let validation = test_create_checkbox(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
+        let mut transaction = PendingTransaction::default();
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let reverse = gc.check_deleted_validations(sheet_id, selection);
+        let reverse = gc.check_deleted_validations(&mut transaction, sheet_id, selection);
 
+        assert!(transaction.validations.contains(&sheet_id));
         assert_eq!(reverse.len(), 1);
         assert_eq!(
             reverse[0],

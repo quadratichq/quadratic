@@ -6,6 +6,7 @@ use crate::{
     SheetPos,
     a1::A1Selection,
     controller::GridController,
+    grid::SheetId,
     grid::sheet::validations::{
         rules::{ValidationRule, validation_logical::ValidationLogical},
         validation::Validation,
@@ -49,6 +50,19 @@ pub fn assert_validation_id(
         sheet_pos,
         validation,
         expected_validation
+    );
+}
+
+#[track_caller]
+#[cfg(test)]
+pub fn assert_validation_count(gc: &GridController, sheet_id: SheetId, expected_count: usize) {
+    let sheet = gc.sheet(sheet_id);
+    assert_eq!(
+        expected_count,
+        sheet.validations.validations.len(),
+        "Expected {} validations, but got {}",
+        expected_count,
+        sheet.validations.validations.len(),
     );
 }
 
@@ -121,6 +135,29 @@ mod tests {
         // Test case 4: Expected validation warning but none present (should panic)
         let result = std::panic::catch_unwind(|| {
             assert_validation_warning(&gc, pos![sheet_id!b1], Some(validation));
+        });
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_assert_validation_count() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Test case 1: No validations initially
+        assert_validation_count(&gc, sheet_id, 0);
+
+        // Test case 2: Add one validation
+        test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
+        assert_validation_count(&gc, sheet_id, 1);
+
+        // Test case 3: Add another validation
+        test_create_checkbox(&mut gc, A1Selection::test_a1("A2"));
+        assert_validation_count(&gc, sheet_id, 2);
+
+        // Test case 4: Wrong count (should panic)
+        let result = std::panic::catch_unwind(|| {
+            assert_validation_count(&gc, sheet_id, 3);
         });
         assert!(result.is_err());
     }

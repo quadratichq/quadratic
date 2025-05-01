@@ -104,6 +104,27 @@ impl A1Selection {
             Ok(self)
         }
     }
+
+    /// Translates the selection, clamping the result within the sheet bounds.
+    /// Returns `None` if the whole selection becomes empty.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn translate(self, dx: i64, dy: i64) -> Option<Self> {
+        let ranges = self
+            .ranges
+            .into_iter()
+            .filter_map(|r| r.saturating_translate(dx, dy))
+            .collect::<Vec<_>>();
+        if ranges.is_empty() {
+            None
+        } else {
+            Some(Self {
+                sheet_id: self.sheet_id,
+                cursor: self.cursor.saturating_translate(dx, dy),
+                ranges,
+            })
+        }
+    }
+
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds. Returns `None` if the whole selection becomes empty.
     #[must_use = "this method returns a new value instead of modifying its input"]

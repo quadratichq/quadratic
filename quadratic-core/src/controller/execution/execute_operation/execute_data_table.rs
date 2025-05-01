@@ -1164,8 +1164,15 @@ impl GridController {
             let mut sheet_format_updates = SheetFormatUpdates::default();
             let mut rects_to_remove = vec![];
 
+            // used to store the values of the columns that are deleted for the
+            // validation check below
+            let mut columns_deleted = vec![];
+
             for &index in columns.iter() {
                 let display_index = data_table.get_display_index_from_column_index(index, true);
+                if let Ok(name) = data_table.column_name(display_index as usize) {
+                    columns_deleted.push(name);
+                }
 
                 let sheet = self.try_sheet_result(sheet_id)?;
                 let data_table = sheet.data_table_result(data_table_pos)?;
@@ -1257,9 +1264,22 @@ impl GridController {
                         formats: data_table_reverse_format,
                     });
                 }
+            }
 
-                reverse_operations
-                    .extend(self.check_deleted_validations(sheet_id, remove_selection));
+            if !columns_deleted.is_empty() {
+                let sheet = self.try_sheet_result(sheet_id)?;
+                let data_table = sheet.data_table_result(data_table_pos)?;
+                if let Some(deleted_selection) = A1Selection::from_table_columns(
+                    data_table.name.to_display().as_str(),
+                    columns_deleted,
+                    &self.a1_context,
+                ) {
+                    reverse_operations.extend(self.check_deleted_validations(
+                        transaction,
+                        sheet_id,
+                        deleted_selection,
+                    ));
+                }
             }
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -1785,6 +1805,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util::*;
 
     use crate::{
         Array, SheetPos, Value,
@@ -2542,5 +2563,40 @@ mod tests {
             ),
             true,
         );
+    }
+
+    #[test]
+    fn test_execute_delete_data_table_column_with_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!a1];
+
+        test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 2, 2);
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context);
+        let validation = test_create_checkbox(&mut gc, selection);
+
+        let checkbox_pos = pos![sheet_id!a3];
+        assert_validation_id(&gc, checkbox_pos, Some(validation.id));
+        assert_validation_count(&gc, sheet_id, 1);
+
+        gc.data_table_mutations(
+            pos!(sheet_id!a1),
+            false,
+            None,
+            Some(vec![0]),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        assert_validation_id(&gc, checkbox_pos, None);
+
+        // ensure the new column does not have a checkbox validation
+        gc.data_table_insert_columns(sheet_pos, vec![0], false, None, None, None);
+        assert_validation_id(&gc, checkbox_pos, None);
+
+        assert_validation_count(&gc, sheet_id, 0);
     }
 }
