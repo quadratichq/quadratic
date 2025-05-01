@@ -449,6 +449,7 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let index = sheet.data_table_index_result(pos)?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
+            let table_name = data_table.name.to_display().clone();
             let cell_value = sheet.cell_value_result(data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, false)
@@ -537,6 +538,22 @@ impl GridController {
                 Some(&values_sheet_rect.union(&data_table_rect)),
             );
             self.check_deleted_data_tables(transaction, &values_sheet_rect);
+
+            // Move any validations that were tied to the table to the sheet
+            let mut a1_context = A1Context::default();
+            if let Some(table) = self.a1_context.try_table(&table_name) {
+                // we only need the table in a separate a1_context (this is
+                // done to avoid borrow issues below)
+                a1_context.table_map.insert(table.clone());
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                let reverse_operations = sheet
+                    .validations
+                    .transfer_to_sheet(&table_name, &a1_context);
+                if !reverse_operations.is_empty() {
+                    transaction.reverse_operations.extend(reverse_operations);
+                    transaction.validations.insert(sheet_id);
+                }
+            }
 
             return Ok(());
         };
@@ -1140,7 +1157,6 @@ impl GridController {
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_result(data_table_pos)?;
-            let table_name = data_table.name.to_display().clone();
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
@@ -1343,23 +1359,6 @@ impl GridController {
                 reverse_operations,
                 Some(&data_table_rect),
             );
-
-            if flatten {
-                // Move any validations that were tied to the table to the sheet
-                let mut a1_context = A1Context::default();
-                if let Some(table) = self.a1_context.try_table(&table_name) {
-                    // we only need the table in a separate a1_context (this is
-                    // done to avoid borrow issues below)
-                    a1_context.table_map.insert(table.clone());
-                    let sheet = self.try_sheet_mut_result(sheet_id)?;
-                    transaction.reverse_operations.extend(
-                        sheet
-                            .validations
-                            .transfer_to_sheet(&table_name, &a1_context),
-                    );
-                }
-            }
-
             return Ok(());
         };
 
@@ -2036,6 +2035,21 @@ mod tests {
             gc.sheet(sheet_id).display_value(pos![A5]),
             Some(CellValue::Text("Westborough".into()))
         );
+    }
+
+    #[test]
+    fn test_flatten_data_table_with_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+        let checkbox = test_create_checkbox(&mut gc, selection);
+        assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
+
+        gc.flatten_data_table(pos![sheet_id!a1], None);
+        assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
     }
 
     #[test]
