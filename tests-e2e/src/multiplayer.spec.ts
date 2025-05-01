@@ -828,7 +828,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
     await userPage1.mouse.move(i * 100, i * 100);
     await userPage1.mouse.down();
 
-    await userPage1.waitForTimeout(10 * 1000);
+    await userPage2.waitForTimeout(10 * 1000);
 
     //--------------------------------
     // Assert:
@@ -911,7 +911,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
     await userPage2.mouse.move(i * 150, i * 100);
     await userPage2.mouse.down();
 
-    await userPage1.waitForTimeout(10 * 1000);
+    await userPage3.waitForTimeout(10 * 1000);
 
     //--------------------------------
     // Assert:

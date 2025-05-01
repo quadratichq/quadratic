@@ -968,6 +968,21 @@ test('References', async ({ page }) => {
     }
   }
 
+  // for debugging - start
+  await navigateOnSheet(page, { targetColumn: 'J', targetRow: 4 });
+
+  // Press '/' on keyboard to open up pop up
+  await page.keyboard.press('/');
+
+  // Click on 'Console' tab
+  await page.getByRole(`tab`, { name: `Console` }).click();
+
+  // Assert formatting appears correct
+  await expect(page.locator(`[role="tabpanel"]`)).toHaveScreenshot(`javascript_console_log.png`, {
+    maxDiffPixels: 3000,
+  });
+  // for debugging - end
+
   //--------------------------------
   // Clean up:
   //--------------------------------
