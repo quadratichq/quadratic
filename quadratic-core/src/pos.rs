@@ -97,7 +97,7 @@ impl Pos {
     /// bounds. Returns a new Pos.
     pub fn saturating_translate(&self, dx: i64, dy: i64) -> Self {
         let adjust = RefAdjust::new_translate(dx, dy);
-        self.clone().saturating_adjust(adjust)
+        self.saturating_adjust(adjust)
     }
 
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
