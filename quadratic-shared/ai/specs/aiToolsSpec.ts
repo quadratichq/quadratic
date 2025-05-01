@@ -232,7 +232,7 @@ Values may include text, numbers, dates, or blanks. To clear a cell, pass an emp
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Inserts code into a specified code cell and executes it on the current open sheet. Requires the code language, the cell position (A1 notation), and the code string. Only use this tool for adding executable code — not for adding raw data, formulas, or values to tables. Code output may include visualizations or results that spill into adjacent cells.
+Inserts code into a specified code cell and executes it on the current open sheet. Requires the code language, the cell position (A1 notation), and the code string. Only use this tool for adding executable code. Do not use this for adding raw data to the sheet. Do not use this for adding formulas or code to tables; formulas and code do not work in tables. Code output may include visualizations or results that spill into adjacent cells; think about placement so as to not intersect existing content, avoid these so-called spills.
 `,
     parameters: {
       type: 'object',
@@ -263,16 +263,17 @@ Use this tool to insert code into the current open sheet. Provide:
 - The code string
 
 Placement rules:
-- Place the code cell **near the data it references**:
-  - For portrait tables → use the top-right corner
-  - For landscape tables → use the bottom-left corner
+- Place the code cell near the data it references:
+  - For portrait tables use the top-right corner
+  - For landscape tables use the bottom-left corner
 - Leave a blank row or column between the code cell and the data it references
 - Avoid placing the code cell where outputs may collide with existing content
-- Code outputs (e.g. plots) require 7 columns × 23 rows of free space
+- Chart outputs require 7 columns × 23 rows of free space
+- Non-chart outputs should keep in mind the space they take up based on the corresponding data type 
 
-Do not:
+Do NOT:
 - Use this to add static values or formulas (use set_cell_values instead)
-- Place code inside data tables
+- Place code or formulas inside data tables
 - Use conditionals to return data (Python only returns final unconditional expression)
 - Prefix formulas with = (omit it in Formula cells)
  `,
