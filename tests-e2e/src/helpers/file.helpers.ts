@@ -12,6 +12,7 @@ export const createFile = async (page: Page, { fileName }: CreateFileOptions) =>
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.waitForLoadState('networkidle');
 
   // Name file
   await page.getByRole('button', { name: 'Untitled' }).click({ timeout: 60000 });
@@ -74,6 +75,7 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.waitForLoadState('networkidle');
 
   // Assert we navigate into the file
   await expect(page.locator(`button:text("${fileName}")`)).toBeVisible({
@@ -124,6 +126,7 @@ export const uploadFile = async (page: Page, { fileName, fileType }: UploadFileO
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.waitForLoadState('networkidle');
 
   // Confirm file is uploaded
   await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible({

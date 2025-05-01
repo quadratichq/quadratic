@@ -770,7 +770,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   // Navigate to team URL
   await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
-  await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('networkidle');
   await userPage2.locator(`a:has-text("${fileName}")`).click();
 
   // Close AI chat box as needed
@@ -786,7 +786,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   // Navigate to team URL
   await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
-  await userPage3.waitForTimeout(2000);
+  await userPage2.waitForLoadState('networkidle');
   await userPage3.locator(`a:has-text("${fileName}")`).click();
 
   // Close AI chat box as needed
@@ -813,11 +813,11 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   await navigateOnSheet(userPage1, { targetColumn: 5, targetRow: 1 });
   await userPage1.keyboard.press('1');
-  await userPage1.waitForTimeout(3000);
+  await userPage1.waitForTimeout(5 * 1000);
   await userPage1.keyboard.press('Enter');
 
   // Dedicated wait for timeout
-  await userPage1.waitForTimeout(5000);
+  await userPage1.waitForTimeout(5 * 1000);
   await navigateOnSheet(userPage1, { targetColumn: 1, targetRow: 1 });
   await userPage1.mouse.move(0, 0);
   await userPage1.mouse.down();
@@ -827,7 +827,8 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
     // Move the mouse
     await userPage1.mouse.move(i * 100, i * 100);
     await userPage1.mouse.down();
-    await userPage2.waitForTimeout(3000);
+
+    await userPage1.waitForTimeout(10 * 1000);
 
     //--------------------------------
     // Assert:
@@ -905,12 +906,12 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
     // Move the mouse as the first user
     await userPage1.mouse.move(i * 50, i * 100);
     await userPage1.mouse.down();
-    await userPage1.waitForTimeout(3000);
 
     // Move the mouse as the second user
     await userPage2.mouse.move(i * 150, i * 100);
     await userPage2.mouse.down();
-    await userPage2.waitForTimeout(3000);
+
+    await userPage1.waitForTimeout(10 * 1000);
 
     //--------------------------------
     // Assert:

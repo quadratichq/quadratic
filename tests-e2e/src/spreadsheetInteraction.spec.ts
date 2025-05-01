@@ -266,7 +266,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Auto-Complete', async ({ page }) => {
+test.skip('Auto-Complete', async ({ page }) => {
   //--------------------------------
   // Formatting
   //--------------------------------

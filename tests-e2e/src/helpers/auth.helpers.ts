@@ -36,16 +36,16 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('networkidle');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.waitForLoadState('networkidle');
 
   // go to dashboard if in app
   const dashboardLink = page.locator('nav a[href="/"]');
   while (await dashboardLink.isVisible()) {
     await dashboardLink.click();
     await page.waitForTimeout(10 * 1000);
-    await page.waitForLoadState('networkidle');
     await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+    await page.waitForLoadState('networkidle');
   }
 
   // assert that we are logged in
