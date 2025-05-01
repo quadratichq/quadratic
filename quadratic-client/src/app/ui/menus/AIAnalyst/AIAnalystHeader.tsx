@@ -29,8 +29,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 
   // TODO: decide on the right threshold
   const highlightStartFresh = messagesCount > 2 && !showChatHistory;
-  // TODO: consider hiding this permanently once chat history is clicked once?
-  const highlightHistory = messagesCount === 0 && !showChatHistory;
+  const highlightHistory = messagesCount === 0 && !showChatHistory && !loading && chatsCount > 0;
 
   return (
     <div className="flex flex-col">
