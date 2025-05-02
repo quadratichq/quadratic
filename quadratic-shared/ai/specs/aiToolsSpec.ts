@@ -12,6 +12,7 @@ export enum AITool {
   CodeEditorCompletions = 'code_editor_completions',
   UserPromptSuggestions = 'user_prompt_suggestions',
   PDFImport = 'pdf_import',
+  GetCells = 'get_cells',
 }
 
 export const AIToolSchema = z.enum([
@@ -25,6 +26,7 @@ export const AIToolSchema = z.enum([
   AITool.CodeEditorCompletions,
   AITool.UserPromptSuggestions,
   AITool.PDFImport,
+  AITool.GetCells,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -123,6 +125,10 @@ export const AIToolsArgsSchema = {
   [AITool.PDFImport]: z.object({
     file_name: z.string(),
     prompt: z.string(),
+  }),
+  [AITool.GetCells]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
   }),
 } as const;
 
@@ -503,5 +509,36 @@ Never extract data from PDF files that are not relevant to the user's prompt. Ne
 Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
 `,
+  },
+  [AITool.GetCells]: {
+    sources: ['AIAnalyst'],
+    description: `
+    This tool returns the values of the cells in the chosen selection. It also requires the current sheet name as defined in the context.\n
+    You should use the get_cells function to get the values of the cells when you need more data to reference.\n
+    get_cells function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
+    `,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        selection: {
+          type: 'string',
+          description: `
+          The string representation (in a1 notation) of the selection of cells to get the values of.\n
+          Do not concatenate requests.Use a separate request for each independent range.\n`,
+        },
+      },
+      required: ['selection', 'sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetCells],
+    prompt: `
+    This tool returns a JSON object with the starting x and y position, the width and height of the selection, and an array of values that map to the x, y, width, and height.\n
+    It returns it in two parts: (1) a string representing the range that was copied, and (2) a 2d array of strings representing the values of the individual cells within that range, in column-based order (i.e., the second value is the second row in the first column).\n
+    You should use the get_cells function to get the values of the cells when you need more data to reference for your response.\n
+    `,
   },
 } as const;

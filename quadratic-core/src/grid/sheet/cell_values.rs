@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::{
-    CellValue, Pos,
+    CellValue, Pos, Rect,
     a1::A1Context,
     cell_values::CellValues,
     controller::{
@@ -122,6 +122,20 @@ impl Sheet {
             }
             _ => Some(value.to_display()),
         }
+    }
+
+    /// Returns the rendered value of the cells in a given rect.
+    pub fn get_cells_as_string(&self, rect: Rect) -> String {
+        let mut cells = String::new();
+        for x in rect.min.x..=rect.max.x {
+            for y in rect.min.y..=rect.max.y {
+                if let Some(value) = self.rendered_value(Pos { x, y }) {
+                    let pos = Pos { x, y }.a1_string();
+                    cells.push_str(&format!("{} is \"{}\", ", pos, value));
+                }
+            }
+        }
+        cells
     }
 }
 

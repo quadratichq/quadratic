@@ -719,6 +719,14 @@ class CoreClient {
         core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
         return;
 
+      case 'clientCoreGetAICells':
+        this.send({
+          type: 'coreClientGetAICells',
+          id: e.data.id,
+          aiCells: core.getAICells(e.data.selection, e.data.sheetId),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

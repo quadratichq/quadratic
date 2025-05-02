@@ -308,4 +308,14 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.PDFImport]: async () => {
     return `PDF import tool executed successfully.`;
   },
+  [AITool.GetCells]: async (args) => {
+    const { selection, sheet_name } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    const response = await quadraticCore.getAICells(selection, sheetId);
+    if (response) {
+      return 'These are the cells in the selection:\n' + response;
+    } else {
+      return 'There was an error executing the get cells tool';
+    }
+  },
 } as const;

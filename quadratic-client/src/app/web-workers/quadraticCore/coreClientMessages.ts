@@ -9,6 +9,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  JsAICells,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
@@ -1274,6 +1275,19 @@ export interface CoreClientCoreError {
   error: Error | unknown;
 }
 
+export interface ClientCoreGetAICells {
+  type: 'clientCoreGetAICells';
+  id: number;
+  selection: string;
+  sheetId: string;
+}
+
+export interface CoreClientGetAICells {
+  type: 'coreClientGetAICells';
+  id: number;
+  aiCells: JsAICells | string | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1370,7 +1384,8 @@ export type ClientCoreMessage =
   | ClientCoreGetCsvPreview
   | ClientCoreAddDataTable
   | ClientCoreMoveColumns
-  | ClientCoreMoveRows;
+  | ClientCoreMoveRows
+  | ClientCoreGetAICells;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1446,4 +1461,5 @@ export type CoreClientMessage =
   | CoreClientDeleteCellValues
   | CoreClientDataTableMutations
   | CoreClientSetCodeCellValue
-  | CoreClientCoreError;
+  | CoreClientCoreError
+  | CoreClientGetAICells;

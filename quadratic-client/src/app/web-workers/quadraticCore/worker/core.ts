@@ -18,6 +18,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  JsAICells,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -1564,6 +1565,19 @@ class Core {
       this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
     } catch (e) {
       this.handleCoreError('moveRows', e);
+    }
+  }
+
+  getAICells(selection: string, sheetName: string): JsAICells | string | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      console.log(selection, sheetName);
+      const results = this.gridController.getAICells(selection, sheetName);
+      console.log(results);
+      return results;
+    } catch (e) {
+      console.log(e);
+      return JSON.stringify(e);
     }
   }
 }

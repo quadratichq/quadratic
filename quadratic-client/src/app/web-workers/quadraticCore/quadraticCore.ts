@@ -19,6 +19,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  JsAICells,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -400,6 +401,16 @@ class QuadraticCore {
         y,
         id,
       });
+    });
+  }
+
+  getAICells(selection: string, sheetId: string): Promise<JsAICells | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { aiCells: JsAICells | undefined }) => {
+        resolve(message.aiCells);
+      };
+      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId });
     });
   }
 
