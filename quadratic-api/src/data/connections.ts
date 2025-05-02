@@ -1,9 +1,9 @@
 import type { Connection } from 'quadratic-shared/typesAndSchemasConnections';
-import { CONNECTION_DEMO_DATA } from '../env-vars';
+import { CONNECTION_DEMO_1 } from '../env-vars';
 
 export const demoConnection = {
   // uuid, name, type, typeDetails all go in the env var
-  ...CONNECTION_DEMO_DATA,
+  ...CONNECTION_DEMO_1,
 
   // We set these because they don't really matter for the UI
   createdDate: '2022-01-01T00:00:00.000Z',
