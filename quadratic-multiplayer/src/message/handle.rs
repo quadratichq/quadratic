@@ -10,6 +10,7 @@ use quadratic_rust_shared::quadratic_api::{FilePermRole, get_file_perms};
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::background_worker::broadcast_sequence_num;
 use crate::error::{ErrorLevel, MpError, Result};
 use crate::get_mut_room;
 use crate::message::response::{BinaryTransaction, Transaction};
@@ -135,6 +136,7 @@ pub(crate) async fn handle_message(
             .map_err(|e| MpError::SendingMessage(e.to_string()))?;
 
             // only broadcast if the user is new to the room
+            // response is the variant MessageResponse::UsersInRoom
             if is_new {
                 let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from((room.users, &state.settings.version));
@@ -142,7 +144,10 @@ pub(crate) async fn handle_message(
                 broadcast(vec![], file_id, Arc::clone(&state), response, false);
             }
 
-            Ok(None)
+            // send the current transaction to the user
+            let response = MessageResponse::CurrentTransaction { sequence_num };
+
+            Ok(Some(response))
         }
 
         // User leaves a room
@@ -203,17 +208,37 @@ pub(crate) async fn handle_message(
                 .push_pubsub(id, file_id, decoded_operations, room_sequence_num)
                 .await?;
 
-            // broadcast the transaction to all users in the room
+            // broadcast the transaction to all users in the room (except the initiator)
             let response = MessageResponse::Transaction {
                 id,
                 file_id,
+                sequence_num,
                 operations,
+            };
+            broadcast(
+                vec![session_id],
+                file_id,
+                Arc::clone(&state),
+                response,
+                false,
+            );
+
+            // send the current transaction to all users in the room (except the initiator)
+            let broadcasted =
+                broadcast_sequence_num(Arc::clone(&state), &file_id, vec![session_id]).await;
+
+            if let Err(error) = broadcasted {
+                tracing::warn!("Error broadcasting sequence number: {:?}", error);
+            }
+
+            // send an ack to the initiator
+            let response = MessageResponse::TransactionAck {
+                id,
+                file_id,
                 sequence_num,
             };
 
-            broadcast(vec![], file_id, Arc::clone(&state), response, false);
-
-            Ok(None)
+            Ok(Some(response))
         }
 
         // User sends binarytransactions
@@ -253,7 +278,6 @@ pub(crate) async fn handle_message(
                 sequence_num,
                 operations,
             };
-
             broadcast(
                 vec![session_id],
                 file_id,
@@ -261,6 +285,14 @@ pub(crate) async fn handle_message(
                 response,
                 true,
             );
+
+            // send the current transaction to all users in the room (except the initiator)
+            let broadcasted =
+                broadcast_sequence_num(Arc::clone(&state), &file_id, vec![session_id]).await;
+
+            if let Err(error) = broadcasted {
+                tracing::warn!("Error broadcasting sequence number: {:?}", error);
+            }
 
             // send an ack to the initiator
             let response = MessageResponse::TransactionAck {

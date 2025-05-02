@@ -13,7 +13,6 @@ use crate::{
 const BACKGROUND_WORKER_INTERVAL_MS: u64 = 2000;
 
 /// In a separate thread:
-///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
 #[tracing::instrument(level = "trace")]
 pub(crate) fn start(
@@ -46,13 +45,6 @@ pub(crate) fn start(
                 for (file_id, _) in rooms.iter() {
                     tracing::trace!("Processing room {}", file_id);
 
-                    // broadcast sequence number to all users in the room
-                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), file_id).await;
-
-                    if let Err(error) = broadcasted {
-                        tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                    }
-
                     // remove stale users in the room
                     let removed = remove_stale_users_in_room(
                         Arc::clone(&state),
@@ -77,11 +69,15 @@ pub(crate) fn start(
 }
 
 // broadcast sequence number to all users in the room
-async fn broadcast_sequence_num(state: Arc<State>, file_id: &Uuid) -> Result<JoinHandle<()>> {
+pub(crate) async fn broadcast_sequence_num(
+    state: Arc<State>,
+    file_id: &Uuid,
+    exclude: Vec<Uuid>,
+) -> Result<JoinHandle<()>> {
     let sequence_num = state.get_sequence_num(file_id).await?;
 
     Ok(broadcast(
-        vec![],
+        exclude,
         file_id.to_owned(),
         Arc::clone(&state),
         MessageResponse::CurrentTransaction { sequence_num },
@@ -149,7 +145,7 @@ mod tests {
             .await
             .unwrap();
 
-        super::broadcast_sequence_num(state, &file_id)
+        super::broadcast_sequence_num(state, &file_id, vec![])
             .await
             .unwrap()
             .await
