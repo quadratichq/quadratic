@@ -537,8 +537,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCells],
     prompt: `
-    This tool returns a JSON object with the starting x and y position, the width and height of the selection, and an array of values that map to the x, y, width, and height.\n
-    It returns it in two parts: (1) a string representing the range that was copied, and (2) a 2d array of strings representing the values of the individual cells within that range, in column-based order (i.e., the second value is the second row in the first column).\n
+    This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
     You should use the get_cells function to get the values of the cells when you need more data to reference for your response.\n
     `,
   },

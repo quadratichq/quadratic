@@ -32,15 +32,25 @@ export function useCurrentSheetContextMessages() {
               type: 'text',
               text: `
 Note: This is an internal message for context. Do not quote it in your response.\n\n
-I have an open sheet, with sheet name '${currentSheetName}', all actions are performed on this sheet.\n
+I have an open sheet, with sheet name '${currentSheetName}', all actions are performed on this sheet, unless the user specifies otherwise.\n
 You can reference data from this or other sheets in the currently open file.\n
 
-${
-  sheetBounds.type === 'nonEmpty'
-    ? `- Data range: ${rectToA1(sheetBounds)}
+The current sheet has the following ranges: ${
+                sheetBounds.type === 'nonEmpty'
+                  ? `- Data range: ${rectToA1(sheetBounds)}
 - Note: This range may contain empty cells.`
-    : '- The currently open sheet is empty.'
-}\n\n
+                  : '- The currently open sheet is empty.'
+              }\n\n
+
+CRITICAL INSTRUCTION: You MUST use get_cells BEFORE performing ANY operation on the sheet's data. This is a strict requirement.\n\n
+NEVER use set_cell_values or any other data modification tool without first using get_cells to verify the current state of the data.\n\n
+You MUST use get_cells in these situations:\n
+1. BEFORE any data modification or analysis\n
+2. BEFORE checking if cells are empty or contain specific values\n
+3. BEFORE making any assumptions about the data\n\n
+
+The sample data shown below is ONLY for understanding the structure of the sheet. It is NOT for making decisions or performing operations.\n
+ALWAYS use get_cells to get the current, complete data before proceeding with any task.\n\n
 
 ${
   !!currentSheetContext && currentSheetContext.length === 1
@@ -97,7 +107,7 @@ Each cell value is a JSON object having the following properties:\n
 - kind: The kind of the value. This can be blank, text, number, logical, time instant, duration, error, html, code, image, date, time, date time, null or undefined.\n
 - pos: This is the position of the cell in A1 notation. Columns are represented by letters and rows are represented by numbers.\n\n
 
-This is being shared so that you can understand the data format, size and value types inside the data rectangle.\n
+WARNING: This is ONLY sample data. You MUST use get_cells to get the current data before performing any operations.\n\n
 
 There are following data in the currently open sheet:\n
 \`\`\`json
@@ -107,18 +117,15 @@ ${JSON.stringify(currentSheetContext[0].data_rects)}
     : ''
 }
 
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code, always reference data from the sheet. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code.
-- In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
-- In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
-- Tables can be referenced using \`q.cells("Table_Name")\` to reference the entire table.\n
-- In Formulas and JavaScript use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header. This does not work in Python.\n
-- In all languages use \`q.cells("Table_Name[#HEADERS]")\` to reference the headers of the table.\n
-- In Formulas and JavaScript use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table. This does not work in Python.\n
-- Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
-- Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
-- To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
-
-Use this visible data in the context of following messages. Refer to cells if required in code.\n\n`
+To work with the sheet's data, use the get_cells function in the following ways:\n
+1. In formulas, use A1 notation directly: \`=SUM(A1:B2)\`\n
+2. In Python and JavaScript, use \`q.cells("A1:B2")\`\n
+3. For different sheets, include the sheet name: \`=SUM('Sheet 1'!A1:B2)\` or \`q.cells("'Sheet 1'!A1:B2")\`\n
+4. For tables:\n
+   - \`q.cells("Table_Name")\` for the entire table\n
+   - \`q.cells("Table_Name[#ALL]")\` for table with headers (Formulas/JavaScript only)\n
+   - \`q.cells("Table_Name[#HEADERS]")\` for table headers\n
+   - \`q.cells("Table_Name[#DATA]")\` for table data (Formulas/JavaScript only)\n\n`
     : `This currently open sheet is empty.\n`
 }`,
             },
