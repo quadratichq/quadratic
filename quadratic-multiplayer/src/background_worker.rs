@@ -10,7 +10,7 @@ use crate::{
     state::State,
 };
 
-const BACKGROUND_WORKER_INTERVAL_MS: u64 = 2000;
+const BACKGROUND_WORKER_INTERVAL_MS: u64 = 1000;
 
 /// In a separate thread:
 ///   * Check for stale users in rooms and remove them.
