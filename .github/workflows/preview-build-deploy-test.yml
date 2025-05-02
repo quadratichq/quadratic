@@ -518,7 +518,7 @@ jobs:
           max_attempts: ${{ env.MAX_ATTEMPTS }}
 
   test-e2e-start-comment:
-    name: Tests-E2E - Start Comment
+    name: Tests-E2E - Generate Matrix and Start Comment
     needs: [build_images, deploy_images, verify_deployed_version]
     permissions:
       contents: read
@@ -565,7 +565,7 @@ jobs:
           edit-mode: replace
 
   test-e2e-matrix-run:
-    name: Tests-E2E - Run Shard
+    name: Tests-E2E - Matrix Run, Shard
     needs:
       [
         build_images,

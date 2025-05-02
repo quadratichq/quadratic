@@ -2994,7 +2994,7 @@ test('Range Cell Reference - Python', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Right Click on Column and Row Headers', async ({ page }) => {
+test('Right Click on Column and Row Headers', async ({ page }) => {
   // Constants
   const newTeamName = `Right Click on Column and Row Headers - ${Date.now()}`;
   const fileName = 'Insert_row_col';
