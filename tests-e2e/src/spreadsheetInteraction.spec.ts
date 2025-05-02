@@ -595,7 +595,7 @@ test('Cell Actions', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  // Upload Chat File
+  // Upload File
   await uploadFile(page, { fileName, fileType });
 
   // Initial screenshot
@@ -732,7 +732,7 @@ test('Custom DateTime Options', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  // Upload Chat File
+  // Upload File
   await uploadFile(page, { fileName, fileType });
 
   //--------------------------------
@@ -869,7 +869,7 @@ test('Data Validation', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  // Upload Chat File
+  // Upload File
   await uploadFile(page, { fileName, fileType });
 
   //--------------------------------
@@ -963,7 +963,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  // Upload Chat File
+  // Upload File
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
@@ -1128,7 +1128,7 @@ test('Download Sheet', async ({ page }) => {
   // Clean up files
   await cleanUpFiles(page, { fileName });
 
-  // Upload Chat File
+  // Upload File
   await uploadFile(page, { fileName, fileType });
 
   // Cycle through all bottom tabs and assert initial screenshots
@@ -1351,6 +1351,88 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
 
   // Assert sheet has the same # of rows as # of entries found in Excel sheet
   expect(Number(rowNumber) - 1).toBe(excelRowCount); // minus 1 to exclude header
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('File - Clear Recent History', async ({ page }) => {
+  //--------------------------------
+  // File - Clear Recent History
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Clear Recent History - ${Date.now()}`;
+  const fileName = 'Clear_Recent_History';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_recent_history` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Create new file
+  await createFile(page, { fileName });
+
+  // Go to the examples
+  await page.getByRole(`link`, { name: `view_carousel Examples` }).click();
+
+  // Wait for the page to appear
+  await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
+
+  // Scrape all h2 elements on the page and trim their text content
+  const h2Texts = await page.$$eval('ul.grid li h2.truncate', (elements) =>
+    elements.map((el) => el?.textContent?.trim()).filter((text) => !!text && text.length > 0)
+  );
+
+  // Randomly pick one h2 file title
+  const randomIndex = Math.floor(Math.random() * h2Texts.length);
+  const exampleName = h2Texts[randomIndex];
+  if (!exampleName) throw new Error('No example name found');
+
+  // Search for the randomly picked file, click it
+  await page.getByRole(`textbox`, { name: `Filter by file or creator` }).fill(exampleName);
+  await page.locator(`h2:text("${exampleName}")`).click();
+
+  // Wait for the page to load, this is the sheet chat.
+  await page.getByText(`Sheet chataddhistoryclose`).waitFor();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click File in the menu bar
+  await page.getByRole(`menuitem`, { name: `File` }).click();
+
+  // Click "Open Recent"
+  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click();
+
+  // Expect our new file to appear under Recently Opened
+  await expect(page.getByRole(`menuitem`, { name: `${fileName}` })).toBeVisible();
+
+  // Click the Clear button
+  await page.getByRole(`menuitem`, { name: 'Clear', exact: true }).click();
+
+  // Click File in the menu bar
+  await page.getByRole(`menuitem`, { name: `File` }).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that "Open recent" isn't visible under File after we clear the history
+  await expect(page.getByRole('menuitem', { name: 'file_open Open recent' })).toBeHidden();
+
+  //--------------------------------
+  // Cleanup:
+  //--------------------------------
 
   //--------------------------------
   // Clean up:

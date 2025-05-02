@@ -966,7 +966,7 @@ test('Import Files', async ({ page }) => {
   await cleanUpFiles(page, { fileName: excelFileName });
 });
 
-test.skip('Resources Examples - Dashboard Views', async ({ page }) => {
+test('Resources Examples - Dashboard Views', async ({ page }) => {
   //--------------------------------
   // List View
   //--------------------------------
@@ -1031,7 +1031,7 @@ test.skip('Resources Examples - Dashboard Views', async ({ page }) => {
   expect(gridViewCharacteristics.firstLiStructure?.imgWidth).toBeNull();
 });
 
-test.skip('Search - Search File Examples', async ({ page }) => {
+test('Search - Search File Examples', async ({ page }) => {
   //--------------------------------
   // Search - Search File Examples
   //--------------------------------
