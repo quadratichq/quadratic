@@ -1431,8 +1431,276 @@ test('File - Clear Recent History', async ({ page }) => {
   await expect(page.getByRole('menuitem', { name: 'file_open Open recent' })).toBeHidden();
 
   //--------------------------------
-  // Cleanup:
+  // Clean up:
   //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('File - Open Recent', async ({ page }) => {
+  //--------------------------------
+  // File - Open Recent
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Open Recent - ${Date.now()}`;
+  const fileName1 = 'open_recent_1';
+  const fileName2 = 'open_recent_2';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_open_recent` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName: fileName1 });
+  await cleanUpFiles(page, { fileName: fileName2 });
+
+  // Create new file
+  await createFile(page, { fileName: fileName1 });
+  await createFile(page, { fileName: fileName2 });
+
+  // Navigate into the first file we made
+  await navigateIntoFile(page, { fileName: fileName1 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click File in the menu bar
+  await page.getByRole(`menuitem`, { name: `File` }).click();
+
+  // Click "Open Recent"
+  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that our file we opened recently in the "Open recent" dropdown is visible
+  await expect(page.getByRole(`menuitem`, { name: `${fileName2}` })).toBeVisible();
+
+  // Click into our file to continue assertions
+  await page.getByRole(`menuitem`, { name: `${fileName2}` }).click();
+
+  // Assert we navigate to the correct page we created
+  await expect(page.locator(`button:text("${fileName2}")`)).toBeVisible();
+
+  // Click back into File, Open Recent, and assert the JS example we visited is visible.
+  await page.getByRole(`menuitem`, { name: `File` }).click(); // Click File
+  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click(); // Click Open recent
+  await expect(page.getByRole(`menuitem`, { name: `${fileName1}` })).toBeVisible(); // Assert
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName: fileName1 });
+  await cleanUpFiles(page, { fileName: fileName2 });
+});
+
+test('Find in current sheet', async ({ page }) => {
+  //--------------------------------
+  // Find in current sheet
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Open Recent - ${Date.now()}`;
+  const fileName = '(Main) QAWolf test';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_find_in_sheet` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click `Edit` on the top left of the page
+  await page.getByRole(`menuitem`, { name: `Edit` }).click();
+
+  // Click `Find in current sheet` option
+  await page.getByRole(`menuitem`, { name: `pageview Find in current` }).click();
+
+  // Fill `Find in current sheet` search field to be visible on the top right of the page
+  await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`Referencing sheet inputs from Python`);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Expect `1 of 1` to be visible on the search field
+  await expect(page.locator(`input + div`).getByText(`1 of 1`)).toBeVisible();
+
+  // Expect the cell named `Referencing sheet inputs from Python` to be highlighted, likely on row 1
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Search_In_Current_Sheet.png', {
+    maxDiffPixelRatio: 0.005,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Insert and Delete Columns', async ({ page }) => {
+  //--------------------------------
+  // Insert Column to the left
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Insert and Delete Columns - ${Date.now()}`;
+  const fileName = 'Insert_row_col';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_insert_delete_column` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Rename file
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.keyboard.type(fileName, { delay: 50 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select column 1  (relative to screen mouse position X: 98, Y:90)
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 50, y: 10 } });
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 30 } });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert we can insert rows and not columns
+  await expect(page.getByText(`Insert column left`)).toBeVisible();
+  await expect(page.getByText(`Insert row above`)).not.toBeVisible();
+
+  // Click Insert column to the left
+  await page.getByText(`Insert column left`).click();
+
+  // Screenshot assertion (Column 1 should be red and not have any values in it)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_col_left.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Navigate to cell (1, 1), assert value should be 1
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 8, targetRow: 1 });
+  await page.waitForTimeout(3000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('7'); // Assert the clipboard content
+
+  //--------------------------------
+  // Insert Column to the right
+  //--------------------------------
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select column 4  (relative to screen mouse position X: 520, Y:90)
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 472, y: 10 } });
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 472, y: 30 } });
+
+  // Click Insert column to the right
+  await page.getByText(`Insert column right`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion (Column 0 and 5 should be red and not have any values in it)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_col_right.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 6, targetRow: 1 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe(''); // Assert the clipboard content
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 8, targetRow: 1 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('6'); // Assert the clipboard content
+
+  //--------------------------------
+  // Delete Column
+  //--------------------------------
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select column 7
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 775, y: 30 } });
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 775, y: 30 } });
+
+  // Click Delete column
+  await page.getByText(`Delete 1 column`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion (Column 0 should be red and not have any values in it)
+  // Colums should be missing a "6" value - was deleted
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Delete-col.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 8, targetRow: 1 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('7'); // Assert the clipboard content
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 9, targetRow: 1 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('8'); // Assert the clipboard content
 
   //--------------------------------
   // Clean up:
