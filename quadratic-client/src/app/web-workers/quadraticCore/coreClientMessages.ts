@@ -9,7 +9,6 @@ import type {
   DataTableSort,
   Direction,
   Format,
-  JsAICells,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
@@ -1285,7 +1284,7 @@ export interface ClientCoreGetAICells {
 export interface CoreClientGetAICells {
   type: 'coreClientGetAICells';
   id: number;
-  aiCells: JsAICells | string | undefined;
+  aiCells: string;
 }
 
 export type ClientCoreMessage =

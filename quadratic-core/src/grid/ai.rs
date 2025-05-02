@@ -7,20 +7,15 @@ impl GridController {
     /// Returns the rendered values of the cells in a given rect. Note: this
     /// will return only the first range given within a selection.
     pub fn get_ai_cells(&self, selection: A1Selection) -> Result<String, A1Error> {
-        let range = &selection.ranges[0];
-        if let Some(rect) = range.to_rect(self.a1_context()) {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                let cells = sheet.get_cells_as_string(rect);
-                Ok(cells)
-            } else {
-                Err(A1Error::SheetNotFound)
+        let mut cells = String::new();
+        for range in &selection.ranges {
+            if let Some(rect) = range.to_rect(self.a1_context()) {
+                if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                    cells.push_str(&sheet.get_cells_as_string(rect));
+                }
             }
-        } else {
-            Err(A1Error::InvalidTableRef(format!(
-                "Invalid table range: {}",
-                range.to_string()
-            )))
         }
+        Ok(cells)
     }
 }
 

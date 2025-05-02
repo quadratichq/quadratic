@@ -18,7 +18,6 @@ import type {
   DataTableSort,
   Direction,
   Format,
-  JsAICells,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -1568,15 +1567,11 @@ class Core {
     }
   }
 
-  getAICells(selection: string, sheetName: string): JsAICells | string | undefined {
+  getAICells(selection: string, sheetName: string): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      console.log(selection, sheetName);
-      const results = this.gridController.getAICells(selection, sheetName);
-      console.log(results);
-      return results;
+      return this.gridController.getAICells(selection, sheetName);
     } catch (e) {
-      console.log(e);
       return JSON.stringify(e);
     }
   }

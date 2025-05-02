@@ -513,8 +513,9 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
   [AITool.GetCells]: {
     sources: ['AIAnalyst'],
     description: `
-    This tool returns the values of the cells in the chosen selection. It also requires the current sheet name as defined in the context.\n
+    This tool returns the values of the cells in the chosen selection.\n
     You should use the get_cells function to get the values of the cells when you need more data to reference.\n
+    Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
     get_cells function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
     `,
     parameters: {
@@ -522,13 +523,13 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
+          description:
+            'The sheet name of the current sheet as defined in the context, unless the user is requesting data from another sheet. In which case, use that sheet name.',
         },
         selection: {
           type: 'string',
           description: `
-          The string representation (in a1 notation) of the selection of cells to get the values of.\n
-          Do not concatenate requests.Use a separate request for each independent range.\n`,
+          The string representation (in a1 notation) of the selection of cells to get the values of. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
         },
       },
       required: ['selection', 'sheet_name'],
