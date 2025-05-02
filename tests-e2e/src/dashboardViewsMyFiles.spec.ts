@@ -377,19 +377,14 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
 
   // Log in
 
-  // Create new team
-  const teamName = `Shared with me - ${Date.now()}`;
-
   const sharedUserBrowser = await chromium.launch();
   const sharedUserPage = await sharedUserBrowser.newPage();
 
   // login 2 users
   const [, sharedUserEmail] = await Promise.all([
-    logIn(page, { emailPrefix: 'e2e_dashboard_shared_files_1' }),
-    logIn(sharedUserPage, { emailPrefix: 'e2e_dashboard_shared_files_2' }),
+    logIn(page, { emailPrefix: 'e2e_dashboard_user' }),
+    logIn(sharedUserPage, { emailPrefix: 'e2e_dashboard_shared_user' }),
   ]);
-
-  await createNewTeamByURL(page, { teamName });
 
   // Define test file names
   const testFile1 = 'C - Test File 1';

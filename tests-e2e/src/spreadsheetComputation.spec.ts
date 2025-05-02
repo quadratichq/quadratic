@@ -375,7 +375,7 @@ test('Formatting', async ({ page }) => {
 
   // Take initial screenshot
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-formatting-pre.png', {
-    maxDiffPixels: 1000,
+    maxDiffPixels: 500,
   });
 
   // Click search icon

@@ -37,6 +37,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await page.waitForTimeout(10 * 1000);
 
   const quadraticLoading = page.locator('html[data-loading-start]');
+  // app get stuck on loading screen some times which causes many tests to fail
   while (await quadraticLoading.isVisible()) {
     try {
       await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });

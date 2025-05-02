@@ -432,11 +432,9 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images
+            ✅ Deploy images - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}) on ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
             ⏳ Tests-E2E
 
-            🔗 URL: https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}
-            🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
 
@@ -549,11 +547,9 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images
+            ✅ Deploy images - [Preview](https://${{ env.e2e_url }}) on ${{ env.deploy_time }}
             ⏳ Tests-E2E running...
 
-            🔗 URL: https://${{ env.e2e_url }}
-            🕒 Last deployed: ${{ env.deploy_time }}
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
 
@@ -701,9 +697,6 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images
+            ✅ Deploy images - [Preview](https://${{ env.e2e_url }}) on ${{ env.deploy_time }}
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [View](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)  [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
-
-            🔗 URL: https://${{ env.e2e_url }}
-            🕒 Last deployed: ${{ env.deploy_time }}
           edit-mode: replace

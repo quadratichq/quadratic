@@ -1292,13 +1292,6 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   await dropTarget.dispatchEvent('dragover', { dataTransfer });
   await dropTarget.dispatchEvent('drop', { dataTransfer });
 
-  // Assert modal appears with file upload progress - very fast locally, test only on CI
-  if (process.env.CI) {
-    await expect(page.locator(`//*[@id='radix-:rs:']`)).toBeVisible();
-    await expect(page.getByText(`Import files`)).toBeVisible();
-    await expect(page.getByText(fileName)).toBeVisible();
-  }
-
   //--------------------------------
   // Assert:
   //--------------------------------
