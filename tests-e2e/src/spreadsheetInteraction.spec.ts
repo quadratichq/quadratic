@@ -1709,3 +1709,1063 @@ test('Insert and Delete Columns', async ({ page }) => {
   await page.locator(`nav a svg`).click();
   await cleanUpFiles(page, { fileName });
 });
+
+test('Insert and Delete Rows', async ({ page }) => {
+  //--------------------------------
+  // Insert Row above
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Insert and Delete Rows - ${Date.now()}`;
+  const fileName = 'Insert_row_col';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_insert_delete_row` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Rename file
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.keyboard.type(fileName, { delay: 50 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select row 1
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 30 } });
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 30, y: 30 } });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert we can insert rows and not columns
+  await expect(page.getByText(`Insert row above`)).toBeVisible();
+  await expect(page.getByText(`Insert column to the left`)).not.toBeVisible();
+
+  // Click Insert column to the left
+  await page.getByText(`Insert row above`).click();
+
+  // Screenshot assertion (Row 0 should not have any values in it)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_row_above.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Navigate to cell (1, 1), assert value should be ''
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(1000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('');
+  await page.keyboard.press('Escape');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 2, targetRow: 2 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('2'); // Assert the clipboard content
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Insert Row below
+  //--------------------------------
+
+  // Select row 4 (relative to screen mouse position X: 58, Y:195)
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 115 } });
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 30, y: 115 } });
+
+  // Click Insert column to the right
+  await page.getByText(`Insert row below`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion (Row 1 and 6 should be red and not have any values in it)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_row_below.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 6 });
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(1000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe(''); // Assert the clipboard content
+  await page.keyboard.press('Escape');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 9 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('7'); // Assert the clipboard content
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Delete Row
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select row 5 (relative to screen mouse position X: 58, Y:215)
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 135 } });
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 30, y: 135 } });
+
+  // Click Delete column
+  await page.getByText(`Delete 1 row`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion (Row 0 should not have any values in it, all other rows have values)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Delete-row.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 9 });
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(1000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('8'); // Assert the clipboard content
+  await page.keyboard.press('Escape');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 6 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('5'); // Assert the clipboard content
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Key Actions', async ({ page }) => {
+  // Constants
+  const newTeamName = `Key Actions - ${Date.now()}`;
+  const fileName = 'Key Actions';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_insert_delete_row` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  await createFile(page, { fileName });
+
+  //--------------------------------
+  // Arrow Keys
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Navigate into Key Actions File
+  await navigateIntoFile(page, { fileName });
+  await expect(page.locator('button:has-text("Key Actions")')).toBeVisible();
+
+  // Use Right arrow Key
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowRight');
+
+  // Enter fill the cell with text "Right Arrow"
+  await page.waitForTimeout(1000);
+  await page.keyboard.type('Right Arrow', { delay: 250 });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Confirm we're hovering over the expected cell
+  await expect(
+    page.locator(`div[style*="left: 102px; top: 2px"] > div[id="cell-edit"]:has-text("Right Arrow")`)
+  ).toBeVisible();
+
+  // Use Down Arrow Key
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowDown');
+
+  // Enter fill the cell with text "Down Arrow"
+  await page.waitForTimeout(1000);
+  await page.keyboard.type('Down Arrow', { delay: 500 });
+
+  // Confirm we're hovering over the expected cell
+  await expect(
+    page.locator(`div[style*="left: 102px; top: 23px"] > div[id="cell-edit"]:has-text("Down Arrow")`)
+  ).toBeVisible();
+
+  // Use Left Arrow Key
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowLeft');
+
+  // Enter fill the cell with text "Left Arrow"
+  await page.waitForTimeout(1000);
+  await page.keyboard.type('Left Arrow', { delay: 500 });
+
+  // Confirm we're hovering over the expected cell
+  await expect(
+    page.locator(`div[style*="left: 2px; top: 23px"] > div[id="cell-edit"]:has-text("Left Arrow")`)
+  ).toBeVisible();
+
+  // Use Up Arrow Key
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowUp');
+
+  // Enter fill the cell with text "Up Arrow"
+  await page.waitForTimeout(1000);
+  await page.keyboard.type('Up Arrow', { delay: 500 });
+
+  // Confirm we're hovering over the expected cell
+  await expect(
+    page.locator(`div[style*="left: 2px; top: 2px"] > div[id="cell-edit"]:has-text("Up Arrow")`)
+  ).toBeVisible();
+
+  //--------------------------------
+  // Tab Key
+  //--------------------------------
+  // Press "Esc" on keyboard to clear text
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Use Tab Key
+  await page.keyboard.press('Tab');
+
+  // Enter fill the cell with text "Tab"
+  await page.waitForTimeout(1000);
+  await page.keyboard.type('Tab', { delay: 500 });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Confirm we're hovering over the expected cell
+  await expect(page.locator(`div[style*="left: 102px; top: 2px"] > div[id="cell-edit"]:has-text("Tab")`)).toBeVisible();
+
+  //--------------------------------
+  // Enter Key
+  //--------------------------------
+  // Press "Esc" on keyboard to clear text
+  await page.keyboard.press('Escape');
+
+  // Use Down Arrow Key
+  await page.keyboard.press('ArrowDown');
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Use Enter Key
+  await page.keyboard.press('Enter');
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Confirm we're Prompted to type and edting is allowed
+  await expect(page.locator(`#cell-edit`)).toBeVisible();
+
+  // Enter fill the cell with text "Enter"
+  await page.waitForTimeout(1000);
+  await page.keyboard.type('Enter', { delay: 500 });
+
+  // Use Enter Key while in edit mode
+  await page.keyboard.press('Enter');
+
+  // Confirm edting is no longer allowed
+  await expect(page.locator(`#cell-edit`)).not.toBeVisible();
+
+  // Confirm we're hovering over the expected cell
+  await expect(
+    page.locator(`div[style*="left: 102px; top: 23px"] > div[id="cell-edit"]:has-text("Enter")`)
+  ).not.toBeVisible();
+
+  //--------------------------------
+  // Shift Key Selection
+  //--------------------------------
+  // Use Shift+Tab Key
+  await page.keyboard.press('Shift+Tab');
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Confirm we're hovering over the expected cell
+  await page.keyboard.type('Shift Key', { delay: 500 });
+
+  // Confirm we're hovering over the expected cell
+  await expect(
+    page.locator(`div[style*="left: 2px; top: 44px"] > div[id="cell-edit"]:has-text("Shift Key")`)
+  ).toBeVisible();
+
+  // Use Shift+Enter Key
+  await page.keyboard.press('Shift+Enter');
+
+  // Enter fill the cell with text "Shift+Tab"
+  await page.waitForTimeout(1000);
+  await page.keyboard.type('Shift+Tab', { delay: 500 });
+
+  // Confirm we're Prompted to type and edting is allowed
+  await expect(
+    page.locator(`div[style*="left: 2px; top: 23px"] > div[id="cell-edit"]:has-text("Shift+Tab")`)
+  ).toBeVisible();
+  await expect(page.locator(`#cell-edit`)).toBeVisible();
+
+  //--------------------------------
+  // Control Key Move
+  //--------------------------------
+  // Set up text in 3, 3
+  await navigateOnSheet(page, { targetColumn: 3, targetRow: 3 });
+  await page.keyboard.type('Shift Key', { delay: 500 });
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1000);
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 3 });
+  await page.waitForTimeout(3000);
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Use Control+RightArrow Key
+  await page.keyboard.press('Control+ArrowRight');
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Confirm we're hovering over the expected cell of the closest text column
+  await page.keyboard.press('Enter');
+  await expect(
+    page.locator(`div[style*="left: 202px; top: 44px"] > div[id="cell-edit"]:has-text("Shift Key")`)
+  ).toBeVisible();
+  await navigateOnSheet(page, { targetColumn: 3, targetRow: 1 });
+
+  // Use Control+DownArrow Key
+  await page.keyboard.press('Control+ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(500);
+
+  // Confirm we're hovering over the expected cell of the closest text column
+  await expect(
+    page.locator(`div[style*="left: 202px; top: 44px"] > div[id="cell-edit"]:has-text("Shift Key")`)
+  ).toBeVisible();
+  await navigateOnSheet(page, { targetColumn: 6, targetRow: 3 });
+  await page.waitForTimeout(1000);
+
+  // Use Control+Left Arrow Key
+  await page.keyboard.press('Control+ArrowLeft');
+  await page.waitForTimeout(500);
+
+  // Confirm we're hovering over the expected cell of the closest text column
+  await page.keyboard.press('Enter');
+  await expect(
+    page.locator(`div[style*="left: 202px; top: 44px"] > div[id="cell-edit"]:has-text("Shift Key")`)
+  ).toBeVisible();
+
+  // Navigate to [3,9]
+  await navigateOnSheet(page, { targetColumn: 3, targetRow: 9 });
+
+  // Use Control+UpArrow Key
+  await page.keyboard.press('Control+ArrowUp');
+
+  // Confirm we're hovering over the expected cell of the closest text column
+  await page.keyboard.press('Enter');
+  await expect(
+    page.locator(`div[style*="left: 202px; top: 44px"] > div[id="cell-edit"]:has-text("Shift Key")`)
+  ).toBeVisible();
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Left and Right Sheet Navigation', async ({ page }) => {
+  // Constants
+  const newTeamName = `Left and Right Sheet Navigation - ${Date.now()}`;
+  const fileName = 'LeftAndRight-SheetNavigation';
+  const lastSheetNum = 15;
+
+  // Log in
+  const email = await logIn(page, { emailPrefix: `e2e_left_right_navigation` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  await createFile(page, { fileName });
+
+  // Assert Quadratic team files page and logged in status
+  await expect(page.getByText(email)).toBeVisible();
+  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+
+  await navigateIntoFile(page, { fileName });
+
+  // Type sheet number into the first cell
+  await page.waitForTimeout(500);
+  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet 1` });
+
+  // Add multiple sheets
+  for (let i = 1; i < lastSheetNum; i++) {
+    await page.getByRole(`button`, { name: `add` }).click();
+
+    // Type sheet number into the first cell
+    await page.waitForTimeout(500);
+    await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet ${i + 1}` });
+  }
+
+  // Focus on the first sheet
+  await page.locator(`[data-title="Sheet 1"]`).click();
+
+  //--------------------------------
+  // Right Navigation
+  //--------------------------------
+
+  // Assert file is correct
+  await expect(page.getByRole(`button`, { name: fileName })).toBeVisible();
+  await expect(page).toHaveTitle(`${fileName} - Quadratic`);
+
+  // Store sheet navigation toolbar
+  const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+
+  // Store first and last sheet element
+  const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet 1"]`);
+  const lastSheetEl = sheetNavigation.locator(`[data-title="Sheet ${lastSheetNum}"]`);
+
+  // Assert all expected sheets are available (Sheets 1 through 15)
+  for (let i = 0; i < lastSheetNum; i++) {
+    await expect(sheetNavigation.locator(`[data-title="Sheet ${i + 1}"]`)).toBeVisible();
+  }
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Get initial x position of the first sheet (Sheet 1)
+  const focusedPosition = await firstSheetEl.boundingBox();
+  const focusedPositionX = focusedPosition?.x;
+
+  // Get initial X position of the last sheet (Sheet 15)
+  const initialPosition = await lastSheetEl.boundingBox();
+  const initialPositionX = initialPosition?.x;
+
+  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Click '>' (right) chevron icon to move sheets
+  // Click until the button is disabled
+  const rightChevron = page.getByRole('button', { name: 'chevron_right' });
+  while (await rightChevron.isEnabled()) {
+    await rightChevron.click();
+    await page.waitForTimeout(100);
+  }
+
+  // Get new X position of the first sheet (Sheet 1)
+  const focusedRightMove = await firstSheetEl.boundingBox();
+  const focusedRightMoveX = focusedRightMove?.x;
+
+  // Get new X position for last sheet (Sheet 15)
+  const afterRightMove = await lastSheetEl.boundingBox();
+  const afterRightMoveX = afterRightMove?.x;
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the focused sheet (Sheet 1) remains in the same position
+  expect(focusedRightMoveX).toBe(focusedPositionX);
+
+  // Assert that the last sheet (Sheet 15) was moved from its original position
+  expect(afterRightMoveX).not.toBe(initialPositionX);
+
+  // Assert sheet navigation toolbar shows `Sheet 15` as the last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToRight.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Assert that the sheet postions are NOT the same as the initial positions
+  let isNotSame;
+  try {
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`, {
+      maxDiffPixelRatio: 0.01,
+    });
+    isNotSame = false; // if it doesn't fail, it's the same (not expected)
+  } catch {
+    isNotSame = true; // if it fails, it's not the same (expected)
+  }
+  expect(isNotSame).toBeTruthy();
+
+  //--------------------------------
+  // Left Navigation
+  //--------------------------------
+  // Reset isNotSame boolean for 'Left Navigation' test assertions
+  isNotSame = null;
+
+  // Assert all expected sheets are available (Sheets 1 through 15)
+  for (let i = 0; i < lastSheetNum; i++) {
+    await expect(sheetNavigation.locator(`[data-title="Sheet ${i + 1}"]`)).toBeVisible();
+  }
+
+  // Get current X position of the first sheet (Sheet 1)
+  const focusedLeftMoveX = focusedRightMoveX;
+
+  // Get current X position of the last sheet (Sheet 15)
+  const beforeLeftMoveX = afterRightMoveX;
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click '<' (left) chevron icon to move sheets
+  // Click until the button is disabled
+  const leftChevron = page.getByRole('button', { name: 'chevron_left' });
+  while (await leftChevron.isEnabled()) {
+    await leftChevron.click();
+    await page.waitForTimeout(100);
+  }
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Get new X position for first sheet (Sheet 1)
+  const focusedFinal = await firstSheetEl.boundingBox();
+  const focusedFinalX = focusedFinal?.x;
+
+  // Get new X position for last sheet (Sheet 15)
+  const afterLeftMove = await lastSheetEl.boundingBox();
+  const afterLeftMoveX = afterLeftMove?.x;
+
+  // Assert that the focused sheet (Sheet 1) remains in the same position
+  expect(focusedFinalX).toBe(focusedLeftMoveX);
+  expect(focusedFinalX).toBe(focusedPositionX);
+
+  // Assert that the last sheet (Sheet 15) was moved from its original position
+  expect(afterLeftMoveX).not.toBe(beforeLeftMoveX);
+
+  // Assert that the last sheet is back to the initial position (before any left/right movements)
+  expect(afterLeftMoveX).toBe(initialPositionX);
+
+  // Assert sheet navigation toolbar shows `Sheet 12` as the last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToLeft.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Assert that the sheet postions are the same as the initial positions
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Assert that the sheet postions are NOT the same as the positions after RIGHT navigation
+  try {
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToRight.png`, {
+      maxDiffPixelRatio: 0.01,
+    });
+    isNotSame = false; // if it doesn't fail, it's the same (not expected)
+  } catch {
+    isNotSame = true; // if it fails, it's not the same (expected)
+  }
+  expect(isNotSame).toBeTruthy();
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Log Out From Sheet', async ({ page }) => {
+  // Constants
+  const newTeamName = `Log Out From Sheet - ${Date.now()}`;
+  const fileName = 'Log Out From Sheet';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_sheet_logout` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  await createFile(page, { fileName });
+
+  await navigateIntoFile(page, { fileName });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click on your profile
+  await page.locator('button:has(img[alt*="You"])').click();
+
+  // Select Log Out
+  await page.getByRole(`menuitem`, { name: `Log out` }).click();
+  await page.waitForTimeout(10 * 1000);
+  await page.waitForLoadState('domcontentloaded');
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert you are on the Login page via text assertions
+  await expect(page.getByText(`Welcome Login to Quadratic.`)).toBeVisible({ timeout: 2000 });
+  await expect(page.getByRole(`textbox`, { name: `Work email` })).toBeVisible();
+  await expect(page.getByRole(`textbox`, { name: `Password` })).toBeVisible();
+  await expect(page.getByRole(`button`, { name: `Continue with Google` })).toBeVisible();
+
+  // Log back in to delete the file we created
+  await logIn(page, { emailPrefix: `e2e_sheet_logout` });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Multi-Delete Columns', async ({ page }) => {
+  // Constants
+  const newTeamName = `Multi-Delete Columns - ${Date.now()}`;
+  const fileName = 'Insert_row_col';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_multi_delete_columns` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Rename file
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.keyboard.type(fileName, { delay: 50 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select cells
+  await selectCells(page, { startXY: [2, 4], endXY: [4, 6] });
+
+  // Right click (screen position 402, 217)
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 354, y: 137 } });
+
+  // Click Delete
+  await page.getByText(`Delete 3 columns`).click();
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Screenshot assertion (Columns 0,1 should be red, Columns 2-7 should be blue)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Multi_delete_col.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Navigate to cell (3,1), assert value should be 6
+  await navigateOnSheet(page, { targetColumn: 3, targetRow: 1 });
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(1000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('6');
+  await page.keyboard.press('Escape');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 5 });
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(3000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('5'); // Assert the clipboard content
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Multi-Delete Rows', async ({ page }) => {
+  // Constants
+  const newTeamName = `Multi-Delete Rows - ${Date.now()}`;
+  const fileName = 'Insert_row_col';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_multi_delete_rows` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Rename file
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.keyboard.type(fileName, { delay: 50 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select cells
+  await selectCells(page, { startXY: [2, 4], endXY: [4, 6] });
+
+  // Right click (screen position 402, 217)
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 354, y: 137 } });
+
+  // Click Delete 3 rows
+  await page.getByText(`Delete 3 rows`).click();
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion (Column 0-3 should be red, Columns 4-10 should be blue)
+  // Column 0 should read vertically: 1,2,3,4,8,9,10, etc
+  // Column 0 should not contain the numbers 5,6,7 (these rows have been deleted)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Multi_delete_rows.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Navigate to cell (3,1), assert value should be 6
+  await navigateOnSheet(page, { targetColumn: 3, targetRow: 1 });
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(1000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('3');
+  await page.keyboard.press('Escape');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 5 });
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(3000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('8'); // Assert the clipboard content
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Panning Behavior', async ({ page }) => {
+  // Constants
+  const newTeamName = `Panning Behavior - ${Date.now()}`;
+  const fileName = 'Panning_Behavior';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_panning_behavior` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Take an initial screenshot of how the sheet should appear
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`panning_behavior_initial.png`);
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Hold down the Spacebar on keyboard
+  await page.keyboard.down(`Space`);
+
+  // Hover over the center of the canvas
+  const canvas = page.locator(`#QuadraticCanvasID`);
+  const boundingBox = await canvas.boundingBox();
+  if (!boundingBox) {
+    throw new Error(`Canvas bounding box not found`);
+  }
+
+  // Calculate the start point (center of the canvas)
+  const startX = boundingBox.x + boundingBox.width / 2;
+  const startY = boundingBox.y + boundingBox.height / 2;
+  console.log({ startX, startY });
+
+  // Calculate the end point (to the left of the start point)
+  const endX = startX;
+  const endY = startY - 500;
+
+  // Simulate mouse drag
+  await page.mouse.move(startX, startY, { steps: 50 });
+  await page.mouse.down();
+  await page.mouse.move(endX, endY, { steps: 100 });
+  await page.mouse.up();
+
+  // Release the Spacebar
+  await page.keyboard.up(`Space`);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert dragging behavior was correct
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`panning_behavior_after_dragging.png`);
+
+  // Hover over the center of the canvas
+  const boundingBox2 = await canvas.boundingBox();
+  if (!boundingBox2) {
+    throw new Error(`Canvas bounding box not found`);
+  }
+
+  // Calculate the start point (center of the canvas)
+  const startX2 = boundingBox2.x + boundingBox2.width / 2;
+  const startY2 = boundingBox2.y + boundingBox2.height / 2;
+
+  // Calculate the end point (to the left of the start point)
+  const endX2 = startX2;
+  const endY2 = startY2 - 200;
+
+  // Simulate mouse drag again
+  await page.mouse.move(startX2, startY2, { steps: 50 });
+  await page.mouse.down();
+  await page.mouse.move(endX2, endY2, { steps: 100 });
+  await page.mouse.up();
+
+  // Assert that panning did not occur after releasing spacebar
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
+    `panning_behavior_after_dragging_and_releasing_spacebar.png`
+  );
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Python More Snippets', async ({ page }) => {
+  // Constants
+  const newTeamName = `Python More Snippets - ${Date.now()}`;
+  const fileName = 'python_more_snippets';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_python_more_snippets` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Select a Snippet from More Snippets
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Navigate to B1
+  await navigateOnSheet(page, { targetColumn: 2, targetRow: 1 });
+
+  // Click / to open code editor
+  await page.keyboard.press('/');
+
+  // Click on Python button
+  await page.getByText('Python', { exact: true }).click();
+  await page.waitForTimeout(2000);
+
+  // Click on the More Snippets button
+  await page.getByRole(`button`, { name: `More snippets` }).click();
+
+  // Type 'Read' in the search snippets input to filter snippets
+  await page.getByPlaceholder('Search snippets...').fill('Read');
+
+  // Click on the 'Read data from the sneet' snippet
+  await page.getByText('Read data from the sheet').click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Code Editor constant
+  const codeEditor = page.locator(`#QuadraticCodeEditorID`);
+
+  // Assert that the text 'for x in range(10):' is visible
+  await expect(codeEditor.getByText("my_value = q.cells('A1')").first()).toBeVisible();
+  await expect(codeEditor.getByText("my_dataframe = q.cells('A1:A10')").first()).toBeVisible();
+
+  // Assert the dropdown has closed
+  await expect(page.locator('[role=dialog]:has(input[placeholder="Search snippets..."])')).toBeHidden();
+
+  //--------------------------------
+  // Run Snippet
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Click the play button
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
+  await page.locator(`#QuadraticCanvasID`).click();
+  await page.keyboard.press('Escape');
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Select the entire python table
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 1 });
+  await page.waitForTimeout(1000);
+
+  // Copy the Data
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(1000);
+
+  // Read the data
+  const clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+
+  // Assert the data returned to the sheet
+  expect(clipboardText).toBe('Python1\n1\n2\n3\nhello\n5\n6\nhi\n8\n9\nworld'); // Assert the clipboard content
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Python Snippets', async ({ page }) => {
+  // Constants
+  const newTeamName = `Python Snippets - ${Date.now()}`;
+  const fileName = 'Python_Snippets';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_python_snippets` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Create new file
+  await createFile(page, { fileName });
+
+  // Navigate into file
+  await navigateIntoFile(page, { fileName });
+
+  //--------------------------------
+  // Select a Snippet
+  //--------------------------------
+  // Code Editor constant
+  const codeEditor = page.locator(`#QuadraticCodeEditorID`);
+
+  // Click / to open code editor
+  await page.keyboard.press('/');
+
+  // Click on Python button
+  await page.getByText('Python', { exact: true }).click();
+  await page.waitForTimeout(2000);
+
+  // Click on the Integration Instructions snippet button
+  await page.getByRole(`button`, { name: `integration_instructions`, exact: true }).click();
+
+  // Type 'Return' in the search snippets input to filter snippets
+  await page.getByPlaceholder('Search snippets...').fill('Return');
+
+  // Click on the 'Return data to the sheet' snippet
+  await page.getByText('Return data to the sheet').click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert that the text 'for x in range(10):' is visible
+  await expect(codeEditor.getByText('for x in range(10):', { exact: true })).toBeVisible();
+
+  // Assert that the snippet shows in the code editor
+  await expect(codeEditor.getByText('out # Last line returns to the sheet', { exact: true })).toBeVisible();
+
+  // Assert the dropdown has closed
+  await expect(page.locator('[role=dialog]:has(input[placeholder="Search snippets..."])')).toBeHidden();
+
+  //--------------------------------
+  // Run Snippet
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Click the play button
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
+  await page.waitForTimeout(5000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Select the entire python table
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+  await page.waitForTimeout(1000);
+
+  // Copy the Data
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(1000);
+
+  // Read the data
+  const clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+
+  // Assert the data returned to the sheet
+  expect(clipboardText).toBe('Python1\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9'); // Assert the clipboard content
+
+  // close editor
+  await page.getByRole(`button`, { name: `Close` }).click();
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
