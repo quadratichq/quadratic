@@ -50,8 +50,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   // app get stuck on loading screen some times which causes many tests to fail
   while (await quadraticLoading.isVisible()) {
     try {
-      await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
       await page.waitForLoadState('domcontentloaded');
+      await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
       await page.waitForTimeout(10 * 1000);
     } catch (error) {
       void error;
@@ -60,11 +60,11 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   // go to dashboard if in app
   const dashboardLink = page.locator('nav a[href="/"]');
-  while (await dashboardLink.isVisible()) {
+  while ((await dashboardLink.isVisible()) || (await quadraticLoading.isVisible())) {
     await dashboardLink.click();
-    await page.waitForTimeout(10 * 1000);
+    await page.waitForLoadState('domcontentloaded');
     await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(10 * 1000);
   }
 
   // assert that we are logged in

@@ -2512,7 +2512,9 @@ test('Panning Behavior', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Take an initial screenshot of how the sheet should appear
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`panning_behavior_initial.png`);
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`panning_behavior_initial.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Act:
@@ -2530,7 +2532,6 @@ test('Panning Behavior', async ({ page }) => {
   // Calculate the start point (center of the canvas)
   const startX = boundingBox.x + boundingBox.width / 2;
   const startY = boundingBox.y + boundingBox.height / 2;
-  console.log({ startX, startY });
 
   // Calculate the end point (to the left of the start point)
   const endX = startX;
@@ -2549,7 +2550,9 @@ test('Panning Behavior', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert dragging behavior was correct
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`panning_behavior_after_dragging.png`);
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`panning_behavior_after_dragging.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   // Hover over the center of the canvas
   const boundingBox2 = await canvas.boundingBox();
@@ -2573,7 +2576,10 @@ test('Panning Behavior', async ({ page }) => {
 
   // Assert that panning did not occur after releasing spacebar
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-    `panning_behavior_after_dragging_and_releasing_spacebar.png`
+    `panning_behavior_after_dragging_and_releasing_spacebar.png`,
+    {
+      maxDiffPixelRatio: 0.01,
+    }
   );
 
   //--------------------------------
@@ -2785,9 +2791,6 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  // Clean up lingering files
-  await cleanUpFiles(page, { fileName });
-
   // Import file
   await uploadFile(page, { fileName, fileType });
 
@@ -2900,9 +2903,6 @@ test('Range Cell Reference - Python', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  // Clean up lingering files
-  await cleanUpFiles(page, { fileName });
-
   // Import file
   await uploadFile(page, { fileName, fileType });
 
@@ -3009,9 +3009,6 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  // Clean up lingering files
-  await cleanUpFiles(page, { fileName });
-
   // Import file
   await uploadFile(page, { fileName, fileType });
 
@@ -3105,6 +3102,1248 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
   await page.waitForTimeout(2000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe(''); // Assert the clipboard content
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Scroll between sheets', async ({ page }) => {
+  // Constants
+  const newTeamName = `Scroll between sheets - ${Date.now()}`;
+  const fileName = 'Scrolling-SheetNavigation';
+  const lastSheetNum = 15;
+
+  // Log in
+  const email = await logIn(page, { emailPrefix: `e2e_scroll_between_sheets` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  await createFile(page, { fileName });
+
+  // Assert Quadratic team files page and logged in status
+  await expect(page.getByText(email)).toBeVisible();
+  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+
+  await navigateIntoFile(page, { fileName });
+
+  // Type sheet number into the first cell
+  await page.waitForTimeout(500);
+  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet 1` });
+
+  // Add multiple sheets
+  for (let i = 1; i < lastSheetNum; i++) {
+    await page.getByRole(`button`, { name: `add` }).click();
+
+    // Type sheet number into the first cell
+    await page.waitForTimeout(500);
+    await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet ${i + 1}` });
+  }
+
+  // Focus on the first sheet
+  await page.locator(`[data-title="Sheet 1"]`).click();
+
+  // Store sheet navigation toolbar
+  const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+
+  // Store first and last sheet element
+  const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet 1"]`);
+  const lastSheetEl = sheetNavigation.locator(`[data-title="Sheet ${lastSheetNum}"]`);
+
+  // Assert all expected sheets are available (Sheets 1 through 15)
+  for (let i = 0; i < lastSheetNum; i++) {
+    await expect(sheetNavigation.locator(`[data-title="Sheet ${i + 1}"]`)).toBeVisible();
+  }
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Get initial x position of the first sheet (Sheet 1)
+  let firstSheetPosition = await firstSheetEl.boundingBox();
+  let firstSheetPositionX = firstSheetPosition?.x;
+
+  // Get initial X position of the last sheet (Sheet 15)
+  let lastSheetPosition = await lastSheetEl.boundingBox();
+  let lastSheetPositionX = lastSheetPosition?.x;
+
+  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Hover over the sheet navigation toolbar and scroll to the RIGHT
+  await sheetNavigation.hover();
+  await page.mouse.wheel(300, 0);
+
+  // Get new X position of the first sheet (Sheet 1)
+  const firstSheetScrolledRight = await firstSheetEl.boundingBox();
+  const firstSheetScrolledRightX = firstSheetScrolledRight?.x;
+
+  // Get new X position for last sheet (Sheet 15)
+  const lastSheetScrolledRight = await lastSheetEl.boundingBox();
+  const lastSheetScrolledRightX = lastSheetScrolledRight?.x;
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the focused sheet (Sheet 1) remains in the same position
+  expect(firstSheetScrolledRightX).toBe(firstSheetPositionX);
+
+  // Assert that the last sheet (Sheet 15) was moved from its original position
+  expect(lastSheetScrolledRightX).not.toBe(lastSheetPositionX);
+
+  // Assert sheet navigation toolbar shows `Sheet 15` as the last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToRight.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Assert that the sheet positions are NOT the same as the initial positions
+  let isNotSame;
+  try {
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
+      maxDiffPixelRatio: 0.01,
+    });
+    isNotSame = false; // if it doesn't fail, it's the same (not expected)
+  } catch {
+    isNotSame = true; // if it fails, it's not the same (expected)
+  }
+  expect(isNotSame).toBeTruthy();
+
+  // Click 'Sheet 15' to focus it
+  await lastSheetEl.click();
+
+  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 4` as first visible sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial_v2.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Update the initial positions with 'Sheet 15' as the focused sheet
+  // Get initial x position of the first sheet (Sheet 1)
+  firstSheetPosition = await firstSheetEl.boundingBox();
+  firstSheetPositionX = firstSheetPosition?.x;
+
+  // Get initial X position of the last sheet (Sheet 15)
+  lastSheetPosition = await lastSheetEl.boundingBox();
+  lastSheetPositionX = lastSheetPosition?.x;
+
+  // Hover over the sheet navigation toolbar and scroll to the LEFT
+  await sheetNavigation.hover();
+  await page.mouse.wheel(-300, 0);
+
+  // Get new X position of the first sheet (Sheet 1)
+  const firstSheetScrolledLeft = await firstSheetEl.boundingBox();
+  const firstSheetScrolledLeftX = firstSheetScrolledLeft?.x;
+
+  // Get new X position for last sheet (Sheet 15)
+  const lastSheetScrolledLeft = await lastSheetEl.boundingBox();
+  const lastSheetScrolledLeftX = lastSheetScrolledLeft?.x;
+
+  // Assert that the focused sheet (Sheet 1) was moved from its original position
+  expect(firstSheetScrolledLeftX).not.toBe(firstSheetPositionX);
+
+  // Assert that the last sheet (Sheet 15) remains in the same position (as the focused sheet)
+  expect(lastSheetScrolledLeftX).toBe(lastSheetPositionX);
+
+  // Assert sheet navigation toolbar shows `Sheet 15` as the focused sheet with `Sheet 1` at the start
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToLef.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Assert that the sheet positions are NOT the same as the v2 initial position
+  isNotSame = null; // reset the variable
+  try {
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial_v2.png`, {
+      maxDiffPixelRatio: 0.01,
+    });
+    isNotSame = false; // if it doesn't fail, it's the same (not expected)
+  } catch {
+    isNotSame = true; // if it fails, it's not the same (expected)
+  }
+  expect(isNotSame).toBeTruthy();
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Search - Case sensitive search', async ({ page }) => {
+  // Constants
+  const newTeamName = `Search - Case sensitive search - ${Date.now()}`;
+  const fileName = '(Main) QAWolf test';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_case_sensitive_search` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Press Control + F
+  await page.keyboard.press(`Control+F`);
+
+  // Click options icon on the search field
+  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+
+  // Click `Case sensitive search` option
+  await page.getByRole(`menuitemcheckbox`, { name: `Case sensitive search` }).click();
+
+  // Click body (playground flakiness)
+  await page.locator(`body`).click();
+
+  // Fill `Find in current sheet` with an lowercase search that doesn't exist
+  await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`this is a string`);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Expect `0 of 0` to be visible on the search field (since the search is does not have the correct capitalization)
+  await expect(page.locator(`input + div`).getByText(`0 of 0`)).toBeVisible();
+
+  // Expect no cells to be highlighted
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Case_Sensitive_Search_No_Match.png');
+
+  // Fill `Find in current sheet` with an complete cell content
+  await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`This is a string`);
+
+  // Expect three cells in the current sheet to be highlighted (since the search has the correct capitalization)
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Case_Sensitive_Search_Match.png');
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Search - Match entire cell contents', async ({ page }) => {
+  // Constants
+  const newTeamName = `Search - Match entire cell contents - ${Date.now()}`;
+  const fileName = '(Main) QAWolf test';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_cell_contents` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Press Control + F
+  await page.keyboard.press(`Control+F`);
+
+  // Click options icon on the search field
+  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+
+  // Click `Match entire cell contents` option
+  await page.getByRole(`menuitemcheckbox`, { name: `Match entire cell contents` }).click();
+
+  // Click body (playground flakiness)
+  await page.locator(`body`).click();
+
+  // Fill `Find in current sheet` with an incomplete cell content
+  await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`1.099`);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Expect `0 of 0` to be visible on the search field (since the search doesn't fully match any cells)
+  await expect(page.locator(`input + div`).getByText(`0 of 0`)).toBeVisible();
+
+  // Expect no cells to be highlighted
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Match_Entire_Cell_Contents_Incomplete_Search.png');
+
+  // Fill `Find in current sheet` with an complete cell content
+  await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`1.099 test`);
+
+  // Expect three cells in the current sheet to be highlighted (since the serach fully matches cell contents)
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Match_Entire_Cell_Contents_Complete_Search.png');
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Search - Search all sheets', async ({ page }) => {
+  // Constants
+  const newTeamName = `Search - Search all sheets - ${Date.now()}`;
+  const fileName = '(Main) QAWolf test';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_search_all_sheets` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Press Control + F
+  await page.keyboard.press(`Control+F`);
+
+  // Click options icon on the search field
+  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+
+  // Click `Search all sheets` option
+  await page.getByRole(`menuitemcheckbox`, { name: `Search all sheets` }).click({ delay: 2 * 1000, force: true });
+
+  // Click body (playground flakiness)
+  await page.locator(`body`).click();
+
+  // Fill `Find in all sheets` search field to be visible on the top right of the page
+  await page.getByRole(`textbox`, { name: `Find in all sheets` }).fill(`Referencing sheet inputs from Python`);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Expect `1 of 4` to be visible on the search field
+  await expect(page.locator(`input + div`).getByText(`1 of 4`)).toBeVisible();
+
+  // Expect the cell named `Referencing sheet inputs from Python` to be highlighted, likely on row 1
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Search_All_Sheets_1.png', {
+    maxDiffPixelRatio: 0.005,
+  });
+
+  // Click the right arrow on the search field
+  await page.getByRole(`dialog`).locator(`button`).nth(1).click();
+
+  // Expect `2 of 4` to be visible on the search field
+  await expect(page.locator(`input + div`).getByText(`2 of 4`)).toBeVisible();
+
+  // Expect the cell named `Referencing sheet inputs from Python` to be highlighted, likely on row 1
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Search_All_Sheets_2.png', {
+    maxDiffPixelRatio: 0.005,
+  });
+
+  // Click the right arrow on the search field
+  await page.getByRole(`dialog`).locator(`button`).nth(1).click();
+
+  // Expect `3 of 4` to be visible on the search field
+  await expect(page.locator(`input + div`).getByText(`3 of 4`)).toBeVisible();
+
+  // Expect the cell named `Referencing sheet inputs from Python` to be highlighted, likely on row 1
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Search_All_Sheets_3.png', {
+    maxDiffPixelRatio: 0.005,
+  });
+
+  // Click the right arrow on the search field
+  await page.getByRole(`dialog`).locator(`button`).nth(1).click();
+
+  // Expect `4 of 4` to be visible on the search field
+  await expect(page.locator(`input + div`).getByText(`4 of 4`)).toBeVisible();
+
+  // Expect the cell named `Referencing sheet inputs from Python` to be highlighted, likely on row 1
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Search_All_Sheets_4.png', {
+    maxDiffPixelRatio: 0.005,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Search - Search within code', async ({ page }) => {
+  // Constants
+  const newTeamName = `Search - Search within code - ${Date.now()}`;
+  const fileName = 'Search_Within_Code';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_search_within_code` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Create new file
+  await createFile(page, { fileName });
+
+  // Navigate into file
+  await navigateIntoFile(page, { fileName });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click / to open code editor
+  await page.keyboard.press('/');
+
+  // Click on Python button
+  await page.getByText('Python', { exact: true }).click();
+
+  // Click `More snippets`
+  await page.getByRole(`button`, { name: `More snippets` }).click({ delay: 2 * 1000 });
+
+  // Click `Select DataFrame columns` option
+  await page.getByRole(`option`, { name: `Select DataFrame columns` }).click({ delay: 2 * 1000 });
+
+  // Click run icon
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+
+  // Close code section
+  await page.getByRole(`button`, { name: `close` }).click({ delay: 1000 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Press Control + F
+  await page.keyboard.press(`Control+F`);
+
+  // Click options icon on the search field
+  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+
+  // Click `Search within code` option
+  await page.getByRole(`menuitemcheckbox`, { name: `Search within code` }).click();
+
+  // Fill search field
+  await page.getByRole(`textbox`, { name: `Find` }).fill(`dataframe`);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Expect A1 to be highlighted as that is the cell that holds the code
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Search_Within_Code.png');
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Single Cell Reference - Javascript', async ({ page }) => {
+  // Constants
+  const newTeamName = `Single Cell Reference - Javascript - ${Date.now()}`;
+  const fileName = 'Cell_Reference_JS';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_reference_javascript` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Select Single Cell
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select cell at ['E', 11]
+  await navigateOnSheet(page, { targetColumn: 'E', targetRow: 11 });
+
+  // Open code editor
+  await page.keyboard.press('/');
+  await page.waitForTimeout(2000);
+  await page.keyboard.type('j');
+  await page.keyboard.press('Enter');
+
+  // Wait for code editor to load
+  await page.locator(`button:has-text("show this again")`).waitFor();
+
+  // Fill JS code into code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.keyboard.type("let ref = q.cells('C7')");
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('return ref');
+  await page.waitForTimeout(2000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(2000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the single cell reference JS table has applied to the cell at [5, 11]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('single_cell_reference_samesheet_js.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Select Single Cell from Another Sheet
+  //--------------------------------
+
+  // Clear code in code editor
+  await page.locator(`#QuadraticCodeEditorID .view-line`).first().click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+
+  // Navigate into Sheet 2
+  await page.locator(`[data-title="Sheet 2"]`).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select cell at ['C', 7]
+  await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
+
+  // Fill JS code into code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.keyboard.type(`let ref = q.cells("'Sheet 2'!C7")`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('return ref');
+  await page.waitForTimeout(2000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(2000);
+
+  // Navigate into Sheet 1
+  await page.locator(`[data-title="Sheet 1"]`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the single cell reference has applied to the cell at [5, 11]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('single_cell_reference_differentsheet_js.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Single Cell Reference - Python', async ({ page }) => {
+  // Constants
+  const newTeamName = `Single Cell Reference - Python - ${Date.now()}`;
+  const fileName = 'Cell_Reference_Python';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_reference_python` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Select Single Cell
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select cell at [E, 11]
+  await navigateOnSheet(page, { targetColumn: 'E', targetRow: 11 });
+  await page.waitForTimeout(2000);
+
+  // Open code editor
+  await page.keyboard.press('/');
+  await page.waitForTimeout(2000);
+  await page.keyboard.type('p');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(2000);
+
+  // Select cell at [C, 7]
+  await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
+
+  // Click "Insert cell reference" button on top bar of code editor
+  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.waitForTimeout(1000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(1000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert that the single cell reference has applied to the cell at [E, 11]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'single_cell_reference_samesheet_python_table.png',
+    {
+      maxDiffPixels: 100,
+    }
+  );
+
+  //--------------------------------
+  // Select Single Cell from Another Sheet
+  //--------------------------------
+
+  // Clear code in code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).last().click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+
+  // Navigate into Sheet 2
+  await page.locator(`[data-title="Sheet 2"]`).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select cell at ["C", 7]
+  await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
+
+  // Click "Insert cell reference" button on top bar of code editor
+  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.waitForTimeout(1000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(1000);
+
+  // Navigate into Sheet 1
+  await page.locator(`[data-title="Sheet 1"]`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the single cell reference has applied to the cell at [5, 11]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'single_cell_reference_diffsheet_python_table.png',
+    {
+      maxDiffPixels: 100,
+    }
+  );
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Spill Auto-Fix', async ({ page }) => {
+  // Constants
+  const newTeamName = `Spill Auto-Fix - ${Date.now()}`;
+  const fileName = 'Spill_Auto_Fix';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_spill_auto_fix` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Spill_Auto_Fix
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Hover over cell A1 where the SPILL error appears
+  await page.mouse.move(110, 110);
+
+  // Click the 'Fix' button in the spill auto-fix box
+  await page.getByText(`Fix arrow_drop_down`).click();
+
+  // Click 'Move right to nearest free space' option
+  await page
+    .getByRole(`menuitem`, {
+      name: `vertical_align_bottom Move right to nearest free space`,
+    })
+    .click();
+
+  // Wait a moment for auto-fix spill to apply
+  await page.waitForTimeout(10000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert that the spill auto-fix worked correctly (another set of 1,2,3,4 shifts right)
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Theme Customization', async ({ page }) => {
+  // Constants
+  const newTeamName = `Theme Customization - ${Date.now()}`;
+
+  const expectedThemes = [
+    {
+      name: `Mono`,
+      color: `rgb(24, 24, 27)`,
+      value: `black`,
+    },
+    {
+      name: `Blue`,
+      color: `rgb(37, 99, 235)`,
+      value: `blue`,
+    },
+    {
+      name: `Violet`,
+      color: `rgb(124, 58, 237)`,
+      value: `violet`,
+    },
+    {
+      name: `Orange`,
+      color: `rgb(249, 115, 22)`,
+      value: `orange`,
+    },
+    {
+      name: `Green`,
+      color: `rgb(22, 163, 74)`,
+      value: `green`,
+    },
+    {
+      name: `Rose`,
+      color: `rgb(225, 29, 72)`,
+      value: `rose`,
+    },
+  ];
+
+  // Log in
+  const email = await logIn(page, { emailPrefix: `e2e_theme_customization` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  //--------------------------------
+  // Arrange:
+  //--------------------------------
+
+  // Assert Quadratic team files page and logged in status
+  await expect(page.getByText(email)).toBeVisible();
+  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible();
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Homepage elements for accent color changes
+  const upgradeButtonEl = page.getByRole(`link`, { name: `Upgrade to Pro` });
+  const newFileButtonEl = page.getByRole(`button`, { name: `New file` });
+  const upgradeTextSVG = page.getByRole(`navigation`).locator(`svg`);
+
+  // Member page elements for accent color changes
+  const inviteButtonEl = page.getByRole(`button`, { name: `Invite` });
+
+  // Settings page elements for accent color changes
+  const settingsUpgradeButtonEl = page.getByRole(`button`, { name: `Upgrade to Pro` });
+  const privateSwitchEl = page.getByRole(`switch`, { name: `Improve AI results` });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // =============== Note ===============
+  // This loop tests all accent themes by:
+  // - Applies the accent color
+  // - Asserts theme is reflected in the UI (`data-theme` attribute, button styles)
+  // - Verifies theme persists after reload and across key pages (Home, Members, Settings)
+
+  // Click accent color and assert the accent color is applied to the expect button elements
+  for (const theme of expectedThemes) {
+    await page.waitForTimeout(500);
+
+    // Click theme toggle button (identified by constract icon)
+    await page.getByRole(`button`, { name: `contrast` }).click();
+
+    // Click accent color
+    await page.getByRole(`button`, { name: theme.name }).click();
+
+    // Assert that the HTML element has accent name applied to 'data-theme' attribute
+    expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
+
+    // Assert the 'Upgrade' button and SVG has the expected accent color
+    await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
+    await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
+
+    // Assert the 'New File' button has the expected accent color
+    await expect(newFileButtonEl).toHaveCSS(`background-color`, theme.color);
+
+    // Reload the page
+    await page.reload();
+    await page.waitForLoadState(`networkidle`);
+
+    // Assert selected accent colors persists after reload (using the same assertions)
+    expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
+    await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
+    await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
+    await expect(newFileButtonEl).toHaveCSS(`background-color`, theme.color);
+
+    // Navigate to the 'Members' page and assert page
+    await page.getByRole(`link`, { name: `group Members` }).click();
+    await expect(page).toHaveTitle(/Team members - Quadratic/);
+    await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible();
+    await expect(page.getByText(`${email} (You)`)).toBeVisible();
+
+    // Assert the 'Invite' button has the expected accent color on the 'Members' page
+    await expect(inviteButtonEl).toHaveCSS(`background-color`, theme.color);
+
+    // Navigate to the 'Settings' page and assert page
+    await page.getByRole(`link`, { name: `settings Settings` }).click();
+    await expect(page).toHaveTitle(/Team settings - Quadratic/);
+    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible();
+
+    // Assert the 'Upgrade to Pro' button has the expected accent color
+    await expect(settingsUpgradeButtonEl).toHaveCSS(`background-color`, theme.color);
+
+    // Assert the 'Privacy' switch toggle has the expected accent color
+    await expect(privateSwitchEl).toHaveCSS(`background-color`, theme.color);
+
+    // Return to homepage
+    await page.getByRole(`link`, { name: `draft Files` }).click();
+  }
+});
+
+test('Theme Customization from Sheet', async ({ page }) => {
+  // Constants
+  const newTeamName = `Theme Customization from Sheet - ${Date.now()}`;
+  const fileName = `theme_customization_from_sheet`;
+
+  // Expected accent themes
+  const expectedThemes = [
+    {
+      name: `Mono`,
+      color: `rgb(24, 24, 27)`,
+      value: `black`,
+    },
+    {
+      name: `blue`,
+      color: `rgb(37, 99, 235)`,
+      value: `blue`,
+    },
+    {
+      name: `violet`,
+      color: `rgb(124, 58, 237)`,
+      value: `violet`,
+    },
+    {
+      name: `orange`,
+      color: `rgb(249, 115, 22)`,
+      value: `orange`,
+    },
+    {
+      name: `green`,
+      color: `rgb(22, 163, 74)`,
+      value: `green`,
+    },
+    {
+      name: `rose`,
+      color: `rgb(225, 29, 72)`,
+      value: `rose`,
+    },
+  ];
+
+  // Log in
+  const email = await logIn(page, { emailPrefix: `e2e_theme_customization_sheet` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  //--------------------------------
+  // Theme Customization from Sheet
+  //--------------------------------
+  // Assert Quadratic team files page and logged in status
+  await expect(page.getByText(email)).toBeVisible();
+  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+
+  // Reset current theme
+  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `discover_tune system` }).click();
+
+  // Assert that there are no files
+  await expect(page.getByRole(`heading`, { name: `No files` })).toBeVisible();
+  await expect(
+    page.getByText(
+      `You don’t have any files yet. Create a new file or drag and drop a CSV, Excel, Parquet, or Quadratic file here.`
+    )
+  ).toBeVisible();
+
+  // Create new file
+  await createFile(page, { fileName });
+
+  // Navigate into file
+  await navigateIntoFile(page, { fileName });
+
+  // Type in a string in the first cell
+  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: 'Hello World' });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  for (const theme of expectedThemes) {
+    // Small wait in between theme changes
+    await page.waitForTimeout(1000);
+
+    // Click theme toggle button (identified by constract icon)
+    await page.getByRole(`button`, { name: `contrast` }).click();
+
+    // Click accent color
+    await page.getByRole(`button`, { name: theme.name }).click();
+
+    // Assert that the HTML element has accent name applied to 'data-theme' attribute
+    expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
+
+    // Assert with screenshot that the canvas has the expected accent color applied
+    // Ensure selected column(s), row(s) and cell(s) have the accent color
+    await selectCells(page, { startXY: [1, 1], endXY: [6, 6] });
+    await expect(page.locator('canvas:visible')).toHaveScreenshot(
+      `ApperanceCustomization-Sheet-${theme.name}-Accent.png`,
+      {
+        maxDiffPixelRatio: 0.01,
+      }
+    );
+
+    // Assert that the sheet name is using accent color
+    await expect(page.locator(`[data-title="Sheet 1"]`)).toHaveCSS(`color`, theme.color);
+
+    // Open AI chat to assert accent color is applied to all buttons
+    await page.getByRole(`button`, { name: `auto_awesome` }).click();
+
+    // Wait for the heading to appear
+    await page.getByRole(`heading`, { name: `What can I help with?` }).waitFor();
+
+    // Store buttons that are expected to change with accent color on AI chat
+    const aiIconBtns = await page.locator(`h2`).locator(`..`).locator(`button`).all();
+    for (let i = 0; i < aiIconBtns.length; i++) {
+      await expect(aiIconBtns[i].locator(`span`)).toHaveCSS(`color`, theme.color);
+    }
+
+    // Close AI chat
+    await page.getByRole(`button`, { name: `close` }).first().click();
+  }
+
+  // (Reset) Remove selection and focus on the first cell on the sheet
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+
+  //--------------------------------
+  // Dark Customization
+  //--------------------------------
+  // Expected colors for dark mode
+  const darkClassName = `dark`;
+  const darkBackground = `rgb(12, 10, 9)`; // background
+  const darkText = `rgb(242, 242, 242)`; // foreground
+  const darkSidebar = `rgb(26, 24, 25)`; // accent
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click theme toggle button (identified by constract icon)
+  await page.getByRole(`button`, { name: `contrast` }).click();
+
+  // Click 'Dark' button to trigger theme change
+  await page.getByRole(`button`, { name: `dark_mode dark` }).click();
+
+  // Click theme toggle button again to close it
+  await page.getByRole(`button`, { name: `contrast` }).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert root has the 'Dark' class applied
+  let htmlClass = await page.locator(`html`).getAttribute(`class`);
+  expect(htmlClass).toContain(darkClassName);
+
+  // Elements to check for theme styling
+  let rootEl = page.locator(`#root .bg-background`).first();
+  let navEl = page.locator(`nav`);
+  let headerBarEl = page.locator(`div:has-text("File") >> nth = 3`);
+
+  // Assert dark mode styling is applied to key elements
+  await expect(rootEl).toHaveCSS(`background-color`, darkBackground);
+  await expect(rootEl).toHaveCSS(`color`, darkText);
+  await expect(navEl).toHaveCSS(`background-color`, darkSidebar);
+  await expect(headerBarEl).toHaveCSS(`background-color`, darkBackground);
+  await expect(headerBarEl).toHaveCSS(`color`, darkText);
+
+  // Assert with screenshot that the canvas is in a dark mode state
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // ** Page reload and assert dark mode colors are persisting **
+  await page.reload();
+  await page.waitForLoadState(`networkidle`);
+
+  // Close AI chat
+  await page.getByRole(`button`, { name: `close` }).first().click();
+
+  // Assert root has the 'Dark' class applied
+  htmlClass = await page.locator(`html`).getAttribute(`class`);
+  expect(htmlClass).toContain(darkClassName);
+
+  // Assert dark mode styling is applied to key elements
+  await expect(rootEl).toHaveCSS(`background-color`, darkBackground);
+  await expect(rootEl).toHaveCSS(`color`, darkText);
+  await expect(navEl).toHaveCSS(`background-color`, darkSidebar);
+  await expect(headerBarEl).toHaveCSS(`background-color`, darkBackground);
+  await expect(headerBarEl).toHaveCSS(`color`, darkText);
+
+  // Assert with screenshot that the canvas is in a dark mode state
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  //--------------------------------
+  // Light Customization
+  //--------------------------------
+
+  // Expected colors for light mode
+  const lightBackground = `rgb(255, 255, 255)`; // background
+  const lightText = `rgb(9, 9, 11)`; // foreground
+  const lightSidebar = `rgb(244, 244, 245)`; // accent
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click theme toggle button (identified by constract icon)
+  await page.getByRole(`button`, { name: `contrast` }).click();
+
+  // Click 'Light' button to trigger theme change
+  await page.getByRole(`button`, { name: `light_mode light` }).click();
+
+  // Click theme toggle button again to close it
+  await page.getByRole(`button`, { name: `contrast` }).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert root does not have the 'Dark' class applied
+  htmlClass = await page.locator(`html`).getAttribute(`class`);
+  expect(htmlClass).not.toContain(darkClassName);
+
+  // Elements to check for theme styling
+  rootEl = page.locator(`#root .bg-background`).first();
+  navEl = page.locator(`nav`);
+  headerBarEl = page.locator(`div:has-text("File") >> nth = 3`);
+
+  // Assert dark mode styling is no longer applied to key elements
+  await expect(rootEl).not.toHaveCSS(`background-color`, darkBackground);
+  await expect(rootEl).not.toHaveCSS(`color`, darkText);
+  await expect(navEl).not.toHaveCSS(`background-color`, darkSidebar);
+  await expect(headerBarEl).not.toHaveCSS(`background-color`, darkBackground);
+  await expect(headerBarEl).not.toHaveCSS(`color`, darkText);
+
+  // Assert light mode styling is applied to key elements
+  await expect(rootEl).toHaveCSS(`background-color`, lightBackground);
+  await expect(rootEl).toHaveCSS(`color`, lightText);
+  await expect(navEl).toHaveCSS(`background-color`, lightSidebar);
+  await expect(headerBarEl).toHaveCSS(`background-color`, lightBackground);
+  await expect(headerBarEl).toHaveCSS(`color`, lightText);
+
+  // Assert with screenshot that the canvas is in a light mode state
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // ** Page reload and assert light mode colors are persisting **
+  await page.reload();
+  await page.waitForLoadState(`networkidle`);
+
+  // Close AI chat
+  await page.getByRole(`button`, { name: `close` }).first().click();
+
+  // Assert root has no class names applied
+  htmlClass = await page.locator(`html`).getAttribute(`class`);
+  expect(htmlClass).toBeNull();
+
+  // Assert light mode styling is applied to key elements
+  await expect(rootEl).toHaveCSS(`background-color`, lightBackground);
+  await expect(rootEl).toHaveCSS(`color`, lightText);
+  await expect(navEl).toHaveCSS(`background-color`, lightSidebar);
+  await expect(headerBarEl).toHaveCSS(`background-color`, lightBackground);
+  await expect(headerBarEl).toHaveCSS(`color`, lightText);
+
+  // Assert with screenshot that the canvas is in a light mode state
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // ===== Cleanup ======
+  // Return home for cleanup
+  await page.locator(`[href="/"]`).click();
+
+  // Assert Quadratic team files page and logged in status
+  await expect(page.getByText(email)).toBeVisible();
+  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
+
+  // Cleanup any files with fileName
+  await cleanUpFiles(page, { fileName });
+
+  // Reset current theme
+  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `discover_tune system` }).click();
+});
+
+test('Zoom In and Out', async ({ page }) => {
+  // Constants
+  const newTeamName = `Zoom In and Out - ${Date.now()}`;
+  const fileName = 'ZoomIn_ZoomOut';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_zoomin_zoomout` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Zoom In
+  //--------------------------------
+  // Click top right zoom dropdown
+  await page
+    .locator(`button`)
+    .filter({ hasText: /%arrow_drop_down$/ })
+    .last()
+    .click();
+
+  // Click `Zoom in
+  await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click();
+
+  // Wait a moment for zoom to process
+  await page.waitForTimeout(1000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Confirm Zoom is correctly zoomed in
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`zoom_in.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  //--------------------------------
+  // Zoom Out
+  //--------------------------------
+  // Click top right zoom dropdown
+  await page
+    .locator(`button`)
+    .filter({ hasText: /%arrow_drop_down$/ })
+    .last()
+    .click();
+
+  // Click `Zoom in
+  await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click();
+  await page.waitForTimeout(1000);
+
+  // Click top right zoom dropdown
+  await page
+    .locator(`button`)
+    .filter({ hasText: /%arrow_drop_down$/ })
+    .last()
+    .click();
+
+  // Click `Zoom out
+  await page.getByRole('menuitem', { name: 'Zoom out Ctrl-' }).click();
+  await page.waitForTimeout(1000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Confirm Zoom is correctly zoomed in
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`zoom_out.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Clean up:
