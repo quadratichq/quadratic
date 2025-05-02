@@ -165,6 +165,37 @@ The chat name should be based on user's messages and should reflect his/her quer
 This name should be from user's perspective, not the assistant's.\n
 `,
   },
+  [AITool.GetCells]: {
+    sources: ['AIAnalyst'],
+    description: `
+    This tool returns the values of the cells in the chosen selection.\n
+    You should use the get_cells function to get the values of the cells when you need more data to reference.\n
+    Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
+    get_cells function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
+    `,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name of the current sheet as defined in the context, unless the user is requesting data from another sheet. In which case, use that sheet name.',
+        },
+        selection: {
+          type: 'string',
+          description: `
+          The string representation (in a1 notation) of the selection of cells to get the values of. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
+        },
+      },
+      required: ['selection', 'sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetCells],
+    prompt: `
+    This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
+    You should use the get_cells function to get the values of the cells when you need more data to reference for your response.\n
+    `,
+  },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
     description: `
@@ -509,36 +540,5 @@ Never extract data from PDF files that are not relevant to the user's prompt. Ne
 Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
 `,
-  },
-  [AITool.GetCells]: {
-    sources: ['AIAnalyst'],
-    description: `
-    This tool returns the values of the cells in the chosen selection.\n
-    You should use the get_cells function to get the values of the cells when you need more data to reference.\n
-    Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
-    get_cells function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
-    `,
-    parameters: {
-      type: 'object',
-      properties: {
-        sheet_name: {
-          type: 'string',
-          description:
-            'The sheet name of the current sheet as defined in the context, unless the user is requesting data from another sheet. In which case, use that sheet name.',
-        },
-        selection: {
-          type: 'string',
-          description: `
-          The string representation (in a1 notation) of the selection of cells to get the values of. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
-        },
-      },
-      required: ['selection', 'sheet_name'],
-      additionalProperties: false,
-    },
-    responseSchema: AIToolsArgsSchema[AITool.GetCells],
-    prompt: `
-    This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
-    You should use the get_cells function to get the values of the cells when you need more data to reference for your response.\n
-    `,
   },
 } as const;
