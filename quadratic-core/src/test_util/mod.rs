@@ -1,3 +1,4 @@
+pub mod assert;
 mod assert_data_table;
 mod assert_formats;
 mod assert_values;
