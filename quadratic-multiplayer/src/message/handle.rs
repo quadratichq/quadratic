@@ -479,7 +479,7 @@ pub(crate) mod tests {
         assert_eq!(handled, response);
 
         if let Some(broadcast_response) = broadcast_response {
-            let received = integration_test_receive(&socket, 2).await.unwrap();
+            let received = integration_test_receive(&socket, 4).await.unwrap();
             assert_eq!(received, broadcast_response);
         }
     }
@@ -545,7 +545,9 @@ pub(crate) mod tests {
             follow: Some(Uuid::new_v4().to_string()),
         };
 
-        let response = MessageResponse::EnterRoom {
+        let response = MessageResponse::CurrentTransaction { sequence_num: 0 };
+
+        let broadcast_response = MessageResponse::EnterRoom {
             file_id,
             sequence_num: 0,
         };
@@ -559,8 +561,8 @@ pub(crate) mod tests {
             file_id,
             user_1,
             request,
-            None,
             Some(response),
+            Some(broadcast_response),
         )
         .await;
 
@@ -625,7 +627,13 @@ pub(crate) mod tests {
             operations: encoded_ops.clone(),
         };
 
-        let response = MessageResponse::Transaction {
+        let response = MessageResponse::TransactionAck {
+            id,
+            file_id,
+            sequence_num: 1,
+        };
+
+        let broadcast_response = MessageResponse::Transaction {
             id,
             file_id,
             operations: encoded_ops.clone(),
@@ -638,8 +646,8 @@ pub(crate) mod tests {
             file_id,
             user_1.clone(),
             request,
-            None,
             Some(response.clone()),
+            Some(broadcast_response.clone()),
         )
         .await;
 

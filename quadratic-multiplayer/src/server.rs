@@ -393,7 +393,7 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
         assert_eq!(response, Some(expected));
     }
 
@@ -447,7 +447,7 @@ pub(crate) mod tests {
             },
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
 
         assert_eq!(response, Some(expected));
     }
@@ -578,14 +578,13 @@ pub(crate) mod tests {
             file_id,
             operations: encoded_ops.clone(),
         };
-        let expected = MessageResponse::Transaction {
+        let expected = MessageResponse::TransactionAck {
             id,
             file_id,
-            operations: encoded_ops,
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
 
         assert_eq!(response, Some(expected));
     }
