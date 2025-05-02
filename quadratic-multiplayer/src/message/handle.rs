@@ -246,14 +246,25 @@ pub(crate) async fn handle_message(
                 .await?;
             tracing::trace!("Pushed to pubsub in {:?}", start_push_pubsub.elapsed());
 
-            // broadcast the transaction to all users in the room
+            // send an ack to the initiator
             let response = MessageResponse::TransactionAck {
                 id,
                 file_id,
                 sequence_num,
             };
+            send_user_message(session_id, file_id, Arc::clone(&state), response)
+                .await
+                .map_err(|e| MpError::SendingMessage(e.to_string()))?;
 
-            broadcast(vec![], file_id, Arc::clone(&state), response, false);
+            // broadcast the transaction to all users in the room (except the initiator)
+            let response = MessageResponse::BinaryTransaction {
+                id,
+                file_id,
+                sequence_num,
+                operations,
+            };
+
+            broadcast(vec![], file_id, Arc::clone(&state), response, true);
 
             Ok(None)
         }
