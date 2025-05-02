@@ -1,7 +1,7 @@
 import type { Team, User } from '@prisma/client';
 import dbClient from '../dbClient';
 import { clearDb } from '../tests/testDataGenerator';
-import { applySshKeys, createTeam, decryptSshKeys } from './teams';
+import { createTeam, decryptSshKeys, getDecryptedTeam } from './teams';
 
 const TEAM_ID = '00000000-0000-9000-8000-000000000001';
 export const TEAM_OWNER_AUTH0_ID = 'teamOwner';
@@ -72,7 +72,7 @@ describe('applySshKeys', () => {
     expect(team?.sshPublicKey).toBeNull();
     expect(team?.sshPrivateKey).toBeNull();
 
-    await applySshKeys(team);
+    await getDecryptedTeam(team);
 
     const updatedTeam = await getTeam(TEAM_ID);
 
@@ -90,13 +90,13 @@ describe('applySshKeys', () => {
     expect(team?.sshPublicKey).toBeNull();
     expect(team?.sshPrivateKey).toBeNull();
 
-    await applySshKeys(team);
+    await getDecryptedTeam(team);
 
     const updatedTeam = await getTeam(TEAM_ID);
     const sshPublicKey = updatedTeam?.sshPublicKey;
     const sshPrivateKey = updatedTeam?.sshPrivateKey;
 
-    await applySshKeys(team);
+    await getDecryptedTeam(team);
 
     const updatedTeam2 = await getTeam(TEAM_ID);
     const sshPublicKey2 = updatedTeam2?.sshPublicKey;
@@ -115,7 +115,7 @@ describe('decryptSshKeys', () => {
       throw new Error(`Team not found in decryptSshKeys: ${TEAM_ID}`);
     }
 
-    await applySshKeys(team);
+    await getDecryptedTeam(team);
 
     const updatedTeam = await getTeam(TEAM_ID);
 

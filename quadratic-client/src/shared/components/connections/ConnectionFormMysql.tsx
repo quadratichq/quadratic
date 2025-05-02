@@ -24,6 +24,7 @@ const DEFAULTS = {
   PORT: '3306',
   DATABASE: 'mysql',
   USERNAME: 'root',
+  SSH_PORT: '22',
 };
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
@@ -37,7 +38,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     password: String(connection?.typeDetails?.password || ''),
     useSsh: Boolean(connection?.typeDetails?.useSsh || false),
     sshHost: String(connection?.typeDetails?.sshHost || ''),
-    sshPort: String(connection?.typeDetails?.sshPort || ''),
+    sshPort: String(connection?.typeDetails?.sshPort || DEFAULTS.SSH_PORT),
     sshUsername: String(connection?.typeDetails?.sshUsername || ''),
   };
 

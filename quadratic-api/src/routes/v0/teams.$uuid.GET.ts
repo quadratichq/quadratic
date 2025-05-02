@@ -14,9 +14,8 @@ import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
-import { decryptFromEnv } from '../../utils/crypto';
 import { getFilePermissions } from '../../utils/permissions';
-import { applySshKeys } from '../../utils/teams';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -123,11 +122,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   }
 
   // Apply SSH keys to the team if they don't already exist.
-  await applySshKeys(dbTeam);
-
-  if (dbTeam.sshPublicKey === null) {
-    throw new ApiError(500, 'Unable to retrieve SSH keys');
-  }
+  const decryptedTeam = await getDecryptedTeam(dbTeam);
 
   // Get signed thumbnail URLs
   await Promise.all(
@@ -148,7 +143,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
-      sshPublicKey: decryptFromEnv(dbTeam.sshPublicKey.toString('utf-8')),
+      sshPublicKey: decryptedTeam.sshPublicKey,
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

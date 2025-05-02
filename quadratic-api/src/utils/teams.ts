@@ -35,10 +35,12 @@ export async function createTeam<T extends Prisma.TeamSelect>(
 }
 
 /**
+ * Gets a decrypted team.
  * Applies SSH keys to a team if they don't already exist.
  * @param team - The team to apply the SSH keys to.
+ * @returns The decrypted team.
  */
-export async function applySshKeys(team: Team) {
+export async function getDecryptedTeam(team: Team): Promise<DecryptedTeam> {
   if (team.sshPublicKey === null) {
     const { privateKey, publicKey } = await generateSshKeys();
     const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
@@ -55,6 +57,8 @@ export async function applySshKeys(team: Team) {
     // only set the public key to keep the private key from being exposed
     team.sshPublicKey = sshPublicKey;
   }
+
+  return decryptSshKeys(team);
 }
 
 /**
