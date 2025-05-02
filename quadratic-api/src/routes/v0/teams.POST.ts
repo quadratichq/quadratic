@@ -1,4 +1,3 @@
-import type { Team } from '@prisma/client';
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
@@ -27,7 +26,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams.P
     name: true,
   };
 
-  const team = (await createTeam(name, userId, select)) as Pick<Team, keyof typeof select>;
+  const team = await createTeam(name, userId, select);
 
   return res.status(201).json({ uuid: team.uuid, name: team.name });
 }

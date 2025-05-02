@@ -11,12 +11,12 @@ export async function createTeam<T extends Prisma.TeamSelect>(
   name: string,
   ownerUserId: number,
   select: T
-): Promise<unknown> {
+): Promise<Team> {
   const { privateKey, publicKey } = await generateSshKeys();
   const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
   const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
 
-  return await dbClient.team.create({
+  const result = await dbClient.team.create({
     data: {
       name,
       sshPublicKey,
@@ -30,6 +30,8 @@ export async function createTeam<T extends Prisma.TeamSelect>(
     },
     select,
   });
+
+  return result as Team;
 }
 
 /**
