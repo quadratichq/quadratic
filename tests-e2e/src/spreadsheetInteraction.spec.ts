@@ -2769,3 +2769,347 @@ test('Python Snippets', async ({ page }) => {
   await page.locator(`nav a svg`).click();
   await cleanUpFiles(page, { fileName });
 });
+
+test('Range Cell Reference - Javascript', async ({ page }) => {
+  // Constants
+  const newTeamName = `Range Cell Reference - Javascript - ${Date.now()}`;
+  const fileName = 'Cell_Reference_JS';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_references_javascript` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Select Range of Cells
+  //--------------------------------
+
+  // Open code editor
+  await page.keyboard.press('/');
+  await page.waitForTimeout(2000);
+  await page.keyboard.type('j');
+  await page.keyboard.press('Enter');
+
+  // Clear code in code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).first().click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select range of cells from ['C', 7] to ['D', 9]
+  await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
+
+  // Fill JS code into code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.keyboard.type("let ref = q.cells('C7:D9')");
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('return ref');
+  await page.waitForTimeout(2000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(2000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the single cell reference has applied to the cells at [5, 11] to [6, 13]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('range_cell_reference_samesheet_js.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Select Range of cells from another sheet
+  //--------------------------------
+
+  // Clear code in code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).first().click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+
+  // Navigate into Sheet 2
+  await page.locator(`[data-title="Sheet 2"]`).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select range of cells from ['C', 7] to ['D', 9]
+  await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
+
+  // Fill JS code into code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.keyboard.type(`let ref = q.cells("'Sheet 2'!C7:D9")`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('return ref');
+  await page.waitForTimeout(2000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(2000);
+
+  // Navigate into Sheet 1
+  await page.locator(`[data-title="Sheet 1"]`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the range cell reference has applied to the cell at [5, 11] through [6, 13]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('range_cell_reference_differentsheet_js.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Range Cell Reference - Python', async ({ page }) => {
+  // Constants
+  const newTeamName = `Range Cell Reference - Python - ${Date.now()}`;
+  const fileName = 'Cell_Reference_Python';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_references_python` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Select Range of Cells
+  //--------------------------------
+  // Open code editor
+  await page.keyboard.press('/');
+  await page.waitForTimeout(2000);
+  await page.keyboard.type('p');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(2000);
+
+  // Clear code in code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select range of cells from ["C", 7] to ["D", 9]
+  await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
+
+  // Click "Insert cell reference" button on top bar of code editor
+  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.waitForTimeout(1000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(1000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the single cell reference has applied to the cells at [5, 11] to [6, 13]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('range_cell_reference_samesheet_python_table.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Select Range of cells from another sheet
+  //--------------------------------
+
+  // Clear code in code editor
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).last().click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+
+  // Navigate into Sheet 2
+  await page.locator(`[data-title="Sheet 2"]`).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Select range of cells from C7 to D9]
+  await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
+
+  // Click "Insert cell reference" button on top bar of code editor
+  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.waitForTimeout(1000);
+
+  // Click "Play" icon on top bar of code editor
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.waitForTimeout(1000);
+
+  // Navigate into Sheet 1
+  await page.locator(`[data-title="Sheet 1"]`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert that the range cell reference has applied to the cell at [5, 11] through [6, 13]
+  await page.waitForTimeout(5000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('range_cell_reference_diffsheet_python_table.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test.only('Right Click on Column and Row Headers', async ({ page }) => {
+  // Constants
+  const newTeamName = `Right Click on Column and Row Headers - ${Date.now()}`;
+  const fileName = 'Insert_row_col';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_right_click_header` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Right Click on Column Header
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Right click on column A header
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 10 } });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert we can insert rows and not columns
+  await expect(page.getByText(`Insert column left`)).toBeVisible();
+  await expect(page.getByText(`Insert row above`)).not.toBeVisible();
+
+  // Click Insert column to the left
+  await page.getByText(`Insert column left`).click();
+
+  // Screenshot assertion (Column 0 should be red and not have any values in it)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    `Right_Click_Column_Row_Headers-Insert_col_left.png`,
+    {
+      maxDiffPixelRatio: 0.001,
+    }
+  );
+
+  // Navigate to cell (1, 1), assert value should be 1
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('');
+  await page.keyboard.press('Escape');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 8, targetRow: 1 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('7'); // Assert the clipboard content
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Right Click on Column Header
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Right click on row 5 header
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 3, y: 110 } });
+
+  // Assert we can insert rows and not columns
+  await expect(page.getByText(`Insert row above`)).toBeVisible();
+  await expect(page.getByText(`Insert column left`)).not.toBeVisible();
+
+  // Click Insert row above
+  await page.getByText(`Insert row above`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion (Row 0 should not have any values in it)
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    `Right_Click_Column_Row_Headers-Insert_row_above.png`,
+    {
+      maxDiffPixelRatio: 0.001,
+    }
+  );
+
+  // Navigate to cell (0, 0), assert value should be ''
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 7 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('6');
+  await page.keyboard.press('Escape');
+
+  // Assert the clipboard content
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 5 });
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(2000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe(''); // Assert the clipboard content
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});

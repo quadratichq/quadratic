@@ -527,10 +527,21 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
+      matrix_runner: 50
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
+      - name: Generate Test Matrix
+        id: generate-matrix
+        run: |
+          # Create a matrix with shardIndex values from 1 to matrix_runner
+          matrix=$(python -c "import json; print(json.dumps({'shardIndex': list(range(1, ${{ env.matrix_runner }} + 1)), 'shardTotal': [${{ env.matrix_runner }}]}))" | tr -d '\n')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $matrix"
+
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
         id: test-e2e-start-comment
@@ -555,49 +566,19 @@ jobs:
 
   test-e2e-matrix-run:
     name: Tests-E2E - Run Shard
-    needs: [build_images, deploy_images, verify_deployed_version]
+    needs:
+      [
+        build_images,
+        deploy_images,
+        verify_deployed_version,
+        test-e2e-start-comment,
+      ]
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      matrix:
-        shardIndex:
-          [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
-            21,
-            22,
-            23,
-            24,
-            25,
-            26,
-            27,
-            28,
-            29,
-            30,
-            31,
-            32,
-          ]
-        shardTotal: [32]
+      matrix: ${{ fromJson(needs.test-e2e-start-comment.outputs.matrix) }}
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
     steps:
