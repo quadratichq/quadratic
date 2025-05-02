@@ -11,7 +11,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { applySshKeys } from '../../utils/teams';
+import { applySshKeys, decryptSshKeys } from '../../utils/teams';
 
 export default [
   validateRequestSchema(
@@ -78,7 +78,7 @@ async function handler(
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
-  const data = {
+  const data: ApiTypes['/v0/files/:uuid.GET.response'] = {
     file: {
       uuid,
       name,
@@ -97,7 +97,7 @@ async function handler(
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },
-      sshPublicKey: ownerTeam.sshPublicKey,
+      sshPublicKey: decryptSshKeys(ownerTeam).sshPublicKey,
     },
     userMakingRequest: {
       id: userId,

@@ -37,5 +37,8 @@ export async function getTeam({ uuid, userId }: { uuid: string; userId: number }
   // Create info about the user making the request
   const userMakingRequest = { id: userId, permissions: getTeamPermissions(userTeamRole.role), role: userTeamRole.role };
 
+  // Decrypt the team's SSH keys
+  // const decryptedTeam = decryptSshKeys(team);
+
   return { team, userMakingRequest };
 }

@@ -2,18 +2,25 @@ import type { Prisma, Team } from '@prisma/client';
 import dbClient from '../dbClient';
 import { decryptFromEnv, encryptFromEnv, generateSshKeys } from './crypto';
 
+export type DecryptedTeam = Omit<Team, 'sshPublicKey' | 'sshPrivateKey'> & {
+  sshPublicKey: string;
+  sshPrivateKey: string;
+};
+
 export async function createTeam<T extends Prisma.TeamSelect>(
   name: string,
   ownerUserId: number,
   select: T
 ): Promise<unknown> {
   const { privateKey, publicKey } = await generateSshKeys();
+  const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
+  const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
 
   return await dbClient.team.create({
     data: {
       name,
-      sshPublicKey: encryptFromEnv(publicKey),
-      sshPrivateKey: encryptFromEnv(privateKey),
+      sshPublicKey,
+      sshPrivateKey,
       UserTeamRole: {
         create: {
           userId: ownerUserId,
@@ -32,17 +39,19 @@ export async function createTeam<T extends Prisma.TeamSelect>(
 export async function applySshKeys(team: Team) {
   if (team.sshPublicKey === null) {
     const { privateKey, publicKey } = await generateSshKeys();
+    const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
+    const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
 
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        sshPublicKey: encryptFromEnv(publicKey),
-        sshPrivateKey: encryptFromEnv(privateKey),
+        sshPublicKey,
+        sshPrivateKey,
       },
     });
 
     // only set the public key to keep the private key from being exposed
-    team.sshPublicKey = publicKey;
+    team.sshPublicKey = sshPublicKey;
   }
 }
 
@@ -51,13 +60,13 @@ export async function applySshKeys(team: Team) {
  * @param team - The team to decrypt the SSH keys of.
  * @returns The team with the decrypted SSH keys.
  */
-export function decryptSshKeys(team: Team): Team {
+export function decryptSshKeys(team: Team): DecryptedTeam {
   if (team.sshPublicKey === null || team.sshPrivateKey === null) {
     throw new Error('SSH keys are not set');
   }
 
-  team.sshPublicKey = decryptFromEnv(team.sshPublicKey);
-  team.sshPrivateKey = decryptFromEnv(team.sshPrivateKey);
+  const sshPublicKey = decryptFromEnv(team.sshPublicKey.toString('utf-8'));
+  const sshPrivateKey = decryptFromEnv(team.sshPrivateKey.toString('utf-8'));
 
-  return team;
+  return { ...team, sshPublicKey, sshPrivateKey };
 }

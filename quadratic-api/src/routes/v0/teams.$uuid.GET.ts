@@ -148,7 +148,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
-      sshPublicKey: decryptFromEnv(dbTeam.sshPublicKey),
+      sshPublicKey: decryptFromEnv(dbTeam.sshPublicKey.toString('utf-8')),
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,
