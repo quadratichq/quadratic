@@ -540,7 +540,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - postgres-connection-data:/var/lib/postgresql/data
+      - ./docker/postgres-connection/data:/var/lib/postgresql/data
       - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
     profiles:
       - quadratic-connection
@@ -564,7 +564,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - mysql-connection-data:/var/lib/mysql
+      - ./docker/mysql-connection/data:/var/lib/mysql
       - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
@@ -583,7 +583,7 @@ services:
       MSSQL_SA_PASSWORD: yourStrong(!)Password
       MSSQL_PID: Express
     volumes:
-      - mssql-connection-data:/var/opt/mssql
+      - ./docker/mssql-connection/data:/var/opt/mssql
       - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
     healthcheck:
       test:

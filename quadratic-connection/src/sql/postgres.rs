@@ -330,6 +330,11 @@ mod tests {
                         r#type: "_int4".into(),
                         is_nullable: true,
                     },
+                    SchemaColumn {
+                        name: "null_bool_col".into(),
+                        r#type: "bool".into(),
+                        is_nullable: true,
+                    },
                 ],
             }],
         };
@@ -428,6 +433,7 @@ mod tests {
             ),
             (DataType::Utf8, vec![]), // unsupported
             (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // null
         ];
 
         validate_parquet(response, expected).await;
