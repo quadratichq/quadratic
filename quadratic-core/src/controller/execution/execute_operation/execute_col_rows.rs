@@ -306,9 +306,8 @@ mod tests {
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
         },
-        test_util::{
-            assert_data_table_size, first_sheet_id, test_create_html_chart, test_create_js_chart,
-        },
+        test_create_gc,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
     };
 
@@ -1081,5 +1080,14 @@ mod tests {
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_col_next_to_code() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_formula_array(&mut gc, pos![C2], 2, 2);
+        print_first_sheet(&gc);
     }
 }
