@@ -5,15 +5,11 @@ import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/co
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useFetchers, useSearchParams } from 'react-router';
 
-export type ConnectionsListConnection = {
-  uuid: string;
-  name: string;
-  createdDate: string;
-  type: ConnectionType;
+export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
 };
 type Props = {

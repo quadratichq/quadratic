@@ -108,7 +108,13 @@ export default function CellTypeMenu() {
               disabled={disabled}
               icon={icon}
               name={name}
-              experimental={experimental}
+              badge={
+                experimental ? (
+                  <Badge variant="secondary" className="ml-2">
+                    Experimental
+                  </Badge>
+                ) : undefined
+              }
               onSelect={() => openEditor(mode)}
             />
           ))}
@@ -117,11 +123,20 @@ export default function CellTypeMenu() {
         <CommandSeparator />
         {fetcher.data?.connections && (
           <CommandGroup heading="Connections">
-            {fetcher.data.connections.map(({ name, type, uuid }) => (
+            {fetcher.data.connections.map(({ name, type, uuid, isDemo }) => (
               <CommandItemWrapper
                 key={uuid}
                 uuid={uuid}
                 name={name}
+                badge={
+                  isDemo ? (
+                    <Badge variant="secondary" className="ml-2">
+                      Demo
+                    </Badge>
+                  ) : (
+                    ''
+                  )
+                }
                 icon={<LanguageIcon language={type} />}
                 onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
               />
@@ -142,14 +157,14 @@ function CommandItemWrapper({
   disabled,
   icon,
   name,
-  experimental,
+  badge,
   onSelect,
   uuid,
 }: {
   disabled?: boolean;
   icon: React.ReactNode;
   name: string;
-  experimental?: boolean;
+  badge?: React.ReactNode;
   onSelect: () => void;
   uuid?: string;
 }) {
@@ -166,12 +181,7 @@ function CommandItemWrapper({
       <div className="mr-4 flex h-5 w-5 items-center">{icon}</div>
       <div className="flex flex-col">
         <span className="flex items-center">
-          {name}{' '}
-          {experimental && (
-            <Badge variant="secondary" className="ml-2">
-              Experimental
-            </Badge>
-          )}
+          {name} {badge ? badge : null}
         </span>
       </div>
     </CommandItem>

@@ -3,6 +3,7 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsers } from '../../auth/auth';
 import { BillingAIUsageMonthlyForUser } from '../../billing/AIUsageHelpers';
+import { demoConnectionCondensend } from '../../data/connections';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -202,7 +203,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       name: connection.name,
       createdDate: connection.createdDate.toISOString(),
       type: connection.type,
-    })),
+    })).concat(demoConnectionCondensend),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
   };
 

@@ -1,12 +1,13 @@
-import { Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { demoConnectionCondensend } from '../../data/connections';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -46,12 +47,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   });
 
   // Pick out the data we want to return
-  const data = connections.map(({ uuid, name, type, createdDate }) => ({
-    uuid,
-    name,
-    createdDate: createdDate.toISOString(),
-    type,
-  }));
+  const data = connections
+    .map(({ uuid, name, type, createdDate }) => ({
+      uuid,
+      name,
+      createdDate: createdDate.toISOString(),
+      type,
+    }))
+    .concat(demoConnectionCondensend);
 
   return res.status(200).json(data);
 }

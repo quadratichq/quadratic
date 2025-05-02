@@ -9,6 +9,7 @@ import type {
   NavigateToView,
 } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -126,44 +127,50 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
-        <div className="group relative flex items-center gap-1" key={uuid}>
-          <button
-            onClick={() => {
-              handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
-            }}
-            disabled={disabled}
-            key={uuid}
-            className={cn(
-              `flex w-full items-center gap-4 rounded px-1 py-2`,
-              disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
-              // i < filteredConnections.length - 1 && 'border-b border-border'
-            )}
-          >
-            <div className="flex h-6 w-6 items-center justify-center">
-              <LanguageIcon language={type} fontSize="small" />
-            </div>
-            <div className="flex flex-grow flex-col text-left">
-              <span className="text-sm">{name}</span>
-              <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                Created {timeAgo(createdDate)}
-              </time>
-            </div>
-          </button>
-          {!disabled && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => {
+        return (
+          <div className="group relative flex items-center gap-1" key={uuid}>
+            <button
               onClick={() => {
-                handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
               }}
+              disabled={disabled}
+              key={uuid}
+              className={cn(
+                `flex w-full items-center gap-4 rounded px-1 py-2`,
+                disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
+                // i < filteredConnections.length - 1 && 'border-b border-border'
+              )}
             >
-              <Pencil1Icon />
-            </Button>
-          )}
-        </div>
-      ))}
+              <div className={cn('flex h-6 w-6 items-center justify-center', isDemo && 'grayscale')}>
+                <LanguageIcon language={type} fontSize="small" />
+              </div>
+              <div className="flex flex-grow flex-col text-left">
+                <span className="text-sm">{name}</span>
+                <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                  {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
+                </time>
+              </div>
+            </button>
+            {isDemo ? (
+              <Badge variant="secondary" className="absolute right-2 top-3.5">
+                Demo
+              </Badge>
+            ) : disabled ? null : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+                onClick={() => {
+                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                }}
+              >
+                <Pencil1Icon />
+              </Button>
+            )}
+          </div>
+        );
+      })}
     </div>
   ) : (
     <Type className="py-2 text-center">No matches.</Type>
