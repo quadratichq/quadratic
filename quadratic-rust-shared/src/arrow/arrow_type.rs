@@ -55,9 +55,10 @@ pub enum ArrowType {
     Unsupported,
 }
 
-impl From<&ArrowType> for DataType {
-    fn from(value: &ArrowType) -> Self {
-        match value {
+impl ArrowType {
+    /// Convert an ArrowType to it's underlying Arrow DataType
+    pub fn data_type(&self) -> DataType {
+        match self {
             ArrowType::Int8(_) => DataType::Int8,
             ArrowType::Int16(_) => DataType::Int16,
             ArrowType::Int32(_) => DataType::Int32,
@@ -86,21 +87,19 @@ impl From<&ArrowType> for DataType {
             ArrowType::Void => DataType::Null,
         }
     }
-}
 
-impl ArrowType {
     // Search values of a column to find the first non-null value to derive
     // the arrow data type
-    pub fn data_type(values: &[ArrowType]) -> DataType {
+    pub fn first_data_type(values: &[ArrowType]) -> DataType {
         values
             .iter()
             .find(|value| value != &&ArrowType::Null)
-            .map_or(DataType::Null, DataType::from)
+            .map_or(DataType::Null, |value| value.data_type())
     }
 
     /// Convert a vector of ArrowType to an Arrow ArrayRef
     pub fn to_array_ref(values: Vec<ArrowType>) -> ArrayRef {
-        let data_type = ArrowType::data_type(&values);
+        let data_type = ArrowType::first_data_type(&values);
 
         match data_type {
             DataType::Int8 => {
