@@ -68,23 +68,6 @@ pub(crate) fn start(
     })
 }
 
-// broadcast sequence number to all users in the room
-pub(crate) async fn broadcast_sequence_num(
-    state: Arc<State>,
-    file_id: &Uuid,
-    exclude: Vec<Uuid>,
-) -> Result<JoinHandle<()>> {
-    let sequence_num = state.get_sequence_num(file_id).await?;
-
-    Ok(broadcast(
-        exclude,
-        file_id.to_owned(),
-        Arc::clone(&state),
-        MessageResponse::CurrentTransaction { sequence_num },
-        false,
-    ))
-}
-
 // remove stale users in the room
 #[tracing::instrument(level = "trace")]
 async fn remove_stale_users_in_room(
@@ -121,36 +104,10 @@ async fn remove_stale_users_in_room(
 
 #[cfg(test)]
 mod tests {
-    use quadratic_core::controller::{GridController, transaction::Transaction};
 
-    use crate::test_util::{add_new_user_to_room, new_arc_state, operation};
+    use crate::test_util::{add_new_user_to_room, new_arc_state};
 
     use super::*;
-
-    #[tokio::test]
-    async fn test_broadcast_sequence_num() {
-        let state = new_arc_state().await;
-        let file_id = Uuid::new_v4();
-        let _user = add_new_user_to_room(file_id, state.clone()).await;
-        let mut grid = GridController::test();
-        let transaction_id_1 = Uuid::new_v4();
-        let operations_1 = operation(&mut grid, 0, 0, "1");
-        let operations = Transaction::serialize_and_compress(vec![operations_1]).unwrap();
-
-        state
-            .pubsub
-            .lock()
-            .await
-            .push(transaction_id_1, file_id, operations, 1)
-            .await
-            .unwrap();
-
-        super::broadcast_sequence_num(state, &file_id, vec![])
-            .await
-            .unwrap()
-            .await
-            .unwrap();
-    }
 
     #[tokio::test]
     async fn remove_stale_users_in_room() {
