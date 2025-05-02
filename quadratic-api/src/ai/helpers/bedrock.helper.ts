@@ -1,14 +1,16 @@
-import {
-  type ConverseResponse,
-  type ConverseStreamOutput,
-  type DocumentBlock,
-  type DocumentFormat,
-  type ImageBlock,
-  type ImageFormat,
-  type Message,
-  type SystemContentBlock,
-  type Tool,
-  type ToolChoice,
+import type {
+  ContentBlock,
+  ToolResultContentBlock,
+  ConverseResponse,
+  ConverseStreamOutput,
+  DocumentBlock,
+  DocumentFormat,
+  ImageBlock,
+  ImageFormat,
+  Message,
+  SystemContentBlock,
+  Tool,
+  ToolChoice,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import {
@@ -27,8 +29,49 @@ import type {
   AISource,
   AIUsage,
   BedrockModelKey,
+  Content,
   ParsedAIResponse,
+  ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
+
+function convertContent(content: Content): ContentBlock[] {
+  return content.map((content) => {
+    if (isContentImage(content)) {
+      const image: ImageBlock = {
+        format: content.mimeType.split('/')[1] as ImageFormat,
+        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+      };
+      return { image };
+    } else if (isContentPdfFile(content) || isContentTextFile(content)) {
+      const document: DocumentBlock = {
+        format: content.mimeType.split('/')[1] as DocumentFormat,
+        name: content.fileName,
+        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+      };
+      return { document };
+    } else {
+      return {
+        text: content.text,
+      };
+    }
+  });
+}
+
+function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
+  return content.map((content) => {
+    if (isContentImage(content)) {
+      const image: ImageBlock = {
+        format: content.mimeType.split('/')[1] as ImageFormat,
+        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+      };
+      return { image };
+    } else {
+      return {
+        text: content.text,
+      };
+    }
+  });
+}
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   system: SystemContentBlock[] | undefined;
@@ -67,11 +110,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           ...message.content.map((toolResult) => ({
             toolResult: {
               toolUseId: toolResult.id,
-              content: [
-                {
-                  text: toolResult.text,
-                },
-              ],
+              content: convertToolResultContent(toolResult.content),
               status: 'success' as const,
             },
           })),
@@ -81,26 +120,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     } else if (message.content) {
       const bedrockMessage: Message = {
         role: message.role,
-        content: message.content.map((content) => {
-          if (isContentImage(content)) {
-            const image: ImageBlock = {
-              format: content.mimeType.split('/')[1] as ImageFormat,
-              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-            };
-            return { image };
-          } else if (isContentPdfFile(content) || isContentTextFile(content)) {
-            const document: DocumentBlock = {
-              format: content.mimeType.split('/')[1] as DocumentFormat,
-              name: content.fileName,
-              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-            };
-            return { document };
-          } else {
-            return {
-              text: content.text,
-            };
-          }
-        }),
+        content: convertContent(message.content),
       };
       return [...acc, bedrockMessage];
     } else {

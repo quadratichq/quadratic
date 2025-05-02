@@ -23,7 +23,11 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getUserPromptMessages,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -166,22 +170,27 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             key={`${index}-${message.role}-${message.contextType}-${message.content}`}
             className={cn(
               'flex flex-col gap-3',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2',
+              message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              message.contextType === 'userPrompt' ? '' : 'bg-accent'
+              message.contextType === 'userPrompt' ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {message.role === 'user' ? (
-              message.contextType === 'userPrompt' ? (
+            {message.role === 'user' && message.contextType === 'userPrompt' ? (
+              <AIAnalystUserMessageForm
+                initialContent={message.content}
+                initialContext={message.context}
+                textareaRef={textareaRef}
+                messageIndex={index}
+              />
+            ) : isToolResultMessage(message) ? (
+              message.content.map((result) => (
                 <AIAnalystUserMessageForm
-                  initialContent={message.content}
-                  initialContext={message.context}
+                  key={`${index}-${result.id}`}
+                  initialContent={result.content}
                   textareaRef={textareaRef}
                   messageIndex={index}
                 />
-              ) : (
-                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
-              )
+              ))
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>

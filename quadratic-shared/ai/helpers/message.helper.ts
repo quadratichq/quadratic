@@ -45,6 +45,28 @@ export const getPromptMessagesWithoutPDF = (
   });
 };
 
+export const removeOldFilesInToolResult = (
+  messages: ChatMessage[],
+  files: Set<string>
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+  return getPromptMessages(messages).map((message) => {
+    if (message.contextType !== 'toolResult') {
+      return message;
+    }
+
+    return {
+      ...message,
+      content: message.content.map((result) => ({
+        id: result.id,
+        content:
+          result.content.length === 1
+            ? result.content
+            : result.content.filter((content) => isContentText(content) || !files.has(content.fileName)),
+      })),
+    };
+  });
+};
+
 export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
   return getPromptMessages(messages).filter(
     (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'

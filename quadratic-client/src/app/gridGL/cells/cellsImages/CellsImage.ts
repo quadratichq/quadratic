@@ -27,6 +27,8 @@ export class CellsImage extends Container {
 
   imageBounds: Rectangle;
 
+  dataUrl: string | undefined;
+
   constructor(cellsSheet: CellsSheet, message: CoreClientImage) {
     super();
     this.cellsSheet = cellsSheet;
@@ -38,6 +40,8 @@ export class CellsImage extends Container {
 
     this.viewRight = new Rectangle();
     this.viewBottom = new Rectangle();
+
+    this.dataUrl = message.image;
 
     this.reposition();
     this.updateMessage(message);

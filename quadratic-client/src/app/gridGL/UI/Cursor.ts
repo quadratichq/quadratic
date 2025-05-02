@@ -77,7 +77,7 @@ export class Cursor extends Container {
     const { codeEditorState } = pixiAppSettings;
     const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
-    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
+    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(sheets.current, cell)) {
       return;
     }
     const tables = pixiApp.cellsSheet().tables;

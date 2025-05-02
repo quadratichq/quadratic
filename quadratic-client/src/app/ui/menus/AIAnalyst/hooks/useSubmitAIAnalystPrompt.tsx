@@ -25,7 +25,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getPromptMessagesWithoutPDF,
+  isContentText,
+  removeOldFilesInToolResult,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -318,14 +323,14 @@ export function useSubmitAIAnalystPrompt() {
                   const aiTool = toolCall.name as AITool;
                   const argsObject = JSON.parse(toolCall.arguments);
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                  const result = await aiToolsActions[aiTool](args as any, {
+                  const toolResultContent = await aiToolsActions[aiTool](args as any, {
                     source: 'AIAnalyst',
                     chatId,
                     messageIndex: lastMessageIndex + 1,
                   });
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    text: result,
+                    content: toolResultContent,
                   });
 
                   if (aiTool === AITool.UserPromptSuggestions) {
@@ -334,13 +339,23 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                      },
+                    ],
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  text: 'Unknown tool',
+                  content: [
+                    {
+                      type: 'text',
+                      text: 'Unknown tool',
+                    },
+                  ],
                 });
               }
             }
@@ -349,16 +364,25 @@ export function useSubmitAIAnalystPrompt() {
             for (const toolCall of importPDFToolCalls) {
               const argsObject = JSON.parse(toolCall.arguments);
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
-              const result = await importPDF({ pdfImportArgs, context, chatMessages });
+              const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
                 id: toolCall.id,
-                text: result,
+                content: toolResultContent,
               });
             }
 
+            const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
+              result.content.forEach((content) => {
+                if (!isContentText(content)) {
+                  acc.add(content.fileName);
+                }
+              });
+              return acc;
+            }, new Set<string>());
+
             let nextChatMessages: ChatMessage[] = [];
             set(aiAnalystCurrentChatMessagesAtom, (prev) => {
-              nextChatMessages = [...prev, toolResultMessage];
+              nextChatMessages = [...removeOldFilesInToolResult(prev, filesInToolResult), toolResultMessage];
               return nextChatMessages;
             });
             chatMessages = nextChatMessages;
