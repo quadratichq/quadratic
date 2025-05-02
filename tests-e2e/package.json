@@ -20,6 +20,7 @@
   "devDependencies": {
     "@playwright/test": "^1.52.0",
     "@types/node": "^22.15.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "xlsx": "^0.18.5"
   }
 }

@@ -189,6 +189,7 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   });
   await ownerPage.bringToFront();
   await ownerPage.reload();
+  await ownerPage.waitForTimeout(30 * 1000);
 
   // Navigate to team URL
   await ownerPage.goto(buildUrl(`/teams/${teamUrl}`));
@@ -553,6 +554,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   // Owner accepts the invitation and navigates to the team
   await ownerPage.bringToFront();
   await ownerPage.reload();
+  await ownerPage.waitForTimeout(30 * 1000);
 
   // Navigate to team URL
   await ownerPage.goto(buildUrl(`/teams/${teamUrl}`));

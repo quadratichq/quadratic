@@ -1,4 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import * as xlsx from 'xlsx';
 import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
@@ -37,7 +40,7 @@ test('Appearance Customization', async ({ page }) => {
   // Act:
   //--------------------------------
 
-  // Click theme toggle button (identified by constract icon)
+  // Click theme toggle button (identified by contrast icon)
   await page.getByRole(`button`, { name: `contrast` }).click();
 
   // Click 'Dark' button to trigger theme change
@@ -87,7 +90,7 @@ test('Appearance Customization', async ({ page }) => {
   // Act:
   //--------------------------------
 
-  // Click theme toggle button (identified by constract icon)
+  // Click theme toggle button (identified by contrast icon)
   await page.getByRole(`button`, { name: `contrast` }).click();
 
   // Click 'Light' button to trigger theme change
@@ -838,6 +841,523 @@ test('Custom DateTime Options', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
     'custom_datetime_options_for_full_month_and_days.png'
   );
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Data Validation', async ({ page }) => {
+  //--------------------------------
+  // Data Validation - Checkbox
+  //--------------------------------
+
+  // Constants
+  const newTeamName = `Data Validation - ${Date.now()}`;
+  const fileName = 'Data_Validation';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_data_validations` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Upload Chat File
+  await uploadFile(page, { fileName, fileType });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Click on the checkbox in cell (0, 0)
+  await page.mouse.click(125, 110);
+
+  // Wait a moment for Python cell to update
+  await page.waitForTimeout(5000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert the Python cell (0, 1) correctly updates to FALSE
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`data_validation__checkbox_false.png`);
+
+  //--------------------------------
+  // Data Validation - Dropdown
+  //--------------------------------
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Click on the dropdown in (0, 1)
+  await page.mouse.click(175, 135);
+
+  // Wait a moment for the dropdown options to appear
+  await page.waitForTimeout(2000);
+
+  // Select 'a' option in the dropdown
+  await page.mouse.click(85, 155);
+
+  // Wait a moment for Python cell to update
+  await page.waitForTimeout(3000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert the Python cell (1, 1) correctly updates to 'a'
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`data_validation__dropdown_a.png`);
+
+  //--------------------------------
+  // Data Validation - Error Popup
+  //--------------------------------
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Navigate to the empty slot at (1, 2) above message '^ Try to enter 44 in above cell, it shouldn't work'
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 2 });
+
+  // Input the number 44
+  await page.keyboard.type(`44`, { delay: 200 });
+
+  // Press Enter
+  await page.keyboard.press(`Enter`);
+
+  // Wait a moment for Python cell to update
+  await page.waitForTimeout(3000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert the Python cell (0, 2) has a Validation Error: Number must not be equal to 44.
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`data_validation__validation_error.png`, {
+    maxDiffPixels: 3000,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Delete Reference and Code Output Table', async ({ page }) => {
+  //--------------------------------
+  // Delete Reference Table (1 layer reference)
+  //--------------------------------
+  // Constants
+  const newTeamName = `Delete Reference Table - ${Date.now()}`;
+  const fileName = 'Delete_reference_tables';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_data_validations` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Upload Chat File
+  await uploadFile(page, { fileName, fileType });
+
+  // Assert the initial state of the table reference sheet
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_reference_tables_sheet_initial.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Navigate to cell A1
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+
+  // Delete Table1
+  await page.keyboard.press('Delete');
+  await page.waitForTimeout(2 * 1000);
+
+  // Navigate to cell D1
+  await navigateOnSheet(page, { targetColumn: 'D', targetRow: 1 });
+
+  // Press Control+8 to perform an action
+  await page.keyboard.press('Control+8');
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert Python1 displaying #Error after Table1 deletion
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_reference_table_1layer.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  //--------------------------------
+  // Delete Code Output Table (1 layer reference)
+  //--------------------------------
+  // Wait for 2 seconds
+  await page.waitForTimeout(2 * 1000);
+
+  // Press Control+- to zoom out
+  await page.keyboard.press('Control+-');
+
+  // Wait for 2 seconds
+  await page.waitForTimeout(2 * 1000);
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Navigate to cell D8
+  await navigateOnSheet(page, { targetColumn: 'D', targetRow: 8 });
+
+  // Delete Python2 table by pressing Delete key
+  await page.keyboard.press('Delete');
+
+  // Wait for 2 seconds to ensure the action is completed
+  await page.waitForTimeout(2 * 1000);
+
+  // Navigate to cell F8
+  await navigateOnSheet(page, { targetColumn: 'F', targetRow: 8 });
+
+  // Press Control+8 to perform an action
+  await page.keyboard.press('Control+8');
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert Python3 displaying #Error after Table1 deletion
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table_1layer.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  //--------------------------------
+  // Delete Reference Table (2 layer reference)
+  //--------------------------------
+  // Wait for 2 seconds
+  await page.waitForTimeout(2 * 1000);
+
+  // Press Control+- to zoom out
+  await page.keyboard.press('Control+-');
+
+  // Wait for 2 seconds
+  await page.waitForTimeout(2 * 1000);
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Navigate to cell A14
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 15 });
+
+  // Delete Python2 table by pressing Delete key
+  await page.keyboard.press('Delete');
+
+  // Wait for 2 seconds to ensure the action is completed
+  await page.waitForTimeout(2 * 1000);
+
+  // Navigate to cell D14
+  await navigateOnSheet(page, { targetColumn: 'D', targetRow: 15 });
+
+  // Press Control+8 to perform an action
+  await page.keyboard.press('Control+8');
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Assert Python4 displaying #Error after Table1 deletion
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table1_2layer.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // Navigate to cell F14
+  await navigateOnSheet(page, { targetColumn: 'F', targetRow: 14 });
+
+  // Press Control+8 to perform an action
+  await page.keyboard.press('Control+8');
+
+  // Assert Python5 displaying #Error after Table1 deletion
+  // Do not change maxDiffPixels of 100, need to capture #Error vs Empty cCel
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table2_2layer.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Download Sheet', async ({ page }) => {
+  //--------------------------------
+  // Download Sheet
+  //--------------------------------
+  // Constants
+  const newTeamName = `Delete Reference Table - ${Date.now()}`;
+  const fileName = '(Main) QAWolf test';
+  const fileType = 'grid';
+  const tabs = [
+    'Types: numbers and strings',
+    'Types: sequences, mappings, sets',
+    'Types: series, dataframes',
+    'Types: dates',
+    'References',
+    'Formatting',
+    'Charts',
+    'API calls',
+    'Spills',
+    'Formulas',
+    'Sheet 2',
+  ];
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_download_sheet` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up files
+  await cleanUpFiles(page, { fileName });
+
+  // Upload Chat File
+  await uploadFile(page, { fileName, fileType });
+
+  // Cycle through all bottom tabs and assert initial screenshots
+  for (const tab of tabs) {
+    // Click into bottom navigation tab
+    await page.locator(`div[data-title="${tab}"]`).click();
+
+    // Remove non-alphanumeric characters for screenshot name
+    const screenshot = tab.replace(/[^a-zA-Z0-9]/g, '');
+
+    // Take screenshot of canvas element
+    await expect(page.locator(`canvas[id="QuadraticCanvasID"]`)).toHaveScreenshot(`${screenshot}-pre.png`, {
+      maxDiffPixelRatio: 0.01,
+    });
+  }
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Click "File" in menu bar
+  await page.getByRole(`menuitem`, { name: `File` }).click();
+
+  // Ensures that download is caught in case it finishes before listener can be created
+  const [download] = await Promise.all([
+    // Create event listener to watch for a "download"
+    page.waitForEvent('download'),
+    // Click "Download" button
+    page.getByRole(`menuitem`, { name: `download Download` }).click(),
+  ]);
+
+  // Get full path of the file download
+  let fullFilePath = await download.path();
+
+  // Add ".grid" to filename so it is recognized as valid
+  fullFilePath += '.grid';
+  await download.saveAs(fullFilePath);
+
+  // Click on website logo to back to dashboard
+  await page.locator(`nav a svg`).click();
+
+  // Upload newly downloaded file
+  await uploadFile(page, { fileName, fileType, fullFilePath });
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Cycle through all bottom tabs and assert new file screenshots
+  for (const tab of tabs) {
+    // Click into bottom navigation tab
+    await page.locator(`div[data-title="${tab}"]`).click();
+
+    // Remove non-alphanumeric characters for screenshot name
+    const screenshot = tab.replace(/[^a-zA-Z0-9]/g, '');
+
+    // Take screenshot of canvas element
+    await expect(page.locator(`canvas[id="QuadraticCanvasID"]`)).toHaveScreenshot(`${screenshot}-post.png`, {
+      maxDiffPixelRatio: 0.01,
+    });
+  }
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Drag and Drop Excel File into Sheet', async ({ page }) => {
+  //--------------------------------
+  // Drag and Drop Excel File into Sheet
+  //--------------------------------
+  // Constants
+  const newTeamName = `Drag Drop Excel - ${Date.now()}`;
+  const fileName = 'Drag_And_Drop_Spreadsheet';
+  const fileType = 'xlsx';
+  const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+  // If options include filepath use that, otherwise use default
+  const filePath = path.join(process.cwd(), './data/', `${fileName}.${fileType}`);
+
+  // Read file and convert to base64
+  const rawBuffer = await readFile(filePath);
+  const buffer = rawBuffer.toString('base64');
+
+  // Convert the Excel data to object
+  const workbook = xlsx.read(rawBuffer);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  const excelData = xlsx.utils.sheet_to_json(worksheet);
+
+  // Key excel sheet values
+  const excelColumns = Object.keys(excelData[0] as object);
+  const excelRowCount = excelData.length;
+
+  //--------------------------------
+  // Arrange:
+  //--------------------------------
+
+  // Log in
+  const email = await logIn(page, { emailPrefix: `e2e_drag_drop_excel` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Assert Quadratic team files page and logged in status
+  await expect(page.getByText(email)).toBeVisible();
+  await expect(page).toHaveTitle(/Team files - Quadratic/);
+  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible();
+
+  // Clean up files
+  await cleanUpFiles(page, { fileName });
+
+  // Assert that there are no files
+  await expect(page.getByRole(`heading`, { name: `No files` })).toBeVisible();
+  await expect(
+    page.getByText(
+      `You don’t have any files yet. Create a new file or drag and drop a CSV, Excel, Parquet, or Quadratic file here.`
+    )
+  ).toBeVisible();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // Locate the initial drop targets
+  const initiateDropEl = page.getByText(`You don’t have any files yet`);
+  const dropTarget = page.locator('#file-drag-drop div').first();
+
+  // Create DataTransfer and file inside browser context to allow drag and drop
+  const dataTransfer = await page.evaluateHandle(
+    async ({ bufferData, fileName, fileType }) => {
+      const dt = new DataTransfer();
+      const blob = await fetch(bufferData).then((res) => res.blob());
+      const file = new File([blob], fileName, { type: fileType });
+      dt.items.add(file);
+      return dt;
+    },
+    {
+      bufferData: `data:${mimeType};base64,${buffer}`,
+      fileName,
+      fileType: mimeType,
+    }
+  );
+
+  // Assert that the initial drop element is visible
+  await expect(initiateDropEl).toBeVisible();
+
+  // Dispatch full drag sequence to trigger the drop target to appear
+  await initiateDropEl.dispatchEvent('dragenter', { dataTransfer });
+  await initiateDropEl.dispatchEvent('dragover', { dataTransfer });
+  await initiateDropEl.dispatchEvent('drop', { dataTransfer });
+
+  // Assert that the drop target is visible
+  await expect(dropTarget).toBeVisible();
+
+  // Dispatch full drag sequence on the desired drop target element
+  await dropTarget.dispatchEvent('dragenter', { dataTransfer });
+  await dropTarget.dispatchEvent('dragover', { dataTransfer });
+  await dropTarget.dispatchEvent('drop', { dataTransfer });
+
+  // Assert modal appears with file upload progress - very fast locally, test only on CI
+  if (process.env.CI) {
+    await expect(page.locator(`//*[@id='radix-:rs:']`)).toBeVisible();
+    await expect(page.getByText(`Import files`)).toBeVisible();
+    await expect(page.getByText(fileName)).toBeVisible();
+  }
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Close the AI chat on the left side
+  await page.getByRole(`button`, { name: `close` }).first().click();
+  await page.waitForTimeout(1000);
+
+  // ----- Assertion: Screenshot ------
+  // Assert CSV data matches the quadratic content using a screenshot
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Drag_Drop_Spreadsheet_Check.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
+  // ----- Assertion: Column Names ------
+  // Select all the column names and copy to clipboard
+  await selectCells(page, { startXY: [1, 1], endXY: [16, 1] });
+  await page.waitForTimeout(1000); // Wait before clicking copy
+  await page.keyboard.press('Control+c');
+
+  // Save copied content into a variable
+  await page.waitForTimeout(1000); // Wait before handling clipboard
+  const rawColumnText = await page.evaluate(() => {
+    return navigator.clipboard.readText();
+  });
+
+  // Split raw column text into an array and normalize the text for matching
+  const columnText = rawColumnText.split('\t').map((col) => col.trim().toLowerCase());
+
+  // Assert that the excelData columns match the Quadratic column names
+  for (let i = 0; i < excelColumns.length; i++) {
+    // Checks if the column name matches
+    const normalizedKey = excelColumns[i].trim().toLowerCase();
+    const keyExists = columnText.includes(normalizedKey);
+    expect(keyExists).toBeTruthy();
+
+    // Checks if the excel column is the same as the column name in the sheet
+    expect(normalizedKey).toBe(columnText[i]);
+  }
+
+  // ----- Assertion: Row Count ------
+  // Navigate to an empty cell & insert formula to count # of rows
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1000); // Wait before navigating on sheet
+  await typeInCell(page, { targetColumn: 18, targetRow: 1, text: '=COUNTA(A)' });
+
+  // Copy and save the number calculated on the sheet
+  await page.keyboard.press('ArrowUp');
+  await page.waitForTimeout(1000); // Wait before clicking copy
+  await page.keyboard.press('Control+c');
+
+  // Save copied content into a variable
+  await page.waitForTimeout(1000); // Wait before handling clipboard
+  const rowNumber = await page.evaluate(() => {
+    return navigator.clipboard.readText();
+  });
+
+  // Assert sheet has the same # of rows as # of entries found in Excel sheet
+  expect(Number(rowNumber) - 1).toBe(excelRowCount); // minus 1 to exclude header
 
   //--------------------------------
   // Clean up:

@@ -99,13 +99,14 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
 type UploadFileOptions = {
   fileName: string;
   fileType: string;
+  fullFilePath?: string;
 };
-export const uploadFile = async (page: Page, { fileName, fileType }: UploadFileOptions) => {
+export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath }: UploadFileOptions) => {
   // Click Import
   await page.locator(`button:text-is("Import ")`).click();
 
   // If options include filepath use that, otherwise use default
-  const filePath = path.join(process.cwd(), './data/', `${fileName}.${fileType}`);
+  const filePath = fullFilePath ?? path.join(process.cwd(), './data/', `${fileName}.${fileType}`);
 
   // Select file
   page.once('filechooser', (chooser) => {
@@ -126,7 +127,6 @@ export const uploadFile = async (page: Page, { fileName, fileType }: UploadFileO
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
 
   // Confirm file is uploaded
   await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible({

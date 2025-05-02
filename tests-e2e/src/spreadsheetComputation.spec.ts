@@ -1,12 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { POSTGRES_DB } from './constants/db';
-import {
-  cleanUpServerConnections,
-  clearCodeEditor,
-  navigateOnSheet,
-  selectCells,
-  showCodeEditorConsole,
-} from './helpers/app.helper';
+import { cleanUpServerConnections, clearCodeEditor, navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { createNewTeamByURL } from './helpers/team.helper';
@@ -968,18 +962,6 @@ test('References', async ({ page }) => {
       // Take final screenshot
       await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-references-post.png');
     } catch (error) {
-      await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 2 });
-      await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 3 });
-      await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 4 });
-      await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 5 });
-      await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 18 });
-      await showCodeEditorConsole(page, { targetColumn: 'I', targetRow: 25 });
-
-      await showCodeEditorConsole(page, { targetColumn: 'J', targetRow: 4 });
-      await showCodeEditorConsole(page, { targetColumn: 'J', targetRow: 11 });
-      await showCodeEditorConsole(page, { targetColumn: 'J', targetRow: 13 });
-      await showCodeEditorConsole(page, { targetColumn: 'J', targetRow: 15 });
-
       // Fail the entire test on the first failure
       void error;
       throw new Error(`Test failed: Screenshot assertion failed on attempt ${attempt}.`);

@@ -4,11 +4,11 @@ inputs:
   e2e_url:
     description: "Base url of deployment"
     required: true
-  shard_total:
-    description: "Total number of shards"
-    required: true
   shard_index:
     description: "Index of the shard to run"
+    required: true
+  shard_total:
+    description: "Total number of shards"
     required: true
 runs:
   using: "composite"

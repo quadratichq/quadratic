@@ -558,7 +558,7 @@ jobs:
           edit-mode: replace
 
   test-e2e-matrix-run:
-    name: Tests-E2E - Matrix Run
+    name: Tests-E2E - Run Shard
     needs: [build_images, deploy_images, verify_deployed_version]
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref != 'qa' || github.base_ref != 'main'
@@ -566,7 +566,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardTotal: [32]
         shardIndex:
           [
             1,
@@ -602,6 +601,7 @@ jobs:
             31,
             32,
           ]
+        shardTotal: [32]
     env:
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
     steps:
@@ -613,8 +613,8 @@ jobs:
         id: run-tests-e2e
         with:
           e2e_url: "https://${{ env.e2e_url }}"
-          shard_total: ${{ matrix.shardTotal }}
           shard_index: ${{ matrix.shardIndex }}
+          shard_total: ${{ matrix.shardTotal }}
 
   test-e2e-merge-report-and-end-comment:
     name: Tests-E2E - Generate Report and End Comment
@@ -702,7 +702,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images
-            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E [View](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/) [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [View](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)  [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
 
             🔗 URL: https://${{ env.e2e_url }}
             🕒 Last deployed: ${{ env.deploy_time }}
