@@ -9,6 +9,7 @@ export class CLI {
     files: boolean;
     connection: boolean;
     python: boolean;
+    shared: boolean;
     skipTypes: boolean;
     all: boolean;
     perf: boolean;
@@ -20,6 +21,7 @@ export class CLI {
     hideFiles: boolean;
     hideConnection: boolean;
     hidePython: boolean;
+    hideShared: boolean;
     servicesLocal: boolean;
     dockerDev: boolean;
     dark: boolean;
@@ -38,6 +40,7 @@ export class CLI {
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
       .option("-f, --files", "Watch the quadratic-files directory")
       .option("-n, --connection", "Watch the quadratic-connection directory")
+      .option("-s, --shared", "Watch the quadratic-shared directory")
       .option(
         "-y, --python",
         "Watch the quadratic-kernels/python-wasm directory"
@@ -57,6 +60,7 @@ export class CLI {
       .option("-N, --hideConnection", "Hide Connection output")
       .option("-Y, --hidePython", "Hide Python output")
       .option("-E, --hideRustClient", "Hide RustClient")
+      .option("-S, --hideShared", "Hide Shared output")
       .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
       .option("-D, --dockerDev", "Run dev in docker")
       .option("-d, --dark", "Use dark theme")
@@ -72,6 +76,7 @@ export class CLI {
       this.options.files = true;
       this.options.connection = true;
       this.options.python = true;
+      this.options.shared = true;
     }
   }
 }
