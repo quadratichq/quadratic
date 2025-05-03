@@ -1088,11 +1088,8 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         let table = test_create_code_table(&mut gc, sheet_id, pos![C2], 2, 2);
-        print_first_sheet(&gc);
 
         gc.insert_column(sheet_id, 3, false, None);
-        print_first_sheet(&gc);
-
         assert_eq!(&table, gc.data_table(pos![sheet_id!d2]).unwrap());
     }
 }
