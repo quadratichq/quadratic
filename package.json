@@ -83,6 +83,7 @@
     "prettier": "3.5.3",
     "tree-kill": "^1.2.2",
     "ts-jest": "^29.2.6",
+    "tsc-watch": "^6.2.1",
     "typescript": "^5.8.2"
   },
   "engines": {

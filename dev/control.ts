@@ -23,6 +23,7 @@ export class Control {
   db?: ChildProcessWithoutNullStreams;
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
+  shared?: ChildProcessWithoutNullStreams;
 
   signals: Record<string, AbortController> = {};
 
@@ -39,6 +40,7 @@ export class Control {
     npm: false,
     postgres: false,
     redis: false,
+    shared: false,
   };
 
   constructor(cli: CLI) {
@@ -58,6 +60,7 @@ export class Control {
       this.kill("files"),
       this.kill("connection"),
       this.kill("python"),
+      this.kill("shared"),
     ]);
     process.exit(0);
   }
@@ -191,7 +194,7 @@ export class Control {
     this.status.types = false;
     await this.kill("types");
     if (!this.cli.options.skipTypes || restart) {
-      this.types = spawn("npm run compile --workspace=quadratic-shared && npm run build:wasm:types", { shell: true });
+      this.types = spawn("npm run build:wasm:types", { shell: true });
       this.ui.printOutput("types", (data) => {
         this.handleResponse("types", data, {
           success: "Running ",
@@ -442,6 +445,50 @@ export class Control {
     }
   }
 
+  async runShared() {
+    if (this.quitting) return;
+    if (this.status.shared === "killed") return;
+    this.status.shared = false;
+    this.ui.print("shared");
+    await this.kill("shared");
+
+    this.signals.shared = new AbortController();
+    console.log(`npm run ${this.cli.options.shared ? 'watch' : 'compile'} --workspace=quadratic-shared`)
+    this.shared = spawn(`npm run ${this.cli.options.shared ? 'watch' : 'compile'} --workspace=quadratic-shared`,
+      {
+        signal: this.signals.shared.signal,
+        shell: true
+      }
+    );
+    this.ui.printOutput("shared", (data) => {
+      this.handleResponse("shared", data, {
+        success: [" 0 errors.", "successfully"],
+        error: ["error"],
+        start: "Starting",
+      });
+    });
+  }
+
+  async restartShared() {
+    this.cli.options.shared = !this.cli.options.shared;
+    if (this.shared) {
+      this.runShared();
+    }
+  }
+
+  async killShared() {
+    if (this.status.shared === "killed") {
+      this.status.shared = false;
+      this.ui.print("shared", "restarting...");
+      this.runShared();
+    } else {
+      if (this.shared) {
+        await this.kill("shared");
+        this.ui.print("shared", "killed", "red");
+      }
+      this.status.shared = "killed";
+    }
+  }
   async runConnection() {
     if (this.quitting) return;
     if (this.status.connection === "killed") return;
@@ -502,6 +549,7 @@ export class Control {
       this.status.connection = "killed";
     }
   }
+
   async runPython() {
     if (this.quitting) return;
     this.status.python = false;
@@ -634,5 +682,6 @@ export class Control {
     this.runRust();
     this.runDb();
     this.runPython();
+    this.runShared();
   }
 }

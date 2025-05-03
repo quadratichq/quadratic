@@ -55,6 +55,12 @@ export class Input {
         }
         this.control.restartFiles();
         break;
+      case "s": // toggle shared
+        if (this.control.status.shared === "killed") {
+          this.control.status.shared = false;
+        }
+        this.control.restartShared();
+        break;
       case "n": // toggle connection
         if (this.control.status.connection === "killed") {
           this.control.status.connection = false;
@@ -122,6 +128,9 @@ export class Input {
         break;
       case "T": // toggle showing React
         this.cli.options.hideTypes = !this.cli.options.hideTypes;
+        break;
+      case "S": // toggle showing Shared
+        this.cli.options.hideShared = !this.cli.options.hideShared;
         break;
       case "d": // toggle dark theme
         this.cli.options.dark = !this.cli.options.dark;
