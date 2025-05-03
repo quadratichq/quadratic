@@ -199,11 +199,13 @@ This name should be from user's perspective, not the assistant's.\n
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
     description: `
+CRITICALLY IMPORTANT: Do not use this tool when augmenting existing data on the sheet or when adding data to a data table that already exists. In that case, ALWAYS use the set_cell_values function instead.\n\n
 Adds a data table to the current open sheet, requires the top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
-Always use this tool when adding a new tabular data to the current open sheet. Don't use set_cell_values function to add tabular data.\n
+Data tables are best for adding new tabular data to the sheet.\n\n
+IMPORTANT: when augmenting existing data on the sheet that is not already in a table, ALWAYS use the set_cell_values function instead.\n\n
 Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
 Always prefer using this tool to add structured data to the current open sheet. Don't use set_cell_values or set_code_cell_value function to add structured data.\n
 `,
@@ -236,12 +238,13 @@ Always prefer using this tool to add structured data to the current open sheet. 
     },
     responseSchema: AIToolsArgsSchema[AITool.AddDataTable],
     prompt: `
+CRITICALLY IMPORTANT: Do not use this tool when augmenting existing data on the sheet or when adding data to a data table that already exists. In that case, ALWAYS use the set_cell_values function instead.\n\n
 Adds a data table to the current open sheet, requires the top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 top_left_position is the anchor position of the data table.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Always use this tool when adding a new tabular data to the current open sheet. Don't use set_cell_values function to add tabular data.\n
+Data tables are best for adding new tabular data to the sheet.\n
 Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
@@ -253,6 +256,7 @@ Don't attempt to add formulas or code to data tables.\n
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
+CRITICALLY IMPORTANT: If augmenting data and including a header row, it should be placed above the first row of data. If the first row of data is already a header row, do not include a separate header row.\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
@@ -284,6 +288,7 @@ To clear the values of a cell, set the value to an empty string.\n
     prompt: `
 You should use the set_cell_values function to set the values of the current open sheet cells to a 2d array of strings.\n
 Use this function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
+CRITICALLY IMPORTANT: If augmenting data and including a header row, it should be placed above the first row of data. If the first row of data is already a header row, do not include a separate header row.\n
 This function requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
