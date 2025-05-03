@@ -264,8 +264,8 @@ Don't attempt to add formulas or code to data tables.\n
     sources: ['AIAnalyst'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
-Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
-CRITICALLY IMPORTANT: If augmenting data and including a header row, it should be placed above the first row of data. If the first row of data is already a header row, do not include a separate header row.\n
+Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
+CRITICALLY IMPORTANT: you MUST insert any header ABOVE the first row of data.\n\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
@@ -300,8 +300,14 @@ To clear the values of a cell, set the value to an empty string.\n
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
 You should use the set_cell_values function to set the values of the current open sheet cells to a 2d array of strings.\n
-Use this function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
-CRITICALLY IMPORTANT: If augmenting data and including a header row, it should be placed above the first row of data. If the first row of data is already a header row, do not include a separate header row.\n
+Use this function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
+CRITICALLY IMPORTANT: you MUST insert any header ABOVE the first row of data.\n
+When setting cell values, follow these rules for headers:\n
+1. The header row MUST be the first row in the cell_values array\n
+2. The header row MUST contain column names that describe the data below\n
+3. The header row MUST have the same number of columns as the data rows\n
+4. The header row MUST be included in the cell_values array, not as a separate operation\n
+5. The top_left_position MUST point to where the header row should start, which is usually the row above the first row of inserted data\n\n
 This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
