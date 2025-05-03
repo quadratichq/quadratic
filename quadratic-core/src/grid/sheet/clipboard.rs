@@ -217,7 +217,7 @@ impl Sheet {
             data_tables.extend(data_tables_in_rect);
         }
 
-        let formats = self.formats.to_clipboard(selection);
+        let formats = self.formats.to_clipboard(selection, self, a1_context).ok();
         let borders = self.borders.to_clipboard(selection);
         let validations = self
             .validations
@@ -254,6 +254,7 @@ mod tests {
     use crate::Pos;
     use crate::controller::GridController;
     use crate::controller::operations::clipboard::PasteSpecial;
+    use crate::controller::user_actions::import::tests::simple_csv;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
 
@@ -319,5 +320,52 @@ mod tests {
         assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
         assert_eq!(border.left.unwrap().line, CellBorderLine::default());
         assert_eq!(border.right.unwrap().line, CellBorderLine::default());
+    }
+
+    #[test]
+    fn clipboard_formats() {
+        let (mut gc, sheet_id, _, _) = simple_csv();
+        let get_format = |pos: Pos, clipboard: &Clipboard| {
+            clipboard
+                .formats
+                .clone()
+                .unwrap()
+                .bold
+                .unwrap()
+                .get(pos)
+                .unwrap()
+        };
+        let set_bold = |gc: &mut GridController, pos: &str| {
+            gc.set_bold(
+                &A1Selection::test_a1_sheet_id(pos, sheet_id),
+                Some(true),
+                None,
+            )
+            .unwrap();
+        };
+        let set_clipboard = |gc: &mut GridController, pos: &str| {
+            let context = gc.a1_context().to_owned();
+            let JsClipboard { html, .. } = gc
+                .sheet_mut(sheet_id)
+                .copy_to_clipboard(
+                    &A1Selection::test_a1(pos),
+                    &context,
+                    ClipboardOperation::Copy,
+                    false,
+                )
+                .unwrap();
+
+            Clipboard::decode(&html).unwrap()
+        };
+
+        // format on the sheet at k1
+        set_bold(&mut gc, "K1");
+        let clipboard = set_clipboard(&mut gc, "K1");
+        assert!(get_format(pos![K1], &clipboard).unwrap());
+
+        // format on a data table at A3
+        set_bold(&mut gc, "A3");
+        let clipboard = set_clipboard(&mut gc, "A3");
+        assert!(get_format(pos![A3], &clipboard).unwrap());
     }
 }
