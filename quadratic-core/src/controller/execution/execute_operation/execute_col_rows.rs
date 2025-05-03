@@ -1090,6 +1090,22 @@ mod tests {
         let table = test_create_code_table(&mut gc, sheet_id, pos![C2], 2, 2);
 
         gc.insert_column(sheet_id, 3, false, None);
+
         assert_eq!(&table, gc.data_table(pos![sheet_id!d2]).unwrap());
+        assert_data_table(&gc, pos![sheet_id!d2], &table);
+    }
+
+    #[test]
+    fn test_insert_column_before_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let table = test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
+
+        print_first_sheet(&gc);
+        gc.insert_column(sheet_id, 3, false, None);
+
+        // todo: this is wrong, the data table should be at c2, not d2
+        assert_data_table(&gc, pos![sheet_id!c2], &table);
     }
 }
