@@ -117,9 +117,6 @@ export class Input {
             case "R": // toggle showing React
                 this.cli.options.hideReact = !this.cli.options.hideReact;
                 break;
-            case "S": // toggle showing Shared
-                this.cli.options.hideShared = !this.cli.options.hideShared;
-                break;
             case "d": // toggle dark theme
                 this.cli.options.dark = !this.cli.options.dark;
                 break;
