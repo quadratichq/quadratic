@@ -41,24 +41,23 @@ export async function createTeam<T extends Prisma.TeamSelect>(
  * @returns The decrypted team.
  */
 export async function getDecryptedTeam(team: Team): Promise<DecryptedTeam> {
-  if (team.sshPublicKey === null) {
+  let encryptedTeam = { ...team };
+
+  if (encryptedTeam.sshPublicKey === null || encryptedTeam.sshPrivateKey === null) {
     const { privateKey, publicKey } = await generateSshKeys();
     const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
     const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
 
-    await dbClient.team.update({
-      where: { id: team.id },
+    encryptedTeam = await dbClient.team.update({
+      where: { id: encryptedTeam.id },
       data: {
         sshPublicKey,
         sshPrivateKey,
       },
     });
-
-    // only set the public key to keep the private key from being exposed
-    team.sshPublicKey = sshPublicKey;
   }
 
-  return decryptSshKeys(team);
+  return decryptSshKeys(encryptedTeam);
 }
 
 /**

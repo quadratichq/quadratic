@@ -11,7 +11,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { decryptSshKeys, getDecryptedTeam } from '../../utils/teams';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [
   validateRequestSchema(
@@ -39,9 +39,9 @@ async function handler(
   const thumbnailSignedUrl = thumbnail ? await getFileUrl(thumbnail) : null;
 
   // Apply SSH keys to the team if they don't already exist.
-  await getDecryptedTeam(ownerTeam);
+  let decryptedTeam = await getDecryptedTeam(ownerTeam);
 
-  if (ownerTeam.sshPublicKey === null) {
+  if (decryptedTeam.sshPublicKey === null) {
     throw new ApiError(500, 'Unable to retrieve SSH keys');
   }
 
@@ -97,7 +97,7 @@ async function handler(
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },
-      sshPublicKey: decryptSshKeys(ownerTeam).sshPublicKey,
+      sshPublicKey: decryptedTeam.sshPublicKey,
     },
     userMakingRequest: {
       id: userId,
