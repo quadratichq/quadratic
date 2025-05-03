@@ -120,6 +120,7 @@ pub trait Connection {
 
         let schema = ArrowSchema::new(fields);
         let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)?;
+
         let record_batch = RecordBatch::try_new(Arc::new(schema), cols)?;
         let record_count = record_batch.num_rows();
         writer.write(&record_batch)?;
@@ -195,4 +196,22 @@ pub trait UsesSsh {
 
     // Set the SSH key
     fn set_ssh_key(&mut self, ssh_key: Option<String>);
+}
+
+/// Convert a column data to an ArrowType into an Arrow type
+#[macro_export]
+macro_rules! convert_sqlx_type {
+    ( $kind:ty, $row:ident, $index:ident ) => {{ $row.try_get::<$kind, usize>($index).ok() }};
+}
+
+/// Convert a column data to an ArrowType into an Arrow type
+/// else return a null value
+#[macro_export]
+macro_rules! to_arrow_type {
+    ( $arrow_type:path, $kind:ty, $row:ident, $index:ident ) => {{
+        match convert_sqlx_type!($kind, $row, $index) {
+            Some(value) => $arrow_type(value),
+            None => ArrowType::Null,
+        }
+    }};
 }
