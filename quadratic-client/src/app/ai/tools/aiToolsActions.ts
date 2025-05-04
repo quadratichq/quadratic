@@ -316,7 +316,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const sheetId = sheets.getSheetIdFromName(sheet_name);
     const response = await quadraticCore.getAICells(selection, sheetId);
     if (response) {
-      return 'These are the cells in the selection:\n' + response;
+      return `The selection ${selection} has:\n${response}`;
     } else {
       return 'There was an error executing the get cells tool';
     }
