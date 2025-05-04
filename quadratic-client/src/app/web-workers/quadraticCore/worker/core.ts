@@ -1585,6 +1585,15 @@ class Core {
       this.handleCoreError('setFormats', e);
     }
   }
+
+  getAICellFormats(sheetId: string, selection: string): string {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      return this.gridController.getAICellFormats(sheetId, selection);
+    } catch (e) {
+      return JSON.stringify(e);
+    }
+  }
 }
 
 export const core = new Core();

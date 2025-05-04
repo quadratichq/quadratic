@@ -77,7 +77,7 @@ pub struct Sheet {
     pub(super) data_bounds: GridBounds,
 
     // bounds for the grid with only formatting
-    pub(super) format_bounds: GridBounds,
+    pub format_bounds: GridBounds,
 
     pub(super) rows_resize: ResizeMap,
 
@@ -467,6 +467,49 @@ impl Sheet {
         }
 
         sheet_format
+    }
+
+    /// Returns a string representation of the format of a cell for use by AI.
+    pub fn cell_text_format_as_string(&self, pos: Pos) -> Option<String> {
+        let format = self.cell_format(pos);
+        if format.is_default() {
+            None
+        } else {
+            let mut values = vec![];
+            if format.bold.is_some_and(|b| b) {
+                values.push("bold".to_string());
+            }
+            if format.italic.is_some_and(|i| i) {
+                values.push("italic".to_string());
+            }
+            if format.underline.is_some_and(|u| u) {
+                values.push("underline".to_string());
+            }
+            if format.strike_through.is_some_and(|s| s) {
+                values.push("strike through".to_string());
+            }
+            if let Some(text_color) = format.text_color {
+                if !text_color.is_empty() {
+                    values.push(format!("text color is {}", text_color.clone()));
+                }
+            }
+            if let Some(fill_color) = format.fill_color {
+                if !fill_color.is_empty() {
+                    values.push(format!("fill color is {}", fill_color.clone()));
+                }
+            }
+            if let Some(align) = format.align {
+                values.push(format!("horizontal align is {}", align.clone()));
+            }
+            if let Some(vertical_align) = format.vertical_align {
+                values.push(format!("vertical align is {}", vertical_align.clone()));
+            }
+            if let Some(wrap) = format.wrap {
+                values.push(format!("wrap is {}", wrap.clone()));
+            }
+
+            Some(values.join(", "))
+        }
     }
 
     /// Returns a summary of formatting in a region.

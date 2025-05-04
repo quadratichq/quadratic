@@ -12,8 +12,9 @@ export enum AITool {
   CodeEditorCompletions = 'code_editor_completions',
   UserPromptSuggestions = 'user_prompt_suggestions',
   PDFImport = 'pdf_import',
-  GetCells = 'get_cells',
+  GetCellData = 'get_cell_data',
   SetTextFormats = 'set_text_formats',
+  GetTextFormats = 'get_text_formats',
 }
 
 export const AIToolSchema = z.enum([
@@ -27,8 +28,9 @@ export const AIToolSchema = z.enum([
   AITool.CodeEditorCompletions,
   AITool.UserPromptSuggestions,
   AITool.PDFImport,
-  AITool.GetCells,
+  AITool.GetCellData,
   AITool.SetTextFormats,
+  AITool.GetTextFormats,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -133,7 +135,7 @@ export const AIToolsArgsSchema = {
     file_name: z.string(),
     prompt: z.string(),
   }),
-  [AITool.GetCells]: z.object({
+  [AITool.GetCellData]: z.object({
     sheet_name: z.string(),
     selection: z.string(),
   }),
@@ -146,6 +148,13 @@ export const AIToolsArgsSchema = {
     strike_through: z.boolean().optional(),
     text_color: z.string().optional(),
     fill_color: z.string().optional(),
+    align: z.string().optional(),
+    vertical_align: z.string().optional(),
+    wrap: z.string().optional(),
+  }),
+  [AITool.GetTextFormats]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
   }),
 } as const;
 
@@ -182,13 +191,13 @@ The chat name should be based on user's messages and should reflect his/her quer
 This name should be from user's perspective, not the assistant's.\n
 `,
   },
-  [AITool.GetCells]: {
+  [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
     description: `
     This tool returns the values of the cells in the chosen selection.\n
-    You should use the get_cells function to get the values of the cells when you need more data to reference.\n
+    You should use the get_cell_data function to get the values of the cells when you need more data to reference.\n
     Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
-    get_cells function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
+    get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
     `,
     parameters: {
       type: 'object',
@@ -207,10 +216,11 @@ This name should be from user's perspective, not the assistant's.\n
       required: ['selection', 'sheet_name'],
       additionalProperties: false,
     },
-    responseSchema: AIToolsArgsSchema[AITool.GetCells],
+    responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
     This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
-    You should use the get_cells function to get the values of the cells when you need more data to reference for your response.\n
+    You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
+    This tool does NOT return formatting information (like bold, currency, etc.). Use get_format_cells function for cell formatting information.
     `,
   },
   [AITool.AddDataTable]: {
@@ -269,10 +279,10 @@ To delete a data table, use set_cell_values function with the top_left_position 
 CRITICALLY IMPORTANT: Do not use this tool when augmenting existing data on the sheet or when adding data to a data table that already exists. In that case, ALWAYS use the set_cell_values function instead.\n\n
 Don't attempt to add formulas or code to data tables.\n
 IMPORTANT: Before using this tool, you MUST verify there is sufficient empty space for the table by following these steps:\n
-1. Use the get_cells function to check the entire area where the new table will be placed\n
-2. If get_cells returns any data in that area, you MUST try again by:\n
-   - Calling get_cells function again with a different location\n
-   - You MUST use the get_cells function as many times as needed until you find a completely empty area large enough for the table\n
+1. Use the get_cell_data function to check the entire area where the new table will be placed\n
+2. If get_cell_data returns any data in that area, you MUST try again by:\n
+   - Calling get_cell_data function again with a different location\n
+   - You MUST use the get_cell_data function as many times as needed until you find a completely empty area large enough for the table\n
    - You MUST continue this process until you find an empty area large enough for the table\n
    - You CANNOT avoid the spill error if the table overlaps existing cells\n
 3. The empty area must be large enough to accommodate:\n
@@ -494,6 +504,35 @@ When using this tool, make sure this is the only tool used in the response.\n
 When using this tool, make sure the code cell is the only cell being edited.\n
 `,
   },
+  [AITool.GetTextFormats]: {
+    sources: ['AIAnalyst'],
+    description: `
+    This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+    It should be used to find formatting within a sheet's formatting bounds.\n
+    It returns a string representation of the formatting information of the cells in the selection.\n
+    `,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        selection: {
+          type: 'string',
+          description: 'The selection of cells to get the formats of, in a1 notation',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetTextFormats],
+    prompt: `
+    This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+    It should be used to find formatting within a sheet's formatting bounds.\n
+    It returns a string representation of the formatting information of the cells in the selection.\n
+    `,
+  },
   [AITool.SetTextFormats]: {
     sources: ['AIAnalyst'],
     description: `
@@ -531,11 +570,25 @@ When using this tool, make sure the code cell is the only cell being edited.\n
         },
         text_color: {
           type: 'string',
-          description: 'The color of the text, in hex format',
+          description:
+            'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
         },
         fill_color: {
           type: 'string',
-          description: 'The color of the background, in hex format',
+          description:
+            'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
+        },
+        align: {
+          type: 'string',
+          description: 'The horizontal alignment of the text, this can be one of Left, Center, Right',
+        },
+        vertical_align: {
+          type: 'string',
+          description: 'The vertical alignment of the text, this can be one of Top, Middle, Bottom',
+        },
+        wrap: {
+          type: 'string',
+          description: 'The wrapping of the text, this can be one of Wrap, Clip, Overflow',
         },
       },
       required: ['sheet_name', 'selection'],
@@ -545,7 +598,8 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     prompt: `This tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
     It can set the bold, italics, underline, or strike through of a cell. It can also set the text color and fill color of a cell using hex format, for example, #FF0000 for red.\n
     There must be at least one format to set.\n
-    For example, to set the cell to bold, provide the key as "bold" and the value as true.\n`,
+    For example, to set the cell to bold, provide the key as "bold" and the value as true.\n
+    You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],

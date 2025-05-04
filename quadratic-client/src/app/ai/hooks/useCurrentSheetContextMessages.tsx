@@ -13,6 +13,7 @@ export function useCurrentSheetContextMessages() {
       if (!sheet) return [];
 
       const sheetBounds = sheet.boundsWithoutFormatting;
+      const formatBounds = sheet.formatBounds;
       const selection: string | undefined = sheetBounds.type === 'empty' ? undefined : getAllSelection(sheet.id);
       const currentSheetContext = !!selection
         ? await quadraticCore.getAISelectionContexts({
@@ -35,12 +36,19 @@ Note: This is an internal message for context. Do not quote it in your response.
 I have an open sheet, with sheet name '${currentSheetName}', all actions are performed on this sheet, unless the user specifies otherwise.\n
 You can reference data from this or other sheets in the currently open file.\n
 
-The current sheet has the following ranges: ${
-                sheetBounds.type === 'nonEmpty'
-                  ? `- Data range: ${rectToA1(sheetBounds)}
-- Note: This range may contain empty cells.`
-                  : '- The currently open sheet is empty.'
-              }\n\n
+The current sheet has the following ranges:\n
+${
+  sheetBounds.type === 'nonEmpty'
+    ? `- Data range: ${rectToA1(sheetBounds)}\n
+- Note: This range may contain empty cells.\n`
+    : '- The currently open sheet is empty.'
+}\n
+${
+  formatBounds.type === 'nonEmpty'
+    ? `- Formatting range (like bold, currency, etc.): ${rectToA1(formatBounds)}\n
+- Note: This range may contain non-formatted cells.\n`
+    : '- The currently open sheet does not have any formatting.'
+}
 
 CRITICAL INSTRUCTION: You MUST use get_cells BEFORE performing ANY operation on the sheet's data. This is a strict requirement.\n\n
 NEVER use set_cell_values or any other data modification tool without first using get_cells to verify the current state of the data.\n\n

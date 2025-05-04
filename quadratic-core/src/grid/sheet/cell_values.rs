@@ -137,6 +137,20 @@ impl Sheet {
         }
         cells
     }
+
+    /// Returns the rendered formats of the cells in a given rect.
+    pub fn get_cell_formats_as_string(&self, rect: Rect) -> String {
+        let mut formats = String::new();
+        for x in rect.min.x..=rect.max.x {
+            for y in rect.min.y..=rect.max.y {
+                let pos = Pos { x, y };
+                if let Some(format) = self.cell_text_format_as_string(pos) {
+                    formats.push_str(&format!("{} is {:?}; ", pos, format));
+                }
+            }
+        }
+        formats
+    }
 }
 
 #[cfg(test)]

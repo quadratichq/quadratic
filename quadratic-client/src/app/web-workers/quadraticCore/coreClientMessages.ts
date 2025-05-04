@@ -1301,6 +1301,19 @@ export interface CoreClientSetFormats {
   id: number;
 }
 
+export interface ClientCoreGetAIFormats {
+  type: 'clientCoreGetAIFormats';
+  id: number;
+  sheetId: string;
+  selection: string;
+}
+
+export interface CoreClientGetAIFormats {
+  type: 'coreClientGetAIFormats';
+  id: number;
+  formats: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1399,7 +1412,8 @@ export type ClientCoreMessage =
   | ClientCoreMoveColumns
   | ClientCoreMoveRows
   | ClientCoreGetAICells
-  | ClientCoreSetFormats;
+  | ClientCoreSetFormats
+  | ClientCoreGetAIFormats;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1477,4 +1491,5 @@ export type CoreClientMessage =
   | CoreClientSetCodeCellValue
   | CoreClientCoreError
   | CoreClientGetAICells
-  | CoreClientSetFormats;
+  | CoreClientSetFormats
+  | CoreClientGetAIFormats;

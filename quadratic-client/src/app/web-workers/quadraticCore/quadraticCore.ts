@@ -53,6 +53,7 @@ import type {
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
   CoreClientFiniteRectFromSelection,
+  CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
@@ -801,6 +802,21 @@ class QuadraticCore {
         sheetId,
         selection,
         formats,
+      });
+    });
+  }
+
+  getAICellFormats(sheetId: string, selection: string) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
+        resolve(message.formats);
+      };
+      this.send({
+        type: 'clientCoreGetAIFormats',
+        id,
+        sheetId,
+        selection,
       });
     });
   }

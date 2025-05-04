@@ -727,6 +727,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetAIFormats':
+        this.send({
+          type: 'coreClientGetAIFormats',
+          id: e.data.id,
+          formats: core.getAICellFormats(e.data.sheetId, e.data.selection),
+        });
+        return;
+
       case 'clientCoreSetFormats':
         core.setFormats(e.data.sheetId, e.data.selection, e.data.formats);
         this.send({

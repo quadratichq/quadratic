@@ -312,7 +312,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.PDFImport]: async () => {
     return `PDF import tool executed successfully.`;
   },
-  [AITool.GetCells]: async (args) => {
+  [AITool.GetCellData]: async (args) => {
     const { selection, sheet_name } = args;
     const sheetId = sheets.getSheetIdFromName(sheet_name);
     const response = await quadraticCore.getAICells(selection, sheetId);
@@ -323,18 +323,29 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetTextFormats]: async (args) => {
-    const { sheet_name, selection, bold, italic, underline, strike_through, text_color, fill_color } = args;
     const formatUpdates: FormatUpdate = {
       ...defaultFormatUpdate(),
-      bold: bold ?? null,
-      italic: italic ?? null,
-      underline: underline ?? null,
-      strike_through: strike_through ?? null,
-      text_color: text_color ?? null,
-      fill_color: fill_color ?? null,
+      bold: args.bold ?? null,
+      italic: args.italic ?? null,
+      underline: args.underline ?? null,
+      strike_through: args.strike_through ?? null,
+      text_color: args.text_color ?? null,
+      fill_color: args.fill_color ?? null,
+      align: args.align ?? null,
+      vertical_align: args.vertical_align ?? null,
+      wrap: args.wrap ?? null,
     };
-    const sheetId = sheets.getSheetIdFromName(sheet_name);
-    await quadraticCore.setFormats(sheetId, selection, formatUpdates);
+    const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    await quadraticCore.setFormats(sheetId, args.selection, formatUpdates);
     return `Executed set formats tool successfully.`;
+  },
+  [AITool.GetTextFormats]: async (args) => {
+    const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    const response = await quadraticCore.getAICellFormats(args.selection, sheetId);
+    if (response) {
+      return `The selection ${args.selection} has:\n${response}`;
+    } else {
+      return 'There was an error executing the get cell formats tool';
+    }
   },
 } as const;

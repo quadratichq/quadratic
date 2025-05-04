@@ -27,6 +27,7 @@ export class Sheet {
   offsets: SheetOffsets;
   bounds: GridBounds;
   boundsWithoutFormatting: GridBounds;
+  formatBounds: GridBounds;
 
   // tracks which Grid lines should not be drawn b/c of overflow
   gridOverflowLines: GridOverflowLines;
@@ -46,6 +47,7 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
+    this.formatBounds = info.format_bounds;
     this.gridOverflowLines = new GridOverflowLines(this);
 
     // this will be imported via SheetInfo in the future

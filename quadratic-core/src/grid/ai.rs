@@ -17,6 +17,20 @@ impl GridController {
         }
         Ok(cells)
     }
+
+    /// Returns the rendered formats of the cells in a given rect. Note: this
+    /// will return only the first range given within a selection.
+    pub fn get_ai_cell_formats(&self, selection: A1Selection) -> Result<String, A1Error> {
+        let mut formats = String::new();
+        for range in &selection.ranges {
+            if let Some(rect) = range.to_rect(self.a1_context()) {
+                if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                    formats.push_str(&sheet.get_cell_formats_as_string(rect));
+                }
+            }
+        }
+        Ok(formats)
+    }
 }
 
 // #[cfg(test)]

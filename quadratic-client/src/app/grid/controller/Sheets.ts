@@ -166,6 +166,7 @@ export class Sheets {
           offsets: '',
           bounds: { type: 'empty' },
           bounds_without_formatting: { type: 'empty' },
+          format_bounds: { type: 'empty' },
         },
         true
       );
