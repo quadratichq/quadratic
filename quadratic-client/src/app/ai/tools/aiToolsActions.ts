@@ -323,13 +323,15 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetTextFormats]: async (args) => {
-    const { sheet_name, selection, bold, italic, underline, strike_through } = args;
+    const { sheet_name, selection, bold, italic, underline, strike_through, text_color, fill_color } = args;
     const formatUpdates: FormatUpdate = {
       ...defaultFormatUpdate(),
       bold: bold ?? null,
       italic: italic ?? null,
       underline: underline ?? null,
       strike_through: strike_through ?? null,
+      text_color: text_color ?? null,
+      fill_color: fill_color ?? null,
     };
     const sheetId = sheets.getSheetIdFromName(sheet_name);
     await quadraticCore.setFormats(sheetId, selection, formatUpdates);

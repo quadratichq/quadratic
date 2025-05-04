@@ -144,6 +144,8 @@ export const AIToolsArgsSchema = {
     italic: z.boolean().optional(),
     underline: z.boolean().optional(),
     strike_through: z.boolean().optional(),
+    text_color: z.string().optional(),
+    fill_color: z.string().optional(),
   }),
 } as const;
 
@@ -496,7 +498,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     sources: ['AIAnalyst'],
     description: `
     This tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
-    It can set the bold, italics, underline, or strike through of a cell.\n
+    It can set the bold, italics, underline, or strike through of a cell. It can also set the text color and fill color of a cell using hex format, for example, #FF0000 for red.\n
     There must be at least one format to set.\n
     For example, to set the cell to bold, provide the key as "bold" and the value as true.\n
     `,
@@ -527,13 +529,21 @@ When using this tool, make sure the code cell is the only cell being edited.\n
           type: 'boolean',
           description: 'Whether to set the cell to strike through',
         },
+        text_color: {
+          type: 'string',
+          description: 'The color of the text, in hex format',
+        },
+        fill_color: {
+          type: 'string',
+          description: 'The color of the background, in hex format',
+        },
       },
       required: ['sheet_name', 'selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
     prompt: `This tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
-    It can set the bold, italics, underline, or strike through of a cell.\n
+    It can set the bold, italics, underline, or strike through of a cell. It can also set the text color and fill color of a cell using hex format, for example, #FF0000 for red.\n
     There must be at least one format to set.\n
     For example, to set the cell to bold, provide the key as "bold" and the value as true.\n`,
   },
