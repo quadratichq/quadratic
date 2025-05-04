@@ -19,6 +19,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -785,6 +786,22 @@ class QuadraticCore {
       selection,
       format,
       cursor,
+    });
+  }
+
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreSetFormats',
+        id,
+        sheetId,
+        selection,
+        formats,
+      });
     });
   }
 

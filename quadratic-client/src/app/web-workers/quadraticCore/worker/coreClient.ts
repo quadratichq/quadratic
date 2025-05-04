@@ -727,6 +727,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreSetFormats':
+        core.setFormats(e.data.sheetId, e.data.selection, e.data.formats);
+        this.send({
+          type: 'coreClientSetFormats',
+          id: e.data.id,
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

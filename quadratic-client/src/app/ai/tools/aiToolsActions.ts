@@ -1,9 +1,10 @@
+import { defaultFormatUpdate } from '@/app/ai/tools/formatUpdate';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetRect } from '@/app/quadratic-core-types';
+import type { FormatUpdate, SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
@@ -320,5 +321,18 @@ export const aiToolsActions: AIToolActionsRecord = {
     } else {
       return 'There was an error executing the get cells tool';
     }
+  },
+  [AITool.SetTextFormats]: async (args) => {
+    const { sheet_name, selection, bold, italic, underline, strike_through } = args;
+    const formatUpdates: FormatUpdate = {
+      ...defaultFormatUpdate(),
+      bold: bold ?? null,
+      italic: italic ?? null,
+      underline: underline ?? null,
+      strike_through: strike_through ?? null,
+    };
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    await quadraticCore.setFormats(sheetId, selection, formatUpdates);
+    return `Executed set formats tool successfully.`;
   },
 } as const;

@@ -4,24 +4,24 @@ import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type GetCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.GetCells]['responseSchema']>;
+type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
 
-type GetCellsProps = {
+type SetTextFormatsProps = {
   args: string;
   loading: boolean;
 };
 
-export const GetCells = ({ args, loading }: GetCellsProps) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<GetCellsResponse, GetCellsResponse>>();
+export const SetTextFormats = ({ args, loading }: SetTextFormatsProps) => {
+  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetTextFormatsResponse, SetTextFormatsResponse>>();
 
   useEffect(() => {
     if (!loading) {
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.GetCells].responseSchema.safeParse(json));
+        setToolArgs(aiToolsSpec[AITool.SetTextFormats].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[GetCells] Failed to parse args: ', error);
+        console.error('[SetTextFormats] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
@@ -29,7 +29,7 @@ export const GetCells = ({ args, loading }: GetCellsProps) => {
   }, [args, loading]);
 
   const icon = <GridActionIcon />;
-  const label = 'Get cells';
+  const label = 'Set text formats';
 
   if (loading) {
     return <ToolCard icon={icon} label={label} isLoading />;

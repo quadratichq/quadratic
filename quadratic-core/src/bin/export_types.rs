@@ -21,6 +21,7 @@ use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
+use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsDataTableContext;
@@ -121,6 +122,7 @@ fn main() {
         DateTimeRange,
         Direction,
         Format,
+        FormatUpdate,
         GridBounds,
         JsBorderHorizontal,
         JsBorderVertical,

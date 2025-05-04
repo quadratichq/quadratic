@@ -9,6 +9,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
@@ -1287,6 +1288,19 @@ export interface CoreClientGetAICells {
   aiCells: string;
 }
 
+export interface ClientCoreSetFormats {
+  type: 'clientCoreSetFormats';
+  sheetId: string;
+  selection: string;
+  formats: FormatUpdate;
+  id: number;
+}
+
+export interface CoreClientSetFormats {
+  type: 'coreClientSetFormats';
+  id: number;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1384,7 +1398,8 @@ export type ClientCoreMessage =
   | ClientCoreAddDataTable
   | ClientCoreMoveColumns
   | ClientCoreMoveRows
-  | ClientCoreGetAICells;
+  | ClientCoreGetAICells
+  | ClientCoreSetFormats;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1461,4 +1476,5 @@ export type CoreClientMessage =
   | CoreClientDataTableMutations
   | CoreClientSetCodeCellValue
   | CoreClientCoreError
-  | CoreClientGetAICells;
+  | CoreClientGetAICells
+  | CoreClientSetFormats;

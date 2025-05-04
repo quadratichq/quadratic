@@ -6,6 +6,7 @@ use crate::Pos;
 use crate::SheetPos;
 use crate::a1::A1Selection;
 use crate::controller::GridController;
+use crate::grid::formats::FormatUpdate;
 
 use super::CellFormatSummary;
 use super::NumericFormatKind;
@@ -286,5 +287,22 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
         serde_wasm_bindgen::to_value(&sheet.cell_format((x, y).into()))
             .map_err(|_| JsValue::UNDEFINED)
+    }
+
+    #[wasm_bindgen(js_name = "setFormats")]
+    pub fn js_set_formats(
+        &mut self,
+        sheet_id: String,
+        selection: String,
+        formats: String,
+    ) -> Result<(), JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
+        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            .map_err(|_| "Unable to parse A1Selection")?;
+        let formats =
+            serde_json::from_str::<FormatUpdate>(&formats).map_err(|_| "Invalid formats")?;
+
+        self.set_formats(&selection, formats);
+        Ok(())
     }
 }

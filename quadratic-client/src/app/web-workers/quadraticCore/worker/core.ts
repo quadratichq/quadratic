@@ -18,6 +18,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -1573,6 +1574,15 @@ class Core {
       return this.gridController.getAICells(selection, sheetName);
     } catch (e) {
       return JSON.stringify(e);
+    }
+  }
+
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.setFormats(sheetId, selection, JSON.stringify(formats));
+    } catch (e) {
+      this.handleCoreError('setFormats', e);
     }
   }
 }

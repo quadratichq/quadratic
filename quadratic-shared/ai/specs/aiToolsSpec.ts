@@ -13,6 +13,7 @@ export enum AITool {
   UserPromptSuggestions = 'user_prompt_suggestions',
   PDFImport = 'pdf_import',
   GetCells = 'get_cells',
+  SetTextFormats = 'set_text_formats',
 }
 
 export const AIToolSchema = z.enum([
@@ -27,6 +28,7 @@ export const AIToolSchema = z.enum([
   AITool.UserPromptSuggestions,
   AITool.PDFImport,
   AITool.GetCells,
+  AITool.SetTextFormats,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -134,6 +136,14 @@ export const AIToolsArgsSchema = {
   [AITool.GetCells]: z.object({
     sheet_name: z.string(),
     selection: z.string(),
+  }),
+  [AITool.SetTextFormats]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
+    bold: z.boolean().optional(),
+    italic: z.boolean().optional(),
+    underline: z.boolean().optional(),
+    strike_through: z.boolean().optional(),
   }),
 } as const;
 
@@ -481,6 +491,51 @@ Never include code in the chat when using this tool, always explain brief what c
 When using this tool, make sure this is the only tool used in the response.\n
 When using this tool, make sure the code cell is the only cell being edited.\n
 `,
+  },
+  [AITool.SetTextFormats]: {
+    sources: ['AIAnalyst'],
+    description: `
+    This tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
+    It can set the bold, italics, underline, or strike through of a cell.\n
+    There must be at least one format to set.\n
+    For example, to set the cell to bold, provide the key as "bold" and the value as true.\n
+    `,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        selection: {
+          type: 'string',
+          description: 'The selection of cells to set the formats of, in a1 notation',
+        },
+        bold: {
+          type: 'boolean',
+          description: 'Whether to set the cell to bold',
+        },
+        italic: {
+          type: 'boolean',
+          description: 'Whether to set the cell to italic',
+        },
+        underline: {
+          type: 'boolean',
+          description: 'Whether to set the cell to underline',
+        },
+        strike_through: {
+          type: 'boolean',
+          description: 'Whether to set the cell to strike through',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
+    prompt: `This tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
+    It can set the bold, italics, underline, or strike through of a cell.\n
+    There must be at least one format to set.\n
+    For example, to set the cell to bold, provide the key as "bold" and the value as true.\n`,
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
