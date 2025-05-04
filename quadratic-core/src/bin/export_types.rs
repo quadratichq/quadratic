@@ -140,7 +140,6 @@ fn main() {
         JsDataTableColumnHeader,
         JsDataTableContext,
         JsFormulaParseResult,
-        JsCellsA1Value,
         JsHtmlOutput,
         JsNumber,
         JsOffset,

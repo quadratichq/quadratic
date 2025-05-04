@@ -3,12 +3,6 @@
 version = 4
 
 [[package]]
-name = "Inflector"
-version = "0.11.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
-
-[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6158,21 +6152,20 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "ts-rs"
-version = "7.0.0"
-source = "git+https://github.com/quadratichq/ts-rs/?rev=812c1a8#812c1a8b5ff3128916426e95e228f51430eb02cc"
+version = "10.1.0"
+source = "git+https://github.com/quadratichq/ts-rs/?branch=update-v10#a2bcd59d43c92f682e4995711ed6baeb607a01e1"
 dependencies = [
  "smallvec",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "ts-rs-macros",
  "uuid",
 ]
 
 [[package]]
 name = "ts-rs-macros"
-version = "7.0.0"
-source = "git+https://github.com/quadratichq/ts-rs/?rev=812c1a8#812c1a8b5ff3128916426e95e228f51430eb02cc"
+version = "10.1.0"
+source = "git+https://github.com/quadratichq/ts-rs/?branch=update-v10#a2bcd59d43c92f682e4995711ed6baeb607a01e1"
 dependencies = [
- "Inflector",
  "proc-macro2",
  "quote",
  "syn 2.0.100",

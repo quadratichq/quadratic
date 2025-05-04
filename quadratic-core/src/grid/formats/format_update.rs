@@ -14,84 +14,98 @@ pub struct FormatUpdate {
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<String>>")]
     pub align: Option<Option<CellAlign>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<String>>")]
     pub vertical_align: Option<Option<CellVerticalAlign>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<String>>")]
     pub wrap: Option<Option<CellWrap>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<NumericFormat>>")]
     pub numeric_format: Option<Option<NumericFormat>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<NumericFormat>>")]
     pub numeric_decimals: Option<Option<i16>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<i16>>")]
     pub numeric_commas: Option<Option<bool>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<bool>>")]
     pub bold: Option<Option<bool>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<bool>>")]
     pub italic: Option<Option<bool>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<String>>")]
     pub text_color: Option<Option<String>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<String>>")]
     pub fill_color: Option<Option<String>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<RenderSize>>")]
     pub render_size: Option<Option<RenderSize>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<String>>")]
     pub date_time: Option<Option<String>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<bool>>")]
     pub underline: Option<Option<bool>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    #[ts(as = "Option<Option<bool>>")]
     pub strike_through: Option<Option<bool>>,
 }
 
