@@ -3977,6 +3977,9 @@ test('Theme Customization', async ({ page }) => {
 
     // Navigate to the 'Settings' page and assert page
     await page.getByRole(`link`, { name: `settings Settings` }).click();
+    await page.waitForTimeout(10 * 1000);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
     await expect(page).toHaveTitle(/Team settings - Quadratic/);
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible();
 
