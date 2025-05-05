@@ -196,7 +196,11 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   await ownerPage.waitForTimeout(2000);
   await ownerPage.waitForLoadState('domcontentloaded');
   await ownerPage.waitForLoadState('networkidle');
+
   await ownerPage.locator(`nav :text-is("Members")`).click();
+  await ownerPage.waitForTimeout(2000);
+  await ownerPage.waitForLoadState('domcontentloaded');
+  await ownerPage.waitForLoadState('networkidle');
 
   //--------------------------------
   // Assert:

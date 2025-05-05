@@ -1478,6 +1478,9 @@ test('File - Open Recent', async ({ page }) => {
 
   // Click "Open Recent"
   await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click();
+  await page.waitForTimeout(10 * 1000);
+  await page.waitForLoadState('domcontentloaded');
+  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -2547,8 +2550,12 @@ test('Panning Behavior', async ({ page }) => {
   await page.mouse.move(endX, endY, { steps: 100 });
   await page.mouse.up();
 
+  await page.waitForTimeout(10 * 1000);
+
   // Release the Spacebar
   await page.keyboard.up(`Space`);
+
+  await page.waitForTimeout(30 * 1000);
 
   //--------------------------------
   // Assert:
@@ -3947,7 +3954,9 @@ test('Theme Customization', async ({ page }) => {
 
     // Reload the page
     await page.reload();
-    await page.waitForLoadState(`networkidle`);
+    await page.waitForTimeout(10 * 1000);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
 
     // Assert selected accent colors persists after reload (using the same assertions)
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);

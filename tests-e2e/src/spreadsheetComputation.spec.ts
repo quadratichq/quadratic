@@ -647,6 +647,7 @@ test('Open and Use Formula Editor', async ({ page }) => {
 
   // Click on formula
   await page.locator(`div[data-value="Formula"]`).click();
+  await page.waitForTimeout(30 * 1000);
 
   // Assert multi line code editor opens
   await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 30 * 1000 });
@@ -1870,6 +1871,8 @@ test('Switch between Python and Formula', async ({ page }) => {
 
     // Mouse to double click on [2, 1]
     await page.mouse.dblclick(330, 130);
+    await page.waitForTimeout(30 * 1000);
+
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-formula.png`, {
       maxDiffPixelRatio: 0.001,
     });
