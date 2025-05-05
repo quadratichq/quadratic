@@ -4,10 +4,10 @@ version = "0.1.0"
 description = ""
 authors = ["Jacob Rice <jacob.rice.systems@gmail.com>"]
 readme = "README.md"
-packages = [{include = "quadratic_py"}]
+packages = [{ include = "quadratic_py" }]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11, <3.12"
 numpy = ">=1.23.0"
 nest-asyncio = ">=1.6.0"
 pandas = ">=1.4.3"

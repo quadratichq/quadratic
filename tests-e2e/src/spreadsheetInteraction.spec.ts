@@ -1464,6 +1464,10 @@ test('File - Open Recent', async ({ page }) => {
 
   // Navigate into the first file we made
   await navigateIntoFile(page, { fileName: fileName1 });
+  await page.waitForTimeout(10 * 1000);
+  await page.waitForLoadState('domcontentloaded');
+  const quadraticLoading = page.locator('html[data-loading-start]');
+  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -3255,7 +3259,7 @@ test('Scroll between sheets', async ({ page }) => {
   expect(lastSheetScrolledLeftX).toBe(lastSheetPositionX);
 
   // Assert sheet navigation toolbar shows `Sheet 15` as the focused sheet with `Sheet 1` at the start
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToLef.png`, {
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToLeft.png`, {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -3953,6 +3957,8 @@ test('Theme Customization', async ({ page }) => {
 
     // Navigate to the 'Members' page and assert page
     await page.getByRole(`link`, { name: `group Members` }).click();
+    await page.waitForTimeout(10 * 1000);
+    await page.waitForLoadState(`networkidle`);
     await expect(page).toHaveTitle(/Team members - Quadratic/);
     await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible();
     await expect(page.getByText(`${email} (You)`)).toBeVisible();
