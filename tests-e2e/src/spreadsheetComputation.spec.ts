@@ -307,7 +307,7 @@ test('Drag References', async ({ page }) => {
   await page.mouse.move(961, 280, { steps: 10 });
   await page.mouse.up();
 
-  await page.waitForTimeout(2 * 60 * 1000);
+  await page.waitForTimeout(30 * 1000);
 
   //--------------------------------
   // Assert:
@@ -525,7 +525,7 @@ console.log(data)
   // Click the blue play arrow to 'Save and run'
   await page.getByRole(`button`, { name: `play_arrow` }).click();
 
-  await page.waitForTimeout(2 * 60 * 1000);
+  await page.waitForTimeout(30 * 1000);
 
   // Click on 'Console' tab
   await page.getByRole(`tab`, { name: `Console` }).click();
@@ -592,7 +592,7 @@ test('Javascript Formulas', async ({ page }) => {
       //--------------------------------
 
       // Wait for the canvas to be ready
-      await page.waitForTimeout(2 * 60 * 1000);
+      await page.waitForTimeout(15 * 1000);
 
       // Assert that the canvas looks as expected after rerunning the JS code
       await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('javascript_formulas_rerun_code.png');
@@ -1724,7 +1724,7 @@ hire_date DATE);`);
 
   // Click Play
   await playButton.click();
-  await page.waitForTimeout(2 * 60 * 1000);
+  await page.waitForTimeout(30 * 1000);
 
   // Navigate to answer
   await typingInput.click();

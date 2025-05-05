@@ -29,6 +29,9 @@ export const createFile = async (page: Page, { fileName }: CreateFileOptions) =>
 
   // Navigate back to files
   await page.locator(`nav a >> nth = 0`).click();
+
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(10 * 1000);
 };
 
 type CleanUpFilesOptions = {

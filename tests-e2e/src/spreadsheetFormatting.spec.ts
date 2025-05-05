@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { selectCells } from './helpers/app.helper';
+import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
-import { cleanUpFiles, uploadFile } from './helpers/file.helpers';
+import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Cell Formatting', async ({ page }) => {
@@ -611,6 +611,438 @@ test('Date Formatting', async ({ page }) => {
 
   // Take a screenshot of the formatted cells and compare it to the expected result
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('dates-month-long-dd-yyyy.png', {
+    maxDiffPixels: 3000,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Number Formatting', async ({ page }) => {
+  // Constants
+  const newTeamName = `Number Formatting - ${Date.now()}`;
+  const fileName = 'Number_Formatting';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_number_formatting` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Take a screenshot and compare it to the expected result
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting.png', {
+    maxDiffPixels: 3000,
+  });
+
+  //--------------------------------
+  // Automatic
+  //--------------------------------
+  // Click cell at position 'A', 0
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+
+  // Click Automatic
+  await page.getByLabel(`Automatic`).click();
+
+  // Click cell at position 'B', 2
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
+
+  // Assert that the number is formatted per the Automatic Format
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_AutomaticFormatting.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Toggle commas
+  //--------------------------------
+  // click cell at position 'A', 1
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+
+  // click Toggle Commas
+  await page.locator(`[aria-label="Toggle commas"]`).click();
+
+  // Click cell at position 'B', 2
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
+
+  // assert that the number is formatted per the Commas Format
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_CommasOnFormatting.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Currency
+  //--------------------------------
+  // Un-toggle commas
+  // click cell at position 'A', 1
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+  await page.locator(`[aria-label="Toggle commas"]`).click();
+
+  // click Currency
+  await page.locator(`[aria-label="Currency"]`).click();
+
+  // Click cell at position 'B', 2
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
+
+  // assert that the number is formatted per the Currency Format
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_CurrencyFormatting.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Scientific
+  //--------------------------------
+  // click cell at position 'A', 1
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+
+  // Click into Format menu
+  await page.getByRole(`menuitem`, { name: `Format` }).click();
+
+  // Hover over Number option
+  await page.getByRole(`menuitem`, { name: `Number` }).hover();
+
+  // Click Scientific option
+  await page.getByRole(`menuitem`, { name: `functions Scientific 1.01E+` }).click();
+
+  // Click cell at position 'B', 2
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
+
+  // assert that the number is formatted per the Scientific Format
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_ScientificFormatting.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Increase decimals
+  //--------------------------------
+  // Reset to Automatic Formatting
+  // click cell at position 'A', 1
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+  await page.getByLabel(`Automatic`).click();
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // click Increase Decimals
+  await page.locator(`[aria-label="Increase decimals"]`).click();
+
+  // Click cell at position 'B', 2
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
+
+  // assert that the number has increased decimal
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_IncreaseDecimalsFormatting.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Decrease decimals
+  //--------------------------------
+  // click cell at position 'A', 1
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+
+  // click Decrease Decimals
+  await page.locator(`[aria-label="Decrease decimals"]`).click();
+
+  // Click cell at position 'B', 2
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
+
+  // assert that the number has decreased decimal
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_DecreaseDecimalsFormatting.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Percent
+  //--------------------------------
+  // click cell at position 'A', 1
+  await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
+
+  // click Percent
+  await page.locator(`[aria-label="Percent"]`).click();
+
+  // Click cell at position 'B', 2
+  await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
+
+  // assert that the number is formatted per the Percent Format
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_PercentFormatting.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
+  // Constants
+  const newTeamName = `Text Wrap, Horizontal and Vertical Alignment - ${Date.now()}`;
+  const fileName = 'Text Wrap and Vertical Align';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_wrap_align` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Create file
+  await createFile(page, { fileName });
+
+  await navigateIntoFile(page, { fileName });
+
+  //--------------------------------
+  // Text Wrap
+  //--------------------------------
+  const longText =
+    "This is a very long text string that should wrap to the next line when it reaches the edge of the text area. We'll use this to test the text wrap functionality.";
+  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: longText });
+
+  await page.locator(`[aria-label="Text wrap"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Overflow")`).click();
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+
+  // Check text overflow
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrapoverflow.png', {
+    maxDiffPixels: 1000,
+  });
+
+  // Test text wrap
+  await page.locator(`[aria-label="Text wrap"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Wrap")`).click();
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+
+  // Check text wrap
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrap.png', { maxDiffPixels: 1000 });
+
+  // Test for text cut-off
+  await page.locator(`[aria-label="Text wrap"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Clip")`).click();
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+
+  // Check text cut-off
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextcutoff.png', { maxDiffPixels: 1000 });
+
+  //--------------------------------
+  // Horizontal Align
+  //--------------------------------
+  const shortText = 'Testing';
+  const mediumText = 'Horizontal Align Testing left, center, and right.';
+
+  await page.mouse.dblclick(119, 60);
+  await typeInCell(page, { targetColumn: 1, targetRow: 2, text: shortText });
+  await typeInCell(page, { targetColumn: 1, targetRow: 3, text: mediumText });
+
+  //--------------------------------
+  // Act and Assert:
+  //--------------------------------
+
+  // Left alignment
+  await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
+  await page.locator(`[aria-label="Horizontal align"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Left")`).click();
+  await page.mouse.click(65, 150);
+
+  // Assert left alignment
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testlefthorizontalalign.png', {
+    maxDiffPixels: 1000,
+  });
+
+  // Center alignment
+  await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
+  await page.locator(`[aria-label="Horizontal align"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Center")`).click();
+  await page.mouse.click(65, 150);
+
+  // Assert center alignment
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterhorizontalalign.png', {
+    maxDiffPixels: 1000,
+  });
+
+  // Right alignment
+  await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
+  await page.locator(`[aria-label="Horizontal align"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Right")`).click();
+  await page.mouse.click(65, 150);
+
+  // Assert right alignment
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testrighthorizontalalign.png', {
+    maxDiffPixels: 1000,
+  });
+
+  //--------------------------------
+  // Vertical Align
+  //--------------------------------
+  await page.mouse.dblclick(119, 60);
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 2 });
+  await page.keyboard.press('Delete');
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 3 });
+  await page.keyboard.press('Delete');
+
+  // Highlight and expand cell heights
+  await page.mouse.move(57, 122);
+  await page.mouse.down();
+  await page.mouse.move(57, 250);
+  await page.waitForTimeout(1000);
+  await page.mouse.up();
+
+  //--------------------------------
+  // Act and Assert:
+  //--------------------------------
+
+  // Top alignment
+  await page.locator(`[aria-label="Vertical align"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Top")`).click();
+  await page.mouse.click(65, 150);
+
+  // Assert top alignment
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtopverticalalign.png', {
+    maxDiffPixels: 1000,
+  });
+
+  // Center alignment
+  await page.locator(`[aria-label="Vertical align"]`).click();
+  await page.locator(`[role="menuitem"][ data-orientation="vertical"] >> nth=1`).click();
+
+  // Assert center alignment
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterverticalalign.png', {
+    maxDiffPixels: 1000,
+  });
+
+  // Bottom alignment
+  await page.locator(`[aria-label="Vertical align"]`).click();
+  await page.locator(`[role="menuitem"] span:has-text("Bottom")`).click();
+
+  // Assert bottom alignment
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testbottomverticalalign.png', {
+    maxDiffPixels: 1000,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Time Formatting', async ({ page }) => {
+  // Constants
+  const newTeamName = `Time Formatting - ${Date.now()}`;
+  const fileName = 'Format date time';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_time_formatting` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Take a screenshot and compare it to the expected result
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('format-date-time.png', {
+    maxDiffPixels: 3000,
+  });
+
+  //--------------------------------
+  // Time in 12-Hour Format (HH:MM AM/PM)
+  //--------------------------------
+  // Select cells to format
+  await selectCells(page, { startXY: [5, 1], endXY: [8, 24] });
+
+  // Open Format menu
+  await page.getByRole(`menuitem`, { name: `Format` }).click();
+
+  // Select Date and time option
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+
+  // Choose the time format: Hour:Minute AM/PM (e.g., 1:30 PM)
+  await page.locator(`[role="radio"][value="%-I:%M %p"]`).click();
+
+  // Apply the selected time format
+  await page.getByRole(`button`, { name: `Apply` }).click();
+
+  // Take a screenshot of the formatted time cells and compare it to the expected result
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-hr-mm-am-pm-format.png', {
+    maxDiffPixels: 3000,
+  });
+
+  //--------------------------------
+  // Time in 12-Hour Format with Seconds (HH:MM:SS AM/PM)
+  //--------------------------------
+  // Open Format menu
+  await page.getByRole(`menuitem`, { name: `Format` }).click();
+
+  // Select Date and time option from the menu
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+
+  // Choose the time format: Hour:Minute:Second AM/PM (e.g., 1:30:45 PM)
+  await page.locator(`[role="radio"][value="%-I:%M:%S %p"]`).click();
+
+  // Apply the selected time format
+  await page.getByRole(`button`, { name: `Apply` }).click();
+
+  // Take a screenshot of the formatted time cells and compare it to the expected result
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-hr-mm-ss-am-pm-format.png', {
+    maxDiffPixels: 100,
+  });
+
+  //--------------------------------
+  // Time in 24-Hour Format (HH:MM)
+  //--------------------------------
+  // Open Format menu
+  await page.getByRole(`menuitem`, { name: `Format` }).click();
+
+  // Select Date and time option from the menu
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+
+  // Choose the 24-hour time format: Hour:Minute (e.g., 13:30)
+  await page.locator(`[role="radio"][value="%H:%M"]`).click();
+
+  // Apply the selected 24-hour time format
+  await page.getByRole(`button`, { name: `Apply` }).click();
+
+  // Take a screenshot of the formatted time cells and compare it to the expected result
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-24hr-mm-format.png', {
+    maxDiffPixels: 3000,
+  });
+
+  //--------------------------------
+  // Time in 24-Hour Format with Seconds (HH:MM:SS)
+  //--------------------------------
+  // Open Format menu
+  await page.getByRole(`menuitem`, { name: `Format` }).click();
+
+  // Select Date and time option from the menu
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+
+  // Choose the 24-hour time format with seconds: Hour:Minute:Second (e.g., 13:30:45)
+  await page.locator(`[role="radio"][value="%H:%M:%S"]`).click();
+
+  // Apply the selected 24-hour time format with seconds
+  await page.getByRole(`button`, { name: `Apply` }).click();
+
+  // Take a screenshot of the formatted time cells and compare it to the expected result
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-24hr-mm-ss-format.png', {
     maxDiffPixels: 3000,
   });
 
