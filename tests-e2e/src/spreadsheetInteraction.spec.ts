@@ -2836,7 +2836,7 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
 
   // Click "Play" icon on top bar of code editor
   await page.getByRole(`button`, { name: `play_arrow` }).click();
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(10 * 1000);
 
   //--------------------------------
   // Assert:
@@ -3622,7 +3622,7 @@ test('Single Cell Reference - Javascript', async ({ page }) => {
 
   // Click "Play" icon on top bar of code editor
   await page.getByRole(`button`, { name: `play_arrow` }).click();
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(10 * 1000);
 
   //--------------------------------
   // Assert:

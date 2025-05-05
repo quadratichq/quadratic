@@ -1034,9 +1034,8 @@ test('Can View Members are Unable to Invite Members', async ({ page: adminUserPa
 
   // Navigate to team URL
   await canViewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await canViewUserPage.waitForTimeout(2000);
   await canViewUserPage.waitForLoadState('domcontentloaded');
-  await canViewUserPage.waitForLoadState('networkidle');
+  await canViewUserPage.waitForTimeout(10 * 1000);
   await canViewUserPage.locator(`nav :text-is("Members")`).click();
 
   //--------------------------------

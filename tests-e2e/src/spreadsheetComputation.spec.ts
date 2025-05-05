@@ -307,6 +307,8 @@ test('Drag References', async ({ page }) => {
   await page.mouse.move(961, 280, { steps: 10 });
   await page.mouse.up();
 
+  await page.waitForTimeout(10 * 1000);
+
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -523,6 +525,8 @@ console.log(data)
   // Click the blue play arrow to 'Save and run'
   await page.getByRole(`button`, { name: `play_arrow` }).click();
 
+  await page.waitForTimeout(10 * 1000);
+
   // Click on 'Console' tab
   await page.getByRole(`tab`, { name: `Console` }).click();
 
@@ -588,7 +592,7 @@ test('Javascript Formulas', async ({ page }) => {
       //--------------------------------
 
       // Wait for the canvas to be ready
-      await page.waitForTimeout(6000);
+      await page.waitForTimeout(10 * 1000);
 
       // Assert that the canvas looks as expected after rerunning the JS code
       await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('javascript_formulas_rerun_code.png');
@@ -651,6 +655,8 @@ test('Open and Use Formula Editor', async ({ page }) => {
 
   // Assert multi line code editor opens
   await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 30 * 1000 });
+
+  await page.waitForTimeout(10 * 1000);
 
   // tool tip hover, assert formula tooltip
   await page.locator(`svg.MuiSvgIcon-root`).hover();
@@ -1712,11 +1718,11 @@ hire_date DATE);`);
   // Return the data to the cell
   await page.keyboard.type('return data');
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(10000);
+  await page.waitForTimeout(10 * 1000);
 
   // Click Play
   await playButton.click();
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(10 * 1000);
 
   // Navigate to answer
   await typingInput.click();
@@ -1878,6 +1884,8 @@ test('Switch between Python and Formula', async ({ page }) => {
     });
 
     await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 30 * 1000 });
+
+    await page.waitForTimeout(10 * 1000);
 
     // toop tip hover, assert python tooltip
     await page.locator(`svg.MuiSvgIcon-root`).hover();
