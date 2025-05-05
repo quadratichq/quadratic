@@ -96,14 +96,14 @@ describe('applySshKeys', () => {
     const sshPublicKey = updatedTeam?.sshPublicKey;
     const sshPrivateKey = updatedTeam?.sshPrivateKey;
 
-    await getDecryptedTeam(team);
+    await getDecryptedTeam(updatedTeam as Team);
 
     const updatedTeam2 = await getTeam(TEAM_ID);
     const sshPublicKey2 = updatedTeam2?.sshPublicKey;
     const sshPrivateKey2 = updatedTeam2?.sshPrivateKey;
 
-    expect(sshPublicKey).toBe(sshPublicKey2);
-    expect(sshPrivateKey).toBe(sshPrivateKey2);
+    expect(sshPublicKey).toStrictEqual(sshPublicKey2);
+    expect(sshPrivateKey).toStrictEqual(sshPrivateKey2);
   });
 });
 
