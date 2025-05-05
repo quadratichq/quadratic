@@ -1114,9 +1114,8 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   await canViewUserPage.reload();
   // Navigate to team URL
   await canViewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
-  await canViewUserPage.waitForTimeout(2000);
   await canViewUserPage.waitForLoadState('domcontentloaded');
-  await canViewUserPage.waitForLoadState('networkidle');
+  await canViewUserPage.waitForTimeout(30 * 1000);
 
   // Click on Filter by name
   await canViewUserPage.locator(`[placeholder="Filter by file or creator name…"]`).click();

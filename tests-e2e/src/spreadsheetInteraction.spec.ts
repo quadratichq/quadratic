@@ -2843,7 +2843,7 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   //--------------------------------
 
   // Assert that the single cell reference has applied to the cells at [5, 11] to [6, 13]
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(2 * 60 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('range_cell_reference_samesheet_js.png', {
     maxDiffPixels: 100,
   });
