@@ -5,7 +5,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -261,6 +261,8 @@ export const AIUserMessageForm = memo(
                   setEditing(false);
                   bottomTextareaRef.current?.focus();
                 }
+              } else if (loading && event.shiftKey && event.metaKey && event.key === 'Backspace') {
+                abortPrompt();
               }
 
               if (loading || waitingOnMessageIndex !== undefined) return;
@@ -345,13 +347,18 @@ const CancelButton = memo(({ show, waitingOnMessageIndex, abortPrompt }: CancelB
     <Button
       size="sm"
       variant="outline"
-      className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
+      className="absolute -top-10 right-1/2 z-10 translate-x-1/2 gap-1 bg-background"
       onClick={(e) => {
         e.stopPropagation();
         abortPrompt();
       }}
     >
-      <BackspaceIcon className="mr-1" /> Cancel {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}
+      <span className="flex-shrink-0">Stop {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}</span>
+      <span className="text-xs text-muted-foreground">
+        ({KeyboardSymbols.Command}
+        {KeyboardSymbols.Shift}
+        {KeyboardSymbols.Delete})
+      </span>
     </Button>
   );
 });
