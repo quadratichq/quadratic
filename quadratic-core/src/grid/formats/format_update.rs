@@ -14,21 +14,21 @@ pub struct FormatUpdate {
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
-    #[ts(as = "Option<Option<String>>")]
+    #[ts(as = "Option<Option<CellAlign>>")]
     pub align: Option<Option<CellAlign>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
-    #[ts(as = "Option<Option<String>>")]
+    #[ts(as = "Option<Option<CellVerticalAlign>>")]
     pub vertical_align: Option<Option<CellVerticalAlign>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
-    #[ts(as = "Option<Option<String>>")]
+    #[ts(as = "Option<Option<CellWrap>>")]
     pub wrap: Option<Option<CellWrap>>,
     #[serde(
         default,
@@ -42,14 +42,14 @@ pub struct FormatUpdate {
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
-    #[ts(as = "Option<Option<NumericFormat>>")]
+    #[ts(as = "Option<Option<i16>>")]
     pub numeric_decimals: Option<Option<i16>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
-    #[ts(as = "Option<Option<i16>>")]
+    #[ts(as = "Option<Option<bool>>")]
     pub numeric_commas: Option<Option<bool>>,
     #[serde(
         default,

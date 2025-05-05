@@ -151,6 +151,10 @@ export const AIToolsArgsSchema = {
     align: z.string().optional(),
     vertical_align: z.string().optional(),
     wrap: z.string().optional(),
+    numeric_commas: z.boolean().optional(),
+    number_type: z.string().optional(),
+    currency_symbol: z.string().optional(),
+    date_time: z.string().optional(),
   }),
   [AITool.GetTextFormats]: z.object({
     sheet_name: z.string(),
@@ -528,7 +532,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     },
     responseSchema: AIToolsArgsSchema[AITool.GetTextFormats],
     prompt: `
-    This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+    The get_text_formats tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
     It should be used to find formatting within a sheet's formatting bounds.\n
     It returns a string representation of the formatting information of the cells in the selection.\n
     `,
@@ -536,10 +540,9 @@ When using this tool, make sure the code cell is the only cell being edited.\n
   [AITool.SetTextFormats]: {
     sources: ['AIAnalyst'],
     description: `
-    This tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
-    It can set the bold, italics, underline, or strike through of a cell. It can also set the text color and fill color of a cell using hex format, for example, #FF0000 for red.\n
+    This tool sets the text formats of a selection of cells on a specified sheet.\n
+    It requires the sheet name, the selection of cells to set the formats of, and any formats to set.\n
     There must be at least one format to set.\n
-    For example, to set the cell to bold, provide the key as "bold" and the value as true.\n
     `,
     parameters: {
       type: 'object',
@@ -580,25 +583,51 @@ When using this tool, make sure the code cell is the only cell being edited.\n
         },
         align: {
           type: 'string',
-          description: 'The horizontal alignment of the text, this can be one of Left, Center, Right',
+          description: 'The horizontal alignment of the text, this can be one of "left", "center", "right"',
         },
         vertical_align: {
           type: 'string',
-          description: 'The vertical alignment of the text, this can be one of Top, Middle, Bottom',
+          description: 'The vertical alignment of the text, this can be one of "top", "middle", "bottom"',
         },
         wrap: {
           type: 'string',
-          description: 'The wrapping of the text, this can be one of Wrap, Clip, Overflow',
+          description: 'The wrapping of the text, this can be one of "wrap", "clip", "overflow"',
+        },
+        numeric_commas: {
+          type: 'boolean',
+          description:
+            'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas.',
+        },
+        number_type: {
+          type: 'string',
+          description:
+            'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.',
+        },
+        currency_symbol: {
+          type: 'string',
+          description:
+            'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR',
+        },
+        date_time: {
+          type: 'string',
+          description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
         },
       },
       required: ['sheet_name', 'selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
-    prompt: `This tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
-    It can set the bold, italics, underline, or strike through of a cell. It can also set the text color and fill color of a cell using hex format, for example, #FF0000 for red.\n
+    prompt: `The set_text_formats tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set:\n
+    - bold, italics, underline, or strike through\n
+    - text color and fill color using hex format, for example, #FF0000 for red\n
+    - horizontal alignment, this can be one of "left", "center", "right"\n
+    - vertical alignment, this can be one of "top", "middle", "bottom"\n
+    - wrapping, this can be one of "wrap", "clip", "overflow"\n
+    - numeric_commas, adds or removes commas from numbers\n
+    - number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
+    - currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
+    - date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
     There must be at least one format to set.\n
-    For example, to set the cell to bold, provide the key as "bold" and the value as true.\n
     You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {

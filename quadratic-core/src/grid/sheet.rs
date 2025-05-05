@@ -507,6 +507,21 @@ impl Sheet {
             if let Some(wrap) = format.wrap {
                 values.push(format!("wrap is {}", wrap.clone()));
             }
+            if let Some(numeric_format) = format.numeric_format {
+                values.push(format!("numeric kind is {}", numeric_format.kind));
+                if let Some(symbol) = numeric_format.symbol {
+                    values.push(format!("numeric symbol is {}", symbol));
+                }
+            }
+            if let Some(numeric_decimals) = format.numeric_decimals {
+                values.push(format!("numeric decimals is {}", numeric_decimals));
+            }
+            if let Some(numeric_commas) = format.numeric_commas {
+                values.push(format!("numeric commas is {}", numeric_commas));
+            }
+            if let Some(date_time) = format.date_time {
+                values.push(format!("date time is {}", date_time.clone()));
+            }
 
             Some(values.join(", "))
         }

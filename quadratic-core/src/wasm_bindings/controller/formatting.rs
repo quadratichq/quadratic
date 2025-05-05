@@ -299,8 +299,10 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
             .map_err(|_| "Unable to parse A1Selection")?;
-        let mut formats =
-            serde_json::from_str::<FormatUpdate>(&formats).map_err(|_| "Invalid formats")?;
+        let mut formats = serde_json::from_str::<FormatUpdate>(&formats).map_err(|e| {
+            dbgjs!(&e);
+            "Invalid formats"
+        })?;
 
         // handle clear text and fill color properly
         if formats
