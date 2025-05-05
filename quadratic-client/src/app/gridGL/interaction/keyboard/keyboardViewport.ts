@@ -236,6 +236,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
     const cursor = sheets.sheet.cursor;
     const rect = cursor.getSingleRectangleOrCursor();
     if (rect) {
+      console.log('rect', rect);
       if (rect.height === 1) {
         quadraticCore.autocomplete(
           sheets.current,

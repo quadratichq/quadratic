@@ -696,6 +696,7 @@ impl GridController {
                         }
                     }
 
+                    dbgjs!(format!("x: {}, y: {}", x, y));
                     let sheet_pos = SheetPos::new(sheet_id, x, y);
                     data_table_ops.push(Operation::ComputeCode { sheet_pos });
 
@@ -713,10 +714,25 @@ impl GridController {
             series.iter().map(|(v, _)| v.to_owned()).collect(),
         );
         let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
-        let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];
+        // let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];
+        let mut ops = self.cell_values_operations(
+            Some(&selection),
+            sheet_pos,
+            Pos::new(0, 0),
+            &mut cells,
+            values,
+            false,
+        )?;
+
+        ops.extend(vec![Operation::SetCellValues {
+            sheet_pos,
+            values: cells,
+        }]);
 
         // the compute code operations need to be applied after the cell values
         ops.extend(compute_code_ops);
+
+        // dbgjs!(&ops);
 
         Ok((ops, series))
     }
