@@ -315,6 +315,11 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
   get: ({ get }) => get(aiAnalystCurrentChatAtom).messages.length,
 });
 
+export const aiAnalystCurrentChatUserMessagesCountAtom = selector<number>({
+  key: 'aiAnalystCurrentChatUserMessagesCountAtom',
+  get: ({ get }) => get(aiAnalystCurrentChatAtom).messages.filter((message) => message.role === 'user').length,
+});
+
 export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions');
 export const aiAnalystPromptSuggestionsCountAtom = selector<number>({
   key: 'aiAnalystPromptSuggestionsCountAtom',

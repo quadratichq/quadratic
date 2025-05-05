@@ -3,7 +3,7 @@ import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
-  aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
@@ -12,6 +12,7 @@ import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import mixpanel from 'mixpanel-browser';
 import { memo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -19,17 +20,18 @@ type AIAnalystHeaderProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
+const THRESHOLD_START_FRESH_MSG = 20;
+
 export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
-  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const currentUserMessages = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
-  // TODO: decide on the right threshold
-  const highlightStartFresh = messagesCount > 2 && !showChatHistory;
-  const highlightHistory = messagesCount === 0 && !showChatHistory && !loading && chatsCount > 0;
+  const showStartFreshMsg = currentUserMessages > THRESHOLD_START_FRESH_MSG && !showChatHistory;
+  const showHistoryMsg = currentUserMessages === 0 && !showChatHistory && !loading && chatsCount > 0;
 
   return (
     <div className="flex flex-col">
@@ -42,11 +44,13 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
         <div className="flex items-center gap-2">
           <TooltipPopover label="New chat">
             <Button
-              variant={highlightStartFresh ? 'outline' : 'ghost'}
+              variant={showStartFreshMsg ? 'outline' : 'ghost'}
               size="icon-sm"
               className="text-muted-foreground hover:text-foreground"
-              disabled={loading || messagesCount === 0}
+              disabled={loading || currentUserMessages === 0}
               onClick={() => {
+                console.log('mixpanel startNewChat with: ', currentUserMessages);
+                mixpanel.track('[AIAnalyst].startNewChat', { messageCount: currentUserMessages });
                 setCurrentChat({
                   id: '',
                   name: '',
@@ -62,7 +66,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 
           <TooltipPopover label="Previous chats">
             <Button
-              variant={showChatHistory ? 'default' : highlightHistory ? 'outline' : 'ghost'}
+              variant={showChatHistory ? 'default' : showHistoryMsg ? 'outline' : 'ghost'}
               size="icon-sm"
               className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
               disabled={!showChatHistory && (loading || chatsCount === 0)}
@@ -85,13 +89,13 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
           </TooltipPopover>
         </div>
       </div>
-      {highlightStartFresh && (
-        <p className="relative mx-2 mb-1.5 rounded bg-primary px-2 py-1.5 text-center text-xs text-background">
-          Fresh chats = better results. Try starting anew.
-          <span className="absolute -top-2 right-[86px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-primary border-l-transparent border-r-transparent" />
+      {showStartFreshMsg && (
+        <p className="relative mx-2 mb-1.5 rounded bg-foreground px-2 py-1.5 text-center text-xs text-background">
+          Long chat? New topic? Fresh chats = better results.
+          <span className="absolute -top-2 right-[86px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-foreground border-l-transparent border-r-transparent" />
         </p>
       )}
-      {highlightHistory && (
+      {showHistoryMsg && (
         <p className="relative mx-2 mb-1.5 rounded bg-secondary px-2 py-1.5 text-center text-xs text-muted-foreground">
           Previous chats are saved in history.
           <span className="absolute -top-2 right-[50px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-secondary border-l-transparent border-r-transparent" />
