@@ -19,11 +19,11 @@ use sqlx::{
     postgres::{PgColumn, PgConnectOptions, PgRow, PgTypeKind, types::PgTimeTz},
 };
 
-use crate::convert_pg_type;
 use crate::error::{Result, SharedError};
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
+use crate::{convert_sqlx_type, to_arrow_type};
 
 /// PostgreSQL connection
 #[derive(Debug, Serialize, Deserialize)]
@@ -148,7 +148,6 @@ impl Connection for PostgresConnection {
         }
 
         let (bytes, num_records) = Self::to_parquet(rows)?;
-
         Ok((bytes, over_the_limit, num_records))
     }
 
@@ -203,24 +202,24 @@ impl Connection for PostgresConnection {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
-                ArrowType::Utf8(convert_pg_type!(String, row, index))
+                to_arrow_type!(ArrowType::Utf8, String, row, index)
             }
             "SMALLINT" | "SMALLSERIAL" | "INT2" => {
-                ArrowType::Int16(convert_pg_type!(i16, row, index))
+                to_arrow_type!(ArrowType::Int16, i16, row, index)
             }
-            "INT" | "SERIAL" | "INT4" => ArrowType::Int32(convert_pg_type!(i32, row, index)),
-            "BIGINT" | "BIGSERIAL" | "INT8" => ArrowType::Int64(convert_pg_type!(i64, row, index)),
-            "BOOL" => ArrowType::Boolean(convert_pg_type!(bool, row, index)),
-            "REAL" | "FLOAT4" => ArrowType::Float32(convert_pg_type!(f32, row, index)),
-            "DOUBLE PRECISION" | "FLOAT8" => ArrowType::Float64(convert_pg_type!(f64, row, index)),
-            "NUMERIC" => ArrowType::BigDecimal(convert_pg_type!(BigDecimal, row, index)),
-            "TIMESTAMP" => ArrowType::Timestamp(convert_pg_type!(NaiveDateTime, row, index)),
-            "TIMESTAMPTZ" => ArrowType::TimestampTz(convert_pg_type!(DateTime<Local>, row, index)),
-            "DATE" => {
-                let naive_date = convert_pg_type!(NaiveDate, row, index);
-                ArrowType::Date32(Date32Type::from_naive_date(naive_date))
-            }
-            "TIME" => ArrowType::Time32(convert_pg_type!(NaiveTime, row, index)),
+            "INT" | "SERIAL" | "INT4" => to_arrow_type!(ArrowType::Int32, i32, row, index),
+            "BIGINT" | "BIGSERIAL" | "INT8" => to_arrow_type!(ArrowType::Int64, i64, row, index),
+            "BOOL" => to_arrow_type!(ArrowType::Boolean, bool, row, index),
+            "REAL" | "FLOAT4" => to_arrow_type!(ArrowType::Float32, f32, row, index),
+            "DOUBLE PRECISION" | "FLOAT8" => to_arrow_type!(ArrowType::Float64, f64, row, index),
+            "NUMERIC" => to_arrow_type!(ArrowType::BigDecimal, BigDecimal, row, index),
+            "TIMESTAMP" => to_arrow_type!(ArrowType::Timestamp, NaiveDateTime, row, index),
+            "TIMESTAMPTZ" => to_arrow_type!(ArrowType::TimestampTz, DateTime<Local>, row, index),
+            "DATE" => match convert_sqlx_type!(NaiveDate, row, index) {
+                Some(naive_date) => ArrowType::Date32(Date32Type::from_naive_date(naive_date)),
+                None => ArrowType::Null,
+            },
+            "TIME" => to_arrow_type!(ArrowType::Time32, NaiveTime, row, index),
             "TIMETZ" => {
                 let time = row.try_get::<PgTimeTz, usize>(index).ok();
                 time.map_or_else(|| ArrowType::Void, |time| ArrowType::Time32(time.time))
@@ -231,9 +230,9 @@ impl Connection for PostgresConnection {
                 // PgInterval { months: -2, days: 0, microseconds: 0
                 ArrowType::Void
             }
-            "JSON" => ArrowType::Json(convert_pg_type!(Value, row, index)),
-            "JSONB" => ArrowType::Jsonb(convert_pg_type!(Value, row, index)),
-            "UUID" => ArrowType::Uuid(convert_pg_type!(Uuid, row, index)),
+            "JSON" => to_arrow_type!(ArrowType::Json, Value, row, index),
+            "JSONB" => to_arrow_type!(ArrowType::Jsonb, Value, row, index),
+            "UUID" => to_arrow_type!(ArrowType::Uuid, Uuid, row, index),
             "XML" => ArrowType::Void,
             "VOID" => ArrowType::Void,
             // try to convert others to a string
@@ -262,20 +261,10 @@ impl Connection for PostgresConnection {
                 //         .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()))
                 // );
 
-                ArrowType::Utf8(convert_pg_type!(String, row, index))
+                to_arrow_type!(ArrowType::Utf8, String, row, index)
             }
         }
     }
-}
-
-/// Convert a column data to an ArrowType into an Arrow type
-#[macro_export]
-macro_rules! convert_pg_type {
-    ( $kind:ty, $row:ident, $index:ident ) => {{
-        $row.try_get::<$kind, usize>($index)
-            .ok()
-            .unwrap_or_default()
-    }};
 }
 
 #[cfg(test)]
