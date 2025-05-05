@@ -86,24 +86,29 @@ export const AIToolsArgsSchema = {
     chat_name: z.string(),
   }),
   [AITool.AddDataTable]: z.object({
+    sheet_name: z.string(),
     top_left_position: z.string(),
     table_name: z.string(),
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
+    sheet_name: z.string(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
+    sheet_name: z.string(),
     top_left_position: z.string(),
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
+    sheet_name: z.string(),
     source_selection_rect: z.string(),
     target_top_left_position: z.string(),
   }),
   [AITool.DeleteCells]: z.object({
+    sheet_name: z.string(),
     selection: z.string(),
   }),
   [AITool.UpdateCodeCell]: z.object({
@@ -173,6 +178,10 @@ Always prefer using this tool to add structured data to the current open sheet. 
     parameters: {
       type: 'object',
       properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
         top_left_position: {
           type: 'string',
           description:
@@ -194,12 +203,12 @@ Always prefer using this tool to add structured data to the current open sheet. 
           },
         },
       },
-      required: ['top_left_position', 'table_name', 'table_data'],
+      required: ['sheet_name', 'top_left_position', 'table_name', 'table_data'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddDataTable],
     prompt: `
-Adds a data table to the current open sheet, requires the top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+Adds a data table to the current sheet defined in the context, requires the sheet name, top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 top_left_position is the anchor position of the data table.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
@@ -224,6 +233,10 @@ To clear the values of a cell, set the value to an empty string.\n
     parameters: {
       type: 'object',
       properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
         top_left_position: {
           type: 'string',
           description:
@@ -240,14 +253,14 @@ To clear the values of a cell, set the value to an empty string.\n
           },
         },
       },
-      required: ['top_left_position', 'cell_values'],
+      required: ['sheet_name', 'top_left_position', 'cell_values'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
 You should use the set_cell_values function to set the values of the current open sheet cells to a 2d array of strings.\n
 Use this function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
-This function requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
+This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation), and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
 `,
@@ -264,6 +277,10 @@ Always refer to the data from cell by its position in a1 notation from respectiv
     parameters: {
       type: 'object',
       properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
         code_cell_language: {
           type: 'string',
           description:
@@ -279,7 +296,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
           description: 'The code which will run in the cell',
         },
       },
-      required: ['code_cell_language', 'code_cell_position', 'code_string'],
+      required: ['sheet_name', 'code_cell_language', 'code_cell_position', 'code_string'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
@@ -314,6 +331,10 @@ Target location is the top left corner of the target location on the current ope
     parameters: {
       type: 'object',
       properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet in the context',
+        },
         source_selection_rect: {
           type: 'string',
           description:
@@ -325,13 +346,13 @@ Target location is the top left corner of the target location on the current ope
             'The top left position of the target location on the current open sheet, in a1 notation. This should be a single cell, not a range. This will be the top left corner of the source selection rectangle after moving.',
         },
       },
-      required: ['source_selection_rect', 'target_top_left_position'],
+      required: ['sheet_name', 'source_selection_rect', 'target_top_left_position'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveCells],
     prompt: `
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
-move_cells function requires the source selection and target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
+move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
   },
@@ -345,19 +366,23 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     parameters: {
       type: 'object',
       properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
         selection: {
           type: 'string',
           description:
             'The string representation (in a1 notation) of the selection of cells to delete, this can be a single cell or a range of cells or multiple ranges in a1 notation',
         },
       },
-      required: ['selection'],
+      required: ['sheet_name', 'selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.DeleteCells],
     prompt: `
 You should use the delete_cells function to delete value(s) on the current open sheet.\n
-delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+delete_cells functions requires the current sheet name provided in the context, and a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 `,
   },
   [AITool.UpdateCodeCell]: {
