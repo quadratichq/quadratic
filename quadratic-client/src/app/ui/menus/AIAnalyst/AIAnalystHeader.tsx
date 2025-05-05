@@ -30,7 +30,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
-  const showStartFreshMsg = currentUserMessages > THRESHOLD_START_FRESH_MSG && !showChatHistory;
+  const showStartFreshMsg = currentUserMessages >= THRESHOLD_START_FRESH_MSG && !showChatHistory;
   const showHistoryMsg = currentUserMessages === 0 && !showChatHistory && !loading && chatsCount > 0;
 
   return (
