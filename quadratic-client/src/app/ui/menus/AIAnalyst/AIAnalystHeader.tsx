@@ -22,8 +22,8 @@ type AIAnalystHeaderProps = {
 };
 
 const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
-  ? Number(import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD)
-  : 20;
+  ? parseInt(import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD || '15', 10)
+  : 15;
 
 export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
