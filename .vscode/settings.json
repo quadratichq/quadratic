@@ -109,6 +109,8 @@
     "prec",
     "profraw",
     "proptest",
+    "prost",
+    "protoc",
     "pulumi",
     "pyimport",
     "Pyodide",

@@ -1,12 +1,12 @@
 // Protocol Buffers for Transactions
 //
-// It's important to not change existing fields once a versioned 
-// (including their order and tags).  A best practice is to append 
+// It's important to not change existing fields once a versioned
+// (including their order and tags).  A best practice is to append
 // new fields to the end of the message or create a new message or
-// version the messsages.
+// version the messages.
 //
-// For Rust, protobuf is generated using the `protoc` compiler with the 
-// `protoc-gen-rust` plugin, which happens automaticaly when this file 
+// For Rust, protobuf is generated using the `protoc` compiler with the
+// `protoc-gen-rust` plugin, which happens automatically when this file
 // is changed.
 //
 // Quadratic Client requires the protobuf code to be generated.
