@@ -15,14 +15,10 @@ export class JavascriptAPI {
     this.javascript = javascript;
   }
 
-  getCellsA1 = async (a1: string): Promise<ArrayBuffer> => {
-    if (!this.javascript.transactionId) {
-      throw new Error('No transactionId in getCellsA1');
-    }
-
+  getCellsA1 = async (transactionId: string, a1: string): Promise<ArrayBuffer> => {
     let responseBuffer: ArrayBuffer;
     try {
-      responseBuffer = await javascriptCore.sendGetCellsA1(this.javascript.transactionId, a1);
+      responseBuffer = await javascriptCore.sendGetCellsA1(transactionId, a1);
     } catch (error: any) {
       const response: JsCellsA1Response = {
         values: null,

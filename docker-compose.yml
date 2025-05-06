@@ -614,16 +614,5 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mssql
 
-volumes:
-  postgres-connection-data:
-    name: postgres-connection-data
-    driver: local
-  mysql-connection-data:
-    name: mysql-connection
-    driver: local
-  mssql-connection-data:
-    name: mssql-connection-data
-    driver: local
-
 networks:
   host:

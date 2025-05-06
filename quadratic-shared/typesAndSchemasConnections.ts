@@ -16,8 +16,9 @@ const ConnectionHostSchema = z
   .min(1, { message: 'Required' })
   .refine(
     (host) => {
-      // If we're running locally, allow localhost
-      if (window?.location?.hostname === 'localhost') return true;
+      // Allow all for localhost and previews
+      const hostname = window?.location?.hostname;
+      if (hostname && (hostname === 'localhost' || hostname.endsWith('quadratic-preview.com'))) return true;
 
       // Otherwise, disallow specific hosts
       host = host.trim();

@@ -1,0 +1,26 @@
+{
+  "name": "tests-e2e",
+  "version": "1.0.0",
+  "author": "",
+  "description": "E2E tests for Quadratic",
+  "main": "index.js",
+  "scripts": {
+    "lint:ts": "tsc --noemit",
+    "test": "npm run lint:ts && npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:fix": "npx playwright test --update-snapshots",
+    "test:report": "npx playwright show-report"
+  },
+  "keywords": [],
+  "engines": {
+    "node": "23.x"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.2",
+    "typescript": "^5.8.2",
+    "xlsx": "^0.18.5"
+  }
+}
