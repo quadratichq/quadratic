@@ -1280,6 +1280,7 @@ export interface ClientCoreGetAICells {
   id: number;
   selection: string;
   sheetId: string;
+  page: number;
 }
 
 export interface CoreClientGetAICells {

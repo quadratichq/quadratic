@@ -1568,10 +1568,10 @@ class Core {
     }
   }
 
-  getAICells(selection: string, sheetName: string): string {
+  getAICells(selection: string, sheetName: string, page: number): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      return this.gridController.getAICells(selection, sheetName);
+      return this.gridController.getAICells(selection, sheetName, page);
     } catch (e) {
       return JSON.stringify(e);
     }

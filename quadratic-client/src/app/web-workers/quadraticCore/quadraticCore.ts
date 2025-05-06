@@ -405,13 +405,13 @@ class QuadraticCore {
     });
   }
 
-  getAICells(selection: string, sheetId: string): Promise<string | undefined> {
+  getAICells(selection: string, sheetId: string, page: number): Promise<string | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: { aiCells: string }) => {
         resolve(message.aiCells);
       };
-      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId });
+      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId, page });
     });
   }
 

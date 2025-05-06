@@ -723,7 +723,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetAICells',
           id: e.data.id,
-          aiCells: core.getAICells(e.data.selection, e.data.sheetId),
+          aiCells: core.getAICells(e.data.selection, e.data.sheetId, e.data.page),
         });
         return;
 

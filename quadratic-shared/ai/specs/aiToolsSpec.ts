@@ -138,6 +138,7 @@ export const AIToolsArgsSchema = {
   [AITool.GetCellData]: z.object({
     sheet_name: z.string(),
     selection: z.string(),
+    page: z.number(),
   }),
   [AITool.SetTextFormats]: z.object({
     sheet_name: z.string(),
@@ -202,6 +203,7 @@ This name should be from user's perspective, not the assistant's.\n
     You should use the get_cell_data function to get the values of the cells when you need more data to reference.\n
     Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
     get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
+    The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
     `,
     parameters: {
       type: 'object',
@@ -216,16 +218,25 @@ This name should be from user's perspective, not the assistant's.\n
           description: `
           The string representation (in a1 notation) of the selection of cells to get the values of. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
         },
+        page: {
+          type: 'number',
+          description:
+            'The page number of the results to return. The first page is always 0. Use the parameters with a different page to get the next set of results.',
+        },
       },
-      required: ['selection', 'sheet_name'],
+      required: ['selection', 'sheet_name', 'page'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
     This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
     You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
-    This tool does NOT return formatting information (like bold, currency, etc.). Use get_format_cells function for cell formatting information.
-    `,
+    This tool does NOT return formatting information (like bold, currency, etc.). Use get_format_cells function for cell formatting information.\n
+    CRITICALLY IMPORTANT: If too large, the results will include page information:\n
+    - if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
+    - ALWAYS read through all pages of results, but IMMEDIATELY perform actions on each page's results before moving to the next page.\n
+    - if the results are not too large, perform actions on the current page's results immediately.\n
+     `,
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],

@@ -125,13 +125,13 @@ impl Sheet {
     }
 
     /// Returns the rendered value of the cells in a given rect.
-    pub fn get_cells_as_string(&self, rect: Rect) -> String {
-        let mut cells = String::new();
+    pub fn get_cells_as_string(&self, rect: Rect) -> Vec<String> {
+        let mut cells = Vec::new();
         for x in rect.min.x..=rect.max.x {
             for y in rect.min.y..=rect.max.y {
                 if let Some(value) = self.rendered_value(Pos { x, y }) {
                     let pos = Pos { x, y }.a1_string();
-                    cells.push_str(&format!("{} is \"{}\", ", pos, value));
+                    cells.push(format!("{} is \"{}\"", pos, value));
                 }
             }
         }
@@ -139,13 +139,13 @@ impl Sheet {
     }
 
     /// Returns the rendered formats of the cells in a given rect.
-    pub fn get_cell_formats_as_string(&self, rect: Rect) -> String {
-        let mut formats = String::new();
+    pub fn get_cell_formats_as_string(&self, rect: Rect) -> Vec<String> {
+        let mut formats = Vec::new();
         for x in rect.min.x..=rect.max.x {
             for y in rect.min.y..=rect.max.y {
                 let pos = Pos { x, y };
                 if let Some(format) = self.cell_text_format_as_string(pos) {
-                    formats.push_str(&format!("{} is {:?}; ", pos, format));
+                    formats.push(format!("{} is {:?}; ", pos, format));
                 }
             }
         }
