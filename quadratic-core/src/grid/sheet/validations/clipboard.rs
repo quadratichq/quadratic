@@ -48,9 +48,7 @@ mod tests {
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
             SheetId,
-            sheet::validations::{
-                Validations, validation::Validation, validation_rules::ValidationRule,
-            },
+            sheet::validations::{Validations, rules::ValidationRule, validation::Validation},
         },
     };
 
