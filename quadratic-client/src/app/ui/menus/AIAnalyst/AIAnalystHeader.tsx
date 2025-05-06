@@ -9,18 +9,21 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 type AIAnalystHeaderProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
-const THRESHOLD_START_FRESH_MSG = 20;
+const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
+  ? Number(import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD)
+  : 20;
 
 export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
@@ -29,9 +32,24 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessages = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const [numberOfTimesHistoryHasBeenClicked, setNumberOfTimesHistoryHasBeenClicked] = useLocalStorage(
+    'aiAnalystHistoryClicksCount',
+    0
+  );
 
-  const showStartFreshMsg = currentUserMessages >= THRESHOLD_START_FRESH_MSG && !showChatHistory;
-  const showHistoryMsg = currentUserMessages === 0 && !showChatHistory && !loading && chatsCount > 0;
+  const showStartFreshMsg = useMemo(
+    () => currentUserMessages >= THRESHOLD && !showChatHistory,
+    [currentUserMessages, showChatHistory]
+  );
+  const showHistoryMsg = useMemo(
+    () =>
+      numberOfTimesHistoryHasBeenClicked < 15 &&
+      currentUserMessages === 0 &&
+      !showChatHistory &&
+      !loading &&
+      chatsCount > 0,
+    [numberOfTimesHistoryHasBeenClicked, currentUserMessages, showChatHistory, loading, chatsCount]
+  );
 
   return (
     <div className="flex flex-col">
@@ -69,7 +87,10 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               size="icon-sm"
               className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
               disabled={!showChatHistory && (loading || chatsCount === 0)}
-              onClick={() => setShowChatHistory((prev) => !prev)}
+              onClick={() => {
+                setShowChatHistory((prev) => !prev);
+                setNumberOfTimesHistoryHasBeenClicked((prev) => prev + 1);
+              }}
             >
               <HistoryIcon />
             </Button>
@@ -89,17 +110,25 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
         </div>
       </div>
       {showStartFreshMsg && (
-        <p className="relative mx-2 mb-1.5 rounded bg-foreground px-2 py-1.5 text-center text-xs text-background">
-          Long chat? New topic? Fresh chats = better results.
-          <span className="absolute -top-2 right-[86px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-foreground border-l-transparent border-r-transparent" />
-        </p>
+        <SubheaderMessage caretPosFromRight={86}>Long chat? New topic? Fresh chats = better results.</SubheaderMessage>
       )}
       {showHistoryMsg && (
-        <p className="relative mx-2 mb-1.5 rounded bg-secondary px-2 py-1.5 text-center text-xs text-muted-foreground">
-          Previous chats are saved in history.
-          <span className="absolute -top-2 right-[50px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-secondary border-l-transparent border-r-transparent" />
-        </p>
+        <SubheaderMessage caretPosFromRight={49}>Previous chats are saved in historyzz.</SubheaderMessage>
       )}
     </div>
   );
 });
+
+function SubheaderMessage({ children, caretPosFromRight }: { children: React.ReactNode; caretPosFromRight: number }) {
+  return (
+    <p className="relative mx-2 mb-1.5 rounded border border-border bg-background px-2 py-1.5 text-center text-xs font-semibold text-muted-foreground">
+      Previous chats are saved in history.
+      <span
+        className={`absolute -top-[8px] right-[${caretPosFromRight}px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-border border-l-transparent border-r-transparent`}
+      />
+      <span
+        className={`absolute -top-[6px] right-[${caretPosFromRight}px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-background border-l-transparent border-r-transparent`}
+      />
+    </p>
+  );
+}
