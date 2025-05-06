@@ -22,13 +22,13 @@ runs:
         node-version: 23
 
     - name: Install Dependencies
-      run: cd tests/e2e && npm install
+      run: cd test/e2e && npm install
       shell: bash
 
     - name: Get Playwright's Version
       id: playwright-version
       run: |
-        cd tests/e2e
+        cd test/e2e
         PLAYWRIGHT_VERSION=$(npm ls @playwright/test | grep @playwright | sed 's/.*@//')
         echo "Playwright's Version: $PLAYWRIGHT_VERSION"
         echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
@@ -47,7 +47,7 @@ runs:
       shell: bash
 
     - name: Run Playwright tests
-      run: export E2E_URL=${{ inputs.e2e_url }} && cd tests/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
+      run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
       shell: bash
 
     - name: Upload blob report to GitHub Actions Artifacts
@@ -56,7 +56,7 @@ runs:
       id: upload-playwright-report
       with:
         name: blob-report-${{ github.run_id }}-${{ matrix.shardIndex }}
-        path: tests/e2e/blob-report
+        path: test/e2e/blob-report
         retention-days: 1
         overwrite: true
         include-hidden-files: true

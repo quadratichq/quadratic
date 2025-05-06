@@ -624,7 +624,7 @@ jobs:
           node-version: 23
 
       - name: Install Dependencies
-        run: cd tests/e2e && npm install
+        run: cd test/e2e && npm install
 
       - name: Download blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v4

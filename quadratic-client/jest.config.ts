@@ -5,7 +5,7 @@ const config: Config = {
   testEnvironment: 'node',
   preset: 'ts-jest',
   testPathIgnorePatterns: [
-    '<rootDir>/tests/e2e/*',
+    '<rootDir>/test/e2e/*',
     '<rootDir>/node_modules/',
     '<rootDir>/quadratic-api/*',
     '<rootDir>/quadratic-core/*',
