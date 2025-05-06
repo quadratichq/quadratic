@@ -124,10 +124,12 @@ function SubheaderMessage({ children, caretPosFromRight }: { children: React.Rea
     <p className="relative mx-2 mb-1.5 rounded border border-border bg-background px-2 py-1.5 text-center text-xs font-semibold text-muted-foreground">
       {children}
       <span
-        className={`absolute -top-[8px] right-[${caretPosFromRight}px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-border border-l-transparent border-r-transparent`}
+        className={`absolute -top-[8px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-border border-l-transparent border-r-transparent`}
+        style={{ right: `${caretPosFromRight}px` }}
       />
       <span
-        className={`absolute -top-[6px] right-[${caretPosFromRight}px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-background border-l-transparent border-r-transparent`}
+        className={`absolute -top-[6px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-background border-l-transparent border-r-transparent`}
+        style={{ right: `${caretPosFromRight}px` }}
       />
     </p>
   );
