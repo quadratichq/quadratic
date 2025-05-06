@@ -630,7 +630,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: all-blob-reports
-          pattern: blob-report-*
+          pattern: blob-report-${{ github.run_id }}-*
           merge-multiple: true
 
       - name: Merge into HTML Report
@@ -641,7 +641,7 @@ jobs:
         id: e2e-test-report
         with:
           name: pr-${{ github.event.pull_request.number }}-e2e-report
-          path: playwright-report
+          path: playwright-report-${{ github.run_id }}
           retention-days: 14
           overwrite: true
           include-hidden-files: true
@@ -657,7 +657,7 @@ jobs:
       - name: Upload Report to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} --delete
+          aws s3 sync playwright-report-${{ github.run_id }} s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} --delete
 
       - name: Find Build & Deploy Images Comment
         if: always()
