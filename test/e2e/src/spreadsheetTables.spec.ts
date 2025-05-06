@@ -1565,7 +1565,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (populationValuesAscending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'Population' value
@@ -1600,7 +1600,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (i != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'GDP' value
@@ -1656,7 +1656,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (populationValuesDescending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'Population' value
@@ -1691,7 +1691,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (i != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'GDP' value
@@ -1741,7 +1741,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (populationValuesUnsorted.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'Population' value
@@ -1771,7 +1771,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (gdpValuesUnsorted.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'GDP' value
@@ -1937,7 +1937,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
     // Press enter unless on first row
     if (i != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'State' value
@@ -2324,7 +2324,7 @@ test('Table Sort', async ({ page }) => {
     // Press enter on keyboard to make cell editable (skip this if on first row)
     if (populationValuesAscending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'Population' value
@@ -2366,7 +2366,7 @@ test('Table Sort', async ({ page }) => {
     // Press enter on keyboard to make cell editable (skip this if on first row)
     if (populationValuesDescending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(5 * 1000);
+      await page.waitForTimeout(1000);
     }
 
     // Store 'Population' value

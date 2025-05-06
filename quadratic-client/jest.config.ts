@@ -1,11 +1,11 @@
-import { Config } from 'jest';
+import type { Config } from 'jest';
 
 const config: Config = {
   verbose: true,
   testEnvironment: 'node',
   preset: 'ts-jest',
   testPathIgnorePatterns: [
-    '<rootDir>/tests-e2e/*',
+    '<rootDir>/tests/e2e/*',
     '<rootDir>/node_modules/',
     '<rootDir>/quadratic-api/*',
     '<rootDir>/quadratic-core/*',

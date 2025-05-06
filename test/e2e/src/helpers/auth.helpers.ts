@@ -18,14 +18,14 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   const email = `${options.emailPrefix}_${browserName}@quadratichq.com`;
 
   // to create a new account, only needed when adding a dedicated account for new test
-  try {
-    await signUp(page, { email });
-    await page.locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_"))').click();
-    await page.locator(`:text("Logout")`).click();
-    await expect(page).toHaveURL(/login/);
-  } catch (_error) {
-    void _error;
-  }
+  // try {
+  //   await signUp(page, { email });
+  //   await page.locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_"))').click();
+  //   await page.locator(`:text("Logout")`).click();
+  //   await expect(page).toHaveURL(/login/);
+  // } catch (_error) {
+  //   void _error;
+  // }
 
   // setup dialog alerts to be yes
   page.on('dialog', (dialog) => {

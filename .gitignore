@@ -83,10 +83,10 @@ docker/snowflake-connection/data
 docker/mssql-connection/data
 
 # Playwright
-tests-e2e/test-results/
-tests-e2e/playwright-report/
-tests-e2e/blob-report/
-tests-e2e/playwright/.cache/
+test/e2e/test-results
+test/e2e/playwright-report
+test/e2e/blob-report
+test/e2e/playwright/.cache/
 
 # JMeter
 jmeter.log

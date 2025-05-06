@@ -530,7 +530,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 64
+      matrix_runner: 100
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
@@ -624,7 +624,7 @@ jobs:
           node-version: 23
 
       - name: Install Dependencies
-        run: cd tests-e2e && npm install
+        run: cd tests/e2e && npm install
 
       - name: Download blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v4
