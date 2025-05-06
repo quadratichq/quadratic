@@ -1,6 +1,11 @@
-use crate::{a1::A1Selection, grid::formats::SheetFormatUpdates};
+use crate::{
+    a1::{A1Context, A1Selection},
+    grid::{Sheet, formats::SheetFormatUpdates},
+};
 
 use super::SheetFormatting;
+
+use anyhow::Result;
 
 // todo: this is wrong. it does not properly handle infinite selections (it cuts
 // them off at the bounds of the sheet)
@@ -8,22 +13,37 @@ use super::SheetFormatting;
 impl SheetFormatting {
     /// Returns a format update that applies the formatting from the cells in
     /// the selection.
-    pub fn to_clipboard(&self, selection: &A1Selection) -> Option<SheetFormatUpdates> {
-        Some(SheetFormatUpdates {
-            align: Some(self.align.get_update_for_selection(selection)),
-            vertical_align: Some(self.vertical_align.get_update_for_selection(selection)),
-            wrap: Some(self.wrap.get_update_for_selection(selection)),
-            numeric_format: Some(self.numeric_format.get_update_for_selection(selection)),
-            numeric_decimals: Some(self.numeric_decimals.get_update_for_selection(selection)),
-            numeric_commas: Some(self.numeric_commas.get_update_for_selection(selection)),
-            bold: Some(self.bold.get_update_for_selection(selection)),
-            italic: Some(self.italic.get_update_for_selection(selection)),
-            text_color: Some(self.text_color.get_update_for_selection(selection)),
-            fill_color: Some(self.fill_color.get_update_for_selection(selection)),
-            date_time: Some(self.date_time.get_update_for_selection(selection)),
-            underline: Some(self.underline.get_update_for_selection(selection)),
-            strike_through: Some(self.strike_through.get_update_for_selection(selection)),
-        })
+    pub fn to_clipboard(
+        &self,
+        selection: &A1Selection,
+        sheet: &Sheet,
+        a1_context: &A1Context,
+    ) -> Result<SheetFormatUpdates> {
+        // first, get formats for the sheet of the selection
+        let mut sheet_format_updates =
+            SheetFormatUpdates::from_sheet_formatting_selection(selection, self);
+
+        // get the largest rect that is finite of the selection
+        let rect = selection.largest_rect_finite(a1_context);
+
+        // determine if the selection overlaps with data tables
+        let data_tables_within = sheet.data_tables_within_rect(rect, false)?;
+
+        // get the formats from the data table and merge them with the sheet formats
+        for data_table_pos in data_tables_within {
+            let data_table = sheet.data_table_result(data_table_pos)?;
+
+            // update the sheet format updates with the formats from the data
+            // table we send in the full rect, and the function just looks at
+            // the overlapping area
+            data_table.transfer_formats_to_sheet(
+                data_table_pos,
+                rect,
+                &mut sheet_format_updates,
+            )?;
+        }
+
+        Ok(sheet_format_updates)
     }
 }
 
@@ -41,9 +61,10 @@ mod tests {
         let _ = gc.set_bold(&A1Selection::test_a1("A1:B2"), Some(true), None);
 
         let sheet = gc.sheet(sheet_id);
+        let a1_context = gc.a1_context();
         let clipboard = sheet
             .formats
-            .to_clipboard(&A1Selection::test_a1("A1:C3"))
+            .to_clipboard(&A1Selection::test_a1("A1:C3"), sheet, a1_context)
             .unwrap();
 
         assert_eq!(

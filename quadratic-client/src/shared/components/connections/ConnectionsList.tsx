@@ -1,7 +1,7 @@
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
   ConnectionsListConnection,
@@ -141,7 +141,7 @@ function ListItems({
             )}
           >
             <div className="flex h-6 w-6 items-center justify-center">
-              <LanguageIcon language={type} fontSize="small" />
+              <LanguageIcon language={type} />
             </div>
             <div className="flex flex-grow flex-col text-left">
               <span className="text-sm">{name}</span>
