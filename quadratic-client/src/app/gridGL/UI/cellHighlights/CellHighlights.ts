@@ -23,6 +23,7 @@ export class CellHighlights extends Container {
   private marchingHighlight: Graphics;
   private march = 0;
   private marchLastTime = 0;
+  private isPython = false;
 
   dirty = false;
 
@@ -55,14 +56,12 @@ export class CellHighlights extends Container {
     pixiApp.setViewportDirty();
   };
 
-  private convertCellRefRangeToRefRangeBounds(cellRefRange: CellRefRange): RefRangeBounds | undefined {
+  private convertCellRefRangeToRefRangeBounds(
+    cellRefRange: CellRefRange,
+    isPython: boolean
+  ): RefRangeBounds | undefined {
     try {
-      const refRangeBoundsStringified = cellRefRangeToRefRangeBounds(
-        JSON.stringify(cellRefRange, bigIntReplacer),
-        sheets.a1Context
-      );
-      const refRangeBounds = JSON.parse(refRangeBoundsStringified);
-      return refRangeBounds;
+      return cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange, bigIntReplacer), isPython, sheets.a1Context);
     } catch (e) {
       console.log(`Error converting CellRefRange to RefRangeBounds: ${e}`);
     }
@@ -73,19 +72,17 @@ export class CellHighlights extends Container {
 
     if (!this.cellsAccessed.length) return;
 
-    const selectedCellIndex = this.selectedCellIndex;
-
     if (!inlineEditorHandler.cursorIsMoving) {
       this.cellsAccessed.forEach(({ sheetId, ranges }, index) => {
-        if (sheetId !== sheets.current || selectedCellIndex === index) return;
+        if (sheetId !== sheets.current) return;
 
         ranges.forEach((range) => {
-          const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range);
+          const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, this.isPython);
           if (refRangeBounds) {
             drawDashedRectangle({
               g: this.highlights,
               color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
-              isSelected: selectedCellIndex === index,
+              isSelected: this.selectedCellIndex === index,
               range: refRangeBounds,
             });
           }
@@ -93,7 +90,7 @@ export class CellHighlights extends Container {
       });
     }
 
-    this.dirty = true;
+    this.dirty = false;
   };
 
   // Draws the marching highlights by using an offset dashed line to create the
@@ -127,7 +124,7 @@ export class CellHighlights extends Container {
     }
 
     const colorNumber = convertColorStringToTint(colors.cellHighlightColor[selectedCellIndex % NUM_OF_CELL_REF_COLORS]);
-    const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(accessedCell.ranges[0]);
+    const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(accessedCell.ranges[0], this.isPython);
     if (!refRangeBounds) {
       this.marchingHighlight.clear();
       return;
@@ -164,8 +161,9 @@ export class CellHighlights extends Container {
     return this.dirty || inlineEditorHandler.cursorIsMoving;
   };
 
-  fromCellsAccessed = (cellsAccessed: JsCellsAccessed[] | null) => {
+  fromCellsAccessed = (cellsAccessed: JsCellsAccessed[] | null, isPython: boolean) => {
     this.cellsAccessed = cellsAccessed ?? [];
+    this.isPython = isPython;
     this.dirty = true;
   };
 
