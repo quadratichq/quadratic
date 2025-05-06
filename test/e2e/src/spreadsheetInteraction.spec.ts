@@ -3983,6 +3983,7 @@ test('Theme Customization', async ({ page }) => {
     await page.waitForTimeout(10 * 1000);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle');
+    await expect(page.locator('span:has-text("refresh").animate-spin.opacity-0')).toBeVisible();
     await expect(page).toHaveTitle(/Team settings - Quadratic/);
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible();
 

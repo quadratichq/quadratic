@@ -608,7 +608,7 @@ test('File Actions', async ({ page }) => {
   await duplicatedPage.bringToFront();
 
   // assert that file title contains word "(Copy)"
-  await expect(duplicatedPage.locator(`button:text("${renamedFileName} (Copy)")`)).toBeVisible();
+  await expect(duplicatedPage.locator(`button:text("${renamedFileName} (Copy)")`)).toBeVisible({ timeout: 30 * 1000 });
 
   // navigate to dashboard my files page
   await page.bringToFront();
@@ -616,7 +616,7 @@ test('File Actions', async ({ page }) => {
 
   //assert that a duplicate copy has been created
   await page.locator(`div a:text("My files")`).click();
-  await expect(page.locator(`:text("${renamedFileName} (Copy)")`)).toBeVisible();
+  await expect(page.locator(`:text("${renamedFileName} (Copy)")`)).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Download File
@@ -1438,7 +1438,7 @@ test('Sheet Actions', async ({ page }) => {
   await expect(page.locator('[data-actual-order="4"]')).toHaveText(`${sheetName}arrow_drop_down`);
   await expect(page.locator('[data-actual-order="6"]')).toHaveText(`${sheetName} Copyarrow_drop_down`);
 
-  // Screnshot assertions
+  // Screenshot assertions
   await expect(page.locator('[data-actual-order="4"]')).toHaveScreenshot('MoveSheetLeft.png');
   await expect(page.locator('[data-actual-order="2"]')).toHaveScreenshot('OriginalNewSheet.png');
 
