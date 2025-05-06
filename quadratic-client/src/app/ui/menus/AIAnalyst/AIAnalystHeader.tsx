@@ -113,7 +113,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
         <SubheaderMessage caretPosFromRight={86}>Long chat? New topic? Fresh chats = better results.</SubheaderMessage>
       )}
       {showHistoryMsg && (
-        <SubheaderMessage caretPosFromRight={49}>Previous chats are saved in historyzz.</SubheaderMessage>
+        <SubheaderMessage caretPosFromRight={49}>Previous chats are saved in history.</SubheaderMessage>
       )}
     </div>
   );
@@ -122,7 +122,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 function SubheaderMessage({ children, caretPosFromRight }: { children: React.ReactNode; caretPosFromRight: number }) {
   return (
     <p className="relative mx-2 mb-1.5 rounded border border-border bg-background px-2 py-1.5 text-center text-xs font-semibold text-muted-foreground">
-      Previous chats are saved in history.
+      {children}
       <span
         className={`absolute -top-[8px] right-[${caretPosFromRight}px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-border border-l-transparent border-r-transparent`}
       />
