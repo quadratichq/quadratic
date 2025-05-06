@@ -1,7 +1,8 @@
+import { DEBUG } from '@/env-vars';
 const url = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
 
 // set this in .env (if set to false then all debug flags are turned off)
-export const debug = url.has('debug') || import.meta.env.VITE_DEBUG === '1' ? true : false;
+export const debug = url.has('debug') || DEBUG;
 
 // ------------------
 // Debug footer marks

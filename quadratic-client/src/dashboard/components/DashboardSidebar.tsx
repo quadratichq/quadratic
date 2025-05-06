@@ -1,4 +1,5 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
+import { STORAGE_TYPE } from '@/env-vars';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
@@ -55,7 +56,7 @@ import {
   useSubmit,
 } from 'react-router';
 
-const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
+const SHOW_EXAMPLES = STORAGE_TYPE !== 'file-system';
 
 /**
  * Dashboard Navbar

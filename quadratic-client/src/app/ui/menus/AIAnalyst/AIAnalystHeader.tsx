@@ -8,6 +8,7 @@ import {
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD } from '@/env-vars';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -20,10 +21,6 @@ import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 type AIAnalystHeaderProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
-
-const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
-  ? Number(import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD)
-  : 20;
 
 export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
@@ -38,7 +35,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   );
 
   const showStartFreshMsg = useMemo(
-    () => currentUserMessages >= THRESHOLD && !showChatHistory,
+    () => currentUserMessages >= AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD && !showChatHistory,
     [currentUserMessages, showChatHistory]
   );
   const showHistoryMsg = useMemo(

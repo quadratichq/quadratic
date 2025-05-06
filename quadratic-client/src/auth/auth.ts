@@ -1,9 +1,8 @@
 import { auth0Client } from '@/auth/auth0';
 import { oryClient } from '@/auth/ory';
+import { AUTH_TYPE } from '@/env-vars';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
-
-const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
 
 export interface User {
   name?: string;

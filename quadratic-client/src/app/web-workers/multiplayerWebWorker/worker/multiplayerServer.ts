@@ -23,9 +23,9 @@ import type {
 import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
 import type { User } from '@/auth/auth';
+import { QUADRATIC_MULTIPLAYER_URL } from '@/env-vars';
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
-
 const UPDATE_TIME_MS = 1000 / 60;
 const HEARTBEAT_TIME = 1000 * 10;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
@@ -123,7 +123,7 @@ export class MultiplayerServer {
       await multiplayerClient.sendRefreshJwt();
     }
 
-    this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
+    this.websocket = new WebSocket(QUADRATIC_MULTIPLAYER_URL);
     this.websocket.addEventListener('message', this.handleMessage);
 
     this.websocket.addEventListener('close', () => {

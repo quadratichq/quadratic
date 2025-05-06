@@ -1,10 +1,9 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import { ORY_HOST } from '@/env-vars';
 import type { Session } from '@ory/kratos-client';
 import { Configuration, FrontendApi } from '@ory/kratos-client';
 import * as Sentry from '@sentry/react';
-
-const ORY_HOST = import.meta.env.VITE_ORY_HOST;
 
 // verify all Ory env variables are set
 if (!ORY_HOST) {

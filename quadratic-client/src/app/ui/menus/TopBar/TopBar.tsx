@@ -4,8 +4,8 @@ import { TopBarFileNameAndLocationMenu } from '@/app/ui/menus/TopBar/TopBarFileN
 import { TopBarMenus } from '@/app/ui/menus/TopBar/TopBarMenus/TopBarMenus';
 import { TopBarShareButton } from '@/app/ui/menus/TopBar/TopBarShareButton';
 import { TopBarUsers } from '@/app/ui/menus/TopBar/TopBarUsers';
+import { VERSION } from '@/env-vars';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
-import { VERSION } from '@/shared/constants/appConstants';
 import {
   DropdownMenu,
   DropdownMenuContent,

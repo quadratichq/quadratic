@@ -1,4 +1,5 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
+import { QUADRATIC_API_URL } from '@/env-vars';
 import { ApiError, fetchFromApi } from '@/shared/api/fetchFromApi';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
@@ -429,17 +430,7 @@ export const apiClient = {
   },
 
   getApiUrl() {
-    const url = import.meta.env.VITE_QUADRATIC_API_URL;
-    if (!url) {
-      const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
-      Sentry.captureEvent({
-        message,
-        level: 'fatal',
-      });
-      throw new Error(message);
-    }
-
-    return url;
+    return QUADRATIC_API_URL;
   },
 
   // Someday: figure out how to fit in the calls for the AI chat
