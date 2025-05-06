@@ -14,6 +14,7 @@ pub use ids::*;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
 pub use sheet_formatting::SheetFormatting;
+pub use region_map::RegionMap;
 
 use crate::CellValue;
 #[cfg(test)]
@@ -28,6 +29,7 @@ mod code_run;
 pub mod column;
 pub mod contiguous;
 pub mod data_table;
+mod region_map;
 pub mod file;
 pub mod formats;
 pub mod formatting;

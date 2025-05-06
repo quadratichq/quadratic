@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use ts_rs::TS;
+use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefRangeEnd, range_might_intersect};
 use crate::{Pos, Rect};
@@ -14,6 +15,7 @@ mod translate;
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct RefRangeBounds {
     pub start: CellRefRangeEnd,
     pub end: CellRefRangeEnd,

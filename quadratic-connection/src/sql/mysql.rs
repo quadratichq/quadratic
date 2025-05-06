@@ -290,6 +290,11 @@ mod tests {
                         r#type: "json".into(),
                         is_nullable: true,
                     },
+                    SchemaColumn {
+                        name: "null_bool_col".into(),
+                        r#type: "tinyint".into(),
+                        is_nullable: true,
+                    },
                 ],
             }],
         };
@@ -371,6 +376,7 @@ mod tests {
             ),
             (DataType::UInt16, num_vec!(2024_u16)),
             (DataType::Utf8, str_vec(r#"{"key":"value"}"#)),
+            (DataType::Utf8, vec![]), // null
         ];
 
         validate_parquet(response, expected).await;
