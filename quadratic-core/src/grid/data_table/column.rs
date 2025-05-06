@@ -21,7 +21,11 @@ impl DataTable {
     pub fn column_name(&self, column_index: usize) -> Result<String> {
         if let Some(headers) = &self.column_headers {
             if column_index >= headers.len() {
-                return Err(anyhow::anyhow!("Column index out of bounds"));
+                return Err(anyhow::anyhow!(
+                    "Column index {} out of bounds for {} columns",
+                    column_index,
+                    headers.len()
+                ));
             }
             return Ok(headers[column_index].name.to_string());
         }

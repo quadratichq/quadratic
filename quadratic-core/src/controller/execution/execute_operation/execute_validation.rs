@@ -19,40 +19,52 @@ impl GridController {
         sheet_id: SheetId,
         remove_selection: A1Selection,
     ) -> Vec<Operation> {
-        // not great, but the borrow issues are a pain below
-        let a1_context = self.a1_context.clone();
-
         let mut reverse_operations = vec![];
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+
+        let mut validations_to_change = vec![];
+        let mut validations_to_delete = vec![];
+
+        if let Some(sheet) = self.try_sheet(sheet_id) {
             // Collect validations that need to be processed first
             let validations_to_process: Vec<_> = sheet
                 .validations
-                .validation_overlaps_selection(&remove_selection, &a1_context)
+                .validation_overlaps_selection(&remove_selection, &self.a1_context)
                 .iter()
-                .map(|v| (v.id, v.selection.clone()))
+                .map(|v| (v.id, (*v).clone()))
                 .collect();
 
-            for (validation_id, selection) in validations_to_process {
-                if let Some(new_selection) =
-                    selection.delete_selection(&remove_selection, &a1_context)
+            for (validation_id, validation) in validations_to_process {
+                if let Some(new_selection) = validation
+                    .selection
+                    .delete_selection(&remove_selection, &self.a1_context)
                 {
                     // if the selection is different, then update the validation
-                    if selection != new_selection {
+                    if validation.selection != new_selection {
                         let validation = Validation {
                             selection: new_selection,
-                            ..sheet.validations.validation(validation_id).unwrap().clone()
+                            ..validation.clone()
                         };
-                        reverse_operations.extend(sheet.validations.set(validation));
-                        transaction.validations.insert(sheet_id);
+                        validations_to_change.push(validation);
                     }
                 } else {
                     // this handles the case where the selection completely
                     // overlaps the validation
-                    reverse_operations.extend(sheet.validations.remove(validation_id));
-                    transaction.validations.insert(sheet_id);
+                    validations_to_delete.push(validation_id);
                 }
             }
         }
+
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+            for validation in validations_to_change {
+                reverse_operations.extend(sheet.validations.set(validation));
+                transaction.validations.insert(sheet_id);
+            }
+            for validation_id in validations_to_delete {
+                reverse_operations.extend(sheet.validations.remove(validation_id));
+                transaction.validations.insert(sheet_id);
+            }
+        }
+
         reverse_operations
     }
 

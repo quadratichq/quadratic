@@ -159,41 +159,4 @@ mod tests {
         };
         assert_eq!(remaining, range);
     }
-
-    // #[test]
-    // fn test_delete_with_absolute_references() {
-    //     let range = RefRangeBounds {
-    //         start: CellRefRangeEnd {
-    //             col: CellRefCoord {
-    //                 coord: 1,
-    //                 is_absolute: true,
-    //             },
-    //             row: CellRefCoord {
-    //                 coord: 1,
-    //                 is_absolute: true,
-    //             },
-    //         },
-    //         end: CellRefRangeEnd {
-    //             col: CellRefCoord {
-    //                 coord: 5,
-    //                 is_absolute: true,
-    //             },
-    //             row: CellRefCoord {
-    //                 coord: 5,
-    //                 is_absolute: true,
-    //             },
-    //         },
-    //     };
-    //     let to_delete = RefRangeBounds::new_relative(2, 2, 4, 4);
-    //     let result = range.delete_ref_range_bounds(&to_delete);
-    //     assert_eq!(result.len(), 4);
-
-    //     // Verify absolute references are preserved
-    //     for r in result {
-    //         assert!(r.range.start.col.is_absolute);
-    //         assert!(r.range.start.row.is_absolute);
-    //         assert!(r.range.end.col.is_absolute);
-    //         assert!(r.range.end.row.is_absolute);
-    //     }
-    // }
 }
