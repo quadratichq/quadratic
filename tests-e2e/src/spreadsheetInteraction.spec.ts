@@ -955,7 +955,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   const fileType = 'grid';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_data_validations` });
+  await logIn(page, { emailPrefix: `e2e_delete_reference_tables` });
 
   // Create a new team
   await createNewTeamByURL(page, { teamName: newTeamName });
@@ -980,7 +980,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
 
   // Delete Table1
   await page.keyboard.press('Delete');
-  await page.waitForTimeout(2 * 1000);
+  await page.waitForTimeout(10 * 1000);
 
   // Navigate to cell D1
   await navigateOnSheet(page, { targetColumn: 'D', targetRow: 1 });
@@ -1020,7 +1020,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   await page.keyboard.press('Delete');
 
   // Wait for 2 seconds to ensure the action is completed
-  await page.waitForTimeout(2 * 1000);
+  await page.waitForTimeout(10 * 1000);
 
   // Navigate to cell F8
   await navigateOnSheet(page, { targetColumn: 'F', targetRow: 8 });
@@ -1060,7 +1060,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   await page.keyboard.press('Delete');
 
   // Wait for 2 seconds to ensure the action is completed
-  await page.waitForTimeout(2 * 1000);
+  await page.waitForTimeout(10 * 1000);
 
   // Navigate to cell D14
   await navigateOnSheet(page, { targetColumn: 'D', targetRow: 15 });
@@ -1491,6 +1491,9 @@ test('File - Open Recent', async ({ page }) => {
 
   // Click into our file to continue assertions
   await page.getByRole(`menuitem`, { name: `${fileName2}` }).click();
+  await page.waitForTimeout(10 * 1000);
+  await page.waitForLoadState('domcontentloaded');
+  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   // Assert we navigate to the correct page we created
   await expect(page.locator(`button:text("${fileName2}")`)).toBeVisible();

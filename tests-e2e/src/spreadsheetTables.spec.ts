@@ -396,7 +396,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")').click();
 
   // Select fill color to red
-  await page.locator(`[title="#E74C3C"]`).click({ force: true });
+  await page.locator(`[title="#E74C3C"]`).nth(0).click({ force: true });
   await page.waitForTimeout(1000);
 
   // Assert color formatting has applied successfully (fill color red)

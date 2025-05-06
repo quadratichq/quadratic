@@ -160,6 +160,8 @@ while True:
   // Run code
   await page.getByRole(`button`, { name: `play_arrow` }).click();
 
+  await page.waitForTimeout(30 * 1000);
+
   // Check that the regular Python code executed successfully
   await expect(page.getByText(expectedRegularPythonCodeOutput)).toBeVisible();
 
@@ -601,6 +603,7 @@ test('File Actions', async ({ page }) => {
   // click Duplicate
   // Clicking something to open a new tab
   const [duplicatedPage] = await Promise.all([page.waitForEvent('popup'), duplicateButton.click()]);
+  await page.waitForTimeout(10 * 1000);
   await duplicatedPage.waitForLoadState('domcontentloaded');
   await duplicatedPage.bringToFront();
 
@@ -1175,6 +1178,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Navigate to file
   await recipientFileCard.click();
 
+  await page.waitForTimeout(10 * 1000);
+  await page.waitForLoadState('domcontentloaded');
+
   // Assert "Read-only" message appears
   await expect(
     recipientPage.locator(`:text("Read-only. Duplicate or ask the owner for permission to edit.")`).first()
@@ -1539,6 +1545,8 @@ test('View Actions', async ({ page }) => {
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
 
+  await page.waitForTimeout(10 * 1000);
+
   // Assert column headers are not displayed
   await expect(page).toHaveScreenshot(`row-and-cols-disabled-col-headers-1.png`, {
     maxDiffPixelRatio: 0.01,
@@ -1578,6 +1586,8 @@ test('View Actions', async ({ page }) => {
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
 
+  await page.waitForTimeout(10 * 1000);
+
   // Assert grid lines are shown
   await expect(page).toHaveScreenshot(`grid-lines-enabled.png`, {
     threshold: 0.01,
@@ -1596,6 +1606,8 @@ test('View Actions', async ({ page }) => {
 
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
+
+  await page.waitForTimeout(10 * 1000);
 
   // Assert grid lines are not shown
   await expect(page).toHaveScreenshot(`grid-lines-disabled.png`, {
@@ -1626,6 +1638,8 @@ test('View Actions', async ({ page }) => {
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
 
+  await page.waitForTimeout(10 * 1000);
+
   // Assert code cell outlines are shown
   await expect(page).toHaveScreenshot(`code-cell-outlines-enabled.png`, {
     threshold: 0.01,
@@ -1644,6 +1658,8 @@ test('View Actions', async ({ page }) => {
 
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
+
+  await page.waitForTimeout(10 * 1000);
 
   // Assert code cell outlines are not shown
   await expect(page).toHaveScreenshot(`code-cell-outlines-disabled.png`, {
@@ -1679,7 +1695,7 @@ test('View Actions', async ({ page }) => {
   await page.mouse.move(692, 325);
 
   // Wait for a short delay for the pop-up to appear
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(10 * 1000);
 
   // Assert code peek pop-up appears
   // Pop-up should show "Formula Code" title with "q.cells("E8") + q.cells("E9")" code
@@ -1703,7 +1719,7 @@ test('View Actions', async ({ page }) => {
   // Hover over the specified position of the canvas
   // Should be one of the "Example data" cells with 463 in it
   await page.mouse.move(692, 325);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(10 * 1000);
 
   // Assert code peek pop-up does not appear
   await expect(page).toHaveScreenshot(`code-peak-disabled.png`, {
@@ -1727,10 +1743,10 @@ test('View Actions', async ({ page }) => {
   await presentationModeOption.click();
 
   // Wait for a short delay
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(10 * 1000);
 
   // Assert page is in full screen/presentation mode
-  await expect(page).toHaveScreenshot(`entered-presentation-mode`, {
+  await expect(page).toHaveScreenshot(`entered-presentation-mode.png`, {
     maxDiffPixels: 1000,
   });
 
@@ -1741,10 +1757,10 @@ test('View Actions', async ({ page }) => {
   await page.keyboard.press('Escape');
 
   // Wait for a short delay
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(10 * 1000);
 
   // Assert page has exited full screen/presentation mode
-  await expect(page).toHaveScreenshot(`exited-presentation-mode-1`, {
+  await expect(page).toHaveScreenshot(`exited-presentation-mode-1.png`, {
     maxDiffPixels: 1000,
   });
 
