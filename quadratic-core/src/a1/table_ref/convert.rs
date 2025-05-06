@@ -26,10 +26,8 @@ impl TableRef {
             ));
         }
         let (mut y_start, y_end) = table.to_sheet_rows();
-        if self.headers && !self.data {
+        if self.headers && !self.data || show_table_headers_for_python {
             // this is the case where we only want the header row and can ignore force_table_bounds
-            y_start = table.bounds.min.y + if table.show_name { 1 } else { 0 };
-        } else if show_table_headers_for_python {
             y_start = table.bounds.min.y + if table.show_name { 1 } else { 0 };
         } else {
             y_start += table.y_adjustment(false);
@@ -100,6 +98,9 @@ impl TableRef {
         self.finish_convert(table, y_start, y_end, use_unbounded)
     }
 
+    /// Helper function to finish the conversion of a table ref to a
+    /// CellRefRange::RefRangeBounds by properly mapping to the ColRange. (Used
+    /// by both fns above.)
     fn finish_convert(
         &self,
         table: &TableMapEntry,
