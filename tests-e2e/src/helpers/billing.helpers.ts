@@ -36,7 +36,7 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
       await page.getByRole(`menuitem`, { name: `Make default` }).click();
 
       // Wait for dropdown to be hidden
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
 
       // Remove the newly added payment method (Mastercard)
       await page.locator(`[data-testid="overflow-menu-button"]`).click();
@@ -59,7 +59,7 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
 
       // **Assert that payment method was deleted:
       // Wait for page to update
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
 
       // Assert that there is only 1 card element representing the initial card
       const afterCleanupCardCount = await page

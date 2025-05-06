@@ -236,7 +236,7 @@ test('Edit Table Data', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
   // Wait a second
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Delete first 3 cells in the Population column
   for (let i = 0; i < 3; i++) {
@@ -245,7 +245,7 @@ test('Edit Table Data', async ({ page }) => {
     await page.waitForTimeout(500);
     // Press Down Arrow to navigate to next cell
     await page.keyboard.press('ArrowDown');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
   }
 
   // Assert first 3 cells in the Population column have been deleted
@@ -257,7 +257,7 @@ test('Edit Table Data', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 3 });
 
   // Wait a second
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Edit first 3 cells in the State column
   for (let i = 0; i < 3; i++) {
@@ -266,11 +266,11 @@ test('Edit Table Data', async ({ page }) => {
     await page.waitForTimeout(500);
     // Press Enter to edit cell value and type "CANADA"
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
     await page.keyboard.type('CANADA', { delay: 100 });
     // Press Enter to navigate to next cell
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
   }
 
   // Assert first 3 cells in the State column have been deleted
@@ -282,13 +282,13 @@ test('Edit Table Data', async ({ page }) => {
   await selectCells(page, { startXY: ['A', 4], endXY: ['C', 26] });
 
   // Wait a second
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Press Delete on keyboard to clear all highlighted cell values
   await page.keyboard.press('Delete');
 
   // Wait a second
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert all cells except first rowin table have been cleared
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Date_ClearAllCellsButFirstRow.png', {
@@ -379,7 +379,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Select text color red
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert text color formatting has applied successfully (red text)
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Color.png', {
@@ -397,7 +397,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Select fill color to red
   await page.locator(`[title="#E74C3C"]`).nth(0).click({ force: true });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert color formatting has applied successfully (fill color red)
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Fill_Color.png', {
@@ -406,7 +406,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Click undo on keyboard to clear fill color and highlight all cells
   await page.keyboard.press(`Control+Z`);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Edit Table Borders Formatting
@@ -416,7 +416,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Click 'Border All' option
   await page.getByRole(`radio`, { name: `border_all` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert all border formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_All_Borders.png', {
@@ -428,7 +428,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Click 'Border Outer' option
   await page.getByRole(`radio`, { name: `border_outer` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert outer border formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Outer_Borders.png', {
@@ -440,7 +440,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Click 'Border Inner' option
   await page.getByRole(`radio`, { name: `border_inner` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert inner border formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Inner_Borders.png', {
@@ -452,7 +452,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Click 'Border Left' option
   await page.getByRole(`radio`, { name: `border_left` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert left border formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Left_Borders.png', {
@@ -464,7 +464,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Click 'Border Right' option
   await page.getByRole(`radio`, { name: `border_right` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert right border formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Right_Borders.png', {
@@ -493,7 +493,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Click on the "Text Wrap" icon and select "Overflow"
   await page.getByRole('button', { name: 'Text Wrap' }).click();
   await page.locator('div[role="menuitem"] >> text=Overflow').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert text wrap formatting has successfully applied
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Text_Overflow.png', {
@@ -503,12 +503,12 @@ test('Edit Table Formatting', async ({ page }) => {
   // Click on the "Text Wrap" icon and select "Clip"
   await page.getByRole('button', { name: 'Text Wrap' }).click();
   await page.locator('div[role="menuitem"] >> text=Clip').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click on the "Text Wrap" icon and select "Wrap"
   await page.getByRole('button', { name: 'Text Wrap' }).click();
   await page.locator('div[role="menuitem"] >> text=Wrap').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert text wrap formatting has successfully applied
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Text_Wrap.png', {
@@ -521,7 +521,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Click on the "Horizontal Align" icon and select "Left"
   await page.getByRole('button', { name: 'Horizontal align' }).click();
   await page.locator('div[role="menuitem"] >> text=Left').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -534,7 +534,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Click on the "Horizontal Align" icon and select "Right"
   await page.getByRole('button', { name: 'Horizontal align' }).click();
   await page.locator('div[role="menuitem"] >> text=Right').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -545,7 +545,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Click on the "Horizontal Align" icon and select "Center"
   await page.getByRole('button', { name: 'Horizontal align' }).click();
   await page.locator('div[role="menuitem"] >> text=Center').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -553,10 +553,10 @@ test('Edit Table Formatting', async ({ page }) => {
     { maxDiffPixelRatio: 0.01 }
   );
 
-  // Click on the "Veritical Align" icon and select "Bottom"
+  // Click on the "Vertical Align" icon and select "Bottom"
   await page.getByRole('button', { name: 'Vertical align' }).click();
   await page.locator('div[role="menuitem"] >> text=Bottom').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -566,10 +566,10 @@ test('Edit Table Formatting', async ({ page }) => {
     }
   );
 
-  // Click on the "Veritical Align" icon and select "Top"
+  // Click on the "Vertical Align" icon and select "Top"
   await page.getByRole('button', { name: 'Vertical align' }).click();
   await page.locator('div[role="menuitem"] >> text=Top').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -579,10 +579,10 @@ test('Edit Table Formatting', async ({ page }) => {
     }
   );
 
-  // Click on the "Veritical Align" icon and select "Middle"
+  // Click on the "Vertical Align" icon and select "Middle"
   await page.getByRole('button', { name: 'Vertical align' }).click();
   await page.locator('div[role="menuitem"] >> text=Middle').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -626,26 +626,26 @@ test('Edit Table Formatting', async ({ page }) => {
 
   // Select text color red
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click Borders option to open border menu
   await page.getByLabel(`Borders`).click();
 
   // Click 'Border All' option
   await page.getByRole(`radio`, { name: `border_all` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click on the "Horizontal Align" icon and select "Left"
   await page.getByRole('button', { name: 'Horizontal align' }).click();
   await page.locator('div[role="menuitem"] >> text=Left').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click on the "Fill Color" icon
   await page.locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")').click();
 
   // Select fill color to blue
   await page.locator(`[title="#3498DB"]`).click({ force: true });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert all cell formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Cell_Formatting.png', {
@@ -664,7 +664,7 @@ test('Edit Table Formatting', async ({ page }) => {
   for (const option of borderOptions) {
     // Click Border option
     await page.getByRole(`radio`, { name: `border_${option}` }).click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
 
     // Asser cell border formatting has applied successfully
     await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -676,7 +676,7 @@ test('Edit Table Formatting', async ({ page }) => {
 
     // Click Border option to deselect
     await page.getByRole(`radio`, { name: `border_${option}` }).click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
   }
 
   // Click Borders option to close border menu
@@ -689,7 +689,7 @@ test('Edit Table Formatting', async ({ page }) => {
     // Click on the "Horizontal Align" icon and select option
     await page.getByRole('button', { name: 'Horizontal align' }).click();
     await page.locator(`div[role="menuitem"] >> text=${option}`).click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
 
     // Asser cell horizontal align formatting has applied successfully
     await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -797,7 +797,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await page.keyboard.press('Control+C');
 
   // Wait for the clipboard operation to complete
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Get clipboard content
   const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
@@ -1193,15 +1193,15 @@ test('Rename code table from code editor', async ({ page }) => {
 
   // Select all text in the code editor
   await page.keyboard.press('Control+A');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Delete the selected text
   await page.keyboard.press('Backspace');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Type the new table name with a delay between keystrokes
   await page.keyboard.type(editedTableName, { delay: 350 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Press "Enter" to confirm the change
   await page.keyboard.press('Enter');
@@ -1544,7 +1544,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   await page.getByRole(`button`, { name: `Apply` }).click();
 
   // Wait for sorting to apply
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Store 'Population' column values
   const populationValuesAscending = [];
@@ -1565,7 +1565,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (populationValuesAscending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'Population' value
@@ -1600,7 +1600,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (i != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'GDP' value
@@ -1656,7 +1656,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (populationValuesDescending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'Population' value
@@ -1691,7 +1691,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (i != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'GDP' value
@@ -1741,7 +1741,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (populationValuesUnsorted.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'Population' value
@@ -1771,7 +1771,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Press enter unless on first row
     if (gdpValuesUnsorted.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'GDP' value
@@ -1851,7 +1851,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   while (stateValuesAscending.length < 24) {
     // Press enter twice on keyboard to navigate to next 'State' value
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
     // Press enter unless on first row
     if (stateValuesAscending.length != 0) {
       await page.keyboard.press('Enter');
@@ -1895,7 +1895,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   while (populationValuesAscending.length < 24) {
     // Press enter twice on keyboard to navigate to next 'Population' value
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
     // Press enter unless on first row
     if (populationValuesAscending.length != 0) {
       await page.keyboard.press('Enter');
@@ -1937,7 +1937,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
     // Press enter unless on first row
     if (i != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'State' value
@@ -2016,7 +2016,7 @@ test('Table reference from code input', async ({ page }) => {
 
   // Click run to execute the code
   await page.getByRole(`button`, { name: `play_arrow` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
   await page.getByRole(`button`, { name: `close` }).click();
@@ -2054,7 +2054,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `play_arrow` }).click();
 
   // Wait for 1 second to allow code execution
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
   await page.getByRole(`button`, { name: `close` }).click();
@@ -2092,7 +2092,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `play_arrow` }).click();
 
   // Wait for 1 second to allow code execution
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
   await page.getByRole(`button`, { name: `close` }).click();
@@ -2130,7 +2130,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `play_arrow` }).click();
 
   // Wait for 1 second to allow code execution
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
   await page.getByRole(`button`, { name: `close` }).click();
@@ -2168,7 +2168,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `play_arrow` }).click();
 
   // Wait for 1 second to allow code execution
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
   await page.getByRole(`button`, { name: `close` }).click();
@@ -2221,15 +2221,15 @@ test('Table Resize', async ({ page }) => {
   //--------------------------------
   // Hover and click down at start cell coordinates (E, 12)
   await page.mouse.move(startX, startY, { steps: 50 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.mouse.down();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Move and mouse up at end cell coordinates (F, 16)
   await page.mouse.move(endX, endY - 20, { steps: 50 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert table has been expanded and data has been added
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Table_Resize_Add_Data.png', {
@@ -2244,15 +2244,15 @@ test('Table Resize', async ({ page }) => {
 
   // Hover and click down at start cell coordinates (F, 16)
   await page.mouse.move(endX, endY, { steps: 50 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.mouse.down();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Move and mouse up at end cell coordinates  (D, 8)
   await page.mouse.move(startX - 100, startY - 100, { steps: 50 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert table has been shrunk and data has been removed
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Table_Resize_Remove_Data.png', {
@@ -2324,7 +2324,7 @@ test('Table Sort', async ({ page }) => {
     // Press enter on keyboard to make cell editable (skip this if on first row)
     if (populationValuesAscending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'Population' value
@@ -2366,7 +2366,7 @@ test('Table Sort', async ({ page }) => {
     // Press enter on keyboard to make cell editable (skip this if on first row)
     if (populationValuesDescending.length != 0) {
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5 * 1000);
     }
 
     // Store 'Population' value

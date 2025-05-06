@@ -70,7 +70,7 @@ test.skip('AI Assistant', async ({ page }) => {
   await page.getByRole(`tab`, { name: `Chat` }).click();
 
   // Wait for a short delay to ensure AI assistant has loaded
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert that previous prompt is not visible
   await expect(page.locator(`[id*="content-ai-assistant"]`)).not.toContainText(prompt);
@@ -204,7 +204,7 @@ test('Charts Resizing', async ({ page }) => {
   await page.mouse.up();
 
   // Wait a moment for processing
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
@@ -215,14 +215,14 @@ test('Charts Resizing', async ({ page }) => {
   // Hover over the right of the JS chart (right bar graph)
   // Simulate mouse drag
   await page.mouse.move(1129, 524, { steps: 50 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   await page.mouse.down();
   await page.mouse.move(900, 350, { steps: 50 });
   await page.mouse.up();
 
   // Wait a moment for processing
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`charts_resizing_javascript_horizontalresize.png`, {
@@ -240,7 +240,7 @@ test('Charts Resizing', async ({ page }) => {
   await page.mouse.up();
 
   // Wait a moment for processing
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`charts_resizing_python_vertical.png`, {
@@ -255,7 +255,7 @@ test('Charts Resizing', async ({ page }) => {
   await page.mouse.up();
 
   // Wait a moment for processing
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`charts_resizing_python_horizontal_smaller.png`, {
@@ -914,7 +914,7 @@ test('Resize Column width with Fill', async ({ page }) => {
   await page.mouse.move(316, 91);
   await page.mouse.down();
   await page.mouse.move(518, 91);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
   // Assert that color filled cell's width updates per expanded column 2 width
@@ -926,7 +926,7 @@ test('Resize Column width with Fill', async ({ page }) => {
   await page.mouse.move(518, 91);
   await page.mouse.down();
   await page.mouse.move(210, 91);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
   // Assert that color filled cell's width updates per shrunken column 2 width
@@ -969,7 +969,7 @@ test('Right Click Actions', async ({ page }) => {
   // Copy as PNG shortcut
   await page.keyboard.press('Control+Shift+C');
 
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Check if clipboard contains a PNG image
   const clipboardContainsPng = await page.evaluate(async () => {
@@ -1401,7 +1401,7 @@ test('Sheet Actions', async ({ page }) => {
   // click on change color option
   await page.locator('[role="menuitem"]:has-text("Change color")').click();
   await page.locator('[title="#6F258E"]').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // assert that the color has changed
   await expect(page.locator('[data-actual-order="2"]')).toHaveScreenshot('SheetColorPurple.png');
@@ -1804,7 +1804,7 @@ test('Zoom Options', async ({ page }) => {
   await page.locator(`:text("Zoom to selection")`).click();
 
   // Wait a moment for zoom to process
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Confirm Zoom is correctly zoomed to selection
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`zoom_options_selection.png`, {
@@ -1825,7 +1825,7 @@ test('Zoom Options', async ({ page }) => {
   await page.locator(`:text("Zoom to fit")`).click();
 
   // Wait a moment for zoom to process
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Confirm Zoom is correctly zoomed to fit
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`zoom_options_fit.png`, {
@@ -1846,7 +1846,7 @@ test('Zoom Options', async ({ page }) => {
   await page.locator(`:text("Zoom to 50%")`).click();
 
   // Wait a moment for zoom to process
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Confirm Zoom is correctly zoomed to 50%
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`zoom_options_50_percent.png`, {
@@ -1867,7 +1867,7 @@ test('Zoom Options', async ({ page }) => {
   await page.locator(`:text("Zoom to 100%")`).click();
 
   // Wait a moment for zoom to process
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Confirm Zoom is correctly zoomed to 100%
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`zoom_options_100_percent.png`, {
@@ -1888,7 +1888,7 @@ test('Zoom Options', async ({ page }) => {
   await page.locator(`:text("Zoom to 200%")`).click();
 
   // Wait a moment for zoom to process
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Confirm Zoom is correctly zoomed to 200%
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`zoom_options_200_percent.png`, {

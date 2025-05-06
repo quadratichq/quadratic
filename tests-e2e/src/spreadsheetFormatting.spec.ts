@@ -30,7 +30,7 @@ test('Cell Formatting', async ({ page }) => {
   // Act:
   //--------------------------------
   await selectCells(page, { startXY: ['A', 1], endXY: ['B', 3] });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click on the Bold Formatting button
   await page.getByLabel(`Bold`).click();
@@ -43,7 +43,7 @@ test('Cell Formatting', async ({ page }) => {
   // Confirm Cells are formatted as expected
   await page.keyboard.press('Control+9');
   await page.keyboard.press('Control+Shift+=');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_TextFormatting.png', {
     maxDiffPixels: 1000,
   });
@@ -897,7 +897,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   await page.mouse.move(57, 122);
   await page.mouse.down();
   await page.mouse.move(57, 250);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
   //--------------------------------

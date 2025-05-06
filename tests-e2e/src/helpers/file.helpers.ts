@@ -57,7 +57,7 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
     await page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).first().click();
     await page.locator('[role="menuitem"]:has-text("Delete")').click();
     await page.locator('[role="alertdialog"] button:has-text("Delete")').click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
   }
 
   // once complete clear out search bar

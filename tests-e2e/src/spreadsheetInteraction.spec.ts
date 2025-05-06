@@ -170,7 +170,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Press "Esc" on keyboard to close the programming language menu
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Press "Enter" on keyboard focus on cell (0,0)
   await page.keyboard.press('Enter');
@@ -186,7 +186,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Press "Esc" on keyboard to lose focus on cell (0,0)
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Press "/" on keyboard to open programming language menu
   await page.keyboard.press('/');
@@ -222,7 +222,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Press "Esc" on keyboard to close the programming language menu
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Press "Enter" on keyboard focus on cell (0,0)
   await page.keyboard.press('Enter');
@@ -238,7 +238,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Press "Esc" on keyboard to lose focus on cell (0,0)
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Press "/" on keyboard to open programming language menu
   await page.keyboard.press('/');
@@ -259,7 +259,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   // Clean up
   // Press "Esc" on keyboard to close the programming language menu
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Clean up:
@@ -269,7 +269,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.skip('Auto-Complete', async ({ page }) => {
+test('Auto-Complete', async ({ page }) => {
   //--------------------------------
   // Formatting
   //--------------------------------
@@ -311,9 +311,9 @@ test.skip('Auto-Complete', async ({ page }) => {
   // Change text color to red
   await page.waitForTimeout(3000);
   await page.locator('[aria-label="Text color"]').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.getByRole('menuitem').getByTitle('#E74C3C').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Prepare to drag from bottom-right corner of cell
   await page.mouse.move(170, 124, { steps: 10 });
@@ -552,7 +552,7 @@ time.sleep(20)
   await expect(page.getByRole(`button`, { name: `stop` })).toBeVisible({ timeout: 30 * 1000 });
 
   // Wait a moment for visualization
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click on the Stop button
   await page.getByRole(`button`, { name: `stop` }).click();
@@ -611,7 +611,7 @@ test('Cell Actions', async ({ page }) => {
 
   // Cut
   await page.keyboard.press('Control+X');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Get clipboard content
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText());
@@ -648,7 +648,7 @@ test('Cell Actions', async ({ page }) => {
 
   // Copy
   await page.keyboard.press('Control+C');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Get clipboard content
   clipboardText = await page.evaluate(() => navigator.clipboard.readText());
@@ -675,14 +675,14 @@ test('Cell Actions', async ({ page }) => {
 
   // Paste
   await page.keyboard.press('Control+V');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Navigate to cell C7
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
 
   // Paste Value only
   await page.keyboard.press('Control+Shift+V');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Navigate to cell C8
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 8 });
@@ -695,7 +695,7 @@ test('Cell Actions', async ({ page }) => {
 
   // Click Paste formatting only
   await page.locator(`[role="option"]:has-text("Paste formatting only")`).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:
@@ -779,7 +779,7 @@ test('Custom DateTime Options', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 3 });
 
   // Wait a moment
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click on the calendar button to format
   await page.locator(`[aria-label="Date and time"]`).click();
@@ -816,7 +816,7 @@ test('Custom DateTime Options', async ({ page }) => {
   await page.keyboard.type(`2024-02-01`, { delay: 400 });
 
   // Wait a moment
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click on the calendar button to format
   await page.locator(`[aria-label="Date and time"]`).click();
@@ -1298,7 +1298,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
 
   // Close the AI chat on the left side
   await page.getByRole(`button`, { name: `close` }).first().click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // ----- Assertion: Screenshot ------
   // Assert CSV data matches the quadratic content using a screenshot
@@ -1309,11 +1309,11 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // ----- Assertion: Column Names ------
   // Select all the column names and copy to clipboard
   await selectCells(page, { startXY: [1, 1], endXY: [16, 1] });
-  await page.waitForTimeout(1000); // Wait before clicking copy
+  await page.waitForTimeout(5 * 1000); // Wait before clicking copy
   await page.keyboard.press('Control+c');
 
   // Save copied content into a variable
-  await page.waitForTimeout(1000); // Wait before handling clipboard
+  await page.waitForTimeout(5 * 1000); // Wait before handling clipboard
   const rawColumnText = await page.evaluate(() => {
     return navigator.clipboard.readText();
   });
@@ -1335,16 +1335,16 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // ----- Assertion: Row Count ------
   // Navigate to an empty cell & insert formula to count # of rows
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000); // Wait before navigating on sheet
+  await page.waitForTimeout(5 * 1000); // Wait before navigating on sheet
   await typeInCell(page, { targetColumn: 18, targetRow: 1, text: '=COUNTA(A)' });
 
   // Copy and save the number calculated on the sheet
   await page.keyboard.press('ArrowUp');
-  await page.waitForTimeout(1000); // Wait before clicking copy
+  await page.waitForTimeout(5 * 1000); // Wait before clicking copy
   await page.keyboard.press('Control+c');
 
   // Save copied content into a variable
-  await page.waitForTimeout(1000); // Wait before handling clipboard
+  await page.waitForTimeout(5 * 1000); // Wait before handling clipboard
   const rowNumber = await page.evaluate(() => {
     return navigator.clipboard.readText();
   });
@@ -1772,9 +1772,9 @@ test('Insert and Delete Rows', async ({ page }) => {
 
   // Navigate to cell (1, 1), assert value should be ''
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('');
   await page.keyboard.press('Escape');
@@ -1811,9 +1811,9 @@ test('Insert and Delete Rows', async ({ page }) => {
 
   // Assert the clipboard content
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 6 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe(''); // Assert the clipboard content
   await page.keyboard.press('Escape');
@@ -1853,9 +1853,9 @@ test('Insert and Delete Rows', async ({ page }) => {
 
   // Assert the clipboard content
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 9 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('8'); // Assert the clipboard content
   await page.keyboard.press('Escape');
@@ -1910,7 +1910,7 @@ test('Key Actions', async ({ page }) => {
   await page.keyboard.press('ArrowRight');
 
   // Enter fill the cell with text "Right Arrow"
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Right Arrow', { delay: 250 });
 
   //--------------------------------
@@ -1927,7 +1927,7 @@ test('Key Actions', async ({ page }) => {
   await page.keyboard.press('ArrowDown');
 
   // Enter fill the cell with text "Down Arrow"
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Down Arrow', { delay: 500 });
 
   // Confirm we're hovering over the expected cell
@@ -1940,7 +1940,7 @@ test('Key Actions', async ({ page }) => {
   await page.keyboard.press('ArrowLeft');
 
   // Enter fill the cell with text "Left Arrow"
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Left Arrow', { delay: 500 });
 
   // Confirm we're hovering over the expected cell
@@ -1953,7 +1953,7 @@ test('Key Actions', async ({ page }) => {
   await page.keyboard.press('ArrowUp');
 
   // Enter fill the cell with text "Up Arrow"
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Up Arrow', { delay: 500 });
 
   // Confirm we're hovering over the expected cell
@@ -1974,7 +1974,7 @@ test('Key Actions', async ({ page }) => {
   await page.keyboard.press('Tab');
 
   // Enter fill the cell with text "Tab"
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Tab', { delay: 500 });
 
   //--------------------------------
@@ -2005,7 +2005,7 @@ test('Key Actions', async ({ page }) => {
   await expect(page.locator(`#cell-edit`)).toBeVisible();
 
   // Enter fill the cell with text "Enter"
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Enter', { delay: 500 });
 
   // Use Enter Key while in edit mode
@@ -2040,7 +2040,7 @@ test('Key Actions', async ({ page }) => {
   await page.keyboard.press('Shift+Enter');
 
   // Enter fill the cell with text "Shift+Tab"
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Shift+Tab', { delay: 500 });
 
   // Confirm we're Prompted to type and edting is allowed
@@ -2056,7 +2056,7 @@ test('Key Actions', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 3 });
   await page.keyboard.type('Shift Key', { delay: 500 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 3 });
   await page.waitForTimeout(3000);
 
@@ -2086,7 +2086,7 @@ test('Key Actions', async ({ page }) => {
     page.locator(`div[style*="left: 202px; top: 44px"] > div[id="cell-edit"]:has-text("Shift Key")`)
   ).toBeVisible();
   await navigateOnSheet(page, { targetColumn: 6, targetRow: 3 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Use Control+Left Arrow Key
   await page.keyboard.press('Control+ArrowLeft');
@@ -2412,16 +2412,16 @@ test('Multi-Delete Columns', async ({ page }) => {
 
   // Navigate to cell (3,1), assert value should be 6
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 1 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('6');
   await page.keyboard.press('Escape');
 
   // Assert the clipboard content
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 5 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
   await page.waitForTimeout(3000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
@@ -2480,16 +2480,16 @@ test('Multi-Delete Rows', async ({ page }) => {
 
   // Navigate to cell (3,1), assert value should be 6
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 1 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('3');
   await page.keyboard.press('Escape');
 
   // Assert the clipboard content
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 5 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
   await page.waitForTimeout(3000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
@@ -2677,11 +2677,11 @@ test('Python More Snippets', async ({ page }) => {
   //--------------------------------
   // Select the entire python table
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 1 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Copy the Data
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Read the data
   const clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
@@ -2767,11 +2767,11 @@ test('Python Snippets', async ({ page }) => {
   //--------------------------------
   // Select the entire python table
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Copy the Data
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Read the data
   const clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
@@ -2944,11 +2944,11 @@ test('Range Cell Reference - Python', async ({ page }) => {
 
   // Click "Insert cell reference" button on top bar of code editor
   await page.getByRole(`button`, { name: `ink_selection` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
   await page.getByRole(`button`, { name: `play_arrow` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:
@@ -2981,11 +2981,11 @@ test('Range Cell Reference - Python', async ({ page }) => {
 
   // Click "Insert cell reference" button on top bar of code editor
   await page.getByRole(`button`, { name: `ink_selection` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
   await page.getByRole(`button`, { name: `play_arrow` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Navigate into Sheet 1
   await page.locator(`[data-title="Sheet 1"]`).click();
@@ -3730,11 +3730,11 @@ test('Single Cell Reference - Python', async ({ page }) => {
 
   // Click "Insert cell reference" button on top bar of code editor
   await page.getByRole(`button`, { name: `ink_selection` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
   await page.getByRole(`button`, { name: `play_arrow` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:
@@ -3769,11 +3769,11 @@ test('Single Cell Reference - Python', async ({ page }) => {
 
   // Click "Insert cell reference" button on top bar of code editor
   await page.getByRole(`button`, { name: `ink_selection` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
   await page.getByRole(`button`, { name: `play_arrow` }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Navigate into Sheet 1
   await page.locator(`[data-title="Sheet 1"]`).click();
@@ -4084,7 +4084,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
 
   for (const theme of expectedThemes) {
     // Small wait in between theme changes
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
 
     // Click theme toggle button (identified by constract icon)
     await page.getByRole(`button`, { name: `contrast` }).click();
@@ -4323,7 +4323,7 @@ test('Zoom In and Out', async ({ page }) => {
   await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click();
 
   // Wait a moment for zoom to process
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:
@@ -4345,7 +4345,7 @@ test('Zoom In and Out', async ({ page }) => {
 
   // Click `Zoom in
   await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click top right zoom dropdown
   await page
@@ -4356,7 +4356,7 @@ test('Zoom In and Out', async ({ page }) => {
 
   // Click `Zoom out
   await page.getByRole('menuitem', { name: 'Zoom out Ctrl-' }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:

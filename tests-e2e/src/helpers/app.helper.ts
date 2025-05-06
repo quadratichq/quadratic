@@ -13,10 +13,10 @@ export const typeInCell = async (page: Page, { targetColumn, targetRow, text }: 
   await navigateOnSheet(page, { targetColumn, targetRow });
   // type some text
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type(text, { delay: 250 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 };
 
 /**
@@ -75,7 +75,7 @@ export const navigateOnSheet = async (
     await page.waitForTimeout(200);
   }
 
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 };
 
 /**
@@ -189,10 +189,10 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
   for (let i = 0; i < connectionCount; i++) {
     await page.locator(`button:has-text("${connectionName}") + button `).first().click();
     await page.getByRole(`button`, { name: `Delete` }).click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
     // Confirm delete action
     await page.locator('[role="alertdialog"] button:has-text("Delete")').click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
   }
 
   await page.getByRole(`button`, { name: `Close` }).click();

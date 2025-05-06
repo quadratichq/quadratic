@@ -252,11 +252,11 @@ test('Edit Share File Permissions', async ({ page }) => {
   await page.locator(`[role="menuitem"]:text-is("Share")`).click();
   await page.locator(`button:right-of(:text("${recipientEmail}"))`).first().click();
   await page.locator(`[role="option"]:has-text("Remove")`).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Confirm "Remove" action
   await page.getByRole(`button`, { name: 'Remove' }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Bring the recipient page back to the front and reload
   await recipientPage.bringToFront();
@@ -426,11 +426,11 @@ test('File Actions - Dashboard', async ({ page }) => {
 
   // Click on Delete
   await page.locator('[role="menuitem"]:has-text("Delete")').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Confirm "Delete" action
   await page.getByRole(`button`, { name: 'Delete' }).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:
@@ -708,7 +708,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await cleanUpFiles(user1Page, { fileName });
 });
 
-test.skip('Upload Large File', async ({ page }) => {
+test('Upload Large File', async ({ page }) => {
   //--------------------------------
   // Upload Large File
   //--------------------------------
@@ -753,12 +753,9 @@ test.skip('Upload Large File', async ({ page }) => {
   });
 
   //--------------------------------
-  // Assert
+  // Clean up:
   //--------------------------------
-
-  // Open the main menu
-  await page.locator('nav a svg').click();
-
-  // Clean up the uploaded file
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
   await cleanUpFiles(page, { fileName: largeFileName });
 });

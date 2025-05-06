@@ -534,7 +534,7 @@ test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
   // Copy cell and assert clipboard text
   await page.waitForTimeout(10 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cells
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   const clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('10');
 

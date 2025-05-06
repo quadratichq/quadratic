@@ -100,7 +100,7 @@ test('Basic Formula Creation', async ({ page }) => {
   //--------------------------------
   // Create sum function with = in cell, selecting cells with drag (?)
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 2 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5000);
   await page.keyboard.type('=');
@@ -447,9 +447,9 @@ test('Formulas', async ({ page }) => {
 
   // Select all cells in column I, copy them to assert against in Assert block
   await selectCells(page, { startXY: ['I', 2], endXY: ['I', 87] });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cells
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   const clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   await page.waitForTimeout(3000);
   await page.keyboard.press('Escape');
@@ -693,7 +693,7 @@ test('Open and Use Formula Editor', async ({ page }) => {
   await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
 
   // Wait a moment for processing
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:
@@ -896,7 +896,7 @@ test('Read Python Output within Formula', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 8 }); // Navigate to cell (2, 8) (col, row)
   await page.waitForTimeout(3000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('15'); // Assert the clipboard content
 
@@ -1242,21 +1242,21 @@ hire_date DATE);`);
   });
 
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 3 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('John'); // Assert the clipboard content
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Escape');
 
   await navigateOnSheet(page, { targetColumn: 5, targetRow: 3 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('75000'); // Assert the clipboard content
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Escape');
   //--------------------------------
   // Clean up:
@@ -1437,13 +1437,13 @@ hire_date DATE);`);
   await page.keyboard.type('=SUM(A3:A6)', { delay: 500 });
   await page.waitForTimeout(2000);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Navigate to answer
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 8 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
 
   //--------------------------------
@@ -1486,9 +1486,9 @@ hire_date DATE);`);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 8 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Control+C'); // Copy the text in the cell
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
 
   //--------------------------------
@@ -1688,7 +1688,7 @@ hire_date DATE);`);
   // Calculate Sum of row ids
   // Navigate to empty cell
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 12 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Press / to open code editor
   await page.keyboard.press('/');
@@ -1735,7 +1735,7 @@ hire_date DATE);`);
 
   // Copy the text in the cell
   await page.keyboard.press('Control+C');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
 
   //--------------------------------
@@ -1760,11 +1760,11 @@ hire_date DATE);`);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(3000);
     await navigateOnSheet(page, { targetColumn: 1, targetRow: 12 });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
 
     // Copy the text in the cell
     await page.keyboard.press('Control+C');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5 * 1000);
     clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
 
     // Assert the copied text (or the sum) is 6
@@ -1842,21 +1842,21 @@ test('Switch between Python and Formula', async ({ page }) => {
   //--------------------------------
   // Create sum function with = in cell, selecting cells with drag (?)
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   await page.keyboard.type('=SUM(A2:A16', { delay: 500 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(3000);
 
   // Create python formula in a different cell
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 2 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('/');
   await page.locator(`span:text-is("Python")`).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('5+5');
   await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
 
@@ -1897,9 +1897,9 @@ test('Switch between Python and Formula', async ({ page }) => {
   // Convert Python cell to Basic Formula cell
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 2 });
   await page.keyboard.press('Delete');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   await page.keyboard.type('=SUM(A2:A16', { delay: 250 });
 
@@ -1908,15 +1908,15 @@ test('Switch between Python and Formula', async ({ page }) => {
     maxDiffPixelRatio: 0.001,
   });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Convert same cell to back to python cell
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 2 });
   await page.keyboard.press('Delete');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('/');
   await page.locator(`span:text-is("Python")`).click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('5+5');
   await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
 

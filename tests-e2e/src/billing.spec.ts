@@ -93,7 +93,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   // Assert the chat is open based on heading text
   await expect(page.getByText(`Sheet chat`)).toBeVisible({ timeout: 30 * 1000 });
   await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 30 * 1000 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
   // Iterate through the pre-defined prompt messages and send them one by one to the chat
   for (let i = 0; i < promptsToSend.length; i++) {
     // Prompt the AI
@@ -279,7 +279,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await iframe.locator('input[name="postalCode"]').fill(paymentMethod.zipCode);
 
   // Wait 1s to ensure the form 'Add' button is active
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Click 'Submit' button to add the new payment method after it is enabled
   await expect(page.locator(`[data-testid="confirm"]`)).toBeEnabled();
