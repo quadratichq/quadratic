@@ -304,7 +304,7 @@ mod tests {
         cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+            sheet::validations::{validation::Validation, rules::ValidationRule},
         },
         test_util::{
             assert_data_table_size, first_sheet_id, test_create_html_chart, test_create_js_chart,
@@ -945,7 +945,6 @@ mod tests {
 
         gc.insert_column(sheet_id, 2, true, None);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
-        offsets.insert((Some(2), None), DEFAULT_COLUMN_WIDTH);
         offsets.insert((Some(3), None), 200.0);
         offsets.insert((Some(4), None), DEFAULT_COLUMN_WIDTH);
         offsets.insert((Some(5), None), 400.0);
@@ -953,7 +952,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
-        assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
+        assert_eq!(sheet.offsets.column_width(2), 200.0);
         assert_eq!(sheet.offsets.column_width(3), 200.0);
         assert_eq!(sheet.offsets.column_width(5), 400.0);
     }
@@ -1003,7 +1002,6 @@ mod tests {
 
         gc.insert_row(sheet_id, 2, true, None);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
-        offsets.insert((None, Some(2)), DEFAULT_ROW_HEIGHT);
         offsets.insert((None, Some(3)), 200.0);
         offsets.insert((None, Some(4)), DEFAULT_ROW_HEIGHT);
         offsets.insert((None, Some(5)), 400.0);
@@ -1011,7 +1009,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
-        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(2), 200.0);
         assert_eq!(sheet.offsets.row_height(3), 200.0);
         assert_eq!(sheet.offsets.row_height(5), 400.0);
     }

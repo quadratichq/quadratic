@@ -10,12 +10,13 @@ mod get_sheets;
 mod print_gc;
 pub mod print_sheet;
 mod print_table;
+mod validations;
 
 #[allow(unused_imports)]
 pub use {
     assert_data_table::*, assert_formats::*, assert_values::*, create_chart::*,
     create_code_table::*, create_data_table::*, create_values::*, get_sheets::*, print_gc::*,
-    print_sheet::*, print_table::*,
+    print_sheet::*, print_table::*, validations::*,
 };
 
 #[track_caller]

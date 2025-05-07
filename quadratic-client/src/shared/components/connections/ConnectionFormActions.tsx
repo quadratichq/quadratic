@@ -31,7 +31,6 @@ export function ConnectionFormActions({
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
-
   const formData = form.watch();
 
   // If the user changed some data, reset the state of the connection so they
@@ -63,6 +62,7 @@ export function ConnectionFormActions({
                   const { connected, message } = await connectionClient.test.run({
                     type,
                     typeDetails,
+                    teamUuid,
                   });
                   setConnectionError(connected === false && message ? message : '');
                   setConnectionState(connected ? 'success' : 'error');

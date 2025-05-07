@@ -4,12 +4,10 @@ import {
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { JavaScript } from '@/app/ui/icons';
 import '@/app/ui/styles/floating-dialog.css';
 import { DatabaseIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -49,7 +47,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
     name: 'JavaScript',
     searchStrings: ['js'],
     mode: 'Javascript',
-    icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
+    icon: <LanguageIcon language="Javascript" />,
     experimental: true,
   },
 ];

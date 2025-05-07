@@ -10,8 +10,8 @@ use crate::{
     grid::{
         SheetId,
         sheet::validations::{
+            rules::ValidationRule,
             validation::{Validation, ValidationStyle},
-            validation_rules::ValidationRule,
         },
     },
 };
@@ -37,7 +37,24 @@ impl GridController {
 
     /// Creates or updates a validation.
     pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
-        let ops = vec![Operation::SetValidation { validation }];
+        // Update the selection to take advantage of any table-based selections.
+        // DF: This helps validations work better with tables--there are still
+        // edge cases where it doesn't work, like setting individual cells
+        // within a table, and then hiding that column--one way to fix this is
+        // to provide a1 notation for entries within tables, eg, Table1[Column
+        // 2][3], and using that for validations. Alternatively, we could
+        // provide a data_table.validations, similar to what we do for
+        // formatting (but that makes it more difficult to work with the
+        // validations DOM UI)
+        let mut selection = validation.selection.clone();
+        selection.change_to_table_refs(validation.selection.sheet_id, &self.a1_context);
+
+        let ops = vec![Operation::SetValidation {
+            validation: Validation {
+                selection,
+                ..validation
+            },
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::Validation);
     }
 
@@ -114,15 +131,16 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-
+    use crate::grid::js_types::JsRenderCellSpecial;
+    use crate::{Rect, test_util::*};
     use crate::{
         grid::sheet::validations::{
-            validation::ValidationError,
-            validation_rules::{
+            rules::{
                 ValidationRule,
                 validation_list::{ValidationList, ValidationListSource},
                 validation_logical::ValidationLogical,
             },
+            validation::ValidationError,
         },
         wasm_bindings::js::expect_js_call,
     };
@@ -380,5 +398,40 @@ mod tests {
             gc.validate_input(sheet_id, (1, 3).into(), "random"),
             Some(validation.id)
         );
+    }
+
+    #[test]
+    fn test_validate_checkbox_in_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = gc.sheet_ids()[0];
+
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![b2], 2, 2, &["", "", "", ""]);
+        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("c4"));
+
+        let sheet = gc.sheet(sheet_id);
+
+        // ensure the checkbox is rendered
+        let cells = sheet.get_render_cells(Rect::test_a1("c4"), gc.a1_context());
+        assert_eq!(cells[0].special, Some(JsRenderCellSpecial::Checkbox));
+
+        // there should be no warning since the contents is empty in the table
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
+
+        // set the contents to true
+        gc.set_cell_value(pos![sheet_id!c4], "true".to_string(), None);
+
+        // there should be no warning since the content is true
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
+
+        // set the contents to a, causing a validation error
+        gc.set_cell_value(pos![sheet_id!c4], "a".to_string(), None);
+
+        // there should be a warning since the content is not true, false, or empty
+        assert_validation_warning(&gc, pos![sheet_id!c4], Some(validation));
+
+        gc.set_cell_value(pos![sheet_id!c4], "false".to_string(), None);
+
+        // there should be no warning since the content is false
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
     }
 }
