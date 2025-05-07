@@ -108,6 +108,33 @@ pub struct Clipboard {
     pub operation: ClipboardOperation,
 }
 
+impl Clipboard {
+    /// Decode the clipboard html and return a Clipboard struct.
+    pub fn decode(html: &str) -> Result<Self> {
+        let error = |e, msg| Error::msg(format!("Clipboard decode {:?}: {:?}", msg, e));
+
+        match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
+            Err(e) => Err(error(e.to_string(), "Regex creation error")),
+            Ok(re) => {
+                // pull out the sub string
+                let sub_string = re
+                    .captures(html)
+                    .ok_or_else(|| error("".into(), "Regex capture error"))?
+                    .get(1)
+                    .map_or("", |m| m.as_str());
+
+                // decode html in attribute
+                let decoded = htmlescape::decode_html(sub_string)
+                    .map_err(|_| error("".into(), "Html decode error"))?;
+
+                // parse into Clipboard
+                serde_json::from_str::<Clipboard>(&decoded)
+                    .map_err(|e| error(e.to_string(), "Serialization error"))
+            }
+        }
+    }
+}
+
 impl GridController {
     pub fn cut_to_clipboard_operations(
         &mut self,
@@ -714,140 +741,114 @@ impl GridController {
         html: String,
         special: PasteSpecial,
     ) -> Result<Vec<Operation>> {
-        let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
+        let mut ops = vec![];
+        let mut compute_code_ops = vec![];
+        let mut clipboard = Clipboard::decode(&html)?;
 
-        // use regex to find data-quadratic
-        match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
-            Err(e) => Err(error(e.to_string(), "Regex creation error")),
-            Ok(re) => {
-                let data = re
-                    .captures(&html)
-                    .ok_or_else(|| error("".into(), "Regex capture error"))?;
+        // If the clipboard is larger than the selection, we need to paste multiple times.
+        // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
+        let (max_x, max_y, cell_value_width, cell_value_height) =
+            Self::get_max_paste_area(insert_at, end_pos, clipboard.w, clipboard.h);
 
-                let result = data.get(1).map_or("", |m| m.as_str());
-                drop(data);
+        // collect all cell values, values and sheet format updates for a a single operation
+        let mut cell_values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
+        let mut formats = clipboard.formats.to_owned().unwrap_or_default();
+        let mut borders = clipboard.borders.to_owned().unwrap_or_default();
+        let source_columns = clipboard.cells.columns;
 
-                // decode html in attribute
-                let decoded = htmlescape::decode_html(result)
-                    .map_err(|_| error("".into(), "Html decode error"))?;
-                drop(html);
+        // loop through the clipboard and replace cell references in formulas and other languages
+        for (start_x, x) in (insert_at.x..=max_x)
+            .enumerate()
+            .step_by(clipboard.w as usize)
+        {
+            for (start_y, y) in (insert_at.y..=max_y)
+                .enumerate()
+                .step_by(clipboard.h as usize)
+            {
+                let pos: Pos = Pos { x, y };
+                let dx = insert_at.x - clipboard.origin.x + start_x as i64;
+                let dy = insert_at.y - clipboard.origin.y + start_y as i64;
 
-                // parse into Clipboard
-                let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
-                    .map_err(|e| error(e.to_string(), "Serialization error"))?;
-                drop(decoded);
+                let adjust = match clipboard.operation {
+                    ClipboardOperation::Cut => RefAdjust::NO_OP,
+                    ClipboardOperation::Copy => RefAdjust {
+                        sheet_id: None,
+                        relative_only: true,
+                        dx,
+                        dy,
+                        x_start: 0,
+                        y_start: 0,
+                    },
+                };
+                let new_default_sheet_id = match clipboard.operation {
+                    ClipboardOperation::Cut => selection.sheet_id,
+                    ClipboardOperation::Copy => clipboard.origin.sheet_id,
+                };
 
-                let mut ops = vec![];
-                let mut compute_code_ops = vec![];
+                // restore the original columns for each pass to avoid replacing the replaced code cells
+                clipboard.cells.columns = source_columns.to_owned();
 
-                // If the clipboard is larger than the selection, we need to paste multiple times.
-                // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
-                let (max_x, max_y, cell_value_width, cell_value_height) =
-                    Self::get_max_paste_area(insert_at, end_pos, clipboard.w, clipboard.h);
+                if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id) {
+                    for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
+                        for (cols_y, cell) in col {
+                            if let CellValue::Code(code_cell) = cell {
+                                let original_pos = SheetPos {
+                                    x: clipboard.origin.x + cols_x as i64,
+                                    y: clipboard.origin.y + *cols_y as i64,
+                                    sheet_id: clipboard.origin.sheet_id,
+                                };
 
-                // collect all cell values, values and sheet format updates for a a single operation
-                let mut cell_values =
-                    CellValues::new(cell_value_width as u32, cell_value_height as u32);
-                let mut formats = clipboard.formats.to_owned().unwrap_or_default();
-                let mut borders = clipboard.borders.to_owned().unwrap_or_default();
-                let source_columns = clipboard.cells.columns;
-
-                // loop through the clipboard and replace cell references in formulas and other languages
-                for (start_x, x) in (insert_at.x..=max_x)
-                    .enumerate()
-                    .step_by(clipboard.w as usize)
-                {
-                    for (start_y, y) in (insert_at.y..=max_y)
-                        .enumerate()
-                        .step_by(clipboard.h as usize)
-                    {
-                        let pos: Pos = Pos { x, y };
-                        let dx = insert_at.x - clipboard.origin.x + start_x as i64;
-                        let dy = insert_at.y - clipboard.origin.y + start_y as i64;
-
-                        let adjust = match clipboard.operation {
-                            ClipboardOperation::Cut => RefAdjust::NO_OP,
-                            ClipboardOperation::Copy => RefAdjust {
-                                sheet_id: None,
-                                relative_only: true,
-                                dx,
-                                dy,
-                                x_start: 0,
-                                y_start: 0,
-                            },
-                        };
-                        let new_default_sheet_id = match clipboard.operation {
-                            ClipboardOperation::Cut => selection.sheet_id,
-                            ClipboardOperation::Copy => clipboard.origin.sheet_id,
-                        };
-
-                        // restore the original columns for each pass to avoid replacing the replaced code cells
-                        clipboard.cells.columns = source_columns.to_owned();
-
-                        if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id)
-                        {
-                            for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                                for (cols_y, cell) in col {
-                                    if let CellValue::Code(code_cell) = cell {
-                                        let original_pos = SheetPos {
-                                            x: clipboard.origin.x + cols_x as i64,
-                                            y: clipboard.origin.y + *cols_y as i64,
-                                            sheet_id: clipboard.origin.sheet_id,
-                                        };
-
-                                        code_cell.adjust_references(
-                                            new_default_sheet_id,
-                                            self.a1_context(),
-                                            original_pos,
-                                            adjust,
-                                        );
-                                    }
-                                }
+                                code_cell.adjust_references(
+                                    new_default_sheet_id,
+                                    self.a1_context(),
+                                    original_pos,
+                                    adjust,
+                                );
                             }
                         }
-
-                        compute_code_ops.extend(self.get_clipboard_ops(
-                            pos,
-                            Pos::new(start_x as i64, start_y as i64),
-                            &mut cell_values,
-                            &mut formats,
-                            &mut borders,
-                            selection,
-                            &clipboard,
-                            special,
-                        )?);
                     }
                 }
 
-                // cell values need to be set before the compute_code_ops
-                ops.push(Operation::SetCellValues {
-                    sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
-                    values: cell_values,
-                });
-
-                if !formats.is_default() {
-                    ops.push(Operation::SetCellFormatsA1 {
-                        sheet_id: selection.sheet_id,
-                        formats,
-                    });
-                }
-
-                if !borders.is_empty() {
-                    ops.push(Operation::SetBordersA1 {
-                        sheet_id: selection.sheet_id,
-                        borders,
-                    });
-                }
-
-                ops.push(Operation::SetCursorA1 {
-                    selection: selection.to_owned(),
-                });
-
-                ops.extend(compute_code_ops);
-
-                Ok(ops)
+                compute_code_ops.extend(self.get_clipboard_ops(
+                    pos,
+                    Pos::new(start_x as i64, start_y as i64),
+                    &mut cell_values,
+                    &mut formats,
+                    &mut borders,
+                    selection,
+                    &clipboard,
+                    special,
+                )?);
             }
         }
+
+        // cell values need to be set before the compute_code_ops
+        ops.push(Operation::SetCellValues {
+            sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
+            values: cell_values,
+        });
+
+        if !formats.is_default() {
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: selection.sheet_id,
+                formats,
+            });
+        }
+
+        if !borders.is_empty() {
+            ops.push(Operation::SetBordersA1 {
+                sheet_id: selection.sheet_id,
+                borders,
+            });
+        }
+
+        ops.push(Operation::SetCursorA1 {
+            selection: selection.to_owned(),
+        });
+
+        ops.extend(compute_code_ops);
+
+        Ok(ops)
     }
 
     /// If the clipboard is larger than the selection, we need to paste multiple times.
@@ -905,7 +906,7 @@ mod test {
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
-    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
     use crate::test_util::{
         assert_cell_value_row, assert_display_cell_value, print_sheet, print_table_in_rect,

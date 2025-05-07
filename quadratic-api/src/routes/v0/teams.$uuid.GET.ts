@@ -15,6 +15,7 @@ import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
 import { getFilePermissions } from '../../utils/permissions';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -120,6 +121,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
+  // Apply SSH keys to the team if they don't already exist.
+  const decryptedTeam = await getDecryptedTeam(dbTeam);
+
   // Get signed thumbnail URLs
   await Promise.all(
     dbFiles.map(async (file) => {
@@ -139,6 +143,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
+      sshPublicKey: decryptedTeam.sshPublicKey,
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

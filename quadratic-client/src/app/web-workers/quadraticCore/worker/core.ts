@@ -7,6 +7,7 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -22,10 +23,12 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeResult,
+  JsColumnWidth,
   JsCoordinate,
   JsDataTableColumnHeader,
   JsRenderCell,
   JsResponse,
+  JsRowHeight,
   JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
@@ -1589,6 +1592,50 @@ class Core {
       this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
     } catch (e) {
       this.handleCoreError('moveRows', e);
+    }
+  }
+
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsColumnWidth[] = columns.map((column) => ({
+      column: BigInt(column.index),
+      width: column.size,
+    }));
+    try {
+      this.gridController.resizeColumns(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeColumns', e);
+    }
+  }
+
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsRowHeight[] = rows.map((row) => ({
+      row: BigInt(row.index),
+      height: row.size,
+    }));
+    try {
+      this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeRows', e);
+    }
+  }
+
+  resizeAllColumns(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllColumns(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllColumns', e);
+    }
+  }
+
+  resizeAllRows(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllRows(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllRows', e);
     }
   }
 }

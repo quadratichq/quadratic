@@ -31,6 +31,10 @@ pub enum SharedError {
     #[error("{0}")]
     Generic(String),
 
+    #[cfg(feature = "net")]
+    #[error("Error with Net: {0}")]
+    Net(crate::net::error::Net),
+
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
 
