@@ -234,8 +234,7 @@ This name should be from user's perspective, not the assistant's.\n
     This tool does NOT return formatting information (like bold, currency, etc.). Use get_format_cells function for cell formatting information.\n
     CRITICALLY IMPORTANT: If too large, the results will include page information:\n
     - if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
-    - ALWAYS read through all pages of results, but IMMEDIATELY perform actions on each page's results before moving to the next page.\n
-    - if the results are not too large, perform actions on the current page's results immediately.\n
+    - ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actionsbefore moving to the next page.\n
      `,
   },
   [AITool.AddDataTable]: {
