@@ -7,6 +7,7 @@ pub enum TransactionName {
     ResizeColumn,
     ResizeRow,
     ResizeRows,
+    ResizeColumns,
     Autocomplete,
     SetBorders,
     SetCells,
