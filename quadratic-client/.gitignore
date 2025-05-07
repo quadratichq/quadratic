@@ -1,3 +1,6 @@
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Environment variables
+src/env.ts

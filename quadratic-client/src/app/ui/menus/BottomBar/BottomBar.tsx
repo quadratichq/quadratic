@@ -1,5 +1,5 @@
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
-import { VERSION } from '@/env-vars';
+import env from '@/env';
 import { useRecoilValue } from 'recoil';
 import { debugShowFPS } from '../../../debugFlags';
 import BottomBarItem from './BottomBarItem';
@@ -53,7 +53,7 @@ export const BottomBar = () => {
         <SelectionSummary />
         <SyncState />
         <div className="hidden lg:block">
-          <BottomBarItem>{VERSION}</BottomBarItem>
+          <BottomBarItem>{env.VERSION}</BottomBarItem>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 import '@/index.css';
 import '@/shared/shadcn/styles.css';
 
-import { MODE, SENTRY_DSN } from '@/env-vars';
+import env from '@/env';
 import { router } from '@/router';
 import * as Sentry from '@sentry/react';
 import React from 'react';
@@ -10,10 +10,10 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 
 // Enable sentry only if SENTRY_DSN is in ENV
-if (SENTRY_DSN && SENTRY_DSN !== 'none')
+if (env.SENTRY_DSN && env.SENTRY_DSN !== 'none')
   Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: MODE,
+    dsn: env.SENTRY_DSN,
+    environment: env.MODE,
     integrations: [Sentry.browserTracingIntegration(), Sentry.captureConsoleIntegration()],
 
     // We recommend adjusting this value in production, or using tracesSampler

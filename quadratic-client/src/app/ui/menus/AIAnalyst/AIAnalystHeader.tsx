@@ -8,7 +8,7 @@ import {
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD } from '@/env-vars';
+import env from '@/env';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -35,7 +35,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   );
 
   const showStartFreshMsg = useMemo(
-    () => currentUserMessages >= AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD && !showChatHistory,
+    () => currentUserMessages >= env.AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD && !showChatHistory,
     [currentUserMessages, showChatHistory]
   );
   const showHistoryMsg = useMemo(

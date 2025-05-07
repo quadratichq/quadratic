@@ -1,8 +1,10 @@
 import { auth0Client } from '@/auth/auth0';
 import { oryClient } from '@/auth/ory';
-import { AUTH_TYPE } from '@/env-vars';
+import env from '@/env';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
+
+const AUTH_TYPE = env.AUTH_TYPE;
 
 export interface User {
   name?: string;
@@ -55,7 +57,7 @@ export async function requireAuth() {
 }
 
 /**
- * Used in the dashboard and the app to ensure the user’s auth token always
+ * Used in the dashboard and the app to ensure the user's auth token always
  * remains valid. If at any point it expires, we redirect for a new one.
  *
  * Because this runs in both the app and the dashboard, we only want to check

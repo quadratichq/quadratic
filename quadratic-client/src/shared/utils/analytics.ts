@@ -1,6 +1,6 @@
 import { debugShow } from '@/app/debugFlags';
 import type { User as AuthUser } from '@/auth/auth';
-import { AMPLITUDE_ANALYTICS_API_KEY, GOOGLE_ANALYTICS_GTAG, MIXPANEL_ANALYTICS_KEY } from '@/env-vars';
+import env from '@/env';
 import * as amplitude from '@amplitude/analytics-browser';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
@@ -8,6 +8,8 @@ import mixpanel from 'mixpanel-browser';
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
 type User = AuthUser | undefined;
+
+const { AMPLITUDE_ANALYTICS_API_KEY, GOOGLE_ANALYTICS_GTAG, MIXPANEL_ANALYTICS_KEY } = env;
 
 export function googleAnalyticsAvailable(): boolean {
   return Boolean(GOOGLE_ANALYTICS_GTAG) && GOOGLE_ANALYTICS_GTAG !== 'none';

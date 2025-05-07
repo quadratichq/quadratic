@@ -1,6 +1,6 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
-import { STORAGE_TYPE } from '@/env-vars';
+import env from '@/env';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useSubmit } from 'react-router';
 import { z } from 'zod';
 
-const SHOW_EXAMPLES = STORAGE_TYPE !== 'file-system';
+const SHOW_EXAMPLES = env.STORAGE_TYPE !== 'file-system';
 
 export function OnboardingBanner() {
   const {

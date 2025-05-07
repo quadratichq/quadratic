@@ -22,10 +22,12 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
-import { VERSION } from '@/env-vars';
+import env from '@/env';
 import { displayName } from '@/shared/utils/userUtil';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
+
+const VERSION = env.VERSION;
 
 // time to recheck the version of the client after receiving a different version
 // from the server

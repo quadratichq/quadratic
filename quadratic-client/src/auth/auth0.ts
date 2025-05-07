@@ -1,13 +1,13 @@
 import type { AuthClient } from '@/auth/auth';
 import { parseDomain, waitForAuthClientToRedirect } from '@/auth/auth.helper';
-import { AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN, AUTH0_ISSUER } from '@/env-vars';
+import env from '@/env';
 import { ROUTES } from '@/shared/constants/routes';
 import type { Auth0Client } from '@auth0/auth0-spa-js';
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
 
 // verify all AUTH0 env variables are set
-if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
+if (!(env.AUTH0_DOMAIN && env.AUTH0_CLIENT_ID && env.AUTH0_AUDIENCE && env.AUTH0_ISSUER)) {
   const message = 'Auth0 variables are not configured correctly.';
   Sentry.captureEvent({
     message,
@@ -21,11 +21,11 @@ let auth0ClientPromise: Promise<Auth0Client>;
 async function getClient() {
   if (!auth0ClientPromise) {
     auth0ClientPromise = createAuth0Client({
-      domain: AUTH0_DOMAIN,
-      clientId: AUTH0_CLIENT_ID,
-      issuer: AUTH0_ISSUER,
+      domain: env.AUTH0_DOMAIN,
+      clientId: env.AUTH0_CLIENT_ID,
+      issuer: env.AUTH0_ISSUER,
       authorizationParams: {
-        audience: AUTH0_AUDIENCE,
+        audience: env.AUTH0_AUDIENCE,
       },
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
@@ -78,7 +78,7 @@ export const auth0Client: Auth0AuthClient = {
   },
   /**
    * Tries to get a token for the current user from the auth0 client.
-   * If the token is still valid, it'll pull it from a cache. If it’s expired,
+   * If the token is still valid, it'll pull it from a cache. If it's expired,
    * it will fail and we will manually redirect the user to auth0 to re-authenticate
    * and get a new token.
    */

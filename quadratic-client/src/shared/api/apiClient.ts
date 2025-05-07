@@ -1,5 +1,5 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { QUADRATIC_API_URL } from '@/env-vars';
+import env from '@/env';
 import { ApiError, fetchFromApi } from '@/shared/api/fetchFromApi';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
@@ -9,6 +9,8 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 // TODO(ddimaria): make this dynamic
 const CURRENT_FILE_VERSION = '1.6';
+
+const QUADRATIC_API_URL = env.QUADRATIC_API_URL;
 
 export const apiClient = {
   teams: {
