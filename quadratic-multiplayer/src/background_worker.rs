@@ -98,7 +98,6 @@ async fn remove_stale_users_in_room(
         file_id.to_owned(),
         Arc::clone(&state),
         message,
-        false,
     )))
 }
 

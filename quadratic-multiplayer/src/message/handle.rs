@@ -140,7 +140,7 @@ pub(crate) async fn handle_message(
                 let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from((room.users, &state.settings.version));
 
-                broadcast(vec![], file_id, Arc::clone(&state), response, false);
+                broadcast(vec![], file_id, Arc::clone(&state), response);
             }
 
             // send the current transaction to the user
@@ -161,13 +161,7 @@ pub(crate) async fn handle_message(
 
             if is_not_empty {
                 let response = MessageResponse::from((room.users, &state.settings.version));
-                broadcast(
-                    vec![session_id],
-                    file_id,
-                    Arc::clone(&state),
-                    response,
-                    false,
-                );
+                broadcast(vec![session_id], file_id, Arc::clone(&state), response);
             }
 
             Ok(None)
@@ -214,13 +208,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
                 operations,
             };
-            broadcast(
-                vec![session_id],
-                file_id,
-                Arc::clone(&state),
-                response,
-                false,
-            );
+            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
 
             // // send the current transaction to all users in the room (except the initiator)
             // let broadcasted =
@@ -277,13 +265,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
                 operations,
             };
-            broadcast(
-                vec![session_id],
-                file_id,
-                Arc::clone(&state),
-                response,
-                true,
-            );
+            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
 
             // send an ack to the initiator
             let response = MessageResponse::TransactionAck {
@@ -416,13 +398,7 @@ pub(crate) async fn handle_message(
                 update,
             };
 
-            broadcast(
-                vec![session_id],
-                file_id,
-                Arc::clone(&state),
-                response,
-                false,
-            );
+            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
 
             Ok(None)
         }

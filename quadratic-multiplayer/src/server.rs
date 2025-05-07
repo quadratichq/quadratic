@@ -268,7 +268,6 @@ async fn handle_socket(
                         file_id,
                         Arc::clone(&state),
                         message,
-                        false,
                     )
                     .await
                     {
