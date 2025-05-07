@@ -618,7 +618,7 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mysql-ssh
 
-  # This service covers non-ssh mssql connections as well since it's a complex build
+      # This service covers non-ssh mssql connections as well since it's a complex build
   ssh-mssql-connection:
     build:
       context: .
@@ -641,6 +641,24 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mssql  
       - quadratic-connection-db-mssql-ssh  
+
+  bigquery-connection:
+    image: ghcr.io/goccy/bigquery-emulator:latest
+    platform: linux/x86_64
+    restart: always
+    container_name: bigquery-connection
+    command: |
+      --project=test --data-from-yaml=/work/data.yaml
+    ports:
+      - "9050:9050"
+      - "9060:9060"
+    volumes:
+      - ./docker/bigquery-connection/setup:/work
+    working_dir: /work
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-bigquery
 
 volumes:
   postgres-connection-data:
