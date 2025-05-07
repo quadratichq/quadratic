@@ -304,7 +304,7 @@ mod tests {
         cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+            sheet::validations::{validation::Validation, rules::ValidationRule},
         },
         test_util::{
             assert_data_table_size, first_sheet_id, test_create_html_chart, test_create_js_chart,

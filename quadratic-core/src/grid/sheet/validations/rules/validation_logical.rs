@@ -13,11 +13,11 @@ impl ValidationLogical {
     // Validate a CellValue against the validation rule.
     pub fn validate(&self, value: Option<&CellValue>) -> bool {
         if let Some(value) = value {
-            // handle case where text input is empty
-            if *value == CellValue::Text("".to_string()) {
-                self.ignore_blank
-            } else {
-                matches!(value, CellValue::Logical(_))
+            match value {
+                CellValue::Logical(_) => true,
+                CellValue::Blank => self.ignore_blank,
+                CellValue::Text(t) => t.is_empty() && self.ignore_blank,
+                _ => false,
             }
         } else {
             self.ignore_blank
