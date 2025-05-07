@@ -161,7 +161,11 @@ impl GridController {
                 // otherwise we need to rollback all transaction and properly apply it
                 else {
                     self.rollback_unsaved_transactions();
-                    self.transactions.unsaved_transactions.remove(index);
+
+                    // use the operations from the unsaved_transaction queue as an optimization
+                    let unsaved = self.transactions.unsaved_transactions.remove(index);
+                    transaction.operations = unsaved.forward.operations.into();
+
                     self.mark_transaction_sent(transaction.id);
                     self.start_transaction(&mut transaction);
                     self.finalize_transaction(transaction);
