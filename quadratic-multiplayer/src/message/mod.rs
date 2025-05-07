@@ -58,7 +58,6 @@ pub(crate) fn broadcast(
     file_id: Uuid,
     state: Arc<State>,
     message: MessageResponse,
-    is_binary: bool,
 ) -> JoinHandle<()> {
     tracing::trace!(
         "Broadcasting message to room {}, excluding {:?}: {:?}",
@@ -79,7 +78,7 @@ pub(crate) fn broadcast(
                     return Ok::<_, MpError>(());
                 }
 
-                let send_message = match is_binary {
+                let send_message = match message.is_binary() {
                     true => {
                         let serialized_message = encode_message(message)?;
                         Message::Binary(serialized_message.into())
