@@ -33,7 +33,7 @@ export const CodeRunning = () => {
         // todo: in case of the table, we should replace the code language indicator with this indicator
         const table = pixiApp.cellsSheets.getById(current.sheetPos.sheetId)?.tables.getTableFromCell(current.sheetPos);
         let y = current.sheetPos.y;
-        if (table && table.codeCell.show_ui && table.codeCell.show_name) {
+        if (table && table.codeCell.show_name) {
           y = table.codeCell.y + (table.codeCell.show_columns ? 2 : 1);
         }
         const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, y);

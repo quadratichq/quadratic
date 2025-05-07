@@ -29,8 +29,6 @@ pub type BorderStyleCellSchema = v1_7_1::BorderStyleCellSchema;
 pub type BorderStyleTimestampSchema = v1_7_1::BorderStyleTimestampSchema;
 pub type CellBorderLineSchema = v1_7_1::CellBorderLineSchema;
 pub type RgbaSchema = v1_7_1::RgbaSchema;
-pub type BorderStyleCell = v1_7_1::BorderStyleCellSchema;
-pub type SelectionSchema = v1_7_1::A1SelectionSchema;
 pub type ValidationSchema = v1_7_1::ValidationSchema;
 pub type ValidationStyleSchema = v1_7_1::ValidationStyleSchema;
 pub type ValidationMessageSchema = v1_7_1::ValidationMessageSchema;
@@ -81,9 +79,9 @@ pub struct SheetSchema {
     pub order: String,
     pub offsets: OffsetsSchema,
     pub validations: ValidationsSchema,
-    pub columns: Vec<(i64, ColumnSchema)>,
-    pub data_tables: Vec<(PosSchema, DataTableSchema)>,
-    pub rows_resize: Vec<(i64, ResizeSchema)>,
+    pub columns: ColumnsSchema,
+    pub data_tables: DataTablesSchema,
+    pub rows_resize: RowsResizesSchema,
     pub borders: BordersSchema,
     pub formats: SheetFormattingSchema,
 }
@@ -150,13 +148,6 @@ pub struct FormatSchema {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableFormatsSchema {
     pub formats: FormatSchema,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum DataTableShowUISchema {
-    Show,
-    Hide,
-    Default,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

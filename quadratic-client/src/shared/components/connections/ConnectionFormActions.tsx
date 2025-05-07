@@ -1,7 +1,9 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
+
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { ErrorIcon, SpinnerIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
+
 import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -23,6 +25,7 @@ export function ConnectionFormActions({
   teamUuid: string;
 }) {
   const submit = useSubmit();
+  const confirmFn = useConfirmDialog('deleteConnection', undefined);
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
   const formData = form.watch();
 
@@ -48,17 +51,12 @@ export function ConnectionFormActions({
                 type="button"
                 variant="outline-destructive"
                 className="flex-shrink-0"
-                onClick={() => {
-                  const doDelete = window.confirm(
-                    'Deleting this connection will disable it in all existing sheets and it will no longer be usable elsewhere. This cannot be undone.'
-                  );
-                  if (doDelete) {
+                onClick={async () => {
+                  if (await confirmFn()) {
                     mixpanel.track('[Connections].delete', { type: connectionType });
-                    const data = getDeleteConnectionAction(connectionUuid, teamUuid);
-                    submit(data, {
-                      action: ROUTES.API.CONNECTIONS.POST,
-                      method: 'POST',
-                      encType: 'application/json',
+                    const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
+                    submit(json, {
+                      ...options,
                       navigate: false,
                     });
                     handleNavigateToListView();
@@ -73,6 +71,7 @@ export function ConnectionFormActions({
           <Button variant="outline" onClick={handleNavigateToListView} type="button" disabled={isSubmitting}>
             Cancel
           </Button>
+
           <Button type="submit" disabled={isSubmitting}>
             {connectionUuid ? 'Save changes' : 'Create'}
           </Button>

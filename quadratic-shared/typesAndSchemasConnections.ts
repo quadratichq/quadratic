@@ -27,19 +27,7 @@ export function isLocalHostAddress(host: string): boolean {
   return false;
 }
 
-const ConnectionHostSchema = z
-  .string()
-  .min(1, { message: 'Required' })
-  .superRefine((val, ctx) => {
-    if (isLocalHostAddress(val)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Please note: Quadratic runs in the cloud. Connecting to a local database has limited support.',
-        path: [],
-        fatal: false, // This makes it a warning rather than an error
-      });
-    }
-  });
+const ConnectionHostSchema = z.string().min(1, { message: 'Required' });
 const ConnectionPortSchema = z
   .string()
   .min(1, { message: 'Required' })

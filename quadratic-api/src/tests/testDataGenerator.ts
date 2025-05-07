@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import type { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 import { encryptFromEnv } from '../utils/crypto';
+import { getDecryptedTeam } from '../utils/teams';
 
 type UserData = Parameters<typeof dbClient.user.create>[0]['data'];
 type FileData = Parameters<typeof dbClient.file.create>[0]['data'];
@@ -95,7 +96,7 @@ export async function createTeam({
     },
   });
 
-  return dbTeam;
+  return getDecryptedTeam(dbTeam);
 }
 
 /**

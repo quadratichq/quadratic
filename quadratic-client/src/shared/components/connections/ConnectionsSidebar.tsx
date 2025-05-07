@@ -1,3 +1,4 @@
+import { connectionFormSshAtom } from '@/shared/atom/connectionFormSshAtom';
 import {
   DOCUMENTATION_CONNECTIONS_IP_LIST_URL,
   DOCUMENTATION_CONNECTIONS_URL,
@@ -5,7 +6,8 @@ import {
 } from '@/shared/constants/urls';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export const ConnectionsSidebar = ({
   sshPublicKey,
@@ -15,17 +17,7 @@ export const ConnectionsSidebar = ({
   sshPublicKey: string;
 }) => {
   const staticIpsContent = staticIps ? staticIps.join('\n') : '';
-  const [useSsh, setUseSsh] = useState(false);
-
-  useEffect(() => {
-    const handler = (event: CustomEvent<boolean>) => {
-      setUseSsh(event.detail);
-    };
-    window.addEventListener('changeUseSsh', handler as EventListener);
-    return () => {
-      window.removeEventListener('changeUseSsh', handler as EventListener);
-    };
-  }, []);
+  const useSsh = useRecoilValue(connectionFormSshAtom);
 
   return (
     <div className="flex flex-col gap-4 text-sm">

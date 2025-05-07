@@ -45,6 +45,7 @@
 //! =DeptSales[[#Headers], [#Data], [% Commission]]
 
 mod convert;
+mod delete;
 pub mod display;
 mod intersects;
 mod parse;

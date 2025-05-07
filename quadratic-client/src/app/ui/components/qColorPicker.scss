@@ -35,7 +35,7 @@
 }
 
 /* Overrides the last color to add the transparency indicator */
-.color-picker-submenu > div > span:last-of-type > div {
+.color-picker-submenu-last-color > div > span:last-of-type > div {
   background: white !important;
 
   &:before {

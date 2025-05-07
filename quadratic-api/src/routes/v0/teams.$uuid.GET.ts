@@ -14,8 +14,8 @@ import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
-import { generateSshKeys } from '../../utils/crypto';
 import { getFilePermissions } from '../../utils/permissions';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -101,7 +101,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const authUsersById = await getUsers(dbUsers.map(({ user }) => user));
 
   // IDEA: (enhancement) we could put this in /sharing and just return the userCount
-  // then require the data for the team share modal to be a seaparte network request
+  // then require the data for the team share modal to be a separate network request
   const users = dbUsers
     .filter(({ userId: id }) => authUsersById[id])
     .map(({ userId: id, role }) => {
@@ -121,15 +121,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
-  if (dbTeam.sshPublicKey === null) {
-    const { privateKey, publicKey } = await generateSshKeys();
-    await dbClient.team.update({
-      where: { id: dbTeam.id },
-      data: { sshPublicKey: publicKey, sshPrivateKey: privateKey },
-    });
-
-    dbTeam.sshPublicKey = publicKey;
-  }
+  // Apply SSH keys to the team if they don't already exist.
+  const decryptedTeam = await getDecryptedTeam(dbTeam);
 
   // Get signed thumbnail URLs
   await Promise.all(
@@ -150,7 +143,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
-      sshPublicKey: dbTeam.sshPublicKey,
+      sshPublicKey: decryptedTeam.sshPublicKey,
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

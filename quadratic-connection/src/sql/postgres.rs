@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::Claims,
-    connection::{add_key_to_connection, get_api_connection, get_api_team},
+    connection::{add_key_to_connection, get_api_connection},
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse, test_connection},
@@ -394,6 +394,11 @@ pub mod tests {
                         r#type: "_int4".into(),
                         is_nullable: true,
                     },
+                    SchemaColumn {
+                        name: "null_bool_col".into(),
+                        r#type: "bool".into(),
+                        is_nullable: true,
+                    },
                 ],
             }],
         };
@@ -492,6 +497,7 @@ pub mod tests {
             ),
             (DataType::Utf8, vec![]), // unsupported
             (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // null
         ];
 
         validate_parquet(response, expected).await;

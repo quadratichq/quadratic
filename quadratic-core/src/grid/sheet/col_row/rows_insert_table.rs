@@ -27,7 +27,7 @@ impl Sheet {
             } else {
                 // Adds rows to data tables if the row is inserted inside the
                 // table. Code is not impacted by this change.
-                if !dt.readonly
+                if !dt.is_code()
                     && source_row >= pos.y
                     && (row < pos.y + output_rect.height() as i64
                         || (CopyFormats::Before == copy_formats

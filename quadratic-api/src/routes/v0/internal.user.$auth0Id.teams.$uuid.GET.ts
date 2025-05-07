@@ -28,17 +28,10 @@ async function handler(req: Request, res: Response) {
   }
 
   // Get the team
-  const { team, userMakingRequest } = await getTeam({ uuid, userId: user.id });
-
-  // Do you have permission?
-  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
-    throw new ApiError(403, 'You do not have permission to view this connection.');
-  }
+  const { team } = await getTeam({ uuid, userId: user.id });
 
   // Return the data
-  const data = {
-    ...team,
-  };
+  const data = { ...team };
 
   return res.status(200).json(data);
 }

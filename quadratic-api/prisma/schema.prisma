@@ -129,8 +129,8 @@ model Team {
     settingAnalyticsAi Boolean @default(true) @map("setting_analytics_ai")
 
     // SSH Keys
-    sshPrivateKey String? @map("ssh_private_key")
-    sshPublicKey  String? @map("ssh_public_key")
+    sshPrivateKey Bytes?
+    sshPublicKey  Bytes?
 
     @@index([uuid])
 }

@@ -1,3 +1,4 @@
+import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
 import { ConnectionFormSsh } from '@/shared/components/connections/ConnectionFormSsh';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
@@ -23,6 +24,7 @@ const DEFAULTS = {
   PORT: '3306',
   DATABASE: 'mysql',
   USERNAME: 'root',
+  SSH_PORT: '22',
 };
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
@@ -36,7 +38,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     password: String(connection?.typeDetails?.password || ''),
     useSsh: Boolean(connection?.typeDetails?.useSsh || false),
     sshHost: String(connection?.typeDetails?.sshHost || ''),
-    sshPort: String(connection?.typeDetails?.sshPort || ''),
+    sshPort: String(connection?.typeDetails?.sshPort || DEFAULTS.SSH_PORT),
     sshUsername: String(connection?.typeDetails?.sshUsername || ''),
   };
 
@@ -76,6 +78,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
                   <Input autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
+                <ConnectionFormMessageHost value={field.value} />
               </FormItem>
             )}
           />

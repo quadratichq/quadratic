@@ -52,17 +52,30 @@ impl DataTable {
         sheet_format_updates: &mut SheetFormatUpdates,
     ) -> Result<()> {
         for x in formats_rect.x_range() {
-            let format_display_x = u32::try_from(x - data_table_pos.x)?;
+            let relative_x = x - data_table_pos.x;
+
+            // ignore non-overlapping areas
+            if relative_x < 0 {
+                continue;
+            }
+
+            let format_display_x = u32::try_from(relative_x)?;
             let format_actual_x = self.get_column_index_from_display_index(format_display_x, true);
 
             for y in formats_rect.y_range() {
-                let format_display_y =
-                    u64::try_from(y - data_table_pos.y - self.y_adjustment(true))?;
-                let format_actual_y = self.get_row_index_from_display_index(format_display_y);
+                let relative_y = y - data_table_pos.y - self.y_adjustment(true);
 
+                // ignore non-overlapping areas
+                if relative_y < 0 {
+                    continue;
+                }
+
+                let format_display_y = u64::try_from(relative_y)?;
+                let format_actual_y = self.get_row_index_from_display_index(format_display_y);
                 let format = self
                     .formats
                     .format((format_actual_x as i64 + 1, format_actual_y as i64 + 1).into());
+
                 if !format.is_default() {
                     sheet_format_updates.set_format_cell((x, y).into(), format.into());
                 }
@@ -188,7 +201,7 @@ pub mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // show name
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false), None);
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, Some(false), None);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -207,7 +220,7 @@ pub mod test {
         assert_eq!(data_table_format.bold, Some(true));
 
         // show column headers
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, None, Some(false));
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false));
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -272,7 +285,6 @@ pub mod test {
             Some(column_headers),
             None,
             None,
-            None,
         );
 
         // check formats after hiding first column
@@ -333,7 +345,6 @@ pub mod test {
         gc.test_data_table_update_meta(
             pos.to_sheet_pos(sheet_id),
             Some(column_headers),
-            None,
             None,
             None,
         );

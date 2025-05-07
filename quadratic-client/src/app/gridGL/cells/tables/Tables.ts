@@ -386,7 +386,6 @@ export class Tables extends Container<Table> {
       ) {
         return true;
       }
-      if (!code.show_ui) return false;
       return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y === code.y;
     });
   }
@@ -415,7 +414,7 @@ export class Tables extends Container<Table> {
     cell: JsCoordinate
   ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
     for (const table of this.children) {
-      if (table.codeCell.show_ui && table.codeCell.show_columns && table.inOverHeadings) {
+      if (table.codeCell.show_columns && table.inOverHeadings) {
         if (
           cell.x >= table.codeCell.x &&
           cell.x < table.codeCell.x + table.codeCell.w &&
@@ -441,7 +440,6 @@ export class Tables extends Container<Table> {
   isColumnHeaderCell(cell: JsCoordinate): boolean {
     return !!this.children.find(
       (table) =>
-        table.codeCell.show_ui &&
         table.codeCell.show_columns &&
         cell.x >= table.codeCell.x &&
         cell.x <= table.codeCell.x + table.codeCell.w - 1 &&

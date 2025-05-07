@@ -82,8 +82,8 @@ export const generateSshKeys = async (
   } = options;
 
   // Create unique filenames for this run
-  const timestamp = Date.now();
-  const privateKeyPath = path.join(outputDir, `id_${type}_${timestamp}`);
+  const unique = crypto.randomUUID().replace(/-/g, '');
+  const privateKeyPath = path.join(outputDir, `id_${type}_${unique}`);
   const publicKeyPath = `${privateKeyPath}.pub`;
 
   // Build the ssh-keygen command
@@ -110,66 +110,6 @@ export const generateSshKeys = async (
     const publicKey = fs.readFileSync(publicKeyPath, 'utf8');
 
     // Clean up temporary files
-    fs.unlinkSync(privateKeyPath);
-    fs.unlinkSync(publicKeyPath);
-
-    return { privateKey, publicKey };
-  } catch (error: unknown) {
-    console.error('Error generating SSH keys:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to generate SSH keys: ${errorMessage}`);
-  }
-};
-
-/**
- * Synchronous version of generateSshKeys
- */
-export const generateSshKeysSync = (
-  options: {
-    bits?: number;
-    comment?: string;
-    passphrase?: string;
-    type?: 'rsa' | 'ed25519' | 'ecdsa';
-    outputDir?: string;
-  } = {}
-): { privateKey: string; publicKey: string } => {
-  const {
-    bits = 4096,
-    comment = `nodejs-generated-${Date.now()}`,
-    passphrase = '',
-    type = 'rsa',
-    outputDir = os.tmpdir(),
-  } = options;
-
-  // Create unique filenames
-  const timestamp = Date.now();
-  const privateKeyPath = path.join(outputDir, `id_${type}_${timestamp}`);
-  const publicKeyPath = `${privateKeyPath}.pub`;
-
-  // Build the ssh-keygen command
-  const cmd = [
-    'ssh-keygen',
-    '-t',
-    type,
-    '-b',
-    bits,
-    '-C',
-    `"${comment}"`,
-    '-f',
-    privateKeyPath,
-    '-N',
-    `"${passphrase}"`,
-  ].join(' ');
-
-  try {
-    // Execute ssh-keygen synchronously
-    require('child_process').execSync(cmd, { stdio: 'ignore' });
-
-    // Read the generated files
-    const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-    const publicKey = fs.readFileSync(publicKeyPath, 'utf8');
-
-    // Clean up
     fs.unlinkSync(privateKeyPath);
     fs.unlinkSync(publicKeyPath);
 
