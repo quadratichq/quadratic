@@ -1,5 +1,6 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
+import { SKIP_TEST_BUTTON_NAME } from '@/shared/components/connections/ConnectionForm';
 import { ErrorIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
@@ -72,24 +73,32 @@ export function ConnectionFormActions({
           </Button>
 
           <Button type="submit" disabled={isSubmitting}>
-            {connectionUuid ? 'Save changes' : 'Create'}
+            {connectionUuid ? 'Test & save changes' : 'Test & create'}
           </Button>
         </div>
         {dbConnectionError && (
-          <Alert variant="destructive" className="mt-4">
-            <ErrorIcon />
-            <AlertTitle>Failed to {connectionUuid ? 'save changes to' : 'create'} connection</AlertTitle>
-            <AlertDescription className="flex flex-col gap-2">
-              <span className="mb-1">The server returned this error:</span>
-              <span className="font-mono text-xs">{dbConnectionError.message}</span>
-              <span>
-                Need help?{' '}
-                <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="underline">
-                  Contact us.
-                </a>
-              </span>
-            </AlertDescription>
-          </Alert>
+          <div className="mt-4 flex flex-col gap-2">
+            <Alert variant="destructive">
+              <ErrorIcon />
+              <AlertTitle>A test to your connection failed</AlertTitle>
+              <AlertDescription className="flex flex-col gap-2">
+                <span>
+                  Check the details and try again. Or,{' '}
+                  <button type="submit" name={SKIP_TEST_BUTTON_NAME} className="font-medium text-primary">
+                    {connectionUuid ? 'save changes' : 'create the connection'} without testing
+                  </button>
+                  .
+                </span>
+                <span className="mt-1 font-mono text-xs">{dbConnectionError.message}</span>
+              </AlertDescription>
+            </Alert>
+            <p className="text-xs text-muted-foreground">
+              Need help?{' '}
+              <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="underline">
+                Contact us.
+              </a>
+            </p>
+          </div>
         )}
       </div>
     </div>

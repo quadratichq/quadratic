@@ -10,6 +10,7 @@ import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
+import type { SubmitHandler } from 'react-hook-form';
 import { useFetcher, useSubmit } from 'react-router';
 
 export type ConnectionFormProps = {
@@ -108,6 +109,7 @@ export function ConnectionFormEdit({
   );
 }
 
+export const SKIP_TEST_BUTTON_NAME = 'skip-test';
 function ConnectionFormWrapper({
   teamUuid,
   type,
@@ -121,7 +123,13 @@ function ConnectionFormWrapper({
   const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
   // This is a middleware that tests the connection before saving
-  const handleSubmitMiddleware = async (formValues: ConnectionFormValues) => {
+  const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event) => {
+    // @ts-expect-error
+    if (event?.nativeEvent?.submitter?.name === SKIP_TEST_BUTTON_NAME) {
+      props.handleSubmitForm(formValues);
+      return;
+    }
+
     const { name, type, ...typeDetails } = formValues;
 
     try {
