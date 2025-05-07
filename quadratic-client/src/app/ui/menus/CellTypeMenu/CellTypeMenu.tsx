@@ -108,7 +108,7 @@ export default function CellTypeMenu() {
               name={name}
               badge={
                 experimental ? (
-                  <Badge variant="secondary" className="ml-2">
+                  <Badge variant="outline" className="ml-2">
                     Experimental
                   </Badge>
                 ) : undefined
@@ -128,7 +128,7 @@ export default function CellTypeMenu() {
                 name={name}
                 badge={
                   isDemo ? (
-                    <Badge variant="secondary" className="ml-2">
+                    <Badge variant="outline" className="ml-2">
                       Demo
                     </Badge>
                   ) : (

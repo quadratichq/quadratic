@@ -1,6 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { AddIcon, DeleteIcon, EditIcon } from '@/shared/components/Icons';
+import { AddIcon, CloseIcon, EditIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -124,6 +125,7 @@ function ListItems({
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
+  const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
@@ -148,7 +150,7 @@ function ListItems({
               <span className="text-sm">
                 {name}{' '}
                 {isDemo && (
-                  <Badge variant="secondary" className="ml-1">
+                  <Badge variant="outline" className="ml-1">
                     Demo
                   </Badge>
                 )}
@@ -160,17 +162,21 @@ function ListItems({
           </button>
           {isDemo ? (
             <Button
+              aria-label="Hide demo connection"
               variant="ghost"
               size="icon"
               className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
-              onClick={() => {
-                // TODO:
+              onClick={async () => {
+                if (await confirmFn()) {
+                  // TODO:
+                }
               }}
             >
-              <DeleteIcon />
+              <CloseIcon />
             </Button>
           ) : disabled ? null : (
             <Button
+              aria-label="Edit connection"
               variant="ghost"
               size="icon"
               className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"

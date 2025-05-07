@@ -24,6 +24,7 @@ type ConfirmDialogArgs = {
   deleteConnection: undefined;
   deleteUserFromTeam: { name: string; isLoggedInUser: boolean };
   deleteUserFromFile: { name: string; isLoggedInUser: boolean };
+  deleteDemoConnection: undefined;
 };
 type ConfirmDialogKeys = keyof ConfirmDialogArgs;
 
@@ -54,6 +55,12 @@ const confirmDialogs: {
       ? `You will lose your invited access to the file if you continue.`
       : `${name} will lose their invited access to this file if you continue.`,
     confirmText: isLoggedInUser ? 'Leave' : 'Remove',
+  }),
+  deleteDemoConnection: () => ({
+    title: 'Hide demo connection',
+    message:
+      'This connection will no longer be visible to anyone on your team. This cannot be undone. However, any files refercing this connection will continue to work.',
+    confirmText: 'Hide',
   }),
 };
 
