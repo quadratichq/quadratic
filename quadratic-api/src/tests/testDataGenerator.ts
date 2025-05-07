@@ -55,7 +55,6 @@ export async function createFile({ data }: { data: FileData }) {
  * Creating a team
  *
  */
-
 export async function createTeam({
   team,
   users,
@@ -166,27 +165,66 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
  * Creating an Analytics AI chat
  *
  */
-
-export async function createAIChat(data: Partial<AnalyticsAIChatData> & { messageIndex: number }) {
-  const user = await createUser({ auth0Id: 'user' });
-  const team = await createTeam({ users: [{ userId: user.id, role: 'OWNER' }] });
-  const file = await createFile({ data: { name: 'Untitled', ownerTeamId: team.id, creatorUserId: user.id } });
+export async function createAIChat(
+  data: Partial<AnalyticsAIChatData> & {
+    userId?: number;
+    teamId?: number;
+    fileId?: number;
+    messages?: Array<{
+      messageIndex: number;
+      model: string;
+      messageType: 'userPrompt' | 'toolResult';
+    }>;
+  }
+) {
+  const userId = data.userId ?? (await createUser({ auth0Id: 'user' })).id;
+  const fileId =
+    data.fileId ??
+    (
+      await createFile({
+        data: {
+          name: 'Untitled',
+          ownerTeamId: data.teamId ?? (await createTeam({ users: [{ userId, role: 'OWNER' }] })).id,
+          creatorUserId: userId,
+        },
+      })
+    ).id;
+  const messages = data.messages ?? [
+    {
+      messageIndex: 1,
+      model: 'bedrock-anthropic:claude:thinking-toggle-off',
+      messageType: 'userPrompt' as const,
+    },
+  ];
   const aiChat = await dbClient.analyticsAIChat.create({
     data: {
-      userId: user.id,
-      fileId: file.id,
+      userId,
+      fileId,
       chatId: data.chatId ?? randomUUID(),
       source: 'AIAnalyst',
       messages: {
-        create: {
-          model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-          messageIndex: data.messageIndex,
-          s3Key: 'test-key',
-        },
+        create: messages,
       },
     },
   });
   return aiChat;
+}
+
+/**
+ *
+ * Upgrades stripe status on team to ACTIVE (team is pro)
+ *
+ */
+export async function upgradeTeamToPro(teamId?: number) {
+  await dbClient.team.update({
+    where: { id: teamId },
+    data: {
+      stripeSubscriptionId: null,
+      stripeSubscriptionStatus: 'ACTIVE',
+      stripeCurrentPeriodEnd: null,
+      stripeSubscriptionLastUpdated: null,
+    },
+  });
 }
 
 /**
