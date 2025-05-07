@@ -20,19 +20,69 @@ use sqlx::{
 };
 
 use crate::error::{Result, SharedError};
+use crate::quadratic_api::Connection as ApiConnection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
-use crate::{convert_sqlx_type, to_arrow_type};
+use crate::{convert_sqlx_type, net::ssh::SshConfig, sql::UsesSsh, to_arrow_type};
 
 /// PostgreSQL connection
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PostgresConnection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
     pub database: String,
+    pub use_ssh: Option<bool>,
+    pub ssh_host: Option<String>,
+    pub ssh_port: Option<String>,
+    pub ssh_username: Option<String>,
+    pub ssh_key: Option<String>,
+}
+
+impl From<&ApiConnection<PostgresConnection>> for PostgresConnection {
+    fn from(connection: &ApiConnection<PostgresConnection>) -> Self {
+        let details = connection.type_details.to_owned();
+        PostgresConnection::new(
+            details.username,
+            details.password,
+            details.host,
+            details.port,
+            details.database,
+            details.use_ssh,
+            details.ssh_host,
+            details.ssh_port,
+            details.ssh_username,
+            details.ssh_key,
+        )
+    }
+}
+
+impl TryFrom<PostgresConnection> for SshConfig {
+    type Error = SharedError;
+
+    fn try_from(connection: PostgresConnection) -> Result<Self> {
+        let required = |value: Option<String>| {
+            value.ok_or(SharedError::Sql(SqlError::Connect(
+                "Required field is missing".into(),
+            )))
+        };
+
+        let ssh_port = <PostgresConnection as UsesSsh>::parse_port(&connection.ssh_port).ok_or(
+            SharedError::Sql(SqlError::Connect("SSH port is required".into())),
+        )??;
+
+        Ok(SshConfig::new(
+            required(connection.ssh_host)?,
+            ssh_port,
+            required(connection.ssh_username)?,
+            connection.password,
+            required(connection.ssh_key)?,
+            None,
+        ))
+    }
 }
 
 impl PostgresConnection {
@@ -43,6 +93,11 @@ impl PostgresConnection {
         host: String,
         port: Option<String>,
         database: String,
+        use_ssh: Option<bool>,
+        ssh_host: Option<String>,
+        ssh_port: Option<String>,
+        ssh_username: Option<String>,
+        ssh_key: Option<String>,
     ) -> PostgresConnection {
         PostgresConnection {
             username,
@@ -50,6 +105,11 @@ impl PostgresConnection {
             host,
             port,
             database,
+            use_ssh,
+            ssh_host,
+            ssh_port,
+            ssh_username,
+            ssh_key,
         }
     }
 
@@ -99,12 +159,8 @@ impl Connection for PostgresConnection {
             options = options.password(password);
         }
 
-        if let Some(ref port) = self.port {
-            options = options.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(SqlError::Connect(
-                    "Could not parse port into a number".into(),
-                ))
-            })?);
+        if let Some(port) = self.port() {
+            options = options.port(port?);
         }
 
         let pool = options.connect().await.map_err(|e| {
@@ -267,6 +323,28 @@ impl Connection for PostgresConnection {
     }
 }
 
+impl UsesSsh for PostgresConnection {
+    fn use_ssh(&self) -> bool {
+        self.use_ssh.unwrap_or(false)
+    }
+
+    fn port(&self) -> Option<Result<u16>> {
+        Self::parse_port(&self.port)
+    }
+
+    fn set_port(&mut self, port: u16) {
+        self.port = Some(port.to_string());
+    }
+
+    fn ssh_host(&self) -> Option<String> {
+        self.ssh_host.to_owned()
+    }
+
+    fn set_ssh_key(&mut self, ssh_key: Option<String>) {
+        self.ssh_key = ssh_key;
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -280,6 +358,11 @@ mod tests {
             "127.0.0.1".into(),
             Some("5433".into()),
             "postgres-connection".into(),
+            Some(false),
+            Some("".into()),
+            Some("".into()),
+            Some("".into()),
+            Some("".into()),
         )
     }
 

@@ -30,11 +30,16 @@ async function handler(req: Request, res: Response) {
 
   // Get the connection
   const { connection, team } = await getTeamConnection({ connectionUuid, teamUuid, userId: user.id });
-  const typeDetails = decryptFromEnv(connection.typeDetails.toString('utf-8'));
 
   // Do you have permission?
   if (!team.userMakingRequest.permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'You do not have permission to view this connection.');
+  }
+
+  const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString('utf-8')));
+
+  if (typeDetails.useSsh) {
+    typeDetails.sshKey = team.team.sshPrivateKey;
   }
 
   // Return the data
@@ -44,7 +49,7 @@ async function handler(req: Request, res: Response) {
     type: connection.type,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
-    typeDetails: JSON.parse(typeDetails),
+    typeDetails,
   };
 
   return res.status(200).json(data);
