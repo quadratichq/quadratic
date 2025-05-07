@@ -1,4 +1,4 @@
-sexport const help = "(press h for help | q to quit)";
+export const help = "(press h for help | q to quit)";
 export const helpCLI =
   "\n\nOptions:" +
   "\n     Usage: node dev [options]" +
