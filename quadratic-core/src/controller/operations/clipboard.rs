@@ -799,7 +799,7 @@ mod test {
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
-    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
     use crate::test_util::{
         assert_cell_value_row, assert_display_cell_value, print_sheet, print_table_in_rect,

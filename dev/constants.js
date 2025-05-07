@@ -53,6 +53,12 @@ export const COMPONENTS = {
         dark: "gray",
         name: "Redis",
     },
+    shared: {
+        color: "gray",
+        dark: 'gray',
+        shortcut: 's',
+        name: 'Shared',
+    }
 };
 export const SPACE = "     ";
 export const DONE = "✓";
