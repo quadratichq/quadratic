@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsers } from '../../auth/auth';
-import { BillingAIUsageMonthlyForUser } from '../../billing/AIUsageHelpers';
+import { BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -133,7 +133,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     })
   );
 
-  const usage = await BillingAIUsageMonthlyForUser(userMakingRequestId);
+  const usage = await BillingAIUsageMonthlyForUserInTeam(userMakingRequestId, team.id);
 
   const response = {
     team: {
