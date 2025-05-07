@@ -640,15 +640,17 @@ impl GridController {
             negative,
         });
 
+        // we don't need to apply any operations to the cells set in
+        // data_tables_and_cell_values_in_rect() for  no_op_cells
+        let mut no_op_cells = CellValues::default();
         let mut values = CellValues::new(final_range.width(), final_range.height());
-        let mut cells = CellValues::default();
         let context = self.a1_context();
         let selection =
             A1Selection::from_rect(SheetRect::new_from_rect(final_range.to_owned(), sheet_id));
 
         let data_tables_in_rect = sheet.data_tables_and_cell_values_in_rect(
             initial_range,
-            &mut cells,
+            &mut no_op_cells,
             &mut values,
             context,
             &selection,
@@ -696,7 +698,6 @@ impl GridController {
                         }
                     }
 
-                    dbgjs!(format!("x: {}, y: {}", x, y));
                     let sheet_pos = SheetPos::new(sheet_id, x, y);
                     data_table_ops.push(Operation::ComputeCode { sheet_pos });
 
@@ -714,7 +715,8 @@ impl GridController {
             series.iter().map(|(v, _)| v.to_owned()).collect(),
         );
         let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
-        // let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];
+
+        let mut cells = CellValues::default();
         let mut ops = self.cell_values_operations(
             Some(&selection),
             sheet_pos,
@@ -724,15 +726,15 @@ impl GridController {
             false,
         )?;
 
-        ops.extend(vec![Operation::SetCellValues {
-            sheet_pos,
-            values: cells,
-        }]);
+        if !cells.is_empty() {
+            ops.extend(vec![Operation::SetCellValues {
+                sheet_pos,
+                values: cells,
+            }]);
+        }
 
         // the compute code operations need to be applied after the cell values
         ops.extend(compute_code_ops);
-
-        // dbgjs!(&ops);
 
         Ok((ops, series))
     }
