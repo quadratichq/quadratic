@@ -8,6 +8,7 @@ use crate::{Pos, Rect};
 
 mod contains;
 mod create;
+mod delete;
 mod intersects;
 mod normalize;
 mod query;
@@ -23,10 +24,7 @@ pub struct RefRangeBounds {
 
 impl fmt::Debug for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("RefRangeBounds")
-            .field(&self.start)
-            .field(&self.end)
-            .finish()
+        fmt::Display::fmt(self, f)
     }
 }
 

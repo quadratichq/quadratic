@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     OldSelection, Rect, SheetPos, SheetRect,
     a1::{A1Context, ColRange, RefRangeBounds, TableRef},
@@ -88,6 +90,71 @@ impl A1Selection {
                     col_range: ColRange::All,
                 },
             }],
+        }
+    }
+
+    /// Creates a selection from a table name and a list of column names.
+    pub fn from_table_columns(
+        table_name: &str,
+        columns: Vec<String>,
+        a1_context: &A1Context,
+    ) -> Option<Self> {
+        let table_entry = a1_context.try_table(table_name)?;
+        if columns.is_empty() {
+            return None;
+        }
+
+        let mut ranges = vec![];
+        let cursor = Pos {
+            x: table_entry.bounds.min.x,
+            y: table_entry.bounds.min.y + (if table_entry.show_name { 1 } else { 0 }),
+        };
+        if columns.len() == 1 {
+            if table_entry.visible_columns.contains(&columns[0]) {
+                ranges.push(ColRange::Col(columns[0].clone()));
+            }
+        } else {
+            // get a list of indicies from the column names
+            let indicies = columns
+                .iter()
+                .filter_map(|col| table_entry.try_col_index(col))
+                .sorted()
+                .collect::<Vec<_>>();
+
+            // check if indicies are contiguous
+            if !indicies.is_empty()
+                && (1..indicies.len()).all(|i| indicies[i] == indicies[i - 1] + 1)
+            {
+                ranges.push(ColRange::ColRange(
+                    table_entry.all_columns[indicies[0] as usize].clone(),
+                    table_entry.all_columns[indicies[indicies.len() - 1] as usize].clone(),
+                ));
+            } else {
+                indicies.iter().for_each(|i| {
+                    ranges.push(ColRange::Col(table_entry.all_columns[*i as usize].clone()));
+                });
+            }
+        }
+
+        if ranges.is_empty() {
+            None
+        } else {
+            Some(Self {
+                sheet_id: table_entry.sheet_id,
+                cursor,
+                ranges: ranges
+                    .into_iter()
+                    .map(|range| CellRefRange::Table {
+                        range: TableRef {
+                            table_name: table_entry.table_name.clone(),
+                            data: true,
+                            headers: false,
+                            totals: false,
+                            col_range: range,
+                        },
+                    })
+                    .collect(),
+            })
         }
     }
 
@@ -200,6 +267,7 @@ impl A1Selection {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{a1::TableMapEntry, grid::CodeCellLanguage};
 
     #[test]
     fn test_cols() {
@@ -222,6 +290,69 @@ mod tests {
             CellRefRange::Sheet {
                 range: RefRangeBounds::new_relative_row_range(1, 3)
             }
+        );
+    }
+
+    #[test]
+    fn test_from_table_columns() {
+        // Create a test A1Context with a table
+        let mut a1_context = A1Context::default();
+        let table_name = "TestTable";
+        let sheet_id = SheetId::TEST;
+
+        // Create a table with 5 columns using the test helper
+        let table_entry = TableMapEntry::test(
+            table_name,
+            &["A", "B", "C", "D", "E"],
+            None,
+            Rect::test_a1("A1:E10"),
+            CodeCellLanguage::Import,
+        );
+        a1_context.table_map.insert(table_entry);
+
+        // Test single column
+        let selection =
+            A1Selection::from_table_columns(table_name, vec!["B".to_string()], &a1_context)
+                .unwrap();
+        assert_eq!(selection.ranges.len(), 1);
+        assert_eq!(selection.sheet_id, sheet_id);
+        assert_eq!(selection.cursor, Pos { x: 1, y: 2 });
+
+        // Test contiguous columns
+        let selection = A1Selection::from_table_columns(
+            table_name,
+            vec!["B".to_string(), "C".to_string(), "D".to_string()],
+            &a1_context,
+        )
+        .unwrap();
+        assert_eq!(selection.ranges.len(), 1);
+        assert_eq!(selection.sheet_id, sheet_id);
+        assert_eq!(selection.cursor, Pos { x: 1, y: 2 });
+
+        // Test non-contiguous columns
+        let selection = A1Selection::from_table_columns(
+            table_name,
+            vec!["A".to_string(), "C".to_string(), "E".to_string()],
+            &a1_context,
+        )
+        .unwrap();
+        assert_eq!(selection.ranges.len(), 3);
+        assert_eq!(selection.sheet_id, sheet_id);
+        assert_eq!(selection.cursor, Pos { x: 1, y: 2 });
+
+        // Test non-existent table
+        assert!(
+            A1Selection::from_table_columns("NonExistentTable", vec!["A".to_string()], &a1_context)
+                .is_none()
+        );
+
+        // Test empty columns
+        assert!(A1Selection::from_table_columns(table_name, vec![], &a1_context).is_none());
+
+        // Test non-existent column
+        assert!(
+            A1Selection::from_table_columns(table_name, vec!["Z".to_string()], &a1_context)
+                .is_none()
         );
     }
 }
