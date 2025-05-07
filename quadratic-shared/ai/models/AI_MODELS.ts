@@ -1,6 +1,6 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-03-25';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
