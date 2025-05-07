@@ -12,7 +12,7 @@ beforeEach(async () => {
   // Create some users
   owner1Id = (
     await createUser({
-      auth0Id: 'userOwner',
+      auth0Id: 'userOwner1',
     })
   ).id;
   team1Id = (
@@ -26,7 +26,7 @@ beforeEach(async () => {
 
   owner2Id = (
     await createUser({
-      auth0Id: 'userOwner1',
+      auth0Id: 'userOwner2',
     })
   ).id;
   team2Id = (
@@ -46,14 +46,14 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it('responds with a 401 when the token is invalid', async () => {
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000000/billing/ai/usage')
-        .set('Authorization', `Bearer InvalidToken userOwner`)
+        .set('Authorization', `Bearer InvalidToken userOwner1`)
         .expect(401)
         .expect(expectError);
     });
     it('responds with a 200 when the token is valid', async () => {
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000000/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -69,7 +69,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it('responds with a 404 for a team that isn’t in the system', async () => {
       await request(app)
         .get('/v0/teams/11111111-1111-1111-1111-111111111111/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(404)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -82,7 +82,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it('responds with a 200 for a valid team uuid and the user belongs to this team', async () => {
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000000/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -95,7 +95,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it('responds with a 200 for a valid team uuid and user does not belong to this team', async () => {
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -118,7 +118,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
 
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000000/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -139,7 +139,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
 
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -162,7 +162,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
 
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000000/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -183,7 +183,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
 
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000000/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -201,7 +201,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
 
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -222,7 +222,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
 
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
-        .set('Authorization', `Bearer ValidToken userOwner`)
+        .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
