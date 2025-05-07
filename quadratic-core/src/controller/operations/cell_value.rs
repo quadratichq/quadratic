@@ -399,9 +399,12 @@ impl GridController {
         ops
     }
 
-    // Determine if the paste is happening within a data table.
-    // If so, replace values in the data table with the
-    // intersection of the data table and the paste
+    // Replace values in the data table with the
+    // intersection of the data table and `values`.
+    // Otherwise, add to `cell_values`.
+    //
+    // If `delete_value` is true, then the values in `values` are
+    // deleted from `cell_values`.
     pub fn cell_values_operations(
         &self,
         selection: Option<&A1Selection>,
