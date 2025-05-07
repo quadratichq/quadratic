@@ -457,7 +457,7 @@ mod tests {
         // we should generate the thumbnail as we overwrite the unsaved value again
         // assert!(summary.generate_thumbnail);
 
-        // we should still have out unsaved transaction
+        // we should still have our unsaved transaction
         assert_eq!(client.transactions.unsaved_transactions.len(), 1);
 
         // our unsaved value overwrites the older multiplayer value
@@ -998,6 +998,7 @@ mod tests {
 
         let mut receive = GridController::test();
         receive.sheet_mut(receive.sheet_ids()[0]).id = sheet_id;
+
         receive
             .apply_offline_unsaved_transaction(unsaved_transaction.forward.id, unsaved_transaction);
 
@@ -1005,6 +1006,48 @@ mod tests {
         // assert!(summary.generate_thumbnail);
         assert_eq!(
             receive.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_acked_transaction() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
+
+        // there is one unsaved transaction
+        let unsaved_transactions = gc.active_transactions().unsaved_transactions.clone();
+        assert_eq!(unsaved_transactions.len(), 1);
+
+        // simulate an acked transaction that has no operations
+        let ack_transaction = PendingTransaction {
+            id: unsaved_transactions[0].forward.id,
+            operations: VecDeque::new(),
+            ..Default::default()
+        };
+
+        // apply the acked transaction
+        gc.client_apply_transaction(ack_transaction, 1);
+
+        // there are no unsaved transactions
+        let unsaved_transactions = gc.active_transactions().unsaved_transactions.clone();
+        assert_eq!(unsaved_transactions.len(), 0);
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("test".to_string()))
         );
     }
@@ -1097,18 +1140,11 @@ mod tests {
         gc.received_transaction(transaction_id_0, 1, operations_0);
         gc.received_transaction(transaction_id_1, 2, operations_1);
 
+        let cell_value_num = |n: i64| CellValue::Number(BigDecimal::from(n));
         let sheet = gc.grid.first_sheet();
-        assert_eq!(
-            sheet.display_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(1)))
-        );
-        assert_eq!(
-            sheet.display_value(pos![B1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
-        );
-        assert_eq!(
-            sheet.display_value(pos![C1]),
-            Some(CellValue::Number(BigDecimal::from(3)))
-        );
+
+        assert_eq!(sheet.display_value(pos![A1]), Some(cell_value_num(1)));
+        assert_eq!(sheet.display_value(pos![B1]), Some(cell_value_num(2)));
+        assert_eq!(sheet.display_value(pos![C1]), Some(cell_value_num(3)));
     }
 }
