@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
-use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::wasm_bindgen;
 
+use crate::Pos;
 use crate::controller::GridController;
 use crate::grid::js_types::JsResponse;
 use crate::grid::{Grid, SheetId};
-use crate::Pos;
 
 #[wasm_bindgen]
 impl GridController {

@@ -140,6 +140,9 @@ impl Sheet {
             .unwrap_or(false)
     }
 
+    // todo: (DF) not sure how there could be multiple tables in one position if
+    // ignore_spills is false
+
     /// Returns the first data table within a position
     pub fn first_data_table_within(&self, pos: Pos) -> Result<Pos> {
         let data_tables = self.data_tables_within(pos)?;
@@ -368,15 +371,12 @@ impl Sheet {
                     .data_table(data_table_left.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
-                        if data_table.readonly {
+                        if data_table.is_code() {
                             return false;
                         }
 
                         // don't expand if the position is at the data table's name
-                        if data_table.show_ui
-                            && data_table.show_name
-                            && data_table_left.min.y == pos.y
-                        {
+                        if data_table.get_show_name() && data_table_left.min.y == pos.y {
                             return false;
                         }
 
@@ -432,7 +432,7 @@ impl Sheet {
                     .data_table(data_table_above.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
-                        if data_table.readonly {
+                        if data_table.is_code() {
                             return false;
                         }
 
@@ -462,7 +462,7 @@ impl Sheet {
     /// Returns the code language at a pos
     pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
         self.data_table(pos)
-            .and_then(|data_table| self.get_table_language(pos, data_table))
+            .map(|data_table| data_table.get_language())
     }
 
     /// Returns true if the cell at pos is a formula cell
@@ -472,10 +472,14 @@ impl Sheet {
     }
 
     /// Returns true if the cell at pos is a source cell
-    /// If the show_name=false and show_columns=false, it cannot be the source cell
     pub fn is_source_cell(&self, pos: Pos) -> bool {
+        self.data_table(pos).is_some()
+    }
+
+    /// Returns true if the cell at pos is a data table cell
+    pub fn is_data_table_cell(&self, pos: Pos) -> bool {
         self.data_table(pos)
-            .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
+            .is_some_and(|dt| matches!(dt.kind, DataTableKind::Import(_)))
     }
 
     /// You shouldn't be able to create a data table that includes a data table.
@@ -508,12 +512,15 @@ mod test {
         },
         first_sheet_id,
         grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
-        test_create_code_table, test_create_data_table,
+        test_create_code_table, test_create_data_table, test_create_html_chart,
+        test_create_js_chart,
     };
     use bigdecimal::BigDecimal;
 
     pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "=1".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -529,7 +536,8 @@ mod test {
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
-            false,
+            None,
+            None,
             None,
         );
 
@@ -678,5 +686,25 @@ mod test {
 
         // The second data table should have index 1
         assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
+    }
+
+    #[test]
+    fn test_is_data_table_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        test_create_code_table(&mut gc, sheet_id, pos![E5], 2, 2);
+        test_create_js_chart(&mut gc, sheet_id, pos![G7], 2, 2);
+        test_create_html_chart(&mut gc, sheet_id, pos![J9], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.is_data_table_cell(pos![E5]));
+        assert!(!sheet.is_data_table_cell(pos![G7]));
+        assert!(!sheet.is_data_table_cell(pos![J9]));
+        assert!(!sheet.is_data_table_cell(pos![B1]));
+        assert!(!sheet.is_data_table_cell(pos![A2]));
+
+        assert!(sheet.is_data_table_cell(pos![A1]));
     }
 }

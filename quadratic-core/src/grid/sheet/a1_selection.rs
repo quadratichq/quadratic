@@ -462,8 +462,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             None,
             Some(true),
-            None,
-            None,
+            Some(true),
         );
         let sheet = gc.sheet(sheet_id);
         let table_ref = TableRef::parse("Table1", gc.a1_context()).unwrap();

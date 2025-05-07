@@ -191,6 +191,7 @@ export class PixiApp {
     this.reset();
 
     this.pointer = new Pointer(this.viewport);
+
     this.update = new Update();
 
     this.setupListeners();
