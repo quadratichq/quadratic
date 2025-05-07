@@ -641,7 +641,7 @@ impl GridController {
         });
 
         // we don't need to apply any operations to the cells set in
-        // data_tables_and_cell_values_in_rect() for  no_op_cells
+        // data_tables_and_cell_values_in_rect() for no_op_cells
         let mut no_op_cells = CellValues::default();
         let mut values = CellValues::new(final_range.width(), final_range.height());
         let context = self.a1_context();
