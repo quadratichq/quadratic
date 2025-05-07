@@ -1,9 +1,8 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
-
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { ErrorIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { CONTACT_URL } from '@/shared/constants/urls';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
-
 import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -85,12 +84,7 @@ export function ConnectionFormActions({
               <span className="font-mono text-xs">{dbConnectionError.message}</span>
               <span>
                 Need help?{' '}
-                <a
-                  href="https://www.quadratichq.com/contact"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
+                <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="underline">
                   Contact us.
                 </a>
               </span>
