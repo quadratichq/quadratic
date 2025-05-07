@@ -1,6 +1,6 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { AddIcon } from '@/shared/components/Icons';
+import { AddIcon, DeleteIcon, EditIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -15,7 +15,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
+import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 
@@ -127,50 +127,62 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => {
-        return (
-          <div className="group relative flex items-center gap-1" key={uuid}>
-            <button
-              onClick={() => {
-                handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
-              }}
-              disabled={disabled}
-              key={uuid}
-              className={cn(
-                `flex w-full items-center gap-4 rounded px-1 py-2`,
-                disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
-                // i < filteredConnections.length - 1 && 'border-b border-border'
-              )}
-            >
-              <div className={cn('flex h-6 w-6 items-center justify-center', isDemo && 'grayscale')}>
-                <LanguageIcon language={type} />
-              </div>
-              <div className="flex flex-grow flex-col text-left">
-                <span className="text-sm">{name}</span>
-                <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                  {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
-                </time>
-              </div>
-            </button>
-            {isDemo ? (
-              <Badge variant="secondary" className="absolute right-2 top-3.5">
-                Demo
-              </Badge>
-            ) : disabled ? null : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
-                onClick={() => {
-                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-                }}
-              >
-                <Pencil1Icon />
-              </Button>
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => (
+        <div className="group relative flex items-center gap-1" key={uuid}>
+          <button
+            onClick={() => {
+              handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
+            }}
+            disabled={disabled}
+            key={uuid}
+            className={cn(
+              `flex w-full items-center gap-4 rounded px-1 py-2`,
+              disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
+              // i < filteredConnections.length - 1 && 'border-b border-border'
             )}
-          </div>
-        );
-      })}
+          >
+            <div className={'flex h-6 w-6 items-center justify-center'}>
+              <LanguageIcon language={type} />
+            </div>
+            <div className="flex flex-grow flex-col text-left">
+              <span className="text-sm">
+                {name}{' '}
+                {isDemo && (
+                  <Badge variant="secondary" className="ml-1">
+                    Demo
+                  </Badge>
+                )}
+              </span>
+              <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
+              </time>
+            </div>
+          </button>
+          {isDemo ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
+              onClick={() => {
+                // TODO:
+              }}
+            >
+              <DeleteIcon />
+            </Button>
+          ) : disabled ? null : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+              onClick={() => {
+                handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+              }}
+            >
+              <EditIcon />
+            </Button>
+          )}
+        </div>
+      ))}
     </div>
   ) : (
     <Type className="py-2 text-center">No matches.</Type>
