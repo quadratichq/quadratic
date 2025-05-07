@@ -1,10 +1,11 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import env from '@/env';
 import type { Session } from '@ory/kratos-client';
 import { Configuration, FrontendApi } from '@ory/kratos-client';
 import * as Sentry from '@sentry/react';
 
-const ORY_HOST = import.meta.env.VITE_ORY_HOST;
+const ORY_HOST = env.ORY_HOST;
 
 // verify all Ory env variables are set
 if (!ORY_HOST) {
@@ -113,7 +114,7 @@ export const oryClient: OryAuthClient = {
 
   /**
    * Tries to get a token for the current user from the Ory client.
-   * If the token is still valid, it'll pull it from a cache. If it’s expired,
+   * If the token is still valid, it'll pull it from a cache. If it's expired,
    * it will fail and we will manually redirect the user to auth0 to re-authenticate
    * and get a new token.
    */
