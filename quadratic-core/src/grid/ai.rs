@@ -23,7 +23,6 @@ impl GridController {
                 while rows_this_page > 1 && count != 0 {
                     rows_this_page -= 1;
                     count -= rect.width();
-                    count = count.max(0);
                 }
             }
             pages.push(Rect::new(
@@ -32,7 +31,7 @@ impl GridController {
                 rect.max.x,
                 (row_start + rows_this_page - 1) as i64,
             ));
-            rows += rows_this_page as u32;
+            rows += rows_this_page;
             row_start += rows_this_page;
         }
         (pages, count)
