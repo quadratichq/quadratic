@@ -72,6 +72,8 @@ model File {
     AnalyticsAIChat  AnalyticsAIChat[]
 
     @@index([uuid])
+    @@index([ownerTeamId])
+    @@index([id, ownerTeamId])
 }
 
 model FileCheckpoint {
@@ -254,6 +256,8 @@ model AnalyticsAIChat {
     @@index([userId])
     @@index([fileId])
     @@index([source])
+    @@index([createdDate])
+    @@index([userId, source, createdDate])
 }
 
 enum AIChatSource {
@@ -292,6 +296,7 @@ model AnalyticsAIChatMessage {
     updatedDate      DateTime           @default(now()) @map("updated_date")
 
     @@unique([chatId, messageIndex], name: "chatId_messageIndex")
+    @@index([chatId, messageType])
     @@index([chatId, messageIndex])
     @@index([chatId])
     @@index([model])
