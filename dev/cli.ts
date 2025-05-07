@@ -32,7 +32,7 @@ export class CLI {
     program
       .name("node dev")
       .description(
-        "Runs the Quadratic dev server. By default, only React runs in watch mode."
+        "Runs the Quadratic dev server. By default, only React runs in watch mode.",
       )
       .option("-a, --api", "Watch the quadratic-api directory")
       .option("-r, --react", "Do NOT watch quadratic-client (React)")
@@ -43,13 +43,13 @@ export class CLI {
       .option("-s, --shared", "Watch the quadratic-shared directory")
       .option(
         "-y, --python",
-        "Watch the quadratic-kernels/python-wasm directory"
+        "Watch the quadratic-kernels/python-wasm directory",
       )
       .option("-l, --all", "Watch all directories")
-      .option("-s, --skipTypes", "Skip WASM types compilation")
+      .option("-t, --skipTypes", "Skip WASM types compilation")
       .option(
         "-p, --perf",
-        "Run quadratic-core in perf mode (slower to link but faster runtime)"
+        "Run quadratic-core in perf mode (slower to link but faster runtime)",
       )
       .option("-R, --hideReact", "Hide React output")
       .option("-A, --hideAPI", "Hide React output")

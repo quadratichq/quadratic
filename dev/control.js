@@ -290,11 +290,7 @@ export class Control {
         this.signals.multiplayer = new AbortController();
         this.ui.print("multiplayer");
         this.multiplayer = spawn("cargo", this.cli.options.multiplayer
-            ? [
-                "watch",
-                "-x",
-                "run -p quadratic-multiplayer --target-dir=target",
-            ]
+            ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
             : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"], {
             signal: this.signals.multiplayer.signal,
             cwd: "quadratic-multiplayer",
@@ -328,11 +324,7 @@ export class Control {
         catch (e) { }
         this.signals.files = new AbortController();
         this.files = spawn("cargo", this.cli.options.files
-            ? [
-                "watch",
-                "-x",
-                "run -p quadratic-files --target-dir=target",
-            ]
+            ? ["watch", "-x", "run -p quadratic-files --target-dir=target"]
             : ["run", "-p", "quadratic-files", "--target-dir=target"], {
             signal: this.signals.files.signal,
             cwd: "quadratic-files",
@@ -366,7 +358,7 @@ export class Control {
             this.status.files = "killed";
         }
     }
-    async runShared() {
+    async runShared(restart) {
         if (this.quitting)
             return;
         if (this.status.shared === "killed")
@@ -374,24 +366,31 @@ export class Control {
         this.status.shared = false;
         this.ui.print("shared");
         await this.kill("shared");
+        let firstRun = true;
         this.signals.shared = new AbortController();
-        console.log(`npm run ${this.cli.options.shared ? 'watch' : 'compile'} --workspace=quadratic-shared`);
-        this.shared = spawn(`npm run ${this.cli.options.shared ? 'watch' : 'compile'} --workspace=quadratic-shared`, {
+        this.shared = spawn(`npm run ${this.cli.options.shared ? "watch" : "compile"} --workspace=quadratic-shared`, {
             signal: this.signals.shared.signal,
-            shell: true
+            shell: true,
         });
         this.ui.printOutput("shared", (data) => {
             this.handleResponse("shared", data, {
                 success: [" 0 errors.", "successfully"],
                 error: ["error"],
                 start: "Starting",
+            }, () => {
+                if (firstRun && !restart) {
+                    firstRun = false;
+                    if (this.status.db !== "killed" && !this.db) {
+                        this.runDb();
+                    }
+                }
             });
         });
     }
     async restartShared() {
         this.cli.options.shared = !this.cli.options.shared;
         if (this.shared) {
-            this.runShared();
+            this.runShared(true);
         }
     }
     async killShared() {
@@ -424,11 +423,7 @@ export class Control {
         catch (e) { }
         this.signals.connection = new AbortController();
         this.connection = spawn("cargo", this.cli.options.connection
-            ? [
-                "watch",
-                "-x",
-                "run -p quadratic-connection --target-dir=target",
-            ]
+            ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
             : ["run", "-p", "quadratic-connection", "--target-dir=target"], {
             signal: this.signals.connection.signal,
             cwd: "quadratic-connection",
@@ -588,7 +583,6 @@ export class Control {
         this.ui = ui;
         this.checkServices();
         this.runRust();
-        this.runDb();
         this.runPython();
         this.runShared();
     }

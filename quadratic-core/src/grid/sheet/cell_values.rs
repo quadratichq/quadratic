@@ -162,7 +162,7 @@ mod test {
         a1::A1Selection,
         grid::{
             NumericFormat,
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+            sheet::validations::{validation::Validation, rules::ValidationRule},
         },
         wasm_bindings::js::expect_js_call,
     };

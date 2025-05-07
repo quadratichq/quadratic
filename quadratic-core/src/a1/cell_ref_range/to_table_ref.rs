@@ -77,17 +77,18 @@ impl CellRefRange {
                     return None;
                 }
 
+                // Handle contiguous columns by creating a single TableRef with ColRange::ColRange
                 let col_range = if start.x == b.min.x && end.x == b.max.x {
                     ColRange::All
-                } else if start.x == end.x {
-                    let col_name =
-                        table.col_name_from_index(start.x as usize - b.min.x as usize)?;
-                    ColRange::Col(col_name)
                 } else {
                     let col1_name =
                         table.col_name_from_index(start.x as usize - b.min.x as usize)?;
                     let col2_name = table.col_name_from_index(end.x as usize - b.min.x as usize)?;
-                    ColRange::ColRange(col1_name, col2_name)
+                    if col1_name == col2_name {
+                        ColRange::Col(col1_name)
+                    } else {
+                        ColRange::ColRange(col1_name, col2_name)
+                    }
                 };
 
                 // only column headers
@@ -334,5 +335,36 @@ mod tests {
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
         assert_eq!(table_ref, None);
+    }
+
+    #[test]
+    fn test_check_for_table_ref_contiguous_columns() {
+        let context = A1Context::test(
+            &[("Sheet1", SheetId::TEST)],
+            &[(
+                "Table1",
+                &["col1", "col2", "col3", "col4"],
+                Rect::test_a1("A1:D5"),
+            )],
+        );
+
+        // Test selecting multiple contiguous columns
+        let cell_ref_range = CellRefRange::Sheet {
+            range: RefRangeBounds::test_a1("B3:C5"),
+        };
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
+
+        assert_eq!(
+            table_ref,
+            Some(CellRefRange::Table {
+                range: TableRef {
+                    table_name: "Table1".to_string(),
+                    col_range: ColRange::ColRange("col2".to_string(), "col3".to_string()),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                },
+            })
+        );
     }
 }
