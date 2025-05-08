@@ -299,10 +299,9 @@ async fn process_message(
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
-            let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
+            let message_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(messsage_request, state, Arc::clone(&sender), pre_connection)
-                    .await?;
+                handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
 
             send_response(sender, message_response).await?;
         }

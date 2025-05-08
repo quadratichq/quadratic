@@ -228,7 +228,7 @@ pub(crate) async fn handle_message(
             Ok(Some(response))
         }
 
-        // User sends binarytransactions
+        // User sends binary transaction
         MessageRequest::BinaryTransaction {
             id,
             session_id,

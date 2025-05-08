@@ -166,4 +166,5 @@ export type MultiplayerServerMessage =
   | SendEnterRoom
   | SendGetTransactions
   | SendGetBinaryTransactions;
+
 export type MultiplayerServerBinaryMessage = SendBinaryTransaction;

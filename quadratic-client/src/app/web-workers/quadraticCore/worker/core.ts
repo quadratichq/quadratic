@@ -313,13 +313,13 @@ class Core {
 
   // Updates the multiplayer state
   // This is called when a transaction is received from the server
-  async updateMultiplayerState() {
+  private updateMultiplayerState = async () => {
     if (await offline.unsentTransactionsCount()) {
       coreClient.sendMultiplayerState('syncing');
     } else {
       coreClient.sendMultiplayerState('connected');
     }
-  }
+  };
 
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     return new Promise(async (resolve) => {
