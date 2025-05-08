@@ -89,4 +89,4 @@ export const debugWebWorkersMessages = debug && false;
 // AI
 // -----------
 
-export const debugShowAIInternalContext = debug && false;
+export const debugShowAIInternalContext = debug && true;

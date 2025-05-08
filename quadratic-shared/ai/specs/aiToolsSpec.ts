@@ -550,7 +550,8 @@ When using this tool, make sure the code cell is the only cell being edited.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
-    prompt: `The set_text_formats tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set:\n
+    prompt: `The set_text_formats tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
+    Here are the formats you can set:\n
     - bold, italics, underline, or strike through\n
     - text color and fill color using hex format, for example, #FF0000 for red\n
     - horizontal alignment, this can be one of "left", "center", "right"\n
