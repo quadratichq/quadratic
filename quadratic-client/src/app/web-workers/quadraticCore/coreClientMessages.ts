@@ -1309,6 +1309,7 @@ export interface ClientCoreGetAIFormats {
   id: number;
   sheetId: string;
   selection: string;
+  page: number;
 }
 
 export interface CoreClientGetAIFormats {

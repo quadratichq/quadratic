@@ -27,10 +27,14 @@ export const GetTextFormats = ({ args, loading }: GetTextFormatsProps) => {
     }
   }, [args, loading]);
 
-  const label =
+  let label =
     toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-      ? `Reading formats in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}.`
+      ? `Reading formats in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
       : 'Reading formats...';
+  if (toolArgs?.data?.page) {
+    label += ` in page ${toolArgs.data.page + 1}`;
+  }
+  label += '.';
 
   if (loading) {
     return <ToolCardQuery label={label} isLoading />;

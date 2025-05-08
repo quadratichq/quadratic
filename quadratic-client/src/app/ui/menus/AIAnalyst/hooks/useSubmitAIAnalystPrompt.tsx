@@ -20,7 +20,6 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getScreenImage } from '@/app/gridGL/pixiApp/copyAsPNG';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
@@ -35,6 +34,9 @@ import type { z } from 'zod';
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
+
+const CLEAN_UP_MESSAGE =
+  'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST call the tool again.';
 
 export type SubmitAIAnalystPromptArgs = {
   content: Content;
@@ -83,26 +85,68 @@ export function useSubmitAIAnalystPrompt() {
           ...getPromptMessagesWithoutPDF(chatMessages),
         ];
 
-        // Include a screenshot of what the user is seeing
-        const currentScreen = await getScreenImage();
+        // // Include a screenshot of what the user is seeing
+        // const currentScreen = await getScreenImage();
+        // if (currentScreen) {
+        //   const reader = new FileReader();
+        //   const base64 = await new Promise<string>((resolve) => {
+        //     reader.onloadend = () => {
+        //       const result = reader.result as string;
+        //       resolve(result.split(',')[1]);
+        //     };
+        //     reader.readAsDataURL(currentScreen);
+        //   });
+        //   messagesWithContext.push({
+        //     role: 'user',
+        //     content: [{ type: 'data', data: base64, mimeType: 'image/png', fileName: 'screen.png' }],
+        //     contextType: 'userPrompt',
+        //   });
+        // }
 
-        // Open screenshot in new window/tab for debugging
-        if (currentScreen) {
-          const reader = new FileReader();
-          const base64 = await new Promise<string>((resolve) => {
-            reader.onloadend = () => {
-              const result = reader.result as string;
-              resolve(result.split(',')[1]);
-            };
-            reader.readAsDataURL(currentScreen);
-          });
-          messagesWithContext.push({
-            role: 'user',
-            content: [{ type: 'data', data: base64, mimeType: 'image/png', fileName: 'screen.png' }],
-            contextType: 'userPrompt',
+        // Clean up ChatMessage for get_cell_data and get_text_formats message
+        // (we only maintain one get call to avoid clogging the context)
+        const foundGetCellData: ChatMessage[] = [];
+        messagesWithContext.forEach((message) => {
+          if (message.contextType === 'toolResult' && message.content.length === 1) {
+            const content = message.content[0];
+            if (content.fn === 'get_cell_data' && content.text !== CLEAN_UP_MESSAGE) {
+              foundGetCellData.push(message);
+            }
+          }
+        });
+
+        let newMessagesWithContent: ChatMessage[] = [...messagesWithContext];
+
+        // If we have multiple get_cell_data messages, keep only the most recent one
+        if (foundGetCellData.length > 1) {
+          const messagesToClean = foundGetCellData.slice(0, -1); // All but last message
+          console.log(`Found ${messagesToClean.length} messages to clean`);
+          newMessagesWithContent = newMessagesWithContent.map((message) => {
+            if (messagesToClean.includes(message)) {
+              // Only modify tool result messages
+              if (
+                message.contextType === 'toolResult' &&
+                message.content[0] &&
+                'id' in message.content[0] &&
+                'fn' in message.content[0]
+              ) {
+                return {
+                  ...message,
+                  content: [
+                    {
+                      id: message.content[0].id,
+                      fn: message.content[0].fn,
+                      text: CLEAN_UP_MESSAGE,
+                    },
+                  ],
+                };
+              }
+            }
+            return message;
           });
         }
-        return messagesWithContext;
+
+        return newMessagesWithContent;
       },
     [
       getOtherSheetsContext,
@@ -349,6 +393,7 @@ export function useSubmitAIAnalystPrompt() {
                   });
                   toolResultMessage.content.push({
                     id: toolCall.id,
+                    fn: toolCall.name,
                     text: result,
                   });
 
@@ -358,12 +403,14 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
+                    fn: toolCall.name,
                     text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
+                  fn: toolCall.name,
                   text: 'Unknown tool',
                 });
               }
@@ -376,6 +423,7 @@ export function useSubmitAIAnalystPrompt() {
               const result = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
                 id: toolCall.id,
+                fn: toolCall.name,
                 text: result,
               });
             }

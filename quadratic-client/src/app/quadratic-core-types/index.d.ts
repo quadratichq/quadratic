@@ -68,7 +68,6 @@ export type Direction = "Up" | "Down" | "Left" | "Right";
 export type Format = { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, };
 export type FormatUpdate = { align: CellAlign | null | null, vertical_align: CellVerticalAlign | null | null, wrap: CellWrap | null | null, numeric_format: NumericFormat | null | null, numeric_decimals: number | null | null, numeric_commas: boolean | null | null, bold: boolean | null | null, italic: boolean | null | null, text_color: string | null | null, fill_color: string | null | null, render_size: RenderSize | null | null, date_time: string | null | null, underline: boolean | null | null, strike_through: boolean | null | null, };
 export type GridBounds = { "type": "empty" } | { "type": "nonEmpty" } & Rect;
-<<<<<<< HEAD
 export type JsBorderHorizontal = { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint | null, unbounded: boolean, };
 export type JsBorderVertical = { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint | null, unbounded: boolean, };
 export type JsBordersSheet = { horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, };
@@ -81,6 +80,7 @@ export type JsClipboard = { plainText: string, html: string, };
 export type JsCodeCell = { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, };
 export type JsCodeResult = { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, };
 export type JsCodeTableContext = { sheet_name: string, code_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, language: CodeCellLanguage, code_string: string, std_err: string | null, error: boolean, spill: boolean, };
+export type JsColumnWidth = { column: bigint, width: number, };
 export type JsCoordinate = { x: number, y: number, };
 export type JsDataTableColumnHeader = { name: string, display: boolean, valueIndex: number, };
 export type JsDataTableContext = { sheet_name: string, data_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, };
@@ -93,30 +93,6 @@ export type JsRenderCell = { x: bigint, y: bigint, value: string,
  * Code language, set only for the top left cell of a code output.
  */
 language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, columnHeader: boolean | null, };
-=======
-export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint | null, unbounded: boolean, }
-export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint | null, unbounded: boolean, }
-export interface JsBordersSheet { horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
-export interface JsCellsAccessed { sheetId: string, ranges: Array<CellRefRange>, }
-export interface JsCellValue { value: string, kind: string, }
-export interface JsCellValuePos { value: string, kind: string, pos: string, }
-export interface JsCellValuePosContext { sheet_name: string, rect_origin: string, rect_width: number, rect_height: number, starting_rect_values: Array<Array<JsCellValuePos>>, }
-export interface JsChartContext { sheet_name: string, chart_name: string, bounds: string, language: CodeCellLanguage, code_string: string, spill: boolean, }
-export interface JsClipboard { plainText: string, html: string, }
-export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
-export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
-export interface JsCodeTableContext { sheet_name: string, code_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, language: CodeCellLanguage, code_string: string, std_err: string | null, error: boolean, spill: boolean, }
-export interface JsColumnWidth { column: bigint, width: number, }
-export interface JsCoordinate { x: number, y: number, }
-export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
-export interface JsDataTableContext { sheet_name: string, data_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, }
-export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
-export interface JsCellsA1Value { x: number, y: number, v: string, t: number, }
-export interface JsHtmlOutput { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, }
-export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
-export interface JsOffset { column: number | null, row: number | null, size: number, }
-export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special?: JsRenderCellSpecial, number?: JsNumber, underline?: boolean, strikeThrough?: boolean, columnHeader?: boolean, }
->>>>>>> origin/qa
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
 export type JsRenderCodeCell = { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, columns: Array<JsDataTableColumnHeader>, first_row_header: boolean, sort: Array<DataTableSort> | null, sort_dirty: boolean, alternating_colors: boolean, is_code: boolean, is_html: boolean, is_html_image: boolean, show_name: boolean, show_columns: boolean, };
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success" | "HTML" | "Image";
@@ -198,21 +174,12 @@ end: number, };
 export type TableRef = { table_name: string, data: boolean, headers: boolean, totals: boolean, col_range: ColRange, };
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
-<<<<<<< HEAD
-export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
+export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "ResizeColumns" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
 export type TransientResize = { row: bigint | null, column: bigint | null, old_size: number, new_size: number, };
 export type Validation = { id: string, selection: A1Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, };
 export type ValidationDateTime = { ignore_blank: boolean, require_date: boolean, require_time: boolean, prohibit_date: boolean, prohibit_time: boolean, ranges: Array<DateTimeRange>, };
 export type ValidationError = { show: boolean, style: ValidationStyle, title: string | null, message: string | null, };
 export type ValidationList = { source: ValidationListSource, ignore_blank: boolean, drop_down: boolean, };
-=======
-export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "ResizeColumns" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
-export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
-export interface Validation { id: string, selection: A1Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export interface ValidationDateTime { ignore_blank: boolean, require_date: boolean, require_time: boolean, prohibit_date: boolean, prohibit_time: boolean, ranges: Array<DateTimeRange>, }
-export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
-export interface ValidationList { source: ValidationListSource, ignore_blank: boolean, drop_down: boolean, }
->>>>>>> origin/qa
 export type ValidationListSource = { "Selection": A1Selection } | { "List": Array<string> };
 export type ValidationLogical = { show_checkbox: boolean, ignore_blank: boolean, };
 export type ValidationMessage = { show: boolean, title: string | null, message: string | null, };

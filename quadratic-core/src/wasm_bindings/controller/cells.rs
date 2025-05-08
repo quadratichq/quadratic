@@ -138,13 +138,18 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "getAICellFormats")]
-    pub fn js_get_ai_cell_formats(&self, a1: String, sheet_id: String) -> Result<String, JsValue> {
+    pub fn js_get_ai_cell_formats(
+        &self,
+        a1: String,
+        sheet_id: String,
+        page: i32,
+    ) -> Result<String, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id)
             .map_err(|_| JsValue::from_str("Unable to parse SheetId"))?;
         let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
             .map_err(|_| JsValue::from_str("Unable to parse a1 string"))?;
 
-        match &self.get_ai_cell_formats(selection) {
+        match &self.get_ai_cell_formats(selection, page as u32) {
             Ok(ai_cell_formats) => serde_json::to_string(ai_cell_formats)
                 .map_err(|_| JsValue::from_str("Unable to parse AICellFormats")),
             Err(e) => Err(JsValue::from_str(&format!(

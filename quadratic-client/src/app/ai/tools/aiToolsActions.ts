@@ -364,7 +364,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.GetTextFormats]: async (args) => {
     const sheetId = sheets.getSheetIdFromName(args.sheet_name);
-    const response = await quadraticCore.getAICellFormats(args.selection, sheetId);
+    const response = await quadraticCore.getAICellFormats(sheetId, args.selection, args.page);
     if (response) {
       return `The selection ${args.selection} has:\n${response}`;
     } else {

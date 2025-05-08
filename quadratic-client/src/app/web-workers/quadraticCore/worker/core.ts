@@ -1589,10 +1589,10 @@ class Core {
     }
   }
 
-  getAICellFormats(sheetId: string, selection: string): string {
+  getAICellFormats(sheetId: string, selection: string, page: number): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      return this.gridController.getAICellFormats(sheetId, selection);
+      return this.gridController.getAICellFormats(sheetId, selection, page);
     } catch (e) {
       return JSON.stringify(e);
     }

@@ -27,11 +27,14 @@ export const GetCells = ({ args, loading }: GetCellsProps) => {
     }
   }, [args, loading]);
 
-  const label =
+  let label =
     toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-      ? `Reading data in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}.`
+      ? `Reading data in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
       : 'Reading data...';
-
+  if (toolArgs?.data?.page) {
+    label += ` in page ${toolArgs.data.page + 1}`;
+  }
+  label += '.';
   if (loading) {
     return <ToolCardQuery label={label} isLoading />;
   }

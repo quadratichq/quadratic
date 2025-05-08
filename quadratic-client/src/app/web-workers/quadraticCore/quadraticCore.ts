@@ -810,7 +810,7 @@ class QuadraticCore {
     });
   }
 
-  getAICellFormats(sheetId: string, selection: string) {
+  getAICellFormats(sheetId: string, selection: string, page: number) {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
@@ -821,6 +821,7 @@ class QuadraticCore {
         id,
         sheetId,
         selection,
+        page,
       });
     });
   }

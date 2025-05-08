@@ -257,11 +257,13 @@ export function useSubmitAIAssistantPrompt() {
                 });
                 toolResultMessage.content.push({
                   id: toolCall.id,
+                  fn: toolCall.name,
                   text: result,
                 });
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
+                  fn: toolCall.name,
                   text: 'Unknown tool',
                 });
               }

@@ -731,7 +731,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetAIFormats',
           id: e.data.id,
-          formats: core.getAICellFormats(e.data.sheetId, e.data.selection),
+          formats: core.getAICellFormats(e.data.sheetId, e.data.selection, e.data.page),
         });
         return;
 

@@ -125,7 +125,7 @@ impl Sheet {
     }
 
     /// Returns the rendered value of the cells in a given rect.
-    pub fn get_cells_as_string(&self, rect: Rect) -> Vec<String> {
+    pub fn cells_as_string(&self, rect: Rect) -> Option<Vec<String>> {
         let mut cells = Vec::new();
         for x in rect.min.x..=rect.max.x {
             for y in rect.min.y..=rect.max.y {
@@ -135,11 +135,14 @@ impl Sheet {
                 }
             }
         }
-        cells
+        if cells.is_empty() { None } else { Some(cells) }
     }
 
     /// Returns the rendered formats of the cells in a given rect.
-    pub fn get_cell_formats_as_string(&self, rect: Rect) -> Vec<String> {
+    ///
+    /// todo: it would be better if this returned ranges (but this is difficult
+    /// b/c of tables vs. non-table formatting)
+    pub fn cell_formats_as_string(&self, rect: Rect) -> Vec<String> {
         let mut formats = Vec::new();
         for x in rect.min.x..=rect.max.x {
             for y in rect.min.y..=rect.max.y {
@@ -162,7 +165,7 @@ mod test {
         a1::A1Selection,
         grid::{
             NumericFormat,
-            sheet::validations::{validation::Validation, rules::ValidationRule},
+            sheet::validations::{rules::ValidationRule, validation::Validation},
         },
         wasm_bindings::js::expect_js_call,
     };
