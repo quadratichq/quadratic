@@ -921,7 +921,9 @@ impl CellValue {
             }
             // date - date
             (CellValue::Date(d1), CellValue::Date(d2)) => {
-                CellValue::Duration(Duration::from(*d1 - *d2))
+                // number is more consistent with other spreadsheets.
+                // will coerce to a duration when used.
+                CellValue::from(Duration::from(*d1 - *d2).to_fractional_days())
             }
 
             // time - time
