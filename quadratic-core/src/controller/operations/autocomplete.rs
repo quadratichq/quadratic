@@ -683,7 +683,7 @@ impl GridController {
                         original_pos.x = x;
                         original_pos.y = y;
 
-                        // collecte SetDataTable operations for any data tables in the source_pos
+                        // collect SetDataTable operations for any data tables in the source_pos
                         if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
                             let mut data_table = data_table.to_owned();
                             let old_name = data_table.name().to_string();
