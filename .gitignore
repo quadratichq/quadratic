@@ -76,6 +76,8 @@ docker/postgres-connection/data
 docker/mysql-connection/data
 docker/snowflake-connection/data
 docker/mssql-connection/data
+docker/cockroachdb-connection/data
+docker/bigquery-connection/data
 
 # JMeter
 jmeter.log

@@ -114,7 +114,7 @@ impl PostgresConnection {
     }
 
     /// Query all rows from a PostgreSQL database
-    async fn query_all(pool: &mut PgConnection, sql: &str) -> Result<Vec<PgRow>> {
+    pub(crate) async fn query_all(pool: &mut PgConnection, sql: &str) -> Result<Vec<PgRow>> {
         let rows = sqlx::query(sql)
             .fetch_all(pool)
             .await
@@ -389,8 +389,210 @@ mod tests {
     async fn test_postgres_schema() {
         let connection = new_postgres_connection();
         let mut pool = connection.connect().await.unwrap();
-        let _schema = connection.schema(&mut pool).await.unwrap();
+        let schema = connection.schema(&mut pool).await.unwrap();
 
         // println!("{:?}", schema);
+
+        let expected = vec![
+            SchemaColumn {
+                name: "id".into(),
+                r#type: "int4".into(),
+                is_nullable: false,
+            },
+            SchemaColumn {
+                name: "smallint_col".into(),
+                r#type: "int2".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "integer_col".into(),
+                r#type: "int4".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "bigint_col".into(),
+                r#type: "int8".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "decimal_col".into(),
+                r#type: "numeric".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "numeric_col".into(),
+                r#type: "numeric".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "real_col".into(),
+                r#type: "float4".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "double_col".into(),
+                r#type: "float8".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "serial_col".into(),
+                r#type: "int4".into(),
+                is_nullable: false,
+            },
+            SchemaColumn {
+                name: "bigserial_col".into(),
+                r#type: "int8".into(),
+                is_nullable: false,
+            },
+            SchemaColumn {
+                name: "money_col".into(),
+                r#type: "money".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "char_col".into(),
+                r#type: "bpchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "varchar_col".into(),
+                r#type: "varchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "text_col".into(),
+                r#type: "text".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "bytea_col".into(),
+                r#type: "bytea".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "timestamp_col".into(),
+                r#type: "timestamp".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "timestamptz_col".into(),
+                r#type: "timestamptz".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "date_col".into(),
+                r#type: "date".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "time_col".into(),
+                r#type: "time".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "timetz_col".into(),
+                r#type: "timetz".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "interval_col".into(),
+                r#type: "interval".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "boolean_col".into(),
+                r#type: "bool".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "enum_col".into(),
+                r#type: "varchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "point_col".into(),
+                r#type: "point".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "line_col".into(),
+                r#type: "line".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "lseg_col".into(),
+                r#type: "lseg".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "box_col".into(),
+                r#type: "box".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "path_col".into(),
+                r#type: "path".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "polygon_col".into(),
+                r#type: "polygon".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "circle_col".into(),
+                r#type: "circle".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "cidr_col".into(),
+                r#type: "cidr".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "inet_col".into(),
+                r#type: "inet".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "macaddr_col".into(),
+                r#type: "macaddr".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "json_col".into(),
+                r#type: "json".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "jsonb_col".into(),
+                r#type: "jsonb".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "uuid_col".into(),
+                r#type: "uuid".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "xml_col".into(),
+                r#type: "xml".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "array_col".into(),
+                r#type: "_int4".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "null_bool_col".into(),
+                r#type: "bool".into(),
+                is_nullable: true,
+            },
+        ];
+
+        let columns = &schema.tables.get("all_native_data_types").unwrap().columns;
+
+        assert_eq!(columns, &expected);
     }
 }

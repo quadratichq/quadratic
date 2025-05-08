@@ -15,10 +15,12 @@ use std::sync::Arc;
 use crate::{SharedError, arrow::arrow_type::ArrowType, error::Result};
 
 use self::{
-    mssql_connection::MsSqlConnection, mysql_connection::MySqlConnection,
-    postgres_connection::PostgresConnection,
+    bigquery_connection::BigqueryConnection, mssql_connection::MsSqlConnection,
+    mysql_connection::MySqlConnection, postgres_connection::PostgresConnection,
 };
 
+pub mod bigquery_connection;
+pub mod cockroachdb_connection;
 pub mod error;
 pub mod mssql_connection;
 pub mod mysql_connection;
@@ -27,9 +29,10 @@ pub mod schema;
 pub mod snowflake_connection;
 
 pub enum SqlConnection {
-    Postgres(PostgresConnection),
-    Mysql(MySqlConnection),
+    BigqueryConnection(BigqueryConnection),
     Mssql(MsSqlConnection),
+    Mysql(MySqlConnection),
+    Postgres(PostgresConnection),
     SnowflakeConnection(SnowflakeConnection),
 }
 

@@ -660,6 +660,30 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-bigquery
 
+  cockraochdb-connection:
+    image: cockroachdb/cockroach:latest
+    restart: always
+    container_name: cockroachdb-connection
+    environment:
+      COCKROACH_DATABASE: cockroachdb_connection
+      # COCKROACH_USER: user
+      # COCKROACH_PASSWORD: password
+    ports:
+      - "26257:26257"
+    command: start-single-node --insecure
+    healthcheck:
+      test: ["CMD", "cockroach", "node", "status", "--insecure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/cockroachdb-connection/data:/cockroach/cockroach-data
+      - ./docker/cockroachdb-connection/scripts:/docker-entrypoint-initdb.d
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-cockroachdb
+
 volumes:
   postgres-connection-data:
     name: postgres-connection-data
