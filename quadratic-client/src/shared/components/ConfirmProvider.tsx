@@ -57,10 +57,10 @@ const confirmDialogs: {
     confirmText: isLoggedInUser ? 'Leave' : 'Remove',
   }),
   deleteDemoConnection: () => ({
-    title: 'Hide demo connection',
+    title: 'Remove demo connection',
     message:
-      'This connection will no longer be visible to anyone on your team. This cannot be undone. However, any files referencing this connection will continue to work.',
-    confirmText: 'Hide',
+      'This connection will no longer be visible to your team. However, any files refercing this connection will continue to work.',
+    confirmText: 'Remove',
   }),
 };
 
