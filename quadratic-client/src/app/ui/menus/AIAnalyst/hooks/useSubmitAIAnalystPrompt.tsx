@@ -88,11 +88,6 @@ export function useSubmitAIAnalystPrompt() {
 
         // Open screenshot in new window/tab for debugging
         if (currentScreen) {
-          const url = URL.createObjectURL(currentScreen);
-          window.open(url, '_blank');
-          URL.revokeObjectURL(url);
-        }
-        if (currentScreen) {
           const reader = new FileReader();
           const base64 = await new Promise<string>((resolve) => {
             reader.onloadend = () => {
