@@ -21,7 +21,8 @@ function prepareRenderer(): Renderer {
 
 export const getScreenImage = async (): Promise<Blob | null> => {
   const renderer = prepareRenderer();
-  renderer.render(pixiApp.viewportContents);
+  // todo: probably right-size the scale of the image so it's not too big?
+  renderer.render(pixiApp.stage);
   return new Promise((resolve) => {
     renderer!.view.toBlob?.((blob) => resolve(blob));
   });

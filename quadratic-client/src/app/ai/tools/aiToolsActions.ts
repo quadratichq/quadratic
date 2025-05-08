@@ -371,7 +371,4 @@ export const aiToolsActions: AIToolActionsRecord = {
       return 'There was an error executing the get cell formats tool';
     }
   },
-  [AITool.GetScreenImage]: async () => {
-    return `Screen image tool executed successfully.`;
-  },
 } as const;

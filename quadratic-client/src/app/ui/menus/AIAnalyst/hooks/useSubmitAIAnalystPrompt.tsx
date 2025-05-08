@@ -20,6 +20,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getScreenImage } from '@/app/gridGL/pixiApp/copyAsPNG';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
@@ -61,7 +62,8 @@ export function useSubmitAIAnalystPrompt() {
           tablesContext,
           currentSheetContext,
           visibleContext,
-          /*selectionContext,*/ filesContext,
+          /*selectionContext,*/
+          filesContext,
         ] = await Promise.all([
           getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
           getTablesContext(),
@@ -81,6 +83,30 @@ export function useSubmitAIAnalystPrompt() {
           ...getPromptMessagesWithoutPDF(chatMessages),
         ];
 
+        // Include a screenshot of what the user is seeing
+        const currentScreen = await getScreenImage();
+
+        // Open screenshot in new window/tab for debugging
+        if (currentScreen) {
+          const url = URL.createObjectURL(currentScreen);
+          window.open(url, '_blank');
+          URL.revokeObjectURL(url);
+        }
+        if (currentScreen) {
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve) => {
+            reader.onloadend = () => {
+              const result = reader.result as string;
+              resolve(result.split(',')[1]);
+            };
+            reader.readAsDataURL(currentScreen);
+          });
+          messagesWithContext.push({
+            role: 'user',
+            content: [{ type: 'data', data: base64, mimeType: 'image/png', fileName: 'screen.png' }],
+            contextType: 'userPrompt',
+          });
+        }
         return messagesWithContext;
       },
     [

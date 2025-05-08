@@ -15,7 +15,6 @@ export enum AITool {
   GetCellData = 'get_cell_data',
   SetTextFormats = 'set_text_formats',
   GetTextFormats = 'get_text_formats',
-  GetScreenImage = 'get_screen_image',
 }
 
 export const AIToolSchema = z.enum([
@@ -32,7 +31,6 @@ export const AIToolSchema = z.enum([
   AITool.GetCellData,
   AITool.SetTextFormats,
   AITool.GetTextFormats,
-  AITool.GetScreenImage,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -163,7 +161,6 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string(),
     selection: z.string(),
   }),
-  [AITool.GetScreenImage]: z.object({}),
 } as const;
 
 export type AIToolSpecRecord = {
@@ -678,24 +675,6 @@ Never extract data from PDF files that are not relevant to the user's prompt. Ne
 Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
 `,
-  },
-  [AITool.GetScreenImage]: {
-    sources: ['AIAnalyst'],
-    description: `
-    This tool returns a screenshot of what the user currently sees on the current screen, requires no parameters.\n
-    Use this tool call to understand the user's current context and to provide a more accurate and relevant response.\n
-    `,
-    parameters: {
-      type: 'object',
-      properties: {},
-      required: [],
-      additionalProperties: false,
-    },
-    responseSchema: AIToolsArgsSchema[AITool.GetScreenImage],
-    prompt: `
-    This tool returns a screenshot of what the user currently sees on the current screen, requires no parameters.\n
-    Use this tool call to understand the user's current context and to provide a more accurate and relevant response.\n
-    `,
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
