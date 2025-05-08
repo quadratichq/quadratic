@@ -332,7 +332,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetTextFormats]: async (args) => {
     const kind = args.number_type
-      ? (expectedEnum(args.number_type, ['number', 'currency', 'percentage', 'exponential']) as NumericFormatKind)
+      ? (expectedEnum(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL']) as NumericFormatKind)
       : null;
     let numericFormat: NumericFormat | null = null;
     if (kind) {
@@ -370,5 +370,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     } else {
       return 'There was an error executing the get cell formats tool';
     }
+  },
+  [AITool.GetScreenImage]: async () => {
+    return `Screen image tool executed successfully.`;
   },
 } as const;

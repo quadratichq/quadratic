@@ -1,7 +1,6 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -22,7 +21,7 @@ export const useAnalystPDFImport = () => {
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
-  const { getSelectionContext } = useSelectionContextMessages();
+  // const { getSelectionContext } = useSelectionContextMessages();
 
   const importPDF = useRecoilCallback(
     ({ set }) =>
@@ -43,13 +42,13 @@ export const useAnalystPDFImport = () => {
             return `File with name ${file_name} not found`;
           }
 
-          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, selectionContext] =
+          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext /*selectionContext*/] =
             await Promise.all([
               getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
               getTablesContext(),
               getCurrentSheetContext({ currentSheetName: context.currentSheet }),
               getVisibleContext(),
-              getSelectionContext({ selection: context.selection }),
+              // getSelectionContext({ selection: context.selection }),
             ]);
 
           const messagesWithContext: ChatMessage[] = [
@@ -91,7 +90,7 @@ How can I help you?`,
             ...tablesContext,
             ...currentSheetContext,
             ...visibleContext,
-            ...selectionContext,
+            // ...selectionContext,
             {
               role: 'user',
               content: [
@@ -159,7 +158,7 @@ How can I help you?`,
       getTablesContext,
       getCurrentSheetContext,
       getVisibleContext,
-      getSelectionContext,
+      // getSelectionContext,
     ]
   );
 

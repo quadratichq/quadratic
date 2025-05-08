@@ -8,8 +8,7 @@ const maxTextureSize = 4096;
 
 let renderer: Renderer | undefined;
 
-/** returns a dataURL to a copy of the selected cells */
-export const copyAsPNG = async (): Promise<Blob | null> => {
+function prepareRenderer(): Renderer {
   if (!renderer) {
     renderer = new Renderer({
       resolution,
@@ -17,6 +16,20 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
       backgroundColor: 0xffffff,
     });
   }
+  return renderer;
+}
+
+export const getScreenImage = async (): Promise<Blob | null> => {
+  const renderer = prepareRenderer();
+  renderer.render(pixiApp.viewportContents);
+  return new Promise((resolve) => {
+    renderer!.view.toBlob?.((blob) => resolve(blob));
+  });
+};
+
+/** returns a dataURL to a copy of the selected cells */
+export const copyAsPNG = async (): Promise<Blob | null> => {
+  const renderer = prepareRenderer();
 
   const rect = sheets.sheet.cursor.getLargestRectangle();
   if (!rect) return null;
