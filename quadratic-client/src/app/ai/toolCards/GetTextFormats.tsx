@@ -1,5 +1,4 @@
-import { ToolCard } from '@/app/ai/toolCards/ToolCard';
-import { GridActionIcon } from '@/shared/components/Icons';
+import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';
 import type { z } from 'zod';
@@ -28,18 +27,20 @@ export const GetTextFormats = ({ args, loading }: GetTextFormatsProps) => {
     }
   }, [args, loading]);
 
-  const icon = <GridActionIcon />;
-  const label = 'Get text formats';
+  const label =
+    toolArgs?.data?.sheet_name && toolArgs?.data?.selection
+      ? `Reading formats in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}.`
+      : 'Reading formats...';
 
   if (loading) {
-    return <ToolCard icon={icon} label={label} isLoading />;
+    return <ToolCardQuery label={label} isLoading />;
   }
 
   if (!!toolArgs && !toolArgs.success) {
-    return <ToolCard icon={icon} label={label} hasError />;
+    return <ToolCardQuery label={label} hasError />;
   } else if (!toolArgs || !toolArgs.data) {
-    return <ToolCard icon={icon} label={label} isLoading />;
+    return <ToolCardQuery label={label} isLoading />;
   }
 
-  return <ToolCard icon={icon} label={label} description={` from ${toolArgs.data.selection}`} />;
+  return <ToolCardQuery label={label} />;
 };

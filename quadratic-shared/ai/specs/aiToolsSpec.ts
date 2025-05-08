@@ -234,10 +234,10 @@ This name should be from user's perspective, not the assistant's.\n
     prompt: `
     This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
     You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
-    This tool does NOT return formatting information (like bold, currency, etc.). Use get_format_cells function for cell formatting information.\n
+    This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
     CRITICALLY IMPORTANT: If too large, the results will include page information:\n
     - if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
-    - ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actionsbefore moving to the next page.\n
+    - ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
      `,
   },
   [AITool.SetCellValues]: {
@@ -749,27 +749,27 @@ Data tables are best for adding new tabular data to the sheet.\n
 Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
-Don't attempt to add formulas or code to data tables.\n
-IMPORTANT: Before using this tool, you MUST verify there is sufficient empty space for the table by following these steps:\n
-1. Use the get_cell_data function to check the entire area where the new table will be placed\n
-2. If get_cell_data returns any data in that area, you MUST try again by:\n
-   - Calling get_cell_data function again with a different location\n
-   - You MUST use the get_cell_data function as many times as needed until you find a completely empty area large enough for the table\n
-   - You MUST continue this process until you find an empty area large enough for the table\n
-   - You CANNOT avoid the spill error if the table overlaps existing cells\n
-3. The empty area must be large enough to accommodate:\n
-   - The table data itself\n
-   - The table name row\n
-   - 2 rows of padding below\n
-   - 2 columns of padding to the right\n
-4. When checking for empty space, you MUST verify:\n
-   - The entire area is completely empty, including any cells that might be hidden or not immediately visible\n
-   - There are no hidden formulas, conditional formatting, or other invisible content\n
-   - The area is not part of an existing table or data structure\n
-5. If you cannot find a suitable empty area:\n
-   - Inform the user that there is insufficient space\n
-   - Suggest they clear some space or use a different sheet\n
-   - DO NOT attempt to force the table into a non-empty area\n
-`,
+Don't attempt to add formulas or code to data tables.\n`,
+    // IMPORTANT: Before using this tool, you MUST find empty space to place the table:\n
+    // 1. Use the get_cell_data function to check the entire area where the new table will be placed\n
+    // 2. If get_cell_data returns any data in that area, you MUST try again by:\n
+    //    - Calling get_cell_data function again with a different location\n
+    //    - You MUST use the get_cell_data function as many times as needed until you find a completely empty area large enough for the table\n
+    //    - You MUST continue this process until you find an empty area large enough for the table\n
+    //    - You CANNOT avoid the spill error if the table overlaps existing cells\n
+    // 3. The empty area must be large enough to accommodate:\n
+    //    - The table data itself\n
+    //    - The table name row\n
+    //    - 2 rows of padding below\n
+    //    - 2 columns of padding to the right\n
+    // 4. When checking for empty space, you MUST verify:\n
+    //    - The entire area is completely empty, including any cells that might be hidden or not immediately visible\n
+    //    - There are no hidden formulas, conditional formatting, or other invisible content\n
+    //    - The area is not part of an existing table or data structure\n
+    // 5. If you cannot find a suitable empty area:\n
+    //    - Inform the user that there is insufficient space\n
+    //    - Suggest they clear some space or use a different sheet\n
+    //    - DO NOT attempt to force the table into a non-empty area\n
+    // `,
   },
 } as const;
