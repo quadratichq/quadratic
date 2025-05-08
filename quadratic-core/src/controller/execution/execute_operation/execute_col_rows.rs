@@ -1092,7 +1092,7 @@ mod tests {
         gc.insert_column(sheet_id, 3, false, None);
 
         assert_eq!(&table, gc.data_table(pos![sheet_id!d2]).unwrap());
-        assert_data_table(&gc, pos![sheet_id!d2], &table);
+        assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
     }
 
     #[test]
@@ -1106,6 +1106,6 @@ mod tests {
         gc.insert_column(sheet_id, 3, false, None);
 
         // todo: this is wrong, the data table should be at c2, not d2
-        assert_data_table(&gc, pos![sheet_id!c2], &table);
+        assert_data_table_eq(&gc, pos![sheet_id!c2], &table);
     }
 }

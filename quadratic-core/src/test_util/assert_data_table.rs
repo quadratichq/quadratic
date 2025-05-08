@@ -60,7 +60,7 @@ pub fn assert_chart_size(
 /// Run an assertion that a data table is equal to the given data table.
 #[cfg(test)]
 #[track_caller]
-pub fn assert_data_table(gc: &GridController, sheet_pos: SheetPos, dt: &DataTable) {
+pub fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataTable) {
     let sheet = gc.sheet(sheet_pos.sheet_id);
     assert!(
         matches!(
@@ -323,7 +323,7 @@ mod tests {
         let dt = test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
         // Assert that the data table matches the expected one
-        assert_data_table(&gc, pos![sheet_id!a1], &dt);
+        assert_data_table_eq(&gc, pos![sheet_id!a1], &dt);
     }
 
     #[test]
@@ -339,6 +339,6 @@ mod tests {
         let different_dt = test_create_data_table(&mut gc, sheet_id, pos![D1], 2, 2);
 
         // This should panic since the data tables are different
-        assert_data_table(&gc, pos![sheet_id!a1], &different_dt);
+        assert_data_table_eq(&gc, pos![sheet_id!a1], &different_dt);
     }
 }
