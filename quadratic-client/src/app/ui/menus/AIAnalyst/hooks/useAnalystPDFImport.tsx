@@ -3,7 +3,6 @@ import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetCo
 // import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
-import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
@@ -21,7 +20,7 @@ export const useAnalystPDFImport = () => {
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
-  const { getVisibleContext } = useVisibleContextMessages();
+  // const { getVisibleContext } = useVisibleContextMessages();
   // const { getSelectionContext } = useSelectionContextMessages();
 
   const importPDF = useRecoilCallback(
@@ -43,12 +42,12 @@ export const useAnalystPDFImport = () => {
             return `File with name ${file_name} not found`;
           }
 
-          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext /*selectionContext*/] =
+          const [otherSheetsContext, tablesContext, currentSheetContext /*visibleContext, selectionContext*/] =
             await Promise.all([
               getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
               getTablesContext(),
               getCurrentSheetContext({ currentSheetName: context.currentSheet }),
-              getVisibleContext(),
+              // getVisibleContext(),
               // getSelectionContext({ selection: context.selection }),
             ]);
 
@@ -90,7 +89,7 @@ How can I help you?`,
             ...otherSheetsContext,
             ...tablesContext,
             ...currentSheetContext,
-            ...visibleContext,
+            // ...visibleContext,
             // ...selectionContext,
             {
               role: 'user',
@@ -158,7 +157,7 @@ How can I help you?`,
       getOtherSheetsContext,
       getTablesContext,
       getCurrentSheetContext,
-      getVisibleContext,
+      // getVisibleContext,
       // getSelectionContext,
     ]
   );

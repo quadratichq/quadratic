@@ -1,4 +1,5 @@
 import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
+import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
 import { GetCells } from '@/app/ai/toolCards/GetCells';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
@@ -46,6 +47,8 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <SetTextFormats args={args} loading={loading} />;
     case AITool.GetTextFormats:
       return <GetTextFormats args={args} loading={loading} />;
+    case AITool.ConvertToTable:
+      return <ConvertToTable args={args} loading={loading} />;
     default:
       console.error(`Unknown tool: ${name}`);
       return null;

@@ -44,6 +44,7 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
+  console.error(error);
 
   return (
     <EmptyPage

@@ -104,6 +104,10 @@ export class Sheets {
     if (!sheet) return;
     sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
+    pixiApp.headings.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.cursor.dirty = true;
+    pixiApp.multiplayerCursor.dirty = true;
   };
 
   private updateOffsets = (sheetId: string, offsets: JsOffset[]) => {

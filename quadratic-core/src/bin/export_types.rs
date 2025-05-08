@@ -24,6 +24,7 @@ use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
+use quadratic_core::grid::js_types::JsColumnWidth;
 use quadratic_core::grid::js_types::JsDataTableContext;
 use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
@@ -136,6 +137,7 @@ fn main() {
         JsCodeCell,
         JsCodeResult,
         JsCodeTableContext,
+        JsColumnWidth,
         JsCoordinate,
         JsDataTableColumnHeader,
         JsDataTableContext,

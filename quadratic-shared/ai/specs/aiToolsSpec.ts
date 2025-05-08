@@ -208,6 +208,7 @@ This name should be from user's perspective, not the assistant's.\n
     sources: ['AIAnalyst'],
     description: `
     This tool returns the values of the cells in the chosen selection.\n
+    Do NOT use this tool if there is no data based on the data bounds provided for the sheet.\n
     You should use the get_cell_data function to get the values of the cells when you need more data to reference.\n
     Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
     get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
@@ -238,7 +239,7 @@ This name should be from user's perspective, not the assistant's.\n
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
     This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
-    Do NOT use this tool if there is no data in the region based on the data bounds provided for the sheet.\n
+    Do NOT use this tool if there is no data based on the data bounds provided for the sheet.\n
     You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
     This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
     CRITICALLY IMPORTANT: If too large, the results will include page information:\n
