@@ -4,7 +4,7 @@ import * as Postgres from '@/shared/components/connections/ConnectionFormPostgre
 import * as Snowflake from '@/shared/components/connections/ConnectionFormSnowflake';
 import type { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import type { ReactNode } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
+import type { SubmitHandler, UseFormReturn } from 'react-hook-form';
 import MssqlLogo from './logo-mssql.svg?react';
 import MysqlLogo from './logo-mysql.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
@@ -25,7 +25,7 @@ export type UseConnectionForm<T extends ConnectionFormValues> = (connection: Con
 export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
   form: UseFormReturn<T>;
   children: ReactNode;
-  handleSubmitForm: (formValues: ConnectionFormValues) => void;
+  handleSubmitForm: SubmitHandler<ConnectionFormValues>;
 }) => ReactNode;
 
 type ConnectionTypeData<T extends ConnectionFormValues> = {
