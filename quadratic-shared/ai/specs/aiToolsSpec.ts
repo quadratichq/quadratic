@@ -230,6 +230,7 @@ This name should be from user's perspective, not the assistant's.\n
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
     This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
+    Do NOT use this tool if there is no data in the region based on the data bounds provided for the sheet.\n
     You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
     This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
     CRITICALLY IMPORTANT: If too large, the results will include page information:\n
@@ -445,6 +446,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     sources: ['AIAnalyst'],
     description: `
     This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+    Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
     It should be used to find formatting within a sheet's formatting bounds.\n
     It returns a string representation of the formatting information of the cells in the selection.\n
     `,
@@ -466,6 +468,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     responseSchema: AIToolsArgsSchema[AITool.GetTextFormats],
     prompt: `
     The get_text_formats tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+    Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
     It should be used to find formatting within a sheet's formatting bounds.\n
     It returns a string representation of the formatting information of the cells in the selection.\n
     `,
@@ -475,6 +478,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     description: `
     This tool sets the text formats of a selection of cells on a specified sheet.\n
     It requires the sheet name, the selection of cells to set the formats of, and any formats to set.\n
+    When changing formatting, BE CAREFUL NOT TO alter existing, unrelated formatting.\n
     There must be at least one format to set.\n
     `,
     parameters: {
@@ -562,6 +566,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     - currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
     - date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
     There must be at least one format to set.\n
+    When changing formatting, BE CAREFUL NOT TO alter existing, unrelated formatting.\n
     You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {
