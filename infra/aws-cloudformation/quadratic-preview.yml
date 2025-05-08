@@ -156,6 +156,9 @@ Resources:
           IMAGE_TAG=${ImageTag}
           EOF
 
+          # misc
+          CONNECTION_DEMO=$(aws ssm get-parameter --name "/quadratic-development/CONNECTION_DEMO" --with-decryption --query "Parameter.Value" --output text)
+
           # Create login.sh script and run it
           cat << 'EOF' > /quadratic-selfhost/login.sh
           #!/bin/bash
