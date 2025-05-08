@@ -59,7 +59,7 @@ const confirmDialogs: {
   deleteDemoConnection: () => ({
     title: 'Hide demo connection',
     message:
-      'This connection will no longer be visible to anyone on your team. This cannot be undone. However, any files refercing this connection will continue to work.',
+      'This connection will no longer be visible to anyone on your team. This cannot be undone. However, any files referencing this connection will continue to work.',
     confirmText: 'Hide',
   }),
 };
