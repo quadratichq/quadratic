@@ -47,6 +47,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   settings: {
     analyticsAi: false,
+    showDemoConnection: true,
   },
   user: undefined, // when we call <RecoilRoot> we initialize this with the value from the server
   fileUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server

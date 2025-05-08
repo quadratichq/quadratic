@@ -1,4 +1,5 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { apiClient } from '@/shared/api/apiClient';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon, CloseIcon, EditIcon } from '@/shared/components/Icons';
@@ -26,6 +27,7 @@ type Props = {
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
+  teamUuid: string;
 };
 
 export const ConnectionsList = ({
@@ -34,6 +36,7 @@ export const ConnectionsList = ({
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
+  teamUuid,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
 
@@ -96,6 +99,7 @@ export const ConnectionsList = ({
               items={connections}
               handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
+              teamUuid={teamUuid}
             />
           </>
         ) : (
@@ -116,79 +120,87 @@ function ListItems({
   handleNavigateToDetailsView,
   handleNavigateToEditView,
   items,
+  teamUuid,
 }: {
   filterQuery: string;
   handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   items: ConnectionsListConnection[];
+  teamUuid: string;
 }) {
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
+  const [hideDemoConnection, setHideDemoConnection] = useState(false);
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => (
-        <div className="group relative flex items-center gap-1" key={uuid}>
-          <button
-            onClick={() => {
-              handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
-            }}
-            disabled={disabled}
-            key={uuid}
-            className={cn(
-              `flex w-full items-center gap-4 rounded px-1 py-2`,
-              disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
-              // i < filteredConnections.length - 1 && 'border-b border-border'
-            )}
-          >
-            <div className={'flex h-6 w-6 items-center justify-center'}>
-              <LanguageIcon language={type} />
-            </div>
-            <div className="flex flex-grow flex-col text-left">
-              <span className="text-sm">
-                {name}{' '}
-                {isDemo && (
-                  <Badge variant="outline" className="ml-1">
-                    Demo
-                  </Badge>
-                )}
-              </span>
-              <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
-              </time>
-            </div>
-          </button>
-          {isDemo ? (
-            <Button
-              aria-label="Hide demo connection"
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
-              onClick={async () => {
-                if (await confirmFn()) {
-                  // TODO:
-                }
-              }}
-            >
-              <CloseIcon />
-            </Button>
-          ) : disabled ? null : (
-            <Button
-              aria-label="Edit connection"
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+      {filteredItems
+        .filter(({ isDemo }) => !(isDemo && hideDemoConnection))
+        .map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => (
+          <div className="group relative flex items-center gap-1" key={uuid}>
+            <button
               onClick={() => {
-                handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
               }}
+              disabled={disabled}
+              key={uuid}
+              className={cn(
+                `flex w-full items-center gap-4 rounded px-1 py-2`,
+                disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
+                // i < filteredConnections.length - 1 && 'border-b border-border'
+              )}
             >
-              <EditIcon />
-            </Button>
-          )}
-        </div>
-      ))}
+              <div className={'flex h-6 w-6 items-center justify-center'}>
+                <LanguageIcon language={type} />
+              </div>
+              <div className="flex flex-grow flex-col text-left">
+                <span className="text-sm">
+                  {name}{' '}
+                  {isDemo && (
+                    <Badge variant="outline" className="ml-1">
+                      Demo
+                    </Badge>
+                  )}
+                </span>
+                <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                  {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
+                </time>
+              </div>
+            </button>
+            {isDemo ? (
+              <Button
+                aria-label="Hide demo connection"
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
+                onClick={async () => {
+                  if (await confirmFn()) {
+                    // Immediately hide it in the UI
+                    setHideDemoConnection(true);
+                    // Then update this preference on the server
+                    apiClient.teams.update(teamUuid, { settings: { showDemoConnection: false } });
+                  }
+                }}
+              >
+                <CloseIcon />
+              </Button>
+            ) : disabled ? null : (
+              <Button
+                aria-label="Edit connection"
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+                onClick={() => {
+                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                }}
+              >
+                <EditIcon />
+              </Button>
+            )}
+          </div>
+        ))}
     </div>
   ) : (
     <Type className="py-2 text-center">No matches.</Type>

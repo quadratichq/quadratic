@@ -126,7 +126,8 @@ model Team {
     clientDataKv Json @default("{}") @map("client_data_kv")
 
     // Settings
-    settingAnalyticsAi Boolean @default(true) @map("setting_analytics_ai")
+    settingAnalyticsAi        Boolean @default(true) @map("setting_analytics_ai")
+    settingShowDemoConnection Boolean @default(true) @map("setting_show_demo_connection")
 
     // SSH Keys
     sshPrivateKey Bytes?

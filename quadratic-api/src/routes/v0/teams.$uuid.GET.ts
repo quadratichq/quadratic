@@ -3,10 +3,10 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsers } from '../../auth/auth';
 import { BillingAIUsageMonthlyForUser } from '../../billing/AIUsageHelpers';
-import { demoConnectionCondensed } from '../../data/connections';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
 import { getTeam } from '../../middleware/getTeam';
+import { getTeamConnectionsList } from '../../middleware/getTeamConnectionsList';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
@@ -97,6 +97,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbFiles = dbTeam.File ? dbTeam.File : [];
   const dbUsers = dbTeam.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
+  const dbConnections = dbTeam.Connection ? dbTeam.Connection : [];
 
   // Get user info from auth
   const authUsersById = await getUsers(dbUsers.map(({ user }) => user));
@@ -143,6 +144,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       name: team.name,
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
+        showDemoConnection: dbTeam.settingShowDemoConnection,
       },
       sshPublicKey: decryptedTeam.sshPublicKey,
     },
@@ -203,12 +205,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
         },
       })),
     license: { ...license },
-    connections: dbTeam.Connection.map((connection) => ({
-      uuid: connection.uuid,
-      name: connection.name,
-      createdDate: connection.createdDate.toISOString(),
-      type: connection.type,
-    })).concat(demoConnectionCondensed),
+    connections: getTeamConnectionsList({ dbConnections, settingShowDemoConnection: dbTeam.settingShowDemoConnection }),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
   };
 

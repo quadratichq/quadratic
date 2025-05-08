@@ -165,6 +165,7 @@ export const Connections = ({
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
+            teamUuid={teamUuid}
           />
         )}
       </div>
