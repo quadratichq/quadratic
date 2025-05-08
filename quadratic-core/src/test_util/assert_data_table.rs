@@ -1,6 +1,5 @@
-use crate::SheetPos;
 #[cfg(test)]
-use crate::{CellValue, Pos, controller::GridController, grid::DataTable, grid::SheetId};
+use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::DataTable, grid::SheetId};
 
 /// Runs an assertion that a cell value is equal to the given value. The col/row
 /// are 0-indexed to the table and ignore all ui elements (ie, table name and

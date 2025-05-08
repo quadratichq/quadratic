@@ -4546,13 +4546,8 @@ dependencies = [
  "parquet",
  "pollster",
  "quadratic-rust-shared",
-<<<<<<< HEAD
- "rand 0.9.0",
- "regex",
-=======
  "rand 0.9.1",
  "regex 1.11.1",
->>>>>>> origin/qa
  "rstar",
  "serde",
  "serde-wasm-bindgen",
@@ -5161,8 +5156,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "russh"
 version = "0.51.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5267,7 +5260,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> origin/qa
 name = "rust_decimal"
 version = "1.37.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
