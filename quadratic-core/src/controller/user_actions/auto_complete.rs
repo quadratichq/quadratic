@@ -765,19 +765,19 @@ mod tests {
     #[test]
     fn test_expand_down_and_right_in_and_outside_of_data_table() {
         let (mut grid, sheet_id, _, _) = simple_csv();
-        let pos = pos![A2];
+        let pos = pos![A3];
         let selected: Rect = Rect::new_span(pos, pos);
         let range: Rect = Rect::new_span(selected.min, Pos { x: 6, y: 14 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
-        let expected = vec!["city", "city", "city", "city", "city", "city"];
+        let expected = vec!["Southborough", "Southborough", "Southborough", "Southborough", "Southborough", "Southborough"];
 
-        // validate rows 3-14
+        // validate rows 4-14
         // data table is in rows 1 - 12, 4 columns wide
         // autocomplete expanded beyond the data table: right 2 columns, down 2 rows
-        for y in 3..=14 {
+        for y in 4..=14 {
             assert_cell_value_row(&grid, sheet_id, 1, 6, y, expected.clone());
         }
     }
