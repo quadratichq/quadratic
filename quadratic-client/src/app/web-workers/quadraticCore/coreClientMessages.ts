@@ -1156,6 +1156,7 @@ export interface ClientCoreCodeDataTableToDataTable {
 export interface ClientCoreGridToDataTable {
   type: 'clientCoreGridToDataTable';
   sheetRect: string;
+  firstRowIsHeader: boolean;
   cursor: string;
 }
 

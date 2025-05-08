@@ -187,7 +187,7 @@ export const gridToDataTable = () => {
       min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
-    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
+    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), false, sheets.getCursorPosition());
   }
 };
 

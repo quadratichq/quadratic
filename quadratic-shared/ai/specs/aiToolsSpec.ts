@@ -15,6 +15,7 @@ export enum AITool {
   GetCellData = 'get_cell_data',
   SetTextFormats = 'set_text_formats',
   GetTextFormats = 'get_text_formats',
+  ConvertToTable = 'convert_to_table',
 }
 
 export const AIToolSchema = z.enum([
@@ -31,6 +32,7 @@ export const AIToolSchema = z.enum([
   AITool.GetCellData,
   AITool.SetTextFormats,
   AITool.GetTextFormats,
+  AITool.ConvertToTable,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -160,6 +162,12 @@ export const AIToolsArgsSchema = {
   [AITool.GetTextFormats]: z.object({
     sheet_name: z.string(),
     selection: z.string(),
+  }),
+  [AITool.ConvertToTable]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
+    table_name: z.string(),
+    first_row_is_column_names: z.boolean(),
   }),
 } as const;
 
@@ -681,10 +689,49 @@ Follow the user's instructions carefully and provide accurate and relevant data.
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
 `,
   },
+  [AITool.ConvertToTable]: {
+    sources: ['AIAnalyst'],
+    description: `
+    This tool converts a selection of cells on a specified sheet into a data table.\n
+    It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
+    A data table cannot be created over any existing code cells or data tables.\n
+    The data table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
+    `,
+    parameters: {
+      type: 'object',
+      properties: {
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to convert to a data table, in a1 notation. This MUST be a rectangle, like A2:D20',
+        },
+        table_name: {
+          type: 'string',
+          description:
+            "The name of the data table to create, this should be a concise and descriptive name of the data table. Don't use special characters or spaces in the name. Always use a unique name for the data table. Spaces, if any, in name are replaced with underscores.",
+        },
+        first_row_is_column_names: {
+          type: 'boolean',
+          description: 'Whether the first row of the selection is the column names',
+        },
+      },
+      required: ['sheet_name', 'selection', 'table_name', 'first_row_is_column_names'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ConvertToTable],
+    prompt: `
+    This tool converts a selection of cells on a specified sheet into a data table.\n
+    It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
+    A data table cannot be created over any existing code cells or data tables.\n
+    The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
+    The data table will include a table name as the first row, which will push down all data by one row.\n
+    `,
+  },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
 Data tables are best for adding new tabular data to the sheet.\n\n
@@ -725,6 +772,7 @@ Don't use this tool to add data to an existing data table. Use set_cell_values f
     prompt: `
 Adds a data table to the current sheet defined in the context, requires the sheet name, top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 top_left_position is the anchor position of the data table.\n
+Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
 CRITICALLY IMPORTANT: Unless requested by the user, do not use this tool to add data to the sheet. Use set_cell_values instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n

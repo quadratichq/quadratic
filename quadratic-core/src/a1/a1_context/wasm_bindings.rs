@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{Pos, grid::SheetId};
+use crate::{Pos, SheetRect, a1::A1Selection, grid::SheetId};
 
 use super::A1Context;
 use wasm_bindgen::prelude::*;
@@ -52,4 +52,22 @@ pub fn get_table_name_in_name_or_column(
         return None;
     };
     context.table_in_name_or_column(sheet_id, x, y)
+}
+
+#[wasm_bindgen(js_name = "selectionToSheetRect")]
+pub fn selection_to_sheet_rect(sheet_name: &str, selection: &str) -> Result<String, String> {
+    let sheet_id = SheetId::from_str(sheet_name).map_err(|e| format!("Sheet not found: {e}"))?;
+    let selection = serde_json::from_str::<A1Selection>(selection)
+        .map_err(|e| format!("Invalid selection: {e}"))?;
+    let range = selection
+        .ranges
+        .first()
+        .ok_or("Invalid selection: no ranges")?;
+    // we don't really need the context here, but we need to pass something
+    let context = A1Context::default();
+    let rect = range
+        .to_rect(&context)
+        .ok_or("Invalid selection: not a rectangle")?;
+    let sheet_rect = rect.to_sheet_rect(sheet_id);
+    Ok(serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())?)
 }
