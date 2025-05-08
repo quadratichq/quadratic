@@ -86,7 +86,7 @@ clear the entire `TEST_ARRAY` (for the same reason as above).
 
 ## How to add environment variables
 
-When possible, you can provide sensible fallbacks to environtment variables so that if they’re not present in the environment the app still functions.
+When possible, you can provide sensible fallbacks to environment variables so that if they're not present in the environment the app still functions.
 
 But if you are adding a critical env variables that the app absolutely depends on, follow the instructions below.
 
