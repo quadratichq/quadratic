@@ -82,7 +82,6 @@ export class Cursor extends Container {
     }
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
-    const insideTable = tables.getInTable(cell);
     const tableName = table?.getTableNameBounds();
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
@@ -96,9 +95,7 @@ export class Cursor extends Container {
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      (!insideTable || insideTable?.isSingleValue()) &&
       !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
-      (!pixiApp.cellsSheet().tables.cursorOnDataTable() || cursor.isSingleSelection()) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
