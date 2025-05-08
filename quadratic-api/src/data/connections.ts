@@ -11,7 +11,7 @@ export const demoConnection = {
   isDemo: true,
 } as Connection;
 
-export const demoConnectionCondensend = {
+export const demoConnectionCondensed = {
   uuid: demoConnection.uuid,
   name: demoConnection.name,
   type: demoConnection.type,

@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { demoConnectionCondensend } from '../../data/connections';
+import { demoConnectionCondensed } from '../../data/connections';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -54,7 +54,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       createdDate: createdDate.toISOString(),
       type,
     }))
-    .concat(demoConnectionCondensend);
+    .concat(demoConnectionCondensed);
 
   return res.status(200).json(data);
 }
