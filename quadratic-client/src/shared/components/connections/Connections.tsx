@@ -6,15 +6,11 @@ import { ConnectionsList } from '@/shared/components/connections/ConnectionsList
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useFetchers, useSearchParams } from 'react-router';
 
-export type ConnectionsListConnection = {
-  uuid: string;
-  name: string;
-  createdDate: string;
-  type: ConnectionType;
+export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
 };
 type Props = {
@@ -111,6 +107,15 @@ export const Connections = ({
     });
   }
 
+  // Connection hidden? Remove it from the list
+  const demoConnectionBeingHidden = fetchers.filter(
+    (fetcher) =>
+      isJsonObject(fetcher.json) && fetcher.json.action === 'toggle-demo-connection' && fetcher.state !== 'idle'
+  );
+  if (demoConnectionBeingHidden.length) {
+    connections = connections.filter((c) => !c.isDemo);
+  }
+
   /**
    * Navigation
    */
@@ -169,6 +174,7 @@ export const Connections = ({
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
+            teamUuid={teamUuid}
           />
         )}
       </div>

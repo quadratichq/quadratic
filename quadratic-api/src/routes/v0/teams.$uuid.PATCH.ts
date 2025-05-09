@@ -52,7 +52,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     data: {
       ...(name ? { name } : {}),
       ...(clientDataKv ? { clientDataKv: { ...validatedExistingClientDataKv, ...clientDataKv } } : {}),
-      ...(settings ? { settingAnalyticsAi: settings.analyticsAi } : {}),
+      ...(settings
+        ? {
+            ...(settings.analyticsAi !== undefined ? { settingAnalyticsAi: settings.analyticsAi } : {}),
+            ...(settings.showDemoConnection !== undefined
+              ? { settingShowDemoConnection: settings.showDemoConnection }
+              : {}),
+          }
+        : {}),
     },
   });
 
@@ -71,6 +78,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     clientDataKv: newClientDataKv,
     settings: {
       analyticsAi: newTeam.settingAnalyticsAi,
+      showDemoConnection: newTeam.settingShowDemoConnection,
     },
   });
 }

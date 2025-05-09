@@ -39,7 +39,7 @@ async function handler(
   const thumbnailSignedUrl = thumbnail ? await getFileUrl(thumbnail) : null;
 
   // Apply SSH keys to the team if they don't already exist.
-  let decryptedTeam = await getDecryptedTeam(ownerTeam);
+  const decryptedTeam = await getDecryptedTeam(ownerTeam);
 
   if (decryptedTeam.sshPublicKey === null) {
     throw new ApiError(500, 'Unable to retrieve SSH keys');
@@ -96,6 +96,7 @@ async function handler(
       name: ownerTeam.name,
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
+        showDemoConnection: ownerTeam.settingShowDemoConnection,
       },
       sshPublicKey: decryptedTeam.sshPublicKey,
     },

@@ -91,6 +91,14 @@ describe('PATCH /v0/teams/:uuid', () => {
         .expect((res) => {
           expect(res.body.settings.analyticsAi).toBe(false);
         });
+      await request(app)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .send({ settings: { showDemoConnection: false } })
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.settings.showDemoConnection).toBe(false);
+        });
     });
     it('accepst key/value pair updates', async () => {
       // Create value

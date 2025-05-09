@@ -105,6 +105,7 @@ export const TeamClientDataKvSchema = z.record(z.any());
 
 const TeamSettingsSchema = z.object({
   analyticsAi: z.boolean(),
+  showDemoConnection: z.boolean(),
 });
 export type TeamSettings = z.infer<typeof TeamSettingsSchema>;
 
