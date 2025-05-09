@@ -65,7 +65,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               variant={showStartFreshMsg ? 'outline' : 'ghost'}
               size="icon-sm"
               className="text-muted-foreground hover:text-foreground"
-              disabled={loading || currentUserMessages === 0}
+              disabled={loading || chatsCount === 0}
               onClick={() => {
                 mixpanel.track('[AIAnalyst].startNewChat', { messageCount: currentUserMessages });
                 setCurrentChat({
