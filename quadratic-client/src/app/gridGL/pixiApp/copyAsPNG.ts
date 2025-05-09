@@ -8,32 +8,21 @@ const maxTextureSize = 4096;
 
 let renderer: Renderer | undefined;
 
-function prepareRenderer(): Renderer {
-  if (!renderer) {
-    renderer = new Renderer({
-      resolution,
-      antialias: true,
-      backgroundColor: 0xffffff,
-    });
-  }
-  return renderer;
-}
-
 export const getScreenImage = async (): Promise<Blob | null> => {
-  // const renderer = prepareRenderer();
-  // pixiApp.prepareForCopying({ ai: true });
-  // // todo: probably right-size the scale of the image so it's not too big?
-  // renderer.render(pixiApp.stage);
-  // pixiApp.cleanUpAfterCopying();
-  // return new Promise((resolve) => {
-  //   renderer!.view.toBlob?.((blob) => resolve(blob));
-  // });
-  return null;
+  return new Promise((resolve) => {
+    pixiApp.renderer.view.toBlob?.((blob) => resolve(blob));
+  });
 };
 
 /** returns a dataURL to a copy of the selected cells */
 export const copyAsPNG = async (): Promise<Blob | null> => {
-  const renderer = prepareRenderer();
+  if (!renderer) {
+    renderer = new Renderer({
+      resolution: 1,
+      antialias: true,
+      backgroundColor: 0xffffff,
+    });
+  }
 
   const rect = sheets.sheet.cursor.getLargestRectangle();
   if (!rect) return null;
