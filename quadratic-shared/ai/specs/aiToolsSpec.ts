@@ -502,7 +502,6 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     description: `
     This tool sets the text formats of a selection of cells on a specified sheet.\n
     It requires the sheet name, the selection of cells to set the formats of, and any formats to set.\n
-    When changing formatting, BE CAREFUL NOT TO alter existing, unrelated formatting.\n
     There must be at least one format to set.\n
     `,
     parameters: {
@@ -590,7 +589,6 @@ When using this tool, make sure the code cell is the only cell being edited.\n
     - currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
     - date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
     There must be at least one format to set.\n
-    When changing formatting, BE CAREFUL NOT TO alter existing, unrelated formatting.\n
     You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {

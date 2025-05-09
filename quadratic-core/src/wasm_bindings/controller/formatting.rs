@@ -6,6 +6,7 @@ use crate::Pos;
 use crate::SheetPos;
 use crate::a1::A1Selection;
 use crate::controller::GridController;
+use crate::grid::Format;
 use crate::grid::formats::FormatUpdate;
 
 use super::CellFormatSummary;
@@ -299,27 +300,28 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
             .map_err(|_| "Unable to parse A1Selection")?;
-        let mut formats = serde_json::from_str::<FormatUpdate>(&formats).map_err(|e| {
+        let format = serde_json::from_str::<Format>(&formats).map_err(|e| {
             dbgjs!(&e);
             "Invalid formats"
         })?;
+        let mut format_update = FormatUpdate::from(format);
 
         // handle clear text and fill color properly
-        if formats
+        if format_update
             .text_color
             .as_ref()
             .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
         {
-            formats.text_color = Some(None);
+            format_update.text_color = Some(None);
         }
-        if formats
+        if format_update
             .fill_color
             .as_ref()
             .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
         {
-            formats.fill_color = Some(None);
+            format_update.fill_color = Some(None);
         }
-        self.set_formats(&selection, formats);
+        self.set_formats(&selection, format_update);
         Ok(())
     }
 }
