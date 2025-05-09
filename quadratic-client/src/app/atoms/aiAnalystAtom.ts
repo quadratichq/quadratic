@@ -284,7 +284,6 @@ export const aiAnalystCurrentChatNameAtom = selector<string>({
 
 // Cleans up old get_ tool messages to avoid clogging the context.
 const cleanUpGetToolCalls = (messages: ChatMessage[]): ChatMessage[] => {
-  console.log(messages);
   const foundGetCellData: ChatMessage[] = [];
   messages.forEach((message) => {
     if (message.contextType === 'toolResult' && message.content.length === 1) {
@@ -298,7 +297,6 @@ const cleanUpGetToolCalls = (messages: ChatMessage[]): ChatMessage[] => {
   // If we have multiple get_cell_data messages, keep only the most recent one
   if (foundGetCellData.length > 1) {
     const messagesToClean = foundGetCellData.slice(0, -1); // All but last message
-    console.log(`Found ${messagesToClean.length} messages to clean`);
     return messages.map((message) => {
       if (messagesToClean.includes(message)) {
         // Only modify tool result messages
@@ -323,7 +321,6 @@ const cleanUpGetToolCalls = (messages: ChatMessage[]): ChatMessage[] => {
       return message;
     });
   }
-  console.log('after:', messages);
   return messages;
 };
 
