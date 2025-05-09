@@ -12,6 +12,9 @@ import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
 
+const CLEAN_UP_MESSAGE =
+  'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST call the tool again.';
+
 export interface AIAnalystState {
   showAIAnalyst: boolean;
   showChatHistory: boolean;
@@ -279,6 +282,51 @@ export const aiAnalystCurrentChatNameAtom = selector<string>({
   },
 });
 
+// Cleans up old get_ tool messages to avoid clogging the context.
+const cleanUpGetToolCalls = (messages: ChatMessage[]): ChatMessage[] => {
+  console.log(messages);
+  const foundGetCellData: ChatMessage[] = [];
+  messages.forEach((message) => {
+    if (message.contextType === 'toolResult' && message.content.length === 1) {
+      const content = message.content[0];
+      if (content.fn === 'get_cell_data' && content.text !== CLEAN_UP_MESSAGE) {
+        foundGetCellData.push(message);
+      }
+    }
+  });
+
+  // If we have multiple get_cell_data messages, keep only the most recent one
+  if (foundGetCellData.length > 1) {
+    const messagesToClean = foundGetCellData.slice(0, -1); // All but last message
+    console.log(`Found ${messagesToClean.length} messages to clean`);
+    return messages.map((message) => {
+      if (messagesToClean.includes(message)) {
+        // Only modify tool result messages
+        if (
+          message.contextType === 'toolResult' &&
+          message.content[0] &&
+          'id' in message.content[0] &&
+          'fn' in message.content[0]
+        ) {
+          return {
+            ...message,
+            content: [
+              {
+                id: message.content[0].id,
+                fn: message.content[0].fn,
+                text: CLEAN_UP_MESSAGE,
+              },
+            ],
+          };
+        }
+      }
+      return message;
+    });
+  }
+  console.log('after:', messages);
+  return messages;
+};
+
 export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
   key: 'aiAnalystCurrentChatMessagesAtom',
   get: ({ get }) => get(aiAnalystCurrentChatAtom).messages,
@@ -295,7 +343,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         id: !!prev.currentChat.id ? prev.currentChat.id : v4(),
         name: prev.currentChat.name,
         lastUpdated: Date.now(),
-        messages: newValue,
+        messages: cleanUpGetToolCalls(newValue),
       };
 
       // update chats

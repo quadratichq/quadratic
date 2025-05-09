@@ -35,9 +35,6 @@ import type { z } from 'zod';
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
-const CLEAN_UP_MESSAGE =
-  'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST call the tool again.';
-
 export type SubmitAIAnalystPromptArgs = {
   content: Content;
   context: Context;
@@ -103,50 +100,7 @@ export function useSubmitAIAnalystPrompt() {
         //   });
         // }
 
-        // Clean up ChatMessage for get_cell_data and get_text_formats message
-        // (we only maintain one get call to avoid clogging the context)
-        const foundGetCellData: ChatMessage[] = [];
-        messagesWithContext.forEach((message) => {
-          if (message.contextType === 'toolResult' && message.content.length === 1) {
-            const content = message.content[0];
-            if (content.fn === 'get_cell_data' && content.text !== CLEAN_UP_MESSAGE) {
-              foundGetCellData.push(message);
-            }
-          }
-        });
-
-        let newMessagesWithContent: ChatMessage[] = [...messagesWithContext];
-
-        // If we have multiple get_cell_data messages, keep only the most recent one
-        if (foundGetCellData.length > 1) {
-          const messagesToClean = foundGetCellData.slice(0, -1); // All but last message
-          console.log(`Found ${messagesToClean.length} messages to clean`);
-          newMessagesWithContent = newMessagesWithContent.map((message) => {
-            if (messagesToClean.includes(message)) {
-              // Only modify tool result messages
-              if (
-                message.contextType === 'toolResult' &&
-                message.content[0] &&
-                'id' in message.content[0] &&
-                'fn' in message.content[0]
-              ) {
-                return {
-                  ...message,
-                  content: [
-                    {
-                      id: message.content[0].id,
-                      fn: message.content[0].fn,
-                      text: CLEAN_UP_MESSAGE,
-                    },
-                  ],
-                };
-              }
-            }
-            return message;
-          });
-        }
-
-        return newMessagesWithContent;
+        return messagesWithContext;
       },
     [
       getOtherSheetsContext,

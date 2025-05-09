@@ -19,7 +19,7 @@ use crate::{
 
 use super::GridBounds;
 
-const MAX_POTENTIAL_CELLS_PER_PAGE: u32 = 5000;
+const MAX_POTENTIAL_CELLS_PER_PAGE: u32 = 1000;
 
 impl GridController {
     /// Breaks up a rect into pages, based on the number of cells per page.

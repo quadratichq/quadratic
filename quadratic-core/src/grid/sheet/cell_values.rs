@@ -131,7 +131,7 @@ impl Sheet {
             for y in rect.min.y..=rect.max.y {
                 if let Some(value) = self.rendered_value(Pos { x, y }) {
                     let pos = Pos { x, y }.a1_string();
-                    cells.push(format!("{} is \"{}\"", pos, value));
+                    cells.push(format!("{} is {}", pos, value));
                 }
             }
         }
