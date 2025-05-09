@@ -5,6 +5,7 @@ import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import { getTeam } from '../../middleware/getTeam';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { ApiError } from '../../utils/ApiError';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [validateM2MAuth(), handler];
 
@@ -29,9 +30,10 @@ async function handler(req: Request, res: Response) {
 
   // Get the team
   const { team } = await getTeam({ uuid, userId: user.id });
+  const decryptedTeam = await getDecryptedTeam(team);
 
   // Return the data
-  const data = { ...team };
+  const data = { ...decryptedTeam };
 
   return res.status(200).json(data);
 }
