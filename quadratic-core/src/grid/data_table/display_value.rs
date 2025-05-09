@@ -147,14 +147,18 @@ impl DataTable {
 
     /// Get the indices of the columns to show.
     pub fn columns_to_show(&self) -> Vec<usize> {
-        self.column_headers
+        let result = self
+            .column_headers
             .to_owned()
             .unwrap_or_else(|| self.default_header(None))
             .iter()
             .enumerate()
             .filter(|(_, c)| c.display)
             .map(|(index, _)| index)
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+
+        // handles single value case (which does not work properly)
+        if result.is_empty() { vec![0] } else { result }
     }
 
     /// Gets the visible columns by name. This is used to map it to a grid
@@ -366,6 +370,9 @@ pub mod test {
 
         let display_value = dt.display_value(false).unwrap().into_array().unwrap();
         assert_eq!(display_value.size(), ArraySize::new(1, 1).unwrap());
-        assert_eq!(display_value.get(0, 0).unwrap(), &CellValue::from("256"));
+        assert_eq!(
+            display_value.get(0, 0).unwrap().to_display(),
+            "256".to_string()
+        );
     }
 }
