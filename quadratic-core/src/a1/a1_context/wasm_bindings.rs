@@ -71,5 +71,5 @@ pub fn selection_to_sheet_rect(sheet_id: &str, selection: &str) -> Result<String
         .to_rect(&context)
         .ok_or("Invalid selection: not a rectangle")?;
     let sheet_rect = rect.to_sheet_rect(sheet_id);
-    Ok(serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())?)
+    serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())
 }
