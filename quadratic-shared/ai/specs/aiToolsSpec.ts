@@ -208,7 +208,7 @@ This name should be from user's perspective, not the assistant's.\n
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
     description: `
-    This tool returns the values of the cells in the chosen selection. The selection may be on the sheet or in a table.\n
+    This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
     Do NOT use this tool if there is no data based in the data bounds provided for the sheet.\n
     You should use the get_cell_data function to get the values of the cells when you need more data to reference.\n
     Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
