@@ -183,7 +183,7 @@ export function CodeEditorHeaderLabel() {
             <span className="pl-1 after:ml-1 after:content-['·']">{currentConnectionName}</span>
           )}
           <button
-            className="max-w-full truncate rounded pl-1 text-left hover:cursor-pointer hover:bg-accent"
+            className="max-w-full truncate rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
             onClick={focusCellRef}
           >
             {cellRef}
