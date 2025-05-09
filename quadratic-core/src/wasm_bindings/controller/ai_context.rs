@@ -53,7 +53,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "getAITablesContext")]
     pub fn js_get_ai_tables_context(&self) -> Result<JsValue, JsValue> {
         let mut tables: Vec<JsTablesContext> = Vec::new();
-        for sheet in self.grid().sheets() {
+        for sheet in self.grid().sheets().values() {
             if let Some(tables_in_sheet) = sheet.get_ai_tables_context() {
                 tables.push(tables_in_sheet);
             }

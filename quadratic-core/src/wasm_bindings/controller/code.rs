@@ -47,7 +47,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "getCodeCell")]
     pub fn js_get_code_string(&self, sheet_id: String, pos: String) -> Result<JsValue, JsValue> {
         let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+        let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return Ok(JsValue::null());
         };
         if let Some(edit_code) = sheet.edit_code_value(pos, self.a1_context()) {

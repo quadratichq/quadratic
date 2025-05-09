@@ -9,7 +9,7 @@ impl Grid {
     /// Creates an A1Context from the grid for use by rust client (or core).
     pub fn make_a1_context(&self) -> A1Context {
         let mut context = A1Context::default();
-        self.sheets.iter().for_each(|sheet| {
+        self.sheets.values().for_each(|sheet| {
             sheet.add_sheet_to_a1_context(&mut context);
         });
         context
