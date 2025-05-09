@@ -380,6 +380,12 @@ impl From<JsDataTableColumnHeader> for DataTableColumnHeader {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
+pub struct JsColumnWidth {
+    pub column: i64,
+    pub width: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsRowHeight {
     pub row: i64,
     pub height: f64,

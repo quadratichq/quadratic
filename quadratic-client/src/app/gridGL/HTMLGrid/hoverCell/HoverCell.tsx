@@ -144,8 +144,9 @@ export function HoverCell() {
 
   useEffect(() => {
     const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
-      // don't show hover cell if the inline editor is showing at the same location
-      if (cell && inlineEditorHandler.getShowing(cell.x, cell.y)) {
+      // don't show hover cell if the inline editor is showing at the same
+      // location, unless it's a validation error
+      if (cell && !(cell as ErrorValidation)?.validationId && inlineEditorHandler.getShowing(cell.x, cell.y)) {
         removePointerEvents();
         setHovering(false);
         hoveringRef.current = false;

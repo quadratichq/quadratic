@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { Button } from '@/shared/shadcn/ui/button';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -143,7 +143,7 @@ export const ErrorBoundary = () => {
   const error = useRouteError();
   console.error(error);
   return (
-    <Empty
+    <EmptyPage
       title="Unexpected error"
       description="Something went wrong loading this team. If the error continues, contact us."
       Icon={ExclamationTriangleIcon}
@@ -152,7 +152,6 @@ export const ErrorBoundary = () => {
           <Link to="/">Go home</Link>
         </Button>
       }
-      severity="error"
       error={error}
     />
   );

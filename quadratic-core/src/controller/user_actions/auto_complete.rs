@@ -31,6 +31,7 @@ mod tests {
         CellValue, Pos, SheetPos, SheetRect,
         a1::A1Selection,
         array,
+        controller::user_actions::import::tests::simple_csv,
         grid::{
             CodeCellLanguage, CodeCellValue,
             sheet::borders::{BorderSelection, BorderStyle},
@@ -38,7 +39,7 @@ mod tests {
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value,
-            print_table_in_rect,
+            print_table_from_grid,
         },
     };
 
@@ -163,7 +164,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(
+        print_table_from_grid(
             &grid,
             sheet_id,
             Rect::new_span(Pos { x: 7, y: 11 }, Pos { x: 15, y: 12 }),
@@ -186,11 +187,11 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
         let expected_bold = vec![true, false, false, true, true, false, false, true, true];
@@ -210,7 +211,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g"];
         let expected_bold = vec![true, false, false, true];
@@ -238,7 +239,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g"];
         let expected_bold = vec![true, false, false, true];
@@ -266,7 +267,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
         let expected_bold = vec![true, false, false, true, true, false, false, true, true];
@@ -290,7 +291,7 @@ mod tests {
         let range: Rect = Rect::new_span(selected.min, Pos { x: 7, y: 6 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 9, y: 8 });
-        print_table_in_rect(&grid, sheet_id, range_over);
+        print_table_from_grid(&grid, sheet_id, range_over);
 
         let expected = vec!["white", "red", "blue", "green", "white", "red"];
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 4, expected);
@@ -304,7 +305,7 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 2, y: -1 }, Pos { x: 7, y: 3 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 0, y: -3 }, Pos { x: 9, y: 5 });
-        print_table_in_rect(&grid, sheet_id, range_over);
+        print_table_from_grid(&grid, sheet_id, range_over);
 
         let expected = vec!["yellow", "white", "red", "blue", "yellow", "white"];
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 1, expected);
@@ -318,7 +319,7 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 1, y: 6 }, selected.max);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 7, y: 8 });
-        print_table_in_rect(&grid, sheet_id, range_over);
+        print_table_from_grid(&grid, sheet_id, range_over);
 
         let expected = vec!["green", "white", "red", "blue", "green"];
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 4, expected);
@@ -332,7 +333,7 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 1, y: -1 }, selected.max);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: -3 }, Pos { x: 7, y: 5 });
-        print_table_in_rect(&grid, sheet_id, range_over);
+        print_table_from_grid(&grid, sheet_id, range_over);
 
         let expected = vec!["blue", "yellow", "white", "red", "blue"];
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 1, expected);
@@ -349,7 +350,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(
+        print_table_from_grid(
             &grid,
             sheet_id,
             Rect::new_span(Pos { x: 12, y: 13 }, Pos { x: 20, y: 3 }),
@@ -371,7 +372,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(
+        print_table_from_grid(
             &grid,
             sheet_id,
             Rect::new_span(Pos { x: 3, y: 12 }, Pos { x: 15, y: 20 }),
@@ -397,7 +398,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, Rect::new_span(range.min, selected.max));
+        print_table_from_grid(&grid, sheet_id, Rect::new_span(range.min, selected.max));
 
         let expected = vec![
             "b", "f", "z", "r", "b", "f", "z", "r", "b", "f", "z", "r", "b",
@@ -419,7 +420,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         let expected = vec!["8", "9", "10", "11", "12", "13", "14", "15"];
         assert_cell_value_row(&grid, sheet_id, 2, 9, 2, expected);
@@ -444,7 +445,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         let expected = vec!["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
         assert_cell_value_row(&grid, sheet_id, 6, 13, 12, expected.clone());
@@ -472,7 +473,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         let expected = vec!["2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
         assert_cell_value_row(&grid, sheet_id, -4, 5, -8, expected.clone());
@@ -506,7 +507,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(&grid, sheet_id, range);
+        print_table_from_grid(&grid, sheet_id, range);
 
         assert_display_cell_value(&grid, sheet_id, 3, 5, "4");
         assert_display_cell_value(&grid, sheet_id, 3, 6, "5");
@@ -527,7 +528,7 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 4, y: 7 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(
+        print_table_from_grid(
             &grid,
             sheet_id,
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
@@ -561,7 +562,7 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 5 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(
+        print_table_from_grid(
             &grid,
             sheet_id,
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
@@ -592,7 +593,7 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 5 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        print_table_in_rect(
+        print_table_from_grid(
             &grid,
             sheet_id,
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
@@ -714,7 +715,7 @@ mod tests {
     }
 
     #[test]
-    fn update_code_cell_references_python() {
+    fn autocomplete_update_code_cell_references_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -738,7 +739,7 @@ mod tests {
     }
 
     #[test]
-    fn update_code_cell_references_javascript() {
+    fn autocomplete_update_code_cell_references_javascript() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -758,6 +759,26 @@ mod tests {
                 assert_eq!(code_cell.code, r#"return q.cells("B1:C2");"#);
             }
             _ => panic!("expected code cell"),
+        }
+    }
+
+    #[test]
+    fn test_expand_down_and_right_in_and_outside_of_data_table() {
+        let (mut grid, sheet_id, _, _) = simple_csv();
+        let pos = pos![A3];
+        let selected: Rect = Rect::new_span(pos, pos);
+        let range: Rect = Rect::new_span(selected.min, Pos { x: 6, y: 14 });
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+
+        print_table_from_grid(&grid, sheet_id, range);
+
+        let expected = vec!["Southborough", "Southborough", "Southborough", "Southborough", "Southborough", "Southborough"];
+
+        // validate rows 4-14
+        // data table is in rows 1 - 12, 4 columns wide
+        // autocomplete expanded beyond the data table: right 2 columns, down 2 rows
+        for y in 4..=14 {
+            assert_cell_value_row(&grid, sheet_id, 1, 6, y, expected.clone());
         }
     }
 }

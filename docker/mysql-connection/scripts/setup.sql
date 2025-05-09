@@ -30,7 +30,8 @@ CREATE TABLE `all_native_data_types` (
     `timestamp_col` TIMESTAMP,
     `time_col` TIME,
     `year_col` YEAR,
-    `json_col` JSON
+    `json_col` JSON,
+    `null_bool_col` BOOLEAN
 );
 
 INSERT INTO `all_native_data_types` (
@@ -39,12 +40,12 @@ INSERT INTO `all_native_data_types` (
     `varchar_col`, `binary_col`, `varbinary_col`, `tinyblob_col`, `blob_col`,
     `mediumblob_col`, `longblob_col`, `tinytext_col`, `text_col`, `mediumtext_col`,
     `longtext_col`, `enum_col`, `set_col`, `date_col`, `datetime_col`,
-    `timestamp_col`, `time_col`, `year_col`, `json_col`
+    `timestamp_col`, `time_col`, `year_col`, `json_col`, `null_bool_col`
 ) VALUES (
     127, 32767, 8388607, 2147483647, 9223372036854775807,
     12345.67, 123.45, 123456789.123456, b'1', 'char_data',
     'varchar_data', BINARY('bin_data'), BINARY('varbin_data'), BINARY('tinyblob'), BINARY('blob'),
     BINARY('mediumblob'), BINARY('longblob'), 'tinytext_data', 'text_data', 'mediumtext_data',
     'longtext_data', 'value1', 'value1,value2', '2024-05-28', '2024-05-28 12:34:56',
-    '2024-05-28 12:34:56', '12:34:56', 2024, '{"key": "value"}'
+    '2024-05-28 12:34:56', '12:34:56', 2024, '{"key": "value"}', null
 );

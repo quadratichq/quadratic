@@ -6,12 +6,13 @@ use arrow::{
 };
 use async_trait::async_trait;
 use bytes::Bytes;
+use error::Sql as SqlError;
 use parquet::arrow::ArrowWriter;
 use schema::DatabaseSchema;
 use snowflake_connection::SnowflakeConnection;
 use std::sync::Arc;
 
-use crate::{arrow::arrow_type::ArrowType, error::Result};
+use crate::{SharedError, arrow::arrow_type::ArrowType, error::Result};
 
 use self::{
     mssql_connection::MsSqlConnection, mysql_connection::MySqlConnection,
@@ -119,6 +120,7 @@ pub trait Connection {
 
         let schema = ArrowSchema::new(fields);
         let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)?;
+
         let record_batch = RecordBatch::try_new(Arc::new(schema), cols)?;
         let record_count = record_batch.num_rows();
         writer.write(&record_batch)?;
@@ -167,3 +169,49 @@ pub trait Connection {
 
 //     Ok(schema)
 // }
+
+pub trait UsesSsh {
+    // Whether the connection uses SSH
+    fn use_ssh(&self) -> bool;
+
+    // Parse the port to connect to
+    fn parse_port(port: &Option<String>) -> Option<Result<u16>> {
+        port.as_ref().map(|port| {
+            port.parse::<u16>().map_err(|_| {
+                SharedError::Sql(SqlError::Connect(
+                    "Could not parse port into a number".into(),
+                ))
+            })
+        })
+    }
+
+    // The port to connect to
+    fn port(&self) -> Option<Result<u16>>;
+
+    // Set the port to connect to
+    fn set_port(&mut self, port: u16);
+
+    // The host to connect to
+    fn ssh_host(&self) -> Option<String>;
+
+    // Set the SSH key
+    fn set_ssh_key(&mut self, ssh_key: Option<String>);
+}
+
+/// Convert a column data to an ArrowType into an Arrow type
+#[macro_export]
+macro_rules! convert_sqlx_type {
+    ( $kind:ty, $row:ident, $index:ident ) => {{ $row.try_get::<$kind, usize>($index).ok() }};
+}
+
+/// Convert a column data to an ArrowType into an Arrow type
+/// else return a null value
+#[macro_export]
+macro_rules! to_arrow_type {
+    ( $arrow_type:path, $kind:ty, $row:ident, $index:ident ) => {{
+        match convert_sqlx_type!($kind, $row, $index) {
+            Some(value) => $arrow_type(value),
+            None => ArrowType::Null,
+        }
+    }};
+}

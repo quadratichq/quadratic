@@ -75,9 +75,10 @@ impl Sheet {
         let mut data_tables_to_move_back = Vec::new();
 
         for (pos, dt) in self.data_tables.iter() {
+            // Catch all cases where the dt needs to be pushed to the right b/c of an insert.
             if (copy_formats == CopyFormats::Before && pos.x > column)
-                || ((copy_formats == CopyFormats::After || copy_formats == CopyFormats::None)
-                    && pos.x >= column)
+                || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
+                || (copy_formats != CopyFormats::Before && pos.x >= column)
             {
                 data_tables_to_move_right.push(*pos);
             }

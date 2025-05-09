@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import {
   aiAnalystAbortControllerAtom,
+  aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystDelaySecondsAtom,
   aiAnalystLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
@@ -29,13 +30,14 @@ export const AIAnalystUserMessageForm = memo(
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
+    const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const delaySeconds = useRecoilValue(aiAnalystDelaySecondsAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
     const handleSubmit = useCallback(
       ({ content, onSubmit }: SubmitPromptArgs) => {
-        mixpanel.track('[AIAnalyst].submitPrompt');
+        mixpanel.track('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
         submitPrompt({
           content,
           context,
@@ -43,7 +45,7 @@ export const AIAnalystUserMessageForm = memo(
           onSubmit,
         });
       },
-      [context, props.messageIndex, submitPrompt]
+      [context, props.messageIndex, submitPrompt, userMessagesCount]
     );
 
     const formOnKeyDown = useRecoilCallback(

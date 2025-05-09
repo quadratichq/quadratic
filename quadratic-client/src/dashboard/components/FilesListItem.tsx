@@ -10,6 +10,7 @@ import {
   getActionFileDuplicate,
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DraftIcon, MoreVertIcon } from '@/shared/components/Icons';
@@ -82,6 +83,7 @@ export function FilesListItemUserFile({
 
   const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
   const actionUrl = ROUTES.API.FILE(uuid);
+  const confirmFn = useConfirmDialog('deleteFile', { name });
 
   // Determine if the user can move files
   // If we're looking at the user's private files, make sure they have edit access to the team
@@ -128,8 +130,8 @@ export function FilesListItemUserFile({
     fetcherRename.submit(data, fetcherSubmitOpts);
   };
 
-  const handleDelete = () => {
-    if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
+  const handleDelete = async () => {
+    if (await confirmFn()) {
       const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
       fetcherDelete.submit(data, fetcherSubmitOpts);
     }

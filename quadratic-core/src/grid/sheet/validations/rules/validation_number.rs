@@ -50,6 +50,8 @@ impl ValidationNumber {
                         NumberRange::NotEqual(not_equal) => not_equal.iter().all(|v| n != *v),
                     })
                 }
+                CellValue::Blank => self.ignore_blank,
+                CellValue::Text(text) => text.is_empty() && self.ignore_blank,
                 _ => false,
             }
         } else {

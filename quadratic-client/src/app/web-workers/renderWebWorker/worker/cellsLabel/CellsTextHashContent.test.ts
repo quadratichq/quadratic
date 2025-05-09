@@ -1,6 +1,6 @@
+import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { describe, expect, it } from 'vitest';
 import { CellsTextHashContent } from './CellsTextHashContent';
-import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 
 describe('CellsTextHashContent', () => {
   it('should add cells', () => {
@@ -55,7 +55,7 @@ describe('CellsTextHashContent', () => {
     content.add(sheetHashWidth - 5, sheetHashHeight - 4);
     const bits = content.export();
     const newContent = new CellsTextHashContent();
-    newContent.import(bits);
+    newContent.import(bits as Uint32Array<ArrayBuffer>);
     for (let y = 0; y < sheetHashHeight; y++) {
       for (let x = 0; x < sheetHashWidth; x++) {
         expect(newContent.hasContent(x, y)).toBe(content.hasContent(x, y));

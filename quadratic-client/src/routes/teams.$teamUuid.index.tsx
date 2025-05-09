@@ -6,7 +6,7 @@ import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Avatar } from '@/shared/components/Avatar';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';
@@ -92,7 +92,7 @@ export const Component = () => {
           canEdit ? (
             <FilesListEmptyState />
           ) : (
-            <Empty
+            <EmptyState
               title="No team files yet"
               description={`Files created by your team members will show up here.`}
               Icon={FileIcon}

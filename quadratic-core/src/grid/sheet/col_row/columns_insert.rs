@@ -70,7 +70,7 @@ impl Sheet {
                 .insert_column(transaction, self.id, column, a1_context);
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
-        let changes = self.offsets.insert_column(column);
+        let changes = self.offsets.insert_column(column, copy_formats);
         if !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
@@ -99,7 +99,7 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, DEFAULT_COLUMN_WIDTH, Pos,
+        CellValue, Pos,
         grid::sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
     };
 
@@ -246,7 +246,7 @@ mod tests {
             &A1Context::default(),
         );
         assert_eq!(sheet.offsets.column_width(1), 100.0);
-        assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
+        assert_eq!(sheet.offsets.column_width(2), 200.0);
         assert_eq!(sheet.offsets.column_width(3), 200.0);
         assert_eq!(sheet.offsets.column_width(5), 400.0);
     }

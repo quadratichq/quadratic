@@ -1,12 +1,12 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
 import { convertTableToRange, stringToSelection } from '@/app/quadratic-core/quadratic_core';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { CommandSeparator } from 'cmdk';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -191,7 +191,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
                 onSelect={() => selectTable(name)}
                 name={name}
                 nameSecondary={tableNameToRange(name)}
-                icon={<LanguageIcon language={getLanguage(language)} sx={{ width: 16, height: 16 }} />}
+                icon={<LanguageIcon language={getConnectionKind(language)} />}
               />
             ))}
           </CommandGroup>

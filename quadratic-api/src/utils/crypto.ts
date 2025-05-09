@@ -1,4 +1,9 @@
+import { exec } from 'child_process';
 import crypto from 'crypto';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { promisify } from 'util';
 import { ENCRYPTION_KEY } from '../env-vars';
 
 // Use the same algorithm and IV for all encryption and decryption.
@@ -51,4 +56,67 @@ export const decrypt = (key: Buffer, encryptedText: string): string => {
 // The IV is prepended to the encrypted text.
 export const decryptFromEnv = (encryptedText: string): string => {
   return decrypt(encryption_key, encryptedText);
+};
+
+/**
+ * Generate SSH key pair using the actual ssh-keygen command
+ *
+ * @param options Configuration options
+ * @returns Promise with the private and public keys as strings
+ */
+export const generateSshKeys = async (
+  options: {
+    bits?: number;
+    comment?: string;
+    passphrase?: string;
+    type?: 'rsa' | 'ed25519' | 'ecdsa';
+    outputDir?: string;
+  } = {}
+): Promise<{ privateKey: string; publicKey: string }> => {
+  const {
+    bits = 4096,
+    comment = `nodejs-generated-${Date.now()}`,
+    passphrase = '',
+    type = 'rsa',
+    outputDir = os.tmpdir(),
+  } = options;
+
+  // Create unique filenames for this run
+  const unique = crypto.randomUUID().replace(/-/g, '');
+  const privateKeyPath = path.join(outputDir, `id_${type}_${unique}`);
+  const publicKeyPath = `${privateKeyPath}.pub`;
+
+  // Build the ssh-keygen command
+  const cmd = [
+    'ssh-keygen',
+    '-t',
+    type,
+    '-b',
+    bits,
+    '-C',
+    `"${comment}"`,
+    '-f',
+    privateKeyPath,
+    '-N',
+    `"${passphrase}"`,
+  ].join(' ');
+
+  try {
+    // Execute ssh-keygen
+    await promisify(exec)(cmd);
+
+    // Read the generated files
+    const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+    const publicKey = fs.readFileSync(publicKeyPath, 'utf8');
+
+    // Clean up temporary files
+    fs.unlinkSync(privateKeyPath);
+    fs.unlinkSync(publicKeyPath);
+
+    return { privateKey, publicKey };
+  } catch (error: unknown) {
+    console.error('Error generating SSH keys:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to generate SSH keys: ${errorMessage}`);
+  }
 };

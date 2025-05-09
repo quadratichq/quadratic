@@ -33,11 +33,8 @@ impl DataTable {
 
         if transaction.is_user() {
             let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
-
-            let table_rows = self
-                .formats
-                .get_rows_with_wrap_in_rect(&data_table_rect.into());
-
+            let table_rows =
+                self.get_rows_with_wrap_in_rect(&data_table_pos, &data_table_rect.into(), true);
             if !sheet_rows.is_empty() || !table_rows.is_empty() {
                 let resize_rows = transaction
                     .resize_rows
@@ -68,36 +65,8 @@ impl DataTable {
         }
     }
 
-    fn format_transaction_changes<T: std::fmt::Debug + Clone + PartialEq>(
-        &self,
-        data_table_pos: Pos,
-        format: SheetFormatUpdatesType<T>,
-        needs_resize: bool,
-        dirty_hashes: &mut HashSet<Pos>,
-        resize_rows: &mut HashSet<i64>,
-    ) {
-        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
-        let data_table_rect = self.output_rect((1, 1).into(), true);
-        if let Some(format) = format {
-            format
-                .to_rects_with_rect_bounds(data_table_rect)
-                .for_each(|(x1, y1, x2, y2, _)| {
-                    let mut rect = Rect::new(x1, y1, x2, y2);
-                    // translate to actual data table pos
-                    rect.translate(data_table_pos.x - 1, data_table_pos.y - 1);
-                    // add y adjustment to factor in table name and headers
-                    rect.max.y += self.y_adjustment(true);
-                    dirty_hashes.extend(rect.to_hashes());
-                    if needs_resize {
-                        let rows = self.formats.get_rows_with_wrap_in_rect(&rect);
-                        resize_rows.extend(rows);
-                    }
-                });
-        }
-    }
-
-    fn has_content_in_row(&self, data_table_pos: Pos, row: i64) -> bool {
-        let data_table_rect = self.output_rect(data_table_pos, false);
+    fn has_content_in_row(&self, row: i64) -> bool {
+        let data_table_rect = self.output_rect((0, 0).into(), false);
         for x in data_table_rect.x_range() {
             if let Some(cell_value) = self.cell_value_at(x as u32, row as u32) {
                 if !cell_value.is_blank_or_empty_string() {
@@ -108,6 +77,72 @@ impl DataTable {
         false
     }
 
+    /// Returns the rows with wrap in the given rect.
+    pub(crate) fn get_rows_with_wrap_in_rect(
+        &self,
+        data_table_pos: &Pos,
+        rect: &Rect,
+        include_blanks: bool,
+    ) -> Vec<i64> {
+        let mut rows = vec![];
+        let formats_x_offset = data_table_pos.x - 1;
+        let formats_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let check_value = include_blanks
+                    || self
+                        .cell_value_at((x - data_table_pos.x) as u32, (y - data_table_pos.y) as u32)
+                        .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string());
+
+                let check_wrap = self
+                    .formats
+                    .wrap
+                    .get((x - formats_x_offset, y - formats_y_offset).into())
+                    .is_some_and(|wrap| wrap == CellWrap::Wrap);
+
+                if check_value && check_wrap {
+                    rows.push(y);
+                    break;
+                }
+            }
+        }
+        rows
+    }
+
+    fn format_transaction_changes<T: std::fmt::Debug + Clone + PartialEq>(
+        &self,
+        data_table_pos: Pos,
+        format: SheetFormatUpdatesType<T>,
+        needs_resize: bool,
+        dirty_hashes: &mut HashSet<Pos>,
+        resize_rows: &mut HashSet<i64>,
+    ) {
+        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
+        let data_table_formats_rect = self.output_rect((1, 1).into(), true);
+        if let Some(format) = format {
+            format
+                .to_rects_with_rect_bounds(data_table_formats_rect)
+                .for_each(|(x1, y1, x2, y2, _)| {
+                    let formats_rect = Rect::new(x1, y1, x2, y2);
+                    let formats_rect_x_offset = data_table_pos.x - 1;
+                    let formats_rect_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+                    let actual_rect_on_sheet =
+                        formats_rect.translate(formats_rect_x_offset, formats_rect_y_offset);
+
+                    dirty_hashes.extend(actual_rect_on_sheet.to_hashes());
+
+                    if needs_resize {
+                        let rows = self.get_rows_with_wrap_in_rect(
+                            &data_table_pos,
+                            &actual_rect_on_sheet,
+                            false,
+                        );
+                        resize_rows.extend(rows);
+                    }
+                });
+        }
+    }
+
     fn wrap_transaction_changes(
         &self,
         data_table_pos: Pos,
@@ -115,18 +150,24 @@ impl DataTable {
         dirty_hashes: &mut HashSet<Pos>,
         resize_rows: &mut HashSet<i64>,
     ) {
-        let data_table_rect = self.output_rect(data_table_pos, true);
+        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
+        let data_table_formats_rect = self.output_rect((1, 1).into(), true);
         if let Some(wrap) = wrap {
-            wrap.to_rects_with_rect_bounds(data_table_rect)
+            wrap.to_rects_with_rect_bounds(data_table_formats_rect)
                 .for_each(|(x1, y1, x2, y2, value)| {
-                    let rect = Rect::new(x1, y1, x2, y2);
-                    dirty_hashes.extend(rect.to_hashes());
+                    let formats_rect = Rect::new(x1, y1, x2, y2);
+                    let formats_rect_x_offset = data_table_pos.x - 1;
+                    let formats_rect_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+                    let actual_rect_on_sheet =
+                        formats_rect.translate(formats_rect_x_offset, formats_rect_y_offset);
+
+                    dirty_hashes.extend(actual_rect_on_sheet.to_hashes());
 
                     // check if new formats is wrap
                     if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
-                            if self.has_content_in_row(data_table_pos, y) {
-                                resize_rows.insert(y);
+                            if self.has_content_in_row(y) {
+                                resize_rows.insert(y + formats_rect_y_offset);
                             }
                         }
                     }
@@ -151,7 +192,6 @@ impl DataTable {
 
         let mut dirty_hashes = HashSet::new();
         let mut resize_rows = HashSet::new();
-        let mut fills_changed = false;
 
         self.format_transaction_changes(
             data_table_pos,
@@ -246,10 +286,6 @@ impl DataTable {
             &mut resize_rows,
         );
 
-        if formats.fill_color.is_some() {
-            fills_changed = true;
-        }
-
         if !transaction.is_server() {
             if !dirty_hashes.is_empty() {
                 let dirty_hashes_transaction =
@@ -262,9 +298,62 @@ impl DataTable {
                 resize_rows_transaction.extend(resize_rows);
             }
 
-            if fills_changed {
+            if formats.fill_color.is_some() {
                 transaction.add_fill_cells(sheet_id);
             }
         }
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use crate::{
+        Pos,
+        a1::A1Selection,
+        controller::user_actions::import::tests::simple_csv_at,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
+    };
+
+    #[test]
+    fn test_table_js_hashes_dirty() {
+        clear_js_calls();
+
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos![M20]);
+
+        gc.set_bold(
+            &A1Selection::test_a1_sheet_id("M22", sheet_id),
+            Some(true),
+            None,
+        )
+        .unwrap();
+
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call(
+            "jsHashesDirty",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![Pos::new(0, 0)]).unwrap()
+            ),
+            true,
+        );
+
+        gc.set_bold(
+            &A1Selection::test_a1_sheet_id("P31", sheet_id),
+            Some(true),
+            None,
+        )
+        .unwrap();
+
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call(
+            "jsHashesDirty",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![Pos::new(1, 1)]).unwrap()
+            ),
+            true,
+        );
     }
 }

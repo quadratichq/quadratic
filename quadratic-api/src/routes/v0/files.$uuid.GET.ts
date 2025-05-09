@@ -11,6 +11,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [
   validateRequestSchema(
@@ -36,6 +37,13 @@ async function handler(
   } = await getFile({ uuid: req.params.uuid, userId });
 
   const thumbnailSignedUrl = thumbnail ? await getFileUrl(thumbnail) : null;
+
+  // Apply SSH keys to the team if they don't already exist.
+  let decryptedTeam = await getDecryptedTeam(ownerTeam);
+
+  if (decryptedTeam.sshPublicKey === null) {
+    throw new ApiError(500, 'Unable to retrieve SSH keys');
+  }
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -70,7 +78,7 @@ async function handler(
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
-  const data = {
+  const data: ApiTypes['/v0/files/:uuid.GET.response'] = {
     file: {
       uuid,
       name,
@@ -89,6 +97,7 @@ async function handler(
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },
+      sshPublicKey: decryptedTeam.sshPublicKey,
     },
     userMakingRequest: {
       id: userId,

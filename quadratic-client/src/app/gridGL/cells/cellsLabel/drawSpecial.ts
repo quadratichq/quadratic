@@ -62,7 +62,6 @@ export const drawDropdown = (options: RenderDropdown) => {
   sprite.height = DROPDOWN_SIZE[1];
   sprite.rectangle = dropdownRectangle(options.x, options.y);
   sprite.alpha = 0.5;
-  sprite.anchor.set(1, 0);
-  sprite.position.set(options.x - DROPDOWN_PADDING[0], options.y + DROPDOWN_PADDING[1]);
+  sprite.position.set(options.x, options.y + DROPDOWN_PADDING[1]);
   return sprite;
 };

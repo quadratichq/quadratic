@@ -2,21 +2,19 @@ use super::current;
 
 use crate::Pos;
 use crate::grid::sheet::validations::Validations;
-use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
-use crate::grid::sheet::validations::validation_rules::ValidationRule;
-use crate::grid::sheet::validations::validation_rules::validation_date_time::{
+use crate::grid::sheet::validations::rules::ValidationRule;
+use crate::grid::sheet::validations::rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
 };
-use crate::grid::sheet::validations::validation_rules::validation_list::{
+use crate::grid::sheet::validations::rules::validation_list::{
     ValidationList, ValidationListSource,
 };
-use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
-use crate::grid::sheet::validations::validation_rules::validation_number::{
-    NumberRange, ValidationNumber,
-};
-use crate::grid::sheet::validations::validation_rules::validation_text::{
+use crate::grid::sheet::validations::rules::validation_logical::ValidationLogical;
+use crate::grid::sheet::validations::rules::validation_number::{NumberRange, ValidationNumber};
+use crate::grid::sheet::validations::rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
+use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
 
 use super::selection::{export_selection, import_selection};
 

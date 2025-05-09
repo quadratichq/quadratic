@@ -44,6 +44,17 @@ impl ValidationList {
         a1_context: &A1Context,
     ) -> bool {
         if let Some(value) = value {
+            // handle cases of blank text
+            match value {
+                CellValue::Blank => return self.ignore_blank,
+                CellValue::Text(text) => {
+                    if text.is_empty() && self.ignore_blank {
+                        return true;
+                    }
+                }
+                _ => {}
+            }
+
             match &self.source {
                 ValidationListSource::Selection(selection) => {
                     ValidationList::validate_selection(sheet, selection, value, a1_context)
@@ -176,5 +187,37 @@ mod tests {
             list.to_drop_down(&sheet, &a1_context),
             Some(vec!["test".to_string(), "test2".to_string()])
         );
+    }
+
+    #[test]
+    fn validate_blank_and_empty_text() {
+        let sheet = Sheet::test();
+        let list = ValidationList {
+            source: ValidationListSource::List(vec!["test".to_string()]),
+            ignore_blank: true,
+            drop_down: true,
+        };
+
+        let a1_context = sheet.make_a1_context();
+
+        // Test with ignore_blank = true
+        assert!(list.validate(&sheet, Some(&CellValue::Blank), &a1_context));
+        assert!(list.validate(&sheet, Some(&CellValue::Text("".to_string())), &a1_context));
+        assert!(list.validate(&sheet, None, &a1_context));
+
+        // Test with ignore_blank = false
+        let list_no_ignore = ValidationList {
+            source: ValidationListSource::List(vec!["test".to_string()]),
+            ignore_blank: false,
+            drop_down: true,
+        };
+
+        assert!(!list_no_ignore.validate(&sheet, Some(&CellValue::Blank), &a1_context));
+        assert!(!list_no_ignore.validate(
+            &sheet,
+            Some(&CellValue::Text("".to_string())),
+            &a1_context
+        ));
+        assert!(!list_no_ignore.validate(&sheet, None, &a1_context));
     }
 }

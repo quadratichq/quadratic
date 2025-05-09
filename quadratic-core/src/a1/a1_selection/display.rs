@@ -1,4 +1,5 @@
 use crate::a1::{A1Context, SheetCellRefRange};
+use std::fmt;
 
 use super::*;
 
@@ -48,6 +49,12 @@ impl A1Selection {
     #[cfg(test)]
     pub fn test_to_string(&self) -> String {
         self.to_string(Some(SheetId::TEST), &A1Context::default())
+    }
+}
+
+impl fmt::Debug for A1Selection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_string(None, &A1Context::default()))
     }
 }
 

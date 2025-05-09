@@ -4,7 +4,7 @@ import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
@@ -224,7 +224,7 @@ export const ErrorBoundary = () => {
   if (isRouteErrorResponse(error)) {
     if (error.status === 402)
       return (
-        <Empty
+        <EmptyPage
           title="License Revoked"
           description="Your license has been revoked. Please contact Quadratic Support."
           Icon={InfoCircledIcon}
@@ -233,29 +233,27 @@ export const ErrorBoundary = () => {
       );
     if (error.status === 403)
       return (
-        <Empty
+        <EmptyPage
           title="You don’t have access to this team"
           description="Reach out to the team owner for permission to access this team."
           Icon={InfoCircledIcon}
           actions={actions}
-          showLoggedInUser
         />
       );
     if (error.status === 404 || error.status === 400)
       return (
-        <Empty
+        <EmptyPage
           title="Team not found"
           description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
           Icon={ExclamationTriangleIcon}
           actions={actions}
-          showLoggedInUser
         />
       );
   }
 
   console.error(error);
   return (
-    <Empty
+    <EmptyPage
       title="Unexpected error"
       description="Something went wrong loading this team. If the error continues, contact us."
       Icon={ExclamationTriangleIcon}
@@ -264,9 +262,7 @@ export const ErrorBoundary = () => {
           <Link to="/">Go home</Link>
         </Button>
       }
-      severity="error"
       error={error}
-      showLoggedInUser
     />
   );
 };

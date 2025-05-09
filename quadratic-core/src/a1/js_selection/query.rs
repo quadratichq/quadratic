@@ -258,7 +258,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
     pub fn get_selected_table_names(&self) -> Result<JsValue, String> {
-        serde_wasm_bindgen::to_value(&self.selection.selected_table_names())
+        serde_wasm_bindgen::to_value(&self.selection.selected_table_names(&self.context))
             .map_err(|e| e.to_string())
     }
 

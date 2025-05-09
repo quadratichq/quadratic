@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { app } from '../../app';
+import { auth0Mock } from '../../tests/auth0Mock';
 import { clearDb, createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
@@ -76,31 +77,22 @@ beforeAll(async () => {
 afterAll(clearDb);
 
 // Mock Auth0 getUser
-jest.mock('auth0', () => {
-  return {
-    ManagementClient: jest.fn().mockImplementation(() => {
-      return {
-        getUsers: jest.fn().mockImplementation(({ q }: { q: string }) => {
-          const users = [
-            {
-              user_id: 'user1',
-              email: 'user1@example.com',
-              picture: 'https://s.gravatar.com/avat',
-              name: 'User One',
-            },
-            {
-              user_id: 'user2',
-              email: 'user2@example.com',
-              picture: 'https://s.gravatar.com/avat',
-              name: 'User Two',
-            },
-          ];
-          return users.filter(({ user_id }) => q.includes(user_id));
-        }),
-      };
-    }),
-  };
-});
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'user1',
+      email: 'user1@example.com',
+      picture: 'https://s.gravatar.com/avat',
+      name: 'User One',
+    },
+    {
+      user_id: 'user2',
+      email: 'user2@example.com',
+      picture: 'https://s.gravatar.com/avat',
+      name: 'User Two',
+    },
+  ])
+);
 
 // Shape of the data that should always exist across any sharing request
 const expectSharingData = (res: any) => {

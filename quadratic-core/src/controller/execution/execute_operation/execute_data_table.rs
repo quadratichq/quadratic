@@ -1,6 +1,6 @@
 use crate::{
     ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
-    a1::A1Selection,
+    a1::{A1Context, A1Selection},
     cell_values::CellValues,
     cellvalue::Import,
     controller::{
@@ -73,6 +73,7 @@ impl GridController {
             };
 
             if transaction.is_user() {
+                self.check_validations(transaction, sheet_rect);
                 self.add_compute_operations(transaction, sheet_rect, None);
                 self.check_all_spills(transaction, sheet_rect.sheet_id);
             }
@@ -297,6 +298,14 @@ impl GridController {
 
             transaction.add_code_cell(sheet_id, data_table_pos);
             transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
+            let rows = data_table.get_rows_with_wrap_in_rect(&data_table_pos, &rect, true);
+            if !rows.is_empty() {
+                let resize_rows = transaction
+                    .resize_rows
+                    .entry(sheet_pos.sheet_id)
+                    .or_default();
+                resize_rows.extend(rows);
+            }
 
             pos.y -= data_table.y_adjustment(true);
 
@@ -440,6 +449,7 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let index = sheet.data_table_index_result(pos)?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
+            let table_name = data_table.name.to_display().clone();
             let cell_value = sheet.cell_value_result(data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, false)
@@ -528,6 +538,22 @@ impl GridController {
                 Some(&values_sheet_rect.union(&data_table_rect)),
             );
             self.check_deleted_data_tables(transaction, &values_sheet_rect);
+
+            // Move any validations that were tied to the table to the sheet
+            let mut a1_context = A1Context::default();
+            if let Some(table) = self.a1_context.try_table(&table_name) {
+                // we only need the table in a separate a1_context (this is
+                // done to avoid borrow issues below)
+                a1_context.table_map.insert(table.clone());
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                let reverse_operations = sheet
+                    .validations
+                    .transfer_to_sheet(&table_name, &a1_context);
+                if !reverse_operations.is_empty() {
+                    transaction.reverse_operations.extend(reverse_operations);
+                    transaction.validations.insert(sheet_id);
+                }
+            }
 
             return Ok(());
         };
@@ -1153,10 +1179,17 @@ impl GridController {
             let mut sheet_cell_values =
                 CellValues::new(old_data_table_rect.width(), old_data_table_rect.height());
             let mut sheet_format_updates = SheetFormatUpdates::default();
-            let mut data_table_formats_rects = vec![];
+            let mut rects_to_remove = vec![];
+
+            // used to store the values of the columns that are deleted for the
+            // validation check below
+            let mut columns_deleted = vec![];
 
             for &index in columns.iter() {
                 let display_index = data_table.get_display_index_from_column_index(index, true);
+                if let Ok(name) = data_table.column_name(display_index as usize) {
+                    columns_deleted.push(name);
+                }
 
                 let sheet = self.try_sheet_result(sheet_id)?;
                 let data_table = sheet.data_table_result(data_table_pos)?;
@@ -1217,7 +1250,7 @@ impl GridController {
 
                 let formats_rect =
                     Rect::from_numbers(index as i64 + 1, 1, 1, data_table.height(true) as i64);
-                data_table_formats_rects.push(formats_rect);
+                rects_to_remove.push(formats_rect);
 
                 let old_values = data_table.get_column_sorted(index as usize)?;
                 reverse_columns.push((index, old_column_header, Some(old_values)));
@@ -1227,10 +1260,11 @@ impl GridController {
             let data_table = sheet.data_table_result(data_table_pos)?;
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
+            let remove_selection =
+                A1Selection::from_rects(rects_to_remove, sheet_id, &self.a1_context);
+
             // delete table formats
-            if let Some(formats_selection) =
-                A1Selection::from_rects(data_table_formats_rects, sheet_id, &self.a1_context)
-            {
+            if let Some(remove_selection) = remove_selection {
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let data_table = sheet.data_table_mut(data_table_pos)?;
 
@@ -1238,7 +1272,7 @@ impl GridController {
                     data_table
                         .formats
                         .apply_updates(&SheetFormatUpdates::from_selection(
-                            &formats_selection,
+                            &remove_selection,
                             FormatUpdate::cleared(),
                         ));
                 if !data_table_reverse_format.is_default() {
@@ -1246,6 +1280,22 @@ impl GridController {
                         sheet_pos,
                         formats: data_table_reverse_format,
                     });
+                }
+            }
+
+            if !columns_deleted.is_empty() {
+                let sheet = self.try_sheet_result(sheet_id)?;
+                let data_table = sheet.data_table_result(data_table_pos)?;
+                if let Some(deleted_selection) = A1Selection::from_table_columns(
+                    data_table.name.to_display().as_str(),
+                    columns_deleted,
+                    &self.a1_context,
+                ) {
+                    reverse_operations.extend(self.check_deleted_validations(
+                        transaction,
+                        sheet_id,
+                        deleted_selection,
+                    ));
                 }
             }
 
@@ -1309,7 +1359,6 @@ impl GridController {
                 reverse_operations,
                 Some(&data_table_rect),
             );
-
             return Ok(());
         };
 
@@ -1772,6 +1821,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util::*;
 
     use crate::{
         Array, SheetPos, Value,
@@ -1985,6 +2035,21 @@ mod tests {
             gc.sheet(sheet_id).display_value(pos![A5]),
             Some(CellValue::Text("Westborough".into()))
         );
+    }
+
+    #[test]
+    fn test_flatten_data_table_with_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+        let checkbox = test_create_checkbox(&mut gc, selection);
+        assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
+
+        gc.flatten_data_table(pos![sheet_id!a1], None);
+        assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
     }
 
     #[test]
@@ -2529,5 +2594,40 @@ mod tests {
             ),
             true,
         );
+    }
+
+    #[test]
+    fn test_execute_delete_data_table_column_with_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!a1];
+
+        test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 2, 2);
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context);
+        let validation = test_create_checkbox(&mut gc, selection);
+
+        let checkbox_pos = pos![sheet_id!a3];
+        assert_validation_id(&gc, checkbox_pos, Some(validation.id));
+        assert_validation_count(&gc, sheet_id, 1);
+
+        gc.data_table_mutations(
+            pos!(sheet_id!a1),
+            false,
+            None,
+            Some(vec![0]),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        assert_validation_id(&gc, checkbox_pos, None);
+
+        // ensure the new column does not have a checkbox validation
+        gc.data_table_insert_columns(sheet_pos, vec![0], false, None, None, None);
+        assert_validation_id(&gc, checkbox_pos, None);
+
+        assert_validation_count(&gc, sheet_id, 0);
     }
 }

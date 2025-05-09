@@ -7,7 +7,6 @@ import {
   codeEditorShowSnippetsPopoverAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
 import {
   SNIPPET_JS_API,
   SNIPPET_JS_CHART,
@@ -22,7 +21,14 @@ import {
   SNIPPET_PY_READ,
   SNIPPET_PY_RETURN,
 } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { ApiIcon, DependencyIcon, InsertChartIcon, SnippetsIcon } from '@/shared/components/Icons';
+import {
+  ApiIcon,
+  DependencyIcon,
+  InsertChartIcon,
+  SheetComeFromIcon,
+  SheetGoToIcon,
+  SnippetsIcon,
+} from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';
 import type * as monaco from 'monaco-editor';

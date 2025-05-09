@@ -1,7 +1,7 @@
 import type * as LabelPrimitive from '@radix-ui/react-label';
 import { Slot } from '@radix-ui/react-slot';
 import * as React from 'react';
-import type { ControllerProps, FieldPath, FieldValues} from 'react-hook-form';
+import type { ControllerProps, FieldPath, FieldValues } from 'react-hook-form';
 import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
 import { Label } from '@/shared/shadcn/ui/label';
@@ -11,7 +11,7 @@ const Form = FormProvider;
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > = {
   name: TName;
 };
@@ -20,7 +20,7 @@ const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFi
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   ...props
 }: ControllerProps<TFieldValues, TName>) => {
@@ -115,6 +115,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
   ({ className, children, ...props }, ref) => {
     const { error, formMessageId } = useFormField();
     const body = error ? String(error?.message) : children;
+    const classDestructive = error?.type !== 'custom' ? 'text-destructive' : '';
 
     if (!body) {
       return null;
@@ -124,7 +125,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
       <p
         ref={ref}
         id={formMessageId}
-        className={cn('text-[0.8rem] font-medium text-destructive', className)}
+        className={cn('text-[0.8rem] font-medium', classDestructive, className)}
         {...props}
       >
         {body}

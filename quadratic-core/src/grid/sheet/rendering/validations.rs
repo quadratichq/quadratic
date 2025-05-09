@@ -97,7 +97,7 @@ mod tests {
             js_types::JsValidationWarning,
             sheet::validations::{
                 validation::{Validation, ValidationStyle},
-                validation_rules::{ValidationRule, validation_logical::ValidationLogical},
+                rules::{ValidationRule, validation_logical::ValidationLogical},
             },
         },
         wasm_bindings::js::expect_js_call,

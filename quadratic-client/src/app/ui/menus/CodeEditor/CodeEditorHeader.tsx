@@ -9,7 +9,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { codeCellIsAConnection, getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorHeaderLabel } from '@/app/ui/menus/CodeEditor/CodeEditorHeaderLabel';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
@@ -29,6 +28,7 @@ import {
   SaveAndRunStopIcon,
   SpinnerIcon,
 } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -152,7 +152,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       >
         <TooltipPopover label={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} side="bottom">
           <div className="flex items-center">
-            <LanguageIcon language={codeCell?.id} fontSize="small" />
+            <LanguageIcon language={codeCell?.id} />
           </div>
         </TooltipPopover>
       </div>

@@ -13,10 +13,7 @@ const payload = {
 };
 
 beforeAll(async () => {
-  const aiChat = await createAIChat({
-    chatId: chatUuid,
-    messageIndex,
-  });
+  const aiChat = await createAIChat({ chatId: payload.chatId });
   chatId = aiChat.id;
 });
 

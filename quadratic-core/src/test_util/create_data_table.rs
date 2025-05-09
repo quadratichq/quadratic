@@ -26,6 +26,36 @@ pub fn test_create_data_table(
 }
 
 /// Creates a data table on the given sheet of the grid controller. The values
+/// are 0..width * height inserted table row-wise (ie, the first values will
+/// fill the columns of the first row, etc.).
+///
+/// The table's name is "test", and the first row is not a header.
+///
+/// Returns a clone of the created data table.
+#[cfg(test)]
+pub fn test_create_data_table_no_ui(
+    gc: &mut GridController,
+    sheet_id: SheetId,
+    pos: Pos,
+    width: usize,
+    height: usize,
+) -> DataTable {
+    let v: Vec<_> = (0..(width * height)).map(|i| i.to_string()).collect();
+    let v_refs: Vec<&str> = v.iter().map(|s| s.as_str()).collect();
+    let dt = test_create_data_table_with_values(gc, sheet_id, pos, width, height, &v_refs);
+    gc.data_table_meta(
+        pos.to_sheet_pos(sheet_id),
+        None,
+        None,
+        None,
+        Some(Some(false)),
+        Some(Some(false)),
+        None,
+    );
+    dt
+}
+
+/// Creates a data table on the given sheet of the grid controller. The values
 /// will be converted to CellValues and fill the table row-wise (ie, the first
 /// values will fill the columns of the first row, etc.).
 ///

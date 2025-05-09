@@ -65,7 +65,10 @@ export function isColumnVisible(column: number): boolean {
 }
 
 // Makes a rect visible in the viewport
-export function rectVisible(min: JsCoordinate, max: JsCoordinate): boolean {
+export function rectVisible(sheetId: string, min: JsCoordinate, max: JsCoordinate): boolean {
+  if (sheetId !== sheets.current) {
+    sheets.current = sheetId;
+  }
   // returns true if the rect is visible in the viewport
   const { viewport, headings } = pixiApp;
   const sheet = sheets.sheet;
@@ -96,8 +99,8 @@ export function rectVisible(min: JsCoordinate, max: JsCoordinate): boolean {
   return !is_off_screen;
 }
 
-export function ensureRectVisible(min: JsCoordinate, max: JsCoordinate) {
-  if (!rectVisible(min, max)) {
+export function ensureRectVisible(sheetId: string, min: JsCoordinate, max: JsCoordinate) {
+  if (!rectVisible(sheetId, min, max)) {
     pixiApp.viewportChanged();
   }
 }

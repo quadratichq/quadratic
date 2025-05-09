@@ -156,6 +156,7 @@ export class UI {
         this.statusItem("connection");
         this.statusItem("types");
         this.statusItem("python");
+        this.statusItem("shared");
         if (this.help === "cli") {
             this.write(helpCLI);
         }

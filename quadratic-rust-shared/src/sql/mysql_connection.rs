@@ -19,20 +19,70 @@ use sqlx::{
     mysql::{MySqlColumn, MySqlConnectOptions, MySqlRow /* , MySqlTypeInfo*/},
 };
 
-use crate::convert_mysql_type;
 use crate::error::{Result, SharedError};
+use crate::quadratic_api::Connection as ApiConnection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
+use crate::{convert_sqlx_type, net::ssh::SshConfig, sql::UsesSsh, to_arrow_type};
 
 /// MySQL connection
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MySqlConnection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
     pub database: String,
+    pub use_ssh: Option<bool>,
+    pub ssh_host: Option<String>,
+    pub ssh_port: Option<String>,
+    pub ssh_username: Option<String>,
+    pub ssh_key: Option<String>,
+}
+
+impl From<&ApiConnection<MySqlConnection>> for MySqlConnection {
+    fn from(connection: &ApiConnection<MySqlConnection>) -> Self {
+        let details = connection.type_details.to_owned();
+        MySqlConnection::new(
+            details.username,
+            details.password,
+            details.host,
+            details.port,
+            details.database,
+            details.use_ssh,
+            details.ssh_host,
+            details.ssh_port,
+            details.ssh_username,
+            details.ssh_key,
+        )
+    }
+}
+
+impl TryFrom<MySqlConnection> for SshConfig {
+    type Error = SharedError;
+
+    fn try_from(connection: MySqlConnection) -> Result<Self> {
+        let required = |value: Option<String>| {
+            value.ok_or(SharedError::Sql(SqlError::Connect(
+                "Required field is missing".into(),
+            )))
+        };
+
+        let ssh_port = <MySqlConnection as UsesSsh>::parse_port(&connection.ssh_port).ok_or(
+            SharedError::Sql(SqlError::Connect("SSH port is required".into())),
+        )??;
+
+        Ok(SshConfig::new(
+            required(connection.ssh_host)?,
+            ssh_port,
+            required(connection.ssh_username)?,
+            connection.password,
+            required(connection.ssh_key)?,
+            None,
+        ))
+    }
 }
 
 impl MySqlConnection {
@@ -43,6 +93,11 @@ impl MySqlConnection {
         host: String,
         port: Option<String>,
         database: String,
+        use_ssh: Option<bool>,
+        ssh_host: Option<String>,
+        ssh_port: Option<String>,
+        ssh_username: Option<String>,
+        ssh_key: Option<String>,
     ) -> MySqlConnection {
         MySqlConnection {
             username,
@@ -50,6 +105,11 @@ impl MySqlConnection {
             host,
             port,
             database,
+            use_ssh,
+            ssh_host,
+            ssh_port,
+            ssh_username,
+            ssh_key,
         }
     }
 
@@ -99,12 +159,8 @@ impl Connection for MySqlConnection {
             options = options.password(password);
         }
 
-        if let Some(ref port) = self.port {
-            options = options.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(SqlError::Connect(
-                    "Could not parse port into a number".into(),
-                ))
-            })?);
+        if let Some(port) = self.port() {
+            options = options.port(port?);
         }
 
         let pool = options.connect().await.map_err(|e| {
@@ -197,32 +253,32 @@ impl Connection for MySqlConnection {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
-                ArrowType::Utf8(convert_mysql_type!(String, row, index))
+                to_arrow_type!(ArrowType::Utf8, String, row, index)
             }
-            "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),
-            "SMALLINT" => ArrowType::Int16(convert_mysql_type!(i16, row, index)),
-            "MEDIUMINT" | "INT" => ArrowType::Int32(convert_mysql_type!(i32, row, index)),
-            "BIGINT" => ArrowType::Int64(convert_mysql_type!(i64, row, index)),
-            "TINYINT UNSIGNED" => ArrowType::UInt8(convert_mysql_type!(u8, row, index)),
-            "SMALLINT UNSIGNED" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
+            "TINYINT" => to_arrow_type!(ArrowType::Int8, i8, row, index),
+            "SMALLINT" => to_arrow_type!(ArrowType::Int16, i16, row, index),
+            "MEDIUMINT" | "INT" => to_arrow_type!(ArrowType::Int32, i32, row, index),
+            "BIGINT" => to_arrow_type!(ArrowType::Int64, i64, row, index),
+            "TINYINT UNSIGNED" => to_arrow_type!(ArrowType::UInt8, u8, row, index),
+            "SMALLINT UNSIGNED" => to_arrow_type!(ArrowType::UInt16, u16, row, index),
             "INT UNSIGNED" | "MEDIUMINT UNSIGNED" => {
-                ArrowType::UInt32(convert_mysql_type!(u32, row, index))
+                to_arrow_type!(ArrowType::UInt32, u32, row, index)
             }
-            "BIGINT UNSIGNED" | "BIT" => ArrowType::UInt64(convert_mysql_type!(u64, row, index)),
-            "BOOL" | "BOOLEAN" => ArrowType::Boolean(convert_mysql_type!(bool, row, index)),
-            "FLOAT" => ArrowType::Float32(convert_mysql_type!(f32, row, index)),
-            "DOUBLE" => ArrowType::Float64(convert_mysql_type!(f64, row, index)),
-            "DECIMAL" => ArrowType::BigDecimal(convert_mysql_type!(BigDecimal, row, index)),
-            "TIMESTAMP" => ArrowType::TimestampTz(convert_mysql_type!(DateTime<Local>, row, index)),
-            "DATETIME" => ArrowType::Timestamp(convert_mysql_type!(NaiveDateTime, row, index)),
-            "DATE" => {
-                let naive_date = convert_mysql_type!(NaiveDate, row, index);
-                ArrowType::Date32(Date32Type::from_naive_date(naive_date))
-            }
-            "TIME" => ArrowType::Time32(convert_mysql_type!(NaiveTime, row, index)),
-            "YEAR" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
-            "JSON" => ArrowType::Json(convert_mysql_type!(Value, row, index)),
-            "UUID" => ArrowType::Uuid(convert_mysql_type!(Uuid, row, index)),
+            "BIGINT UNSIGNED" | "BIT" => to_arrow_type!(ArrowType::UInt64, u64, row, index),
+            "BOOL" | "BOOLEAN" => to_arrow_type!(ArrowType::Boolean, bool, row, index),
+            "FLOAT" => to_arrow_type!(ArrowType::Float32, f32, row, index),
+            "DOUBLE" => to_arrow_type!(ArrowType::Float64, f64, row, index),
+            "DECIMAL" => to_arrow_type!(ArrowType::BigDecimal, BigDecimal, row, index),
+            "TIMESTAMP" => to_arrow_type!(ArrowType::TimestampTz, DateTime<Local>, row, index),
+            "DATETIME" => to_arrow_type!(ArrowType::Timestamp, NaiveDateTime, row, index),
+            "DATE" => match convert_sqlx_type!(NaiveDate, row, index) {
+                Some(naive_date) => ArrowType::Date32(Date32Type::from_naive_date(naive_date)),
+                None => ArrowType::Null,
+            },
+            "TIME" => to_arrow_type!(ArrowType::Time32, NaiveTime, row, index),
+            "YEAR" => to_arrow_type!(ArrowType::UInt16, u16, row, index),
+            "JSON" => to_arrow_type!(ArrowType::Json, Value, row, index),
+            "UUID" => to_arrow_type!(ArrowType::Uuid, Uuid, row, index),
             "NULL" => ArrowType::Void,
             // try to convert others to a string
             _ => ArrowType::Unsupported,
@@ -230,13 +286,26 @@ impl Connection for MySqlConnection {
     }
 }
 
-#[macro_export]
-macro_rules! convert_mysql_type {
-    ( $kind:ty, $row:ident, $index:ident ) => {{
-        $row.try_get::<$kind, usize>($index)
-            .ok()
-            .unwrap_or_default()
-    }};
+impl UsesSsh for MySqlConnection {
+    fn use_ssh(&self) -> bool {
+        self.use_ssh.unwrap_or(false)
+    }
+
+    fn port(&self) -> Option<Result<u16>> {
+        Self::parse_port(&self.port)
+    }
+
+    fn set_port(&mut self, port: u16) {
+        self.port = Some(port.to_string());
+    }
+
+    fn ssh_host(&self) -> Option<String> {
+        self.ssh_host.to_owned()
+    }
+
+    fn set_ssh_key(&mut self, ssh_key: Option<String>) {
+        self.ssh_key = ssh_key;
+    }
 }
 
 #[cfg(test)]
@@ -256,6 +325,11 @@ mod tests {
             "0.0.0.0".into(),
             Some("3306".into()),
             "mysql-connection".into(),
+            None,
+            None,
+            None,
+            None,
+            None,
         )
     }
 
@@ -499,6 +573,11 @@ mod tests {
             SchemaColumn {
                 name: "json_col".into(),
                 r#type: "json".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "null_bool_col".into(),
+                r#type: "tinyint".into(),
                 is_nullable: true,
             },
         ];

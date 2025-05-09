@@ -3,6 +3,7 @@ import { SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
+import type { DecryptedTeam } from '../utils/teams';
 
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true,
@@ -180,7 +181,7 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
   updateTeamStatus(stripeSubscriptionId, status, customer, new Date(event.current_period_end * 1000));
 };
 
-export const updateBilling = async (team: Team) => {
+export const updateBilling = async (team: Team | DecryptedTeam) => {
   if (!team.stripeCustomerId) {
     return;
   }

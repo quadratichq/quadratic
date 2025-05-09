@@ -100,11 +100,13 @@ pub struct PendingTransaction {
     /// sheets w/updated fill cells
     pub fill_cells: HashSet<SheetId>,
 
-    /// sheets w/updated offsets
+    /// sheets w/updated info
     pub sheet_info: HashSet<SheetId>,
 
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
+
+    pub offsets_reloaded: HashSet<SheetId>,
 
     // update selection after transaction completes
     pub update_selection: Option<String>,
@@ -138,6 +140,7 @@ impl Default for PendingTransaction {
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
+            offsets_reloaded: HashSet::new(),
             update_selection: None,
         }
     }

@@ -140,7 +140,7 @@ impl Sheet {
                 transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                 transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
 
-                output_rect.translate(0, -shift_table);
+                output_rect.translate_in_place(0, -shift_table);
                 transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                 transaction.add_from_code_run(
                     self.id,

@@ -189,7 +189,6 @@ class InlineEditorHandler {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
     }
     if (input) {
-      this.open = true;
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.position;
       this.location = {
@@ -252,6 +251,10 @@ class InlineEditorHandler {
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
       inlineEditorEvents.emit('status', true, value);
+
+      // this needs to be at the end to avoid a race condition where the cursor
+      // draws at 0,0 when editing in a data table
+      this.open = true;
     } else {
       this.close(0, 0, false);
     }

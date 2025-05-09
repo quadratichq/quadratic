@@ -17,30 +17,33 @@ type AIMessageUsage = {
  *   { month: '2024-03', ai_messages: 300 },
  * ]
  */
-export const BillingAIUsageMonthlyForUser = async (userId: number) => {
+export const BillingAIUsageMonthlyForUserInTeam = async (userId: number, teamId: number) => {
   return await dbClient.$queryRaw<AIMessageUsage[]>`
-  WITH RECURSIVE months AS (
-    SELECT 
-      DATE_TRUNC('month', CURRENT_DATE) as month
-    UNION ALL
-    SELECT 
-      DATE_TRUNC('month', month - INTERVAL '1 month')
-    FROM months
-    WHERE month > DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months')
-  )
-  SELECT 
-    TO_CHAR(m.month, 'YYYY-MM') as month,
-    COALESCE(COUNT(acm.id)::integer, 0) as ai_messages
-  FROM months m
-  LEFT JOIN "AnalyticsAIChat" ac ON 
-    DATE_TRUNC('month', ac.created_date) = m.month
-    AND ac.user_id = ${userId}
-    AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
-  LEFT JOIN "AnalyticsAIChatMessage" acm ON 
-    acm.chat_id = ac.id
-    AND acm.message_type = 'user_prompt'
-  GROUP BY m.month
-  ORDER BY m.month DESC;
+WITH date_range AS (
+  SELECT
+    generate_series(
+      DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months'),
+      DATE_TRUNC('month', CURRENT_DATE),
+      '1 month'::interval
+    ) AS month
+),
+filtered_chats AS (
+  SELECT ac.id, DATE_TRUNC('month', ac.created_date) AS month_date
+  FROM "AnalyticsAIChat" ac
+  JOIN "File" f ON f.id = ac.file_id AND f.owner_team_id = ${teamId}
+  WHERE ac.user_id = ${userId}
+  AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
+)
+SELECT
+  TO_CHAR(d.month, 'YYYY-MM') as month,
+  COUNT(acm.id)::integer as ai_messages
+FROM date_range d
+LEFT JOIN filtered_chats fc ON fc.month_date = d.month
+LEFT JOIN "AnalyticsAIChatMessage" acm ON
+  acm.chat_id = fc.id
+  AND acm.message_type = 'user_prompt'
+GROUP BY d.month
+ORDER BY d.month DESC;
 `;
 };
 

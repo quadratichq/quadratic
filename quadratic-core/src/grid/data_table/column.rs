@@ -17,6 +17,22 @@ impl DataTable {
         Ok(column)
     }
 
+    /// Gets the name of a column from the column_index (not the display index).
+    pub fn column_name(&self, column_index: usize) -> Result<String> {
+        if let Some(headers) = &self.column_headers {
+            if column_index >= headers.len() {
+                return Err(anyhow::anyhow!(
+                    "Column index {} out of bounds for {} columns",
+                    column_index,
+                    headers.len()
+                ));
+            }
+            return Ok(headers[column_index].name.to_string());
+        }
+
+        Err(anyhow::anyhow!("No column name found"))
+    }
+
     /// Get the values of a column taking into account sorted columns.
     ///
     /// Maps the cells values from actual values index to display index, returning
@@ -285,5 +301,25 @@ pub mod test {
         {
             assert_eq!(header.value_index, index as u32);
         }
+    }
+
+    #[test]
+    fn test_data_table_column_name() {
+        let (_, mut data_table) = new_data_table();
+
+        // Test when no column headers exist
+        assert_eq!(data_table.column_name(0).unwrap(), "Column 1".to_string());
+
+        // Apply headers and test valid column names
+        data_table.apply_first_row_as_header();
+
+        // "city", "region", "country", "population"
+        assert_eq!(data_table.column_name(0).unwrap(), "city");
+        assert_eq!(data_table.column_name(1).unwrap(), "region");
+        assert_eq!(data_table.column_name(2).unwrap(), "country");
+        assert_eq!(data_table.column_name(3).unwrap(), "population");
+
+        // Test out of bounds
+        assert!(data_table.column_name(4).is_err());
     }
 }

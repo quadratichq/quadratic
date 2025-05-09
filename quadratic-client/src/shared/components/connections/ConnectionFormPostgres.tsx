@@ -1,3 +1,5 @@
+import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
+import { ConnectionFormSsh } from '@/shared/components/connections/ConnectionFormSsh';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
@@ -16,12 +18,14 @@ const ConnectionFormPostgresSchema = z.object({
   type: z.literal(ConnectionTypeSchema.enum.POSTGRES),
   ...ConnectionTypeDetailsPostgresSchema.shape,
 });
+
 type FormValues = z.infer<typeof ConnectionFormPostgresSchema>;
 
 const DEFAULTS = {
   PORT: '5432',
   DATABASE: 'postgres',
   USERNAME: 'postgres',
+  SSH_PORT: '22',
 };
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
@@ -33,6 +37,10 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     database: String(connection?.typeDetails?.database || ''),
     username: String(connection?.typeDetails?.username || ''),
     password: String(connection?.typeDetails?.password || ''),
+    useSsh: Boolean(connection?.typeDetails?.useSsh || false),
+    sshHost: String(connection?.typeDetails?.sshHost || ''),
+    sshPort: String(connection?.typeDetails?.sshPort || DEFAULTS.SSH_PORT),
+    sshUsername: String(connection?.typeDetails?.sshUsername || ''),
   };
 
   const form = useForm<FormValues>({
@@ -71,6 +79,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
                   <Input autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
+                <ConnectionFormMessageHost value={field.value} />
               </FormItem>
             )}
           />
@@ -130,6 +139,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             )}
           />
         </div>
+
+        <ConnectionFormSsh form={form} />
+
         {children}
       </form>
     </Form>

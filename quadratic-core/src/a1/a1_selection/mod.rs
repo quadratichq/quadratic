@@ -6,6 +6,7 @@ use crate::{Pos, grid::SheetId};
 use super::CellRefRange;
 
 mod create;
+mod delete;
 mod display;
 mod exclude;
 mod intersects;
@@ -18,7 +19,7 @@ mod select_table;
 /// Maximum number of columns that can be parsed in a column name.
 pub const MAX_COLUMNS: i64 = 5000000;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct A1Selection {
     /// Current sheet.

@@ -299,11 +299,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert checkbox',
     Icon: CheckBoxIcon,
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
-      pixiAppSettings.setEditorInteractionState((prev) => ({
-        ...prev,
-        showValidation: 'logical',
-      }));
+      sheets.sheet.addCheckbox();
     },
   },
   [Action.InsertDropdown]: {

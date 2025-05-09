@@ -454,4 +454,8 @@ export class SheetCursor {
   getSelectedTableColumnsCount = (): number => {
     return this.jsSelection.getSelectedTableColumnsCount();
   };
+
+  isAllSelected = (): boolean => {
+    return this.jsSelection.isAllSelected();
+  };
 }

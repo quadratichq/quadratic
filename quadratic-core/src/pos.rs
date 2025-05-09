@@ -94,6 +94,13 @@ impl Pos {
     }
 
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns a new Pos.
+    pub fn saturating_translate(&self, dx: i64, dy: i64) -> Self {
+        let adjust = RefAdjust::new_translate(dx, dy);
+        self.saturating_adjust(adjust)
+    }
+
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds.
     ///
     /// **Note:** `adjust.sheet_id` and `adjust.relative_only` are ignored by

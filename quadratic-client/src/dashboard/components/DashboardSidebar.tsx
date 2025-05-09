@@ -26,7 +26,7 @@ import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -158,6 +158,10 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           <SidebarNavLink to={DOCUMENTATION_URL} target="_blank">
             <ExternalLinkIcon className={classNameIcons} />
             Docs
+          </SidebarNavLink>
+          <SidebarNavLink to={COMMUNITY_FORUMS} target="_blank">
+            <ExternalLinkIcon className={classNameIcons} />
+            Forum
           </SidebarNavLink>
           <SidebarNavLink to={CONTACT_URL} target="_blank">
             <ExternalLinkIcon className={classNameIcons} />

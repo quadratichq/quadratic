@@ -462,7 +462,7 @@ mod test {
                 borders::{BorderSelection, BorderStyle},
                 validations::{
                     validation::Validation,
-                    validation_rules::{ValidationRule, validation_logical::ValidationLogical},
+                    rules::{ValidationRule, validation_logical::ValidationLogical},
                 },
             },
         },
