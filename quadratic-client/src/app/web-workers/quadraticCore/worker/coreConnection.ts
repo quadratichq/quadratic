@@ -21,26 +21,31 @@ declare var self: WorkerGlobalScope &
 class CoreConnection {
   controller: AbortController = new AbortController();
 
-  start() {
+  lastTransactionId?: string;
+
+  start = () => {
     self.sendConnection = this.sendConnection;
 
     if (debugWebWorkers) console.log('[coreConnection] initialized.');
-  }
+  };
 
   private send(message: any) {
     self.postMessage(message);
   }
 
-  sendConnectionState(state: LanguageState, options?: { current?: CodeRun; awaitingExecution?: CodeRun[] }) {
+  private sendConnectionState = (
+    state: LanguageState,
+    options?: { current?: CodeRun; awaitingExecution?: CodeRun[] }
+  ) => {
     this.send({
       type: 'coreClientConnectionState',
       state,
       current: options?.current,
       awaitingExecution: options?.awaitingExecution,
     });
-  }
+  };
 
-  sendConnection = async (
+  private sendConnection = async (
     transactionId: string,
     x: number,
     y: number,
@@ -49,6 +54,8 @@ class CoreConnection {
     connector_type: ConnectionKind,
     connection_id: String
   ) => {
+    this.lastTransactionId = transactionId;
+
     const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
     const kind = connector_type.toLocaleLowerCase();
     const url = `${base}/${kind}/query`;
@@ -72,37 +79,41 @@ class CoreConnection {
     try {
       this.sendConnectionState('running', { current: codeRun });
 
-      const response = await fetch(url, {
-        signal,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${jwt}`,
-        },
-        body: JSON.stringify(body),
-      });
+      if (core.teamUuid) {
+        const response = await fetch(url, {
+          signal,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${jwt}`,
+            'X-Team-Id': core.teamUuid,
+          },
+          body: JSON.stringify(body),
+        });
 
-      if (!response.ok) {
-        std_err = (await response.text()) + `\n\nQuery: ${codeRun.code}`;
-        console.warn(std_err);
-      } else {
-        buffer = await response.arrayBuffer();
+        if (!response.ok) {
+          std_err = (await response.text()) + `\n\nQuery: ${codeRun.code}`;
+          console.warn(std_err);
+        } else {
+          buffer = await response.arrayBuffer();
 
-        const headers = response.headers;
-        const isOverTheLimit = headers.get('over-the-limit') === 'true';
-        std_out = isOverTheLimit ? 'Exceeded maximum allowed bytes, not all available records returned.' : '';
-        extra = ` in ${headers.get('elapsed-total-ms')}ms`;
+          const headers = response.headers;
+          const isOverTheLimit = headers.get('over-the-limit') === 'true';
+          std_out = isOverTheLimit ? 'Exceeded maximum allowed bytes, not all available records returned.' : '';
+          extra = ` in ${headers.get('elapsed-total-ms')}ms`;
+        }
       }
 
       // send the parquet bytes to core
       core.connectionComplete(transactionId, buffer, std_out, std_err?.replace(/\\/g, '').replace(/"/g, ''), extra);
       this.sendConnectionState('ready');
+      this.lastTransactionId = undefined;
     } catch (e) {
       console.error(`Error fetching ${url}`, e);
     }
   };
 
-  cancelExecution() {
+  cancelExecution = () => {
     try {
       this.controller.abort();
     } catch (error: any) {
@@ -113,8 +124,19 @@ class CoreConnection {
     }
 
     this.controller = new AbortController();
-    this.sendConnectionState('ready');
-  }
+
+    // It's possible that the transaction was completed before the message was
+    // received.
+    if (this.lastTransactionId) {
+      const buffer = new ArrayBuffer(0);
+      const std_out = undefined;
+      const std_err = 'Execution cancelled by user';
+      const extra = undefined;
+      core.connectionComplete(this.lastTransactionId, buffer, std_out, std_err, extra);
+      this.sendConnectionState('ready');
+      this.lastTransactionId = undefined;
+    }
+  };
 }
 
 export const coreConnection = new CoreConnection();

@@ -14,7 +14,6 @@ use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
-use super::data_table::DataTable;
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
@@ -218,8 +217,9 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a vertical edge of a table.
     pub fn is_at_table_edge_col(&self, pos: &Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
-            // we handle charts separately in find_next_*
-            if dt.is_html_or_image() {
+            // we handle charts separately in find_next_*;
+            // we ignore single_value tables
+            if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
             }
             let bounds = dt.output_rect(dt_pos, false);
@@ -233,17 +233,21 @@ impl Sheet {
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
     pub fn is_at_table_edge_row(&self, pos: &Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
-            // we handle charts separately in find_next_*
-            if dt.is_html_or_image() {
+            // we handle charts separately in find_next_*;
+            // we ignore single_value tables
+            if dt.is_html_or_image() || dt.is_single_value() {
                 return false;
             }
             let bounds = dt.output_rect(dt_pos, false);
             if bounds.min.y == pos.y {
                 // table name, or column header if no table name, or top of data if no column header or table name
                 return true;
-            } else if bounds.min.y
-                + (if dt.show_ui && dt.show_name { 1 } else { 0 })
-                + (if dt.show_ui && dt.show_columns { 1 } else { 0 })
+            }
+
+            let show_name = dt.get_show_name();
+            let show_columns = dt.get_show_columns();
+
+            if bounds.min.y + (if show_name { 1 } else { 0 }) + (if show_columns { 1 } else { 0 })
                 == pos.y
             {
                 // ignore column header--just go to first line of data or table name
@@ -561,8 +565,8 @@ mod test {
     use super::*;
     use crate::a1::A1Selection;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
-    use crate::test_util::gc::print_table;
+    use crate::grid::{CodeCellLanguage, CodeCellValue, DataTable, DataTableKind, NumericFormat};
+    use crate::test_util::print_table_in_rect;
     use crate::{Array, SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -759,7 +763,7 @@ mod test {
         ];
         let (grid, sheet_id) = test_setup(&selected, &vals);
 
-        print_table(&grid, sheet_id, selected);
+        print_table_in_rect(&grid, sheet_id, selected);
 
         let sheet = grid.sheet(sheet_id);
         let values = sheet.cell_values_in_rect(&selected, false).unwrap();
@@ -1043,7 +1047,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert_full(&pos, dt.clone());
@@ -1291,7 +1296,8 @@ mod test {
             ])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert_full(&anchor_pos, dt);
@@ -1319,10 +1325,11 @@ mod test {
             Value::Array(Array::from(vec![vec!["a", "b"], vec!["c", "d"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
-        dt_no_ui.show_name = false;
+        dt_no_ui.show_name = Some(false);
         sheet.data_tables.insert_full(&pos![E5], dt_no_ui);
 
         // Test edges without UI
@@ -1361,7 +1368,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert_full(&pos, dt.clone());

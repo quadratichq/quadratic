@@ -1,9 +1,9 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { ROUTES } from '@/shared/constants/routes';
 import { FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean }) => {
   const {
@@ -14,7 +14,7 @@ export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean
 
   return (
     <div className="flex min-h-80 items-center justify-center border-2 border-dashed border-border">
-      <Empty
+      <EmptyState
         className="max-w-lg"
         title="No files"
         description={

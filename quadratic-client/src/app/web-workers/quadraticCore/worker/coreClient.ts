@@ -642,7 +642,6 @@ class CoreClient {
           e.data.name,
           e.data.alternatingColors,
           e.data.columns,
-          e.data.showUI,
           e.data.showName,
           e.data.showColumns,
           e.data.cursor
@@ -699,6 +698,22 @@ class CoreClient {
 
       case 'clientCoreMoveRows':
         core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeColumns':
+        core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeRows':
+        core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeAllColumns':
+        core.resizeAllColumns(e.data.sheetId, e.data.size, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeAllRows':
+        core.resizeAllRows(e.data.sheetId, e.data.size, e.data.cursor);
         return;
 
       default:

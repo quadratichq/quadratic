@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::*;
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
-    Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
+    Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
 )]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Pos {
@@ -94,6 +94,13 @@ impl Pos {
     }
 
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns a new Pos.
+    pub fn saturating_translate(&self, dx: i64, dy: i64) -> Self {
+        let adjust = RefAdjust::new_translate(dx, dy);
+        self.saturating_adjust(adjust)
+    }
+
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds.
     ///
     /// **Note:** `adjust.sheet_id` and `adjust.relative_only` are ignored by
@@ -150,6 +157,14 @@ impl From<(u32, u32)> for Pos {
         }
     }
 }
+impl From<(usize, usize)> for Pos {
+    fn from(pos: (usize, usize)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
 impl From<[i64; 2]> for Pos {
     fn from(pos: [i64; 2]) -> Self {
         Pos {
@@ -197,6 +212,12 @@ pub struct SheetPos {
 }
 
 impl SheetPos {
+    /// Replace the pos with a new pos
+    pub fn replace_pos(&mut self, pos: Pos) {
+        self.x = pos.x;
+        self.y = pos.y;
+    }
+
     #[cfg(test)]
     pub fn test() -> Self {
         Self {
@@ -234,6 +255,12 @@ impl FromStr for SheetPos {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         serde_json::from_str::<SheetPos>(s).map_err(|e| e.to_string())
+    }
+}
+
+impl fmt::Debug for Pos {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Pos ({}, {}) {}", self.x, self.y, self.a1_string())
     }
 }
 

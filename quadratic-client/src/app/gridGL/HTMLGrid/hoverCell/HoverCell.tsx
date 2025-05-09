@@ -1,4 +1,4 @@
-import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
+import { aiAssistantLoadingAtom, aiAssistantWaitingOnMessageIndexAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -10,7 +10,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
@@ -41,7 +41,7 @@ export function HoverCell() {
   const [hovering, setHovering] = useState(false);
   const hoveringRef = useRef(false);
 
-  const timeoutId = useRef<NodeJS.Timeout | undefined>();
+  const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
   const [allowPointerEvents, setAllowPointerEvents] = useState(false);
 
   const addPointerEvents = useCallback(() => {
@@ -144,8 +144,9 @@ export function HoverCell() {
 
   useEffect(() => {
     const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
-      // don't show hover cell if the inline editor is showing at the same location
-      if (cell && inlineEditorHandler.getShowing(cell.x, cell.y)) {
+      // don't show hover cell if the inline editor is showing at the same
+      // location, unless it's a validation error
+      if (cell && !(cell as ErrorValidation)?.validationId && inlineEditorHandler.getShowing(cell.x, cell.y)) {
         removePointerEvents();
         setHovering(false);
         hoveringRef.current = false;
@@ -234,7 +235,8 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
     [codeCellCore.language, x, y]
   );
 
-  const loading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiAssistantWaitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
 
   const { submitPrompt } = useSubmitAIAssistantPrompt();
 
@@ -252,12 +254,12 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
             });
             submitPrompt({
               content: [{ type: 'text', text: 'Fix the error in the code cell' }],
-              clearMessages: true,
+              messageIndex: 0,
               codeCell,
             }).catch(console.error);
             onClick();
           }}
-          disabled={loading}
+          disabled={aiAssistantLoading || aiAssistantWaitingOnMessageIndex !== undefined}
         >
           Fix with AI
         </Button>

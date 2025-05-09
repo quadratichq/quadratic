@@ -1,42 +1,48 @@
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export function useCodeCellContextMessages() {
-  const getCodeCellContext = useCallback(async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
-    const { sheetId, pos, language: cellLanguage } = codeCell;
-    const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
-    const codeString = codeCellCore?.code_string ?? '';
-    const consoleOutput = {
-      std_out: codeCellCore?.std_out ?? '',
-      std_err: codeCellCore?.std_err ?? '',
-    };
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
 
-    let schemaData;
-    const connection = getConnectionInfo(cellLanguage);
-    if (connection) {
-      schemaData = await connectionClient.schemas.get(
-        connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
-        connection.id
-      );
-    }
-    const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
+  const getCodeCellContext = useCallback(
+    async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
+      const { sheetId, pos, language: cellLanguage } = codeCell;
+      const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
+      const codeString = codeCellCore?.code_string ?? '';
+      const consoleOutput = {
+        std_out: codeCellCore?.std_out ?? '',
+        std_err: codeCellCore?.std_err ?? '',
+      };
 
-    const a1Pos = xyToA1(pos.x, pos.y);
-    const language = getConnectionKind(cellLanguage);
-    const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
+      let schemaData: Awaited<ReturnType<typeof connectionClient.schemas.get>> = null;
+      const connection = getConnectionInfo(cellLanguage);
+      if (connection) {
+        schemaData = await connectionClient.schemas.get(
+          connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
+          connection.id,
+          teamUuid
+        );
+      }
+      const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
 
-    return [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `Note: This is an internal message for context. Do not quote it in your response.\n\n
+      const a1Pos = xyToA1(pos.x, pos.y);
+      const language = getConnectionKind(cellLanguage);
+      const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
+
+      return [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 Currently, you are in a code cell that is being edited.\n
 The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
@@ -83,22 +89,24 @@ ${
 \`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\``
     : ``
 }`,
-          },
-        ],
-        contextType: 'codeCell',
-      },
-      {
-        role: 'assistant',
-        content: [
-          {
-            type: 'text',
-            text: `How can I help you?`,
-          },
-        ],
-        contextType: 'codeCell',
-      },
-    ];
-  }, []);
+            },
+          ],
+          contextType: 'codeCell',
+        },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: `How can I help you?`,
+            },
+          ],
+          contextType: 'codeCell',
+        },
+      ];
+    },
+    [teamUuid]
+  );
 
   return { getCodeCellContext };
 }

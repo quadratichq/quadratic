@@ -134,6 +134,45 @@ macro_rules! pos {
     }};
 }
 
+/// Parses a cell rectangle in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{rect, Rect};
+/// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
+/// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
+/// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
+/// ```
+#[macro_export]
+macro_rules! rect {
+    ($corner1:ident : $corner2:ident) => {
+        $crate::Rect::new_span($crate::pos![$corner1], $crate::pos![$corner2])
+    };
+}
+
+/// Parses a cell reference range in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord}};
+/// assert_eq!(ref_range_bounds![:$C], RefRangeBounds {
+///     start: CellRefRangeEnd::new_relative_xy(1, 1),
+///     end: CellRefRangeEnd {
+///         col: CellRefCoord::new_abs(3),
+///         row: CellRefCoord::UNBOUNDED,
+///     },
+/// });
+/// ```
+#[macro_export]
+macro_rules! ref_range_bounds {
+    ($($tok:tt)*) => {
+        $crate::a1::RefRangeBounds::from_str(stringify!($($tok)*), None)
+            .expect("invalid range")
+    };
+}
+
 /// Returns a human-friendly list of things, joined at the end by the given
 /// conjunction.
 pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
@@ -352,6 +391,22 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
         Some(b) if b < a => (b, Some(a)),
         _ => (a, b),
     }
+}
+
+#[allow(unused)]
+macro_rules! print_sheet {
+    ($gc:expr, $sheet_id:expr) => {
+        let sheet = $gc.try_sheet($sheet_id).unwrap();
+        $crate::test_util::print_sheet::print_sheet(&sheet);
+    };
+}
+
+#[allow(unused)]
+macro_rules! print_first_sheet {
+    ($gc:expr) => {
+        let sheet = $gc.try_sheet($gc.sheet_ids()[0]).unwrap();
+        $crate::test_util::print_sheet::print_sheet(&sheet);
+    };
 }
 
 #[cfg(test)]

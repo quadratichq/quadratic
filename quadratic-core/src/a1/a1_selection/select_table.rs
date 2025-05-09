@@ -137,7 +137,7 @@ impl A1Selection {
 
         let (col_range, x) = if let Some(col) = col {
             if let Some(col_index) = table.try_col_index(&col) {
-                if table.show_ui && table.show_name {
+                if table.show_name {
                     y += 1;
                 }
                 (
@@ -164,7 +164,7 @@ impl A1Selection {
                     // handle toggle for single column selection
                     if matches!(col_range, ColRange::Col(_)) {
                         if !range.headers && range.data {
-                            headers = table.show_ui && table.show_columns;
+                            headers = table.show_columns;
                             data = false;
                         } else {
                             headers = false;
@@ -173,7 +173,7 @@ impl A1Selection {
                         self.ranges.pop();
                     } else if matches!(col_range, ColRange::All) {
                         // handle toggle for column selection
-                        headers = table.show_ui && table.show_columns && !range.headers;
+                        headers = table.show_columns && !range.headers;
                         self.ranges.pop();
                     }
                 }
@@ -223,7 +223,9 @@ mod tests {
     #[test]
     fn test_select_table() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
-        context.table_mut("Table1").unwrap().show_ui = false;
+        let table = context.table_mut("Table1").unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, false, false);
         assert_eq!(selection.ranges.len(), 1);
@@ -239,7 +241,9 @@ mod tests {
     #[test]
     fn test_select_table_col() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
-        context.table_mut("Table1").unwrap().show_ui = false;
+        let table = context.table_mut("Table1").unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table(
             "Table1",
@@ -271,7 +275,9 @@ mod tests {
     #[test]
     fn test_select_table_append() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
-        context.table_mut("Table1").unwrap().show_ui = false;
+        let table = context.table_mut("Table1").unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);

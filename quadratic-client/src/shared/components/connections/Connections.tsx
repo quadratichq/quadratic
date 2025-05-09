@@ -3,11 +3,12 @@ import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAc
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
+import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetchers, useSearchParams } from 'react-router-dom';
+import { useFetchers, useSearchParams } from 'react-router';
 
 export type ConnectionsListConnection = {
   uuid: string;
@@ -18,6 +19,7 @@ export type ConnectionsListConnection = {
 };
 type Props = {
   teamUuid: string;
+  sshPublicKey: string;
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
@@ -33,6 +35,7 @@ export const Connections = ({
   teamUuid,
   staticIps,
   handleNavigateToDetailsViewOverride,
+  sshPublicKey,
 }: Props) => {
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
@@ -123,7 +126,7 @@ export const Connections = ({
     setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
     setActiveConnectionType(connectionType);
   };
-  const hangleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+  const handleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
     // If we're in the app, insert a query on the sheet.
     if (handleNavigateToDetailsViewOverride) {
       handleNavigateToDetailsViewOverride({ Connection: { kind: connectionType, id: connectionUuid } });
@@ -135,37 +138,43 @@ export const Connections = ({
   };
 
   return (
-    <div>
-      {activeConnectionState && activeConnectionType ? (
-        activeConnectionState.view === 'edit' ? (
-          <ConnectionFormEdit
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionType}
+    <div className={'grid-cols-12 gap-12 md:grid'}>
+      <div className="col-span-8">
+        {activeConnectionState && activeConnectionType ? (
+          activeConnectionState.view === 'edit' ? (
+            <ConnectionFormEdit
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          ) : (
+            <ConnectionDetails
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          )
+        ) : activeConnectionType ? (
+          <ConnectionFormCreate
+            teamUuid={teamUuid}
+            type={activeConnectionType}
             handleNavigateToListView={handleNavigateToListView}
           />
         ) : (
-          <ConnectionDetails
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionType}
-            handleNavigateToListView={handleNavigateToListView}
-            teamUuid={teamUuid}
+          <ConnectionsList
+            connections={connections}
+            connectionsAreLoading={connectionsAreLoading}
+            handleNavigateToCreateView={handleNavigateToCreateView}
+            handleNavigateToEditView={handleNavigateToEditView}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
           />
-        )
-      ) : activeConnectionType ? (
-        <ConnectionFormCreate
-          teamUuid={teamUuid}
-          type={activeConnectionType}
-          handleNavigateToListView={handleNavigateToListView}
-        />
-      ) : (
-        <ConnectionsList
-          connections={connections}
-          connectionsAreLoading={connectionsAreLoading}
-          handleNavigateToCreateView={handleNavigateToCreateView}
-          handleNavigateToEditView={handleNavigateToEditView}
-          hangleNavigateToDetailsView={hangleNavigateToDetailsView}
-        />
-      )}
+        )}
+      </div>
+      <div className="col-span-4 mt-12 md:mt-0">
+        <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
+      </div>
     </div>
   );
 };

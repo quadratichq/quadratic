@@ -1,6 +1,6 @@
 use super::operation::Operation;
 use crate::{
-    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
+    Array, ArraySize, CellValue, CopyFormats, Pos, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
@@ -49,26 +49,67 @@ impl GridController {
         ops
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn data_table_meta_operations(
         &self,
         sheet_pos: SheetPos,
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
-        show_name: Option<bool>,
-        show_columns: Option<bool>,
+        show_name: Option<Option<bool>>,
+        show_columns: Option<Option<bool>>,
     ) -> Vec<Operation> {
-        vec![Operation::DataTableMeta {
+        vec![Operation::DataTableOptionMeta {
             sheet_pos,
             name,
             alternating_colors,
             columns,
-            show_ui,
-            show_name,
-            show_columns,
-            readonly: None,
+            show_name: show_name.map(|show_name| show_name.into()),
+            show_columns: show_columns.map(|show_columns| show_columns.into()),
+        }]
+    }
+
+    /// Inserts a column in the table. If swallow is true, then the column is inserted
+    /// using the data that already exists on the sheet. Otherwise, copy_formats
+    /// is checked and any formats and borders are taken from the source column.
+    pub(crate) fn data_table_insert_columns_operations(
+        &self,
+        sheet_pos: SheetPos,
+        columns: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+    ) -> Vec<Operation> {
+        vec![Operation::InsertDataTableColumns {
+            sheet_pos,
+            columns: columns
+                .into_iter()
+                .map(|index| (index, None, None))
+                .collect(),
+            swallow,
+            select_table: false,
+            copy_formats_from,
+            copy_formats,
+        }]
+    }
+
+    /// Inserts a row in the table. If swallow is true, then the row is inserted
+    /// using the data that already exists on the sheet. Otherwise, copy_formats
+    /// is checked and any formats and borders are taken from the source row.
+    pub(crate) fn data_table_insert_rows_operations(
+        &self,
+        sheet_pos: SheetPos,
+        rows: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+    ) -> Vec<Operation> {
+        vec![Operation::InsertDataTableRows {
+            sheet_pos,
+            rows: rows.into_iter().map(|index| (index, None)).collect(),
+            swallow,
+            select_table: false,
+            copy_formats_from,
+            copy_formats,
         }]
     }
 
@@ -96,6 +137,8 @@ impl GridController {
                         .collect(),
                     swallow: swallow_on_insert.unwrap_or(false),
                     select_table,
+                    copy_formats_from: None,
+                    copy_formats: None,
                 });
             }
         }
@@ -118,6 +161,8 @@ impl GridController {
                     rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
                     swallow: swallow_on_insert.unwrap_or(false),
                     select_table,
+                    copy_formats_from: None,
+                    copy_formats: None,
                 });
             }
         }
@@ -186,7 +231,7 @@ impl GridController {
             return ops;
         }
 
-        let width = values[0].len();
+        let width = values.iter().map(|row| row.len()).max().unwrap_or(0);
         if width == 0 {
             dbgjs!("[set_cell_values] Empty values");
             return ops;
@@ -231,7 +276,8 @@ impl GridController {
             cell_values.into(),
             false,
             first_row_is_header,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         data_table.formats.apply_updates(&sheet_format_updates);
@@ -241,6 +287,7 @@ impl GridController {
             sheet_pos,
             data_table,
             cell_value: CellValue::Import(import),
+            index: None,
         });
 
         ops
@@ -257,7 +304,7 @@ mod test {
             operations::operation::Operation,
         },
         grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-        test_util::gc::{assert_cell_value, assert_display_cell_value, print_table},
+        test_util::{assert_cell_value, assert_display_cell_value, print_table_in_rect},
     };
 
     #[test]
@@ -342,7 +389,7 @@ mod test {
         ];
 
         gc.set_cell_values(sheet_pos, values, None);
-        print_table(&gc, sheet_id, sheet_rect.into());
+        print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
         let ops = gc.grid_to_data_table_operations(sheet_rect);
         gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
@@ -350,7 +397,7 @@ mod test {
         let import = Import::new("Table1".into());
         let cell_value = CellValue::Import(import.to_owned());
 
-        print_table(&gc, sheet_id, data_table_rect);
+        print_table_in_rect(&gc, sheet_id, data_table_rect);
 
         // check that the data table is in the sheet
         assert_cell_value(&gc, sheet_id, 1, 1, cell_value.clone());
@@ -364,7 +411,7 @@ mod test {
         gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
-        print_table(&gc, sheet_id, sheet_rect.into());
+        print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
         let ops = gc.grid_to_data_table_operations(sheet_rect);
 
@@ -377,6 +424,6 @@ mod test {
         // there should still be just 1 data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
-        print_table(&gc, sheet_id, data_table_rect);
+        print_table_in_rect(&gc, sheet_id, data_table_rect);
     }
 }

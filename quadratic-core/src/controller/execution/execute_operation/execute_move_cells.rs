@@ -37,6 +37,8 @@ impl GridController {
                 ops.extend(cut_ops);
 
                 match self.paste_html_operations(
+                    dest.into(),
+                    dest.into(),
                     &A1Selection::from_single_cell(dest),
                     js_clipboard.html,
                     PasteSpecial::None,
@@ -60,7 +62,7 @@ mod tests {
             active_transactions::transaction_name::TransactionName,
             user_actions::import::tests::{simple_csv, simple_csv_at},
         },
-        test_util::gc::print_table,
+        test_util::print_table_in_rect,
     };
 
     use super::*;
@@ -71,7 +73,7 @@ mod tests {
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
-        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 12));
 
         let dest_pos = pos![F1];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
@@ -82,7 +84,7 @@ mod tests {
             rows: false,
         }];
         gc.start_user_transaction(ops, None, TransactionName::MoveCells);
-        print_table(&gc, sheet_id, Rect::new(6, 1, 10, 12));
+        print_table_in_rect(&gc, sheet_id, Rect::new(6, 1, 10, 12));
     }
 
     #[test]
@@ -96,7 +98,7 @@ mod tests {
             Some(CellValue::Import(Import::new(file_name.to_string())))
         );
 
-        print_table(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+        print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
 
         let dest_pos = pos![F4];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
@@ -108,7 +110,7 @@ mod tests {
             rows: false,
         }];
         gc.start_user_transaction(ops, None, TransactionName::MoveCells);
-        print_table(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+        print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
 
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
         assert!(gc.sheet(sheet_id).data_table_at(&pos).is_none());

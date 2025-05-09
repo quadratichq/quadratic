@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { getLastPromptMessageType, getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getLastPromptMessageType } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   getModelFromModelKey,
   isAnthropicModel,
@@ -42,13 +42,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
-  // TODO: Enforce usage limit
-  // const usage = await getAIMessageUsageForUser(userId);
-  // const exceededUsageLimit = await userExceededUsageLimit(usage);
+  // const usage = await BillingAIUsageMonthlyForUser(userId);
+  // const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
 
-  // if (exceededUsageLimit) {
+  // if (exceededBillingLimit) {
   //   //@ts-expect-error
-  //   return res.status(402).json({ error: 'Usage limit exceeded' });
+  //   return res.status(402).json({ error: 'Billing limit exceeded' });
   // }
 
   const { body } = parseRequest(req, schema);
@@ -96,7 +95,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = await getFile({ uuid: fileUuid, userId });
 
   const model = getModelFromModelKey(modelKey);
-  const messageIndex = getLastUserPromptMessageIndex(args.messages);
+  const messageIndex = getLastAIPromptMessageIndex(args.messages);
   const messageType = getLastPromptMessageType(args.messages);
 
   const chat = await dbClient.analyticsAIChat.upsert({

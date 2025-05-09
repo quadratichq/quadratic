@@ -4,7 +4,7 @@ use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, parse_formula},
-    grid::{CodeRun, DataTable, DataTableKind},
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
 };
 
 impl GridController {
@@ -23,6 +23,8 @@ impl GridController {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
                 let new_code_run = CodeRun {
+                    language: CodeCellLanguage::Formula,
+                    code,
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
@@ -38,7 +40,8 @@ impl GridController {
                     output.inner,
                     false,
                     false,
-                    false,
+                    None,
+                    None,
                     None,
                 );
                 self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
@@ -69,6 +72,7 @@ mod test {
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        test_util::pretty_print_data_table,
     };
 
     #[test]
@@ -247,8 +251,11 @@ mod test {
             result,
             sheet_pos,
             CodeCellLanguage::Javascript,
+            r#"return "12";"#.to_string(),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: r#"return "12";"#.to_string(),
             return_type: Some("number".into()),
             output_type: Some("number".into()),
             ..Default::default()
@@ -261,12 +268,11 @@ mod test {
                 Value::Single(CellValue::Number(12.into())),
                 false,
                 false,
-                true,
+                None,
+                None,
                 None,
             )
             .with_last_modified(result.last_modified)
-            .with_show_columns(false)
-            .with_show_name(false),
         );
     }
 
@@ -324,8 +330,11 @@ mod test {
             result,
             sheet_pos,
             CodeCellLanguage::Javascript,
+            r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
             return_type: Some("array".into()),
             output_type: Some("array".into()),
             ..Default::default()
@@ -337,18 +346,18 @@ mod test {
             Value::Array(array),
             false,
             false,
-            true,
             None,
-        )
-        .with_show_columns(false);
+            None,
+            None,
+        );
         let column_headers =
             expected_result.default_header_with_name(|i| format!("{}", i - 1), None);
         expected_result = expected_result
             .with_column_headers(column_headers)
             .with_last_modified(result.last_modified);
 
-        crate::grid::data_table::test::pretty_print_data_table(&result, None, None);
-        crate::grid::data_table::test::pretty_print_data_table(&expected_result, None, None);
+        pretty_print_data_table(&result, None, None);
+        pretty_print_data_table(&expected_result, None, None);
 
         assert_eq!(result, expected_result);
     }

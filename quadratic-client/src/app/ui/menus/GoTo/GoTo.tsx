@@ -1,21 +1,22 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
-import { convertTableToRange, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { convertTableToRange, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { CommandSeparator } from 'cmdk';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
   const [, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>();
+  const [currentSheet, setCurrentSheet] = useState<string>(sheets.current);
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
@@ -94,14 +95,6 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
     [closeMenu]
   );
 
-  const selectSheet = useCallback(
-    (sheetId: string) => {
-      sheets.current = sheetId;
-      closeMenu();
-    },
-    [closeMenu]
-  );
-
   const tablesFiltered = useMemo(
     () =>
       tableInfo
@@ -136,6 +129,12 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
         .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true)),
     [value]
   );
+
+  useEffect(() => {
+    if (currentSheet !== sheets.current) {
+      sheets.current = currentSheet;
+    }
+  }, [currentSheet]);
 
   return (
     <Command shouldFilter={false}>
@@ -192,7 +191,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
                 onSelect={() => selectTable(name)}
                 name={name}
                 nameSecondary={tableNameToRange(name)}
-                icon={<LanguageIcon language={getLanguage(language)} sx={{ width: 16, height: 16 }} />}
+                icon={<LanguageIcon language={getConnectionKind(language)} />}
               />
             ))}
           </CommandGroup>
@@ -204,7 +203,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
               <CommandItemGoto
                 key={sheet.id}
                 value={sheet.id}
-                onSelect={() => selectSheet(sheet.id)}
+                onSelect={() => setCurrentSheet(sheet.id)}
                 name={sheet.name}
               />
             ))}

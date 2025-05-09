@@ -10,6 +10,7 @@ import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
@@ -143,13 +144,24 @@ export class Tables extends Container<Table> {
       });
   };
 
+  // We cannot start rendering code cells until the bitmap fonts are loaded. We
+  // listen for the bitmapFontsLoaded event and then render the code cells.
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
-      codeCells.forEach((codeCell) => {
-        this.addChild(new Table(this.sheet, codeCell));
-      });
+      if (!isBitmapFontLoaded()) {
+        console.log('bitmapFontsLoaded event not received');
+        events.once('bitmapFontsLoaded', () => this.completeRenderCodeCells(codeCells));
+        return;
+      }
+      this.completeRenderCodeCells(codeCells);
     }
+  };
+
+  private completeRenderCodeCells = (codeCells: JsRenderCodeCell[]) => {
+    codeCells.forEach((codeCell) => {
+      this.addChild(new Table(this.sheet, codeCell));
+    });
   };
 
   update(dirtyViewport: boolean) {
@@ -372,7 +384,6 @@ export class Tables extends Container<Table> {
       ) {
         return true;
       }
-      if (!code.show_ui) return false;
       return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y === code.y;
     });
   }
@@ -401,7 +412,7 @@ export class Tables extends Container<Table> {
     cell: JsCoordinate
   ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
     for (const table of this.children) {
-      if (table.codeCell.show_ui && table.codeCell.show_columns && table.inOverHeadings) {
+      if (table.codeCell.show_columns && table.inOverHeadings) {
         if (
           cell.x >= table.codeCell.x &&
           cell.x < table.codeCell.x + table.codeCell.w &&
@@ -427,7 +438,6 @@ export class Tables extends Container<Table> {
   isColumnHeaderCell(cell: JsCoordinate): boolean {
     return !!this.children.find(
       (table) =>
-        table.codeCell.show_ui &&
         table.codeCell.show_columns &&
         cell.x >= table.codeCell.x &&
         cell.x <= table.codeCell.x + table.codeCell.w - 1 &&

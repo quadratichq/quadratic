@@ -20,20 +20,10 @@ impl GridController {
                         &values,
                         &self.a1_context,
                     );
+
                     if old_values == values {
                         return;
                     }
-
-                    // if cfg!(target_family = "wasm")
-                    //     && !transaction.is_server()
-                    //     && values.into_iter().any(|(_, _, value)| value.is_html())
-                    // {
-                    //     if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
-                    //         if let Ok(html) = serde_json::to_string(&html) {
-                    //             crate::wasm_bindings::js::jsUpdateHtml(html);
-                    //         }
-                    //     }
-                    // };
 
                     let min = sheet_pos.into();
                     let sheet_rect = SheetRect {
@@ -51,11 +41,8 @@ impl GridController {
 
                         if transaction.is_user() {
                             self.check_deleted_data_tables(transaction, &sheet_rect);
-
-                            // dbgjs!(format!("todo(ayush): enable compute operations and spills"));
-
-                            // self.add_compute_operations(transaction, &sheet_rect, None);
-                            // self.check_all_spills(transaction, sheet_rect.sheet_id);
+                            self.add_compute_operations(transaction, &sheet_rect, None);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
                         transaction
@@ -97,7 +84,7 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::GridController;
-    use crate::grid::SheetId;
+    use crate::grid::{CodeCellLanguage, SheetId};
     use crate::{CellValue, Pos, SheetPos};
 
     #[test]
@@ -167,15 +154,6 @@ mod tests {
             None,
         );
     }
-}
-
-#[cfg(test)]
-mod test {
-    use bigdecimal::BigDecimal;
-
-    use super::*;
-    use crate::grid::CodeCellLanguage;
-    use crate::{CellValue, SheetPos};
 
     #[test]
     fn test_set_cell_values_code_cell_remove() {

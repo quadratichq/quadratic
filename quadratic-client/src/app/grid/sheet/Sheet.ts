@@ -10,13 +10,10 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import {
-  A1SelectionToJsSelection,
-  type SheetOffsets,
-  SheetOffsetsWasm,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionToJsSelection, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
+import { v4 } from 'uuid';
 
 export class Sheet {
   sheets: Sheets;
@@ -189,5 +186,34 @@ export class Sheet {
 
   getValidationById(id: string): Validation | undefined {
     return this.validations.find((v) => v.id === id);
+  }
+
+  // Returns the content bounds in viewport coordinates from 0,0 to the
+  // bottom-right of the content.
+  getScrollbarBounds(): Rectangle {
+    const bounds = this.bounds;
+    if (bounds.type === 'empty') return new Rectangle();
+    const bottomRight = this.getCellOffsets(Number(bounds.max.x) + 1, Number(bounds.max.y) + 1);
+    return new Rectangle(0, 0, bottomRight.left, bottomRight.top);
+  }
+
+  addCheckbox() {
+    const validation: Validation = {
+      id: v4(),
+      selection: this.cursor.selection(),
+      rule: { Logical: { show_checkbox: true, ignore_blank: true } },
+      message: {
+        show: false,
+        title: '',
+        message: '',
+      },
+      error: {
+        show: true,
+        style: 'Stop',
+        title: '',
+        message: '',
+      },
+    };
+    quadraticCore.updateValidation(validation, this.sheets.getCursorPosition());
   }
 }

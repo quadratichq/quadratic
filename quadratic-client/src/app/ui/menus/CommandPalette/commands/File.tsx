@@ -9,9 +9,9 @@ import {
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 // TODO: make the types better here so it knows whether this exists
@@ -36,16 +36,15 @@ const commands: CommandGroup = {
       label: duplicateFileAction.label,
       isAvailable: duplicateFileAction.isAvailable,
       Component: (props) => {
-        const submit = useSubmit();
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         const action = () => {
-          duplicateFileAction.run({ fileUuid, submit });
+          duplicateFileAction.run({ fileUuid });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileCopyIcon />} />;
       },
     },
     {
-      label: openFileVersionHistoryActionSpec.label,
+      label: openFileVersionHistoryActionSpec.label(),
       isAvailable: openFileVersionHistoryActionSpec.isAvailable,
       Component: (props) => {
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
@@ -60,7 +59,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: downloadFileActionSpec.label,
+      label: downloadFileActionSpec.label(),
       isAvailable: downloadFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
@@ -75,7 +74,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: renameFileActionSpec?.label ?? '',
+      label: renameFileActionSpec?.label() ?? '',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
@@ -91,12 +90,13 @@ const commands: CommandGroup = {
       label: deleteFile.label,
       isAvailable: deleteFile.isAvailable,
       Component: (props: any) => {
+        const { name } = useFileContext();
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         const user = useRecoilValue(editorInteractionStateUserAtom);
         const submit = useSubmit();
-        const { addGlobalSnackbar } = useGlobalSnackbar();
+        const confirmFn = useConfirmDialog('deleteFile', { name });
         const action = () =>
-          deleteFile.run({ fileUuid, userEmail: user?.email ?? '', redirect: true, submit, addGlobalSnackbar });
+          deleteFile.run({ fileUuid, userEmail: user?.email ?? '', redirect: true, submit, confirmFn });
         return <CommandPaletteListItem {...props} action={action} icon={<DeleteIcon />} />;
       },
     },

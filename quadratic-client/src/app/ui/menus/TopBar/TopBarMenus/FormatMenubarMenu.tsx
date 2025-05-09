@@ -135,7 +135,7 @@ export const FormatMenubarMenu = () => {
 
 function DataTimeSubMenu({ action }: { action: Action.FormatDateTime }) {
   const actionSpec = defaultActionSpec[action];
-  const { label } = actionSpec;
+  const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
   return (
@@ -153,7 +153,7 @@ function DataTimeSubMenu({ action }: { action: Action.FormatDateTime }) {
 
 function MenubarColorPickerSubMenu({ action }: { action: Action.FormatTextColor | Action.FormatFillColor }) {
   const actionSpec = defaultActionSpec[action];
-  const { run, label } = actionSpec;
+  const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
   return (
@@ -166,11 +166,11 @@ function MenubarColorPickerSubMenu({ action }: { action: Action.FormatTextColor 
         <MenubarItem className="color-picker-dropdown-menu flex-col gap-0 p-0 hover:bg-background focus:bg-background">
           <QColorPicker
             onChangeComplete={(color) => {
-              run(color);
+              actionSpec.run(color);
               focusGrid();
             }}
             onClear={() => {
-              run(undefined);
+              actionSpec.run(undefined);
               focusGrid();
             }}
           />

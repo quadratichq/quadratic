@@ -67,9 +67,11 @@ impl GridController {
                     data_table.name = unique_name.to_owned().into();
 
                     // update table context for replacing table names in code cells
-                    if let Some(mut table_map_entry) = context.table_map.remove(&old_name) {
-                        table_map_entry.sheet_id = sheet_id;
-                        context.table_map.insert(table_map_entry);
+                    if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
+                        let mut new_table_map_entry = old_table_map_entry.to_owned();
+                        new_table_map_entry.sheet_id = sheet_id;
+                        new_table_map_entry.table_name = unique_name.to_owned();
+                        context.table_map.insert(new_table_map_entry);
                     }
 
                     data_tables_pos.push(*pos);
@@ -631,14 +633,14 @@ mod tests {
 
         gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 10,
-                y: 10,
-            },
+            pos![sheet_id!J10],
             CodeCellLanguage::Python,
             format!("q.cells('{}')", file_name),
             None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).data_table_at(&pos![J10]).unwrap().name(),
+            "Table1"
         );
 
         gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
@@ -648,6 +650,10 @@ mod tests {
             CodeCellLanguage::Python,
             format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).data_table_at(&pos![T20]).unwrap().name(),
+            "Table2"
         );
 
         let ops = gc.duplicate_sheet_operations(sheet_id);
@@ -671,6 +677,21 @@ mod tests {
                 language: CodeCellLanguage::Python,
                 code: format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#),
             })
+        );
+
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .data_table_at(&pos![J10])
+                .unwrap()
+                .name(),
+            "Table3"
+        );
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .data_table_at(&pos![T20])
+                .unwrap()
+                .name(),
+            "Table4"
         );
     }
 }

@@ -3,16 +3,16 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, CopyFormats, SheetPos, SheetRect,
+    CellValue, ClearOption, CopyFormats, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
-        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
+        DataTable, DataTableKind, Sheet, SheetId,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
         formatting::CellFmtArray,
-        js_types::JsRowHeight,
+        js_types::{JsColumnWidth, JsRowHeight},
         sheet::{
             borders::{
                 BordersUpdates,
@@ -45,10 +45,16 @@ pub enum Operation {
         data_table: Option<DataTable>,
         index: usize,
     },
+    /// Adds or replaces a data table at a specific SheetPos.
     AddDataTable {
         sheet_pos: SheetPos,
         data_table: DataTable,
         cell_value: CellValue,
+
+        // Used to insert a data table at a specific index (usually after an
+        // undo action)
+        #[serde(default)]
+        index: Option<usize>,
     },
     DeleteDataTable {
         sheet_pos: SheetPos,
@@ -79,6 +85,7 @@ pub enum Operation {
     GridToDataTable {
         sheet_rect: SheetRect,
     },
+    // **Deprecated** and replaced with DataTableOptionMeta
     DataTableMeta {
         sheet_pos: SheetPos,
         name: Option<String>,
@@ -88,6 +95,14 @@ pub enum Operation {
         show_name: Option<bool>,
         show_columns: Option<bool>,
         readonly: Option<bool>,
+    },
+    DataTableOptionMeta {
+        sheet_pos: SheetPos,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumnHeader>>,
+        show_name: Option<ClearOption<bool>>,
+        show_columns: Option<ClearOption<bool>>,
     },
     DataTableFormats {
         sheet_pos: SheetPos,
@@ -118,6 +133,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableColumns {
         sheet_pos: SheetPos,
@@ -144,6 +165,12 @@ pub enum Operation {
 
         /// select the table after the operation
         select_table: bool,
+
+        #[serde(default)]
+        copy_formats_from: Option<u32>,
+
+        #[serde(default)]
+        copy_formats: Option<CopyFormats>,
     },
     DeleteDataTableRows {
         sheet_pos: SheetPos,
@@ -152,25 +179,11 @@ pub enum Operation {
         // the row index is the display index, not the actual index
         rows: Vec<u32>,
 
-        /// Inserts the removed row into sheet at the same position.
+        // Inserts the removed row into sheet at the same position.
         flatten: bool,
 
-        /// select the table after the operation
+        // select the table after the operation
         select_table: bool,
-    },
-    SetCodeRun {
-        sheet_pos: SheetPos,
-        code_run: Option<CodeRunOld>,
-        index: usize,
-    },
-    /// Sets a code run.
-    SetCodeRunVersion {
-        sheet_pos: SheetPos,
-        code_run: Option<CodeRunOld>,
-        index: usize,
-
-        /// Simple version for tracking breaking changes to [`CodeRun`].
-        version: u16,
     },
     /// Runs the code cell at a specific position.
     ComputeCode {
@@ -265,10 +278,28 @@ pub enum Operation {
         client_resized: bool,
     },
 
+    /// Resizes multiple columns.
+    ResizeColumns {
+        sheet_id: SheetId,
+        column_widths: Vec<JsColumnWidth>,
+    },
+
     /// Resizes several rows.
     ResizeRows {
         sheet_id: SheetId,
         row_heights: Vec<JsRowHeight>,
+    },
+
+    /// Changes the default row size
+    DefaultRowSize {
+        sheet_id: SheetId,
+        size: f64,
+    },
+
+    /// Changes the default column size
+    DefaultColumnSize {
+        sheet_id: SheetId,
+        size: f64,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
@@ -317,11 +348,19 @@ pub enum Operation {
     DeleteColumn {
         sheet_id: SheetId,
         column: i64,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     /// Deletes a row.
     DeleteRow {
         sheet_id: SheetId,
         row: i64,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     /// Inserts a column.
     InsertColumn {
@@ -351,9 +390,17 @@ pub enum Operation {
     DeleteColumns {
         sheet_id: SheetId,
         columns: Vec<i64>,
+
+        // this is used to properly redo an InsertColumn operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
     DeleteRows {
         sheet_id: SheetId,
         rows: Vec<i64>,
+
+        // this is used to properly redo an InsertRow operation
+        #[serde(default)]
+        copy_formats: CopyFormats,
     },
 }

@@ -2,6 +2,7 @@ import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import type {
   JsBordersSheet,
   JsHashValidationWarnings,
@@ -17,6 +18,7 @@ import type {
   Validation,
 } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
+import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
@@ -33,7 +35,7 @@ import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
+  needRefresh: (state: RefreshType) => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
@@ -142,6 +144,11 @@ interface EventTypes {
   gridLinesDirty: () => void;
 
   coreError: (from: string, error: Error | unknown) => void;
+
+  scrollBarsHandler: (scrollBarsHandler: ScrollBarsHandler) => void;
+  scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
+
+  bitmapFontsLoaded: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

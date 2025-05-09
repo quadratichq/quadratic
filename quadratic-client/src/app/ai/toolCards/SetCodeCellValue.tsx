@@ -2,10 +2,10 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
@@ -105,7 +105,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       const { code_cell_language: language, code_cell_position: position } = partialJson;
       return (
         <ToolCard
-          icon={<LanguageIcon language={language} className="text-primary" />}
+          icon={<LanguageIcon language={language} />}
           label={language}
           description={
             `${estimatedNumberOfLines} line` +

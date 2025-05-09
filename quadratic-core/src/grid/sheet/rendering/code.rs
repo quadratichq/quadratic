@@ -27,7 +27,7 @@ impl Sheet {
                 .unwrap_or_default(),
             html: Some(output.to_display()),
             name: dt.name().to_string(),
-            show_name: dt.show_name,
+            show_name: dt.get_show_name(),
         })
     }
 
@@ -50,7 +50,7 @@ impl Sheet {
                         .unwrap_or_default(),
                     html: Some(output.to_display()),
                     name: dt.name().to_string(),
-                    show_name: dt.show_name,
+                    show_name: dt.get_show_name(),
                 })
             })
             .collect()
@@ -104,13 +104,12 @@ impl Sheet {
             name: data_table.name().to_string(),
             columns: data_table.send_columns(),
             first_row_header: data_table.header_is_first_row,
-            show_ui: data_table.show_ui,
-            show_name: data_table.show_name,
-            show_columns: !data_table.is_html_or_image() && data_table.show_columns,
+            show_name: data_table.get_show_name(),
+            show_columns: data_table.get_show_columns(),
             sort: data_table.sort.clone(),
             sort_dirty: data_table.sort_dirty,
             alternating_colors,
-            readonly: data_table.readonly,
+            is_code: data_table.is_code(),
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
         })
@@ -192,6 +191,7 @@ impl Sheet {
 mod tests {
     use crate::{
         Rect, SheetPos,
+        a1::A1Context,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -276,6 +276,8 @@ mod tests {
             code: "".to_string(),
         });
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -292,9 +294,12 @@ mod tests {
             Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
+
+        let context = A1Context::default();
 
         // render rect is larger than code rect
         let code_cells = sheet.get_render_code_cells(
@@ -302,6 +307,7 @@ mod tests {
             &data_table,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 3, 2),
+            &context,
         );
         assert_eq!(code_cells.len(), 6);
         assert_eq!(code_cells[0].value, "1".to_string());
@@ -316,6 +322,7 @@ mod tests {
             &data_table,
             &Rect::from_numbers(2, 1, 10, 10),
             &Rect::from_numbers(0, 0, 3, 2),
+            &context,
         );
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "6".to_string());
@@ -327,12 +334,15 @@ mod tests {
             &data_table,
             &Rect::from_numbers(0, 0, 3, 2),
             &Rect::from_numbers(2, 1, 10, 10),
+            &context,
         );
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -348,7 +358,8 @@ mod tests {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         let code_cells = sheet.get_render_code_cells(
@@ -356,6 +367,7 @@ mod tests {
             &code_run,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 1, 1),
+            &context,
         );
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
@@ -380,6 +392,8 @@ mod tests {
             code: "1 + 1".to_string(),
         });
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "1 + 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -388,16 +402,16 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        let mut data_table = DataTable::new(
+        let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(2.into())),
             false,
             false,
-            true,
+            None,
+            None,
             None,
         );
-        data_table.show_ui = false;
 
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -415,13 +429,12 @@ mod tests {
                 name: "Table 1".to_string(),
                 columns: vec![], // single values don't have column headers
                 first_row_header: false,
-                show_ui: false,
-                show_name: true,
-                show_columns: true,
+                show_name: false,
+                show_columns: false,
                 sort: None,
                 sort_dirty: false,
                 alternating_colors: true,
-                readonly: true,
+                is_code: true,
                 is_html: false,
                 is_html_image: false,
             })
@@ -445,6 +458,8 @@ mod tests {
         let image = "image".to_string();
         let code = CellValue::Image(image.clone());
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -459,7 +474,8 @@ mod tests {
             Value::Single(CellValue::Image(image.clone())),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(pos, Some(data_table));
@@ -481,6 +497,8 @@ mod tests {
         let sheet_id = sheet.id;
         let pos = pos![A1];
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -497,7 +515,8 @@ mod tests {
                 Value::Single(CellValue::Image("image".to_string())),
                 false,
                 false,
-                true,
+                Some(true),
+                Some(true),
                 None,
             )),
         );

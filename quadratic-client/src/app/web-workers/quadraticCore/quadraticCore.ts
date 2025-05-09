@@ -4,9 +4,10 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debug, debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   BorderSelection,
@@ -208,6 +209,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientCoreError') {
       events.emit('coreError', e.data.from, e.data.error);
+      if (debug) {
+        console.error('[quadraticCore] core error', e.data.from, e.data.error);
+      }
       return;
     }
 
@@ -230,7 +234,7 @@ class QuadraticCore {
     }
   };
 
-  private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
+  send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
     // worker may not be defined during hmr
     if (!this.worker) return;
 
@@ -244,11 +248,13 @@ class QuadraticCore {
   // Loads a Grid file and initializes renderWebWorker upon response
   async load({
     fileId,
+    teamUuid,
     url,
     version,
     sequenceNumber,
   }: {
     fileId: string;
+    teamUuid: string;
     url: string;
     version: string;
     sequenceNumber: number;
@@ -278,6 +284,7 @@ class QuadraticCore {
         sequenceNumber,
         id,
         fileId,
+        teamUuid,
       };
       if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);
@@ -1421,9 +1428,8 @@ class QuadraticCore {
       name?: string;
       alternatingColors?: boolean;
       columns?: JsDataTableColumnHeader[];
-      showColumns?: boolean;
       showName?: boolean;
-      showUI?: boolean;
+      showColumns?: boolean;
     },
     cursor?: string
   ) {
@@ -1435,7 +1441,6 @@ class QuadraticCore {
       name: options.name,
       alternatingColors: options.alternatingColors,
       columns: options.columns,
-      showUI: options.showUI,
       showName: options.showName,
       showColumns: options.showColumns,
       cursor: cursor || '',
@@ -1528,6 +1533,42 @@ class QuadraticCore {
     });
   }
   //#endregion
+
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
+    this.send({
+      type: 'clientCoreResizeColumns',
+      sheetId,
+      columns,
+      cursor,
+    });
+  }
+
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
+    this.send({
+      type: 'clientCoreResizeRows',
+      sheetId,
+      rows,
+      cursor,
+    });
+  }
+
+  resizeAllColumns(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllColumns',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  resizeAllRows(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllRows',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();

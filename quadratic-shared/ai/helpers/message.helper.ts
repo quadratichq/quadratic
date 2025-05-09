@@ -30,10 +30,29 @@ export const getPromptMessages = (
   );
 };
 
+export const getPromptMessagesWithoutPDF = (
+  messages: ChatMessage[]
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+  return getPromptMessages(messages).map((message) => {
+    if (message.role !== 'user' || message.contextType === 'toolResult') {
+      return message;
+    }
+
+    return {
+      ...message,
+      content: message.content.filter((content) => !isContentPdfFile(content)),
+    };
+  });
+};
+
 export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
   return getPromptMessages(messages).filter(
     (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'
   );
+};
+
+const getAIPromptMessages = (messages: ChatMessage[]): AIMessagePrompt[] => {
+  return getPromptMessages(messages).filter((message): message is AIMessagePrompt => message.role === 'assistant');
 };
 
 export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
@@ -41,8 +60,8 @@ export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptCon
   return userPromptMessage[userPromptMessage.length - 1].contextType;
 };
 
-export const getLastUserPromptMessageIndex = (messages: ChatMessage[]): number => {
-  return getUserPromptMessages(messages).length - 1;
+export const getLastAIPromptMessageIndex = (messages: ChatMessage[]): number => {
+  return getAIPromptMessages(messages).length - 1;
 };
 
 export const getSystemPromptMessages = (
@@ -77,4 +96,22 @@ export const isContentPdfFile = (content: Content[number]): content is PdfFileCo
 
 export const isContentTextFile = (content: Content[number]): content is TextFileContent => {
   return content.type === 'data' && content.mimeType === 'text/plain';
+};
+
+export const filterImageFilesInChatMessages = (messages: ChatMessage[]): ImageContent[] => {
+  return getUserPromptMessages(messages)
+    .filter((message) => message.contextType === 'userPrompt')
+    .flatMap((message) => message.content)
+    .filter(isContentImage);
+};
+
+export const filterPdfFilesInChatMessages = (messages: ChatMessage[]): PdfFileContent[] => {
+  return getUserPromptMessages(messages)
+    .filter((message) => message.contextType === 'userPrompt')
+    .flatMap((message) => message.content)
+    .filter(isContentPdfFile);
+};
+
+export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessage[]): PdfFileContent | undefined => {
+  return filterPdfFilesInChatMessages(messages).find((content) => content.fileName === fileName);
 };

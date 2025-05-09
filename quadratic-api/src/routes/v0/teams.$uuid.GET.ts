@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getAIMessageUsageForUser } from '../../ai/usage';
 import { getUsers } from '../../auth/auth';
+import { BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -10,11 +10,12 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getPresignedFileUrl } from '../../storage/storage';
-import { updateBillingIfNecessary } from '../../stripe/stripe';
+import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
 import { getFilePermissions } from '../../utils/permissions';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -33,8 +34,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   } = req as RequestWithUser;
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  // Update billing info if necessary
-  await updateBillingIfNecessary(team);
+  // Update billing info
+  await updateBilling(team);
 
   // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({
@@ -100,7 +101,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const authUsersById = await getUsers(dbUsers.map(({ user }) => user));
 
   // IDEA: (enhancement) we could put this in /sharing and just return the userCount
-  // then require the data for the team share modal to be a seaparte network request
+  // then require the data for the team share modal to be a separate network request
   const users = dbUsers
     .filter(({ userId: id }) => authUsersById[id])
     .map(({ userId: id, role }) => {
@@ -120,6 +121,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
+  // Apply SSH keys to the team if they don't already exist.
+  const decryptedTeam = await getDecryptedTeam(dbTeam);
+
   // Get signed thumbnail URLs
   await Promise.all(
     dbFiles.map(async (file) => {
@@ -129,7 +133,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     })
   );
 
-  const usage = await getAIMessageUsageForUser(userMakingRequestId);
+  const usage = await BillingAIUsageMonthlyForUserInTeam(userMakingRequestId, team.id);
 
   const response = {
     team: {
@@ -139,6 +143,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
+      sshPublicKey: decryptedTeam.sshPublicKey,
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

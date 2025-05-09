@@ -1,12 +1,12 @@
-import { authClient } from '@/auth/auth';
+import { authClient, requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { initMixpanelAnalytics } from '@/shared/utils/analytics';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
-import { replace } from 'react-router-dom';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { replace } from 'react-router';
 
 const getFailUrl = (path: string = '/') => {
   let params = new URLSearchParams();
@@ -15,7 +15,13 @@ const getFailUrl = (path: string = '/') => {
   return path + '?' + params.toString();
 };
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const shouldRevalidate = () => false;
+
+export const loader = async (loaderArgs: LoaderFunctionArgs) => {
+  await requireAuth();
+
+  const { request, params } = loaderArgs;
+
   // We initialize mixpanel here (again, as we do it in the root loader) because
   // it helps us prevent the app from failing because all the loaders run in parallel
   // and we can't guarantee this loader finishes before the root one

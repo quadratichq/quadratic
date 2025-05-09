@@ -7,7 +7,6 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        js_types::JsSnackbarSeverity,
     },
 };
 
@@ -30,6 +29,21 @@ impl Sheet {
     /// Returns a DataTable at a Pos
     pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get_at(pos)
+    }
+
+    /// Gets the index of the data table
+    pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
+        self.data_tables.get_index_of(&pos)
+    }
+
+    /// Returns the index of the data table as a result.
+    pub fn data_table_index_result(&self, pos: Pos) -> Result<usize> {
+        self.data_table_index(pos).ok_or_else(|| {
+            anyhow!(
+                "Data table not found at {:?} in data_table_index_result()",
+                pos
+            )
+        })
     }
 
     /// Returns a DataTable by name
@@ -309,15 +323,12 @@ impl Sheet {
                     .data_table_at(&data_table_left.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
-                        if data_table.readonly {
+                        if data_table.is_code() {
                             return false;
                         }
 
                         // don't expand if the position is at the data table's name
-                        if data_table.show_ui
-                            && data_table.show_name
-                            && data_table_left.min.y == pos.y
-                        {
+                        if data_table.get_show_name() && data_table_left.min.y == pos.y {
                             return false;
                         }
 
@@ -373,7 +384,7 @@ impl Sheet {
                     .data_table_at(&data_table_above.min)
                     .filter(|data_table| {
                         // don't expand if the data table is readonly
-                        if data_table.readonly {
+                        if data_table.is_code() {
                             return false;
                         }
 
@@ -403,7 +414,7 @@ impl Sheet {
     /// Returns the code language at a pos
     pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
         self.data_table_at(&pos)
-            .and_then(|data_table| self.get_table_language(pos, data_table))
+            .map(|data_table| data_table.get_language())
     }
 
     /// Returns true if the cell at pos is a formula cell
@@ -413,10 +424,14 @@ impl Sheet {
     }
 
     /// Returns true if the cell at pos is a source cell
-    /// If the show_name=false and show_columns=false, it cannot be the source cell
     pub fn is_source_cell(&self, pos: Pos) -> bool {
+        self.data_table_at(&pos).is_some()
+    }
+
+    /// Returns true if the cell at pos is a data table cell
+    pub fn is_data_table_cell(&self, pos: Pos) -> bool {
         self.data_table_at(&pos)
-            .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
+            .is_some_and(|dt| matches!(dt.kind, DataTableKind::Import(_)))
     }
 
     /// You shouldn't be able to create a data table that includes a data table.
@@ -425,12 +440,11 @@ impl Sheet {
     pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
         let contains_data_table = self.contains_data_table_within_rect(rect, None);
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && contains_data_table {
+        #[cfg(any(target_family = "wasm", test))]
+        if contains_data_table {
             let message = "Tables cannot be created over tables, code, or formulas.";
-            crate::wasm_bindings::js::jsClientMessage(
-                message.to_owned(),
-                JsSnackbarSeverity::Error.to_string(),
-            );
+            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+            crate::wasm_bindings::js::jsClientMessage(message.into(), severity.to_string());
         }
 
         !contains_data_table
@@ -448,12 +462,17 @@ mod test {
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
         },
+        first_sheet_id,
         grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
+        test_create_code_table, test_create_data_table, test_create_html_chart,
+        test_create_js_chart,
     };
     use bigdecimal::BigDecimal;
 
     pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "=1".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -469,7 +488,8 @@ mod test {
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
-            false,
+            None,
+            None,
             None,
         );
 
@@ -598,5 +618,45 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
 
         assert!(sheet.is_source_cell(pos![A1]));
+    }
+
+    #[test]
+    fn test_data_table_index() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        test_create_code_table(&mut gc, sheet_id, pos![E2], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Test that the data table index is 0 for the first data table
+        assert_eq!(sheet.data_table_index(pos![A1]), Some(0));
+
+        // Test that a non-existent data table returns None
+        assert_eq!(sheet.data_table_index(pos![B2]), None);
+
+        // The second data table should have index 1
+        assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
+    }
+
+    #[test]
+    fn test_is_data_table_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        test_create_code_table(&mut gc, sheet_id, pos![E5], 2, 2);
+        test_create_js_chart(&mut gc, sheet_id, pos![G7], 2, 2);
+        test_create_html_chart(&mut gc, sheet_id, pos![J9], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.is_data_table_cell(pos![E5]));
+        assert!(!sheet.is_data_table_cell(pos![G7]));
+        assert!(!sheet.is_data_table_cell(pos![J9]));
+        assert!(!sheet.is_data_table_cell(pos![B1]));
+        assert!(!sheet.is_data_table_cell(pos![A2]));
+
+        assert!(sheet.is_data_table_cell(pos![A1]));
     }
 }

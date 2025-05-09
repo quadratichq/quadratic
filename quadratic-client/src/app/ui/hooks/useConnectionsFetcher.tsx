@@ -1,5 +1,5 @@
 import type { GetConnections } from '@/routes/api.connections';
-import { useFetcher } from 'react-router-dom';
+import { useFetcher } from 'react-router';
 
 /**
  * The data for this accessed in various places in the app (cell type menu,

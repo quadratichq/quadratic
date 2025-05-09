@@ -16,22 +16,19 @@ pub(crate) fn import_column_builder(
     columns_schema: Vec<(i64, current::ColumnSchema)>,
 ) -> Result<SheetColumns> {
     let mut columns = BTreeMap::new();
-    let mut has_value = Contiguous2D::new();
+    let mut has_cell_value = Contiguous2D::new();
     for (x, column) in columns_schema {
         let mut col = Column::new(x);
-
-        // todo: there's probably a better way of doing this
         for (y, value) in column.into_iter() {
             let cell_value = import_cell_value(value);
             if !cell_value.is_blank_or_empty_string() {
-                has_value.set((x, y).into(), Some(true));
+                has_cell_value.set((x, y).into(), Some(true));
                 col.values.insert(y, cell_value);
             }
         }
-
         columns.insert(x, col);
     }
-    Ok(SheetColumns::from(columns, has_value))
+    Ok(SheetColumns::from(columns, has_cell_value))
 }
 
 pub(crate) fn export_values(values: BTreeMap<i64, CellValue>) -> current::ColumnSchema {

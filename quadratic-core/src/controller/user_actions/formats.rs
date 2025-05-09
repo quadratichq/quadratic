@@ -912,7 +912,14 @@ mod test {
     fn test_apply_table_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos!(E5).to_sheet_pos(sheet_id), 3, 3, false, true);
+        gc.test_set_data_table(
+            pos!(E5).to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(true),
+            Some(true),
+        );
 
         let format_update = FormatUpdate {
             bold: Some(Some(true)),

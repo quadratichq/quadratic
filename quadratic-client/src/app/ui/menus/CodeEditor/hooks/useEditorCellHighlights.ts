@@ -7,7 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import type { JsFormulaParseResult } from '@/app/quadratic-core-types';
-import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { parseFormula } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import type { Monaco } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
@@ -65,7 +65,7 @@ export const useEditorCellHighlights = (
         codeCell.language === 'Javascript' ||
         codeCellIsAConnection(codeCell.language)
       ) {
-        pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed);
+        pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed, codeCell.language === 'Python');
       } else if (codeCell.language === 'Formula') {
         let parsed: JsFormulaParseResult;
         try {
@@ -75,7 +75,7 @@ export const useEditorCellHighlights = (
           return;
         }
 
-        pixiApp.cellHighlights.fromCellsAccessed(parsed.cells_accessed);
+        pixiApp.cellHighlights.fromCellsAccessed(parsed.cells_accessed, false);
 
         parsed.spans.forEach((span, index) => {
           const cellRef = parsed.cells_accessed[index];

@@ -6,7 +6,7 @@ import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWork
 import './monacoInit';
 
 export const initWorkers = () => {
-  quadraticCore.initWorker();
-  multiplayer.initWorker();
   renderWebWorker.initWorker();
+  multiplayer.initWorker();
+  quadraticCore.initWorker();
 };

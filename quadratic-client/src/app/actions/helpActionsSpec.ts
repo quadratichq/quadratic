@@ -4,7 +4,7 @@ import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { openLink } from '@/app/helpers/links';
 import { ExternalLinkIcon, FeedbackIcon } from '@/shared/components/Icons';
-import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 
 type HelpActionSpec = Pick<
   ActionSpecRecord,
@@ -18,14 +18,14 @@ type HelpActionSpec = Pick<
 
 export const helpActionsSpec: HelpActionSpec = {
   [Action.HelpContactUs]: {
-    label: 'Contact us',
+    label: () => 'Contact us',
     Icon: ExternalLinkIcon,
     run: () => {
       openLink(CONTACT_URL);
     },
   },
   [Action.HelpDocs]: {
-    label: 'Docs',
+    label: () => 'Docs',
     labelVerbose: 'Visit docs',
     Icon: ExternalLinkIcon,
     run: () => {
@@ -33,7 +33,7 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpQuadratic101]: {
-    label: 'Quadratic 101',
+    label: () => 'Quadratic 101',
     labelVerbose: 'Visit Quadratic 101',
     Icon: ExternalLinkIcon,
     run: () => {
@@ -41,15 +41,15 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpCommunity]: {
-    label: 'Community',
-    labelVerbose: 'Visit Community',
+    label: () => 'Forum',
+    labelVerbose: 'Visit Forum',
     Icon: ExternalLinkIcon,
     run: () => {
-      openLink('https://community.quadratichq.com/');
+      openLink(COMMUNITY_FORUMS);
     },
   },
   [Action.HelpChangelog]: {
-    label: 'Changelog',
+    label: () => 'Changelog',
     labelVerbose: 'Visit Changelog',
     Icon: ExternalLinkIcon,
     run: () => {
@@ -57,7 +57,7 @@ export const helpActionsSpec: HelpActionSpec = {
     },
   },
   [Action.HelpFeedback]: {
-    label: 'Feedback',
+    label: () => 'Feedback',
     labelVerbose: 'Provide feedback',
     Icon: FeedbackIcon,
     isAvailable: isAvailableBecauseLoggedIn,

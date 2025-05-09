@@ -7,6 +7,7 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -21,9 +22,11 @@ import type {
   JsCellValue,
   JsCodeCell,
   JsCodeResult,
+  JsColumnWidth,
   JsCoordinate,
   JsDataTableColumnHeader,
   JsResponse,
+  JsRowHeight,
   JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
@@ -69,6 +72,7 @@ import { Rectangle } from 'pixi.js';
 
 class Core {
   gridController?: GridController;
+  teamUuid?: string;
 
   private sendAnalyticsError = (from: string, error: Error | unknown) => {
     console.error(error);
@@ -82,24 +86,32 @@ class Core {
     coreClient.sendCoreError(from, error);
   };
 
-  private async loadGridFile(file: string): Promise<Uint8Array> {
+  private fetchGridFile = async (file: string): Promise<Uint8Array> => {
     const res = await fetch(file);
     return new Uint8Array(await res.arrayBuffer());
-  }
+  };
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
-  async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
+  loadFile = async (
+    message: ClientCoreLoad,
+    renderPort: MessagePort
+  ): Promise<{ version: string } | { error: string }> => {
+    this.teamUuid = message.teamUuid;
+
     coreRender.init(renderPort);
-    const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
+
     try {
+      const results = await Promise.all([this.fetchGridFile(message.url), initCore()]);
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
       this.sendAnalyticsError('loadFile', e);
       return { error: 'Unable to load file' };
     }
+
     if (debugWebWorkers) console.log('[core] GridController loaded');
+
     return { version: this.gridController.getVersion() };
-  }
+  };
 
   getSheetName(sheetId: string): Promise<string> {
     return new Promise((resolve) => {
@@ -1410,7 +1422,6 @@ class Core {
     name?: string,
     alternatingColors?: boolean,
     columns?: JsDataTableColumnHeader[],
-    showUI?: boolean,
     showName?: boolean,
     showColumns?: boolean,
     cursor?: string
@@ -1423,7 +1434,6 @@ class Core {
         name,
         alternatingColors,
         JSON.stringify(columns),
-        showUI,
         showName,
         showColumns,
         cursor
@@ -1542,6 +1552,50 @@ class Core {
       this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
     } catch (e) {
       this.handleCoreError('moveRows', e);
+    }
+  }
+
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsColumnWidth[] = columns.map((column) => ({
+      column: BigInt(column.index),
+      width: column.size,
+    }));
+    try {
+      this.gridController.resizeColumns(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeColumns', e);
+    }
+  }
+
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsRowHeight[] = rows.map((row) => ({
+      row: BigInt(row.index),
+      height: row.size,
+    }));
+    try {
+      this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeRows', e);
+    }
+  }
+
+  resizeAllColumns(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllColumns(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllColumns', e);
+    }
+  }
+
+  resizeAllRows(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllRows(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllRows', e);
     }
   }
 }

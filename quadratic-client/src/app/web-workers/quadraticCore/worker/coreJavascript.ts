@@ -99,6 +99,7 @@ class CoreJavascript {
     // received.
     if (this.lastTransactionId) {
       core.cancelExecution(this.lastTransactionId);
+      this.lastTransactionId = undefined;
     }
   }
 }

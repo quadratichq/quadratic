@@ -9,8 +9,8 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { DeleteIcon, DraftIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
+import { DeleteIcon, DraftIcon, ExternalLinkIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
@@ -26,7 +26,7 @@ import {
 import type { RecentFile } from '@/shared/utils/updateRecentFiles';
 import { clearRecentFiles, RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
 import { useMemo } from 'react';
-import { useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 // TODO: (enhancement) move these into `fileActionsSpec` by making the `.run()`
@@ -35,12 +35,11 @@ import { useRecoilValue } from 'recoil';
 export const FileMenubarMenu = () => {
   const { name } = useFileContext();
   const submit = useSubmit();
-
   const { isAuthenticated } = useRootRouteLoaderData();
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const user = useRecoilValue(editorInteractionStateUserAtom);
-  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const confirmFn = useConfirmDialog('deleteFile', { name });
   const isAvailableArgs = useIsAvailableArgs();
 
   const [recentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
@@ -85,12 +84,14 @@ export const FileMenubarMenu = () => {
           <MenubarItem onClick={() => createNewFileAction.run({ teamUuid })}>
             <DraftIcon />
             {createNewFileAction.label}
+            <ExternalLinkIcon className="ml-auto !h-4 !w-4 text-center !text-xs text-muted-foreground opacity-50" />
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid, submit })}>
+          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid })}>
             <FileCopyIcon />
             Duplicate
+            <ExternalLinkIcon className="ml-auto !h-4 !w-4 text-center !text-xs text-muted-foreground opacity-50" />
           </MenubarItem>
         )}
         <MenubarItemAction action={Action.FileVersionHistory} actionArgs={{ uuid: fileUuid }} />
@@ -108,7 +109,13 @@ export const FileMenubarMenu = () => {
         {deleteFile.isAvailable(isAvailableArgs) && (
           <MenubarItem
             onClick={() =>
-              deleteFile.run({ fileUuid, userEmail: user?.email ?? '', redirect: true, submit, addGlobalSnackbar })
+              deleteFile.run({
+                fileUuid,
+                userEmail: user?.email ?? '',
+                redirect: true,
+                submit,
+                confirmFn,
+              })
             }
           >
             <DeleteIcon />

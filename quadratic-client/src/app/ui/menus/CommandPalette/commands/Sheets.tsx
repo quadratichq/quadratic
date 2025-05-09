@@ -9,8 +9,7 @@ import { SheetIcon } from '@/shared/components/Icons';
 import { useEffect, useMemo, useState } from 'react';
 
 const ListItems = () => {
-  // used to trigger changes in sheets
-  const [trigger, setTrigger] = useState(0);
+  const [currentSheet, setCurrentSheet] = useState(sheets.current);
 
   const items = useMemo(() => {
     const items: CommandGroup = {
@@ -37,7 +36,7 @@ const ListItems = () => {
             return (
               <CommandPaletteListItem
                 {...props}
-                action={() => quadraticCore.duplicateSheet(sheets.current, sheets.getCursorPosition())}
+                action={() => quadraticCore.duplicateSheet(currentSheet, sheets.getCursorPosition())}
                 icon={<SheetIcon />}
               />
             );
@@ -51,9 +50,7 @@ const ListItems = () => {
               <CommandPaletteListItem
                 {...props}
                 action={() => {
-                  if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
-                    quadraticCore.deleteSheet(sheets.current, sheets.getCursorPosition());
-                  }
+                  quadraticCore.deleteSheet(currentSheet, sheets.getCursorPosition());
                   setTimeout(focusGrid);
                 }}
                 icon={<SheetIcon />}
@@ -66,7 +63,7 @@ const ListItems = () => {
             ({
               label: `Go to “${sheet.name}”`,
               keywords: [`Switch to “${sheet.name}”`],
-              isAvailable: () => sheets.current !== sheet.id,
+              isAvailable: () => currentSheet !== sheet.id,
               Component: (props) => {
                 return (
                   <CommandPaletteListItem
@@ -76,22 +73,19 @@ const ListItems = () => {
                   />
                 );
               },
-            } as CommandGroup['commands'][0])
+            }) as CommandGroup['commands'][0]
         ),
       ],
     };
 
     return items;
-
-    // trigger is only used to trigger changes (and will be shown as a warning)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trigger]);
+  }, [currentSheet]);
 
   useEffect(() => {
-    const updateTrigger = () => setTrigger((trigger) => trigger + 1);
-    events.on('changeSheet', updateTrigger);
+    const handleChangeSheet = (sheetId: string) => setCurrentSheet(sheetId);
+    events.on('changeSheet', handleChangeSheet);
     return () => {
-      events.off('changeSheet', updateTrigger);
+      events.off('changeSheet', handleChangeSheet);
     };
   }, []);
 

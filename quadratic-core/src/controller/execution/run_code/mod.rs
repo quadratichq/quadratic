@@ -38,58 +38,17 @@ impl GridController {
         transaction.waiting_for_async = None;
 
         let sheet_id = sheet_pos.sheet_id;
-
-        // enforce unique data table names
-        if let Some(new_data_table) = &mut new_data_table {
-            let unique_name = unique_data_table_name(
-                new_data_table.name(),
-                false,
-                Some(sheet_pos),
-                self.a1_context(),
-            );
-            new_data_table.update_table_name(&unique_name);
-        }
-
-        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+        let pos: Pos = sheet_pos.into();
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted
             return;
         };
-        let pos: Pos = sheet_pos.into();
-
-        // index for SetCodeRun is either set by execute_set_code_run or calculated
-        let index = index.unwrap_or(
-            sheet
-                .data_tables
-                .get_index_of(&pos)
-                .unwrap_or(sheet.data_tables.len()),
-        );
-
-        // calculate the chart_output if it is an image or html data table based on the pixel output
-        if let Some(new_data_table) = &mut new_data_table {
-            if new_data_table.is_html_or_image() && new_data_table.chart_output.is_none() {
-                let (pixel_width, pixel_height) = new_data_table
-                    .chart_pixel_output
-                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
-                let chart_output =
-                    sheet
-                        .offsets
-                        .calculate_grid_size(pos, pixel_width, pixel_height);
-                new_data_table.chart_output = Some(chart_output);
-            }
-        }
 
         let old_data_table = sheet.data_table_at(&pos);
 
         // preserve some settings from the previous code run
         if let (Some(old_data_table), Some(new_data_table)) = (old_data_table, &mut new_data_table)
         {
-            let is_code_cell = sheet
-                .get_table_language(pos, new_data_table)
-                .is_some_and(|lang| lang.is_code_language());
-
-            new_data_table.alternating_colors = old_data_table.alternating_colors;
-            new_data_table.name = old_data_table.name.to_owned();
-
             // for python dataframes, we don't want preserve the show_columns setting
             // for other data tables types, we want to preserve most settings
             if !new_data_table.is_dataframe()
@@ -97,27 +56,17 @@ impl GridController {
                 && !new_data_table.is_series()
                 && !new_data_table.is_html_or_image()
             {
-                new_data_table.show_ui = old_data_table.show_ui;
-                new_data_table.show_name = old_data_table.show_name;
-                new_data_table.show_columns = old_data_table.show_columns;
-
                 // since we don't automatically apply the first row as headers in JS,
                 // we need to do it manually here
                 if old_data_table.header_is_first_row {
                     new_data_table.apply_first_row_as_header();
                 }
-
-                // if the old data table has headers, then the new data table should
-                // have headers; if the data table already has headers (eg, via data
-                // frames), then leave them in.
-                new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
             }
 
-            // if the new data table is a single value and is a code cell, then we
-            // don't want to show the name or columns headers
-            if new_data_table.is_single_value() && is_code_cell {
-                new_data_table.apply_single_value_settings();
-            }
+            new_data_table.alternating_colors = old_data_table.alternating_colors;
+            new_data_table.name = old_data_table.name.to_owned();
+            new_data_table.show_name = old_data_table.show_name.to_owned();
+            new_data_table.show_columns = old_data_table.show_columns.to_owned();
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
@@ -139,11 +88,33 @@ impl GridController {
             // TODO (DF): we should be tracking whether a user set this, and
             // if not, we should use the pixel output.
             if new_data_table.is_html_or_image() {
-                if let Some(chart_output) = old_data_table.chart_output {
-                    new_data_table.chart_output = Some(chart_output);
-                    new_data_table.show_ui = old_data_table.show_ui;
-                }
+                new_data_table.chart_output = old_data_table.chart_output.to_owned();
             }
+        }
+
+        // calculate the chart_output if it is an image or html data table based on the pixel output
+        if let Some(new_data_table) = &mut new_data_table {
+            if new_data_table.is_html_or_image() && new_data_table.chart_output.is_none() {
+                let (pixel_width, pixel_height) = new_data_table
+                    .chart_pixel_output
+                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+                let chart_output =
+                    sheet
+                        .offsets
+                        .calculate_grid_size(pos, pixel_width, pixel_height);
+                new_data_table.chart_output = Some(chart_output);
+            }
+        }
+
+        // enforce unique data table names
+        if let Some(new_data_table) = &mut new_data_table {
+            let unique_name = unique_data_table_name(
+                new_data_table.name(),
+                false,
+                Some(sheet_pos),
+                &self.a1_context,
+            );
+            new_data_table.update_table_name(&unique_name);
         }
 
         let sheet_rect = match (&old_data_table, &new_data_table) {
@@ -200,14 +171,23 @@ impl GridController {
             new_data_table.as_ref().is_some_and(|dt| dt.is_image()),
             new_data_table.as_ref().is_some_and(|dt| dt.is_html()),
         );
+
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
+        // index for SetCodeRun is either set by execute_set_code_run or calculated
+        let index = index.unwrap_or(
+            sheet
+                .data_tables
+                .get_index_of(&pos)
+                .unwrap_or(sheet.data_tables.len()),
+        );
         if transaction.is_user_undo_redo() {
             let old_data_table = if let Some(new_data_table) = &new_data_table {
                 let index = index.min(sheet.data_tables.len());
                 sheet
                     .data_tables
-                    .shift_insert(index, &pos, new_data_table.to_owned())
+                    .insert_before(index, &pos, new_data_table.to_owned())
+                    .1
             } else {
                 sheet.data_tables.shift_remove(&pos)
             };
@@ -241,16 +221,15 @@ impl GridController {
                 });
 
             if transaction.is_user() {
-                // dbgjs!(format!("todo(ayush): enable compute operations and spills"));
-                // self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-                // self.check_all_spills(transaction, sheet_pos.sheet_id);
+                self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+                self.check_all_spills(transaction, sheet_pos.sheet_id);
             }
 
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
         } else {
             if let Some(new_data_table) = new_data_table {
                 let index = index.min(sheet.data_tables.len());
-                sheet.data_tables.shift_insert(index, &pos, new_data_table);
+                sheet.data_tables.insert_before(index, &pos, new_data_table);
             } else {
                 sheet.data_tables.shift_remove(&pos);
             };
@@ -278,8 +257,8 @@ impl GridController {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
-            Some(language) => {
-                if !language.is_code_language() {
+            Some(code_cell) => {
+                if !code_cell.language.is_code_language() {
                     return Err(CoreError::UnhandledLanguage(
                         "Transaction.complete called for an unhandled language".into(),
                     ));
@@ -289,7 +268,8 @@ impl GridController {
                     transaction,
                     result,
                     current_sheet_pos,
-                    language.clone(),
+                    code_cell.language.clone(),
+                    code_cell.code.clone(),
                 );
 
                 self.finalize_data_table(
@@ -300,6 +280,13 @@ impl GridController {
                 );
             }
         }
+
+        #[cfg(feature = "show-first-sheet-operations")]
+        {
+            println!("\n========= After calculation async =========");
+            print_first_sheet!(&self);
+        }
+
         // continue the compute loop after a successful async call
         self.start_transaction(transaction);
         Ok(())
@@ -343,6 +330,8 @@ impl GridController {
         let new_code_run = match code_run {
             Some(old_code_run) => {
                 CodeRun {
+                    language: code_cell_value.language.to_owned(),
+                    code: code_cell_value.code.to_owned(),
                     error: Some(error.to_owned()),
                     return_type: None,
                     line_number: old_code_run.line_number,
@@ -355,6 +344,8 @@ impl GridController {
                 }
             }
             None => CodeRun {
+                language: code_cell_value.language.to_owned(),
+                code: code_cell_value.code.to_owned(),
                 error: Some(error.to_owned()),
                 return_type: None,
                 line_number: error
@@ -378,7 +369,8 @@ impl GridController {
             Value::Single(CellValue::Blank),
             false,
             false,
-            false,
+            None,
+            None,
             None,
         );
 
@@ -394,6 +386,7 @@ impl GridController {
         js_code_result: JsCodeResult,
         start: SheetPos,
         language: CodeCellLanguage,
+        code: String,
     ) -> DataTable {
         let table_name = match language {
             CodeCellLanguage::Formula => "Formula1",
@@ -402,10 +395,13 @@ impl GridController {
             _ => "Table1",
         };
 
+        // sheet may have been deleted before the async operation completed
         let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
             // todo: this is probably not the best place to handle this
             // sheet may have been deleted before the async operation completed
             let code_run = CodeRun {
+                language,
+                code,
                 error: Some(RunError {
                     span: None,
                     msg: RunErrorMsg::CodeRunError(
@@ -426,7 +422,8 @@ impl GridController {
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
-                false,
+                None,
+                None,
                 None,
             );
         };
@@ -477,33 +474,27 @@ impl GridController {
         });
 
         let code_run = CodeRun {
+            language,
+            code,
             error,
             return_type,
             line_number: js_code_result.line_number,
             output_type: js_code_result.output_display_type,
             std_out: js_code_result.std_out,
             std_err: js_code_result.std_err,
-            cells_accessed: transaction.cells_accessed.clone(),
+            cells_accessed: std::mem::take(&mut transaction.cells_accessed),
         };
 
-        let mut data_table = DataTable::new(
+        let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
             false,
             js_code_result.has_headers,
-            true,
+            None,
+            None,
             js_code_result.chart_pixel_output,
         );
-
-        transaction.cells_accessed.clear();
-        data_table.show_columns = js_code_result.has_headers;
-
-        // if the new data table is a single value and is a code cell, then we
-        // don't want to show the name or columns headers
-        if data_table.is_single_value() && language.is_code_language() {
-            data_table.apply_single_value_settings();
-        }
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
         if !js_code_result.has_headers
@@ -555,6 +546,8 @@ mod test {
 
         // test finalize_code_cell
         let new_code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "delete me".to_string(),
             std_err: None,
             std_out: None,
             error: None,
@@ -569,7 +562,8 @@ mod test {
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
@@ -593,6 +587,8 @@ mod test {
 
         // test finalize_code_cell
         let new_code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "replace me".to_string(),
             std_err: None,
             std_out: None,
             error: None,
@@ -607,11 +603,10 @@ mod test {
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
-        )
-        .with_show_name(false)
-        .with_show_columns(false);
+        );
         new_data_table.column_headers = None;
 
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);

@@ -215,15 +215,15 @@ impl SheetDataTables {
         (index, old_data_table)
     }
 
-    pub fn shift_insert(
+    pub fn insert_before(
         &mut self,
         index: usize,
         pos: &Pos,
         data_table: DataTable,
-    ) -> Option<DataTable> {
+    ) -> (usize, Option<DataTable>) {
         let new_output_rect = data_table.output_rect(*pos, false);
 
-        let old_data_table = self.data_tables.shift_insert(index, *pos, data_table);
+        let (index, old_data_table) = self.data_tables.insert_before(index, *pos, data_table);
 
         let old_output_rect = old_data_table
             .as_ref()
@@ -231,7 +231,19 @@ impl SheetDataTables {
 
         self.update_output_rects(pos, old_output_rect, Some(new_output_rect));
 
-        old_data_table
+        (index, old_data_table)
+    }
+
+    pub fn shift_remove_full(&mut self, pos: &Pos) -> Option<(usize, Pos, DataTable)> {
+        let old_data_table_full = self.data_tables.shift_remove_full(pos);
+
+        let old_output_rect = old_data_table_full
+            .as_ref()
+            .map(|dt| dt.2.output_rect(*pos, false));
+
+        self.update_output_rects(pos, old_output_rect, None);
+
+        old_data_table_full
     }
 
     pub fn shift_remove(&mut self, pos: &Pos) -> Option<DataTable> {

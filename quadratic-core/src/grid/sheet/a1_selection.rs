@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 
 use crate::{
     CellValue, Pos, Rect,
-    a1::{A1Context, A1Selection, CellRefRange, RefRangeBounds, TableRef},
+    a1::{A1Context, A1Selection, CellRefRange, ColRange, RefRangeBounds, TableRef},
     grid::GridBounds,
 };
 
@@ -138,9 +138,11 @@ impl Sheet {
         &self,
         range: &TableRef,
         force_columns: bool,
-        force_table_bounds: bool,
+        auto_detect_table_bounds: bool,
         a1_context: &A1Context,
     ) -> Option<Rect> {
+        let force_table_bounds = auto_detect_table_bounds && range.col_range == ColRange::All;
+
         range
             .convert_to_ref_range_bounds(false, a1_context, force_columns, force_table_bounds)
             .and_then(|range| range.to_rect())
@@ -211,7 +213,7 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         force_columns: bool,
-        force_table_bounds: bool,
+        auto_detect_table_bounds: bool,
         a1_context: &A1Context,
     ) -> Vec<Rect> {
         let mut rects = Vec::new();
@@ -219,9 +221,12 @@ impl Sheet {
             match range {
                 CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
                 CellRefRange::Table { range } => {
-                    if let Some(rect) =
-                        self.table_ref_to_rect(range, force_columns, force_table_bounds, a1_context)
-                    {
+                    if let Some(rect) = self.table_ref_to_rect(
+                        range,
+                        force_columns,
+                        auto_detect_table_bounds,
+                        a1_context,
+                    ) {
                         rects.push(rect);
                     }
                 }
@@ -235,10 +240,16 @@ impl Sheet {
     pub fn selection_bounds(
         &self,
         selection: &A1Selection,
-        force_table_bounds: bool,
+        auto_detect_table_bounds: bool,
+        force_columns: bool,
         a1_context: &A1Context,
     ) -> Option<Rect> {
-        let rects = self.selection_to_rects(selection, false, force_table_bounds, a1_context);
+        let rects = self.selection_to_rects(
+            selection,
+            force_columns,
+            auto_detect_table_bounds,
+            a1_context,
+        );
         if rects.is_empty() {
             None
         } else {
@@ -381,63 +392,63 @@ mod tests {
         // Single cell selection
         let single_cell = A1Selection::test_a1("B2");
         assert_eq!(
-            sheet.selection_bounds(&single_cell, false, &a1_context),
+            sheet.selection_bounds(&single_cell, false, false, &a1_context),
             Some(Rect::new(2, 2, 2, 2))
         );
 
         // Regular rectangular selection
         let rect_selection = A1Selection::test_a1("B2:D4");
         assert_eq!(
-            sheet.selection_bounds(&rect_selection, false, &a1_context),
+            sheet.selection_bounds(&rect_selection, false, false, &a1_context),
             Some(Rect::new(2, 2, 4, 4))
         );
 
         // Multiple disjoint rectangles
         let multi_rect = A1Selection::test_a1("A1:B2,D4:E5");
         assert_eq!(
-            sheet.selection_bounds(&multi_rect, false, &a1_context),
+            sheet.selection_bounds(&multi_rect, false, false, &a1_context),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Overlapping rectangles
         let overlapping = A1Selection::test_a1("B2:D4,C3:E5");
         assert_eq!(
-            sheet.selection_bounds(&overlapping, false, &a1_context),
+            sheet.selection_bounds(&overlapping, false, false, &a1_context),
             Some(Rect::new(2, 2, 5, 5))
         );
 
         // Infinite column selection (should be clamped to sheet bounds)
         let infinite_col = A1Selection::test_a1("C:C");
         assert_eq!(
-            sheet.selection_bounds(&infinite_col, false, &a1_context),
+            sheet.selection_bounds(&infinite_col, false, false, &a1_context),
             Some(Rect::new(3, 1, 3, 1))
         );
 
         // Infinite row selection (should be clamped to sheet bounds)
         let infinite_row = A1Selection::test_a1("3:3");
         assert_eq!(
-            sheet.selection_bounds(&infinite_row, false, &a1_context),
+            sheet.selection_bounds(&infinite_row, false, false, &a1_context),
             Some(Rect::new(1, 3, 1, 3))
         );
 
         // Select all (should be clamped to sheet bounds)
         let select_all = A1Selection::test_a1("*");
         assert_eq!(
-            sheet.selection_bounds(&select_all, false, &a1_context),
+            sheet.selection_bounds(&select_all, false, false, &a1_context),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Multiple infinite selections (should be clamped to sheet bounds)
         let multi_infinite = A1Selection::test_a1("A:B,2:3");
         assert_eq!(
-            sheet.selection_bounds(&multi_infinite, false, &a1_context),
+            sheet.selection_bounds(&multi_infinite, false, false, &a1_context),
             Some(Rect::new(1, 1, 2, 3))
         );
 
         // Mixed finite and infinite selections
         let mixed = A1Selection::test_a1("B2:C3,D:D,4:4");
         assert_eq!(
-            sheet.selection_bounds(&mixed, false, &a1_context),
+            sheet.selection_bounds(&mixed, false, false, &a1_context),
             Some(Rect::new(1, 1, 4, 4))
         );
     }
@@ -451,8 +462,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             None,
             Some(true),
-            None,
-            None,
+            Some(true),
         );
         let sheet = gc.sheet(sheet_id);
         let table_ref = TableRef::parse("Table1", gc.a1_context()).unwrap();

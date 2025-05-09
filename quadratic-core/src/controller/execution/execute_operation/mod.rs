@@ -52,17 +52,22 @@ impl GridController {
             #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {:?}", &op));
 
-            if transaction.operations.len() % 100 == 0 {
-                dbgjs!(format!(
-                    "transaction: {:?}, op: {:?}",
-                    &transaction.operations.len(),
-                    &op,
-                ));
-            }
+            #[cfg(feature = "show-first-sheet-operations")]
+            println!(
+                "{}",
+                format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+            );
+
+            // if transaction.operations.len() % 100 == 0 {
+            //     dbgjs!(format!(
+            //         "transaction: {:?}, op: {:?}",
+            //         &transaction.operations.len(),
+            //         &op,
+            //     ));
+            // }
 
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
-                Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
                     self.execute_set_chart_size(transaction, op),
                 ),
@@ -72,6 +77,7 @@ impl GridController {
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
+
                 Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table(transaction, op),
                 ),
@@ -89,6 +95,9 @@ impl GridController {
                 ),
                 Operation::DataTableMeta { .. } => Self::handle_execution_operation_result(
                     self.execute_data_table_meta(transaction, op),
+                ),
+                Operation::DataTableOptionMeta { .. } => Self::handle_execution_operation_result(
+                    self.execute_data_table_option_meta(transaction, op),
                 ),
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
@@ -129,9 +138,6 @@ impl GridController {
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
-                Operation::SetCodeRunVersion { .. } => {
-                    self.execute_set_code_run_version(transaction, op);
-                }
                 Operation::SetDataTable { .. } => {
                     self.execute_set_data_table(transaction, op);
                 }
@@ -164,6 +170,11 @@ impl GridController {
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
                 Operation::ResizeRows { .. } => self.execute_resize_rows(transaction, op),
+                Operation::ResizeColumns { .. } => self.execute_resize_columns(transaction, op),
+                Operation::DefaultColumnSize { .. } => {
+                    self.execute_default_column_size(transaction, op);
+                }
+                Operation::DefaultRowSize { .. } => self.execute_default_row_size(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
@@ -181,8 +192,16 @@ impl GridController {
 
                 Operation::DeleteColumn { .. } => self.execute_delete_column(transaction, op),
                 Operation::DeleteColumns { .. } => self.execute_delete_columns(transaction, op),
-                Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
-                Operation::DeleteRows { .. } => self.execute_delete_rows(transaction, op),
+                Operation::DeleteRow { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_row(transaction, op),
+                    );
+                }
+                Operation::DeleteRows { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_rows(transaction, op),
+                    );
+                }
 
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
@@ -191,6 +210,8 @@ impl GridController {
                 Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
             }
         }
+        #[cfg(feature = "show-first-sheet-operations")]
+        print_first_sheet!(&self);
     }
 }
 

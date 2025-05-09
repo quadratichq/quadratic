@@ -26,7 +26,6 @@ jobs:
           - multiplayer
           - files
           - connection
-          - rust-client
           - rust-shared
         include:
           - package: core
@@ -37,12 +36,11 @@ jobs:
             test_command: "npm run docker:test"
           - package: connection
             test_command: "npm run docker:test"
-          - package: rust-client
-            test_command: "npm run test"
           - package: rust-shared
             test_command: "npm run docker:test"
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - uses: useblacksmith/setup-node@v5
         with:
@@ -89,7 +87,7 @@ jobs:
           grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ../target/debug/ \
+            --binary-path ./target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
@@ -108,9 +106,18 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Pyodide
+        uses: useblacksmith/cache@v5
         with:
-            lfs: true
+          path: quadratic-client/public/pyodide
+          key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
+
+      - name: Download & Verify Pyodide
+        run: |
+          npm run client:download:pyodide
 
       - name: Install build-essential, llvm, and clang
         run: |
@@ -140,11 +147,10 @@ jobs:
         with:
           version: "latest"
 
-      - name: Build core and rust-client
+      - name: Build core
         run: |
           npm run build:dev --workspace=quadratic-core & \
           npm run export_types --workspace=quadratic-core & \
-          npm run build:dev --workspace=quadratic-rust-client & \
           wait
 
       - name: Build python
@@ -160,7 +166,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - uses: useblacksmith/setup-node@v5
         with:
@@ -181,7 +188,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - uses: useblacksmith/setup-node@v5
         with:
@@ -198,7 +206,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -218,7 +227,8 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install build-essential, llvm, and clang
         run: |
@@ -244,11 +254,10 @@ jobs:
         with:
           version: "latest"
 
-      - name: Build core and rust-client
+      - name: Build core
         run: |
           npm run build:dev --workspace=quadratic-core & \
           npm run export_types --workspace=quadratic-core & \
-          npm run build:dev --workspace=quadratic-rust-client & \
           wait
 
       - name: Lint quadratic-client

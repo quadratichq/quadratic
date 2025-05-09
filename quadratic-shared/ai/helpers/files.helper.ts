@@ -1,3 +1,4 @@
+import type { FileContent } from '../../typesAndSchemasAI';
 import {
   ImageContentSchema,
   PdfFileContentSchema,
@@ -23,4 +24,15 @@ export const isSupportedMimeType = (
   mimeType: string
 ): mimeType is ImageContent['mimeType'] | PdfFileContent['mimeType'] | TextFileContent['mimeType'] => {
   return isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType) || isSupportedTextMimeType(mimeType);
+};
+
+export const getFileTypeLabel = (mimeType: string): string => {
+  if (isSupportedImageMimeType(mimeType)) return 'Image';
+  if (isSupportedPdfMimeType(mimeType)) return 'PDF';
+  if (isSupportedTextMimeType(mimeType)) return 'Text';
+  return 'Unknown';
+};
+
+export const getDataBase64String = (content: FileContent) => {
+  return `data:${content.mimeType};base64,${content.data}`;
 };

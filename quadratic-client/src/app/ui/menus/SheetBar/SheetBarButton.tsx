@@ -1,13 +1,14 @@
 import type { ButtonProps } from '@/shared/shadcn/ui/button';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { memo } from 'react';
 
 interface Props extends ButtonProps {
   buttonRef?: any;
   tooltip: string;
 }
 
-export const SheetBarButton = ({ children, buttonRef, tooltip, className, ...rest }: Props) => {
+export const SheetBarButton = memo(({ children, buttonRef, tooltip, className, ...rest }: Props) => {
   const buttonProps = {
     ...rest,
     ...(buttonRef ? { ref: buttonRef } : {}),
@@ -21,4 +22,4 @@ export const SheetBarButton = ({ children, buttonRef, tooltip, className, ...res
       </Button>
     </TooltipPopover>
   );
-};
+});

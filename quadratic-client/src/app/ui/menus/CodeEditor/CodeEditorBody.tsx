@@ -12,8 +12,8 @@ import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import type { CodeCell } from '@/app/shared/types/codeCell';
+import { provideCompletionItems, provideHover } from '@/app/quadratic-core/quadratic_core';
+import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
@@ -36,7 +36,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import type { Monaco } from '@monaco-editor/react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 interface CodeEditorBodyProps {
@@ -44,7 +44,7 @@ interface CodeEditorBodyProps {
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
 }
 
-const AI_COMPLETION_DEBOUNCE_TIME_MS = 100;
+const AI_COMPLETION_DEBOUNCE_TIME_MS = 300;
 
 // need to track globally since monaco is a singleton
 const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
@@ -54,7 +54,7 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Import: false,
 };
 
-export const CodeEditorBody = (props: CodeEditorBodyProps) => {
+export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
   const { editorInst, setEditorInst } = props;
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
@@ -111,7 +111,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     };
   }, [editorInst]);
 
-  const lastLocation = useRef<CodeCell | undefined>();
+  const lastLocation = useRef<CodeCell | undefined>(undefined);
   // This is to clear monaco editor's undo/redo stack when the cell location
   // changes useEffect gets triggered when the cell location changes, but the
   // editor content is not loaded in the editor new editor content for the next
@@ -123,12 +123,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     const model = editorInst.getModel();
     if (!model) return;
 
-    if (
-      lastLocation.current &&
-      codeCell.sheetId === lastLocation.current.sheetId &&
-      codeCell.pos.x === lastLocation.current.pos.x &&
-      codeCell.pos.x === lastLocation.current.pos.y
-    ) {
+    if (lastLocation.current && isSameCodeCell(lastLocation.current, codeCell)) {
       return;
     }
     lastLocation.current = codeCell;
@@ -140,8 +135,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     return () => {
       (model as any)?._commandManager?.clear();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y]);
+  }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, codeCell]);
 
   const addCommands = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -423,34 +417,38 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         <CodeEditorPlaceholder />
       </div>
 
-      <div className={`${!loading && showDiffEditor ? 'h-full w-full' : 'h-0 w-0 opacity-0'}`}>
-        <DiffEditor
-          height="100%"
-          width="100%"
-          language={monacoLanguage}
-          original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
-          modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
-          onMount={onMountDiff}
-          loading={<SpinnerIcon className="text-primary" />}
-          theme="light"
-          options={{
-            readOnly: true,
-            minimap: { enabled: true },
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            scrollbar: {
-              horizontal: 'hidden',
-            },
-            wordWrap: 'on',
+      {!loading && showDiffEditor && (
+        <div className="h-full w-full">
+          <DiffEditor
+            height="100%"
+            width="100%"
+            language={monacoLanguage}
+            original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
+            originalLanguage={monacoLanguage}
+            modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
+            modifiedLanguage={monacoLanguage}
+            onMount={onMountDiff}
+            loading={<SpinnerIcon className="text-primary" />}
+            theme="light"
+            options={{
+              readOnly: true,
+              minimap: { enabled: true },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                horizontal: 'hidden',
+              },
+              wordWrap: 'on',
 
-            // need to ignore unused b/c of the async wrapper around the code and import code
-            showUnused: codeCell.language === 'Javascript' ? false : true,
+              // need to ignore unused b/c of the async wrapper around the code and import code
+              showUnused: codeCell.language === 'Javascript' ? false : true,
 
-            renderSideBySide: false,
-          }}
-        />
-      </div>
+              renderSideBySide: false,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
-};
+});

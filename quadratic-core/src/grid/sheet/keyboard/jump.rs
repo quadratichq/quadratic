@@ -16,10 +16,6 @@ use crate::{Pos, grid::Sheet};
 
 use super::Direction;
 
-// todo: ideally, this should be part of rust-client and not core--right now we
-// rely on has_content, which is a sheet fn. We should port the TS
-// CellsTextHashContent to rust and use that as part of the A1Context instead.
-
 // todo: this should not return a Pos but should directly change the
 // A1Selection--ie, it should handle the entire keyboard movement logic
 
@@ -241,12 +237,16 @@ mod tests {
     // creates a 3x3 chart at the given position
     fn create_3x3_chart(sheet: &mut Sheet, pos: Pos) {
         let mut dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
+            DataTableKind::CodeRun(CodeRun {
+                language: CodeCellLanguage::Javascript,
+                ..Default::default()
+            }),
             "Table 1",
             CellValue::Html("<html></html>".to_string()).into(),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         dt.chart_output = Some((3, 3));
@@ -565,8 +565,10 @@ mod tests {
     fn test_jump_left_table_from_name() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3"], false);
-        sheet.data_table_mut_at(&pos![B2]).unwrap().show_ui = true;
-        sheet.data_table_mut_at(&pos![B2]).unwrap().show_name = true;
+
+        let dt = sheet.data_table_mut_at(&pos![B2]).unwrap();
+        dt.show_name = Some(true);
+        dt.show_columns = Some(true);
 
         assert_eq!(sheet.jump_left(pos![D2]), pos![A2]);
     }

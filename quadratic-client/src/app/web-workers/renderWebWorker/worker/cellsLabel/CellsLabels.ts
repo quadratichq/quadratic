@@ -18,8 +18,8 @@ import type {
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
-import type { SheetOffsets } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { SheetOffsets } from '@/app/quadratic-core/quadratic_core';
+import { SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsTextHash } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHash';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';

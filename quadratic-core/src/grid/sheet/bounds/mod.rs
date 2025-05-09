@@ -32,7 +32,46 @@ impl Sheet {
 
         for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
-                if let Some(rect) = self.selection_bounds(&validation.selection, false, a1_context)
+                if let Some(rect) =
+                    self.selection_bounds(&validation.selection, false, false, a1_context)
+                {
+                    self.data_bounds.add(rect.min);
+                    self.data_bounds.add(rect.max);
+                }
+            }
+        }
+
+        if let Some(rect) = self.formats.finite_bounds() {
+            self.format_bounds.add_rect(rect);
+        }
+
+        old_data_bounds != self.data_bounds.to_bounds_rect()
+            || old_format_bounds != self.format_bounds.to_bounds_rect()
+    }
+
+    /// Recalculates all bounds of the sheet.
+    ///
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn expensive_recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
+        let old_data_bounds = self.data_bounds.to_bounds_rect();
+        let old_format_bounds = self.format_bounds.to_bounds_rect();
+        self.data_bounds.clear();
+        self.format_bounds.clear();
+
+        if let Some(rect) = self.columns.expensive_finite_bounds() {
+            self.data_bounds.add_rect(rect);
+        };
+
+        self.data_tables.iter().for_each(|(pos, code_cell_value)| {
+            let output_rect = code_cell_value.output_rect(*pos, false);
+            self.data_bounds.add(output_rect.min);
+            self.data_bounds.add(output_rect.max);
+        });
+
+        for validation in self.validations.validations.iter() {
+            if validation.render_special().is_some() {
+                if let Some(rect) =
+                    self.selection_bounds(&validation.selection, false, false, a1_context)
                 {
                     self.data_bounds.add(rect.min);
                     self.data_bounds.add(rect.max);
@@ -453,8 +492,8 @@ mod test {
             sheet::{
                 borders::{BorderSelection, BorderStyle},
                 validations::{
+                    rules::{ValidationRule, validation_logical::ValidationLogical},
                     validation::Validation,
-                    validation_rules::{ValidationRule, validation_logical::ValidationLogical},
                 },
             },
         },

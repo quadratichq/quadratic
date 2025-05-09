@@ -84,10 +84,10 @@ export class PointerCellMoving {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
       pixiApp.viewport.disableMouseEdges();
+      htmlCellsHandler.enable();
     }
     this.state = undefined;
     this.startCell = undefined;
-    htmlCellsHandler.enable();
   };
 
   private pointerMoveMoving = (world: Point) => {

@@ -21,7 +21,7 @@ export type FileActionArgs = {
 
 export const fileActionsSpec: FileActionSpec = {
   [Action.FileShare]: {
-    label: 'Share',
+    label: () => 'Share',
     Icon: PersonAddIcon,
     isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
     run: () => {
@@ -30,7 +30,7 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileRename]: {
-    label: 'Rename',
+    label: () => 'Rename',
     Icon: FileRenameIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
@@ -39,7 +39,7 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileDownload]: {
-    label: 'Download',
+    label: () => 'Download',
     Icon: DownloadIcon,
     isAvailable: isAvailableBecauseLoggedIn,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownload]) => {
@@ -52,7 +52,7 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileVersionHistory]: {
-    label: 'Open file history',
+    label: () => 'Open file history',
     Icon: HistoryIcon,
     isAvailable: ({ isAuthenticated, filePermissions, teamPermissions }: ActionAvailabilityArgs) =>
       Boolean(isAuthenticated && filePermissions.includes('FILE_EDIT') && teamPermissions?.includes('TEAM_VIEW')),

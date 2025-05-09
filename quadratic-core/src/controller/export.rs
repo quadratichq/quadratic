@@ -23,7 +23,7 @@ impl GridController {
         }
 
         let bounds = sheet
-            .selection_bounds(selection, false, &self.a1_context)
+            .selection_bounds(selection, false, false, &self.a1_context)
             .context("No values")?;
 
         let values = sheet.selection_sorted_vec(selection, false, &self.a1_context);

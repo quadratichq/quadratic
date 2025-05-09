@@ -47,7 +47,7 @@ export const BorderMenu = () => {
     <div>
       <ToggleGroup.Root type="single" className="flex flex-row border-b border-border pb-1">
         {borderActionKeys.map((actionKey) => {
-          const label = defaultActionSpec[actionKey].label;
+          const label = defaultActionSpec[actionKey].label();
           const Icon = 'Icon' in defaultActionSpec[actionKey] ? defaultActionSpec[actionKey].Icon : undefined;
           const run = defaultActionSpec[actionKey].run;
           const disabled =
@@ -107,6 +107,7 @@ export const BorderMenu = () => {
             onClear={() => {
               borders.clearBorders();
             }}
+            removeColor
           />
         </div>
       </div>

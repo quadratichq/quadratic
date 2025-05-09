@@ -11,7 +11,7 @@ pub struct SheetColumns {
     #[serde(with = "crate::util::btreemap_serde")]
     columns: BTreeMap<i64, Column>,
 
-    has_value: Contiguous2D<Option<bool>>,
+    has_cell_value: Contiguous2D<Option<bool>>,
 }
 
 impl Default for SheetColumns {
@@ -33,12 +33,18 @@ impl SheetColumns {
     pub fn new() -> Self {
         Self {
             columns: BTreeMap::new(),
-            has_value: Contiguous2D::new(),
+            has_cell_value: Contiguous2D::new(),
         }
     }
 
-    pub fn from(columns: BTreeMap<i64, Column>, has_value: Contiguous2D<Option<bool>>) -> Self {
-        Self { columns, has_value }
+    pub fn from(
+        columns: BTreeMap<i64, Column>,
+        has_cell_value: Contiguous2D<Option<bool>>,
+    ) -> Self {
+        Self {
+            columns,
+            has_cell_value,
+        }
     }
 
     pub fn iter(&self) -> btree_map::Iter<'_, i64, Column> {
@@ -69,7 +75,7 @@ impl SheetColumns {
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Option<bool>)> {
-        self.has_value.nondefault_rects_in_rect(rect)
+        self.has_cell_value.nondefault_rects_in_rect(rect)
     }
 
     pub fn set_value(&mut self, pos: &Pos, value: impl Into<CellValue>) -> Option<CellValue> {
@@ -94,16 +100,16 @@ impl SheetColumns {
         };
 
         if let Some(value) = value {
-            self.has_value.set(*pos, Some(true));
+            self.has_cell_value.set(*pos, Some(true));
             column.values.insert(pos.y, value)
         } else {
-            self.has_value.set(*pos, None);
+            self.has_cell_value.set(*pos, None);
             column.values.remove(&pos.y)
         }
     }
 
     pub fn delete_values(&mut self, rect: Rect) -> Array {
-        self.has_value.set_rect(
+        self.has_cell_value.set_rect(
             rect.min.x,
             rect.min.y,
             Some(rect.max.x),
@@ -139,16 +145,42 @@ impl SheetColumns {
     }
 
     pub fn clear(&mut self) {
-        self.has_value.set_rect(1, 1, None, None, None);
+        self.has_cell_value.set_rect(1, 1, None, None, None);
         self.columns.clear();
     }
 
     pub fn finite_bounds(&self) -> Option<Rect> {
-        self.has_value.finite_bounds()
+        self.has_cell_value.finite_bounds()
+    }
+
+    pub fn expensive_finite_bounds(&self) -> Option<Rect> {
+        let mut bounds: Option<Rect> = None;
+        for (&x, column) in &self.columns {
+            if let Some(data_range) = column.range() {
+                let column_bound = Rect::new(x, data_range.start, x, data_range.end - 1);
+                bounds = bounds.map_or(Some(column_bound), |bounds| {
+                    Some(bounds.union(&column_bound))
+                });
+            }
+        }
+        bounds
+    }
+
+    pub fn expensive_regenerate_has_value(&mut self) {
+        self.has_cell_value.set_rect(1, 1, None, None, None);
+        for (&x, column) in &self.columns {
+            if let Some(range) = column.range() {
+                for y in range {
+                    if column.has_data_in_row(y) {
+                        self.has_cell_value.set((x, y).into(), Some(true));
+                    }
+                }
+            }
+        }
     }
 
     pub fn insert_column(&mut self, column: i64) {
-        self.has_value.insert_column(column, CopyFormats::None);
+        self.has_cell_value.insert_column(column, CopyFormats::None);
 
         // update the indices of all columns impacted by the insertion
         let mut columns_to_update = Vec::new();
@@ -167,7 +199,8 @@ impl SheetColumns {
     }
 
     pub fn insert_row(&mut self, row: i64) {
-        self.has_value.insert_row(row, CopyFormats::None);
+        self.has_cell_value.insert_row(row, CopyFormats::None);
+
         for column in self.columns.values_mut() {
             let mut keys_to_move: Vec<i64> = column
                 .values
@@ -188,7 +221,7 @@ impl SheetColumns {
     }
 
     pub fn remove_column(&mut self, column: i64) {
-        self.has_value.remove_column(column);
+        self.has_cell_value.remove_column(column);
 
         self.columns.remove(&column);
 
@@ -209,7 +242,8 @@ impl SheetColumns {
     }
 
     pub fn remove_row(&mut self, row: i64) {
-        self.has_value.remove_row(row);
+        self.has_cell_value.remove_row(row);
+
         for column in self.columns.values_mut() {
             column.values.remove(&row);
 
@@ -229,5 +263,11 @@ impl SheetColumns {
                 }
             }
         }
+    }
+
+    /// Moves a cell value from one position to another.
+    pub fn move_cell_value(&mut self, old_pos: &Pos, new_pos: &Pos) {
+        let cell_value = self.set_value(old_pos, CellValue::Blank);
+        self.set_value(new_pos, cell_value);
     }
 }

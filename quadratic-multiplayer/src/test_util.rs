@@ -1,3 +1,5 @@
+use axum::body::Body;
+use axum::http::{self, Request, Response};
 use fake::Fake;
 use fake::faker::filesystem::en::FilePath;
 use fake::faker::internet::en::FreeEmail;
@@ -17,11 +19,13 @@ use std::{
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, tungstenite};
+use tower::ServiceExt;
 use uuid::Uuid;
 
 use crate::config::config;
 use crate::message::request::MessageRequest;
 use crate::message::response::MessageResponse;
+use crate::server::app;
 use crate::state::State;
 use crate::state::connection::PreConnection;
 use crate::state::user::{CellEdit, User, UserState};
@@ -281,4 +285,21 @@ pub(crate) async fn integration_test_receive(
     }
 
     last_response
+}
+
+/// Process a route and return the response.
+/// TODO(ddimaria): move to quadratic-rust-shared
+pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
+    let state = new_arc_state().await;
+    let app = app(state);
+
+    app.oneshot(
+        Request::builder()
+            .method(method)
+            .uri(uri)
+            .body(body)
+            .unwrap(),
+    )
+    .await
+    .unwrap()
 }

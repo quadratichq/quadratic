@@ -198,7 +198,7 @@ mod test {
     }
 
     #[test]
-    fn test_duplidate_sheet_with_data_table() {
+    fn test_duplicate_sheet_with_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let data_table = gc
             .sheet_mut(sheet_id)
@@ -206,7 +206,6 @@ mod test {
             .unwrap()
             .clone();
 
-        // let sheet = gc.sheet_mut(sheet_id);
         gc.sheet_mut(sheet_id)
             .set_data_table((1, 1).into(), Some(data_table));
 

@@ -1,3 +1,4 @@
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -47,6 +48,7 @@ export interface ClientCoreLoad {
   sequenceNumber: number;
   id: number;
   fileId: string;
+  teamUuid: string;
 }
 
 export interface CoreClientLoad {
@@ -237,6 +239,12 @@ export interface ClientCoreGetJwt {
   type: 'clientCoreGetJwt';
   id: number;
   jwt: string;
+}
+
+export interface ClientCoreGetTeamUuid {
+  type: 'clientCoreGetTeamUuid';
+  id: number;
+  teamUuid: string;
 }
 
 //#endregion
@@ -1137,7 +1145,6 @@ export interface ClientCoreDataTableMeta {
   columns?: JsDataTableColumnHeader[];
   showName?: boolean;
   showColumns?: boolean;
-  showUI?: boolean;
   cursor: string;
 }
 
@@ -1244,6 +1251,34 @@ export interface CoreClientCoreError {
   error: Error | unknown;
 }
 
+export interface ClientCoreResizeColumns {
+  type: 'clientCoreResizeColumns';
+  sheetId: string;
+  columns: ColumnRowResize[];
+  cursor: string;
+}
+
+export interface ClientCoreResizeRows {
+  type: 'clientCoreResizeRows';
+  sheetId: string;
+  rows: ColumnRowResize[];
+  cursor: string;
+}
+
+export interface ClientCoreResizeAllColumns {
+  type: 'clientCoreResizeAllColumns';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
+export interface ClientCoreResizeAllRows {
+  type: 'clientCoreResizeAllRows';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1303,6 +1338,7 @@ export type ClientCoreMessage =
   | ClientCoreInitJavascript
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
+  | ClientCoreGetTeamUuid
   | ClientCoreMoveCells
   | ClientCoreGetFormatCell
   | ClientCoreSetDateTimeFormat
@@ -1338,7 +1374,11 @@ export type ClientCoreMessage =
   | ClientCoreGetCsvPreview
   | ClientCoreAddDataTable
   | ClientCoreMoveColumns
-  | ClientCoreMoveRows;
+  | ClientCoreMoveRows
+  | ClientCoreResizeColumns
+  | ClientCoreResizeRows
+  | ClientCoreResizeAllColumns
+  | ClientCoreResizeAllRows;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

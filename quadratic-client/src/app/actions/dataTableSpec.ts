@@ -13,7 +13,7 @@ import type {
   JsRenderCodeCell,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { newRectSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { newRectSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   AddColumnLeftIcon,
@@ -57,7 +57,6 @@ type DataTableSpec = Pick<
   | Action.HideTableColumn
   | Action.ShowAllColumns
   | Action.EditTableCode
-  | Action.ToggleTableUI
 >;
 
 export const getTable = (): JsRenderCodeCell | undefined => {
@@ -147,17 +146,12 @@ const isAlternatingColorsShowing = (): boolean => {
 
 const isReadOnly = (): boolean => {
   const table = getTable();
-  return !!table?.readonly;
+  return !!table?.is_code;
 };
 
 const isWithinTable = (): boolean => {
   // getRow() returns zero if outside of the table
   return !!getRow() || getColumn() !== undefined;
-};
-
-const isTableUIShowing = (): boolean => {
-  const table = getTable();
-  return !!table?.show_ui;
 };
 
 const isTableNameShowing = (): boolean => {
@@ -438,21 +432,6 @@ const editTableCode = () => {
   }
 };
 
-export const toggleTableUI = () => {
-  pixiAppSettings.setContextMenu?.({});
-
-  const table = getTable();
-  if (table) {
-    quadraticCore.dataTableMeta(
-      sheets.current,
-      table.x,
-      table.y,
-      { showUI: !table.show_ui },
-      sheets.getCursorPosition()
-    );
-  }
-};
-
 export const toggleTableColumns = () => {
   pixiAppSettings.setContextMenu?.({});
 
@@ -485,101 +464,119 @@ export const toggleTableName = () => {
 
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
-    label: 'Flatten',
+    label: () => 'Flatten',
     Icon: FlattenTableIcon,
     run: flattenDataTable,
   },
   [Action.GridToDataTable]: {
-    label: 'Convert to table',
+    label: () => 'Convert to table',
     Icon: TableConvertIcon,
     run: gridToDataTable,
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
-    label: 'Use first row as column names',
+    label: () => 'Use first row as column names',
     checkbox: isFirstRowHeader,
     isAvailable: () => !isCodeCell('Python') && !isCodeCell('Formula'),
     run: toggleFirstRowAsHeader,
   },
   [Action.RenameTable]: {
-    label: 'Rename',
+    label: () => 'Rename',
     Icon: FileRenameIcon,
     isAvailable: () => {
       const table = getTable();
-      return !!table?.show_ui && !!table?.show_name;
+      return !!table?.show_name;
     },
     run: renameTable,
   },
   [Action.DeleteDataTable]: {
-    label: 'Delete',
+    label: () => 'Delete',
     Icon: DeleteIcon,
     run: deleteDataTable,
   },
   [Action.CodeToDataTable]: {
-    label: 'Convert to table',
+    label: () => 'Convert to table',
     Icon: TableIcon,
     run: codeToDataTable,
   },
   [Action.SortTable]: {
-    label: 'Sort',
+    label: () => 'Sort',
     Icon: SortIcon,
     run: sortDataTable,
   },
   [Action.ToggleTableAlternatingColors]: {
-    label: 'Show alternating colors',
+    label: () => 'Show alternating colors',
     checkbox: isAlternatingColorsShowing,
     run: toggleTableAlternatingColors,
   },
   [Action.RenameTableColumn]: {
-    label: 'Rename',
+    label: () => 'Rename',
     labelVerbose: 'Rename column',
     defaultOption: true,
     Icon: FileRenameIcon,
     run: renameTableColumn,
   },
   [Action.SortTableColumnAscending]: {
-    label: 'Sort ascending',
+    label: () => 'Sort ascending',
     labelVerbose: 'Sort column ascending',
     Icon: SortAscendingIcon,
     run: sortTableColumnAscending,
   },
   [Action.SortTableColumnDescending]: {
-    label: 'Sort descending',
+    label: () => 'Sort descending',
     labelVerbose: 'Sort column descending',
     Icon: SortDescendingIcon,
     run: sortTableColumnDescending,
   },
   [Action.InsertTableColumnLeft]: {
-    label: 'Insert table column left',
+    label: () => 'Insert table column left',
     Icon: AddColumnLeftIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(0),
   },
   [Action.InsertTableColumnRight]: {
-    label: 'Insert table column right',
+    label: () => 'Insert table column right',
     Icon: AddColumnRightIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(1),
   },
   [Action.RemoveTableColumn]: {
-    label: 'Delete table column(s)',
+    label: () => {
+      const length = sheets.sheet.cursor.getSelectedTableColumnsCount();
+      if (length === 0) return 'Delete table column(s)';
+
+      const plural = length > 1 ? 's' : '';
+      return `Delete ${length} table column${plural}`;
+    },
     Icon: DeleteIcon,
     isAvailable: () => {
-      const length = sheets.sheet.cursor.getSelectedColumnsFinite().length;
-      const plural = length > 1 ? 's' : '';
-      dataTableSpec[Action.RemoveTableColumn].label = `Delete ${length} column${plural}`;
+      const length = sheets.sheet.cursor.getSelectedTableColumnsCount();
+      if (length === 0) return false;
       return !isReadOnly() && isWithinTable();
     },
     run: () => removeTableColumn(true),
   },
   [Action.HideTableColumn]: {
-    label: 'Hide',
+    label: () => 'Hide',
     labelVerbose: 'Hide column',
     Icon: HideIcon,
     run: hideTableColumn,
     isAvailable: () => !isCodeCell('Formula') && !isCodeCell('Python'),
   },
   [Action.ShowAllColumns]: {
-    label: 'Reveal hidden columns',
+    label: () => {
+      let label = 'Reveal hidden columns';
+      if (isCodeCell('Formula') || isCodeCell('Python')) {
+        return label;
+      }
+
+      const table = getTable();
+      const hiddenColumns = table?.columns.filter((c) => !c.display).length || 0;
+      if (hiddenColumns === 0) {
+        return label;
+      }
+
+      return `Reveal ${hiddenColumns} hidden column${hiddenColumns > 1 ? 's' : ''}`;
+    },
     Icon: ShowIcon,
     run: showAllTableColumns,
     isAvailable: () => {
@@ -593,55 +590,46 @@ export const dataTableSpec: DataTableSpec = {
         return false;
       }
 
-      dataTableSpec[Action.ShowAllColumns].label = `Reveal ${hiddenColumns} hidden column${
-        hiddenColumns > 1 ? 's' : ''
-      }`;
       return true;
     },
   },
   [Action.InsertTableRowAbove]: {
-    label: 'Insert table row above',
+    label: () => 'Insert table row above',
     Icon: AddRowAboveIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(0),
   },
   [Action.InsertTableRowBelow]: {
-    label: 'Insert table row below',
+    label: () => 'Insert table row below',
     Icon: AddRowBelowIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(1),
   },
   [Action.RemoveTableRow]: {
-    label: 'Delete table row',
-    Icon: DeleteIcon,
-    isAvailable: () => {
+    label: () => {
       const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
       const plural = length > 1 ? 's' : '';
-      dataTableSpec[Action.RemoveTableRow].label = `Delete ${length} row${plural}`;
-      return !isReadOnly() && isWithinTable();
+      return `Delete ${length} row${plural}`;
     },
+    Icon: DeleteIcon,
+    isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => removeTableRow(true),
   },
   [Action.EditTableCode]: {
     defaultOption: true,
-    label: 'Open code editor',
+    label: () => 'Open code editor',
     Icon: EditIcon,
     run: editTableCode,
   },
-  [Action.ToggleTableUI]: {
-    label: 'Show table UI',
-    checkbox: isTableUIShowing,
-    run: toggleTableUI,
-  },
   [Action.ToggleTableColumns]: {
-    label: 'Show column names',
+    label: () => 'Show column names',
     isAvailable: () => !isCodeCell('Python') && !isCodeCell('Formula'),
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },
   [Action.ToggleTableName]: {
-    label: 'Show name',
-    isAvailable: () => !isSingleCell(),
+    label: () => 'Show name',
+    isAvailable: () => isCodeCell('Python') || isCodeCell('Javascript') || !isSingleCell(),
     labelVerbose: 'Show table name',
     checkbox: isTableNameShowing,
     run: toggleTableName,

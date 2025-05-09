@@ -30,14 +30,8 @@ use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
 
-#[cfg(test)]
-use tabled::{
-    builder::Builder,
-    settings::{Color, Modify, Style},
-};
-
 use super::sheet::borders::Borders;
-use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting, SheetId};
+use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
 
 /// Returns a unique name for the data table, taking into account its
 /// position on the sheet (so it doesn't conflict with itself).
@@ -152,16 +146,14 @@ pub struct DataTable {
     pub sort_dirty: bool,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
-    pub readonly: bool,
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
     pub formats: SheetFormatting,
     pub borders: Borders,
 
-    pub show_ui: bool,
-    pub show_name: bool,
-    pub show_columns: bool,
+    pub show_name: Option<bool>,
+    pub show_columns: Option<bool>,
 
     // width and height of the chart (html or image) output
     pub chart_pixel_output: Option<(f32, f32)>,
@@ -178,26 +170,8 @@ impl From<(Import, Array, &A1Context)> for DataTable {
             Value::Array(cell_values),
             false,
             false,
-            true,
             None,
-        )
-    }
-}
-
-impl From<CodeRunOld> for DataTable {
-    fn from(code_run_old: CodeRunOld) -> Self {
-        let value = match code_run_old.result.to_owned() {
-            CodeRunResult::Ok(value) => value,
-            CodeRunResult::Err(_) => Value::Single(CellValue::Blank),
-        };
-
-        DataTable::new(
-            DataTableKind::CodeRun(code_run_old.into()),
-            "Table1",
-            value,
-            false,
-            false,
-            true,
+            None,
             None,
         )
     }
@@ -207,34 +181,29 @@ impl DataTable {
     /// Creates a new DataTable with the given kind, value, and spill_error,
     /// with the ability to lift the first row as column headings.
     /// This handles the most common use cases.  Use `new_raw` for more control.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         kind: DataTableKind,
         name: &str,
         value: Value,
         spill_error: bool,
         header_is_first_row: bool,
-        show_ui: bool,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
         chart_pixel_output: Option<(f32, f32)>,
     ) -> Self {
-        let readonly = match kind {
-            DataTableKind::CodeRun(_) => true,
-            DataTableKind::Import(_) => false,
-        };
-
         let mut data_table = DataTable {
             kind,
             name: name.into(),
             header_is_first_row,
             chart_pixel_output,
             value,
-            readonly,
             spill_error,
             last_modified: Utc::now(),
             alternating_colors: true,
 
-            show_ui,
-            show_name: true,
-            show_columns: true,
+            show_name,
+            show_columns,
 
             column_headers: None,
             sort: None,
@@ -266,19 +235,24 @@ impl DataTable {
             sort_dirty: self.sort_dirty,
             display_buffer: self.display_buffer.clone(),
             value: Value::Single(CellValue::Blank),
-            readonly: self.readonly,
             spill_error: self.spill_error,
             last_modified: self.last_modified,
             alternating_colors: self.alternating_colors,
             formats: self.formats.clone(),
             borders: self.borders.clone(),
 
-            show_ui: self.show_ui,
             show_name: self.show_name,
             show_columns: self.show_columns,
 
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
+        }
+    }
+
+    pub fn get_language(&self) -> CodeCellLanguage {
+        match &self.kind {
+            DataTableKind::CodeRun(code_run) => code_run.language.to_owned(),
+            DataTableKind::Import(_) => CodeCellLanguage::Import,
         }
     }
 
@@ -294,16 +268,77 @@ impl DataTable {
         self
     }
 
-    /// Sets the show_columns flag.
-    pub fn with_show_columns(mut self, show_columns: bool) -> Self {
-        self.show_columns = show_columns;
-        self
+    pub fn is_code(&self) -> bool {
+        match &self.kind {
+            DataTableKind::CodeRun(_) => true,
+            DataTableKind::Import(_) => false,
+        }
     }
 
-    /// Sets the show_name flag.
-    pub fn with_show_name(mut self, show_name: bool) -> Self {
-        self.show_name = show_name;
-        self
+    pub fn get_show_name(&self) -> bool {
+        // always show table name for charts
+        if self.is_html_or_image() {
+            return true;
+        }
+
+        // user set value
+        if let Some(show_name) = self.show_name {
+            return show_name;
+        }
+
+        // defaults show_name for different languages and outputs
+
+        let language = self.get_language();
+        if language == CodeCellLanguage::Import {
+            return true;
+        }
+
+        if self.is_single_value() {
+            return false;
+        }
+
+        if language == CodeCellLanguage::Formula {
+            return false;
+        }
+
+        true
+    }
+
+    pub fn get_show_columns(&self) -> bool {
+        // always hide column headers for charts
+        if self.is_html_or_image() {
+            return false;
+        }
+
+        // user set value
+        if let Some(show_columns) = self.show_columns {
+            return show_columns;
+        }
+
+        // defaults show_columns for different languages and outputs
+
+        let language = self.get_language();
+        if language == CodeCellLanguage::Import {
+            return true;
+        }
+
+        if self.is_single_value() {
+            return false;
+        }
+
+        if self.header_is_first_row {
+            return true;
+        }
+
+        if self.is_list_series_dataframe() {
+            return false;
+        }
+
+        if language == CodeCellLanguage::Javascript || language == CodeCellLanguage::Formula {
+            return false;
+        }
+
+        self.column_headers.is_some()
     }
 
     pub fn name(&self) -> &str {
@@ -409,18 +444,29 @@ impl DataTable {
         }
     }
 
-    /// Returns the height of the data table.
+    /// Returns the height of the data table. The force_table_bounds parameter
+    /// will return the actual height of the table, including any UI elements.
+    /// If false, it includes the array height, which may contain the column
+    /// header row if header_is_first_row is true.
     pub fn height(&self, force_table_bounds: bool) -> usize {
-        match &self.value {
-            Value::Single(_) => 1,
-            Value::Array(array) => {
-                if force_table_bounds {
-                    array.height() as usize
-                } else {
-                    (array.height() as i64 + self.y_adjustment(true)) as usize
-                }
+        if self.is_html_or_image() {
+            if let Some((_, h)) = self.chart_output {
+                (h + (if force_table_bounds { 0 } else { 1 })) as usize
+            } else {
+                1
             }
-            Value::Tuple(_) => 0,
+        } else {
+            match &self.value {
+                Value::Single(_) => 1,
+                Value::Array(array) => {
+                    if force_table_bounds {
+                        array.height() as usize
+                    } else {
+                        (array.height() as i64 + self.y_adjustment(true)) as usize
+                    }
+                }
+                Value::Tuple(_) => 0,
+            }
         }
     }
 
@@ -559,6 +605,11 @@ impl DataTable {
         }
     }
 
+    /// Returns true if the data table output is a list, series, or dataframe.
+    fn is_list_series_dataframe(&self) -> bool {
+        self.is_list() || self.is_series() || self.is_dataframe()
+    }
+
     /// Returns true if the data table is an html.
     pub fn is_html(&self) -> bool {
         if let Value::Single(value) = &self.value {
@@ -620,100 +671,24 @@ impl DataTable {
         }
     }
 
-    /// Pretty print a data table for testing
-    #[cfg(test)]
-    pub fn pretty_print_data_table(
-        data_table: &DataTable,
-        title: Option<&str>,
-        max: Option<usize>,
-    ) -> String {
-        let mut builder = Builder::default();
-        let array = data_table
-            .display_value(false)
-            .unwrap()
-            .into_array()
-            .unwrap();
-        let max = max.unwrap_or(array.height() as usize);
-        let title = title.unwrap_or("Data Table");
-        let display_buffer = data_table
-            .display_buffer
-            .clone()
-            .unwrap_or((0..array.height() as u64).collect::<Vec<_>>());
-
-        for (index, row) in array.rows().take(max).enumerate() {
-            let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-            let display_index = vec![display_buffer[index].to_string()];
-
-            if index == 0 && data_table.column_headers.is_some() && data_table.show_columns {
-                let headers = data_table
-                    .column_headers
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .filter(|h| h.display)
-                    .map(|h| h.name.to_string())
-                    .collect::<Vec<_>>();
-                builder.set_header([display_index, headers].concat());
-            } else if index == 0 && data_table.header_is_first_row && data_table.show_columns {
-                let row = [display_index, row].concat();
-                builder.set_header(row);
-            } else {
-                let row = [display_index, row].concat();
-                builder.push_record(row);
-            }
-        }
-
-        let mut table = builder.build();
-        table.with(Style::modern());
-
-        // bold the headers if they exist
-        if data_table.header_is_first_row {
-            table.with(Modify::new((0, 0)).with(Color::BOLD));
-
-            (0..table.count_columns())
-                .collect::<Vec<usize>>()
-                .iter()
-                .enumerate()
-                .for_each(|(index, _)| {
-                    table.with(Modify::new((0, index + 1)).with(Color::BOLD));
-                });
-        }
-
-        format!("\nData Table: {title}\n{table}")
-    }
-
     /// Returns the y adjustment for the data table to account for the UI
     /// elements
     pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
 
-        if self.show_ui {
-            if self.show_name {
-                y_adjustment += 1;
-            }
-            if !self.is_html_or_image() && self.show_columns {
-                y_adjustment += 1;
-            }
+        if self.get_show_name() {
+            y_adjustment += 1;
         }
 
-        if self.header_is_first_row && adjust_for_header_is_first_row {
+        if !self.is_html_or_image() && self.get_show_columns() {
+            y_adjustment += 1;
+        }
+
+        if adjust_for_header_is_first_row && self.header_is_first_row {
             y_adjustment -= 1;
         }
 
         y_adjustment
-    }
-
-    /// Applies settings for a single value data table
-    ///
-    /// This is used when a single value data table is created from a code run
-    /// and is a code cell.
-    pub fn apply_single_value_settings(&mut self) {
-        if self.is_single_value() {
-            self.show_name = false;
-            self.show_columns = false;
-            self.header_is_first_row = false;
-            self.column_headers = None;
-        }
     }
 
     /// Returns true if the data table is a single value (ie, not an array)
@@ -763,6 +738,26 @@ impl DataTable {
             false
         }
     }
+
+    /// Returns the rows that are part of the data table's UI.
+    pub fn ui_rows(&self, pos: Pos) -> Vec<i64> {
+        let mut rows = vec![];
+        let show_name = self.get_show_name();
+        if show_name || self.is_html_or_image() {
+            rows.push(pos.y);
+        }
+
+        let show_columns = self.get_show_columns();
+        if show_columns && !self.is_html_or_image() {
+            if show_name {
+                rows.push(pos.y + 1);
+            } else {
+                rows.push(pos.y);
+            }
+        }
+
+        rows
+    }
 }
 
 #[cfg(test)]
@@ -773,6 +768,7 @@ pub mod test {
         Array,
         controller::GridController,
         grid::{Sheet, SheetId},
+        test_util::pretty_print_data_table,
     };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
@@ -798,33 +794,6 @@ pub mod test {
         (sheet, data_table)
     }
 
-    /// Util to print a data table when testing
-    #[track_caller]
-    pub fn pretty_print_data_table(
-        data_table: &DataTable,
-        title: Option<&str>,
-        max: Option<usize>,
-    ) {
-        let data_table = super::DataTable::pretty_print_data_table(data_table, title, max);
-        println!("{}", data_table);
-    }
-
-    /// Assert a data table row matches the expected values
-    #[track_caller]
-    pub fn assert_data_table_row(data_table: &DataTable, row_index: usize, expected: Vec<&str>) {
-        let values = data_table
-            .display_value(false)
-            .unwrap()
-            .into_array()
-            .unwrap();
-
-        values.get_row(row_index).unwrap().iter().enumerate().for_each(|(index, value)| {
-            let value = value.to_string();
-            let expected_value = expected[index];
-            assert_eq!(&value, expected_value, "Expected row {row_index} to be {expected_value} at col {index}, but got {value}");
-        });
-    }
-
     #[test]
     fn test_import_data_table() {
         // test data table without column headings
@@ -839,7 +808,8 @@ pub mod test {
             expected_values,
             false,
             false,
-            true,
+            None,
+            None,
             None,
         )
         .with_last_modified(data_table.last_modified);
@@ -860,6 +830,8 @@ pub mod test {
     fn test_output_size() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -874,7 +846,8 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
 
@@ -892,6 +865,8 @@ pub mod test {
         );
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -907,7 +882,8 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
 
@@ -930,6 +906,8 @@ pub mod test {
     fn test_output_sheet_rect_spill_error() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -944,7 +922,8 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             true,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
@@ -970,6 +949,8 @@ pub mod test {
     #[test]
     fn test_is_single_column() {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -986,7 +967,8 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         assert!(!data_table.is_single_column());
@@ -999,7 +981,8 @@ pub mod test {
             Value::Array(single_column),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         assert!(data_table.is_single_column());
@@ -1012,7 +995,8 @@ pub mod test {
             Value::Array(multi_column),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         assert!(!data_table.is_single_column());
@@ -1025,7 +1009,8 @@ pub mod test {
             Value::Single(CellValue::Html("test".into())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         assert!(data_table.is_single_column());
@@ -1040,7 +1025,8 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
 
@@ -1071,7 +1057,8 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
 
@@ -1091,6 +1078,8 @@ pub mod test {
     #[test]
     fn test_output_size_single_value() {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "Table 1".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -1107,7 +1096,8 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
@@ -1119,7 +1109,8 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         // Height should be 3 (1 for value + 1 for name + 1 for columns)
@@ -1297,5 +1288,48 @@ pub mod test {
         // Allow duplicate column name if the index is the same as the existing column index
         let result = DataTable::validate_column_name(table_name, 0, "existing_col", &context);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_ui_rows() {
+        let code_run = CodeRun::default();
+        let mut data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::new_empty(ArraySize::new(2, 2).unwrap())),
+            false,
+            false,
+            Some(true),
+            Some(true),
+            None,
+        );
+
+        // Test with show_ui = true, show_name = true, show_columns = true
+        let pos = pos!(B2);
+        assert_eq!(data_table.ui_rows(pos), vec![2, 3]);
+
+        // Test with show_name = false
+        data_table.show_name = Some(false);
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with show_columns = false
+        data_table.show_name = Some(true);
+        data_table.show_columns = Some(false);
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with show_ui = false
+        data_table.show_name = Some(false);
+        data_table.show_columns = Some(false);
+        assert_eq!(data_table.ui_rows(pos), Vec::<i64>::new());
+
+        // Test with HTML content
+        data_table.show_name = Some(true);
+        data_table.show_columns = Some(false);
+        data_table.value = Value::Single(CellValue::Html("test".into()));
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with Image content
+        data_table.value = Value::Single(CellValue::Image("test".into()));
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
     }
 }

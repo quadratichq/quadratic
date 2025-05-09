@@ -15,6 +15,7 @@ import {
   BorderTopIcon,
   BorderVerticalIcon,
 } from '@/shared/components/Icons';
+import type { JSX } from 'react';
 
 export const BordersHook = (): CommandGroup => {
   const borders = useBorders();

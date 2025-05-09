@@ -137,14 +137,10 @@ impl GridController {
                     self.a1_context.table_map.remove_at(sheet_id, pos);
                 }
 
-                if let Some(language) = sheet.get_table_language(pos, table) {
-                    let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
-                    self.a1_context
-                        .table_map
-                        .insert_with_key(table_name_folded, table_map_entry);
-                } else {
-                    self.a1_context.table_map.remove_at(sheet_id, pos);
-                }
+                let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
+                self.a1_context
+                    .table_map
+                    .insert_with_key(table_name_folded, table_map_entry);
             }
         }
 
@@ -170,5 +166,17 @@ impl GridController {
     /// Creates a grid controller for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
+    }
+}
+
+impl GridController {
+    /// Returns the undo stack for testing purposes
+    pub fn undo_stack(&self) -> &Vec<Transaction> {
+        &self.undo_stack
+    }
+
+    /// Returns the redo stack for testing purposes
+    pub fn redo_stack(&self) -> &Vec<Transaction> {
+        &self.redo_stack
     }
 }

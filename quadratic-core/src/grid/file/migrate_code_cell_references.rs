@@ -50,8 +50,9 @@ lazy_static! {
 }
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
-    let parse_ctx = grid.make_a1_context();
+    let a1_context = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
+        sheet.expensive_recalculate_bounds(&a1_context);
         let sheet_id = sheet.id;
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             for x in bounds.x_range() {
@@ -63,7 +64,7 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                         if code_cell.language == CodeCellLanguage::Formula {
                             code_cell.code = convert_a1_to_rc(
                                 &code_cell.code,
-                                &parse_ctx,
+                                &a1_context,
                                 crate::SheetPos::new(sheet_id, x + 1, y),
                             );
                         }
@@ -78,7 +79,9 @@ pub fn migrate_code_cell_references(
     grid: &mut Grid,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
+    let a1_context = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
+        sheet.expensive_recalculate_bounds(&a1_context);
         let sheet_name = sheet.name.clone();
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             for x in bounds.x_range() {

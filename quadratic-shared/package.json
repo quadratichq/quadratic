@@ -1,17 +1,20 @@
 {
   "name": "quadratic-shared",
-  "version": "0.6.9",
+  "version": "0.7.1",
   "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
   "main": "index.js",
   "scripts": {
-    "compile": "tsc --project ./tsconfig.json",
+    "compile": "tsc --project ./tsconfig.json && echo 'quadratic-shared compiled successfully.'",
+    "watch": "tsc --watch --preserveWatchOutput --project ./tsconfig.json",
     "lint:eslint": "eslint ./**/*.ts",
     "lint:eslint:write": "eslint ./**/*.ts --fix",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "npx rimraf node_modules dist build target"
   },
   "dependencies": {
-    "typescript": "^5.4.5",
-    "zod": "^3.23.8"
+    "tsc-watch": "^6.3.0",
+    "typescript": "^5.8.2",
+    "zod": "^3.24.2"
   },
   "author": "",
   "license": "ISC",

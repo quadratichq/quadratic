@@ -120,10 +120,18 @@ impl DataTable {
             });
         }
 
-        if pos.x == 0 && pos.y == 0 && self.show_ui && self.show_name {
+        let show_name = self.get_show_name();
+        let show_columns = self.get_show_columns();
+
+        // if the position is the first cell and the name and ui are shown, return the name
+        if pos.x == 0 && pos.y == 0 && show_name {
             return Ok(self.name.as_ref());
         }
-        if pos.y == (if self.show_name { 1 } else { 0 }) && self.show_ui && self.show_columns {
+
+        let header_y = if show_name { 1 } else { 0 };
+
+        // if the position is the first cell and the header is shown, return the header
+        if pos.y == header_y && show_columns {
             if let Some(header) = self.display_header_at(pos.x as u32) {
                 return Ok(header.name.as_ref());
             }
@@ -203,10 +211,9 @@ pub mod test {
         },
         grid::{
             CodeCellLanguage, DataTable,
-            test::{
-                assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
-            },
+            test::{new_data_table, test_csv_values},
         },
+        test_util::{assert_data_table_row, pretty_print_data_table},
     };
 
     #[test]

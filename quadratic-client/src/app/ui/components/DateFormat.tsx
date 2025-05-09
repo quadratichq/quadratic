@@ -1,5 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { applyFormatToDateTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { applyFormatToDateTime } from '@/app/quadratic-core/quadratic_core';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DOCUMENTATION_DATE_TIME_FORMATTING } from '@/shared/constants/urls';
@@ -239,7 +239,7 @@ export const DateFormat = (props: DateFormatProps) => {
                 e.stopPropagation();
               }}
             />
-            <p className="text-xs text-muted-foreground ">
+            <p className="text-xs text-muted-foreground">
               Learn custom date and time formatting{' '}
               <a
                 href={DOCUMENTATION_DATE_TIME_FORMATTING}
