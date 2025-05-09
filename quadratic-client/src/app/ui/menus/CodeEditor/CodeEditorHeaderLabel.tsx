@@ -180,10 +180,10 @@ export function CodeEditorHeaderLabel() {
       {!isRenaming && (
         <div className="flex min-w-0 flex-initial text-xs leading-4 text-muted-foreground">
           {currentConnectionName && (
-            <span className="px-1 after:ml-2 after:content-['·']">{currentConnectionName}</span>
+            <span className="pl-1 after:ml-1 after:content-['·']">{currentConnectionName}</span>
           )}
           <button
-            className="max-w-full truncate rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
+            className="max-w-full truncate rounded pl-1 text-left hover:cursor-pointer hover:bg-accent"
             onClick={focusCellRef}
           >
             {cellRef}
