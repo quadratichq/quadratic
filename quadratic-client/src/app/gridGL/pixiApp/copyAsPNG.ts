@@ -20,12 +20,15 @@ function prepareRenderer(): Renderer {
 }
 
 export const getScreenImage = async (): Promise<Blob | null> => {
-  const renderer = prepareRenderer();
-  // todo: probably right-size the scale of the image so it's not too big?
-  renderer.render(pixiApp.stage);
-  return new Promise((resolve) => {
-    renderer!.view.toBlob?.((blob) => resolve(blob));
-  });
+  // const renderer = prepareRenderer();
+  // pixiApp.prepareForCopying({ ai: true });
+  // // todo: probably right-size the scale of the image so it's not too big?
+  // renderer.render(pixiApp.stage);
+  // pixiApp.cleanUpAfterCopying();
+  // return new Promise((resolve) => {
+  //   renderer!.view.toBlob?.((blob) => resolve(blob));
+  // });
+  return null;
 };
 
 /** returns a dataURL to a copy of the selected cells */
