@@ -107,6 +107,15 @@ export const Connections = ({
     });
   }
 
+  // Connection hidden? Remove it from the list
+  const demoConnectionBeingHidden = fetchers.filter(
+    (fetcher) =>
+      isJsonObject(fetcher.json) && fetcher.json.action === 'toggle-demo-connection' && fetcher.state !== 'idle'
+  );
+  if (demoConnectionBeingHidden.length) {
+    connections = connections.filter((c) => !c.isDemo);
+  }
+
   /**
    * Navigation
    */
