@@ -369,8 +369,8 @@ export class PointerHeading {
       this.active = false;
       if (this.resizing) {
         // if multiple columns or rows are selected, we need to resize all of them
-        const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
-        const rows = sheets.sheet.cursor.getSelectedRowsFinite();
+        const columns = sheets.sheet.cursor.getSelectedColumns();
+        const rows = sheets.sheet.cursor.getSelectedRows();
         if (sheets.sheet.cursor.isAllSelected()) {
           if (this.resizing.column && this.resizing.width !== undefined) {
             quadraticCore.resizeAllColumns(sheets.current, this.resizing.width);
@@ -413,7 +413,7 @@ export class PointerHeading {
   }
 
   async autoResizeColumn(column: number) {
-    const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
+    const columns = sheets.sheet.cursor.getColumnsWithSelectedCells();
     if (!columns.includes(column)) {
       columns.push(column);
     }
@@ -439,7 +439,7 @@ export class PointerHeading {
   }
 
   async autoResizeRow(row: number) {
-    const rows = sheets.sheet.cursor.getSelectedRowsFinite();
+    const rows = sheets.sheet.cursor.getRowsWithSelectedCells();
     if (!rows.includes(row)) {
       rows.push(row);
     }
