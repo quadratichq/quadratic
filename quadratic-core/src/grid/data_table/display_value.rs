@@ -204,7 +204,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        CellValue, Pos, SheetPos,
+        ArraySize, CellValue, Pos, SheetPos,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -213,7 +213,7 @@ pub mod test {
             CodeCellLanguage, DataTable,
             test::{new_data_table, test_csv_values},
         },
-        test_util::{assert_data_table_row, pretty_print_data_table},
+        test_util::*,
     };
 
     #[test]
@@ -355,5 +355,17 @@ pub mod test {
             .display_value_from_value_at(Pos::new(10, 1))
             .unwrap();
         assert_eq!(value, &CellValue::Blank);
+    }
+
+    #[test]
+    fn test_display_value_from_value_single_formula() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let dt = test_create_formula(&mut gc, pos![sheet_id!a1], "256");
+
+        let display_value = dt.display_value(false).unwrap().into_array().unwrap();
+        assert_eq!(display_value.size(), ArraySize::new(1, 1).unwrap());
+        assert_eq!(display_value.get(0, 0).unwrap(), &CellValue::from("256"));
     }
 }
