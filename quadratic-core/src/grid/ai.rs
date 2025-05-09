@@ -20,7 +20,7 @@ use crate::{
 use super::GridBounds;
 
 const MAX_POTENTIAL_CELLS_PER_PAGE: u32 = 1000;
-const MAXIMUM_PAGES: u32 = 10;
+const MAXIMUM_PAGES: u32 = 5;
 
 impl GridController {
     /// Breaks up a rect into pages, based on the number of cells per page.
@@ -102,13 +102,13 @@ impl GridController {
         let mut result = String::new();
         if in_page > MAXIMUM_PAGES {
             result.push_str(&format!("IMPORTANT: There are {} pages in this result. Let the user know that there is a lot of data and it will take quite a while to process all the pages of data. Suggest ways they can work around this using Python or some other method. You can still get additional pages by passing page = {} to this tool. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
-                in_page,
+                in_page + 1,
                 page + 1,
             ));
         } else if in_page != page && has_content {
             result.push_str(&format!(
                 "IMPORTANT: There are {} pages in this result. Use this tool again with page = {} for the next page. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
-                in_page,
+                in_page + 1,
                 page + 1,
             ));
         }
@@ -173,10 +173,15 @@ impl GridController {
             ));
         }
         let mut result = String::new();
-        if in_page != page {
+        if in_page > MAXIMUM_PAGES {
+            result.push_str(&format!("IMPORTANT: There are {} pages in this result. Let the user know that there is a lot of data and it will take quite a while to process all the pages of data. Suggest ways they can work around this. You can still get additional pages by passing page = {} to this tool. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
+                in_page + 1,
+                page + 1,
+            ));
+        } else if in_page != page {
             result.push_str(&format!(
                 "IMPORTANT: There are {} pages in this result. Use this tool again with page = {} for the next page. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
-                in_page,
+                in_page + 1,
                 page + 1,
             ));
         }
@@ -253,12 +258,25 @@ mod tests {
 
         let selection = A1Selection::test_a1("A1:J190");
         let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
-        assert!(result.contains("IMPORTANT: There are more pages"));
+        assert!(result.contains("IMPORTANT: There are 2 pages"));
         assert!(result.contains("A1:J190 for page = 0"));
         assert!(result.contains("page = 1"));
 
         let result = gc.get_ai_cells(selection, 1).unwrap();
         assert!(result.contains("A1:J190 for page = 1"));
+    }
+
+    #[test]
+    fn test_get_ai_cells_too_many_pages() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_set_values(&mut gc, sheet_id, pos![a1], 10, 1000);
+
+        let selection = A1Selection::test_a1("A1:J1000");
+        let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
+
+        // ensure we message AI that there are too many pages
+        assert!(result.contains("IMPORTANT: There are 11 pages in this result. Let the user know"));
     }
 
     #[test]
@@ -315,7 +333,7 @@ mod tests {
         let result = gc.get_ai_cell_formats(selection.clone(), 0).unwrap();
         assert!(result.contains("has formats:"));
         assert!(result.contains("bold"));
-        assert!(result.contains("IMPORTANT: There are more pages"));
+        assert!(result.contains("IMPORTANT: There are 2 pages"));
         assert!(result.contains("A1:J190 for page = 0"));
         assert!(result.contains("page = 1"));
 
@@ -323,5 +341,17 @@ mod tests {
         assert!(result.contains("A1:J190 for page = 1"));
         assert!(result.contains("has formats:"));
         assert!(result.contains("bold"));
+    }
+
+    #[test]
+    fn test_get_ai_cell_formats_too_many_pages() {
+        let mut gc = test_create_gc();
+        let selection = A1Selection::test_a1("A1:J1000");
+
+        gc.set_bold(&selection, Some(true), None).unwrap();
+        let result = gc.get_ai_cell_formats(selection, 0).unwrap();
+
+        // ensure we message AI that there are too many pages
+        assert!(result.contains("IMPORTANT: There are 11 pages in this result. Let the user know"));
     }
 }

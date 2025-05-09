@@ -1422,10 +1422,10 @@ class Core {
     }
   }
 
-  gridToDataTable(sheetRect: string, cursor: string) {
+  gridToDataTable(sheetRect: string, firstRowIsHeader: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.gridToDataTable(sheetRect, cursor);
+      this.gridController.gridToDataTable(sheetRect, firstRowIsHeader, cursor);
     } catch (e) {
       this.handleCoreError('gridToDataTable', e);
     }

@@ -372,12 +372,17 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.ConvertToTable]: async (args) => {
-    let sheetRect = selectionToSheetRect(args.sheet_name, args.selection);
-    if (sheetRect) {
-      quadraticCore.gridToDataTable(sheetRect, args.first_row_is_column_names, sheets.getCursorPosition());
-      return 'Converted sheet data to table.';
-    } else {
-      return 'Invalid selection, this should be a single rectangle, not a range';
+    const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    try {
+      let sheetRect = selectionToSheetRect(sheetId, args.selection);
+      if (sheetRect) {
+        quadraticCore.gridToDataTable(sheetRect, args.first_row_is_column_names, sheets.getCursorPosition());
+        return 'Converted sheet data to table.';
+      } else {
+        return 'Invalid selection, this should be a single rectangle, not a range';
+      }
+    } catch (e) {
+      return `Arguments had an error: ${e}`;
     }
   },
 } as const;

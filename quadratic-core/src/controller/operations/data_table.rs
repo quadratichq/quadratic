@@ -35,7 +35,11 @@ impl GridController {
 
     /// Collects all operations that would be needed to convert a grid to a data table.
     /// If a data table is found within the sheet_rect, it will not be added to the operations.
-    pub fn grid_to_data_table_operations(&self, sheet_rect: SheetRect) -> Vec<Operation> {
+    pub fn grid_to_data_table_operations(
+        &self,
+        sheet_rect: SheetRect,
+        first_row_is_header: bool,
+    ) -> Vec<Operation> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
@@ -43,6 +47,13 @@ impl GridController {
 
             if no_data_table {
                 ops.push(Operation::GridToDataTable { sheet_rect });
+
+                if first_row_is_header {
+                    ops.push(Operation::DataTableFirstRowAsHeader {
+                        sheet_pos: sheet_rect.into(),
+                        first_row_is_header: true,
+                    });
+                }
             }
         }
 
@@ -391,7 +402,7 @@ mod test {
         gc.set_cell_values(sheet_pos, values, None);
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
-        let ops = gc.grid_to_data_table_operations(sheet_rect);
+        let ops = gc.grid_to_data_table_operations(sheet_rect, false);
         gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
 
         let import = Import::new("Table1".into());
@@ -413,7 +424,7 @@ mod test {
 
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
-        let ops = gc.grid_to_data_table_operations(sheet_rect);
+        let ops = gc.grid_to_data_table_operations(sheet_rect, false);
 
         // no operations should be needed since the formula data table is in
         // the selection
