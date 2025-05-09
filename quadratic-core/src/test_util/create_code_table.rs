@@ -6,7 +6,7 @@ use bigdecimal::BigDecimal;
 
 #[cfg(test)]
 use crate::{
-    Array, ArraySize, CellValue, Pos, Value,
+    Array, ArraySize, CellValue, Pos, SheetPos, Value,
     controller::{
         GridController, active_transactions::transaction_name::TransactionName,
         operations::operation::Operation,
@@ -88,6 +88,21 @@ pub fn test_create_code_table_with_values(
     gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
 
     gc.data_table(pos.to_sheet_pos(sheet_id)).unwrap().clone()
+}
+
+#[cfg(test)]
+pub fn test_create_formula(
+    gc: &mut GridController,
+    sheet_pos: SheetPos,
+    formula: &str,
+) -> DataTable {
+    gc.set_code_cell(
+        sheet_pos,
+        CodeCellLanguage::Formula,
+        formula.to_string(),
+        None,
+    );
+    gc.data_table(sheet_pos).unwrap().clone()
 }
 
 #[cfg(test)]

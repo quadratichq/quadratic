@@ -119,7 +119,7 @@ impl From<Vec<Vec<CellValue>>> for Array {
         let w = v[0].len();
         let h = v.len();
         Array {
-            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            size: ArraySize::new(w as u32, h as u32).unwrap_or(ArraySize::_1X1),
             values: v.into_iter().flatten().collect(),
         }
     }
