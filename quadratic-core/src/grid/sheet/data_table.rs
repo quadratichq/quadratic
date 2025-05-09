@@ -214,10 +214,10 @@ impl Sheet {
                     y: output_rect.min.y,
                 };
 
-                // add the CellValue to cells if the code is not included in the clipboard
+                // add the CellValue to cells if the code is not included in the rect
                 let include_in_cells = !rect.contains(data_table_pos);
 
-                // if the source cell is included in the clipboard, add the data_table to the clipboard
+                // if the source cell is included in the rect, add the data_table to data_tables
                 if !include_in_cells {
                     if matches!(data_table.kind, DataTableKind::Import(_))
                         || include_code_table_values
@@ -237,7 +237,7 @@ impl Sheet {
                 let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
                 let y_end = std::cmp::min(output_rect.max.y, rect.max.y);
 
-                // add the code_run output to clipboard.values
+                // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
                         if let Some(value) = data_table.cell_value_at(
@@ -248,6 +248,7 @@ impl Sheet {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
                             };
+
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 if include_in_cells {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());

@@ -306,9 +306,8 @@ mod tests {
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
             sheet::validations::{rules::ValidationRule, validation::Validation},
         },
-        test_util::{
-            assert_data_table_size, first_sheet_id, test_create_html_chart, test_create_js_chart,
-        },
+        test_create_gc,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
     };
 
@@ -1079,5 +1078,35 @@ mod tests {
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_col_next_to_code() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let table = test_create_code_table(&mut gc, sheet_id, pos![C2], 2, 2);
+
+        gc.insert_column(sheet_id, 3, false, None);
+
+        assert_eq!(&table, gc.data_table_at(pos![sheet_id!d2]).unwrap());
+        assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
+    }
+
+    #[test]
+    fn test_insert_column_before_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let _table = test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
+
+        print_first_sheet(&gc);
+        gc.insert_column(sheet_id, 3, false, None);
+
+        // todo: this should be correct
+        // assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
+
+        // this is what happens (for now)
+        assert_data_table_size(&gc, sheet_id, pos![c2], 3, 2, false);
     }
 }

@@ -1,12 +1,21 @@
 use crate::{
     CopyFormats, SheetPos, SheetRect,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
-    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
+    grid::{DataTable, data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
 };
 
 use anyhow::Result;
 
 impl GridController {
+    /// Gets a data table based on a sheet position.
+    pub fn data_table_at(&self, sheet_pos: SheetPos) -> Option<&DataTable> {
+        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+            sheet.data_table_at(&sheet_pos.into())
+        } else {
+            None
+        }
+    }
+
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
         let ops = self.flatten_data_table_operations(sheet_pos);
         self.start_user_transaction(ops, cursor, TransactionName::FlattenDataTable);
@@ -159,7 +168,8 @@ mod tests {
             user_actions::import::tests::simple_csv,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-        test_util::{assert_cell_value, assert_cell_value_row, print_table_in_rect},
+        test_create_data_table,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call},
     };
 
@@ -605,5 +615,16 @@ mod tests {
             assert_eq!(headers[0].name, "Column 1".into());
             assert_eq!(headers[1].name, "Column 2".into());
         }
+    }
+
+    #[test]
+    fn test_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let dt = test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+
+        assert_eq!(gc.data_table_at(pos![sheet_id!A1]), Some(&dt));
+        assert!(gc.data_table_at(pos![sheet_id!A2]).is_none());
     }
 }
