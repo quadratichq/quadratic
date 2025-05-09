@@ -18,8 +18,8 @@ export const ToolCardQuery = ({
 }) => {
   return (
     <div className={className}>
-      <div className="truncate text-sm text-muted-foreground">{label ? label : isLoading ? <Skeleton /> : null}</div>
-      <div className="truncate text-muted-foreground">
+      <div className="text-sm text-muted-foreground">{label ? label : isLoading ? <Skeleton /> : null}</div>
+      <div className="text-muted-foreground">
         {hasError ? (
           <span className="text-destructive">Something went wrong (try again)</span>
         ) : isLoading ? (
