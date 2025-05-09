@@ -4,8 +4,8 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
+  editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
-  editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
@@ -32,7 +32,8 @@ export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const [, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -84,10 +85,7 @@ export const QuadraticSidebar = () => {
 
         {canDoTeamsStuff && (
           <SidebarTooltip label="Connections">
-            <SidebarToggle
-              pressed={showConnectionsMenu}
-              onPressedChange={() => setShowConnectionsMenu((prev) => !prev)}
-            >
+            <SidebarToggle pressed={false} onPressedChange={() => setShowCellTypeMenu('connections')}>
               <DatabaseIcon />
             </SidebarToggle>
           </SidebarTooltip>

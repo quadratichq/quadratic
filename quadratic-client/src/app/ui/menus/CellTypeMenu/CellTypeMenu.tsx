@@ -6,7 +6,7 @@ import {
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
-import { DatabaseIcon } from '@/shared/components/Icons';
+import { SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
@@ -20,7 +20,7 @@ import {
 } from '@/shared/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export interface CellTypeOption {
   name: string;
@@ -53,12 +53,13 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export default function CellTypeMenu() {
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const fetcher = useConnectionsFetcher();
 
-  const searchLabel = 'Choose a cell type…';
+  const includeLanguages = showCellTypeMenu !== 'connections';
+  const searchLabel = `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`;
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -97,36 +98,42 @@ export default function CellTypeMenu() {
       overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
+
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Languages">
-          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
-            <CommandItemWrapper
-              key={name}
-              disabled={disabled}
-              icon={icon}
-              name={name}
-              experimental={experimental}
-              onSelect={() => openEditor(mode)}
-            />
-          ))}
-        </CommandGroup>
 
-        <CommandSeparator />
+        {includeLanguages && (
+          <>
+            <CommandGroup heading="Languages">
+              {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
+                <CommandItemWrapper
+                  key={name}
+                  disabled={disabled}
+                  icon={icon}
+                  name={name}
+                  experimental={experimental}
+                  onSelect={() => openEditor(mode)}
+                />
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
+
         {fetcher.data?.connections && (
           <CommandGroup heading="Connections">
             {fetcher.data.connections.map(({ name, type, uuid }) => (
               <CommandItemWrapper
                 key={uuid}
-                uuid={uuid}
                 name={name}
+                value={name + '--' + uuid}
                 icon={<LanguageIcon language={type} />}
                 onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
               />
             ))}
             <CommandItemWrapper
-              name="Manage connections"
-              icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}
+              name="Manage…"
+              icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
             />
           </CommandGroup>
@@ -140,6 +147,7 @@ function CommandItemWrapper({
   disabled,
   icon,
   name,
+  value,
   experimental,
   onSelect,
   uuid,
@@ -147,6 +155,7 @@ function CommandItemWrapper({
   disabled?: boolean;
   icon: React.ReactNode;
   name: string;
+  value?: string;
   experimental?: boolean;
   onSelect: () => void;
   uuid?: string;
@@ -155,7 +164,7 @@ function CommandItemWrapper({
     <CommandItem
       disabled={disabled}
       onSelect={onSelect}
-      value={name + (uuid ? uuid : '')}
+      value={value ? value : name}
       onPointerDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
