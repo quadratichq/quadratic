@@ -370,7 +370,17 @@ export class PointerHeading {
       if (this.resizing) {
         // if multiple columns or rows are selected, we need to resize all of them
         const columns = sheets.sheet.cursor.getSelectedColumns();
+        if (this.resizing.column !== null) {
+          if (!columns.includes(this.resizing.column)) {
+            columns.push(this.resizing.column);
+          }
+        }
         const rows = sheets.sheet.cursor.getSelectedRows();
+        if (this.resizing.row !== null) {
+          if (!rows.includes(this.resizing.row)) {
+            rows.push(this.resizing.row);
+          }
+        }
         if (sheets.sheet.cursor.isAllSelected()) {
           if (this.resizing.column && this.resizing.width !== undefined) {
             quadraticCore.resizeAllColumns(sheets.current, this.resizing.width);
