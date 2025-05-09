@@ -376,7 +376,12 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       let sheetRect = selectionToSheetRect(sheetId, args.selection);
       if (sheetRect) {
-        quadraticCore.gridToDataTable(sheetRect, args.first_row_is_column_names, sheets.getCursorPosition());
+        quadraticCore.gridToDataTable(
+          sheetRect,
+          args.table_name,
+          args.first_row_is_column_names,
+          sheets.getCursorPosition()
+        );
         return 'Converted sheet data to table.';
       } else {
         return 'Invalid selection, this should be a single rectangle, not a range';

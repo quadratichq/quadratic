@@ -1469,11 +1469,12 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, firstRowIsHeader: boolean, cursor: string) {
+  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
     this.send({
       type: 'clientCoreGridToDataTable',
       sheetRect,
       firstRowIsHeader,
+      tableName,
       cursor,
     });
   }

@@ -50,7 +50,7 @@ export const ConvertToTable = ({ args, loading }: ConvertToTableProps) => {
           {label} <span className="text-muted-foreground">| {table_name}</span>
         </span>
       }
-      description={`Converting ${selection} to data table named ${table_name}`}
+      description={`Converting ${selection} to data table`}
     />
   );
 };
