@@ -385,8 +385,8 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "should cause spill".into(),
@@ -394,8 +394,8 @@ mod test {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -404,15 +404,15 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.cell_value(Pos { x: 1, y: 0 }),
+            sheet.cell_value(Pos { x: 2, y: 1 }),
             Some("should cause spill".into())
         );
-        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1), gc.a1_context());
+        let render = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
         let code = sheet
-            .edit_code_value(Pos { x: 0, y: 0 }, gc.a1_context())
+            .edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context())
             .unwrap();
-        assert_eq!(code.spill_error, Some(vec![Pos { x: 1, y: 0 }]));
+        assert_eq!(code.spill_error, Some(vec![Pos { x: 2, y: 1 }]));
     }
 
     #[test]
@@ -441,17 +441,17 @@ mod test {
             Some(false),
             None,
         );
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
-        sheet.set_data_table(Pos { x: 2, y: 3 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 2, y: 2 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 3, y: 4 }, Some(data_table.clone()));
 
-        assert_eq!(sheet.code_columns_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_columns_bounds(1, 1), Some(1..4));
-        assert_eq!(sheet.code_columns_bounds(1, 2), Some(1..6));
-        assert_eq!(sheet.code_columns_bounds(0, 2), Some(0..6));
-        assert_eq!(sheet.code_columns_bounds(-10, 0), Some(0..3));
-        assert_eq!(sheet.code_columns_bounds(2, 5), Some(3..6));
-        assert_eq!(sheet.code_columns_bounds(10, 10), None);
+        assert_eq!(sheet.code_columns_bounds(2, 2), Some(2..5));
+        assert_eq!(sheet.code_columns_bounds(2, 3), Some(2..7));
+        assert_eq!(sheet.code_columns_bounds(1, 3), Some(1..7));
+        assert_eq!(sheet.code_columns_bounds(-9, 1), Some(1..4));
+        assert_eq!(sheet.code_columns_bounds(3, 6), Some(4..7));
+        assert_eq!(sheet.code_columns_bounds(11, 11), None);
     }
 
     #[test]
@@ -480,17 +480,17 @@ mod test {
             Some(false),
             None,
         );
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
-        sheet.set_data_table(Pos { x: 3, y: 2 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 2, y: 2 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 4, y: 3 }, Some(data_table.clone()));
 
-        assert_eq!(sheet.code_rows_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_rows_bounds(1, 1), Some(1..4));
-        assert_eq!(sheet.code_rows_bounds(1, 2), Some(1..6));
-        assert_eq!(sheet.code_rows_bounds(0, 2), Some(0..6));
-        assert_eq!(sheet.code_rows_bounds(-10, 0), Some(0..3));
-        assert_eq!(sheet.code_rows_bounds(2, 5), Some(3..6));
-        assert_eq!(sheet.code_rows_bounds(10, 10), None);
+        assert_eq!(sheet.code_rows_bounds(2, 2), Some(2..5));
+        assert_eq!(sheet.code_rows_bounds(2, 3), Some(2..7));
+        assert_eq!(sheet.code_rows_bounds(1, 3), Some(1..7));
+        assert_eq!(sheet.code_rows_bounds(-9, 1), Some(1..4));
+        assert_eq!(sheet.code_rows_bounds(3, 6), Some(4..7));
+        assert_eq!(sheet.code_rows_bounds(11, 11), None);
     }
 
     #[test]

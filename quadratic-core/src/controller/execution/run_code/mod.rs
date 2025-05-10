@@ -92,20 +92,6 @@ impl GridController {
             }
         }
 
-        // calculate the chart_output if it is an image or html data table based on the pixel output
-        if let Some(new_data_table) = &mut new_data_table {
-            if new_data_table.is_html_or_image() && new_data_table.chart_output.is_none() {
-                let (pixel_width, pixel_height) = new_data_table
-                    .chart_pixel_output
-                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
-                let chart_output =
-                    sheet
-                        .offsets
-                        .calculate_grid_size(pos, pixel_width, pixel_height);
-                new_data_table.chart_output = Some(chart_output);
-            }
-        }
-
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
             let unique_name = unique_data_table_name(
@@ -485,6 +471,20 @@ impl GridController {
             cells_accessed: std::mem::take(&mut transaction.cells_accessed),
         };
 
+        let chart_output = match value {
+            Value::Single(CellValue::Html(_) | CellValue::Image(_)) => {
+                let (pixel_width, pixel_height) = js_code_result
+                    .chart_pixel_output
+                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+                Some(
+                    sheet
+                        .offsets
+                        .calculate_grid_size(start.into(), pixel_width, pixel_height),
+                )
+            }
+            _ => None,
+        };
+
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
@@ -493,7 +493,7 @@ impl GridController {
             js_code_result.has_headers,
             None,
             None,
-            js_code_result.chart_pixel_output,
+            chart_output,
         );
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]

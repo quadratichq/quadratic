@@ -596,9 +596,9 @@ mod test {
         grid::{
             Contiguous2D, SheetId,
             formats::SheetFormatUpdates,
-            js_types::{JsHtmlOutput, JsRenderCell},
+            js_types::{JsHashRenderCells, JsHashesDirty, JsHtmlOutput, JsRenderCell},
         },
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
     use std::collections::HashSet;
 
@@ -627,7 +627,7 @@ mod test {
         );
         gc.process_visible_dirty_hashes(&mut transaction);
         assert!(!transaction.dirty_hashes.is_empty());
-        expect_js_call_count("jsHashesRenderCells", 2, false);
+        expect_js_call_count("jsHashesRenderCells", 1, false);
         expect_js_call_count("jsHashesDirty", 0, false);
         gc.process_remaining_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
@@ -670,11 +670,13 @@ mod test {
         gc.process_remaining_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
 
-        let hashes: HashSet<Pos> = vec![Pos { x: 0, y: 0 }].into_iter().collect();
-        let hashes_string = serde_json::to_string(&hashes).unwrap();
+        let dirty_hashes = vec![JsHashesDirty {
+            sheet_id,
+            hashes: vec![Pos { x: 0, y: 0 }],
+        }];
         expect_js_call(
             "jsHashesDirty",
-            format!("{},{}", sheet_id, hashes_string),
+            format!("{:?}", serde_json::to_vec(&dirty_hashes).unwrap()),
             false,
         );
         expect_js_call_count("jsHashesRenderCells", 0, true);
@@ -738,27 +740,33 @@ mod test {
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
         gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
 
-        let result = vec![JsRenderCell {
-            value: "test 1".to_string(),
-            ..Default::default()
+        let render_cells = vec![JsHashRenderCells {
+            sheet_id,
+            hash: (Pos { x: 0, y: 0 }).quadrant().into(),
+            cells: vec![JsRenderCell {
+                value: "test 1".to_string(),
+                ..Default::default()
+            }],
         }];
-        let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
             "jsHashesRenderCells",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&result)),
+            format!("{:?}", serde_json::to_vec(&render_cells).unwrap()),
             false,
         );
 
-        let result = vec![JsRenderCell {
-            x: 100,
-            y: 100,
-            value: "test 2".to_string(),
-            ..Default::default()
+        let render_cells = vec![JsHashRenderCells {
+            sheet_id,
+            hash: (Pos { x: 100, y: 100 }).quadrant().into(),
+            cells: vec![JsRenderCell {
+                x: 100,
+                y: 100,
+                value: "test 2".to_string(),
+                ..Default::default()
+            }],
         }];
-        let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
             "jsHashesRenderCells",
-            format!("{},{},{},{}", sheet_id, 6, 3, hash_test(&result)),
+            format!("{:?}", serde_json::to_vec(&render_cells).unwrap()),
             true,
         );
     }

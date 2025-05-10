@@ -106,10 +106,17 @@ mod test {
     use crate::{
         CellValue,
         a1::A1Selection,
+        controller::{
+            active_transactions::transaction_name::TransactionName,
+            operations::operation::Operation,
+        },
+        first_sheet_id,
         grid::{
             NumericFormat,
-            sheet::validations::{validation::Validation, rules::ValidationRule},
+            js_types::JsHashValidationWarnings,
+            sheet::validations::{rules::ValidationRule, validation::Validation},
         },
+        test_create_gc,
         wasm_bindings::js::expect_js_call,
     };
 
@@ -189,11 +196,13 @@ mod test {
 
     #[test]
     fn merge_cell_values_validations() {
-        let mut sheet = Sheet::test();
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
+        let sheet = gc.sheet_mut(sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C1", sheet.id),
+            selection: A1Selection::test_a1_sheet_id("A1:C1", sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -201,29 +210,39 @@ mod test {
         sheet.validations.set(validation.clone());
 
         let cell_values = CellValues::from(vec![vec![
-            CellValue::Text("a".into()),
+            CellValue::Logical(false),
             CellValue::Text("b".into()),
             CellValue::Logical(true),
         ]]);
-        let mut transaction = PendingTransaction::default();
-        let a1_context = sheet.make_a1_context();
-        sheet.merge_cell_values(
-            &mut transaction,
-            Pos { x: 1, y: 1 },
-            &cell_values,
-            &a1_context,
-        );
+        let op = vec![Operation::SetCellValues {
+            sheet_pos: pos![sheet_id!A1],
+            values: cell_values,
+        }];
+        gc.start_user_transaction(op, None, TransactionName::SetCells);
 
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Logical(false))
+        );
         assert_eq!(
             sheet.cell_value(Pos { x: 3, y: 1 }),
             Some(CellValue::Logical(true))
         );
 
-        assert_eq!(sheet.validations.warnings.len(), 2);
-        let warnings = vec![(1, 1, validation.id, false), (2, 1, validation.id, false)];
+        assert_eq!(sheet.validations.warnings.len(), 1);
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id,
+            hash: None,
+            warnings: vec![JsValidationWarning {
+                pos: (2, 1).into(),
+                validation: Some(validation.id),
+                style: Some(validation.error.style.clone()),
+            }],
+        }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet.id, serde_json::to_string(&warnings).unwrap()),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
     }

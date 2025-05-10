@@ -48,6 +48,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     let a1_context = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         sheet.expensive_recalculate_bounds(&a1_context);
+        sheet.columns.expensive_regenerate_has_cell_value();
 
         let mut x_shift = 0;
         let mut y_shift = 0;
@@ -60,7 +61,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 for _ in bounds.min.x..=0 {
                     sheet.insert_column(&mut transaction, insert, CopyFormats::None, &a1_context);
                     sheet.expensive_recalculate_bounds(&a1_context);
-                    sheet.columns.expensive_regenerate_has_value();
+                    sheet.columns.expensive_regenerate_has_cell_value();
                     x_shift += 1;
                 }
             }
@@ -72,7 +73,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 for _ in bounds.min.y..=0 {
                     sheet.insert_row(&mut transaction, insert, CopyFormats::None, &a1_context);
                     sheet.expensive_recalculate_bounds(&a1_context);
-                    sheet.columns.expensive_regenerate_has_value();
+                    sheet.columns.expensive_regenerate_has_cell_value();
                     y_shift += 1;
                 }
             }

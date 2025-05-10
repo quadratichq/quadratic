@@ -146,7 +146,7 @@ mod tests {
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 3, "0");
-        expect_js_call_count("jsUpdateCodeCell", 2, true);
+        expect_js_call_count("jsUpdateCodeCells", 1, true);
 
         gc.redo(None);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
@@ -315,7 +315,7 @@ mod tests {
         clear_js_calls();
         gc.insert_column(sheet_id, 1, true, None);
         assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
-        expect_js_call_count("jsUpdateCodeCell", 2, false);
+        expect_js_call_count("jsUpdateCodeCells", 1, false);
         expect_js_call_count("jsSendImage", 2, true);
     }
 }

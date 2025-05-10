@@ -337,6 +337,7 @@ impl GridController {
 mod tests {
     use super::*;
 
+    use crate::grid::js_types::JsHashValidationWarnings;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, a1::A1Selection};
@@ -372,20 +373,24 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![validation.clone()]).unwrap()
+                serde_json::to_vec(&vec![validation.clone()]).unwrap()
             ),
             false,
         );
-        let warnings = vec![JsValidationWarning {
-            pos: Pos { x: 1, y: 1 },
-            validation: Some(validation.id),
-            style: Some(validation.error.style.clone()),
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id,
+            hash: None,
+            warnings: vec![JsValidationWarning {
+                pos: Pos { x: 1, y: 1 },
+                validation: Some(validation.id),
+                style: Some(validation.error.style.clone()),
+            }],
         }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
 
@@ -393,20 +398,24 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             false,
         );
-        let warnings = vec![JsValidationWarning {
-            pos: Pos { x: 1, y: 1 },
-            validation: None,
-            style: None,
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id,
+            hash: None,
+            warnings: vec![JsValidationWarning {
+                pos: Pos { x: 1, y: 1 },
+                validation: None,
+                style: None,
+            }],
         }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
     }
@@ -442,20 +451,24 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![validation.clone()]).unwrap()
+                serde_json::to_vec(&vec![validation.clone()]).unwrap()
             ),
             false,
         );
-        let warnings = vec![JsValidationWarning {
-            pos: Pos { x: 1, y: 1 },
-            validation: Some(validation.id),
-            style: Some(validation.error.style.clone()),
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id,
+            hash: None,
+            warnings: vec![JsValidationWarning {
+                pos: Pos { x: 1, y: 1 },
+                validation: Some(validation.id),
+                style: Some(validation.error.style.clone()),
+            }],
         }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
 
@@ -475,20 +488,24 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             false,
         );
-        let warnings = vec![JsValidationWarning {
-            pos: Pos { x: 1, y: 1 },
-            validation: None,
-            style: None,
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id,
+            hash: None,
+            warnings: vec![JsValidationWarning {
+                pos: Pos { x: 1, y: 1 },
+                validation: None,
+                style: None,
+            }],
         }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
 
@@ -496,20 +513,24 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![validation.clone()]).unwrap()
+                serde_json::to_vec(&vec![validation.clone()]).unwrap()
             ),
             false,
         );
-        let warnings = vec![JsValidationWarning {
-            pos: Pos { x: 1, y: 1 },
-            validation: Some(validation.id),
-            style: Some(validation.error.style.clone()),
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id,
+            hash: None,
+            warnings: vec![JsValidationWarning {
+                pos: Pos { x: 1, y: 1 },
+                validation: Some(validation.id),
+                style: Some(validation.error.style.clone()),
+            }],
         }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
 
@@ -517,20 +538,24 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             false,
         );
-        let warnings = vec![JsValidationWarning {
-            pos: Pos { x: 1, y: 1 },
-            validation: None,
-            style: None,
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id,
+            hash: None,
+            warnings: vec![JsValidationWarning {
+                pos: Pos { x: 1, y: 1 },
+                validation: None,
+                style: None,
+            }],
         }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
     }

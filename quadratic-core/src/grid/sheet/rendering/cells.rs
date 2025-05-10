@@ -299,6 +299,7 @@ impl Sheet {
 mod tests {
     use uuid::Uuid;
 
+    use crate::grid::js_types::JsHashRenderCells;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::sheet::validations::validation::Validation;
     use crate::test_util::*;
@@ -307,7 +308,7 @@ mod tests {
         a1::A1Selection,
         controller::GridController,
         grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
-        wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
+        wasm_bindings::js::{clear_js_calls, expect_js_call},
     };
 
     use super::*;
@@ -616,16 +617,17 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1), gc.a1_context());
 
-        println!("{:?}", cells);
-        println!("{:?}", expected);
-
         assert_eq!(cells.len(), expected.len());
         assert!(expected.iter().all(|cell| cells.contains(cell)));
 
-        let cells_string = serde_json::to_string(&expected).unwrap();
+        let render_cells = vec![JsHashRenderCells {
+            sheet_id,
+            hash: (Pos { x: 0, y: 0 }).quadrant().into(),
+            cells: expected,
+        }];
         expect_js_call(
             "jsHashesRenderCells",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
+            format!("{:?}", serde_json::to_vec(&render_cells).unwrap()),
             true,
         );
     }

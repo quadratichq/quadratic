@@ -166,7 +166,8 @@ impl SheetColumns {
         bounds
     }
 
-    pub fn expensive_regenerate_has_value(&mut self) {
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    pub fn expensive_regenerate_has_cell_value(&mut self) {
         self.has_cell_value.set_rect(1, 1, None, None, None);
         for (&x, column) in &self.columns {
             if let Some(range) = column.range() {

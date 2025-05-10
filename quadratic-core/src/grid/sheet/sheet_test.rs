@@ -225,10 +225,9 @@ impl Sheet {
                 false,
                 Some(true),
                 Some(true),
-                Some((1.0, 1.0)),
+                Some((w, h)),
             )),
         );
-        self.data_tables.get_mut_at(&pos).unwrap().chart_output = Some((w, h));
     }
 
     /// Sets a JS chart at the given position with the given width and height (in cells).
@@ -261,10 +260,9 @@ impl Sheet {
                 false,
                 Some(true),
                 Some(true),
-                Some((1.0, 1.0)),
+                Some((w, h)),
             )),
         );
-        self.data_tables.get_mut_at(&pos).unwrap().chart_output = Some((w, h));
     }
 
     /// Sets an empty data table on the sheet.
@@ -382,17 +380,17 @@ mod tests {
     #[test]
     fn test_set_code_run_array_horizontal() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], false);
+        sheet.test_set_code_run_array(1, 1, vec!["1", "2", "3"], false);
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: -1 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: -1 }),
+            sheet.display_value(Pos { x: 3, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -400,17 +398,17 @@ mod tests {
     #[test]
     fn test_set_code_run_array_vertical() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], true);
+        sheet.test_set_code_run_array(1, 1, vec!["1", "2", "3"], true);
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 3 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -435,21 +433,21 @@ mod tests {
     #[test]
     fn test_set_code_run_array_2d() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array_2d(-1, -1, 2, 2, vec!["1", "2", "3", "4"]);
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: -1 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
     }

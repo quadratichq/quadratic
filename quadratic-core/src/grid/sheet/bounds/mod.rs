@@ -40,6 +40,9 @@ impl Sheet {
                 }
             }
         }
+        for (&pos, _) in self.validations.warnings.iter() {
+            self.data_bounds.add(pos);
+        }
 
         if let Some(rect) = self.formats.finite_bounds() {
             self.format_bounds.add_rect(rect);
@@ -50,6 +53,8 @@ impl Sheet {
     }
 
     /// Recalculates all bounds of the sheet.
+    ///
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
     ///
     /// Returns whether any of the sheet's bounds has changed
     pub fn expensive_recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
@@ -64,8 +69,7 @@ impl Sheet {
 
         self.data_tables.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
-            self.data_bounds.add(output_rect.min);
-            self.data_bounds.add(output_rect.max);
+            self.data_bounds.add_rect(output_rect);
         });
 
         for validation in self.validations.validations.iter() {
@@ -77,6 +81,9 @@ impl Sheet {
                     self.data_bounds.add(rect.max);
                 }
             }
+        }
+        for (&pos, _) in self.validations.warnings.iter() {
+            self.data_bounds.add(pos);
         }
 
         if let Some(rect) = self.formats.finite_bounds() {
@@ -509,12 +516,12 @@ mod test {
         assert!(!sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
         assert!(sheet.recalculate_bounds(&a1_context));
         assert!(!sheet.is_empty());
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
-        sheet.recalculate_bounds(&a1_context);
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Blank);
+        assert!(sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
     }
 
@@ -524,27 +531,27 @@ mod test {
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
-            .set(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
+            .set(Pos { x: 2, y: 2 }, Some(CellAlign::Center));
         let a1_context = sheet.make_a1_context();
         assert!(sheet.recalculate_bounds(&a1_context));
 
         assert_eq!(
             sheet.bounds(true),
             GridBounds::from(Rect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 }
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 }
             })
         );
 
         assert_eq!(
             sheet.bounds(false),
             GridBounds::from(Rect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 1, y: 1 }
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 2, y: 2 }
             })
         );
     }
@@ -571,9 +578,9 @@ mod test {
     #[test]
     fn column_bounds_code() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
-        assert_eq!(sheet.column_bounds(0, true), Some((0, 1)));
-        assert_eq!(sheet.column_bounds(1, true), Some((0, 1)));
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(sheet.column_bounds(1, true), Some((1, 2)));
+        assert_eq!(sheet.column_bounds(2, true), Some((1, 2)));
     }
 
     #[test]
@@ -595,9 +602,9 @@ mod test {
     #[test]
     fn row_bounds_code() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
-        assert_eq!(sheet.row_bounds(0, true), Some((0, 1)));
-        assert_eq!(sheet.row_bounds(1, true), Some((0, 1)));
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(sheet.row_bounds(1, true), Some((1, 2)));
+        assert_eq!(sheet.row_bounds(2, true), Some((1, 2)));
     }
 
     #[test]
@@ -669,7 +676,7 @@ mod test {
     #[test]
     fn test_read_write() {
         let rect = Rect {
-            min: Pos::ORIGIN,
+            min: Pos { x: 1, y: 1 },
             max: Pos { x: 49, y: 49 },
         };
         let mut sheet = Sheet::test();
@@ -845,21 +852,21 @@ mod test {
     fn find_last_data_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
-        gc.set_cell_value((0, 1, sheet_id).into(), "b".to_string(), None);
-        gc.set_cell_value((0, 2, sheet_id).into(), "c".to_string(), None);
-        gc.set_cell_value((0, 4, sheet_id).into(), "e".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((1, 2, sheet_id).into(), "b".to_string(), None);
+        gc.set_cell_value((1, 3, sheet_id).into(), "c".to_string(), None);
+        gc.set_cell_value((1, 5, sheet_id).into(), "e".to_string(), None);
 
         let sheet = gc.sheet(sheet_id);
 
-        // height should be 3 (0,0 - 0.2)
-        assert_eq!(sheet.find_last_data_row(0, 0, 1), 3);
+        // height should be 3 (1,1 - 1,3)
+        assert_eq!(sheet.find_last_data_row(1, 1, 1), 3);
 
-        // height should be 1 (0,4)
-        assert_eq!(sheet.find_last_data_row(0, 4, 1), 1);
+        // height should be 1 (1,5)
+        assert_eq!(sheet.find_last_data_row(1, 5, 1), 1);
 
         // height should be 0 since there is no data
-        assert_eq!(sheet.find_last_data_row(0, 10, 1), 0);
+        assert_eq!(sheet.find_last_data_row(1, 11, 1), 0);
     }
 
     #[test]

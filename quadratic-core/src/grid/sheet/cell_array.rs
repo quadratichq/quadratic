@@ -141,7 +141,7 @@ impl Sheet {
                 let cell_pos = Pos { x, y };
                 if self
                     .data_table_pos_that_contains(&cell_pos)
-                    .is_ok_and(|data_table_pos| cell_pos != data_table_pos)
+                    .is_ok_and(|data_table_pos| code_pos != data_table_pos)
                 {
                     results.insert(cell_pos);
                 }

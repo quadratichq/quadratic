@@ -288,14 +288,6 @@ pub fn jsRunJavascript(
 }
 
 #[cfg(test)]
-pub fn hash_test<T: std::hash::Hash>(value: &T) -> u64 {
-    use std::hash::{DefaultHasher, Hasher};
-    let mut hasher = DefaultHasher::new();
-    value.hash(&mut hasher);
-    hasher.finish()
-}
-
-#[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsHashesRenderCells(render_cells: Vec<u8> /* Vec<JsHashRenderCells> */) {
     // we use a hash of cells to avoid storing too large test data

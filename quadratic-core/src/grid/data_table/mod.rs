@@ -190,13 +190,13 @@ impl DataTable {
         header_is_first_row: bool,
         show_name: Option<bool>,
         show_columns: Option<bool>,
-        chart_pixel_output: Option<(f32, f32)>,
+        chart_output: Option<(u32, u32)>,
     ) -> Self {
         let mut data_table = DataTable {
             kind,
             name: name.into(),
             header_is_first_row,
-            chart_pixel_output,
+            chart_pixel_output: None,
             value,
             spill_error,
             last_modified: Utc::now(),
@@ -213,7 +213,7 @@ impl DataTable {
             formats: Default::default(),
             borders: Default::default(),
 
-            chart_output: None,
+            chart_output,
         };
 
         if header_is_first_row {

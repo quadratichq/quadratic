@@ -112,8 +112,8 @@ mod tests {
         grid::{
             js_types::JsValidationWarning,
             sheet::validations::{
-                validation::{Validation, ValidationStyle},
                 rules::{ValidationRule, validation_logical::ValidationLogical},
+                validation::{Validation, ValidationStyle},
             },
         },
         wasm_bindings::js::expect_js_call,
@@ -153,10 +153,13 @@ mod tests {
             error: Default::default(),
         });
         sheet.send_all_validations();
-        let validations = serde_json::to_string(&sheet.validations.validations).unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet.id, validations),
+            format!(
+                "{},{:?}",
+                sheet.id,
+                serde_json::to_vec(&sheet.validations.validations).unwrap()
+            ),
             true,
         );
     }
@@ -178,17 +181,22 @@ mod tests {
         sheet
             .validations
             .warnings
-            .insert((0, 0).into(), validation_id);
+            .insert((1, 1).into(), validation_id);
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
         sheet.send_all_validation_warnings();
-        let warnings = serde_json::to_string(&vec![JsValidationWarning {
-            pos: (0, 0).into(),
-            validation: Some(validation_id),
-            style: Some(ValidationStyle::Stop),
-        }])
-        .unwrap();
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id: sheet.id,
+            hash: Some((0, 0).into()),
+            warnings: vec![JsValidationWarning {
+                pos: (1, 1).into(),
+                validation: Some(validation_id),
+                style: Some(ValidationStyle::Stop),
+            }],
+        }];
         expect_js_call(
             "jsValidationWarnings",
-            format!("{},{}", sheet.id, warnings),
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
     }

@@ -1,6 +1,6 @@
 use crate::{
-    CopyFormats, Rect, a1::UNBOUNDED,
-    controller::active_transactions::pending_transaction::PendingTransaction, grid::Sheet,
+    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
+    grid::Sheet,
 };
 
 impl Sheet {
@@ -60,8 +60,10 @@ impl Sheet {
     ) {
         // update the indices of all code_runs impacted by the insertion
         let mut data_tables_to_move = Vec::new();
-        for pos in self.data_tables_pos_intersect_rect(Rect::new(1, row, UNBOUNDED, UNBOUNDED)) {
-            data_tables_to_move.push(pos);
+        for (pos, _) in self.data_tables.iter() {
+            if pos.y >= row {
+                data_tables_to_move.push(*pos);
+            }
         }
         data_tables_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in data_tables_to_move {

@@ -53,6 +53,8 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
     let a1_context = grid.make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         sheet.expensive_recalculate_bounds(&a1_context);
+        sheet.columns.expensive_regenerate_has_cell_value();
+
         let sheet_id = sheet.id;
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             for x in bounds.x_range() {
