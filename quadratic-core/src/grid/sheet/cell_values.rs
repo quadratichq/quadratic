@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::{
-    CellValue, Pos,
+    CellValue, Pos, Rect,
     a1::A1Context,
     cell_values::CellValues,
     controller::{
@@ -123,6 +123,37 @@ impl Sheet {
             _ => Some(value.to_display()),
         }
     }
+
+    /// Returns the rendered value of the cells in a given rect.
+    pub fn cells_as_string(&self, rect: Rect) -> Option<Vec<String>> {
+        let mut cells = Vec::new();
+        for x in rect.min.x..=rect.max.x {
+            for y in rect.min.y..=rect.max.y {
+                if let Some(value) = self.rendered_value(Pos { x, y }) {
+                    let pos = Pos { x, y }.a1_string();
+                    cells.push(format!("{} is {}", pos, value));
+                }
+            }
+        }
+        if cells.is_empty() { None } else { Some(cells) }
+    }
+
+    /// Returns the rendered formats of the cells in a given rect.
+    ///
+    /// todo: it would be better if this returned ranges (but this is difficult
+    /// b/c of tables vs. non-table formatting)
+    pub fn cell_formats_as_string(&self, rect: Rect) -> Vec<String> {
+        let mut formats = Vec::new();
+        for x in rect.min.x..=rect.max.x {
+            for y in rect.min.y..=rect.max.y {
+                let pos = Pos { x, y };
+                if let Some(format) = self.cell_text_format_as_string(pos) {
+                    formats.push(format!("{} is {:?}; ", pos, format));
+                }
+            }
+        }
+        formats
+    }
 }
 
 #[cfg(test)]
@@ -134,7 +165,7 @@ mod test {
         a1::A1Selection,
         grid::{
             NumericFormat,
-            sheet::validations::{validation::Validation, rules::ValidationRule},
+            sheet::validations::{rules::ValidationRule, validation::Validation},
         },
         wasm_bindings::js::expect_js_call,
     };

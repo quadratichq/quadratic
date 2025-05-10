@@ -129,7 +129,15 @@ export const editActionsSpec: EditActionSpec = {
     Icon: FindInFileIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
-      pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showSearch: { sheet_id: undefined } }));
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showSearch: {
+          whole_cell: null,
+          search_code: null,
+          sheet_id: null,
+          case_sensitive: null,
+        },
+      }));
     },
     keywords: ['search'],
   },

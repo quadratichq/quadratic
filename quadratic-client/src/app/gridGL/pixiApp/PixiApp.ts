@@ -299,12 +299,12 @@ export class PixiApp {
   };
 
   // called before and after a render
-  prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle }): Container {
+  prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
-    this.cursor.visible = false;
+    this.cursor.visible = options?.ai ?? false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
-    this.headings.visible = false;
+    this.headings.visible = options?.ai ?? false;
     this.boxCells.visible = false;
     this.htmlPlaceholders.prepare();
     this.cellsSheets.toggleOutlines(false);

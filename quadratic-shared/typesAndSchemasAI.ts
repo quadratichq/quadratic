@@ -168,6 +168,7 @@ export type SystemMessage = z.infer<typeof SystemMessageSchema>;
 
 const ToolResultContentSchema = z.object({
   id: z.string(),
+  fn: z.string(),
   text: z.string(),
 });
 export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
@@ -180,8 +181,9 @@ const ToolResultSchema = z.object({
         .object({
           id: z.string(),
           content: z.string(),
+          fn: z.string(),
         })
-        .transform((old) => ({ id: old.id, text: old.content }))
+        .transform((old) => ({ id: old.id, text: old.content, fn: old.fn }))
     ),
     z.array(ToolResultContentSchema),
   ]),

@@ -8,11 +8,17 @@ const maxTextureSize = 4096;
 
 let renderer: Renderer | undefined;
 
+export const getScreenImage = async (): Promise<Blob | null> => {
+  return new Promise((resolve) => {
+    pixiApp.renderer.view.toBlob?.((blob) => resolve(blob));
+  });
+};
+
 /** returns a dataURL to a copy of the selected cells */
 export const copyAsPNG = async (): Promise<Blob | null> => {
   if (!renderer) {
     renderer = new Renderer({
-      resolution,
+      resolution: 1,
       antialias: true,
       backgroundColor: 0xffffff,
     });

@@ -1,10 +1,19 @@
+import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetRect } from '@/app/quadratic-core-types';
-import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
+import type {
+  CellAlign,
+  CellVerticalAlign,
+  CellWrap,
+  FormatUpdate,
+  NumericFormat,
+  NumericFormatKind,
+  SheetRect,
+} from '@/app/quadratic-core-types';
+import { selectionToSheetRect, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -310,5 +319,75 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.PDFImport]: async () => {
     return `PDF import tool executed successfully.`;
+  },
+  [AITool.GetCellData]: async (args) => {
+    const { selection, sheet_name, page } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    const response = await quadraticCore.getAICells(selection, sheetId, page);
+    if (response) {
+      return response;
+    } else {
+      return 'There was an error executing the get cells tool';
+    }
+  },
+  [AITool.SetTextFormats]: async (args) => {
+    const kind = args.number_type
+      ? (expectedEnum(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL']) as NumericFormatKind)
+      : null;
+    let numericFormat: NumericFormat | null = null;
+    if (kind) {
+      numericFormat = args.number_type
+        ? {
+            type: kind,
+            symbol: args.currency_symbol ?? null,
+          }
+        : null;
+    }
+    const formatUpdates: FormatUpdate = {
+      ...defaultFormatUpdate(),
+      bold: args.bold ?? null,
+      italic: args.italic ?? null,
+      underline: args.underline ?? null,
+      strike_through: args.strike_through ?? null,
+      text_color: args.text_color ?? null,
+      fill_color: args.fill_color ?? null,
+      align: expectedEnum(args.align, ['left', 'center', 'right']) as CellAlign | null,
+      vertical_align: expectedEnum(args.vertical_align, ['top', 'middle', 'bottom']) as CellVerticalAlign | null,
+      wrap: expectedEnum(args.wrap, ['wrap', 'overflow', 'clip']) as CellWrap | null,
+      numeric_commas: args.numeric_commas ?? null,
+      numeric_format: numericFormat,
+      date_time: args.date_time ?? null,
+    };
+    const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    await quadraticCore.setFormats(sheetId, args.selection, formatUpdates);
+    return `Executed set formats tool on ${args.selection} for ${describeFormatUpdates(formatUpdates, args)} successfully.`;
+  },
+  [AITool.GetTextFormats]: async (args) => {
+    const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    const response = await quadraticCore.getAICellFormats(sheetId, args.selection, args.page);
+    if (response) {
+      return `The selection ${args.selection} has:\n${response}`;
+    } else {
+      return 'There was an error executing the get cell formats tool';
+    }
+  },
+  [AITool.ConvertToTable]: async (args) => {
+    const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    try {
+      let sheetRect = selectionToSheetRect(sheetId, args.selection);
+      if (sheetRect) {
+        quadraticCore.gridToDataTable(
+          sheetRect,
+          args.table_name,
+          args.first_row_is_column_names,
+          sheets.getCursorPosition()
+        );
+        return 'Converted sheet data to table.';
+      } else {
+        return 'Invalid selection, this should be a single rectangle, not a range';
+      }
+    } catch (e) {
+      return `Arguments had an error: ${e}`;
+    }
   },
 } as const;
