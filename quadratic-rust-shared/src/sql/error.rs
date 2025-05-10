@@ -6,6 +6,8 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::SharedError;
+
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Sql {
     #[error("Error connecting to database: {0}")]
@@ -19,4 +21,10 @@ pub enum Sql {
 
     #[error("Error creating schema: {0}")]
     Schema(String),
+}
+
+impl From<parquet::errors::ParquetError> for SharedError {
+    fn from(error: parquet::errors::ParquetError) -> Self {
+        SharedError::Sql(Sql::ParquetConversion(error.to_string()))
+    }
 }

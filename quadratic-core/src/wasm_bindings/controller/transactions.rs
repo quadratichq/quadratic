@@ -60,6 +60,23 @@ impl GridController {
         }
     }
 
+    #[wasm_bindgen(js_name = "receiveMultiplayerTransactionAck")]
+    pub fn js_receive_multiplayer_transaction_ack(
+        &mut self,
+        transaction_id: String,
+        sequence_num: u32,
+    ) -> Result<JsValue, JsValue> {
+        let transaction_id = Uuid::parse_str(&transaction_id)
+            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {}", e)))?;
+
+        self.received_transaction(transaction_id, sequence_num as u64, vec![]);
+
+        Ok(serde_wasm_bindgen::to_value(&JsResponse {
+            result: true,
+            error: None,
+        })?)
+    }
+
     #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
     pub fn js_apply_offline_unsaved_transaction(
         &mut self,
