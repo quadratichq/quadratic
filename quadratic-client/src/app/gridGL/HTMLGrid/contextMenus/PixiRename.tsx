@@ -23,6 +23,12 @@ export const PixiRename = (props: Props) => {
   const { defaultValue, initialValue, width, className, styles, onClose, onSave, onInput, getElement } = props;
 
   const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
+
+  const skipSaveRef = useRef<boolean>(false);
+
+  // used to skip the initial blur event after rename starts
+  const waitingForOpenRef = useRef<boolean>(true);
+
   const ref = useCallback(
     (node: HTMLInputElement | null) => {
       setInputEl(node);
@@ -31,12 +37,12 @@ export const PixiRename = (props: Props) => {
         setTimeout(() => {
           node.select();
           node.focus();
+          waitingForOpenRef.current = false;
         });
       }
     },
     [getElement]
   );
-  const skipSaveRef = useRef<boolean>(false);
 
   const close = useCallback(() => {
     onClose();
@@ -79,6 +85,7 @@ export const PixiRename = (props: Props) => {
   // the context menu closes (eg, via a click outside the Input)
   useEffect(() => {
     return () => {
+      if (waitingForOpenRef.current) return;
       if (!skipSaveRef.current) {
         if (inputEl) {
           if (inputEl.value !== defaultValue && validate(inputEl.value)) {
