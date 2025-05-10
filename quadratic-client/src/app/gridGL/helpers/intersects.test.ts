@@ -1,6 +1,6 @@
+import { numbersToRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { describe, expect, it } from 'vitest';
 import { intersects } from './intersects';
-import { numbersToRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 
 describe('intersects', () => {
   it('rectRect', () => {
