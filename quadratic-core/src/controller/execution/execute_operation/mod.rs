@@ -58,6 +58,14 @@ impl GridController {
                 format!("{:?}", op).split('{').next().unwrap_or("Unknown")
             );
 
+            // if transaction.operations.len() % 100 == 0 {
+            //     dbgjs!(format!(
+            //         "transaction: {:?}, op: {:?}",
+            //         &transaction.operations.len(),
+            //         &op,
+            //     ));
+            // }
+
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(

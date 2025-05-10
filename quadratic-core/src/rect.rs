@@ -84,6 +84,7 @@ impl Rect {
     pub fn single_pos(pos: Pos) -> Rect {
         Rect { min: pos, max: pos }
     }
+
     /// Extends the rectangle enough to include a cell.
     pub fn extend_to(&mut self, pos: Pos) {
         self.min.x = std::cmp::min(self.min.x, pos.x);
@@ -91,6 +92,7 @@ impl Rect {
         self.max.x = std::cmp::max(self.max.x, pos.x);
         self.max.y = std::cmp::max(self.max.y, pos.y);
     }
+
     /// Constructs a rectangle from an X range and a Y range.
     pub fn from_ranges(xs: RangeInclusive<i64>, ys: RangeInclusive<i64>) -> Rect {
         Rect {

@@ -43,7 +43,9 @@ pub fn unique_data_table_name(
 ) -> String {
     let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
 
-    let name = unique_name(name, require_number, check_name);
+    let iter_names = a1_context.table_map.iter_rev_table_names();
+
+    let name = unique_name(name, require_number, check_name, iter_names);
 
     // replace spaces with underscores
     name.replace(' ', "_")
@@ -51,7 +53,7 @@ pub fn unique_data_table_name(
 
 impl Grid {
     /// Returns the data table at the given position.
-    pub fn data_table(&self, sheet_id: SheetId, pos: Pos) -> Result<&DataTable> {
+    pub fn data_table_at(&self, sheet_id: SheetId, pos: &Pos) -> Result<&DataTable> {
         self.try_sheet_result(sheet_id)?.data_table_result(pos)
     }
 
@@ -74,7 +76,7 @@ impl Grid {
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
 
         sheet
-            .data_table_mut(sheet_pos.into())?
+            .data_table_mut_at(&sheet_pos.into())?
             .update_table_name(&unique_name);
 
         Ok(())
@@ -188,13 +190,13 @@ impl DataTable {
         header_is_first_row: bool,
         show_name: Option<bool>,
         show_columns: Option<bool>,
-        chart_pixel_output: Option<(f32, f32)>,
+        chart_output: Option<(u32, u32)>,
     ) -> Self {
         let mut data_table = DataTable {
             kind,
             name: name.into(),
             header_is_first_row,
-            chart_pixel_output,
+            chart_pixel_output: None,
             value,
             spill_error,
             last_modified: Utc::now(),
@@ -211,7 +213,7 @@ impl DataTable {
             formats: Default::default(),
             borders: Default::default(),
 
-            chart_output: None,
+            chart_output,
         };
 
         if header_is_first_row {

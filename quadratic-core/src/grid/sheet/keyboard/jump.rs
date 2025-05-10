@@ -566,7 +566,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3"], false);
 
-        let dt = sheet.data_table_mut(pos![B2]).unwrap();
+        let dt = sheet.data_table_mut_at(&pos![B2]).unwrap();
         dt.show_name = Some(true);
         dt.show_columns = Some(true);
 

@@ -161,7 +161,7 @@ impl Sheet {
                 continue;
             };
             let new_pos = pos.translate(0, -shift_table, 1, 1);
-            self.data_tables.shift_insert(index, new_pos, old_dt);
+            self.data_tables.insert_before(index, &new_pos, old_dt);
         }
     }
 }

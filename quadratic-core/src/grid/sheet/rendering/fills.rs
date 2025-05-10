@@ -233,7 +233,7 @@ mod tests {
         )
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
-        let dt = sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap();
+        let dt = sheet.data_table_mut_at(&Pos { x: 5, y: 2 }).unwrap();
         dt.show_name = Some(true);
         dt.show_columns = Some(true);
         let fills = sheet.get_all_render_fills();
@@ -294,7 +294,7 @@ mod tests {
         .unwrap();
 
         let sheet = gc.sheet_mut(sheet_id);
-        let dt = sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap();
+        let dt = sheet.data_table_mut_at(&Pos { x: 5, y: 2 }).unwrap();
         dt.show_name = Some(false);
         dt.show_columns = Some(false);
         let fills = sheet.get_all_render_fills();
@@ -304,7 +304,7 @@ mod tests {
         assert_fill_eq(&fills[3], 7, 3, 1, 1, "red");
 
         let sheet = gc.sheet_mut(sheet_id);
-        let dt = sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap();
+        let dt = sheet.data_table_mut_at(&Pos { x: 5, y: 2 }).unwrap();
         dt.show_name = Some(true);
         dt.show_columns = Some(true);
         let fills = sheet.get_all_render_fills();
@@ -314,7 +314,10 @@ mod tests {
         assert_fill_eq(&fills[3], 7, 5, 1, 1, "red");
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_name = Some(false);
+        sheet
+            .data_table_mut_at(&Pos { x: 5, y: 2 })
+            .unwrap()
+            .show_name = Some(false);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 4, 1, 1, "red");
@@ -323,7 +326,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .data_table_mut(Pos { x: 5, y: 2 })
+            .data_table_mut_at(&Pos { x: 5, y: 2 })
             .unwrap()
             .show_columns = Some(false);
         let fills = sheet.get_all_render_fills();
@@ -334,7 +337,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .data_table_mut(Pos { x: 5, y: 2 })
+            .data_table_mut_at(&Pos { x: 5, y: 2 })
             .unwrap()
             .header_is_first_row = true;
         let fills = sheet.get_all_render_fills();
@@ -345,7 +348,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .data_table_mut(Pos { x: 5, y: 2 })
+            .data_table_mut_at(&Pos { x: 5, y: 2 })
             .unwrap()
             .show_columns = Some(true);
         let fills = sheet.get_all_render_fills();
@@ -372,7 +375,7 @@ mod tests {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             data_table.cell_value_at(0, 2),
             Some(CellValue::Text("Southborough".to_string()))
@@ -388,7 +391,7 @@ mod tests {
         assert_fill_eq(&fills[3], 7, 4, 2, 1, "red");
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
+        let data_table = sheet.data_table_mut_at(&pos).unwrap();
         data_table
             .sort_column(0, SortDirection::Descending)
             .unwrap();
@@ -424,7 +427,7 @@ mod tests {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             data_table.cell_value_at(0, 2),
             Some(CellValue::Text("Southborough".to_string()))
@@ -435,7 +438,7 @@ mod tests {
         assert_fill_eq(&fills[2], 6, 4, 1, 10, "blue");
         assert_fill_eq(&fills[3], 7, 4, 2, 1, "red");
 
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
         gc.test_data_table_update_meta(
@@ -446,7 +449,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             data_table.cell_value_at(0, 2),
             Some(CellValue::Text("MA".to_string()))
@@ -482,7 +485,7 @@ mod tests {
         assert_fill_eq(&fills[7], 7, 4, 1, 1, "red");
         assert_fill_eq(&fills[8], 7, 10, 1, 1, "green");
 
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = true;
         gc.test_data_table_update_meta(

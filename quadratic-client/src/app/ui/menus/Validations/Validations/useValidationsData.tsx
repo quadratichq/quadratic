@@ -39,9 +39,9 @@ export const useValidationsData = (): ValidationsData => {
   // without affecting the sheet.
   const [validations, setValidations] = useState([...sheets.sheet.validations]);
   useEffect(() => {
-    const updateValidations = (incomingSheetId: string, validations: Validation[]) => {
-      if (incomingSheetId === sheetId) {
-        setValidations(validations);
+    const updateValidations = (validationsSheetId: string, sheetValidations: Validation[]) => {
+      if (validationsSheetId === sheetId) {
+        setValidations(sheetValidations);
       }
     };
     events.on('sheetValidations', updateValidations);

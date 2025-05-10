@@ -22,10 +22,10 @@ pub fn test_create_code_table(
     pos: Pos,
     w: u32,
     h: u32,
-) {
+) -> DataTable {
     let values: Vec<String> = (0..w * h).map(|i| i.to_string()).collect();
     let values: Vec<&str> = values.iter().map(|s| s.as_str()).collect();
-    test_create_code_table_with_values(gc, sheet_id, pos, w, h, &values);
+    test_create_code_table_with_values(gc, sheet_id, pos, w, h, &values)
 }
 
 /// Creates a Python code table with output of w x h cells with values.
@@ -37,7 +37,7 @@ pub fn test_create_code_table_with_values(
     w: u32,
     h: u32,
     values: &[&str],
-) {
+) -> DataTable {
     let cell_value = CellValue::Code(CodeCellValue {
         language: CodeCellLanguage::Python,
         code: "code".to_string(),
@@ -86,11 +86,15 @@ pub fn test_create_code_table_with_values(
         index: None,
     };
     gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
+
+    gc.data_table_at(pos.to_sheet_pos(sheet_id))
+        .unwrap()
+        .clone()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::sheet;
+    use crate::test_util::*;
 
     use super::*;
 
@@ -105,7 +109,7 @@ mod tests {
 
         let sheet = sheet(&gc, sheet_id);
 
-        let table = sheet.data_table(pos).unwrap();
+        let table = sheet.data_table_at(&pos).unwrap();
         if let Value::Array(array) = &table.value {
             assert_eq!(array.width(), 2);
             assert_eq!(array.height(), 2);
@@ -135,7 +139,7 @@ mod tests {
         );
 
         let sheet = sheet(&gc, sheet_id);
-        let table = sheet.data_table(pos).unwrap();
+        let table = sheet.data_table_at(&pos).unwrap();
 
         if let Value::Array(array) = &table.value {
             assert_eq!(

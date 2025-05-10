@@ -95,6 +95,7 @@ export class Cursor extends Container {
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
+      !pixiApp.cellsSheet().tables.isTableNameCell(cell) &&
       !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||

@@ -114,7 +114,7 @@ pub fn assert_cell_value_col(
 #[track_caller]
 #[cfg(test)]
 pub fn assert_cell_value_row(
-    grid_controller: &GridController,
+    gc: &GridController,
     sheet_id: SheetId,
     x_start: i64,
     x_end: i64,
@@ -123,7 +123,7 @@ pub fn assert_cell_value_row(
 ) {
     for (index, x) in (x_start..=x_end).enumerate() {
         if let Some(cell_value) = value.get(index) {
-            assert_display_cell_value(grid_controller, sheet_id, x, y, cell_value);
+            assert_display_cell_value(gc, sheet_id, x, y, cell_value);
         } else {
             panic!("No value at position ({},{})", index, y);
         }

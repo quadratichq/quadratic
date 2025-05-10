@@ -74,7 +74,7 @@ impl Sheet {
                         if let Some(CellValue::Code(_)) = column.values.get(&y) {
                             // if there is a code cell, then check if it has an error
                             if self
-                                .data_table((x, y).into())
+                                .data_table_at(&(x, y).into())
                                 .map(|code_run| code_run.has_error())
                                 .unwrap_or(false)
                             {
@@ -114,17 +114,15 @@ impl Sheet {
                         return None;
                     }
 
-                    let table_type = match self.cell_value_ref(pos.to_owned()) {
-                        Some(CellValue::Code(_)) => JsTableType::CodeTable,
-                        Some(CellValue::Import(_)) => JsTableType::DataTable,
-                        _ => return None,
-                    };
-
                     if table.output_rect(*pos, false).intersects(rect) {
                         Some(JsTableSummaryContext {
                             sheet_name: self.name.clone(),
-                            table_name: table.name.to_string(),
-                            table_type,
+                            table_name: table.name().to_string(),
+                            table_type: match self.cell_value_ref(pos.to_owned()) {
+                                Some(CellValue::Code(_)) => JsTableType::CodeTable,
+                                Some(CellValue::Import(_)) => JsTableType::DataTable,
+                                _ => return None,
+                            },
                             bounds: table.output_rect(*pos, false).a1_string(),
                         })
                     } else {
@@ -161,7 +159,7 @@ impl Sheet {
                     if table.output_rect(*pos, false).intersects(rect) {
                         Some(JsChartSummaryContext {
                             sheet_name: self.name.clone(),
-                            chart_name: table.name.to_string(),
+                            chart_name: table.name().to_string(),
                             bounds: table.output_rect(*pos, false).a1_string(),
                         })
                     } else {
@@ -196,7 +194,7 @@ impl Sheet {
                 if let CellValue::Code(code_cell_value) = cell_value {
                     tables_context.charts.push(JsChartContext {
                         sheet_name: self.name.clone(),
-                        chart_name: table.name.to_string(),
+                        chart_name: table.name().to_string(),
                         bounds: table.output_rect(pos.to_owned(), false).a1_string(),
                         language: code_cell_value.language.to_owned(),
                         code_string: code_cell_value.code.to_owned(),
@@ -235,7 +233,7 @@ impl Sheet {
 
                 tables_context.code_tables.push(JsCodeTableContext {
                     sheet_name: self.name.clone(),
-                    code_table_name: table.name.to_string(),
+                    code_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
                     first_row_visible_values,
@@ -252,7 +250,7 @@ impl Sheet {
             } else if cell_value.is_import() {
                 tables_context.data_tables.push(JsDataTableContext {
                     sheet_name: self.name.clone(),
-                    data_table_name: table.name.to_string(),
+                    data_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
                     first_row_visible_values,
@@ -297,7 +295,7 @@ mod tests {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 100 },
             },
-            &Array::from(
+            Array::from(
                 (1..=100)
                     .map(|row| {
                         (1..=10)
@@ -319,7 +317,7 @@ mod tests {
                 min: Pos { x: 31, y: 101 },
                 max: Pos { x: 40, y: 200 },
             },
-            &Array::from(
+            Array::from(
                 (1..=100)
                     .map(|row| {
                         (1..=10)

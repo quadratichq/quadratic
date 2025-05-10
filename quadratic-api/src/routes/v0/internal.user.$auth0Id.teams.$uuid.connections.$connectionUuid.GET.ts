@@ -38,8 +38,8 @@ async function handler(req: Request, res: Response) {
 
   const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString('utf-8')));
 
-  if (typeDetails.useSsh) {
-    typeDetails.sshKey = team.team.sshPrivateKey;
+  if (typeDetails.useSsh && team.team.sshPrivateKey) {
+    typeDetails.sshKey = decryptFromEnv(team.team.sshPrivateKey.toString('utf-8'));
   }
 
   // Return the data

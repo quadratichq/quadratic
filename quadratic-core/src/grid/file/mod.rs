@@ -83,7 +83,7 @@ enum GridFile {
     },
 }
 
-// TODO(ddimaria): refactor to be recrsive
+// TODO(ddimaria): refactor to be recursive
 impl GridFile {
     fn into_latest(self) -> Result<v1_9::GridSchema> {
         match self {
@@ -326,7 +326,7 @@ mod tests {
         assert!(
             imported.sheets[0]
                 .data_tables
-                .get(&Pos { x: 1, y: 3 })
+                .get_at(&Pos { x: 1, y: 3 })
                 .is_some()
         );
         let a1_context = imported.make_a1_context();
@@ -456,7 +456,7 @@ mod tests {
         assert_eq!(
             sheet
                 .data_tables
-                .get(&Pos { x: 1, y: 4 })
+                .get_at(&Pos { x: 1, y: 4 })
                 .unwrap()
                 .output_size(),
             ArraySize::new(1, 500).unwrap()
@@ -472,7 +472,7 @@ mod tests {
         assert_eq!(
             sheet
                 .data_tables
-                .get(&Pos { x: 3, y: 7 })
+                .get_at(&Pos { x: 3, y: 7 })
                 .unwrap()
                 .code_run()
                 .unwrap()

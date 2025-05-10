@@ -62,7 +62,7 @@ impl GridController {
                 // update table names in data tables in the new sheet
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 for (pos, data_table) in sheet.data_tables.iter_mut() {
-                    let old_name = data_table.name.to_string();
+                    let old_name = data_table.name().to_string();
                     let unique_name = unique_data_table_name(&old_name, false, None, &context);
                     data_table.name = unique_name.to_owned().into();
 
@@ -82,9 +82,9 @@ impl GridController {
 
                 // update table names references in code cells in the new sheet
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
-                for pos in data_tables_pos {
+                for pos in data_tables_pos.iter() {
                     if let Some(code_cell_value) = sheet
-                        .cell_value_mut(pos)
+                        .cell_value_mut(*pos)
                         .and_then(|cv| cv.code_cell_value_mut())
                     {
                         for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
@@ -190,6 +190,7 @@ impl GridController {
                     order: original_order,
                 });
 
+            self.update_a1_context_sheet_map(target);
             transaction.sheet_info.insert(target);
         }
     }
@@ -224,6 +225,7 @@ impl GridController {
                     name: old_name,
                 });
 
+            self.update_a1_context_sheet_map(sheet_id);
             transaction.sheet_info.insert(sheet_id);
         }
 
@@ -253,6 +255,7 @@ impl GridController {
                     color: old_color,
                 });
 
+            self.update_a1_context_sheet_map(sheet_id);
             transaction.sheet_info.insert(sheet_id);
         }
     }
@@ -310,7 +313,7 @@ mod tests {
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
         },
-        grid::{CodeCellLanguage, CodeCellValue, SheetId},
+        grid::{CodeCellLanguage, CodeCellValue, SheetId, js_types::JsUpdateCodeCell},
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -413,20 +416,17 @@ mod tests {
         );
 
         // code cells should rerun and send updated code cell
-        let code_cell = sheet
-            .edit_code_value(sheet_pos.into(), gc.a1_context())
-            .unwrap();
-        let render_code_cell = sheet.get_render_code_cell(sheet_pos.into()).unwrap();
+
+        let update_code_cell = JsUpdateCodeCell {
+            sheet_id,
+            pos: sheet_pos.into(),
+            code_cell: sheet.edit_code_value(sheet_pos.into(), gc.a1_context()),
+            render_code_cell: sheet.get_render_code_cell(sheet_pos.into()),
+        };
+
         expect_js_call(
-            "jsUpdateCodeCell",
-            format!(
-                "{},{},{},{:?},{:?}",
-                sheet_id,
-                sheet_pos.x,
-                sheet_pos.y,
-                Some(serde_json::to_string(&code_cell).unwrap()),
-                Some(serde_json::to_string(&render_code_cell).unwrap())
-            ),
+            "jsUpdateCodeCells",
+            format!("{:?}", serde_json::to_vec(&vec![update_code_cell]).unwrap()),
             true,
         );
     }
@@ -639,7 +639,7 @@ mod tests {
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).data_table(pos![J10]).unwrap().name(),
+            gc.sheet(sheet_id).data_table_at(&pos![J10]).unwrap().name(),
             "Table1"
         );
 
@@ -652,7 +652,7 @@ mod tests {
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).data_table(pos![T20]).unwrap().name(),
+            gc.sheet(sheet_id).data_table_at(&pos![T20]).unwrap().name(),
             "Table2"
         );
 
@@ -660,8 +660,8 @@ mod tests {
         gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
 
         let duplicated_sheet_id = gc.sheet_ids()[1];
-        let data_table = gc.sheet(duplicated_sheet_id).data_table(pos).unwrap();
-        assert_eq!(data_table.name.to_string(), format!("{}1", file_name));
+        let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
+        assert_eq!(data_table.name().to_string(), format!("{}1", file_name));
         assert_eq!(
             gc.sheet(duplicated_sheet_id).cell_value(pos![J10]).unwrap(),
             CellValue::Code(CodeCellValue {
@@ -681,14 +681,14 @@ mod tests {
 
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
-                .data_table(pos![J10])
+                .data_table_at(&pos![J10])
                 .unwrap()
                 .name(),
             "Table3"
         );
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
-                .data_table(pos![T20])
+                .data_table_at(&pos![T20])
                 .unwrap()
                 .name(),
             "Table4"

@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -12,7 +11,7 @@ use super::TableMapEntry;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
-    pub tables: HashMap<String, TableMapEntry>,
+    pub tables: IndexMap<String, TableMapEntry>,
 }
 
 impl TableMap {
@@ -28,7 +27,12 @@ impl TableMap {
 
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
-        self.tables.remove(&table_name_folded)
+        self.tables.shift_remove(&table_name_folded)
+    }
+
+    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.tables
+            .retain(|_, table| table.sheet_id != sheet_id || table.bounds.min != pos);
     }
 
     pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
@@ -63,8 +67,14 @@ impl TableMap {
             .unwrap_or(false)
     }
 
+    /// Returns an iterator over the table names in the table map.
     pub fn iter_table_names(&self) -> impl Iterator<Item = &String> {
         self.tables.keys()
+    }
+
+    /// Returns an iterator over the table names in the table map in reverse order.
+    pub fn iter_rev_table_names(&self) -> impl Iterator<Item = &String> {
+        self.tables.keys().rev()
     }
 
     /// Returns a list of all table names in the table map.
@@ -110,10 +120,10 @@ impl TableMap {
         }
     }
 
-    pub fn contains_name(&self, table_name: &str, sheet_pos: Option<SheetPos>) -> bool {
+    pub fn contains_name(&self, table_name: &str, skip_sheet_pos: Option<SheetPos>) -> bool {
         let table = self.try_table(table_name);
         if let Some(table) = table {
-            if let Some(sheet_pos) = sheet_pos {
+            if let Some(sheet_pos) = skip_sheet_pos {
                 table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()
             } else {
                 true

@@ -136,7 +136,7 @@ impl Sheet {
                     old_dt.output_rect(pos, false).to_sheet_rect(self.id),
                 );
                 let new_pos = Pos::new(new_anchor_x, pos.y);
-                self.move_cell_value(pos, new_pos);
+                self.columns.move_cell_value(&pos, &new_pos);
                 transaction
                     .reverse_operations
                     .push(Operation::AddDataTable {
@@ -227,7 +227,7 @@ impl Sheet {
                 continue;
             };
             let new_pos = pos.translate(-shift_table, 0, 1, 1);
-            self.data_tables.shift_insert(index, new_pos, old_dt);
+            self.data_tables.insert_before(index, &new_pos, old_dt);
         }
     }
 }
@@ -324,7 +324,7 @@ mod tests {
         gc.undo(None);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
-        expect_js_call_count("jsUpdateCodeCell", 1, true);
+        expect_js_call_count("jsUpdateCodeCells", 1, true);
 
         gc.redo(None);
         assert_table_count(&gc, sheet_id, 0);

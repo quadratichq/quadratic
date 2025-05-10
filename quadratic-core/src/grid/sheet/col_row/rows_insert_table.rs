@@ -83,7 +83,7 @@ impl Sheet {
                     data_table.is_image(),
                     data_table.is_html(),
                 );
-                self.data_tables.shift_insert(index, new_pos, data_table);
+                self.data_tables.insert_before(index, &new_pos, data_table);
             }
         }
     }

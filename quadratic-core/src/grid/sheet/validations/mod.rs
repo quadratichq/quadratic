@@ -82,11 +82,6 @@ impl Validations {
         }
     }
 
-    /// Stringifies the validations to send to the client.
-    pub fn to_string(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string(&self.validations)
-    }
-
     /// Gets the JsRenderCellSpecial for a cell based on Validation.
     pub fn render_special_pos(
         &self,

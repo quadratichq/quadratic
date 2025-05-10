@@ -200,7 +200,11 @@ mod test {
     #[test]
     fn test_duplicate_sheet_with_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap().clone();
+        let data_table = gc
+            .sheet_mut(sheet_id)
+            .data_table_mut_at(&pos)
+            .unwrap()
+            .clone();
 
         gc.sheet_mut(sheet_id)
             .set_data_table((1, 1).into(), Some(data_table));
@@ -212,7 +216,7 @@ mod test {
         let context = gc.a1_context().to_owned();
 
         for (pos, data_table) in data_tables.into_iter() {
-            let name = data_table.name.to_string();
+            let name = data_table.name().to_string();
             let sheet_pos = pos.to_sheet_pos(duplicate_sheet_id);
             gc.grid
                 .update_data_table_name(sheet_pos, &name, &name, &context, false)

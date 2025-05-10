@@ -1357,7 +1357,7 @@ mod test {
 
         let sheet = gc.sheet_mut(sheet_id);
         let values = vec![vec!["value".to_string(); 2]; 2];
-        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let sheet = gc.sheet(sheet_id);
@@ -1374,7 +1374,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1393,7 +1393,7 @@ mod test {
         );
 
         // first row is not header
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         data_table.header_is_first_row = false;
 
         gc.paste_from_clipboard(
@@ -1405,7 +1405,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             sheet.display_value(pos![G10]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1424,7 +1424,7 @@ mod test {
         );
 
         // first row is not header
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         data_table.show_name = Some(false);
         data_table.show_columns = Some(false);
 
@@ -1437,7 +1437,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             sheet.display_value(pos![E11]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1462,14 +1462,14 @@ mod test {
 
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
+        let data_table = sheet.data_table_mut_at(&pos).unwrap();
         data_table
             .sort_column(3, SortDirection::Descending)
             .unwrap();
 
         let sheet = gc.sheet_mut(sheet_id);
         let values = vec![vec!["value".to_string(); 2]; 2];
-        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let sheet = gc.sheet(sheet_id);
@@ -1486,7 +1486,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
@@ -1511,13 +1511,13 @@ mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         // hide first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
         let column_headers = data_table.column_headers.as_mut().unwrap();
         column_headers[2].display = false;
 
         let sheet = gc.sheet_mut(sheet_id);
         let values = vec![vec!["value".to_string(); 2]; 2];
-        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let sheet = gc.sheet(sheet_id);
@@ -1534,7 +1534,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
