@@ -191,19 +191,19 @@ impl JsSelection {
         self.selection.is_selected_rows_finite(&self.context)
     }
 
-    #[wasm_bindgen(js_name = "getSelectedColumnsFinite")]
-    pub fn get_selected_columns(&self) -> Vec<u32> {
+    #[wasm_bindgen(js_name = "getColumnsWithSelectedCells")]
+    pub fn get_selected_columns_finite(&self) -> Vec<u32> {
         self.selection
-            .selected_columns_finite(&self.context)
+            .columns_with_selected_cells(&self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
-    #[wasm_bindgen(js_name = "getSelectedRowsFinite")]
-    pub fn get_selected_rows(&self) -> Vec<u32> {
+    #[wasm_bindgen(js_name = "getRowsWithSelectedCells")]
+    pub fn get_selected_rows_finite(&self) -> Vec<u32> {
         self.selection
-            .selected_rows_finite(&self.context)
+            .rows_with_selected_cells(&self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -285,5 +285,23 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "getSelectedTableColumnsCount")]
     pub fn get_selected_table_columns(&self) -> u32 {
         self.selection.selected_table_columns(&self.context) as u32
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedColumns")]
+    pub fn get_selected_columns(&self) -> Vec<u32> {
+        self.selection
+            .selected_columns()
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedRows")]
+    pub fn get_selected_rows(&self) -> Vec<u32> {
+        self.selection
+            .selected_rows()
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
     }
 }

@@ -47,7 +47,7 @@ const insertColumnRight: ActionSpec<void> = {
 
 const deleteColumns: ActionSpec<void> = {
   label: () => {
-    const length = sheets.sheet.cursor.getSelectedColumnsFinite().length;
+    const length = sheets.sheet.cursor.getColumnsWithSelectedCells().length;
     const plural = length > 1 ? 's' : '';
     return `Delete ${length} column${plural}`;
   },
@@ -56,7 +56,7 @@ const deleteColumns: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
 
-    const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
+    const columns = sheets.sheet.cursor.getColumnsWithSelectedCells();
     quadraticCore.deleteColumns(sheets.current, columns, sheets.getCursorPosition());
   },
 };
@@ -85,7 +85,7 @@ const insertRowBelow: ActionSpec<void> = {
 
 const deleteRows: ActionSpec<void> = {
   label: () => {
-    const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
+    const length = sheets.sheet.cursor.getRowsWithSelectedCells().length;
     const plural = length > 1 ? 's' : '';
     return `Delete ${length} row${plural}`;
   },
@@ -94,7 +94,7 @@ const deleteRows: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
 
-    const rows = sheets.sheet.cursor.getSelectedRowsFinite();
+    const rows = sheets.sheet.cursor.getRowsWithSelectedCells();
     quadraticCore.deleteRows(sheets.current, rows, sheets.getCursorPosition());
   },
 };
