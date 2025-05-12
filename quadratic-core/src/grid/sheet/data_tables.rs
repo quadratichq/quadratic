@@ -108,7 +108,7 @@ impl SheetDataTables {
             let new_un_spilled_output_rect = data_table.output_rect(*pos, true);
             spill_data_table = self
                 .get_in_rect_sorted(new_un_spilled_output_rect, false)
-                .any(|other| other.0 < index);
+                .any(|other| other.0 <= index && &other.1 != pos);
         }
 
         if let Some(data_table) = self.data_tables.get_mut(pos) {

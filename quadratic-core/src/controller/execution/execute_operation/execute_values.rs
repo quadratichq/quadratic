@@ -38,6 +38,11 @@ impl GridController {
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                     if transaction.is_user_undo_redo() {
+                        if transaction.is_user() {
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
+                            self.add_compute_operations(transaction, &sheet_rect, None);
+                        }
+
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_pos, values });
@@ -48,11 +53,6 @@ impl GridController {
                                 sheet_pos,
                                 values: old_values,
                             });
-
-                        if transaction.is_user() {
-                            self.check_deleted_data_tables(transaction, &sheet_rect);
-                            self.add_compute_operations(transaction, &sheet_rect, None);
-                        }
                     }
 
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);

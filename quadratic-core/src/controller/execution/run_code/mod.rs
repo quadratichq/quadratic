@@ -182,9 +182,10 @@ impl GridController {
                         (Some(data_table), dirty_rects)
                     })
             };
-            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_id);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -215,8 +216,6 @@ impl GridController {
             if transaction.is_user() {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
             }
-
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
         } else {
             let dirty_rects = if let Some(new_data_table) = new_data_table {
                 sheet
