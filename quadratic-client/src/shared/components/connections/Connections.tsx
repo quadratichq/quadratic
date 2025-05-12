@@ -1,6 +1,6 @@
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
-import { apiClient } from '@/shared/api/apiClient';
+import { clientDataKvHideConnectionDemoAtom } from '@/shared/atom/clientDataKvHideConnectionDemoAtom';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
@@ -10,6 +10,7 @@ import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useFetchers, useSearchParams } from 'react-router';
+import { useRecoilValue } from 'recoil';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
@@ -20,7 +21,6 @@ type Props = {
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
-  hideDemoConnection: boolean;
   // If this is present, we're in the app and we'll do stuff slightly differently
   handleNavigateToDetailsViewOverride?: (language: CodeCellLanguage) => void;
 };
@@ -34,7 +34,6 @@ export const Connections = ({
   staticIps,
   handleNavigateToDetailsViewOverride,
   sshPublicKey,
-  hideDemoConnection: initialHideDemoConnection,
 }: Props) => {
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
@@ -44,11 +43,7 @@ export const Connections = ({
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
 
-  // We store this in local state and sync optimistically to the server
-  // This makes the UI instant, but it also helps because we don't revalidate
-  // data on the app-side of connections so this wouldn't properly update
-  // through the data router
-  const [hideDemoConnection, setHideDemoConnection] = useState(initialHideDemoConnection);
+  const hideConnectionDemo = useRecoilValue(clientDataKvHideConnectionDemoAtom);
 
   const [activeConnectionState, setActiveConnectionState] = useState<
     { uuid: string; view: 'edit' | 'details' } | undefined
@@ -117,7 +112,7 @@ export const Connections = ({
   }
 
   // Connection hidden? Remove it from the list
-  if (hideDemoConnection) {
+  if (hideConnectionDemo) {
     connections = connections.filter((c) => !c.isDemo);
   }
 
@@ -145,12 +140,6 @@ export const Connections = ({
     // Otherwise we're on the dashboard, so navigate to the connection details
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
-  };
-  const handleHideDemoConnection = async (hide: boolean) => {
-    // Show/hide immediately in the UI
-    setHideDemoConnection(hide);
-    // Persist preference to the server
-    await apiClient.teams.update(teamUuid, { clientDataKv: { hideDemoConnection: hide } });
   };
 
   return (
@@ -182,7 +171,6 @@ export const Connections = ({
           <ConnectionsList
             connections={connections}
             connectionsAreLoading={connectionsAreLoading}
-            handleHideDemoConnection={handleHideDemoConnection}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}

@@ -4,6 +4,7 @@ import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
+import { clientDataKvHideConnectionDemoAtom } from '@/shared/atom/clientDataKvHideConnectionDemoAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -16,7 +17,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 
 import {
@@ -24,6 +25,7 @@ import {
   Link,
   Outlet,
   redirect,
+  useLoaderData,
   useLocation,
   useNavigation,
   useRevalidator,
@@ -31,7 +33,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router';
-import { RecoilRoot } from 'recoil';
+import { RecoilRoot, type MutableSnapshot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
 
@@ -124,6 +126,9 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
+  const {
+    activeTeam: { clientDataKv },
+  } = useLoaderData() as LoaderData;
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
@@ -149,8 +154,15 @@ export const Component = () => {
     };
   }, [revalidator]);
 
+  const initializeState = useCallback(
+    ({ set }: MutableSnapshot) => {
+      set(clientDataKvHideConnectionDemoAtom, clientDataKv.hideConnectionDemo);
+    },
+    [clientDataKv]
+  );
+
   return (
-    <RecoilRoot>
+    <RecoilRoot initializeState={initializeState}>
       <TooltipProvider>
         <div className={`h-full lg:flex lg:flex-row`}>
           <div

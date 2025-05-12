@@ -8,6 +8,7 @@ import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { DatabaseIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -56,7 +57,10 @@ export default function CellTypeMenu() {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const fetcher = useConnectionsFetcher();
+  const { connections } = useConnectionsFetcher();
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
 
   const searchLabel = 'Choose a cell type…';
 
@@ -119,9 +123,9 @@ export default function CellTypeMenu() {
         </CommandGroup>
 
         <CommandSeparator />
-        {fetcher.data?.connections && (
+        {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
-            {fetcher.data.connections.map(({ name, type, uuid, isDemo }) => (
+            {connections.map(({ name, type, uuid, isDemo }) => (
               <CommandItemWrapper
                 key={uuid}
                 uuid={uuid}

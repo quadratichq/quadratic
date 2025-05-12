@@ -6,11 +6,10 @@ import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
@@ -18,24 +17,9 @@ export function ConnectionsMenu() {
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const {
-    team: {
-      uuid: teamUuid,
-      sshPublicKey,
-      clientDataKv: { hideDemoConnection },
-    },
-    userMakingRequest: { teamPermissions },
+    team: { uuid: teamUuid, sshPublicKey },
   } = useFileRouteLoaderData();
-  const fetcher = useConnectionsFetcher();
-  const fetcherRef = useRef(fetcher);
-
-  const permissionsHasTeamEdit = useMemo(() => teamPermissions?.includes('TEAM_EDIT'), [teamPermissions]);
-
-  // Fetch when this component mounts but only if the user has permission in the current team
-  useEffect(() => {
-    if (fetcherRef.current.state === 'idle' && fetcherRef.current.data === undefined && permissionsHasTeamEdit) {
-      fetcherRef.current.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
-    }
-  }, [permissionsHasTeamEdit, teamUuid]);
+  const { connections, staticIps, isLoading } = useConnectionsFetcher();
 
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const openEditor = useCallback(
@@ -100,13 +84,12 @@ export function ConnectionsMenu() {
         {/* Unmount it so we reset the state */}
         {showConnectionsMenu && (
           <Connections
-            connections={fetcher.data && fetcher.data.connections ? fetcher.data.connections : []}
-            connectionsAreLoading={fetcher.data === undefined}
+            connections={connections}
+            connectionsAreLoading={isLoading}
             teamUuid={teamUuid}
             sshPublicKey={sshPublicKey}
-            staticIps={fetcher.data && fetcher.data.staticIps ? fetcher.data.staticIps : []}
+            staticIps={staticIps}
             handleNavigateToDetailsViewOverride={openEditor}
-            hideDemoConnection={hideDemoConnection}
           />
         )}
       </DialogContent>

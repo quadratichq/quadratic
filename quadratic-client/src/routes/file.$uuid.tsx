@@ -11,6 +11,7 @@ import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { clientDataKvHideConnectionDemoAtom } from '@/shared/atom/clientDataKvHideConnectionDemoAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
@@ -138,11 +139,12 @@ export const Component = () => {
   const { loggedInUser } = useRootRouteLoaderData();
   const {
     file: { uuid: fileUuid },
-    team: { uuid: teamUuid, settings: teamSettings },
+    team: { uuid: teamUuid, settings: teamSettings, clientDataKv },
     userMakingRequest: { filePermissions },
   } = useLoaderData() as FileData;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
+      set(clientDataKvHideConnectionDemoAtom, clientDataKv.hideConnectionDemo);
       set(editorInteractionStateAtom, (prevState) => ({
         ...prevState,
         permissions: filePermissions,
@@ -152,7 +154,7 @@ export const Component = () => {
         teamUuid,
       }));
     },
-    [filePermissions, teamSettings, loggedInUser, fileUuid, teamUuid]
+    [filePermissions, teamSettings, loggedInUser, fileUuid, teamUuid, clientDataKv]
   );
 
   // If this is an embed, ensure that wheel events do not scroll the page

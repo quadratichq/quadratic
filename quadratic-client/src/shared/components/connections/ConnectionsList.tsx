@@ -1,4 +1,5 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { clientDataKvHideConnectionDemoAtom } from '@/shared/atom/clientDataKvHideConnectionDemoAtom';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon, CloseIcon, EditIcon } from '@/shared/components/Icons';
@@ -20,11 +21,11 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useFetcher } from 'react-router';
+import { useSetRecoilState } from 'recoil';
 
 type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
-  handleHideDemoConnection: (hide: boolean) => void;
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
@@ -36,10 +37,10 @@ export const ConnectionsList = ({
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
-  handleHideDemoConnection,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
   const fetcher = useFetcher();
+  const handleHideConnectionDemo = useSetRecoilState(clientDataKvHideConnectionDemoAtom);
 
   return (
     <>
@@ -100,7 +101,6 @@ export const ConnectionsList = ({
               items={connections}
               handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
-              handleHideDemoConnection={handleHideDemoConnection}
             />
           </>
         ) : (
@@ -114,7 +114,7 @@ export const ConnectionsList = ({
                   Or,{' '}
                   <button
                     className="relative font-semibold text-primary"
-                    onClick={() => handleHideDemoConnection(false)}
+                    onClick={() => handleHideConnectionDemo(false)}
                   >
                     add a demo connection
                   </button>
@@ -132,17 +132,16 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
-  handleHideDemoConnection,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
   items,
 }: {
   filterQuery: string;
-  handleHideDemoConnection: Props['handleHideDemoConnection'];
   handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   items: ConnectionsListConnection[];
 }) {
+  const handleHideConnectionDemo = useSetRecoilState(clientDataKvHideConnectionDemoAtom);
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
@@ -189,7 +188,7 @@ function ListItems({
               className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
               onClick={async () => {
                 if (await confirmFn()) {
-                  handleHideDemoConnection(true);
+                  handleHideConnectionDemo(true);
                 }
               }}
             >
