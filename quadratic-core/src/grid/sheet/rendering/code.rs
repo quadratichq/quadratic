@@ -60,7 +60,7 @@ impl Sheet {
     fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
         let code = self.cell_value(pos)?;
         let output_size = data_table.output_size();
-        let (state, w, h, spill_error) = if data_table.spill_error {
+        let (state, w, h, spill_error) = if data_table.has_spill() {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
             (
                 JsRenderCodeCellState::SpillError,
@@ -82,7 +82,7 @@ impl Sheet {
             };
             (state, output_size.w.get(), output_size.h.get(), None)
         };
-        let alternating_colors = !data_table.spill_error
+        let alternating_colors = !data_table.has_spill()
             && !data_table.has_error()
             && !data_table.is_image()
             && !data_table.is_html()
@@ -293,7 +293,6 @@ mod tests {
             "Table 1",
             Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -357,7 +356,6 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Number(1.into())),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -406,7 +404,6 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(2.into())),
-            false,
             false,
             None,
             None,
@@ -473,7 +470,6 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Image(image.clone())),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -513,7 +509,6 @@ mod tests {
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Single(CellValue::Image("image".to_string())),
-                false,
                 false,
                 Some(true),
                 Some(true),

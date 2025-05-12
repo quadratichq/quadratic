@@ -17,7 +17,7 @@ use super::column::Column;
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
-use super::{CellWrap, CodeRun, Format, NumericFormatKind, SheetFormatting};
+use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -178,14 +178,6 @@ impl Sheet {
     /// and did not previously exist (so no change is needed).
     pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         self.columns.set_value(&pos, value)
-    }
-
-    pub fn iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
-        self.data_tables.iter_code_runs()
-    }
-
-    pub fn iter_code_runs_mut(&mut self) -> impl Iterator<Item = (Pos, &mut CodeRun)> {
-        self.data_tables.iter_code_runs_mut()
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
@@ -392,7 +384,7 @@ impl Sheet {
 
         if let Ok(data_table_pos) = self.data_table_pos_that_contains(&pos) {
             if let Some(data_table) = self.data_table_at(&data_table_pos) {
-                if !data_table.spill_error && !data_table.has_error() {
+                if !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
                     let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
                     let table_format = data_table.get_format(format_pos);
@@ -565,7 +557,9 @@ mod test {
     use super::*;
     use crate::a1::A1Selection;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, DataTable, DataTableKind, NumericFormat};
+    use crate::grid::{
+        CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
+    };
     use crate::test_util::print_table_in_rect;
     use crate::{Array, SheetPos, SheetRect, Value};
 
@@ -1046,12 +1040,11 @@ mod test {
             "test",
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
-            false,
             Some(true),
             Some(true),
             None,
         );
-        sheet.data_tables.insert_full(&pos, dt.clone());
+        sheet.data_table_insert_full(&pos, dt.clone());
         assert!(sheet.has_content(pos));
         assert!(sheet.has_content(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content(Pos { x: 3, y: 2 }));
@@ -1059,7 +1052,7 @@ mod test {
         let mut dt = dt.clone();
         dt.chart_output = Some((5, 5));
         let pos2 = Pos { x: 10, y: 10 };
-        sheet.data_tables.insert_full(&pos2, dt);
+        sheet.data_table_insert_full(&pos2, dt);
         assert!(sheet.has_content(pos2));
         assert!(sheet.has_content(Pos { x: 14, y: 10 }));
         assert!(!sheet.has_content(Pos { x: 15, y: 10 }));
@@ -1295,12 +1288,11 @@ mod test {
                 vec!["j", "k", "l"],
             ])),
             false,
-            false,
             Some(true),
             Some(true),
             None,
         );
-        sheet.data_tables.insert_full(&anchor_pos, dt);
+        sheet.data_table_insert_full(&anchor_pos, dt);
 
         // Test row edges
         assert!(sheet.is_at_table_edge_row(&pos![B2])); // Table name
@@ -1324,13 +1316,12 @@ mod test {
             "test",
             Value::Array(Array::from(vec![vec!["a", "b"], vec!["c", "d"]])),
             false,
-            false,
             Some(false),
             Some(false),
             None,
         );
         dt_no_ui.show_name = Some(false);
-        sheet.data_tables.insert_full(&pos![E5], dt_no_ui);
+        sheet.data_table_insert_full(&pos![E5], dt_no_ui);
 
         // Test edges without UI
         assert!(sheet.is_at_table_edge_row(&pos![E5])); // Top edge
@@ -1367,12 +1358,11 @@ mod test {
             "test",
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
-            false,
             Some(true),
             Some(true),
             None,
         );
-        sheet.data_tables.insert_full(&pos, dt.clone());
+        sheet.data_table_insert_full(&pos, dt.clone());
         assert!(sheet.has_content_ignore_blank_table(pos));
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content_ignore_blank_table(Pos { x: 3, y: 2 }));
@@ -1393,7 +1383,7 @@ mod test {
         dt_chart.chart_output = Some((5, 5));
         let pos3 = Pos { x: 20, y: 20 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_tables.insert_full(&pos3, dt_chart);
+        sheet.data_table_insert_full(&pos3, dt_chart);
 
         let a1_context = gc.a1_context().clone();
         gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);

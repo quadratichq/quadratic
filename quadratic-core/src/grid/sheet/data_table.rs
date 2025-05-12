@@ -1,16 +1,18 @@
+use std::collections::HashSet;
+
 use super::Sheet;
 use crate::{
-    Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
+        CodeCellLanguage, CodeCellValue, DataTableKind,
     },
+    Pos, Rect, SheetPos,
 };
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{anyhow, bail, Result};
 use indexmap::IndexMap;
 
 impl Sheet {
@@ -20,9 +22,10 @@ impl Sheet {
     #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
         if let Some(data_table) = data_table {
-            self.data_tables.insert_full(&pos, data_table).1
+            self.data_table_insert_full(&pos, data_table).1
         } else {
-            self.data_tables.shift_remove(&pos)
+            self.data_table_shift_remove(&pos)
+                .map(|(data_table, _)| data_table)
         }
     }
 
@@ -77,7 +80,7 @@ impl Sheet {
 
     /// Returns true if there is a data table within a rect
     pub fn data_tables_pos_intersect_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
-        self.data_tables.get_pos_in_rect(rect)
+        self.data_tables.get_pos_in_rect(rect, false)
     }
 
     /// Returns true if there is a data table within a rect
@@ -85,19 +88,19 @@ impl Sheet {
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Pos, &DataTable)> {
-        self.data_tables.get_in_rect(rect)
+        self.data_tables.get_in_rect(rect, false)
     }
 
     /// Returns true if there is a data table within a rect
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
         if let Some(skip) = skip {
             self.data_tables
-                .get_pos_in_rect(rect)
+                .get_pos_in_rect(rect, false)
                 .filter(|pos| pos != skip)
                 .count()
                 > 0
         } else {
-            self.data_tables.get_pos_in_rect(rect).count() > 0
+            self.data_tables.get_pos_in_rect(rect, false).count() > 0
         }
     }
 
@@ -107,17 +110,96 @@ impl Sheet {
             .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_result()", pos))
     }
 
-    /// Returns a mutable DataTable at a Pos
-    pub fn data_table_mut_at(&mut self, pos: &Pos) -> Result<&mut DataTable> {
-        self.data_tables
-            .get_mut_at(pos)
-            .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_mut()", pos))
+    /// Checks spill due to values on sheet
+    ///
+    /// spill due to other data tables is managed internally by SheetDataTables
+    fn check_spills_due_to_column_values(&self, pos: &Pos, data_table: &DataTable) -> bool {
+        let new_output_rect = data_table.output_rect(*pos, false);
+        let mut nondefault_rects = self.columns.get_nondefault_rects_in_rect(new_output_rect);
+        let root_cell_rect = Rect::single_pos(*pos);
+        nondefault_rects.any(|(rect, _)| rect != root_cell_rect)
     }
 
-    pub fn delete_data_table(&mut self, pos: Pos) -> Result<DataTable> {
-        self.data_tables
-            .shift_remove(&pos)
+    /// Returns a mutable DataTable at a Pos
+    pub fn modify_data_table_at(
+        &mut self,
+        pos: &Pos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<(&DataTable, HashSet<Rect>)> {
+        self.data_tables.modify_data_table_at(pos, f)
+    }
+
+    pub fn data_table_insert_full(
+        &mut self,
+        pos: &Pos,
+        mut data_table: DataTable,
+    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+        data_table.spill_value = self.check_spills_due_to_column_values(pos, &mut data_table);
+        self.data_tables.insert_full(pos, data_table)
+    }
+
+    pub fn data_table_insert_sorted(
+        &mut self,
+        pos: &Pos,
+        mut data_table: DataTable,
+    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+        data_table.spill_value = self.check_spills_due_to_column_values(pos, &mut data_table);
+        self.data_tables.insert_sorted(pos, data_table)
+    }
+
+    pub fn data_table_insert_before(
+        &mut self,
+        index: usize,
+        pos: &Pos,
+        mut data_table: DataTable,
+    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+        data_table.spill_value = self.check_spills_due_to_column_values(pos, &mut data_table);
+        self.data_tables.insert_before(index, pos, data_table)
+    }
+
+    pub fn data_table_shift_remove_full(
+        &mut self,
+        pos: &Pos,
+    ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
+        self.data_tables.shift_remove_full(pos)
+    }
+
+    pub fn data_table_shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
+        self.data_tables.shift_remove(pos)
+    }
+
+    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(DataTable, HashSet<Rect>)> {
+        self.data_table_shift_remove(&pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
+    }
+
+    pub fn data_tables_update_spill(&mut self, rect: Rect) -> HashSet<Rect> {
+        let mut data_tables_to_modify = Vec::new();
+
+        for (_, pos, data_table) in self.data_tables.get_in_rect_sorted(rect, true) {
+            let new_spill = self.check_spills_due_to_column_values(&pos, data_table);
+            if new_spill != data_table.spill_value {
+                data_tables_to_modify.push((pos, new_spill));
+            }
+        }
+
+        let mut dirty_rects = HashSet::new();
+
+        for (pos, new_spill) in data_tables_to_modify {
+            let _ = self.data_tables.modify_data_table_at(&pos, |dt| {
+                let old_output_rect = dt.output_rect(pos, false);
+
+                dt.spill_value = new_spill;
+
+                let new_output_rect = dt.output_rect(pos, false);
+                let max_output_rect = old_output_rect.union(&new_output_rect);
+                dirty_rects.insert(max_output_rect);
+
+                Ok(())
+            });
+        }
+
+        dirty_rects
     }
 
     /// Checks whether a chart intersects a position. We ignore the chart if it
@@ -228,7 +310,7 @@ impl Sheet {
                     }
                 }
 
-                if data_table.spill_error {
+                if data_table.has_spill() {
                     return;
                 }
 
@@ -456,17 +538,16 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        CellValue, Value,
         a1::{A1Selection, RefRangeBounds},
         controller::{
-            GridController,
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
+            GridController,
         },
         first_sheet_id,
-        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
+        grid::{js_types::JsClipboard, CodeRun, DataTableKind, SheetId},
         test_create_code_table, test_create_data_table, test_create_html_chart,
-        test_create_js_chart,
+        test_create_js_chart, CellValue, Value,
     };
     use bigdecimal::BigDecimal;
 
@@ -487,7 +568,6 @@ mod test {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(BigDecimal::from(2))),
-            false,
             false,
             None,
             None,
@@ -544,9 +624,12 @@ mod test {
     #[test]
     fn test_copy_data_table_to_clipboard() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
-
-        data_table.chart_pixel_output = Some((100.0, 100.0));
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                dt.chart_pixel_output = Some((100.0, 100.0));
+                Ok(())
+            })
+            .unwrap();
 
         let selection =
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));

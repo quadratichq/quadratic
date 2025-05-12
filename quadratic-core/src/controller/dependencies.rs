@@ -13,11 +13,14 @@ impl GridController {
 
         let context = self.a1_context();
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.iter_code_runs().for_each(|(pos, code_run)| {
-                if code_run.cells_accessed.intersects(sheet_rect, context) {
-                    dependent_cells.insert(pos.to_sheet_pos(sheet.id));
-                }
-            });
+            sheet
+                .data_tables
+                .iter_code_runs()
+                .for_each(|(pos, code_run)| {
+                    if code_run.cells_accessed.intersects(sheet_rect, context) {
+                        dependent_cells.insert(pos.to_sheet_pos(sheet.id));
+                    }
+                });
         });
 
         if dependent_cells.is_empty() {
@@ -77,7 +80,6 @@ mod test {
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Single(CellValue::Text("test".to_string())),
-                false,
                 false,
                 Some(true),
                 Some(true),

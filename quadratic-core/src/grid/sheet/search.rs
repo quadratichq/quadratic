@@ -120,7 +120,7 @@ impl Sheet {
         let mut results = vec![];
         self.data_tables
             .iter()
-            .filter(|(_, data_table)| !data_table.spill_error && !data_table.has_error())
+            .filter(|(_, data_table)| !data_table.has_spill() && !data_table.has_error())
             .for_each(|(pos, data_table)| match &data_table.value {
                 Value::Single(v) => {
                     if self.compare_cell_value(
@@ -541,7 +541,6 @@ mod test {
             "Table 1",
             Value::Single("world".into()),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -590,7 +589,6 @@ mod test {
                 vec!["abc", "def", "ghi"],
                 vec!["jkl", "mno", "pqr"],
             ])),
-            false,
             false,
             Some(false),
             Some(false),
@@ -728,9 +726,13 @@ mod test {
         assert!(!neighbors.contains(&"hello".to_string()));
 
         // hide first column
-        let data_table = sheet.data_table_mut_at(&pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
-        column_headers[0].display = false;
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                let column_headers = dt.column_headers.as_mut().unwrap();
+                column_headers[0].display = false;
+                Ok(())
+            })
+            .unwrap();
 
         let neighbors = sheet.neighbor_text(pos![E12]);
         assert_eq!(neighbors, vec!["MA", "MO", "NH", "NJ", "OH", "region"]);

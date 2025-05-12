@@ -96,8 +96,11 @@ impl Sheet {
         // move the data tables to the right to match with their new anchor positions
         data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in data_tables_to_move_right {
-            if let Some((index, old_pos, data_table)) = self.data_tables.shift_remove_full(&old_pos)
+            if let Some((index, old_pos, data_table, dirty_rects)) =
+                self.data_table_shift_remove_full(&old_pos)
             {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+
                 let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
@@ -113,7 +116,8 @@ impl Sheet {
                     data_table.is_image(),
                     data_table.is_html(),
                 );
-                self.data_tables.insert_before(index, &new_pos, data_table);
+                let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
         // In the special case of CopyFormats::Before and column == pos.x, we

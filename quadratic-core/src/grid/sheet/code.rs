@@ -232,7 +232,7 @@ impl Sheet {
                 if let Some(data_table) = self.data_table_at(&code_pos) {
                     let evaluation_result =
                         serde_json::to_string(&data_table.value).unwrap_or("".into());
-                    let spill_error = if data_table.spill_error {
+                    let spill_error = if data_table.has_spill() {
                         Some(self.find_spill_error_reasons(
                             &data_table.output_rect(code_pos, true),
                             code_pos,
@@ -336,7 +336,6 @@ mod test {
             "Table 1",
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -436,7 +435,6 @@ mod test {
             "Table 1",
             Value::Array(Array::from(vec![vec!["1"], vec!["2"], vec!["3"]])),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -475,7 +473,6 @@ mod test {
             "Table 1",
             Value::Array(Array::from(vec![vec!["1", "2", "3'"]])),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -502,7 +499,6 @@ mod test {
             DataTableKind::CodeRun(CodeRun::default()),
             "Table 1",
             CellValue::Html("<html></html>".to_string()).into(),
-            false,
             false,
             Some(false),
             Some(false),

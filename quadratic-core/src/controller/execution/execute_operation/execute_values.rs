@@ -30,20 +30,17 @@ impl GridController {
                         sheet_id: sheet_pos.sheet_id,
                         min,
                         max: Pos {
-                            x: min.x - 1 + values.w as i64,
-                            y: min.y - 1 + values.h as i64,
+                            x: min.x - 1 + values.w.max(old_values.w) as i64,
+                            y: min.y - 1 + values.h.max(old_values.h) as i64,
                         },
                     };
+
+                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+
                     if transaction.is_user_undo_redo() {
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_pos, values });
-
-                        if transaction.is_user() {
-                            self.check_deleted_data_tables(transaction, &sheet_rect);
-                            self.add_compute_operations(transaction, &sheet_rect, None);
-                            self.check_all_spills(transaction, sheet_rect.sheet_id);
-                        }
 
                         transaction
                             .reverse_operations
@@ -51,11 +48,17 @@ impl GridController {
                                 sheet_pos,
                                 values: old_values,
                             });
+
+                        if transaction.is_user() {
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
+                            self.add_compute_operations(transaction, &sheet_rect, None);
+                        }
                     }
 
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
                     self.send_updated_bounds(transaction, sheet_rect.sheet_id);
+
                     if !transaction.is_server() {
                         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 

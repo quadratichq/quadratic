@@ -39,7 +39,6 @@ impl GridController {
                     "Formula1",
                     output.inner,
                     false,
-                    false,
                     None,
                     None,
                     None,
@@ -267,7 +266,6 @@ mod test {
                 "JavaScript1",
                 Value::Single(CellValue::Number(12.into())),
                 false,
-                false,
                 None,
                 None,
                 None,
@@ -345,7 +343,6 @@ mod test {
             "JavaScript1",
             Value::Array(array),
             false,
-            false,
             None,
             None,
             None,
@@ -406,7 +403,7 @@ mod test {
             gc.sheet(sheet_id)
                 .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
         assert!(
             gc.sheet(sheet_id)
@@ -428,7 +425,7 @@ mod test {
             gc.sheet(sheet_id)
                 .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
 
         // undo the spill error
@@ -460,7 +457,7 @@ mod test {
             }))
         );
         let result = sheet.data_table_at(&pos).unwrap();
-        assert!(!result.spill_error);
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
 
         gc.set_code_cell(
@@ -478,7 +475,7 @@ mod test {
             }))
         );
         let result = sheet.data_table_at(&pos).unwrap();
-        assert!(!result.spill_error);
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
     }
 }

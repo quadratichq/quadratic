@@ -1,5 +1,6 @@
 use std::{collections::HashSet, ops::RangeInclusive};
 
+use rstar::{AABB, RTreeObject};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
 use wasm_bindgen::prelude::*;
@@ -372,6 +373,14 @@ impl From<SheetRect> for Rect {
 impl From<&CellValues> for Rect {
     fn from(values: &CellValues) -> Self {
         Rect::from_numbers(0, 0, values.w as i64, values.h as i64)
+    }
+}
+
+impl RTreeObject for Rect {
+    type Envelope = AABB<Pos>;
+
+    fn envelope(&self) -> Self::Envelope {
+        AABB::from_corners(self.min, self.max)
     }
 }
 

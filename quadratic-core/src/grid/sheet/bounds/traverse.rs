@@ -239,7 +239,6 @@ mod test {
             "test",
             Value::Single(CellValue::Html("html".to_string())),
             false,
-            false,
             Some(true),
             Some(true),
             // make the chart take up 5x5 cells

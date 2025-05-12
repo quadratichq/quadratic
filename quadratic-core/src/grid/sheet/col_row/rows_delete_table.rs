@@ -37,8 +37,10 @@ impl Sheet {
         }
 
         for pos in tables_to_delete.into_iter() {
-            if let Some((index, pos, old_dt)) = self.data_tables.shift_remove_full(&pos) {
+            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
+            {
                 transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction
                     .reverse_operations
                     .push(Operation::SetDataTable {
@@ -54,7 +56,7 @@ impl Sheet {
         let mut dt_to_update = vec![];
 
         for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
-            if (dt.is_code() && !dt.is_html_or_image()) || dt.spill_error {
+            if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
                 continue;
             }
             let output_rect = dt.output_rect(*pos, false);
@@ -95,7 +97,7 @@ impl Sheet {
     /// Resize charts if rows in the chart range are deleted
     pub(crate) fn delete_chart_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
         for (pos, dt) in self.data_tables.iter_mut() {
-            if !dt.spill_error && dt.is_html_or_image() {
+            if !dt.has_spill() && dt.is_html_or_image() {
                 let output_rect = dt.output_rect(*pos, false);
                 let count = rows
                     .iter()
@@ -153,15 +155,19 @@ impl Sheet {
             }
         }
         for (pos, shift_table) in dt_to_shift_up {
-            let Some((index, _, old_dt)) = self.data_tables.shift_remove_full(&pos) else {
+            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
+            else {
                 dbgjs!(format!(
                     "Error in check_delete_tables_columns: cannot shift up data table\n{:?}",
                     pos
                 ));
                 continue;
             };
+            transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+            
             let new_pos = pos.translate(0, -shift_table, 1, 1);
-            self.data_tables.insert_before(index, &new_pos, old_dt);
+            let dirty_rects = self.data_table_insert_before(index, &new_pos, old_dt).2;
+            transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
         }
     }
 }

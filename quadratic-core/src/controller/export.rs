@@ -85,9 +85,12 @@ mod tests {
     fn exports_a_csv_with_a_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut_at(&pos).unwrap();
-        data_table.apply_first_row_as_header();
-
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.apply_first_row_as_header();
+                Ok(())
+            })
+            .unwrap();
         let mut selected = A1Selection::test_a1("A1:D13");
         let result = gc.export_csv_selection(&mut selected).unwrap();
         println!("{}", result);

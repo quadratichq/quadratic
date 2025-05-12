@@ -342,8 +342,13 @@ mod test {
                 .clone()
         };
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
-        data_table.header_is_first_row = false;
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                dt.header_is_first_row = false;
+                Ok(())
+            })
+            .unwrap();
+
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E4], sheet_id))),
             CellValue::Text("city".into())
@@ -383,9 +388,12 @@ mod test {
         );
 
         // show name
-        let data_table: &mut crate::grid::DataTable =
-            gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
-        data_table.show_name = Some(false);
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                dt.show_name = Some(false);
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E3], sheet_id))),
             CellValue::Text("city1".into())
@@ -416,9 +424,12 @@ mod test {
         );
 
         // show columns
-        let data_table: &mut crate::grid::DataTable =
-            gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
-        data_table.show_columns = Some(false);
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                dt.show_columns = Some(false);
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
             CellValue::Text("city2".into())
@@ -448,8 +459,12 @@ mod test {
             CellValue::Number(3333.into())
         );
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
-        data_table.header_is_first_row = true;
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                dt.header_is_first_row = true;
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
             CellValue::Text("Southborough".into())
@@ -481,9 +496,13 @@ mod test {
         };
 
         // hide first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
-        column_headers[0].display = false;
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                let column_headers = dt.column_headers.as_mut().unwrap();
+                column_headers[0].display = false;
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![G4], sheet_id))),
             CellValue::Number(9686.into())
@@ -505,9 +524,14 @@ mod test {
         );
 
         // show first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut_at(&pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
-        column_headers[0].display = true;
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                let column_headers = dt.column_headers.as_mut().unwrap();
+                column_headers[0].display = true;
+                Ok(())
+            })
+            .unwrap();
+
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
             CellValue::Number(999999.into())
@@ -540,9 +564,11 @@ mod test {
 
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut_at(&pos).unwrap();
-        data_table
-            .sort_column(3, SortDirection::Descending)
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.sort_column(3, SortDirection::Descending).unwrap();
+                Ok(())
+            })
             .unwrap();
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
@@ -566,8 +592,12 @@ mod test {
 
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut_at(&pos).unwrap();
-        data_table.sort_column(3, SortDirection::None).unwrap();
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.sort_column(3, SortDirection::None).unwrap();
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
             CellValue::Number(9686.into())

@@ -73,7 +73,6 @@ pub fn test_create_code_table_with_values(
         "Table1",
         Value::Array(array),
         false,
-        false,
         Some(false),
         Some(false),
         None,

@@ -404,9 +404,11 @@ pub mod test {
 
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut_at(&pos).unwrap();
-        data_table
-            .sort_column(3, SortDirection::Descending)
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.sort_column(3, SortDirection::Descending).unwrap();
+                Ok(())
+            })
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -471,8 +473,12 @@ pub mod test {
 
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut_at(&pos).unwrap();
-        data_table.sort_column(3, SortDirection::None).unwrap();
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.sort_column(3, SortDirection::None).unwrap();
+                Ok(())
+            })
+            .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();

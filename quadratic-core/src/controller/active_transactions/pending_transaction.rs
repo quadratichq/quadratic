@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    Instant, Pos, SheetPos, SheetRect,
+    Instant, Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
@@ -296,6 +296,26 @@ impl PendingTransaction {
         let hashes = sheet_rect.to_hashes();
         let dirty_hashes = self.dirty_hashes.entry(sheet_rect.sheet_id).or_default();
         dirty_hashes.extend(hashes);
+    }
+
+    pub fn add_dirty_hashes_from_dirty_code_rects(
+        &mut self,
+        sheet: &Sheet,
+        dirty_rects: HashSet<Rect>,
+    ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        for dirty_rect in dirty_rects {
+            self.add_dirty_hashes_from_sheet_rect(dirty_rect.to_sheet_rect(sheet.id));
+            if let Some(dt) = sheet.data_table_at(&dirty_rect.min) {
+                dt.add_dirty_fills_and_borders(self, sheet.id);
+                self.add_from_code_run(sheet.id, dirty_rect.min, dt.is_image(), dt.is_html());
+            } else {
+                self.add_code_cell(sheet.id, dirty_rect.min);
+            }
+        }
     }
 
     // Adds dirty hashes for all hashes from col_start to col_end (goes to sheet bounds if not provided)
@@ -677,7 +697,6 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Html("html".to_string())),
             false,
-            false,
             Some(true),
             Some(true),
             None,
@@ -703,7 +722,6 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Image("image".to_string())),
-            false,
             false,
             Some(true),
             Some(true),

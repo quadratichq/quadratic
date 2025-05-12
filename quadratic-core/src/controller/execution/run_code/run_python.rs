@@ -73,15 +73,21 @@ mod tests {
             }
             _ => panic!("expected code cell"),
         }
-        let data_table = sheet.data_tables.get_mut_at(&pos).unwrap();
-        data_table.show_name = Some(false);
-        data_table.show_columns = Some(false);
+        sheet
+            .data_tables
+            .modify_data_table_at(&pos, |dt| {
+                dt.show_name = Some(false);
+                dt.show_columns = Some(false);
+                Ok(())
+            })
+            .unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
             data_table.cell_value_at(0, 1),
             Some(CellValue::Text("test".to_string()))
         );
-        assert!(!data_table.spill_error);
+        assert!(!data_table.has_spill());
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);

@@ -152,7 +152,7 @@ impl Sheet {
                         return None;
                     }
 
-                    if !table.is_html_or_image() || table.spill_error {
+                    if !table.is_html_or_image() || table.has_spill() {
                         return None;
                     }
 
@@ -198,7 +198,7 @@ impl Sheet {
                         bounds: table.output_rect(pos.to_owned(), false).a1_string(),
                         language: code_cell_value.language.to_owned(),
                         code_string: code_cell_value.code.to_owned(),
-                        spill: table.spill_error,
+                        spill: table.has_spill(),
                     });
                 }
                 continue;
@@ -245,7 +245,7 @@ impl Sheet {
                     code_string: code_cell_value.code.to_owned(),
                     std_err: code_run.std_err.to_owned(),
                     error: code_run.error.is_some(),
-                    spill: table.spill_error,
+                    spill: table.has_spill(),
                 });
             } else if cell_value.is_import() {
                 tables_context.data_tables.push(JsDataTableContext {
@@ -404,7 +404,6 @@ mod tests {
                 DataTableKind::CodeRun(code_run_1),
                 "test",
                 Default::default(),
-                false,
                 true,
                 Some(false),
                 Some(false),
@@ -439,7 +438,6 @@ mod tests {
                 DataTableKind::CodeRun(code_run_2),
                 "test",
                 Default::default(),
-                false,
                 true,
                 Some(false),
                 Some(false),
@@ -478,7 +476,6 @@ mod tests {
                     vec!["1".to_string(), "2".to_string()],
                     vec!["3".to_string(), "4".to_string()],
                 ])),
-                true,
                 true,
                 Some(false),
                 Some(false),

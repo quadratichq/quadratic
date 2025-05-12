@@ -300,9 +300,6 @@ pub(crate) fn import_data_table_builder(
             header_is_first_row: data_table.header_is_first_row,
             show_name: data_table.show_name,
             show_columns: data_table.show_columns,
-            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
-            spill_error: data_table.spill_error,
-            value,
             column_headers: data_table.columns.map(|columns| {
                 columns
                     .into_iter()
@@ -331,6 +328,10 @@ pub(crate) fn import_data_table_builder(
             }),
             sort_dirty: data_table.sort_dirty,
             display_buffer: data_table.display_buffer,
+            value,
+            spill_value: data_table.spill_value,
+            spill_data_table: data_table.spill_data_table,
+            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             alternating_colors: data_table.alternating_colors,
             formats: import_formats(data_table.formats),
             borders: import_borders(data_table.borders),
@@ -539,9 +540,10 @@ pub(crate) fn export_data_tables(
                 sort,
                 sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
-                last_modified: Some(data_table.last_modified),
-                spill_error: data_table.spill_error,
                 value,
+                spill_value: data_table.spill_value,
+                spill_data_table: data_table.spill_data_table,
+                last_modified: Some(data_table.last_modified),
                 alternating_colors: data_table.alternating_colors,
                 formats: export_formats(data_table.formats),
                 borders: export_borders(data_table.borders),

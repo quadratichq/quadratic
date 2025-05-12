@@ -1058,8 +1058,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -1068,8 +1068,8 @@ mod tests {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -1078,8 +1078,8 @@ mod tests {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 2,
-                y: 0,
+                x: 3,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -1089,39 +1089,39 @@ mod tests {
         let find_index =
             |sheet: &Sheet, x: i64, y: i64| sheet.data_tables.get_index_of(&Pos { x, y }).unwrap();
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 1, 0), 1);
-        assert_eq!(find_index(sheet, 2, 0), 2);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 2, 1), 1);
+        assert_eq!(find_index(sheet, 3, 1), 2);
 
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "".to_string(),
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 2, 0), 1);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 3, 1), 1);
 
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 1, 0), 1);
-        assert_eq!(find_index(sheet, 2, 0), 2);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 2, 1), 1);
+        assert_eq!(find_index(sheet, 3, 1), 2);
 
         gc.redo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 2, 0), 1);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 3, 1), 1);
 
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 1, 0), 1);
-        assert_eq!(find_index(sheet, 2, 0), 2);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 2, 1), 1);
+        assert_eq!(find_index(sheet, 3, 1), 2);
     }
 
     #[test]

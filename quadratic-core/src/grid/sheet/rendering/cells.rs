@@ -109,7 +109,7 @@ impl Sheet {
         let mut cells = vec![];
 
         if let Some(code_cell_value) = code.code_cell_value() {
-            if data_table.spill_error {
+            if data_table.has_spill() {
                 cells.push(Self::get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
@@ -357,7 +357,6 @@ mod tests {
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Single(CellValue::Text("hello".to_string())),
-                false,
                 false,
                 Some(true),
                 Some(true),

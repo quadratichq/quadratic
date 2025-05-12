@@ -8,14 +8,15 @@ use anyhow::{Result, anyhow};
 use migrate_code_cell_references::{
     migrate_code_cell_references, replace_formula_a1_references_to_r1c1,
 };
+use migrate_data_table_spills::migrate_all_data_table_spills;
 use serde::{Deserialize, Serialize};
 pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
-pub use v1_7_1::{CellsAccessedSchema, CodeRunSchema};
-pub use v1_9 as current;
+pub use v2_0 as current;
 
 mod migrate_code_cell_references;
+mod migrate_data_table_spills;
 pub mod serialize;
 pub mod sheet_schema;
 mod shift_negative_offsets;
@@ -26,9 +27,10 @@ mod v1_6;
 mod v1_7;
 mod v1_7_1;
 mod v1_8;
-pub mod v1_9;
+mod v1_9;
+pub mod v2_0;
 
-pub static CURRENT_VERSION: &str = "1.9";
+pub static CURRENT_VERSION: &str = "2.0";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
@@ -41,6 +43,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "2.0")]
+    V2_0 {
+        #[serde(flatten)]
+        grid: v2_0::GridSchema,
+    },
     #[serde(rename = "1.9")]
     V1_9 {
         #[serde(flatten)]
@@ -85,26 +92,31 @@ enum GridFile {
 
 // TODO(ddimaria): refactor to be recursive
 impl GridFile {
-    fn into_latest(self) -> Result<v1_9::GridSchema> {
+    fn into_latest(self) -> Result<v2_0::GridSchema> {
         match self {
-            GridFile::V1_9 { grid } => Ok(grid),
-            GridFile::V1_8 { grid } => v1_8::upgrade(grid),
-            GridFile::V1_7_1 { grid } => v1_8::upgrade(v1_7_1::upgrade(grid)?),
-            GridFile::V1_7 { grid } => v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(grid)?)?),
-            GridFile::V1_6 { grid } => {
-                v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(grid)?)?)?)
+            GridFile::V2_0 { grid } => Ok(grid),
+            GridFile::V1_9 { grid } => v1_9::upgrade(grid),
+            GridFile::V1_8 { grid } => v1_9::upgrade(v1_8::upgrade(grid)?),
+            GridFile::V1_7_1 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(grid)?)?),
+            GridFile::V1_7 { grid } => {
+                v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(grid)?)?)?)
             }
-            GridFile::V1_5 { grid } => v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(
-                v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?,
+            GridFile::V1_6 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
+                v1_7::upgrade(v1_6::file::upgrade(grid)?)?,
             )?)?),
-            GridFile::V1_4 { grid } => v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(
-                v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)?,
+            GridFile::V1_5 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
+                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?)?,
             )?)?),
-            GridFile::V1_3 { grid } => {
-                v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
-                    v1_5::file::upgrade(v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?)?,
+            GridFile::V1_4 { grid } => {
+                v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(
+                    v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)?,
                 )?)?)?)
             }
+            GridFile::V1_3 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
+                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
+                    v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
+                )?)?)?,
+            )?)?),
         }
     }
 }
@@ -124,53 +136,69 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     let (header, data) = remove_header(&file_contents)?;
     let file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
     let mut check_for_negative_offsets = false;
+    let mut migrate_data_table_spills = false;
 
     let mut grid = match file_version.version.as_str() {
         "1.6" => {
             check_for_negative_offsets = true;
+            migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
-                schema,
+            let schema = v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(
+                v1_6::file::upgrade(schema)?,
             )?)?)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
             check_for_negative_offsets = true;
+            migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_7::schema::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(schema)?)?)?;
+            let schema = v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(schema)?)?)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7.1" => {
+            migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_7_1::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_8::upgrade(v1_7_1::upgrade(schema)?)?;
+            let schema = v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(schema)?)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.8" => {
+            migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_8::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_8::upgrade(schema)?;
+            let schema = v1_9::upgrade(v1_8::upgrade(schema)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.9" => {
+            migrate_data_table_spills = true;
+            let schema = decompress_and_deserialize::<v1_9::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+            drop(file_contents);
+            let schema = v1_9::upgrade(schema)?;
+            Ok(serialize::import(schema)?)
+        }
+        "2.0" => {
             let schema = decompress_and_deserialize::<current::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
@@ -186,6 +214,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     };
 
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
+    handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
 
     grid
 }
@@ -202,6 +231,16 @@ fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: 
     }
 }
 
+fn handle_migrate_data_table_spills(grid: &mut Result<Grid>, migrate_data_table_spills: bool) {
+    if !migrate_data_table_spills {
+        return;
+    }
+
+    if let Ok(grid) = grid {
+        migrate_all_data_table_spills(grid);
+    }
+}
+
 fn import_json(file_contents: String) -> Result<Grid> {
     let json = serde_json::from_str::<GridFile>(&file_contents).map_err(|e| anyhow!(e))?;
     drop(file_contents);
@@ -215,10 +254,23 @@ fn import_json(file_contents: String) -> Result<Grid> {
             | GridFile::V1_7 { .. }
     );
 
+    let migrate_data_table_spills = matches!(
+        &json,
+        GridFile::V1_3 { .. }
+            | GridFile::V1_4 { .. }
+            | GridFile::V1_5 { .. }
+            | GridFile::V1_6 { .. }
+            | GridFile::V1_7 { .. }
+            | GridFile::V1_7_1 { .. }
+            | GridFile::V1_8 { .. }
+            | GridFile::V1_9 { .. }
+    );
+
     let file = json.into_latest()?;
     let mut grid = serialize::import(file);
 
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
+    handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
 
     grid
 }

@@ -251,7 +251,6 @@ impl GridController {
                 DataTableKind::CodeRun(code_run),
                 name,
                 value,
-                false,
                 true,
                 None,
                 None,

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
@@ -161,22 +163,26 @@ impl GridController {
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
         // index for SetCodeRun is either set by execute_set_code_run or calculated
-        let index = index.unwrap_or(
-            sheet
-                .data_tables
-                .get_index_of(&pos)
-                .unwrap_or(sheet.data_tables.len()),
-        );
-        if transaction.is_user_undo_redo() {
-            let old_data_table = if let Some(new_data_table) = &new_data_table {
-                let index = index.min(sheet.data_tables.len());
+        let index = index
+            .unwrap_or(
                 sheet
                     .data_tables
-                    .insert_before(index, &pos, new_data_table.to_owned())
-                    .1
+                    .get_index_of(&pos)
+                    .unwrap_or(sheet.data_tables.len()),
+            )
+            .min(sheet.data_tables.len());
+        if transaction.is_user_undo_redo() {
+            let (old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table {
+                let res = sheet.data_table_insert_before(index, &pos, new_data_table.to_owned());
+                (res.1, res.2)
             } else {
-                sheet.data_tables.shift_remove(&pos)
+                sheet
+                    .data_table_shift_remove(&pos)
+                    .map_or((None, HashSet::new()), |(data_table, dirty_rects)| {
+                        (Some(data_table), dirty_rects)
+                    })
             };
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
             self.send_updated_bounds(transaction, sheet_id);
 
@@ -208,18 +214,21 @@ impl GridController {
 
             if transaction.is_user() {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-                self.check_all_spills(transaction, sheet_pos.sheet_id);
             }
 
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
         } else {
-            if let Some(new_data_table) = new_data_table {
-                let index = index.min(sheet.data_tables.len());
-                sheet.data_tables.insert_before(index, &pos, new_data_table);
+            let dirty_rects = if let Some(new_data_table) = new_data_table {
+                sheet
+                    .data_table_insert_before(index, &pos, new_data_table)
+                    .2
             } else {
-                sheet.data_tables.shift_remove(&pos);
+                sheet
+                    .data_table_shift_remove(&pos)
+                    .map_or(HashSet::new(), |(_, dirty_rects)| dirty_rects)
             };
 
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
@@ -354,7 +363,6 @@ impl GridController {
             table_name,
             Value::Single(CellValue::Blank),
             false,
-            false,
             None,
             None,
             None,
@@ -406,7 +414,6 @@ impl GridController {
                 DataTableKind::CodeRun(code_run),
                 table_name,
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
-                false,
                 false,
                 None,
                 None,
@@ -489,7 +496,6 @@ impl GridController {
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
-            false,
             js_code_result.has_headers,
             None,
             None,
@@ -561,7 +567,6 @@ mod test {
             "Table_1",
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
-            false,
             Some(true),
             Some(true),
             None,
@@ -601,7 +606,6 @@ mod test {
             DataTableKind::CodeRun(new_code_run),
             "Table_1",
             Value::Single(CellValue::Text("replace me".to_string())),
-            false,
             false,
             Some(true),
             Some(true),

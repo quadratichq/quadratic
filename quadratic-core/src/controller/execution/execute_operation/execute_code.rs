@@ -53,9 +53,14 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
-            let data_table = sheet.data_table_mut_at(&data_table_pos)?;
-            data_table.chart_pixel_output = Some((pixel_width, pixel_height));
+            let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
+                dt.chart_pixel_output = Some((pixel_width, pixel_height));
+                Ok(())
+            })?;
             let new_data_table = data_table.clone();
+
+            let sheet = self.try_sheet_result(sheet_id)?;
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
             self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
         }
@@ -71,9 +76,12 @@ impl GridController {
         if let Operation::SetChartCellSize { sheet_pos, w, h } = op {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.data_table_mut_at(&sheet_pos.into())?;
-            let original = data_table.chart_output;
-            data_table.chart_output = Some((w, h));
+            let pos = sheet_pos.into();
+            let original = sheet.data_table_result(&pos)?.chart_output;
+            let (data_table, dirty_rects) = sheet.modify_data_table_at(&pos, |dt| {
+                dt.chart_output = Some((w, h));
+                Ok(())
+            })?;
 
             transaction.forward_operations.push(op);
             transaction
@@ -90,6 +98,9 @@ impl GridController {
                 data_table.is_image(),
                 data_table.is_html(),
             );
+
+            let sheet = self.try_sheet_result(sheet_id)?;
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
         }
 
         Ok(())
@@ -209,7 +220,7 @@ mod tests {
         );
 
         let code_cell = sheet.data_table_at(&Pos { x: 2, y: 1 });
-        assert!(code_cell.unwrap().spill_error);
+        assert!(code_cell.unwrap().has_spill());
     }
 
     #[test]

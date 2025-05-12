@@ -232,7 +232,6 @@ pub mod test {
             kind.clone(),
             "Table 1",
             value,
-            false,
             true,
             Some(true),
             Some(true),
@@ -300,7 +299,6 @@ pub mod test {
             sort_dirty: false,
             display_buffer: None,
             value: Value::Array(array),
-            spill_error: false,
             last_modified: Utc::now(),
             show_name: Some(true),
             show_columns: Some(true),
@@ -310,6 +308,8 @@ pub mod test {
             borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
+            spill_value: false,
+            spill_data_table: false,
         };
         sheet.set_cell_value(
             pos,
@@ -321,8 +321,13 @@ pub mod test {
             Some(CellValue::Text("first".into()))
         );
 
-        let data_table = sheet.data_table_mut_at(&(1, 1).into()).unwrap();
-        data_table.toggle_first_row_as_header(false);
+        sheet
+            .modify_data_table_at(&(1, 1).into(), |dt| {
+                dt.toggle_first_row_as_header(false);
+                Ok(())
+            })
+            .unwrap();
+
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("Column 1".into()))
@@ -352,7 +357,6 @@ pub mod test {
             sort_dirty: false,
             display_buffer: None,
             value: Value::Array(array),
-            spill_error: false,
             last_modified: Utc::now(),
             show_name: Some(true),
             show_columns: Some(true),
@@ -362,6 +366,8 @@ pub mod test {
             borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
+            spill_value: false,
+            spill_data_table: false,
         };
         t.apply_default_header();
         sheet.set_cell_value(
@@ -375,17 +381,25 @@ pub mod test {
         );
 
         // make first row a header
-        let data_table = sheet.data_table_mut_at(&(1, 1).into()).unwrap();
-        data_table.toggle_first_row_as_header(true);
+        sheet
+            .modify_data_table_at(&(1, 1).into(), |dt| {
+                dt.toggle_first_row_as_header(true);
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("first".into()))
         );
 
         // hide first column
-        let data_table = sheet.data_table_mut_at(&(1, 1).into()).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
-        column_headers[0].display = false;
+        sheet
+            .modify_data_table_at(&(1, 1).into(), |dt| {
+                let column_headers = dt.column_headers.as_mut().unwrap();
+                column_headers[0].display = false;
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("second".into()))

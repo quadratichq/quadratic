@@ -1,11 +1,15 @@
+use std::collections::HashSet;
+
 use indexmap::IndexMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, Rect,
-    grid::{CodeRun, Contiguous2D, DataTable},
+    grid::{CodeRun, Contiguous2D, DataTable, SheetRegionMap},
 };
+
+use anyhow::{Result, anyhow};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SheetDataTables {
@@ -14,7 +18,9 @@ pub struct SheetDataTables {
 
     has_data_table: Contiguous2D<Option<bool>>,
 
-    output_rects: Contiguous2D<Option<Pos>>,
+    spilled_output_rects: Contiguous2D<Option<Pos>>,
+
+    un_spilled_output_rects: SheetRegionMap,
 }
 
 impl Default for SheetDataTables {
@@ -37,32 +43,24 @@ impl SheetDataTables {
         Self {
             data_tables: IndexMap::new(),
             has_data_table: Contiguous2D::new(),
-            output_rects: Contiguous2D::new(),
+            spilled_output_rects: Contiguous2D::new(),
+            un_spilled_output_rects: SheetRegionMap::new(),
         }
     }
 
-    pub fn from_data_tables(data_tables: IndexMap<Pos, DataTable>) -> Self {
-        let mut has_data_table = Contiguous2D::new();
-        let mut output_rects = Contiguous2D::new();
-        data_tables.iter().for_each(|(pos, table)| {
-            has_data_table.set(*pos, Some(true));
-            let output_rect = table.output_rect(*pos, false);
-            if output_rect.len() > 1 {
-                output_rects.set_rect(
-                    output_rect.min.x,
-                    output_rect.min.y,
-                    Some(output_rect.max.x),
-                    Some(output_rect.max.y),
-                    Some(*pos),
-                );
-            }
+    pub fn from_data_tables(mut data_tables: IndexMap<Pos, DataTable>) -> Self {
+        let mut data_tables_pos = Vec::new();
+        data_tables.iter_mut().for_each(|(pos, dt)| {
+            dt.spill_data_table = false;
+            data_tables_pos.push(*pos);
         });
 
-        Self {
-            data_tables,
-            has_data_table,
-            output_rects,
+        let mut sheet_data_tables = Self::new();
+        sheet_data_tables.data_tables = data_tables;
+        for (index, pos) in data_tables_pos.iter().enumerate() {
+            sheet_data_tables.update_spill_and_cache(index, &pos, None);
         }
+        sheet_data_tables
     }
 
     pub fn is_empty(&self) -> bool {
@@ -73,37 +71,98 @@ impl SheetDataTables {
         self.data_tables.len()
     }
 
-    fn update_output_rects(
+    fn update_spill_and_cache(
         &mut self,
+        index: usize,
         pos: &Pos,
-        old_output_rect: Option<Rect>,
-        new_output_rect: Option<Rect>,
-    ) {
-        if let Some(old_output_rect) = old_output_rect {
-            self.has_data_table.set(old_output_rect.min, None);
-            if old_output_rect.len() > 1 {
-                self.output_rects.set_rect(
-                    old_output_rect.min.x,
-                    old_output_rect.min.y,
-                    Some(old_output_rect.max.x),
-                    Some(old_output_rect.max.y),
+        old_output_rects: Option<(Rect, Rect)>,
+    ) -> HashSet<Rect> {
+        let mut dirty_rects = HashSet::new();
+
+        let mut updated_rect = None;
+
+        if let Some((old_spilled_output_rect, old_un_spilled_output_rect)) = old_output_rects {
+            dirty_rects.insert(old_spilled_output_rect);
+            updated_rect = Some(old_spilled_output_rect);
+
+            self.has_data_table.set(*pos, None);
+
+            if old_spilled_output_rect.len() > 1 {
+                self.spilled_output_rects.set_rect(
+                    old_spilled_output_rect.min.x,
+                    old_spilled_output_rect.min.y,
+                    Some(old_spilled_output_rect.max.x),
+                    Some(old_spilled_output_rect.max.y),
                     None,
                 );
             }
+
+            if old_un_spilled_output_rect.len() > 1 {
+                self.un_spilled_output_rects
+                    .remove_pos(old_un_spilled_output_rect.min);
+            }
         }
 
-        if let Some(new_output_rect) = new_output_rect {
-            self.has_data_table.set(new_output_rect.min, Some(true));
-            if new_output_rect.len() > 1 {
-                self.output_rects.set_rect(
-                    new_output_rect.min.x,
-                    new_output_rect.min.y,
-                    Some(new_output_rect.max.x),
-                    Some(new_output_rect.max.y),
+        let mut spill_data_table = false;
+        if let Some(data_table) = self.get_at(pos) {
+            let new_un_spilled_output_rect = data_table.output_rect(*pos, true);
+            spill_data_table = self
+                .get_in_rect_sorted(new_un_spilled_output_rect, false)
+                .any(|other| other.0 < index);
+        }
+
+        if let Some(data_table) = self.data_tables.get_mut(pos) {
+            data_table.spill_data_table = spill_data_table;
+
+            self.has_data_table.set(*pos, Some(true));
+
+            let new_spilled_output_rect = data_table.output_rect(*pos, false);
+            let new_un_spilled_output_rect = data_table.output_rect(*pos, true);
+
+            dirty_rects.insert(new_spilled_output_rect);
+            updated_rect = updated_rect.map_or(Some(new_spilled_output_rect), |rect| {
+                Some(rect.union(&new_spilled_output_rect))
+            });
+
+            if new_spilled_output_rect.len() > 1 {
+                self.spilled_output_rects.set_rect(
+                    new_spilled_output_rect.min.x,
+                    new_spilled_output_rect.min.y,
+                    Some(new_spilled_output_rect.max.x),
+                    Some(new_spilled_output_rect.max.y),
                     Some(*pos),
                 );
             }
+
+            if new_un_spilled_output_rect.len() > 1 {
+                self.un_spilled_output_rects
+                    .insert(new_un_spilled_output_rect.min, new_un_spilled_output_rect);
+            }
         }
+
+        let mut other_data_tables_to_update = Vec::new();
+        if let Some(updated_rect) = updated_rect {
+            for (other_index, other_pos, other_data_table) in self
+                .get_in_rect_sorted(updated_rect, true)
+                .filter(|other| other.0 >= index && &other.1 != pos)
+            {
+                let other_old_output_rects = Some((
+                    other_data_table.output_rect(other_pos, false),
+                    other_data_table.output_rect(other_pos, true),
+                ));
+                other_data_tables_to_update.push((other_index, other_pos, other_old_output_rects));
+            }
+        }
+
+        for (other_index, other_pos, other_old_output_rects) in other_data_tables_to_update {
+            dirty_rects.extend(self.update_spill_and_cache(
+                other_index,
+                &other_pos,
+                other_old_output_rects,
+            ));
+        }
+
+        dirty_rects
     }
 
     pub fn get_index_of(&self, pos: &Pos) -> Option<usize> {
@@ -114,23 +173,37 @@ impl SheetDataTables {
         self.data_tables.get_index(index)
     }
 
-    pub fn get_mut_at_index(&mut self, index: usize) -> Option<(&Pos, &mut DataTable)> {
-        self.data_tables.get_index_mut(index)
-    }
-
     pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get(pos)
     }
 
-    pub fn get_mut_at(&mut self, pos: &Pos) -> Option<&mut DataTable> {
-        self.data_tables.get_mut(pos)
+    pub fn modify_data_table_at(
+        &mut self,
+        pos: &Pos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<(&DataTable, HashSet<Rect>)> {
+        let err = || anyhow!("Data table not found at {:?} in modify_data_table_at", pos);
+        let index = self.get_index_of(pos).ok_or_else(err)?;
+        let data_table = self.data_tables.get_mut(pos).ok_or_else(err)?;
+        let old_output_rects = Some((
+            data_table.output_rect(*pos, false),
+            data_table.output_rect(*pos, true),
+        ));
+
+        f(data_table)?;
+        data_table.spill_data_table = false;
+
+        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
+
+        let data_table = self.data_tables.get(pos).ok_or_else(err)?;
+        Ok((data_table, dirty_rects))
     }
 
     pub fn get_pos_contains(&self, pos: &Pos) -> Option<Pos> {
         if self.data_tables.get(pos).is_some() {
             Some(*pos)
         } else {
-            self.output_rects.get(*pos)
+            self.spilled_output_rects.get(*pos)
         }
     }
 
@@ -138,16 +211,18 @@ impl SheetDataTables {
         if let Some(data_table) = self.data_tables.get(pos) {
             Some((*pos, data_table))
         } else {
-            self.output_rects.get(*pos).and_then(|data_table_pos| {
-                self.data_tables
-                    .get(&data_table_pos)
-                    .map(|data_table| (data_table_pos, data_table))
-            })
+            self.spilled_output_rects
+                .get(*pos)
+                .and_then(|data_table_pos| {
+                    self.data_tables
+                        .get(&data_table_pos)
+                        .map(|data_table| (data_table_pos, data_table))
+                })
         }
     }
 
     pub fn get_mut_contains(&mut self, pos: &Pos) -> Option<(Pos, &mut DataTable)> {
-        if let Some(data_table_pos) = self.output_rects.get(*pos) {
+        if let Some(data_table_pos) = self.spilled_output_rects.get(*pos) {
             self.data_tables
                 .get_mut(&data_table_pos)
                 .map(|data_table| (data_table_pos, data_table))
@@ -158,7 +233,11 @@ impl SheetDataTables {
         }
     }
 
-    pub fn get_pos_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+    pub fn get_pos_in_rect(
+        &self,
+        rect: Rect,
+        ignore_spill_error: bool,
+    ) -> impl Iterator<Item = Pos> {
         self.has_data_table
             .nondefault_rects_in_rect(rect)
             .flat_map(|(rect, _)| {
@@ -166,101 +245,134 @@ impl SheetDataTables {
                     .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
             })
             .chain(
-                self.output_rects
-                    .unique_values_in_rect(rect)
-                    .into_iter()
-                    .flatten(),
+                if !ignore_spill_error {
+                    self.spilled_output_rects.unique_values_in_rect(rect)
+                } else {
+                    HashSet::new()
+                }
+                .into_iter()
+                .flatten(),
+            )
+            .chain(
+                if ignore_spill_error {
+                    self.un_spilled_output_rects
+                        .get_positions_associated_with_region(rect)
+                } else {
+                    HashSet::new()
+                }
+                .into_iter(),
             )
             .sorted_unstable()
             .dedup()
     }
 
-    pub fn get_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Pos, &DataTable)> {
-        self.get_pos_in_rect(rect).filter_map(|pos| {
-            self.data_tables
-                .get(&pos)
-                .map(|data_table| (pos, data_table))
-        })
+    pub fn get_in_rect(
+        &self,
+        rect: Rect,
+        ignore_spill_error: bool,
+    ) -> impl Iterator<Item = (Pos, &DataTable)> {
+        self.get_pos_in_rect(rect, ignore_spill_error)
+            .filter_map(|pos| {
+                self.data_tables
+                    .get(&pos)
+                    .map(|data_table| (pos, data_table))
+            })
     }
 
-    pub fn insert_full(&mut self, pos: &Pos, data_table: DataTable) -> (usize, Option<DataTable>) {
-        let new_output_rect = data_table.output_rect(*pos, false);
+    pub fn get_in_rect_sorted(
+        &self,
+        rect: Rect,
+        ignore_spill_error: bool,
+    ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
+        self.get_pos_in_rect(rect, ignore_spill_error)
+            .filter_map(|pos| {
+                self.data_tables
+                    .get_full(&pos)
+                    .map(|(index, _, data_table)| (index, pos, data_table))
+            })
+            .sorted_by(|a, b| a.0.cmp(&b.0))
+    }
+
+    pub fn insert_full(
+        &mut self,
+        pos: &Pos,
+        mut data_table: DataTable,
+    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+        data_table.spill_data_table = false;
 
         let (index, old_data_table) = self.data_tables.insert_full(*pos, data_table);
 
-        let old_output_rect = old_data_table
+        let old_output_rects = old_data_table
             .as_ref()
-            .map(|dt| dt.output_rect(*pos, false));
+            .map(|dt| (dt.output_rect(*pos, false), dt.output_rect(*pos, true)));
 
-        self.update_output_rects(pos, old_output_rect, Some(new_output_rect));
+        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
 
-        (index, old_data_table)
+        (index, old_data_table, dirty_rects)
     }
 
     pub fn insert_sorted(
         &mut self,
         pos: &Pos,
-        data_table: DataTable,
-    ) -> (usize, Option<DataTable>) {
-        let new_output_rect = data_table.output_rect(*pos, false);
+        mut data_table: DataTable,
+    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+        data_table.spill_data_table = false;
 
         let (index, old_data_table) = self.data_tables.insert_sorted(*pos, data_table);
 
-        let old_output_rect = old_data_table
+        let old_output_rects = old_data_table
             .as_ref()
-            .map(|dt| dt.output_rect(*pos, false));
+            .map(|dt| (dt.output_rect(*pos, false), dt.output_rect(*pos, true)));
 
-        self.update_output_rects(pos, old_output_rect, Some(new_output_rect));
+        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
 
-        (index, old_data_table)
+        (index, old_data_table, dirty_rects)
     }
 
     pub fn insert_before(
         &mut self,
         index: usize,
         pos: &Pos,
-        data_table: DataTable,
-    ) -> (usize, Option<DataTable>) {
-        let new_output_rect = data_table.output_rect(*pos, false);
+        mut data_table: DataTable,
+    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+        data_table.spill_data_table = false;
 
         let (index, old_data_table) = self.data_tables.insert_before(index, *pos, data_table);
 
-        let old_output_rect = old_data_table
+        let old_output_rects = old_data_table
             .as_ref()
-            .map(|dt| dt.output_rect(*pos, false));
+            .map(|dt| (dt.output_rect(*pos, false), dt.output_rect(*pos, true)));
 
-        self.update_output_rects(pos, old_output_rect, Some(new_output_rect));
+        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
 
-        (index, old_data_table)
+        (index, old_data_table, dirty_rects)
     }
 
-    pub fn shift_remove_full(&mut self, pos: &Pos) -> Option<(usize, Pos, DataTable)> {
-        let old_data_table_full = self.data_tables.shift_remove_full(pos);
+    pub fn shift_remove_full(
+        &mut self,
+        pos: &Pos,
+    ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
+        let Some((index, _, old_data_table)) = self.data_tables.shift_remove_full(pos) else {
+            return None;
+        };
 
-        let old_output_rect = old_data_table_full
-            .as_ref()
-            .map(|dt| dt.2.output_rect(*pos, false));
+        let old_output_rects = Some((
+            old_data_table.output_rect(*pos, false),
+            old_data_table.output_rect(*pos, true),
+        ));
 
-        self.update_output_rects(pos, old_output_rect, None);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rects);
 
-        old_data_table_full
+        Some((index, *pos, old_data_table, dirty_rects))
     }
 
-    pub fn shift_remove(&mut self, pos: &Pos) -> Option<DataTable> {
-        let old_data_table = self.data_tables.shift_remove(pos);
-
-        let old_output_rect = old_data_table
-            .as_ref()
-            .map(|dt| dt.output_rect(*pos, false));
-
-        self.update_output_rects(pos, old_output_rect, None);
-
-        old_data_table
+    pub fn shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
+        self.shift_remove_full(pos).map(|full| (full.2, full.3))
     }
 
     pub fn column_bounds(&self, column: i64) -> (i64, i64) {
         let has_data_min = self.has_data_table.col_min(column);
-        let output_rects_min = self.output_rects.col_min(column);
+        let output_rects_min = self.spilled_output_rects.col_min(column);
         let min = match (has_data_min > 0, output_rects_min > 0) {
             (true, true) => has_data_min.min(output_rects_min),
             (true, false) => has_data_min,
@@ -269,7 +381,7 @@ impl SheetDataTables {
         };
 
         let has_data_max = self.has_data_table.col_max(column);
-        let output_rects_max = self.output_rects.col_max(column);
+        let output_rects_max = self.spilled_output_rects.col_max(column);
         let max = match (has_data_max > 0, output_rects_max > 0) {
             (true, true) => has_data_max.max(output_rects_max),
             (true, false) => has_data_max,
@@ -282,7 +394,7 @@ impl SheetDataTables {
 
     pub fn row_bounds(&self, row: i64) -> (i64, i64) {
         let has_data_min = self.has_data_table.row_min(row);
-        let output_rects_min = self.output_rects.row_min(row);
+        let output_rects_min = self.spilled_output_rects.row_min(row);
         let min = match (has_data_min > 0, output_rects_min > 0) {
             (true, true) => has_data_min.min(output_rects_min),
             (true, false) => has_data_min,
@@ -291,7 +403,7 @@ impl SheetDataTables {
         };
 
         let has_data_max = self.has_data_table.row_max(row);
-        let output_rects_max = self.output_rects.row_max(row);
+        let output_rects_max = self.spilled_output_rects.row_max(row);
         let max = match (has_data_max > 0, output_rects_max > 0) {
             (true, true) => has_data_max.max(output_rects_max),
             (true, false) => has_data_max,
@@ -305,7 +417,7 @@ impl SheetDataTables {
     pub fn finite_bounds(&self) -> Option<Rect> {
         match (
             self.has_data_table.finite_bounds(),
-            self.output_rects.finite_bounds(),
+            self.spilled_output_rects.finite_bounds(),
         ) {
             (Some(has_data_table_bounds), Some(output_rects_bounds)) => {
                 Some(has_data_table_bounds.union(&output_rects_bounds))
@@ -314,6 +426,14 @@ impl SheetDataTables {
             (None, Some(output_rects_bounds)) => Some(output_rects_bounds),
             (None, None) => None,
         }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
+        self.data_tables.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Pos, &mut DataTable)> {
+        self.data_tables.iter_mut()
     }
 
     pub fn iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
@@ -326,17 +446,5 @@ impl SheetDataTables {
         self.data_tables.iter_mut().flat_map(|(pos, data_table)| {
             data_table.code_run_mut().map(|code_run| (*pos, code_run))
         })
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
-        self.data_tables.iter()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Pos, &mut DataTable)> {
-        self.data_tables.iter_mut()
-    }
-
-    pub fn retain(&mut self, f: impl FnMut(&Pos, &mut DataTable) -> bool) {
-        self.data_tables.retain(f);
     }
 }
