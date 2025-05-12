@@ -1,5 +1,15 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { atom } from 'recoil';
+import { atom, DefaultValue } from 'recoil';
+
+type ConnectionDemoAtom = {
+  teamUuid: string;
+  hideConnectionDemo: boolean | undefined;
+};
+
+const defaultValue: ConnectionDemoAtom = {
+  teamUuid: '',
+  hideConnectionDemo: undefined,
+};
 
 // This value comes initially from the server on both the app- and dashboard-side
 // We store it in local state and sync optimistically to the server
@@ -7,19 +17,27 @@ import { atom } from 'recoil';
 // data on the app-side of connections so this wouldn't properly update
 // through the data router to both the <Connections> component and the
 // <ConnectionsMenu> component
-export const clientDataKvHideConnectionDemoAtom = atom<boolean | undefined>({
+export const clientDataKvHideConnectionDemoAtom = atom<ConnectionDemoAtom>({
   key: 'clientDataKvHideConnectionDemoAtom',
-  default: undefined,
+  default: defaultValue,
   effects: [
     ({ onSet }) => {
       onSet(async (newValue, oldValue) => {
         // If the value hasn't changed, don't update on the server
-        if (newValue === oldValue) {
+        if (
+          newValue instanceof DefaultValue ||
+          oldValue instanceof DefaultValue ||
+          newValue.hideConnectionDemo === oldValue?.hideConnectionDemo
+        ) {
+          console.log('no change');
           return;
         }
 
-        await apiClient.teams.update('3d981189-1971-4e78-8b5c-c6fa6e6a0a06', {
-          clientDataKv: { onboardingBannerDismissed: true },
+        console.warn('syncing', {
+          clientDataKv: { hideConnectionDemo: newValue.hideConnectionDemo },
+        });
+        await apiClient.teams.update(newValue.teamUuid, {
+          clientDataKv: { hideConnectionDemo: newValue.hideConnectionDemo },
         });
       });
     },

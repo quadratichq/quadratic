@@ -144,7 +144,10 @@ export const Component = () => {
   } = useLoaderData() as FileData;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
-      set(clientDataKvHideConnectionDemoAtom, clientDataKv.hideConnectionDemo);
+      set(clientDataKvHideConnectionDemoAtom, {
+        teamUuid,
+        hideConnectionDemo: clientDataKv.hideConnectionDemo,
+      });
       set(editorInteractionStateAtom, (prevState) => ({
         ...prevState,
         permissions: filePermissions,

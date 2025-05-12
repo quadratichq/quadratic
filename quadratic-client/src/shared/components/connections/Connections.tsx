@@ -43,7 +43,7 @@ export const Connections = ({
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
 
-  const hideConnectionDemo = useRecoilValue(clientDataKvHideConnectionDemoAtom);
+  const { hideConnectionDemo } = useRecoilValue(clientDataKvHideConnectionDemoAtom);
 
   const [activeConnectionState, setActiveConnectionState] = useState<
     { uuid: string; view: 'edit' | 'details' } | undefined
@@ -174,6 +174,7 @@ export const Connections = ({
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
+            teamUuid={teamUuid}
           />
         )}
       </div>

@@ -16,7 +16,7 @@ export const useConnectionsFetcher = () => {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const hideConnectionDemo = useRecoilValue(clientDataKvHideConnectionDemoAtom);
+  const { hideConnectionDemo } = useRecoilValue(clientDataKvHideConnectionDemoAtom);
   const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
   const fetcherRef = useRef(fetcher);
 

@@ -29,6 +29,7 @@ type Props = {
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
+  teamUuid: string;
 };
 
 export const ConnectionsList = ({
@@ -37,6 +38,7 @@ export const ConnectionsList = ({
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
+  teamUuid,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
   const fetcher = useFetcher();
@@ -101,6 +103,7 @@ export const ConnectionsList = ({
               items={connections}
               handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
+              teamUuid={teamUuid}
             />
           </>
         ) : (
@@ -114,7 +117,7 @@ export const ConnectionsList = ({
                   Or,{' '}
                   <button
                     className="relative font-semibold text-primary"
-                    onClick={() => handleHideConnectionDemo(false)}
+                    onClick={() => handleHideConnectionDemo({ teamUuid, hideConnectionDemo: false })}
                   >
                     add a demo connection
                   </button>
@@ -135,11 +138,13 @@ function ListItems({
   handleNavigateToDetailsView,
   handleNavigateToEditView,
   items,
+  teamUuid,
 }: {
   filterQuery: string;
   handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   items: ConnectionsListConnection[];
+  teamUuid: string;
 }) {
   const handleHideConnectionDemo = useSetRecoilState(clientDataKvHideConnectionDemoAtom);
   const filteredItems = filterQuery
@@ -188,7 +193,7 @@ function ListItems({
               className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
               onClick={async () => {
                 if (await confirmFn()) {
-                  handleHideConnectionDemo(true);
+                  handleHideConnectionDemo({ teamUuid, hideConnectionDemo: true });
                 }
               }}
             >

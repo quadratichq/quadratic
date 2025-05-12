@@ -127,7 +127,10 @@ export const Component = () => {
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
   const {
-    activeTeam: { clientDataKv },
+    activeTeam: {
+      clientDataKv,
+      team: { uuid: activeTeamUuid },
+    },
   } = useLoaderData() as LoaderData;
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
@@ -156,9 +159,12 @@ export const Component = () => {
 
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
-      set(clientDataKvHideConnectionDemoAtom, clientDataKv.hideConnectionDemo);
+      set(clientDataKvHideConnectionDemoAtom, {
+        teamUuid: activeTeamUuid,
+        hideConnectionDemo: clientDataKv.hideConnectionDemo,
+      });
     },
-    [clientDataKv]
+    [activeTeamUuid, clientDataKv.hideConnectionDemo]
   );
 
   return (
