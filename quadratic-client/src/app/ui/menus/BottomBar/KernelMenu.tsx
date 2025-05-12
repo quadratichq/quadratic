@@ -93,7 +93,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
             {transactionsInfo.length > 0 && (
               <div
                 className={cn(
-                  'pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background',
+                  'pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-background',
                   running ? 'right-0 top-0 h-4 w-4' : 'right-1 top-1 h-2 w-2'
                 )}
               >
