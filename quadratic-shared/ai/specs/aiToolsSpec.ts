@@ -707,6 +707,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
     sources: ['AIAnalyst'],
     description: `
     This tool converts a selection of cells on a specified sheet into a data table.\n
+    IMPORTANT: the selection can NOT contain any code cells or data tables.\n
     It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
     A data table cannot be created over any existing code cells or data tables.\n
     The data table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
@@ -735,6 +736,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
     responseSchema: AIToolsArgsSchema[AITool.ConvertToTable],
     prompt: `
     This tool converts a selection of cells on a specified sheet into a data table.\n
+    IMPORTANT: the selection can NOT contain any code cells or data tables.\n
     It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
     A data table cannot be created over any existing code cells or data tables.\n
     The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
