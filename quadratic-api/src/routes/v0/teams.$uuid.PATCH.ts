@@ -70,6 +70,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   return res.status(200).json({
     name: newTeam.name,
     clientDataKv: newClientDataKv,
-    settings: { analyticsAi: newTeam.settingAnalyticsAi },
+    settings: {
+      analyticsAi: newTeam.settingAnalyticsAi,
+    },
   });
 }
