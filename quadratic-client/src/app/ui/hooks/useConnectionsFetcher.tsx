@@ -31,7 +31,6 @@ export const useConnectionsFetcher = () => {
   const permissionsHasTeamEdit = useMemo(() => teamPermissions?.includes('TEAM_EDIT'), [teamPermissions]);
   useEffect(() => {
     if (permissionsHasTeamEdit && fetcherRef.current.state === 'idle' && fetcherRef.current.data === undefined) {
-      console.log('useConnectionsFetcher fetching');
       fetcherRef.current.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
     }
   }, [teamUuid, permissionsHasTeamEdit]);
