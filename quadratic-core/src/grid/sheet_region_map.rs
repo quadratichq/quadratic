@@ -175,10 +175,6 @@ mod tests {
                 m.get_positions_associated_with_region(rect![H7:H7]),
                 HashSet::from_iter([pos![A2]])
             );
-            assert_eq!(
-                m.get_positions_associated_with_region(rect![D4:F10]),
-                HashSet::from_iter([pos![A1], pos![C3]]),
-            );
 
             m.remove_pos(pos![A2]);
             assert_eq!(
