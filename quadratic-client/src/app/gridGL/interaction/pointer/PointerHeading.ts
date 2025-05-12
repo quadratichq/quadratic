@@ -423,7 +423,7 @@ export class PointerHeading {
   }
 
   async autoResizeColumn(column: number) {
-    const columns = sheets.sheet.cursor.getColumnsWithSelectedCells();
+    const columns = sheets.sheet.cursor.getSelectedColumns();
     if (!columns.includes(column)) {
       columns.push(column);
     }
@@ -449,7 +449,7 @@ export class PointerHeading {
   }
 
   async autoResizeRow(row: number) {
-    const rows = sheets.sheet.cursor.getRowsWithSelectedCells();
+    const rows = sheets.sheet.cursor.getSelectedRows();
     if (!rows.includes(row)) {
       rows.push(row);
     }
