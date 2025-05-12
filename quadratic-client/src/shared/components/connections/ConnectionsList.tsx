@@ -1,5 +1,5 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { clientDataKvHideConnectionDemoAtom } from '@/shared/atom/clientDataKvHideConnectionDemoAtom';
+import { getToggleHideConnectionDemoAction } from '@/routes/api.connections';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon, CloseIcon, EditIcon } from '@/shared/components/Icons';
@@ -20,8 +20,7 @@ import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetcher } from 'react-router';
-import { useSetRecoilState } from 'recoil';
+import { useFetcher, useSubmit } from 'react-router';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -42,7 +41,6 @@ export const ConnectionsList = ({
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
   const fetcher = useFetcher();
-  const handleHideConnectionDemo = useSetRecoilState(clientDataKvHideConnectionDemoAtom);
 
   return (
     <>
@@ -117,7 +115,10 @@ export const ConnectionsList = ({
                   Or,{' '}
                   <button
                     className="relative font-semibold text-primary"
-                    onClick={() => handleHideConnectionDemo({ teamUuid, hideConnectionDemo: false })}
+                    onClick={() => {
+                      const { json, options } = getToggleHideConnectionDemoAction(teamUuid, false);
+                      fetcher.submit(json, options);
+                    }}
                   >
                     add a demo connection
                   </button>
@@ -146,11 +147,11 @@ function ListItems({
   items: ConnectionsListConnection[];
   teamUuid: string;
 }) {
-  const handleHideConnectionDemo = useSetRecoilState(clientDataKvHideConnectionDemoAtom);
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
+  const submit = useSubmit();
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
@@ -193,7 +194,8 @@ function ListItems({
               className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
               onClick={async () => {
                 if (await confirmFn()) {
-                  handleHideConnectionDemo({ teamUuid, hideConnectionDemo: true });
+                  const { json, options } = getToggleHideConnectionDemoAction(teamUuid, true);
+                  submit(json, { ...options, navigate: false });
                 }
               }}
             >

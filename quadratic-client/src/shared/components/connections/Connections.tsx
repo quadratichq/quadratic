@@ -1,6 +1,5 @@
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
-import { clientDataKvHideConnectionDemoAtom } from '@/shared/atom/clientDataKvHideConnectionDemoAtom';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
@@ -10,7 +9,6 @@ import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useFetchers, useSearchParams } from 'react-router';
-import { useRecoilValue } from 'recoil';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
@@ -21,6 +19,7 @@ type Props = {
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
+  hideConnectionDemo: boolean | undefined;
   // If this is present, we're in the app and we'll do stuff slightly differently
   handleNavigateToDetailsViewOverride?: (language: CodeCellLanguage) => void;
 };
@@ -28,6 +27,7 @@ export type NavigateToView = (props: { connectionUuid: string; connectionType: C
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
 export const Connections = ({
+  hideConnectionDemo,
   connections,
   connectionsAreLoading,
   teamUuid,
@@ -42,8 +42,6 @@ export const Connections = ({
   const initialConnectionUuid = searchParams.get('initial-connection-uuid');
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
-
-  const { hideConnectionDemo } = useRecoilValue(clientDataKvHideConnectionDemoAtom);
 
   const [activeConnectionState, setActiveConnectionState] = useState<
     { uuid: string; view: 'edit' | 'details' } | undefined
@@ -112,7 +110,11 @@ export const Connections = ({
   }
 
   // Connection hidden? Remove it from the list
-  if (hideConnectionDemo) {
+  const demoConnectionBeingHidden = fetchers.filter(
+    (fetcher) =>
+      isJsonObject(fetcher.json) && fetcher.json.action === 'toggle-hide-connection-demo' && fetcher.state !== 'idle'
+  );
+  if (demoConnectionBeingHidden.length || hideConnectionDemo) {
     connections = connections.filter((c) => !c.isDemo);
   }
 
@@ -169,12 +171,12 @@ export const Connections = ({
           />
         ) : (
           <ConnectionsList
+            teamUuid={teamUuid}
             connections={connections}
             connectionsAreLoading={connectionsAreLoading}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
-            teamUuid={teamUuid}
           />
         )}
       </div>

@@ -1,10 +1,8 @@
 import type { GetConnections } from '@/routes/api.connections';
-import { clientDataKvHideConnectionDemoAtom } from '@/shared/atom/clientDataKvHideConnectionDemoAtom';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFetcher } from 'react-router';
-import { useRecoilValue } from 'recoil';
 
 /**
  * The data for this accessed in various places in the app (cell type menu,
@@ -16,10 +14,10 @@ export const useConnectionsFetcher = () => {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const { hideConnectionDemo } = useRecoilValue(clientDataKvHideConnectionDemoAtom);
   const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
   const fetcherRef = useRef(fetcher);
 
+  let hideConnectionDemo = Boolean(fetcher.data?.hideConnectionDemo);
   let connections = fetcher.data ? fetcher.data.connections : [];
   if (hideConnectionDemo && connections.length > 0) {
     connections = connections.filter((c) => !c.isDemo);
@@ -35,5 +33,5 @@ export const useConnectionsFetcher = () => {
     }
   }, [teamUuid, permissionsHasTeamEdit]);
 
-  return { connections, staticIps, isLoading: fetcher.data === undefined };
+  return { hideConnectionDemo, connections, staticIps, isLoading: fetcher.data === undefined };
 };
