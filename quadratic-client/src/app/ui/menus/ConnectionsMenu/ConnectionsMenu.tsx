@@ -18,7 +18,11 @@ export function ConnectionsMenu() {
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const {
-    team: { uuid: teamUuid, sshPublicKey },
+    team: {
+      uuid: teamUuid,
+      sshPublicKey,
+      clientDataKv: { hideDemoConnection },
+    },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
   const fetcher = useConnectionsFetcher();
@@ -102,6 +106,7 @@ export function ConnectionsMenu() {
             sshPublicKey={sshPublicKey}
             staticIps={fetcher.data && fetcher.data.staticIps ? fetcher.data.staticIps : []}
             handleNavigateToDetailsViewOverride={openEditor}
+            hideDemoConnection={hideDemoConnection}
           />
         )}
       </DialogContent>

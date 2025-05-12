@@ -54,7 +54,7 @@ async function getConnection(teamUuid: string, connectionUuid: string) {
  *
  */
 
-type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction | ToggleDemoConnectionAction;
+type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction;
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const data: Action = await request.json();
@@ -85,17 +85,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     try {
       const { connectionUuid, teamUuid } = data as DeleteConnectionAction;
       await apiClient.connections.delete({ teamUuid, connectionUuid });
-      return { ok: true };
-    } catch (e) {
-      console.error(e);
-      return { ok: false };
-    }
-  }
-
-  if (data.action === 'toggle-demo-connection') {
-    try {
-      const { teamUuid, show } = data as ToggleDemoConnectionAction;
-      await apiClient.teams.update(teamUuid, { settings: { showDemoConnection: show } });
       return { ok: true };
     } catch (e) {
       console.error(e);
@@ -153,22 +142,6 @@ export const getDeleteConnectionAction = (connectionUuid: string, teamUuid: stri
       action: 'delete-connection',
       connectionUuid,
       teamUuid,
-    },
-    options: {
-      action: ROUTES.API.CONNECTIONS.POST,
-      method: 'POST',
-      encType: 'application/json',
-    },
-  } as const;
-};
-
-export type ToggleDemoConnectionAction = ReturnType<typeof getToggleDemoConnectionAction>['json'];
-export const getToggleDemoConnectionAction = ({ teamUuid, show }: { teamUuid: string; show: boolean }) => {
-  return {
-    json: {
-      action: 'toggle-demo-connection',
-      teamUuid,
-      show,
     },
     options: {
       action: ROUTES.API.CONNECTIONS.POST,

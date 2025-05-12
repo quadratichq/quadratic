@@ -1,5 +1,4 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { getToggleDemoConnectionAction } from '@/routes/api.connections';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon, CloseIcon, EditIcon } from '@/shared/components/Icons';
@@ -25,10 +24,10 @@ import { useFetcher } from 'react-router';
 type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
+  handleHideDemoConnection: (hide: boolean) => void;
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
-  teamUuid: string;
 };
 
 export const ConnectionsList = ({
@@ -37,7 +36,7 @@ export const ConnectionsList = ({
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
-  teamUuid,
+  handleHideDemoConnection,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
   const fetcher = useFetcher();
@@ -101,7 +100,7 @@ export const ConnectionsList = ({
               items={connections}
               handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
-              teamUuid={teamUuid}
+              handleHideDemoConnection={handleHideDemoConnection}
             />
           </>
         ) : (
@@ -115,10 +114,7 @@ export const ConnectionsList = ({
                   Or,{' '}
                   <button
                     className="relative font-semibold text-primary"
-                    onClick={() => {
-                      const { json, options } = getToggleDemoConnectionAction({ teamUuid, show: true });
-                      fetcher.submit(json, options);
-                    }}
+                    onClick={() => handleHideDemoConnection(false)}
                   >
                     add a demo connection
                   </button>
@@ -136,23 +132,21 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
+  handleHideDemoConnection,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
   items,
-  teamUuid,
 }: {
   filterQuery: string;
+  handleHideDemoConnection: Props['handleHideDemoConnection'];
   handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   items: ConnectionsListConnection[];
-  teamUuid: string;
 }) {
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
-
-  const fetcher = useFetcher();
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
@@ -195,8 +189,7 @@ function ListItems({
               className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
               onClick={async () => {
                 if (await confirmFn()) {
-                  const { json, options } = getToggleDemoConnectionAction({ teamUuid, show: false });
-                  fetcher.submit(json, options);
+                  handleHideDemoConnection(true);
                 }
               }}
             >

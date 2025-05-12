@@ -105,7 +105,6 @@ export const TeamClientDataKvSchema = z.record(z.any());
 
 const TeamSettingsSchema = z.object({
   analyticsAi: z.boolean(),
-  showDemoConnection: z.boolean(),
 });
 export type TeamSettings = z.infer<typeof TeamSettingsSchema>;
 
@@ -158,6 +157,7 @@ export const ApiSchemas = {
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).extend({
+      clientDataKv: TeamClientDataKvSchema,
       sshPublicKey: z.string(),
       settings: TeamSettingsSchema,
     }),

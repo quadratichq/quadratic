@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ApiSchemas, TeamClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -10,6 +10,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { updateCustomer } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { validateClientDataKv } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -55,9 +56,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       ...(settings
         ? {
             ...(settings.analyticsAi !== undefined ? { settingAnalyticsAi: settings.analyticsAi } : {}),
-            ...(settings.showDemoConnection !== undefined
-              ? { settingShowDemoConnection: settings.showDemoConnection }
-              : {}),
           }
         : {}),
     },
@@ -76,17 +74,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   return res.status(200).json({
     name: newTeam.name,
     clientDataKv: newClientDataKv,
-    settings: {
-      analyticsAi: newTeam.settingAnalyticsAi,
-      showDemoConnection: newTeam.settingShowDemoConnection,
-    },
+    settings: { analyticsAi: newTeam.settingAnalyticsAi },
   });
-}
-
-function validateClientDataKv(clientDataKv: unknown) {
-  const parseResult = TeamClientDataKvSchema.safeParse(clientDataKv);
-  if (!parseResult.success) {
-    throw new ApiError(500, '`clientDataKv` must be a valid JSON object');
-  }
-  return parseResult.data;
 }

@@ -144,7 +144,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       name: team.name,
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
-        showDemoConnection: dbTeam.settingShowDemoConnection,
       },
       sshPublicKey: decryptedTeam.sshPublicKey,
     },
@@ -205,7 +204,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
         },
       })),
     license: { ...license },
-    connections: getTeamConnectionsList({ dbConnections, settingShowDemoConnection: dbTeam.settingShowDemoConnection }),
+    connections: getTeamConnectionsList({ dbConnections }),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
   };
 
