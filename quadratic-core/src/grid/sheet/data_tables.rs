@@ -58,7 +58,7 @@ impl SheetDataTables {
         let mut sheet_data_tables = Self::new();
         sheet_data_tables.data_tables = data_tables;
         for (index, pos) in data_tables_pos.iter().enumerate() {
-            sheet_data_tables.update_spill_and_cache(index, &pos, None);
+            sheet_data_tables.update_spill_and_cache(index, pos, None);
         }
         sheet_data_tables
     }
@@ -193,7 +193,7 @@ impl SheetDataTables {
         f(data_table)?;
         data_table.spill_data_table = false;
 
-        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rects);
 
         let data_table = self.data_tables.get(pos).ok_or_else(err)?;
         Ok((data_table, dirty_rects))
@@ -253,15 +253,12 @@ impl SheetDataTables {
                 .into_iter()
                 .flatten(),
             )
-            .chain(
-                if ignore_spill_error {
-                    self.un_spilled_output_rects
-                        .get_positions_associated_with_region(rect)
-                } else {
-                    HashSet::new()
-                }
-                .into_iter(),
-            )
+            .chain(if ignore_spill_error {
+                self.un_spilled_output_rects
+                    .get_positions_associated_with_region(rect)
+            } else {
+                HashSet::new()
+            })
             .sorted_unstable()
             .dedup()
     }
@@ -306,7 +303,7 @@ impl SheetDataTables {
             .as_ref()
             .map(|dt| (dt.output_rect(*pos, false), dt.output_rect(*pos, true)));
 
-        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rects);
 
         (index, old_data_table, dirty_rects)
     }
@@ -324,7 +321,7 @@ impl SheetDataTables {
             .as_ref()
             .map(|dt| (dt.output_rect(*pos, false), dt.output_rect(*pos, true)));
 
-        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rects);
 
         (index, old_data_table, dirty_rects)
     }
@@ -343,7 +340,7 @@ impl SheetDataTables {
             .as_ref()
             .map(|dt| (dt.output_rect(*pos, false), dt.output_rect(*pos, true)));
 
-        let dirty_rects = self.update_spill_and_cache(index, &pos, old_output_rects);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rects);
 
         (index, old_data_table, dirty_rects)
     }
@@ -352,9 +349,7 @@ impl SheetDataTables {
         &mut self,
         pos: &Pos,
     ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
-        let Some((index, _, old_data_table)) = self.data_tables.shift_remove_full(pos) else {
-            return None;
-        };
+        let (index, _, old_data_table) = self.data_tables.shift_remove_full(pos)?;
 
         let old_output_rects = Some((
             old_data_table.output_rect(*pos, false),

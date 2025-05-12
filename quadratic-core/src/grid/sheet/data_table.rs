@@ -2,17 +2,17 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
+    Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
+        CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        CodeCellLanguage, CodeCellValue, DataTableKind,
     },
-    Pos, Rect, SheetPos,
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use indexmap::IndexMap;
 
 impl Sheet {
@@ -134,7 +134,7 @@ impl Sheet {
         pos: &Pos,
         mut data_table: DataTable,
     ) -> (usize, Option<DataTable>, HashSet<Rect>) {
-        data_table.spill_value = self.check_spills_due_to_column_values(pos, &mut data_table);
+        data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
         self.data_tables.insert_full(pos, data_table)
     }
 
@@ -143,7 +143,7 @@ impl Sheet {
         pos: &Pos,
         mut data_table: DataTable,
     ) -> (usize, Option<DataTable>, HashSet<Rect>) {
-        data_table.spill_value = self.check_spills_due_to_column_values(pos, &mut data_table);
+        data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
         self.data_tables.insert_sorted(pos, data_table)
     }
 
@@ -153,7 +153,7 @@ impl Sheet {
         pos: &Pos,
         mut data_table: DataTable,
     ) -> (usize, Option<DataTable>, HashSet<Rect>) {
-        data_table.spill_value = self.check_spills_due_to_column_values(pos, &mut data_table);
+        data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
         self.data_tables.insert_before(index, pos, data_table)
     }
 
@@ -538,16 +538,17 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
+        CellValue, Value,
         a1::{A1Selection, RefRangeBounds},
         controller::{
+            GridController,
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
-            GridController,
         },
         first_sheet_id,
-        grid::{js_types::JsClipboard, CodeRun, DataTableKind, SheetId},
+        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
         test_create_code_table, test_create_data_table, test_create_html_chart,
-        test_create_js_chart, CellValue, Value,
+        test_create_js_chart,
     };
     use bigdecimal::BigDecimal;
 
