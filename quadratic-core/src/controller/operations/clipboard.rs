@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::usize;
 
 use anyhow::{Error, Result};
 use indexmap::IndexMap;
@@ -286,7 +287,7 @@ impl GridController {
                     ops.push(Operation::SetDataTable {
                         sheet_pos: target_pos,
                         data_table: Some(data_table),
-                        index: 0,
+                        index: usize::MAX,
                     });
                 }
 

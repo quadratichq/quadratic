@@ -114,7 +114,7 @@ impl Sheet {
     ///
     /// spill due to other data tables is managed internally by SheetDataTables
     fn check_spills_due_to_column_values(&self, pos: &Pos, data_table: &DataTable) -> bool {
-        let new_output_rect = data_table.output_rect(*pos, false);
+        let new_output_rect = data_table.output_rect(*pos, true);
         let mut nondefault_rects = self.columns.get_nondefault_rects_in_rect(new_output_rect);
         let root_cell_rect = Rect::single_pos(*pos);
         nondefault_rects.any(|(rect, _)| rect != root_cell_rect)
@@ -178,15 +178,13 @@ impl Sheet {
 
         for (_, pos, data_table) in self.data_tables.get_in_rect_sorted(rect, true) {
             let new_spill = self.check_spills_due_to_column_values(&pos, data_table);
-            if new_spill != data_table.spill_value {
-                data_tables_to_modify.push((pos, new_spill));
-            }
+            data_tables_to_modify.push((pos, new_spill));
         }
 
         let mut dirty_rects = HashSet::new();
 
         for (pos, new_spill) in data_tables_to_modify {
-            let _ = self.data_tables.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, |dt| {
                 let old_output_rect = dt.output_rect(pos, false);
 
                 dt.spill_value = new_spill;
@@ -196,7 +194,9 @@ impl Sheet {
                 dirty_rects.insert(max_output_rect);
 
                 Ok(())
-            });
+            }) {
+                dirty_rects.extend(dirty_rect);
+            }
         }
 
         dirty_rects
