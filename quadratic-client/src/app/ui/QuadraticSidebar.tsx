@@ -23,7 +23,7 @@ import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import React from 'react';
 import { Link } from 'react-router';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
@@ -32,7 +32,7 @@ export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const [, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
