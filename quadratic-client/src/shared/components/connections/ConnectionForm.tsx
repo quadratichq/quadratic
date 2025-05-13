@@ -123,8 +123,7 @@ function ConnectionFormWrapper({
   const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
   // This is a middleware that tests the connection before saving
-  const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event) => {
-    // @ts-expect-error
+  const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event: any) => {
     if (event?.nativeEvent?.submitter?.name === SKIP_TEST_BUTTON_NAME) {
       props.handleSubmitForm(formValues);
       return;
