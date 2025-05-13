@@ -53,7 +53,7 @@ impl RefRangeBounds {
             },
             end: CellRefRangeEnd {
                 col: CellRefCoord::new_rel(x),
-                row: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::REL_UNBOUNDED,
             },
         }
     }
@@ -65,7 +65,7 @@ impl RefRangeBounds {
                 row: CellRefCoord::new_rel(y),
             },
             end: CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_rel(y),
             },
         }
@@ -82,7 +82,7 @@ impl RefRangeBounds {
             },
             end: CellRefRangeEnd {
                 col: CellRefCoord::new_rel(x2),
-                row: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::REL_UNBOUNDED,
             },
         }
     }
@@ -97,7 +97,7 @@ impl RefRangeBounds {
                 row: CellRefCoord::new_rel(y1),
             },
             end: CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_rel(y2),
             },
         }

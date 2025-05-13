@@ -156,12 +156,12 @@ macro_rules! rect {
 /// # Examples
 ///
 /// ```
-/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord, UNBOUNDED}};
+/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord}};
 /// assert_eq!(ref_range_bounds![:$C], RefRangeBounds {
 ///     start: CellRefRangeEnd::new_relative_xy(1, 1),
 ///     end: CellRefRangeEnd {
 ///         col: CellRefCoord::new_abs(3),
-///         row: CellRefCoord::new_abs(UNBOUNDED),
+///         row: CellRefCoord::ABS_UNBOUNDED,
 ///     },
 /// });
 /// ```
@@ -447,7 +447,7 @@ mod tests {
                 start: CellRefRangeEnd::new_relative_xy(1, 1),
                 end: CellRefRangeEnd {
                     col: CellRefCoord::new_abs(3),
-                    row: CellRefCoord::new_abs(UNBOUNDED),
+                    row: CellRefCoord::ABS_UNBOUNDED,
                 },
             }
         );

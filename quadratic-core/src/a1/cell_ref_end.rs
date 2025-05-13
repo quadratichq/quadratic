@@ -32,8 +32,8 @@ impl CellRefRangeEnd {
         row: CellRefCoord::START,
     };
     pub const UNBOUNDED: Self = Self {
-        col: CellRefCoord::UNBOUNDED,
-        row: CellRefCoord::UNBOUNDED,
+        col: CellRefCoord::REL_UNBOUNDED,
+        row: CellRefCoord::REL_UNBOUNDED,
     };
 
     pub fn new_relative_xy(x: i64, y: i64) -> Self {
@@ -411,20 +411,20 @@ mod tests {
             CellRefRangeEnd::parse_end("C", None).unwrap(),
             CellRefRangeEnd {
                 col: CellRefCoord::new_rel(3),
-                row: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::REL_UNBOUNDED,
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_end("5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_rel(5),
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_end("$5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_abs(5),
             }
         );
@@ -483,20 +483,20 @@ mod tests {
             CellRefRangeEnd::parse_end("C[-2]", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
                 col: CellRefCoord::new_rel(3),
-                row: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::REL_UNBOUNDED,
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_end("R[-3]", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_rel(5),
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_end("R{5}", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_abs(5),
             }
         );
@@ -530,7 +530,7 @@ mod tests {
         assert_eq!(
             CellRefRangeEnd {
                 col: CellRefCoord::new_rel(1),
-                row: CellRefCoord::UNBOUNDED
+                row: CellRefCoord::REL_UNBOUNDED
             }
             .to_string(),
             "A"
