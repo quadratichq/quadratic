@@ -36,7 +36,7 @@ describe('GET /v0/teams/:uuid/connections', () => {
         .set('Authorization', `Bearer ValidToken teamUserOwner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.length).toBe(2);
+          expect(res.body.length).toBe(3); // 2 created + 1 demo
           expect(res.body[0].uuid).toBeDefined();
           expect(res.body[0].name).toBeDefined();
           expect(res.body[0].createdDate).toBeDefined();
