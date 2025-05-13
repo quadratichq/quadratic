@@ -11,7 +11,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getDecryptedTeam, validateClientDataKv } from '../../utils/teams';
+import { getDecryptedTeam } from '../../utils/teams';
 
 export default [
   validateRequestSchema(
@@ -98,7 +98,6 @@ async function handler(
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },
       sshPublicKey: decryptedTeam.sshPublicKey,
-      clientDataKv: validateClientDataKv(ownerTeam.clientDataKv),
     },
     userMakingRequest: {
       id: userId,
