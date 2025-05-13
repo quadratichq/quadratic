@@ -8,7 +8,7 @@ import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
-import { engineName, getUA, isChromium, isDesktop } from 'react-device-detect';
+import { engineName, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
 
 export function Component() {
