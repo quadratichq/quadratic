@@ -362,30 +362,14 @@ impl SheetDataTables {
         (index, old_data_table, dirty_rects)
     }
 
-    pub fn insert_sorted(
-        &mut self,
-        pos: &Pos,
-        mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
-        data_table.spill_data_table = false;
-
-        let (index, old_data_table) = self.data_tables.insert_sorted(*pos, data_table);
-
-        let old_output_rects = old_data_table
-            .as_ref()
-            .map(|dt| (dt.output_rect(*pos, false), dt.output_rect(*pos, true)));
-
-        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rects, false, None);
-
-        (index, old_data_table, dirty_rects)
-    }
-
     pub fn insert_before(
         &mut self,
-        index: usize,
+        mut index: usize,
         pos: &Pos,
         mut data_table: DataTable,
     ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+        index = index.min(self.len());
+
         data_table.spill_data_table = false;
 
         let (index, old_data_table) = self.data_tables.insert_before(index, *pos, data_table);

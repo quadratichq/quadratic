@@ -164,23 +164,17 @@ impl GridController {
 
         // index for SetCodeRun is either set by execute_set_code_run or calculated
         let index = index
-            .unwrap_or(
-                sheet
-                    .data_tables
-                    .get_index_of(&pos)
-                    .unwrap_or(sheet.data_tables.len()),
-            )
+            .unwrap_or(sheet.data_tables.get_index_of(&pos).unwrap_or(usize::MAX))
             .min(sheet.data_tables.len());
         if transaction.is_user_undo_redo() {
-            let (old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table {
-                let res = sheet.data_table_insert_before(index, &pos, new_data_table.to_owned());
-                (res.1, res.2)
+            let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
+            {
+                sheet.data_table_insert_before(index, &pos, new_data_table.to_owned())
             } else {
-                sheet
-                    .data_table_shift_remove(&pos)
-                    .map_or((None, HashSet::new()), |(data_table, dirty_rects)| {
-                        (Some(data_table), dirty_rects)
-                    })
+                sheet.data_table_shift_remove_full(&pos).map_or(
+                    (index, None, HashSet::new()),
+                    |(index, _, data_table, dirty_rects)| (index, Some(data_table), dirty_rects),
+                )
             };
 
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);

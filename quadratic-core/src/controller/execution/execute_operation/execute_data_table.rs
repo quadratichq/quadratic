@@ -159,13 +159,11 @@ impl GridController {
             let old_value = sheet.set_cell_value(data_table_pos, cell_value.to_owned());
 
             // insert the data table into the sheet
-            let (old_index, old_data_table, dirty_rects) = if let Some(index) = index {
-                // if the index is provided, insert the data table at the index
-                let index = index.min(sheet.data_tables.len());
-                sheet.data_table_insert_before(index, &data_table_pos, data_table.to_owned())
-            } else {
-                sheet.data_table_insert_sorted(&data_table_pos, data_table.to_owned())
-            };
+            let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
+                index.unwrap_or(usize::MAX),
+                &data_table_pos,
+                data_table.to_owned(),
+            );
 
             // mark new data table as dirty
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);

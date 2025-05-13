@@ -138,15 +138,6 @@ impl Sheet {
         self.data_tables.insert_full(pos, data_table)
     }
 
-    pub fn data_table_insert_sorted(
-        &mut self,
-        pos: &Pos,
-        mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
-        data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
-        self.data_tables.insert_sorted(pos, data_table)
-    }
-
     pub fn data_table_insert_before(
         &mut self,
         index: usize,
