@@ -114,9 +114,9 @@ impl SheetDataTables {
                 let new_un_spilled_output_rect = data_table.output_rect(*pos, true);
                 // can spill only if it's not a single cell
                 if new_un_spilled_output_rect.len() > 1 {
-                    // force spill this table due to an incomming change
+                    // force spill this table due to an incoming change
                     if let Some(force_spill_self) = force_spill_self {
-                        spill_data_table = force_spill_self
+                        spill_data_table = force_spill_self;
                     }
                     // calculate self spill
                     else {
@@ -135,16 +135,14 @@ impl SheetDataTables {
             }
 
             // spill other tables due to this table
-            for spill_pos in data_tables_to_spill {
-                if let Some(spill_pos) = spill_pos {
-                    if let Ok((_, spilled_dirty_rect)) =
-                        self.modify_data_table_at(&spill_pos, Some(true), |table| {
-                            table.spill_data_table = true;
-                            Ok(())
-                        })
-                    {
-                        dirty_rects.extend(spilled_dirty_rect);
-                    }
+            for spill_pos in data_tables_to_spill.into_iter().flatten() {
+                if let Ok((_, spilled_dirty_rect)) =
+                    self.modify_data_table_at(&spill_pos, Some(true), |table| {
+                        table.spill_data_table = true;
+                        Ok(())
+                    })
+                {
+                    dirty_rects.extend(spilled_dirty_rect);
                 }
             }
 

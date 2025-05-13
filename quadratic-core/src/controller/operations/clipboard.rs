@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::usize;
 
 use anyhow::{Error, Result};
 use indexmap::IndexMap;
