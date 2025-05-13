@@ -43,7 +43,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   );
   const showHistoryMsg = useMemo(
     () =>
-      numberOfTimesHistoryHasBeenClicked < 15 &&
+      numberOfTimesHistoryHasBeenClicked < 2 &&
       currentUserMessages === 0 &&
       !showChatHistory &&
       !loading &&
