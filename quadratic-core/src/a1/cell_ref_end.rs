@@ -187,7 +187,8 @@ impl CellRefRangeEnd {
 
         let mut col_is_absolute = !captures[1].is_empty();
         let col_str = &captures[2];
-        let mut row_is_absolute = !captures[3].is_empty();
+        let no_absolute_row = captures[3].is_empty();
+        let mut row_is_absolute = !no_absolute_row || (no_absolute_row && col_is_absolute);
         let row_str = &captures[4];
 
         // If there is no column, then an absolute row will be parsed as

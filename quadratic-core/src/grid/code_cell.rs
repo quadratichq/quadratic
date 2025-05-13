@@ -307,7 +307,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_update_cell_references() {
+    fn test_update_cell_references_same_sheet() {
         let sheet_id = SheetId::new();
         let mut a1_context = A1Context::default();
         a1_context.sheet_map.insert_parts("This", sheet_id);
@@ -327,6 +327,32 @@ mod tests {
         };
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
         assert_eq!(code.code, r#"q.cells("B2:C3")"#, "Basic reference failed");
+
+        // Absolute single reference
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('$A$1:$B$2')".to_string(),
+        };
+        let mut ref_adjust = RefAdjust::new_translate(1, 1);
+        ref_adjust.relative_only = true;
+        code.adjust_references(sheet_id, &a1_context, pos, ref_adjust);
+        assert_eq!(
+            code.code, r#"q.cells("$A$1:$B$2")"#,
+            "Absolute single reference failed"
+        );
+
+        // Absolute columns reference
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('$A:$B')".to_string(),
+        };
+        let mut ref_adjust = RefAdjust::new_translate(1, 1);
+        ref_adjust.relative_only = true;
+        code.adjust_references(sheet_id, &a1_context, pos, ref_adjust);
+        assert_eq!(
+            code.code, r#"q.cells('$A:$B')"#,
+            "Absolute columns reference failed"
+        );
 
         // Multiple references in one line
         let mut code = CodeCellValue {

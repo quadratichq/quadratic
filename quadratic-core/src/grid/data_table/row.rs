@@ -147,7 +147,7 @@ pub mod test {
         data_table.insert_row(6, None).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table with second New Row"), None);
 
-        // this should be a 4x7 array
+        // this should be a 4x7n array
         let expected_size = ArraySize::new(4, 7).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
