@@ -1,14 +1,22 @@
 import { EmptyPage } from '@/shared/components/EmptyPage';
-import { DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { Button } from '@/shared/shadcn/ui/button';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { engineName, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
 
 export function Component() {
+  const [overrideNonBlinkMsg, setOverrideNonBlinkMsg] = useLocalStorage('overrideNonBlinkMsg', false);
+  const [showNonBlinkMsg, setShowNonBlinkMsg] = useState(
+    isDesktop && engineName.toLowerCase() !== 'blink' && !overrideNonBlinkMsg
+  );
+
   useEffect(() => {
     if (!isWASMSupported || !isWebGLSupported()) {
       mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {
@@ -22,6 +30,38 @@ export function Component() {
       });
     }
   }, []);
+
+  if (showNonBlinkMsg) {
+    return (
+      <EmptyPage
+        title="Browser not officially supported"
+        description={
+          <>
+            We officially support Blink-based browsers like Chrome and Edge. You’re welcome to try others, but things
+            might not work as expected.
+          </>
+        }
+        Icon={InfoCircledIcon}
+        showLoggedInUser={false}
+        actions={
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" asChild>
+              <a href={CONTACT_URL}>Contact us</a>
+            </Button>
+            <Button
+              onClick={() => {
+                mixpanel.track('[BrowserCompatibilityLayoutRoute].userContinuedAnyway');
+                setOverrideNonBlinkMsg(true);
+                setShowNonBlinkMsg(false);
+              }}
+            >
+              Cotinue anyway
+            </Button>
+          </div>
+        }
+      />
+    );
+  }
 
   if (!isWASMSupported || !isWebGLSupported()) {
     return (
