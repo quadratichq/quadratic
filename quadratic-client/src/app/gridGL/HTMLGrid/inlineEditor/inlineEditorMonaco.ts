@@ -384,11 +384,6 @@ class InlineEditorMonaco {
     return lastCharacter;
   };
 
-  /// Determines if a given character is a reference character.
-  private isReferenceCharacter(char: string) {
-    return /^[$A-Za-z0-9']+$/.test(char);
-  }
-
   /// Returns the text and range of any cell reference at the cursor.
   getReferenceAtCursor(): { text: string; range: monaco.Range } | undefined {
     if (!this.editor) {
@@ -396,44 +391,38 @@ class InlineEditorMonaco {
     }
     const formula = this.get();
 
-    // If there is a selection then use the start of the selection
+    // If there is a selection then check if it's a valid reference
     const selection = this.getSelection();
     if (selection) {
-      for (let char of selection.text) {
-        if (!this.isReferenceCharacter(char)) {
-          return undefined;
-        }
+      if (selection.text.match(/^[$A-Za-z0-9']+$/)) {
+        return { text: selection.text, range: selection.range };
       }
-      return { text: selection.text, range: selection.range };
+      return undefined;
     }
 
-    // otherwise, use the text at the cursor position (walking backwards and forwards)
+    // Otherwise, use regex to find the reference at the cursor position
     else {
       const position = this.getPosition();
-      let cursorIndex = Math.max(0, position.column - 2);
+      const cursorIndex = Math.max(0, position.column - 2);
 
-      if (!this.isReferenceCharacter(formula[cursorIndex])) {
-        // Check if cursor is on a reference character
-        return undefined;
+      // Use regex to find the complete reference at or around cursor position
+      const referenceRegex = /[$A-Za-z0-9']+/g;
+      let match;
+
+      while ((match = referenceRegex.exec(formula)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+
+        // Check if cursor is within this reference
+        if (cursorIndex >= start && cursorIndex < end) {
+          return {
+            text: match[0],
+            range: new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 1),
+          };
+        }
       }
 
-      // Find start and end of reference by looking for word boundaries
-      const beforeCursor = formula.slice(0, cursorIndex + 1);
-      const afterCursor = formula.slice(cursorIndex);
-
-      const startMatch = beforeCursor.match(/[$A-Za-z0-9']+$/);
-      const endMatch = afterCursor.match(/^[$A-Za-z0-9']+/);
-
-      if (!startMatch || !endMatch) {
-        return undefined;
-      }
-
-      const start = cursorIndex + 1 - startMatch[0].length;
-      const end = cursorIndex + endMatch[0].length;
-      return {
-        text: formula.slice(start, end),
-        range: new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 1),
-      };
+      return undefined;
     }
   }
 
