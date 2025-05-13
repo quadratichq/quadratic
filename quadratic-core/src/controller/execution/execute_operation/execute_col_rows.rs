@@ -18,7 +18,7 @@ impl GridController {
         adjustments: &[RefAdjust],
     ) {
         for sheet in self.grid.sheets().iter() {
-            for (pos, _) in sheet.data_tables.iter_code_runs() {
+            for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
                     let mut new_code = code.clone();

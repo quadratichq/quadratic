@@ -39,6 +39,8 @@ impl GridController {
         transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
 
+        self.update_cells_accessed(sheet_pos, &new_data_table);
+
         let sheet_id = sheet_pos.sheet_id;
         let pos: Pos = sheet_pos.into();
         let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {

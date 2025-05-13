@@ -86,7 +86,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
     // translate code runs's cells_accessed
     for sheet in grid.sheets.iter_mut() {
-        for (_, code_run) in sheet.data_tables.iter_code_runs_mut() {
+        for (_, code_run) in sheet.data_tables.expensive_iter_code_runs_mut() {
             let cells = &mut code_run.cells_accessed.cells;
             for (sheet_id, ranges) in cells {
                 // Get shift values for the referenced sheet, skip if not found

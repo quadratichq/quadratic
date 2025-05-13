@@ -29,6 +29,7 @@ pub mod borders;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
+pub mod cells_accessed_cache;
 mod chart;
 pub mod clipboard;
 pub mod code;

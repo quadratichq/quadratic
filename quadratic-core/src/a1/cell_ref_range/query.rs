@@ -130,6 +130,13 @@ impl CellRefRange {
         }
     }
 
+    pub fn to_rect_unbounded(&self, a1_context: &A1Context) -> Option<Rect> {
+        match self {
+            Self::Sheet { range } => Some(range.to_rect_unbounded()),
+            Self::Table { range } => range.to_largest_rect(a1_context),
+        }
+    }
+
     pub fn selected_columns_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns_finite(),

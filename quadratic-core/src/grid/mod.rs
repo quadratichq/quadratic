@@ -25,6 +25,7 @@ mod a1_context;
 mod block;
 mod bounds;
 mod cells_accessed;
+mod cells_accessed_cache;
 mod code_cell;
 mod code_run;
 pub mod column;

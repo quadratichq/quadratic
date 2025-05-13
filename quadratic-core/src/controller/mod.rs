@@ -2,9 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    Pos,
+    Pos, SheetPos,
     a1::{A1Context, TableMapEntry},
-    grid::{Grid, SheetId},
+    grid::{DataTable, Grid, RegionMap, SheetId},
     util::case_fold_ascii,
     viewport::ViewportBuffer,
 };
@@ -30,6 +30,7 @@ pub struct GridController {
     grid: Grid,
 
     a1_context: A1Context,
+    cells_accessed: RegionMap,
 
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
@@ -46,9 +47,11 @@ impl Default for GridController {
     fn default() -> Self {
         let grid = Grid::default();
         let a1_context = grid.make_a1_context();
+        let cells_accessed = grid.make_cells_accessed(&a1_context);
         Self {
             grid,
             a1_context,
+            cells_accessed,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             transactions: ActiveTransactions::new(0),
@@ -60,9 +63,11 @@ impl Default for GridController {
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
         let a1_context = grid.make_a1_context();
+        let cells_accessed = grid.make_cells_accessed(&a1_context);
         GridController {
             grid,
             a1_context,
+            cells_accessed,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         }
@@ -70,9 +75,11 @@ impl GridController {
 
     pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
         let a1_context = grid.make_a1_context();
+        let cells_accessed = grid.make_cells_accessed(&a1_context);
         GridController {
             grid,
             a1_context,
+            cells_accessed,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         }
@@ -104,6 +111,10 @@ impl GridController {
 
     pub fn a1_context(&self) -> &A1Context {
         &self.a1_context
+    }
+
+    pub fn cells_accessed(&self) -> &RegionMap {
+        &self.cells_accessed
     }
 
     pub(crate) fn update_a1_context_table_map(
@@ -160,6 +171,24 @@ impl GridController {
             self.a1_context
                 .sheet_map
                 .insert_parts(&sheet_name, sheet_id);
+        }
+    }
+
+    pub(crate) fn update_cells_accessed(
+        &mut self,
+        sheet_pos: SheetPos,
+        data_table: &Option<DataTable>,
+    ) {
+        self.cells_accessed.remove_pos(sheet_pos);
+        if let Some(code_run) = data_table.as_ref().and_then(|dt| dt.code_run()) {
+            for (sheet_id, ranges) in code_run.cells_accessed.cells.iter() {
+                for range in ranges {
+                    if let Some(rect) = range.to_rect_unbounded(&self.a1_context) {
+                        self.cells_accessed
+                            .insert(sheet_pos, (sheet_id.to_owned(), rect));
+                    }
+                }
+            }
         }
     }
 
