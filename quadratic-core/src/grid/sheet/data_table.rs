@@ -126,7 +126,7 @@ impl Sheet {
         pos: &Pos,
         f: impl FnOnce(&mut DataTable) -> Result<()>,
     ) -> Result<(&DataTable, HashSet<Rect>)> {
-        self.data_tables.modify_data_table_at(pos, f)
+        self.data_tables.modify_data_table_at(pos, None, f)
     }
 
     pub fn data_table_insert_full(
@@ -178,21 +178,16 @@ impl Sheet {
 
         for (_, pos, data_table) in self.data_tables.get_in_rect_sorted(rect, true) {
             let new_spill = self.check_spills_due_to_column_values(&pos, data_table);
-            data_tables_to_modify.push((pos, new_spill));
+            if new_spill != data_table.spill_value {
+                data_tables_to_modify.push((pos, new_spill));
+            }
         }
 
         let mut dirty_rects = HashSet::new();
 
         for (pos, new_spill) in data_tables_to_modify {
-            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, |dt| {
-                let old_output_rect = dt.output_rect(pos, false);
-
+            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, None, |dt| {
                 dt.spill_value = new_spill;
-
-                let new_output_rect = dt.output_rect(pos, false);
-                let max_output_rect = old_output_rect.union(&new_output_rect);
-                dirty_rects.insert(max_output_rect);
-
                 Ok(())
             }) {
                 dirty_rects.extend(dirty_rect);
