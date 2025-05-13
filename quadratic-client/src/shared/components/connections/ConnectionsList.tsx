@@ -26,7 +26,7 @@ type Props = {
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
-  handleHideConnectionDemo: (hideConnectionDemo: boolean) => void;
+  handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
   teamUuid: string;
 };
 
@@ -36,7 +36,7 @@ export const ConnectionsList = ({
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
-  handleHideConnectionDemo,
+  handleShowConnectionDemo,
   teamUuid,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
@@ -100,7 +100,7 @@ export const ConnectionsList = ({
               items={connections}
               handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
-              handleHideConnectionDemo={handleHideConnectionDemo}
+              handleShowConnectionDemo={handleShowConnectionDemo}
             />
           </>
         ) : (
@@ -115,7 +115,7 @@ export const ConnectionsList = ({
                   <button
                     className="relative font-semibold text-primary"
                     onClick={() => {
-                      handleHideConnectionDemo(false);
+                      handleShowConnectionDemo(true);
                     }}
                   >
                     add a demo connection
@@ -136,13 +136,13 @@ function ListItems({
   filterQuery,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
-  handleHideConnectionDemo,
+  handleShowConnectionDemo,
   items,
 }: {
   filterQuery: string;
   handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
-  handleHideConnectionDemo: Props['handleHideConnectionDemo'];
+  handleShowConnectionDemo: Props['handleShowConnectionDemo'];
   items: ConnectionsListConnection[];
 }) {
   const filteredItems = filterQuery
@@ -152,7 +152,7 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => (
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled, visibleDemo }, i) => (
         <div className="group relative flex items-center gap-1" key={uuid}>
           <button
             onClick={() => {
@@ -172,18 +172,18 @@ function ListItems({
             <div className="flex flex-grow flex-col text-left">
               <span className="text-sm">
                 {name}{' '}
-                {isDemo && (
+                {visibleDemo && (
                   <Badge variant="outline" className="ml-1">
                     Demo
                   </Badge>
                 )}
               </span>
               <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
+                {visibleDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
               </time>
             </div>
           </button>
-          {isDemo ? (
+          {visibleDemo ? (
             <Button
               aria-label="Hide demo connection"
               variant="ghost"
@@ -191,7 +191,7 @@ function ListItems({
               className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
               onClick={async () => {
                 if (await confirmFn()) {
-                  handleHideConnectionDemo(true);
+                  handleShowConnectionDemo(false);
                 }
               }}
             >

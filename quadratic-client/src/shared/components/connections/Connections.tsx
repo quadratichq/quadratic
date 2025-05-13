@@ -1,9 +1,9 @@
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import {
-  getToggleHideConnectionDemoAction,
+  getToggleShowConnectionDemoAction,
   type CreateConnectionAction,
   type DeleteConnectionAction,
-  type ToggleHideConnectionDemoAction,
+  type ToggleShowConnectionDemoAction,
   type UpdateConnectionAction,
 } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
@@ -25,7 +25,6 @@ type Props = {
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
-  hideConnectionDemo: boolean | undefined;
   // If this is present, we're in the app and we'll do stuff slightly differently
   handleNavigateToDetailsViewOverride?: (language: CodeCellLanguage) => void;
 };
@@ -33,7 +32,6 @@ export type NavigateToView = (props: { connectionUuid: string; connectionType: C
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
 export const Connections = ({
-  hideConnectionDemo,
   connections,
   connectionsAreLoading,
   teamUuid,
@@ -119,13 +117,22 @@ export const Connections = ({
   // Connection hidden? Remove it from the list
   const demoConnectionToggling = fetchers.filter(
     (fetcher) =>
-      isJsonObject(fetcher.json) && fetcher.json.action === 'toggle-hide-connection-demo' && fetcher.state !== 'idle'
+      isJsonObject(fetcher.json) && fetcher.json.action === 'toggle-show-connection-demo' && fetcher.state !== 'idle'
   );
   if (demoConnectionToggling.length) {
     const activeFetcher = demoConnectionToggling.slice(-1)[0];
-    hideConnectionDemo = (activeFetcher.json as ToggleHideConnectionDemoAction).hideConnectionDemo;
+    // @ts-ignore
+    console.log('activeFetcher', activeFetcher.json?.showConnectionDemo);
+    connections = connections.map((c) =>
+      c.visibleDemo === undefined
+        ? c
+        : {
+            ...c,
+            visibleDemo: (activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo,
+          }
+    );
   }
-  connections = connections.filter((c) => (c.isDemo ? !hideConnectionDemo : false));
+  connections = connections.filter((c) => (c.visibleDemo === undefined ? false : c.visibleDemo));
 
   /**
    * Navigation
@@ -152,8 +159,8 @@ export const Connections = ({
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
   };
-  const handleHideConnectionDemo = (hideConnectionDemo: boolean) => {
-    const { json, options } = getToggleHideConnectionDemoAction(teamUuid, hideConnectionDemo);
+  const handleShowConnectionDemo = (showConnectionDemo: boolean) => {
+    const { json, options } = getToggleShowConnectionDemoAction(teamUuid, showConnectionDemo);
     submit(json, { ...options, navigate: false });
   };
 
@@ -190,7 +197,7 @@ export const Connections = ({
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
-            handleHideConnectionDemo={handleHideConnectionDemo}
+            handleShowConnectionDemo={handleShowConnectionDemo}
           />
         )}
       </div>

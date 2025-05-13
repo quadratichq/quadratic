@@ -125,24 +125,26 @@ export default function CellTypeMenu() {
         <CommandSeparator />
         {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
-            {connections.map(({ name, type, uuid, isDemo }) => (
-              <CommandItemWrapper
-                key={uuid}
-                uuid={uuid}
-                name={name}
-                badge={
-                  isDemo ? (
-                    <Badge variant="outline" className="ml-2">
-                      Demo
-                    </Badge>
-                  ) : (
-                    ''
-                  )
-                }
-                icon={<LanguageIcon language={type} />}
-                onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
-              />
-            ))}
+            {connections
+              .filter((c) => (c.visibleDemo === undefined ? false : c.visibleDemo))
+              .map(({ name, type, uuid, visibleDemo }) => (
+                <CommandItemWrapper
+                  key={uuid}
+                  uuid={uuid}
+                  name={name}
+                  badge={
+                    visibleDemo ? (
+                      <Badge variant="outline" className="ml-2">
+                        Demo
+                      </Badge>
+                    ) : (
+                      ''
+                    )
+                  }
+                  icon={<LanguageIcon language={type} />}
+                  onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
+                />
+              ))}
             <CommandItemWrapper
               name="Manage connections"
               icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}

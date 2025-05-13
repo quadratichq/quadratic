@@ -8,7 +8,6 @@ export const demoConnection = {
   // We set these because they don't really matter for the UI
   createdDate: '2022-01-01T00:00:00.000Z',
   updatedDate: '2022-01-01T00:00:00.000Z',
-  isDemo: true,
 } as Connection;
 
 export const demoConnectionCondensed = {
@@ -16,5 +15,4 @@ export const demoConnectionCondensed = {
   name: demoConnection.name,
   type: demoConnection.type,
   createdDate: demoConnection.createdDate,
-  isDemo: demoConnection.isDemo,
 } as const;

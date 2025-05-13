@@ -204,7 +204,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
         },
       })),
     license: { ...license },
-    connections: getTeamConnectionsList({ dbConnections }),
+    connections: getTeamConnectionsList({ dbConnections, settingShowConnectionDemo: team.settingShowConnectionDemo }),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
   };
 

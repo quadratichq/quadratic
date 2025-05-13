@@ -26,7 +26,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = parseRequest(req, schema);
 
   const {
-    team: { id: teamId },
+    team: { id: teamId, settingShowConnectionDemo },
     userMakingRequest: { permissions },
   } = await getTeam({ uuid: teamUuid, userId });
 
@@ -47,7 +47,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   });
 
   // Pick out the data we want to return
-  const data = getTeamConnectionsList({ dbConnections: connections });
+  const data = getTeamConnectionsList({ dbConnections: connections, settingShowConnectionDemo });
 
   return res.status(200).json(data);
 }

@@ -54,7 +54,7 @@ async function getConnection(teamUuid: string, connectionUuid: string) {
  *
  */
 
-type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction | ToggleHideConnectionDemoAction;
+type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction | ToggleShowConnectionDemoAction;
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const data: Action = await request.json();
@@ -92,10 +92,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     }
   }
 
-  if (data.action === 'toggle-hide-connection-demo') {
-    const { teamUuid, hideConnectionDemo } = data as ToggleHideConnectionDemoAction;
+  if (data.action === 'toggle-show-connection-demo') {
+    const { teamUuid, showConnectionDemo } = data as ToggleShowConnectionDemoAction;
     await apiClient.teams.update(teamUuid, {
-      clientDataKv: { hideConnectionDemo },
+      settings: { showConnectionDemo },
     });
     return { ok: true };
   }
@@ -159,10 +159,10 @@ export const getDeleteConnectionAction = (connectionUuid: string, teamUuid: stri
   } as const;
 };
 
-export type ToggleHideConnectionDemoAction = ReturnType<typeof getToggleHideConnectionDemoAction>['json'];
-export const getToggleHideConnectionDemoAction = (teamUuid: string, hideConnectionDemo: boolean) => {
+export type ToggleShowConnectionDemoAction = ReturnType<typeof getToggleShowConnectionDemoAction>['json'];
+export const getToggleShowConnectionDemoAction = (teamUuid: string, showConnectionDemo: boolean) => {
   return {
-    json: { action: 'toggle-hide-connection-demo', teamUuid, hideConnectionDemo },
+    json: { action: 'toggle-show-connection-demo', teamUuid, showConnectionDemo },
     options: {
       action: ROUTES.API.CONNECTIONS.POST,
       method: 'POST',

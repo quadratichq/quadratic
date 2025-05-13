@@ -19,7 +19,7 @@ export function ConnectionsMenu() {
   const {
     team: { uuid: teamUuid, sshPublicKey },
   } = useFileRouteLoaderData();
-  const { connections, staticIps, isLoading, hideConnectionDemo } = useConnectionsFetcher();
+  const { connections, staticIps, isLoading } = useConnectionsFetcher();
 
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const openEditor = useCallback(
@@ -84,7 +84,6 @@ export function ConnectionsMenu() {
         {/* Unmount it so we reset the state */}
         {showConnectionsMenu && (
           <Connections
-            hideConnectionDemo={hideConnectionDemo}
             connections={connections}
             connectionsAreLoading={isLoading}
             teamUuid={teamUuid}

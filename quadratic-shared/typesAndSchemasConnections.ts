@@ -41,7 +41,6 @@ const ConnectionPortSchema = z
   );
 const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
-  isDemo: z.boolean().optional(),
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
   name: ConnectionNameSchema,
@@ -98,7 +97,9 @@ export const ConnectionTypeDetailsSnowflakeSchema = z.object({
  */
 
 export const ConnectionListSchema = z.array(
-  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true, isDemo: true })
+  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true }).extend({
+    visibleDemo: z.boolean().optional(), // true=show, false=hide, undefined=not a demo
+  })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
 
