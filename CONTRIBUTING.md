@@ -94,9 +94,9 @@ But if you are adding a critical env variables that the app absolutely depends o
 
 1. Add it to your local `.env` file, e.g.
     - `FOO=some-value` in `quadratic-client/.env`
-1. Add it to the repo `.evn.*` files as relevant, e.g.
+1. Add it to the repo `.env.*` files as relevant, e.g.
     - `FOO=xxx` in `quadratic-client/.env.example`
-    = `FOO=xxx` in `quadratic-api/.env.test`
+    - `FOO=xxx` in `quadratic-api/.env.test`
 
 ### Preview branches
 
