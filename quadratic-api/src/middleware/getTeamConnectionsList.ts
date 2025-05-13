@@ -1,6 +1,6 @@
 import type { Connection } from '@prisma/client';
 import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
-import { demoConnectionCondensed } from '../data/connections';
+import { connectionDemoCondensed } from '../data/connections';
 
 export function getTeamConnectionsList({
   dbConnections,
@@ -17,7 +17,7 @@ export function getTeamConnectionsList({
   }));
 
   const demo: ConnectionList[number] = {
-    ...demoConnectionCondensed,
+    ...connectionDemoCondensed,
     visibleDemo: settingShowConnectionDemo,
   };
   connections.push(demo);

@@ -1,7 +1,7 @@
 import type { Connection } from 'quadratic-shared/typesAndSchemasConnections';
 import { CONNECTION_DEMO } from '../env-vars';
 
-export const demoConnection = {
+export const connectionDemo = {
   // uuid, name, type, typeDetails all go in the env var
   ...CONNECTION_DEMO,
 
@@ -10,9 +10,9 @@ export const demoConnection = {
   updatedDate: '2022-01-01T00:00:00.000Z',
 } as Connection;
 
-export const demoConnectionCondensed = {
-  uuid: demoConnection.uuid,
-  name: demoConnection.name,
-  type: demoConnection.type,
-  createdDate: demoConnection.createdDate,
+export const connectionDemoCondensed = {
+  uuid: connectionDemo.uuid,
+  name: connectionDemo.name,
+  type: connectionDemo.type,
+  createdDate: connectionDemo.createdDate,
 } as const;

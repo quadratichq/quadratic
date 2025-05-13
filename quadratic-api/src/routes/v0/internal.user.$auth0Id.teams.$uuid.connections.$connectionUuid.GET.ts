@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
-import { demoConnection } from '../../data/connections';
+import { connectionDemo } from '../../data/connections';
 import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import { getTeamConnection } from '../../middleware/getTeamConnection';
@@ -30,8 +30,8 @@ async function handler(req: Request, res: Response) {
   }
 
   // If it's our hard-coded connection, return that
-  if (connectionUuid === demoConnection.uuid) {
-    return res.status(200).json(demoConnection);
+  if (connectionUuid === connectionDemo.uuid) {
+    return res.status(200).json(connectionDemo);
   }
 
   // Get the connection
