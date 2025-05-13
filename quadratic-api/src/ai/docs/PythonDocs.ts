@@ -25,7 +25,6 @@ You can reference tables, individual cells, and ranges of cells using Python.
 
 Much of Quadratic's data is formatted in Data Tables for ease of use. To perform any reference type you can use \`q.cells\`. For table references this places the table in a DataFrame.
 
-
 Note the following examples that use table references: 
 \`\`\`python
 # References entire table, including headers, places into DataFrame 
@@ -275,6 +274,10 @@ x = 3
 # since this is the last line of code, it returns the result of x + 1, which in this case is 4 
 x += 1
 \`\`\`
+
+### Formatting 
+
+Do NOT try to use formatting options like f-strings (f"") or .format() on numerical return types. Returning formatted data will not flow through to the sheet; the sheet will read formatted numerical values as strings, keeping formatting options like currencies and significant digits from working on the returned values. 
 
 ## Packages
 
