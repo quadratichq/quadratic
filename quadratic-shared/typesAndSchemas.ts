@@ -157,7 +157,6 @@ export const ApiSchemas = {
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).extend({
-      clientDataKv: TeamClientDataKvSchema,
       sshPublicKey: z.string(),
       settings: TeamSettingsSchema,
     }),
