@@ -28,8 +28,8 @@ impl fmt::Display for CellRefRangeEnd {
 
 impl CellRefRangeEnd {
     pub const START: Self = Self {
-        col: CellRefCoord::START,
-        row: CellRefCoord::START,
+        col: CellRefCoord::REL_START,
+        row: CellRefCoord::REL_START,
     };
     pub const UNBOUNDED: Self = Self {
         col: CellRefCoord::REL_UNBOUNDED,
@@ -232,6 +232,11 @@ impl CellRefRangeEnd {
             row_is_absolute = true;
         }
 
+        // $1 should imply absolute row and column.
+        if !col_is_absolute && col_str.is_empty() && !row_str.is_empty() && row_is_absolute {
+            col_is_absolute = true;
+        }
+
         Ok((col, col_is_absolute, row, row_is_absolute))
     }
 
@@ -375,20 +380,20 @@ mod tests {
             CellRefRangeEnd::parse_start("C", None).unwrap(),
             CellRefRangeEnd {
                 col: CellRefCoord::new_rel(3),
-                row: CellRefCoord::START,
+                row: CellRefCoord::REL_START,
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_start("5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::START,
+                col: CellRefCoord::REL_START,
                 row: CellRefCoord::new_rel(5),
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_start("$5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::START,
+                col: CellRefCoord::ABS_START,
                 row: CellRefCoord::new_abs(5),
             }
         );
@@ -424,7 +429,7 @@ mod tests {
         assert_eq!(
             CellRefRangeEnd::parse_end("$5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::REL_UNBOUNDED,
+                col: CellRefCoord::ABS_UNBOUNDED,
                 row: CellRefCoord::new_abs(5),
             }
         );
@@ -447,20 +452,20 @@ mod tests {
             CellRefRangeEnd::parse_start("C[-2]", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
                 col: CellRefCoord::new_rel(3),
-                row: CellRefCoord::START,
+                row: CellRefCoord::REL_START,
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_start("R[-3]", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::START,
+                col: CellRefCoord::REL_START,
                 row: CellRefCoord::new_rel(5),
             }
         );
         assert_eq!(
             CellRefRangeEnd::parse_start("R{5}", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::START,
+                col: CellRefCoord::REL_START,
                 row: CellRefCoord::new_abs(5),
             }
         );

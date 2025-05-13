@@ -66,9 +66,13 @@ impl<'de> Deserialize<'de> for CellRefCoord {
 }
 
 impl CellRefCoord {
-    pub const START: Self = Self {
+    pub const REL_START: Self = Self {
         coord: 1,
         is_absolute: false,
+    };
+    pub const ABS_START: Self = Self {
+        coord: 1,
+        is_absolute: true,
     };
 
     pub const REL_UNBOUNDED: Self = Self {

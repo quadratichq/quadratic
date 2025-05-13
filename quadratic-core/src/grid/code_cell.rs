@@ -354,6 +354,19 @@ mod tests {
             "Absolute columns reference failed"
         );
 
+        // Absolute rows reference
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('$1:$2')".to_string(),
+        };
+        let mut ref_adjust = RefAdjust::new_translate(1, 1);
+        ref_adjust.relative_only = true;
+        code.adjust_references(sheet_id, &a1_context, pos, ref_adjust);
+        assert_eq!(
+            code.code, r#"q.cells("$1:$2")"#,
+            "Absolute rows reference failed"
+        );
+
         // Multiple references in one line
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,

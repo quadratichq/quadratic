@@ -49,7 +49,7 @@ impl RefRangeBounds {
         Self {
             start: CellRefRangeEnd {
                 col: CellRefCoord::new_rel(x),
-                row: CellRefCoord::START,
+                row: CellRefCoord::REL_START,
             },
             end: CellRefRangeEnd {
                 col: CellRefCoord::new_rel(x),
@@ -61,7 +61,7 @@ impl RefRangeBounds {
     pub fn new_relative_row(y: i64) -> Self {
         Self {
             start: CellRefRangeEnd {
-                col: CellRefCoord::START,
+                col: CellRefCoord::REL_START,
                 row: CellRefCoord::new_rel(y),
             },
             end: CellRefRangeEnd {
@@ -78,7 +78,7 @@ impl RefRangeBounds {
         Self {
             start: CellRefRangeEnd {
                 col: CellRefCoord::new_rel(x1),
-                row: CellRefCoord::START,
+                row: CellRefCoord::REL_START,
             },
             end: CellRefRangeEnd {
                 col: CellRefCoord::new_rel(x2),
@@ -93,7 +93,7 @@ impl RefRangeBounds {
         }
         Self {
             start: CellRefRangeEnd {
-                col: CellRefCoord::START,
+                col: CellRefCoord::REL_START,
                 row: CellRefCoord::new_rel(y1),
             },
             end: CellRefRangeEnd {
