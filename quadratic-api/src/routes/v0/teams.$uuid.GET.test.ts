@@ -118,6 +118,7 @@ describe('GET /v0/teams/:uuid', () => {
         .expect((res) => {
           expect(res.body.connections).toHaveLength(1);
           expect(res.body.connections[0].isDemo).toBe(true);
+          expect(res.body.connections[0].isDemoVisible).toBe(true);
         });
     });
   });
