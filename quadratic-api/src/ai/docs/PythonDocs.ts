@@ -286,14 +286,14 @@ Using and installing Python packages.
 
 ### Default Packages
 
-Some libraries are included by default, here are some examples:
+Some libraries are included by default, here are some examples (note that they need to be imported even though they're included by default):
 
 * Pandas 
 * NumPy 
 * SciPy 
 * Plotly
 * Scikit-learn
-* Statsmodels
+* Statsmodels (make sure this gets imported if using a trendline in Plotly; Plotly depends on this import for trendlines)
 * Nltk
 * Regex
 
@@ -303,6 +303,7 @@ Default packages can be imported like any other native Python package.
 import pandas as pd
 import numpy as np 
 import scipy
+import statsmodels 
 \`\`\`
 
 ### Additional packages
@@ -410,7 +411,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from statsmodels.tsa.arima.model import ARIMA
+from .tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller
 
 # Generate sample time series data
