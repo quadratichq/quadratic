@@ -10,6 +10,7 @@ mod ref_range_bounds;
 mod sheet_cell_ref_range;
 mod sheet_name;
 mod table_ref;
+pub mod wasm_bindings;
 
 pub use a1_context::*;
 pub use a1_selection::*;

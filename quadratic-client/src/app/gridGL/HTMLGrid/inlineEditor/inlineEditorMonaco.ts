@@ -98,6 +98,17 @@ class InlineEditorMonaco {
     model.applyEdits([{ range, text: '' }]);
   }
 
+  replaceRange(text: string, range: monaco.Range) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in replaceRange');
+    }
+    const model = this.editor.getModel();
+    if (!model) {
+      throw new Error('Expected model to be defined in replaceRange');
+    }
+    model.applyEdits([{ range, text }]);
+  }
+
   focus = () => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in focus');
@@ -192,6 +203,28 @@ class InlineEditorMonaco {
       const model = this.getModel();
       model.applyEdits([{ range, text: '' }]);
     }
+  }
+
+  /// Returns the text and range of the current selection.
+  getSelection(): { text: string; range: monaco.Range } | undefined {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getSelection');
+    }
+    if (!this.hasSelection()) {
+      return undefined;
+    }
+    const selection = this.editor.getSelection();
+    if (selection) {
+      const range = new monaco.Range(
+        selection.startLineNumber,
+        selection.getStartPosition().column,
+        selection.endLineNumber,
+        selection.getEndPosition().column
+      );
+      const model = this.getModel();
+      return { text: model.getValueInRange(range), range };
+    }
+    return undefined;
   }
 
   setBackgroundColor(color: string) {
@@ -350,6 +383,59 @@ class InlineEditorMonaco {
         .at(-1) ?? '';
     return lastCharacter;
   };
+
+  /// Determines if a given character is a reference character.
+  private isReferenceCharacter(char: string) {
+    return /^[$A-Za-z0-9']+$/.test(char);
+  }
+
+  /// Returns the text and range of any cell reference at the cursor.
+  getReferenceAtCursor(): { text: string; range: monaco.Range } | undefined {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getReferenceAtCursor');
+    }
+    const formula = this.get();
+
+    // If there is a selection then use the start of the selection
+    const selection = this.getSelection();
+    if (selection) {
+      for (let char of selection.text) {
+        if (!this.isReferenceCharacter(char)) {
+          return undefined;
+        }
+      }
+      return { text: selection.text, range: selection.range };
+    }
+
+    // otherwise, use the text at the cursor position (walking backwards and forwards)
+    else {
+      const position = this.getPosition();
+      let cursorIndex = Math.max(0, position.column - 2);
+
+      if (!this.isReferenceCharacter(formula[cursorIndex])) {
+        // Check if cursor is on a reference character
+        return undefined;
+      }
+
+      // Find start and end of reference by looking for word boundaries
+      const beforeCursor = formula.slice(0, cursorIndex + 1);
+      const afterCursor = formula.slice(cursorIndex);
+
+      const startMatch = beforeCursor.match(/[$A-Za-z0-9']+$/);
+      const endMatch = afterCursor.match(/^[$A-Za-z0-9']+/);
+
+      if (!startMatch || !endMatch) {
+        return undefined;
+      }
+
+      const start = cursorIndex + 1 - startMatch[0].length;
+      const end = cursorIndex + endMatch[0].length;
+      return {
+        text: formula.slice(start, end),
+        range: new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 1),
+      };
+    }
+  }
 
   createDecorationsCollection(newDecorations: editor.IModelDeltaDecoration[]) {
     if (!this.editor) {
