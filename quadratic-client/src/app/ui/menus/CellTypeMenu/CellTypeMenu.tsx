@@ -126,14 +126,14 @@ export default function CellTypeMenu() {
         {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
             {connections
-              .filter((c) => (c.visibleDemo === undefined ? false : c.visibleDemo))
-              .map(({ name, type, uuid, visibleDemo }) => (
+              .filter((c) => (c.isDemo ? c.isDemoVisible : false))
+              .map(({ name, type, uuid, isDemo }) => (
                 <CommandItemWrapper
                   key={uuid}
                   uuid={uuid}
                   name={name}
                   badge={
-                    visibleDemo ? (
+                    isDemo ? (
                       <Badge variant="outline" className="ml-2">
                         Demo
                       </Badge>

@@ -152,7 +152,7 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled, visibleDemo }, i) => (
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => (
         <div className="group relative flex items-center gap-1" key={uuid}>
           <button
             onClick={() => {
@@ -172,18 +172,18 @@ function ListItems({
             <div className="flex flex-grow flex-col text-left">
               <span className="text-sm">
                 {name}{' '}
-                {visibleDemo && (
+                {isDemo && (
                   <Badge variant="outline" className="ml-1">
                     Demo
                   </Badge>
                 )}
               </span>
               <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                {visibleDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
+                {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
               </time>
             </div>
           </button>
-          {visibleDemo ? (
+          {isDemo ? (
             <Button
               aria-label="Hide demo connection"
               variant="ghost"

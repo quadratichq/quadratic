@@ -18,7 +18,7 @@ export function getTeamConnectionsList({
 
   const demo: ConnectionList[number] = {
     ...connectionDemoCondensed,
-    visibleDemo: settingShowConnectionDemo,
+    isDemoVisible: settingShowConnectionDemo,
   };
   connections.push(demo);
 

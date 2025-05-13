@@ -124,15 +124,15 @@ export const Connections = ({
     // @ts-ignore
     console.log('activeFetcher', activeFetcher.json?.showConnectionDemo);
     connections = connections.map((c) =>
-      c.visibleDemo === undefined
-        ? c
-        : {
+      c.isDemo
+        ? {
             ...c,
-            visibleDemo: (activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo,
+            isDemoVisible: (activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo,
           }
+        : c
     );
   }
-  connections = connections.filter((c) => (c.visibleDemo === undefined ? false : c.visibleDemo));
+  connections = connections.filter((c) => (c.isDemo ? c.isDemoVisible : false));
 
   /**
    * Navigation

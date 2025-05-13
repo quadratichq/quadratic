@@ -98,7 +98,8 @@ export const ConnectionTypeDetailsSnowflakeSchema = z.object({
 
 export const ConnectionListSchema = z.array(
   ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true }).extend({
-    visibleDemo: z.boolean().optional(), // true=show, false=hide, undefined=not a demo
+    isDemo: z.boolean().optional(),
+    isDemoVisible: z.boolean().optional(),
   })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
