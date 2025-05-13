@@ -286,14 +286,14 @@ Using and installing Python packages.
 
 ### Default Packages
 
-Some libraries are included by default, here are some examples (note that they need to be imported even though they're included by default):
+Some libraries are included by default, here are some examples (note that they need to be imported in every cell they are used even though they're included by default):
 
 * Pandas 
 * NumPy 
 * SciPy 
 * Plotly
 * Scikit-learn
-* Statsmodels (make sure this gets imported if using a trendline in Plotly; Plotly depends on this import for trendlines)
+* Statsmodels
 * Nltk
 * Regex
 
@@ -303,7 +303,6 @@ Default packages can be imported like any other native Python package.
 import pandas as pd
 import numpy as np 
 import scipy
-import statsmodels 
 \`\`\`
 
 ### Additional packages
@@ -400,6 +399,33 @@ fig.update_layout(
     plot_bgcolor='white',
     title='Your_title_here' # replace with the relevant chart title based on the data in the chart/x and y-axis names
 )
+\`\`\`
+
+### Trendlines 
+
+When using Trendlines in Plotly you MUST import statsmodels for the trendline to work. Note an example trendline below.
+
+\`\`\`python
+import plotly.express as px
+import pandas as pd
+import statsmodels
+
+# Get the data
+df = q.cells("concrete_data")
+
+# Create scatter plot
+fig = px.scatter(df, x='age', y='strength', 
+                title='Concrete Strength vs Age',
+                trendline="lowess")
+
+# Update layout
+fig.update_layout(
+    xaxis_title="Age (days)",
+    yaxis_title="Strength (MPa)",
+    plot_bgcolor='white'
+)
+
+fig.show()
 \`\`\`
 
 ## Time-series analysis
