@@ -63,7 +63,7 @@ export function Component() {
                 setShowNonBlinkMsg(false);
               }}
             >
-              Cotinue anyway
+              Continue anyway
             </Button>
           </div>
         }
