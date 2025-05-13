@@ -48,7 +48,7 @@ async function handler(req: RequestWithUser, res: express.Response) {
 
   // Post to Slack
   // SLACK_FEEDBACK_URL is the Quadratic product feedback slack app webhook URL
-  // We filter out spammy feedback by requiring at least 30 characters
+   // We filter out spammy feedback by requiring at least 15 characters
   if (SLACK_FEEDBACK_URL && feedback.length >= 15) {
     const payload = {
       text: [
