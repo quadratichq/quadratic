@@ -187,8 +187,8 @@ impl CellRefRangeEnd {
 
         let mut col_is_absolute = !captures[1].is_empty();
         let col_str = &captures[2];
-        let no_absolute_row = captures[3].is_empty();
-        let mut row_is_absolute = !no_absolute_row || (no_absolute_row && col_is_absolute);
+
+        let mut row_is_absolute = !captures[3].is_empty();
         let row_str = &captures[4];
 
         // If there is no column, then an absolute row will be parsed as
@@ -225,6 +225,11 @@ impl CellRefRangeEnd {
         }
         if row.is_some_and(|r| r != UNBOUNDED && r > OUT_OF_BOUNDS) {
             return Err(A1Error::InvalidRow(row.unwrap_or(1).to_string()));
+        }
+
+        // $A should imply absolute row and column.
+        if !row_is_absolute && row_str.is_empty() && !col_str.is_empty() && col_is_absolute {
+            row_is_absolute = true;
         }
 
         Ok((col, col_is_absolute, row, row_is_absolute))

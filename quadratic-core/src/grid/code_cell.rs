@@ -350,7 +350,7 @@ mod tests {
         ref_adjust.relative_only = true;
         code.adjust_references(sheet_id, &a1_context, pos, ref_adjust);
         assert_eq!(
-            code.code, r#"q.cells('$A:$B')"#,
+            code.code, r#"q.cells("$A:$B")"#,
             "Absolute columns reference failed"
         );
 

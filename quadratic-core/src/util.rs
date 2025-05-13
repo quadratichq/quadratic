@@ -156,12 +156,12 @@ macro_rules! rect {
 /// # Examples
 ///
 /// ```
-/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord}};
+/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord, UNBOUNDED}};
 /// assert_eq!(ref_range_bounds![:$C], RefRangeBounds {
 ///     start: CellRefRangeEnd::new_relative_xy(1, 1),
 ///     end: CellRefRangeEnd {
 ///         col: CellRefCoord::new_abs(3),
-///         row: CellRefCoord::UNBOUNDED,
+///         row: CellRefCoord::new_abs(UNBOUNDED),
 ///     },
 /// });
 /// ```
@@ -400,6 +400,9 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
 }
 #[cfg(test)]
 mod tests {
+    use crate::a1::{CellRefCoord, CellRefRangeEnd, RefRangeBounds};
+    use crate::ref_range_bounds;
+
     use super::*;
 
     #[test]
@@ -434,5 +437,19 @@ mod tests {
         assert_eq!(unused_name("Sheet", &used), "Sheet 3");
         let used = ["Sheet 2", "Sheet 3"];
         assert_eq!(unused_name("Sheet", &used), "Sheet 4");
+    }
+
+    #[test]
+    fn test_ref_range_bounds() {
+        assert_eq!(
+            ref_range_bounds![:$C],
+            RefRangeBounds {
+                start: CellRefRangeEnd::new_relative_xy(1, 1),
+                end: CellRefRangeEnd {
+                    col: CellRefCoord::new_abs(3),
+                    row: CellRefCoord::new_abs(UNBOUNDED),
+                },
+            }
+        );
     }
 }
