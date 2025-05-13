@@ -1,5 +1,4 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { getToggleHideConnectionDemoAction } from '@/routes/api.connections';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon, CloseIcon, EditIcon } from '@/shared/components/Icons';
@@ -20,7 +19,6 @@ import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetcher, useSubmit } from 'react-router';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -28,6 +26,7 @@ type Props = {
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
+  handleHideConnectionDemo: (hideConnectionDemo: boolean) => void;
   teamUuid: string;
 };
 
@@ -37,10 +36,10 @@ export const ConnectionsList = ({
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
+  handleHideConnectionDemo,
   teamUuid,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
-  const fetcher = useFetcher();
 
   return (
     <>
@@ -101,13 +100,13 @@ export const ConnectionsList = ({
               items={connections}
               handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
-              teamUuid={teamUuid}
+              handleHideConnectionDemo={handleHideConnectionDemo}
             />
           </>
         ) : (
           <EmptyState
             title="No connections"
-            className={cn('my-8', fetcher.state !== 'idle' && 'pointer-events-none opacity-50')}
+            className={'my-8'}
             description={
               <>
                 <p>Create a connection from the options above, then open a spreadsheet and pull in data from it.</p>
@@ -116,8 +115,7 @@ export const ConnectionsList = ({
                   <button
                     className="relative font-semibold text-primary"
                     onClick={() => {
-                      const { json, options } = getToggleHideConnectionDemoAction(teamUuid, false);
-                      fetcher.submit(json, options);
+                      handleHideConnectionDemo(false);
                     }}
                   >
                     add a demo connection
@@ -138,20 +136,19 @@ function ListItems({
   filterQuery,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
+  handleHideConnectionDemo,
   items,
-  teamUuid,
 }: {
   filterQuery: string;
   handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
+  handleHideConnectionDemo: Props['handleHideConnectionDemo'];
   items: ConnectionsListConnection[];
-  teamUuid: string;
 }) {
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
-  const submit = useSubmit();
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
@@ -194,8 +191,7 @@ function ListItems({
               className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
               onClick={async () => {
                 if (await confirmFn()) {
-                  const { json, options } = getToggleHideConnectionDemoAction(teamUuid, true);
-                  submit(json, { ...options, navigate: false });
+                  handleHideConnectionDemo(true);
                 }
               }}
             >

@@ -35,18 +35,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export type GetConnections = Awaited<ReturnType<typeof getTeamConnections>>;
 async function getTeamConnections(teamUuid: string) {
-  const [
-    connections,
-    staticIps,
-    {
-      clientDataKv: { hideConnectionDemo },
-    },
-  ] = await Promise.all([
+  const [connections, staticIps] = await Promise.all([
     apiClient.connections.list(teamUuid),
     connectionClient.staticIps.list(),
-    apiClient.teams.get(teamUuid),
   ]);
-  return { ok: true, connections, staticIps, hideConnectionDemo };
+  return { ok: true, connections, staticIps };
 }
 
 export type GetConnection = Awaited<ReturnType<typeof getConnection>>;

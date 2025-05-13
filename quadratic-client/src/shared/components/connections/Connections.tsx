@@ -1,5 +1,11 @@
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
+import {
+  getToggleHideConnectionDemoAction,
+  type CreateConnectionAction,
+  type DeleteConnectionAction,
+  type ToggleHideConnectionDemoAction,
+  type UpdateConnectionAction,
+} from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
@@ -8,7 +14,7 @@ import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUp
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetchers, useSearchParams } from 'react-router';
+import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
@@ -35,6 +41,7 @@ export const Connections = ({
   handleNavigateToDetailsViewOverride,
   sshPublicKey,
 }: Props) => {
+  const submit = useSubmit();
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
@@ -110,13 +117,15 @@ export const Connections = ({
   }
 
   // Connection hidden? Remove it from the list
-  const demoConnectionBeingHidden = fetchers.filter(
+  const demoConnectionToggling = fetchers.filter(
     (fetcher) =>
       isJsonObject(fetcher.json) && fetcher.json.action === 'toggle-hide-connection-demo' && fetcher.state !== 'idle'
   );
-  if (demoConnectionBeingHidden.length || hideConnectionDemo) {
-    connections = connections.filter((c) => !c.isDemo);
+  if (demoConnectionToggling.length) {
+    const activeFetcher = demoConnectionToggling.slice(-1)[0];
+    hideConnectionDemo = (activeFetcher.json as ToggleHideConnectionDemoAction).hideConnectionDemo;
   }
+  connections = connections.filter((c) => (c.isDemo ? !hideConnectionDemo : false));
 
   /**
    * Navigation
@@ -142,6 +151,10 @@ export const Connections = ({
     // Otherwise we're on the dashboard, so navigate to the connection details
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
+  };
+  const handleHideConnectionDemo = (hideConnectionDemo: boolean) => {
+    const { json, options } = getToggleHideConnectionDemoAction(teamUuid, hideConnectionDemo);
+    submit(json, { ...options, navigate: false });
   };
 
   return (
@@ -177,6 +190,7 @@ export const Connections = ({
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
+            handleHideConnectionDemo={handleHideConnectionDemo}
           />
         )}
       </div>
