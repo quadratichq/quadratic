@@ -8,7 +8,7 @@ import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
-import { engineName, isDesktop } from 'react-device-detect';
+import { engineName, getUA, isChromium, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
 
 export function Component() {
@@ -34,11 +34,19 @@ export function Component() {
   if (showNonBlinkMsg) {
     return (
       <EmptyPage
-        title="Browser not officially supported"
+        title="Your browser is not officially supported"
         description={
           <>
-            We officially support Blink-based browsers like Chrome and Edge. You’re welcome to try others, but things
-            might not work as expected.
+            Chromium browsers are{' '}
+            <a
+              href={DOCUMENTATION_BROWSER_COMPATIBILITY_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-primary"
+            >
+              officially supported
+            </a>
+            . You’re welcome to try others, but things might not work as expected.
           </>
         }
         Icon={InfoCircledIcon}
