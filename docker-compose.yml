@@ -566,8 +566,8 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ssh-postgres-connection-data:/var/lib/postgresql/data
-      - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
+      - ./docker/ssh-postgres-connection/data:/var/lib/postgresql/data
+      - ./docker/ssh-postgres-connection/scripts:/docker-entrypoint-initdb.d
     profiles:
       - quadratic-connection
       - quadratic-connection-db
@@ -712,9 +712,6 @@ services:
 volumes:
   postgres-connection-data:
     name: postgres-connection-data
-    driver: local
-  ssh-postgres-connection-data:
-    name: ssh-postgres-connection-data
     driver: local
   mysql-connection-data:
     name: mysql-connection-data
