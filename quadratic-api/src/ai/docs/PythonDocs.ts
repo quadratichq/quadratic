@@ -276,6 +276,10 @@ x = 3
 x += 1
 \`\`\`
 
+### Formatting 
+
+Do NOT try to use formatting options like f-strings (f"") or .format() on numerical return types. Returning formatted data will not flow through to the sheet; the sheet will read formatted numerical values as strings, keeping formatting options like currencies and significant digits from working on the returned values. 
+
 ## Packages
 
 Using and installing Python packages.
