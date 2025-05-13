@@ -27,7 +27,6 @@ type Props = {
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
   handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
-  teamUuid: string;
 };
 
 export const ConnectionsList = ({
@@ -37,7 +36,6 @@ export const ConnectionsList = ({
   handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
-  teamUuid,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
 

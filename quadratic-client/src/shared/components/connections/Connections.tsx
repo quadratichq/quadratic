@@ -189,7 +189,6 @@ export const Connections = ({
           />
         ) : (
           <ConnectionsList
-            teamUuid={teamUuid}
             connections={connections}
             connectionsAreLoading={connectionsAreLoading}
             handleNavigateToCreateView={handleNavigateToCreateView}
