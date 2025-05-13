@@ -121,8 +121,6 @@ export const Connections = ({
   );
   if (demoConnectionToggling.length) {
     const activeFetcher = demoConnectionToggling.slice(-1)[0];
-    // @ts-ignore
-    console.log('activeFetcher', activeFetcher.json?.showConnectionDemo);
     connections = connections.map((c) =>
       c.isDemo
         ? {
