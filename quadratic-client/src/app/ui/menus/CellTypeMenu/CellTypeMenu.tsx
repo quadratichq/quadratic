@@ -132,7 +132,7 @@ export default function CellTypeMenu() {
               />
             ))}
             <CommandItemWrapper
-              name="Manage…"
+              name="Add or manage…"
               icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
             />
