@@ -92,11 +92,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy all package.json files
 COPY --link package.json .
-COPY --link package-lock.json .
-COPY --link ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
-COPY --link ./quadratic-core/package*.json ./quadratic-core/
-COPY --link ./quadratic-shared/package*.json ./quadratic-shared/
-COPY --link ./quadratic-client/package*.json ./quadratic-client/
+COPY --link ./quadratic-kernels/python-wasm/package.json ./quadratic-kernels/python-wasm/
+COPY --link ./quadratic-core/package.json ./quadratic-core/
+COPY --link ./quadratic-shared/package.json ./quadratic-shared/
+COPY --link ./quadratic-client/package.json ./quadratic-client/
 
 # Install npm dependencies
 RUN npm install --no-audit --no-fund
