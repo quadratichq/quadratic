@@ -86,8 +86,21 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.push(parsedResponse.responseMessage);
   }
 
-  if (DEBUG) {
-    console.log('[AI.TokenUsage]', parsedResponse?.usage);
+  if (DEBUG && parsedResponse?.usage) {
+    const usage = parsedResponse.usage;
+    let total: number | undefined;
+    if (parsedResponse.responseMessage?.model.includes('claude-3-5-sonnet')) {
+      const inputTokensPerMillion = 3 / 1_000_000;
+      const outputTokensPerMillion = 15 / 1_000_000;
+      const cacheReadTokensPerMillion = 0.3 / 1_000_000;
+      const cacheWriteTokensPerMillion = 3.75 / 1_000_000;
+      total =
+        outputTokensPerMillion * usage.outputTokens +
+        inputTokensPerMillion * usage.inputTokens +
+        cacheReadTokensPerMillion * usage.cacheReadTokens +
+        cacheWriteTokensPerMillion * usage.cacheWriteTokens;
+    }
+    console.log('[AI.TokenUsage]', total ? { ...usage, claude: `$${total.toFixed(2)}` } : usage);
   }
 
   const {
