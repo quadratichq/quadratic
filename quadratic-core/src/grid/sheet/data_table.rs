@@ -331,6 +331,8 @@ impl Sheet {
         ))
     }
 
+    /// Returns true if the data table should expand to the right.
+    /// Will return false if the rectangle touches the table heading.
     pub fn should_expand_data_table(data_tables: &[Rect], rect: Rect) -> bool {
         let rect_moved_left = Rect::new(rect.min.x - 1, rect.min.y, rect.max.x - 1, rect.max.y);
 

@@ -69,23 +69,6 @@ impl A1Context {
         self.table_map.tables.values()
     }
 
-    /// Returns an iterator over all the tables in the context that are in the given sheet.
-    pub fn tables_in_sheet(&self, sheet_id: SheetId) -> impl Iterator<Item = &TableMapEntry> {
-        self.table_map
-            .tables
-            .values()
-            .filter(move |table| table.sheet_id == sheet_id)
-    }
-
-    /// Returns an iterator over all the import tables in the context that are in the given sheet.
-    pub fn import_tables_in_sheet(
-        &self,
-        sheet_id: SheetId,
-    ) -> impl Iterator<Item = &TableMapEntry> {
-        self.tables_in_sheet(sheet_id)
-            .filter(move |table| table.language == CodeCellLanguage::Import)
-    }
-
     /// Returns a list of all table names in the context.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
         self.table_map

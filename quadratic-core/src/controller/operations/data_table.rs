@@ -306,14 +306,13 @@ impl GridController {
         current_sheet_pos: SheetPos,
         value_is_empty: bool,
     ) {
-        // expand the data table to the right or bottom if the cell
-        // value is touching the right or bottom edge
+        // expand the data table to the right or bottom if the cell value is
+        // touching the right or bottom edge
         let (col, row) =
             sheet.expand_columns_and_rows(&data_tables, current_sheet_pos, value_is_empty);
 
-        // if an expansion happened, adjust the size of the
-        // data table rect so that successive iterations
-        // continue to expand the data table.
+        // if an expansion happened, adjust the size of the data table rect
+        // so that successive iterations continue to expand the data table.
         if let Some((sheet_pos, col)) = col {
             let entry = data_table_columns.entry(sheet_pos).or_default();
 
@@ -323,9 +322,8 @@ impl GridController {
 
                 let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
 
-                // adjust the size of the data table rect so that
-                // successive iterations continue to expand the data
-                // table.
+                // adjust the size of the data table rect so that successive
+                // iterations continue to expand the data table.
                 data_tables
                     .iter_mut()
                     .filter(|rect| rect.contains(pos_to_check))
@@ -335,23 +333,21 @@ impl GridController {
             }
         }
 
-        // expand the data table to the bottom if the cell
-        // value is touching the bottom edge
+        // expand the data table to the bottom if the cell value is touching
+        // the bottom edge
         if let Some((sheet_pos, row)) = row {
             let entry = data_table_rows.entry(sheet_pos).or_default();
 
-            // if an expansion happened, adjust the size of the
-            // data table rect so that successive iterations
-            // continue to expand the data table.
+            // if an expansion happened, adjust the size of the data table rect
+            // so that successive iterations continue to expand the data table.
             if !entry.contains(&row) {
                 // add the row to data_table_rows
                 entry.push(row);
 
                 let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
 
-                // adjust the size of the data table rect so that
-                // successive iterations continue to expand the data
-                // table.
+                // adjust the size of the data table rect so that successive
+                // iterations continue to expand the data table.
                 data_tables
                     .iter_mut()
                     .filter(|rect| rect.contains(pos_to_check))

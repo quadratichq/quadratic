@@ -645,7 +645,7 @@ impl GridController {
         let mut clipboard = Clipboard::decode(&html)?;
         let clipboard_rect = clipboard.to_rect(insert_at);
 
-        let new_default_sheet_id = match clipboard.operation {
+        let sheet_id = match clipboard.operation {
             ClipboardOperation::Cut => selection.sheet_id,
             ClipboardOperation::Copy => clipboard.origin.sheet_id,
         };
@@ -664,7 +664,7 @@ impl GridController {
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
         let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
-        let existing_data_tables = self.a1_context_sheet_table_bounds(new_default_sheet_id);
+        let existing_data_tables = self.a1_context_sheet_table_bounds(sheet_id);
         let mut growing_data_tables = existing_data_tables.clone();
         let bypass_growing =
             !Sheet::should_expand_data_table(&existing_data_tables, clipboard_rect);
@@ -696,7 +696,7 @@ impl GridController {
                 // restore the original columns for each pass to avoid replacing the replaced code cells
                 clipboard.cells.columns = source_columns.to_owned();
 
-                if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id) {
+                if !(adjust.is_no_op() && sheet_id == clipboard.origin.sheet_id) {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                         for (cols_y, cell) in col {
                             if let CellValue::Code(code_cell) = cell {
@@ -707,7 +707,7 @@ impl GridController {
                                 };
 
                                 code_cell.adjust_references(
-                                    new_default_sheet_id,
+                                    sheet_id,
                                     self.a1_context(),
                                     original_pos,
                                     adjust,
@@ -724,17 +724,15 @@ impl GridController {
                                 // we're not within a data table
                                 // expand the data table to the right or bottom if the
                                 // cell value is touching the right or bottom edge
-                                if let (false, false, Some(sheet)) = (
-                                    within_data_table,
-                                    bypass_growing,
-                                    self.try_sheet(new_default_sheet_id),
-                                ) {
+                                if let (false, false, Some(sheet)) =
+                                    (within_data_table, bypass_growing, self.try_sheet(sheet_id))
+                                {
                                     self.grow_data_table(
                                         sheet,
                                         &mut growing_data_tables,
                                         &mut data_table_columns,
                                         &mut data_table_rows,
-                                        SheetPos::new(new_default_sheet_id, new_x, new_y),
+                                        SheetPos::new(sheet_id, new_x, new_y),
                                         cell.to_display().is_empty(),
                                     );
                                 }
