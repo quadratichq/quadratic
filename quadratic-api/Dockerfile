@@ -1,7 +1,7 @@
 ###########################################################################################
 # Builder - Install dependencies
 ###########################################################################################
-FROM node:23 AS builder
+FROM node:24 AS builder
 WORKDIR /quadratic
 
 # copy package.json for npm install
@@ -20,7 +20,7 @@ COPY quadratic-shared ./quadratic-shared
 ###########################################################################################
 # Runner
 ###########################################################################################
-FROM node:23-slim AS runtime
+FROM node:24-slim AS runtime
 WORKDIR /quadratic
 
 # Install required packages with correct verification

@@ -9,7 +9,7 @@
   "repository": "https://github.com/quadratichq/quadratic.git",
   "private": true,
   "engines": {
-    "node": "23.x"
+    "node": "24.x"
   },
   "type": "module",
   "dependencies": {
