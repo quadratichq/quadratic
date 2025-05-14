@@ -166,8 +166,16 @@ export class SheetCursor {
   };
 
   // Returns the columns that are selected.
-  getSelectedColumnsFinite = (): number[] => {
-    return Array.from(this.jsSelection.getSelectedColumnsFinite());
+  getColumnsWithSelectedCells = (): number[] => {
+    return Array.from(this.jsSelection.getColumnsWithSelectedCells());
+  };
+
+  getSelectedColumns = (): number[] => {
+    return Array.from(this.jsSelection.getSelectedColumns());
+  };
+
+  getSelectedRows = (): number[] => {
+    return Array.from(this.jsSelection.getSelectedRows());
   };
 
   getSelectedTableColumns = (tableName: string): number[] => {
@@ -175,8 +183,8 @@ export class SheetCursor {
   };
 
   // Returns the rows that are selected.
-  getSelectedRowsFinite = (): number[] => {
-    return Array.from(this.jsSelection.getSelectedRowsFinite());
+  getRowsWithSelectedCells = (): number[] => {
+    return Array.from(this.jsSelection.getRowsWithSelectedCells());
   };
 
   // Returns true if the cursor is only selecting a single cell
@@ -453,5 +461,9 @@ export class SheetCursor {
 
   getSelectedTableColumnsCount = (): number => {
     return this.jsSelection.getSelectedTableColumnsCount();
+  };
+
+  isAllSelected = (): boolean => {
+    return this.jsSelection.isAllSelected();
   };
 }
