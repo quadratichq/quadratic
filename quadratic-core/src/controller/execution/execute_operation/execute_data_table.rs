@@ -85,6 +85,10 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
     ) {
+        if !transaction.is_user() {
+            return;
+        }
+
         let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) else {
             // sheet may have been deleted
             return;
@@ -653,9 +657,8 @@ impl GridController {
                         &A1Selection::from_rect(rect.to_sheet_rect(sheet_id)),
                         FormatUpdate::cleared(),
                     ));
-            self.check_deleted_data_tables(transaction, &rect.to_sheet_rect(sheet_id));
 
-            // inset data table in sheet
+            // insert data table in sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             sheet.set_cell_value(sheet_rect.min, cell_value);
             let (_, _, dirty_rects) =

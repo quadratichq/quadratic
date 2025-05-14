@@ -50,8 +50,8 @@ impl GridController {
             let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
             sheet_rect.min.x = min_column;
             self.check_deleted_data_tables(transaction, &sheet_rect);
-            self.add_compute_operations(transaction, &sheet_rect, None);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+            self.add_compute_operations(transaction, &sheet_rect, None);
         }
 
         // calculate the adjusted to value based on whether we're moving columns
@@ -128,8 +128,8 @@ impl GridController {
             let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
             sheet_rect.min.y = min_row;
             self.check_deleted_data_tables(transaction, &sheet_rect);
-            self.add_compute_operations(transaction, &sheet_rect, None);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+            self.add_compute_operations(transaction, &sheet_rect, None);
         }
 
         // calculate the adjusted to value based on whether we're moving rows

@@ -15,6 +15,10 @@ impl GridController {
         output: &SheetRect,
         skip_compute: Option<SheetPos>,
     ) {
+        if !transaction.is_user() {
+            return;
+        }
+
         self.get_dependent_code_cells(output)
             .iter()
             .for_each(|sheet_positions| {

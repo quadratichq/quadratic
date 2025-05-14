@@ -87,7 +87,7 @@ impl Sheet {
     pub fn data_tables_intersect_rect(
         &self,
         rect: Rect,
-    ) -> impl Iterator<Item = (Pos, &DataTable)> {
+    ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
         self.data_tables.get_in_rect(rect, false)
     }
 
@@ -126,7 +126,7 @@ impl Sheet {
         pos: &Pos,
         f: impl FnOnce(&mut DataTable) -> Result<()>,
     ) -> Result<(&DataTable, HashSet<Rect>)> {
-        self.data_tables.modify_data_table_at(pos, None, f)
+        self.data_tables.modify_data_table_at(pos, f)
     }
 
     pub fn data_table_insert_full(
@@ -177,7 +177,7 @@ impl Sheet {
         let mut dirty_rects = HashSet::new();
 
         for (pos, new_spill) in data_tables_to_modify {
-            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, None, |dt| {
+            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, |dt| {
                 dt.spill_value = new_spill;
                 Ok(())
             }) {

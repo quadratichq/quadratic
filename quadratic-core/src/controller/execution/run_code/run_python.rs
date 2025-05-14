@@ -75,7 +75,7 @@ mod tests {
         }
         sheet
             .data_tables
-            .modify_data_table_at(&pos, None, |dt| {
+            .modify_data_table_at(&pos, |dt| {
                 dt.show_name = Some(false);
                 dt.show_columns = Some(false);
                 Ok(())
