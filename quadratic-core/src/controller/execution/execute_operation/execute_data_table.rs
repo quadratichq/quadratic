@@ -154,7 +154,7 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = Pos::from(sheet_pos);
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
+            let sheet_rect_for_compute_and_spills = data_table.output_sheet_rect(sheet_pos, false);
 
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
@@ -202,7 +202,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -229,7 +229,7 @@ impl GridController {
 
             let index = sheet.data_table_index_result(data_table_pos)?;
             let (data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
-            let data_table_rect = data_table
+            let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
 
@@ -252,7 +252,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -276,9 +276,6 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(&pos)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, false)
-                .to_sheet_rect(sheet_id);
 
             if data_table.is_code() {
                 dbgjs!(format!("Data table {} is readonly", data_table.name));
@@ -419,7 +416,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&rect.to_sheet_rect(sheet_id)),
             );
 
             return Ok(());
@@ -583,7 +580,7 @@ impl GridController {
                 Ok(())
             })?;
 
-            let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
+            let sheet_rect_for_compute_and_spills = data_table.output_sheet_rect(sheet_pos, false);
 
             sheet.set_cell_value(data_table_pos, value);
 
@@ -601,7 +598,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -838,15 +835,22 @@ impl GridController {
                 }
             }
 
+            let mut sheet_rect_for_compute_and_spills = None;
+
+            let sheet = self.grid.try_sheet_result(sheet_id)?;
+            let data_table = sheet.data_table_result(&data_table_pos)?;
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, false)
+                .to_sheet_rect(sheet_id);
+
             let (_, dirty_rects) = self
                 .grid
                 .try_sheet_mut_result(sheet_id)?
                 .modify_data_table_at(&data_table_pos, |dt| {
-                    let data_table_rect =
-                        dt.output_rect(data_table_pos, true).to_sheet_rect(sheet_id);
                     if columns.is_some() || show_name.is_some() || show_columns.is_some() {
                         dt.add_dirty_fills_and_borders(transaction, sheet_id);
                         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
+                        sheet_rect_for_compute_and_spills = Some(&data_table_rect);
                     }
 
                     // if the header is first row, update the column names in the data table value
@@ -889,10 +893,6 @@ impl GridController {
             }
 
             let sheet = self.grid.try_sheet_result(sheet_id)?;
-            let data_table = sheet.data_table_result(&data_table_pos)?;
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, true)
-                .to_sheet_rect(sheet_id);
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
             let forward_operations = vec![op];
@@ -908,7 +908,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                sheet_rect_for_compute_and_spills,
             );
 
             return Ok(());
@@ -932,7 +932,7 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
-            let data_table_sheet_rect = data_table
+            let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
@@ -966,7 +966,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_sheet_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1005,6 +1005,11 @@ impl GridController {
                 .iter()
                 .map(|(index, _, _)| *index)
                 .collect::<Vec<_>>();
+
+            let min_column = columns.first().map_or(0, |col| col.0);
+            let data_table = sheet.data_table_result(&data_table_pos)?;
+            let display_min_column =
+                data_table.get_display_index_from_column_index(min_column, true);
 
             for (index, mut column_header, mut values) in columns {
                 let sheet = self.try_sheet_result(sheet_id)?;
@@ -1134,9 +1139,10 @@ impl GridController {
                 dt.check_sort()?;
                 Ok(())
             })?;
-            let data_table_rect = data_table
+            let mut sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
+            sheet_rect_for_compute_and_spills.min.x += display_min_column as i64;
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
@@ -1159,7 +1165,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1194,9 +1200,10 @@ impl GridController {
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, true)
-                .to_sheet_rect(sheet_id);
+
+            let min_column = columns.first().map_or(0, |col| col.to_owned());
+            let display_min_column =
+                data_table.get_display_index_from_column_index(min_column, true);
 
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
 
@@ -1389,6 +1396,11 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
+            let mut sheet_rect_for_compute_and_spills = data_table
+                .output_rect(data_table_pos, true)
+                .to_sheet_rect(sheet_id);
+            sheet_rect_for_compute_and_spills.min.x += display_min_column as i64;
+
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
@@ -1401,7 +1413,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
             return Ok(());
         };
@@ -1431,6 +1443,7 @@ impl GridController {
             }
 
             rows.sort_by(|a, b| a.0.cmp(&b.0));
+            let min_display_row = rows.first().map_or(0, |row| row.0);
 
             let reverse_rows = rows.iter().map(|(index, _)| *index).collect::<Vec<_>>();
 
@@ -1526,9 +1539,10 @@ impl GridController {
                 dt.check_sort()?;
                 Ok(())
             })?;
-            let data_table_rect = data_table
+            let mut sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
+            sheet_rect_for_compute_and_spills.min.y += min_display_row as i64;
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
@@ -1551,7 +1565,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1577,6 +1591,7 @@ impl GridController {
             }
 
             rows.sort_by(|a, b| b.cmp(a));
+            let min_display_row = rows.first().map_or(0, |row| row.to_owned());
 
             let mut reverse_rows = vec![];
             let mut reverse_operations: Vec<Operation> = vec![];
@@ -1739,6 +1754,11 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
+            let mut sheet_rect_for_compute_and_spills = data_table
+                .output_rect(data_table_pos, true)
+                .to_sheet_rect(sheet_id);
+            sheet_rect_for_compute_and_spills.min.y += min_display_row as i64;
+
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
@@ -1751,7 +1771,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1790,7 +1810,7 @@ impl GridController {
                 Ok(())
             })?;
 
-            let data_table_rect = data_table
+            let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
@@ -1812,7 +1832,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&data_table_rect),
+                Some(&sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());

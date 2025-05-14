@@ -193,6 +193,8 @@ impl GridController {
                 }
             }
 
+            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+
             transaction
                 .forward_operations
                 .push(Operation::SetDataTable {
@@ -208,10 +210,6 @@ impl GridController {
                     data_table: old_data_table,
                     index,
                 });
-
-            if transaction.is_user() {
-                self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-            }
         } else {
             let dirty_rects = if let Some(new_data_table) = new_data_table {
                 sheet

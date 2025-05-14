@@ -15,7 +15,7 @@ impl GridController {
         values: Vec<Vec<String>>,
         cursor: Option<String>,
     ) {
-        // TODO(ddimaria): implement actuall error bubbling and remove this dbgjs! and return a Result
+        // TODO(ddimaria): implement actual error bubbling and remove this dbgjs! and return a Result
         match self.set_cell_values_operations(sheet_pos, values) {
             Ok((ops, data_table_ops)) => {
                 self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
