@@ -46,7 +46,7 @@ export function Component() {
             >
               officially supported
             </a>
-            . You’re welcome to try others, but things might not work as expected.
+            . You’re welcome to try non-Chromium browsers, but things might not work as expected.
           </>
         }
         Icon={InfoCircledIcon}
