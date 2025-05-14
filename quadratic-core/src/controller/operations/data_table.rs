@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use super::operation::Operation;
 use crate::{
-    Array, ArraySize, CellValue, CopyFormats, Pos, SheetPos, SheetRect,
+    Array, ArraySize, CellValue, CopyFormats, Pos, Rect, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
-        DataTable, DataTableKind,
+        DataTable, DataTableKind, Sheet,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
         unique_data_table_name,
@@ -289,6 +291,111 @@ impl GridController {
             cell_value: CellValue::Import(import),
             index: None,
         });
+
+        ops
+    }
+
+    /// Expands a data table to the right or bottom if the cell value is
+    /// touching the right or bottom edge.
+    pub fn grow_data_table(
+        &self,
+        sheet: &Sheet,
+        data_tables: &mut [Rect],
+        data_table_columns: &mut HashMap<SheetPos, Vec<u32>>,
+        data_table_rows: &mut HashMap<SheetPos, Vec<u32>>,
+        current_sheet_pos: SheetPos,
+        value_is_empty: bool,
+    ) {
+        // expand the data table to the right or bottom if the cell
+        // value is touching the right or bottom edge
+        let (col, row) =
+            sheet.expand_columns_and_rows(&data_tables, current_sheet_pos, value_is_empty);
+
+        // if an expansion happened, adjust the size of the
+        // data table rect so that successive iterations
+        // continue to expand the data table.
+        if let Some((sheet_pos, col)) = col {
+            let entry = data_table_columns.entry(sheet_pos).or_default();
+
+            if !entry.contains(&col) {
+                // add the column to data_table_columns
+                entry.push(col);
+
+                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                // adjust the size of the data table rect so that
+                // successive iterations continue to expand the data
+                // table.
+                data_tables
+                    .iter_mut()
+                    .filter(|rect| rect.contains(pos_to_check))
+                    .for_each(|rect| {
+                        rect.max.x += 1;
+                    });
+            }
+        }
+
+        // expand the data table to the bottom if the cell
+        // value is touching the bottom edge
+        if let Some((sheet_pos, row)) = row {
+            let entry = data_table_rows.entry(sheet_pos).or_default();
+
+            // if an expansion happened, adjust the size of the
+            // data table rect so that successive iterations
+            // continue to expand the data table.
+            if !entry.contains(&row) {
+                // add the row to data_table_rows
+                entry.push(row);
+
+                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                // adjust the size of the data table rect so that
+                // successive iterations continue to expand the data
+                // table.
+                data_tables
+                    .iter_mut()
+                    .filter(|rect| rect.contains(pos_to_check))
+                    .for_each(|rect| {
+                        rect.max.y += 1;
+                    });
+            }
+        }
+    }
+
+    /// Returns operations to grow a data table to the right or bottom if the
+    /// cell value is touching the right or bottom edge.
+    pub fn grow_data_table_operations(
+        &self,
+        data_table_columns: HashMap<SheetPos, Vec<u32>>,
+        data_table_rows: HashMap<SheetPos, Vec<u32>>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        if !data_table_columns.is_empty() {
+            for (sheet_pos, columns) in data_table_columns {
+                ops.push(Operation::InsertDataTableColumns {
+                    sheet_pos,
+                    columns: columns.into_iter().map(|c| (c, None, None)).collect(),
+                    swallow: true,
+                    select_table: false,
+                    copy_formats_from: None,
+                    copy_formats: None,
+                });
+            }
+        }
+
+        if !data_table_rows.is_empty() {
+            for (sheet_pos, rows) in data_table_rows {
+                ops.push(Operation::InsertDataTableRows {
+                    sheet_pos,
+                    rows: rows.into_iter().map(|r| (r, None)).collect(),
+                    swallow: true,
+                    select_table: false,
+                    copy_formats_from: None,
+                    copy_formats: None,
+                });
+            }
+        }
 
         ops
     }

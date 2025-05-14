@@ -11,6 +11,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
+use crate::grid::Sheet;
 use crate::grid::SheetId;
 use crate::grid::formats::Format;
 use crate::grid::formats::FormatUpdate;
@@ -132,6 +133,10 @@ impl Clipboard {
                     .map_err(|e| error(e.to_string(), "Serialization error"))
             }
         }
+    }
+
+    pub fn to_rect(&self, pos: Pos) -> Rect {
+        Rect::from_numbers(pos.x, pos.y, self.w as i64, self.h as i64)
     }
 }
 
@@ -633,10 +638,17 @@ impl GridController {
         selection: &A1Selection,
         html: String,
         special: PasteSpecial,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
+        let mut data_table_ops = vec![];
         let mut clipboard = Clipboard::decode(&html)?;
+        let clipboard_rect = clipboard.to_rect(insert_at);
+
+        let new_default_sheet_id = match clipboard.operation {
+            ClipboardOperation::Cut => selection.sheet_id,
+            ClipboardOperation::Copy => clipboard.origin.sheet_id,
+        };
 
         // If the clipboard is larger than the selection, we need to paste multiple times.
         // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
@@ -648,6 +660,14 @@ impl GridController {
         let mut formats = clipboard.formats.to_owned().unwrap_or_default();
         let mut borders = clipboard.borders.to_owned().unwrap_or_default();
         let source_columns = clipboard.cells.columns;
+
+        // collect information for growing data tables
+        let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
+        let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
+        let existing_data_tables = self.a1_context_sheet_table_bounds(new_default_sheet_id);
+        let mut growing_data_tables = existing_data_tables.clone();
+        let bypass_growing =
+            !Sheet::should_expand_data_table(&existing_data_tables, clipboard_rect);
 
         // loop through the clipboard and replace cell references in formulas and other languages
         for (start_x, x) in (insert_at.x..=max_x)
@@ -661,7 +681,6 @@ impl GridController {
                 let pos: Pos = Pos { x, y };
                 let dx = insert_at.x - clipboard.origin.x + start_x as i64;
                 let dy = insert_at.y - clipboard.origin.y + start_y as i64;
-
                 let adjust = match clipboard.operation {
                     ClipboardOperation::Cut => RefAdjust::NO_OP,
                     ClipboardOperation::Copy => RefAdjust {
@@ -672,10 +691,6 @@ impl GridController {
                         x_start: 0,
                         y_start: 0,
                     },
-                };
-                let new_default_sheet_id = match clipboard.operation {
-                    ClipboardOperation::Cut => selection.sheet_id,
-                    ClipboardOperation::Copy => clipboard.origin.sheet_id,
                 };
 
                 // restore the original columns for each pass to avoid replacing the replaced code cells
@@ -697,6 +712,32 @@ impl GridController {
                                     original_pos,
                                     adjust,
                                 );
+                            } else {
+                                let new_x = x + cols_x as i64;
+                                let new_y = y + *cols_y as i64;
+                                let current_pos = Pos::new(new_x, new_y);
+                                let within_data_table = existing_data_tables
+                                    .iter()
+                                    .find(|rect| rect.contains(current_pos))
+                                    .is_some();
+
+                                // we're not within a data table
+                                // expand the data table to the right or bottom if the
+                                // cell value is touching the right or bottom edge
+                                if let (false, false, Some(sheet)) = (
+                                    within_data_table,
+                                    bypass_growing,
+                                    self.try_sheet(new_default_sheet_id),
+                                ) {
+                                    self.grow_data_table(
+                                        sheet,
+                                        &mut growing_data_tables,
+                                        &mut data_table_columns,
+                                        &mut data_table_rows,
+                                        SheetPos::new(new_default_sheet_id, new_x, new_y),
+                                        cell.to_display().is_empty(),
+                                    );
+                                }
                             }
                         }
                     }
@@ -739,9 +780,11 @@ impl GridController {
             selection: selection.to_owned(),
         });
 
+        data_table_ops.extend(self.grow_data_table_operations(data_table_columns, data_table_rows));
+
         ops.extend(compute_code_ops);
 
-        Ok(ops)
+        Ok((ops, data_table_ops))
     }
 
     /// If the clipboard is larger than the selection, we need to paste multiple times.
@@ -869,7 +912,8 @@ mod test {
         let insert_at = selection.cursor;
         let operations = gc
             .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
-            .unwrap();
+            .unwrap()
+            .0;
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
         let sheet = gc.sheet(sheet_id);
@@ -894,7 +938,8 @@ mod test {
         let insert_at = selection.cursor;
         let operations = gc
             .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
-            .unwrap();
+            .unwrap()
+            .0;
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
         let sheet = gc.sheet(sheet_id);
@@ -930,7 +975,8 @@ mod test {
                 html,
                 PasteSpecial::None,
             )
-            .unwrap();
+            .unwrap()
+            .0;
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
         let sheet = gc.sheet(sheet_id);

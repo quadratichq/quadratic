@@ -30,14 +30,7 @@ impl GridController {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
-        let existing_data_tables = self
-            .a1_context()
-            .tables()
-            .filter(|table| {
-                table.sheet_id == sheet_pos.sheet_id && table.language == CodeCellLanguage::Import
-            })
-            .map(|table| table.bounds)
-            .collect::<Vec<_>>();
+        let existing_data_tables = self.a1_context_sheet_table_bounds(sheet_pos.sheet_id);
         let mut growing_data_tables = existing_data_tables.clone();
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
@@ -101,63 +94,16 @@ impl GridController {
                     else {
                         cell_values[x][y] = Some(cell_value);
 
-                        // expand the data table to the right if the cell
-                        // value is touching the right edge
-                        let (col, row) = sheet.expand_columns_and_rows(
-                            &growing_data_tables,
+                        // expand the data table to the right or bottom if the
+                        // cell value is touching the right or bottom edge
+                        self.grow_data_table(
+                            sheet,
+                            &mut growing_data_tables,
+                            &mut data_table_columns,
+                            &mut data_table_rows,
                             current_sheet_pos,
-                            value,
+                            value.is_empty(),
                         );
-
-                        // if an expansion happened, adjust the size of the
-                        // data table rect so that successive iterations
-                        // continue to expand the data table.
-                        if let Some((sheet_pos, col)) = col {
-                            let entry = data_table_columns.entry(sheet_pos).or_default();
-
-                            if !entry.contains(&col) {
-                                // add the column to data_table_columns
-                                entry.push(col);
-
-                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
-
-                                // adjust the size of the data table rect so that
-                                // successive iterations continue to expand the data
-                                // table.
-                                growing_data_tables
-                                    .iter_mut()
-                                    .filter(|rect| rect.contains(pos_to_check))
-                                    .for_each(|rect| {
-                                        rect.max.x += 1;
-                                    });
-                            }
-                        }
-
-                        // expand the data table to the bottom if the cell
-                        // value is touching the bottom edge
-                        if let Some((sheet_pos, row)) = row {
-                            let entry = data_table_rows.entry(sheet_pos).or_default();
-
-                            // if an expansion happened, adjust the size of the
-                            // data table rect so that successive iterations
-                            // continue to expand the data table.
-                            if !entry.contains(&row) {
-                                // add the row to data_table_rows
-                                entry.push(row);
-
-                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
-
-                                // adjust the size of the data table rect so that
-                                // successive iterations continue to expand the data
-                                // table.
-                                growing_data_tables
-                                    .iter_mut()
-                                    .filter(|rect| rect.contains(pos_to_check))
-                                    .for_each(|rect| {
-                                        rect.max.y += 1;
-                                    });
-                            }
-                        }
                     }
 
                     if !format_update.is_default() {
@@ -193,31 +139,8 @@ impl GridController {
                 });
             }
 
-            if !data_table_columns.is_empty() {
-                for (sheet_pos, columns) in data_table_columns {
-                    data_table_ops.push(Operation::InsertDataTableColumns {
-                        sheet_pos,
-                        columns: columns.into_iter().map(|c| (c, None, None)).collect(),
-                        swallow: true,
-                        select_table: false,
-                        copy_formats_from: None,
-                        copy_formats: None,
-                    });
-                }
-            }
-
-            if !data_table_rows.is_empty() {
-                for (sheet_pos, rows) in data_table_rows {
-                    data_table_ops.push(Operation::InsertDataTableRows {
-                        sheet_pos,
-                        rows: rows.into_iter().map(|r| (r, None)).collect(),
-                        swallow: true,
-                        select_table: false,
-                        copy_formats_from: None,
-                        copy_formats: None,
-                    });
-                }
-            }
+            data_table_ops
+                .extend(self.grow_data_table_operations(data_table_columns, data_table_rows));
 
             ops.extend(compute_code_ops);
         }

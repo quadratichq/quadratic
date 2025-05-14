@@ -77,10 +77,14 @@ impl GridController {
         let selection = A1Selection::from_single_cell((to, 1, sheet_id).into());
         let insert_at = selection.cursor;
 
-        if let Ok(ops) =
+        if let Ok((ops, data_table_ops)) =
             self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
         {
             transaction.operations.extend(ops);
+
+            if !data_table_ops.is_empty() {
+                transaction.operations.extend(data_table_ops);
+            }
         }
     }
 
@@ -157,10 +161,14 @@ impl GridController {
         let selection = A1Selection::from_single_cell((1, to, sheet_id).into());
         let insert_at = selection.cursor;
 
-        if let Ok(ops) =
+        if let Ok((ops, data_table_ops)) =
             self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
         {
             transaction.operations.extend(ops);
+
+            if !data_table_ops.is_empty() {
+                transaction.operations.extend(data_table_ops);
+            }
         }
     }
 }
