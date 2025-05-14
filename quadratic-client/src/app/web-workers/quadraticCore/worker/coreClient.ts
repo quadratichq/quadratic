@@ -719,6 +719,22 @@ class CoreClient {
         core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
         return;
 
+      case 'clientCoreResizeColumns':
+        core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeRows':
+        core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeAllColumns':
+        core.resizeAllColumns(e.data.sheetId, e.data.size, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeAllRows':
+        core.resizeAllRows(e.data.sheetId, e.data.size, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

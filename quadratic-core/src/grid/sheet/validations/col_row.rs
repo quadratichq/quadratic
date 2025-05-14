@@ -257,7 +257,7 @@ mod tests {
     use crate::{
         CellValue, CopyFormats,
         controller::{GridController, active_transactions::transaction_name::TransactionName},
-        grid::sheet::validations::validation_rules::{
+        grid::sheet::validations::rules::{
             ValidationRule, validation_logical::ValidationLogical,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},

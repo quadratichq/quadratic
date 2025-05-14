@@ -1,6 +1,6 @@
 {
   "name": "quadratic-api",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -60,6 +60,7 @@
     "newrelic": "^11.17.0",
     "openai": "^4.95.0",
     "pg": "^8.11.3",
+    "ssh-keygen": "^0.5.0",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",
     "zod": "^3.24.2"

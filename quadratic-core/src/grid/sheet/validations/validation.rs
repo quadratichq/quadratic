@@ -8,7 +8,7 @@ use crate::{
     grid::{Sheet, js_types::JsRenderCellSpecial},
 };
 
-use super::validation_rules::ValidationRule;
+use super::rules::ValidationRule;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct ValidationMessage {
@@ -114,7 +114,7 @@ impl ValidationDisplaySheet {
 #[cfg(test)]
 mod tests {
     use crate::a1::A1Context;
-    use crate::grid::sheet::validations::validation_rules::{
+    use crate::grid::sheet::validations::rules::{
         validation_list::{ValidationList, ValidationListSource},
         validation_logical::ValidationLogical,
     };

@@ -25,7 +25,6 @@ async function handler(
   const {
     params: { uuid: teamUuid, connectionUuid },
   } = parseRequest(req, schema);
-
   const {
     connection,
     team: {

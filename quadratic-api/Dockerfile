@@ -1,3 +1,6 @@
+###########################################################################################
+# Builder - Install dependencies
+###########################################################################################
 FROM node:23-alpine AS builder
 WORKDIR /quadratic
 
@@ -14,10 +17,20 @@ RUN npm install
 COPY quadratic-api ./quadratic-api
 COPY quadratic-shared ./quadratic-shared
 
+###########################################################################################
+# Runner
+###########################################################################################
 FROM node:23-slim AS runtime
 WORKDIR /quadratic
+
+# Install required packages with correct verification
+RUN apt update && \
+  apt install -y openssl && \
+  apt install -y openssh-client
+
 COPY --from=builder /quadratic .
-RUN apt-get update && apt install -y openssl
+
 RUN npm run postinstall --workspace=quadratic-api
 RUN npm run build --workspace=quadratic-api
+
 CMD ["npm", "run", "start:prod"]

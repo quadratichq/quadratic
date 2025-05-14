@@ -97,7 +97,7 @@ export class CellsTextHashSpecial {
 
       this.special.dropdowns.forEach((dropdown) => {
         if (dropdown.column === column) {
-          dropdown.x -= delta / 2;
+          dropdown.x -= delta;
           changed = true;
         } else {
           if (column < 0) {

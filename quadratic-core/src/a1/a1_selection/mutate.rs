@@ -3,7 +3,7 @@
 use crate::{
     RefError,
     a1::{A1Context, CellRefRange, RefRangeBounds, TableRef},
-    grid::RefAdjust,
+    grid::{RefAdjust, SheetId},
 };
 
 use super::A1Selection;
@@ -104,6 +104,27 @@ impl A1Selection {
             Ok(self)
         }
     }
+
+    /// Translates the selection, clamping the result within the sheet bounds.
+    /// Returns `None` if the whole selection becomes empty.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn translate(self, dx: i64, dy: i64) -> Option<Self> {
+        let ranges = self
+            .ranges
+            .into_iter()
+            .filter_map(|r| r.saturating_translate(dx, dy))
+            .collect::<Vec<_>>();
+        if ranges.is_empty() {
+            None
+        } else {
+            Some(Self {
+                sheet_id: self.sheet_id,
+                cursor: self.cursor.saturating_translate(dx, dy),
+                ranges,
+            })
+        }
+    }
+
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds. Returns `None` if the whole selection becomes empty.
     #[must_use = "this method returns a new value instead of modifying its input"]
@@ -155,6 +176,15 @@ impl A1Selection {
     pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         self.ranges.iter_mut().for_each(|range| {
             range.replace_column_name(table_name, old_name, new_name);
+        });
+    }
+
+    /// Attempts to convert ranges to table refs (if possible).
+    pub fn change_to_table_refs(&mut self, sheet_id: SheetId, a1_context: &A1Context) {
+        self.ranges.iter_mut().for_each(|range| {
+            if let Some(table_range) = range.check_for_table_ref(sheet_id, a1_context) {
+                *range = table_range;
+            }
         });
     }
 }
@@ -512,5 +542,45 @@ mod tests {
         let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
         assert_eq!(sheet_ranges.len(), 2);
         assert_eq!(table_ranges.len(), 1);
+    }
+
+    #[test]
+    fn test_change_to_table_refs() {
+        let sheet_id = SheetId::TEST;
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
+                ("Table2", &["col1", "col2"], Rect::test_a1("D1:E3")),
+            ],
+        );
+
+        // Test converting a range that matches a table
+        let mut selection = A1Selection::test_a1_context("A3:B3", &context);
+        selection.change_to_table_refs(sheet_id, &context);
+        assert_eq!(selection.to_string(Some(sheet_id), &context), "Table1");
+
+        // Test converting a range that doesn't match any table
+        let mut selection = A1Selection::test_a1_context("C1:D2", &context);
+        selection.change_to_table_refs(sheet_id, &context);
+        assert_eq!(selection.to_string(Some(sheet_id), &context), "C1:D2");
+
+        // Test converting multiple ranges where some match tables
+        let mut selection = A1Selection::test_a1_context("A3:B3,C1:D2,D3:E3", &context);
+        selection.change_to_table_refs(sheet_id, &context);
+        assert_eq!(
+            selection.to_string(Some(sheet_id), &context),
+            "Table1,C1:D2,Table2"
+        );
+
+        // Test converting a single cell that's part of a table
+        let mut selection = A1Selection::test_a1_context("A1", &context);
+        selection.change_to_table_refs(sheet_id, &context);
+        assert_eq!(selection.to_string(Some(sheet_id), &context), "Table1");
+
+        // Test converting a range that partially overlaps with a table
+        let mut selection = A1Selection::test_a1_context("A1:C2", &context);
+        selection.change_to_table_refs(sheet_id, &context);
+        assert_eq!(selection.to_string(Some(sheet_id), &context), "A1:C2");
     }
 }
