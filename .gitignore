@@ -3,10 +3,15 @@
 # dependencies
 node_modules
 **/node_modules
+package-lock.json
+**/package-lock.json
 /.pnp
 .pnp.js
 .cache
 /.cargo
+Cargo.lock
+**/Cargo.lock
+
 # testing
 /coverage
 

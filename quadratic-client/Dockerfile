@@ -1,7 +1,7 @@
 ###########################################################################################
 # Builder 1 - Build core
 ###########################################################################################
-FROM node:23 AS core-builder
+FROM node:24 AS core-builder
 
 ARG CLIENT_DEV
 
@@ -41,7 +41,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 # Builder 2 - Build TS/Rust types
 ###########################################################################################
-FROM node:23 AS ts-rust-types-builder
+FROM node:24 AS ts-rust-types-builder
 
 # Install build-essential, llvm, clang and protobuf-compiler
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
@@ -75,7 +75,7 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 ###########################################################################################
 # Builder 3 - Combine all builder files and build the client
 ###########################################################################################
-FROM node:23 AS vite-builder
+FROM node:24 AS vite-builder
 
 WORKDIR /quadratic
 
@@ -92,11 +92,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy all package.json files
 COPY --link package.json .
-COPY --link package-lock.json .
-COPY --link ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
-COPY --link ./quadratic-core/package*.json ./quadratic-core/
-COPY --link ./quadratic-shared/package*.json ./quadratic-shared/
-COPY --link ./quadratic-client/package*.json ./quadratic-client/
+COPY --link ./quadratic-kernels/python-wasm/package.json ./quadratic-kernels/python-wasm/
+COPY --link ./quadratic-core/package.json ./quadratic-core/
+COPY --link ./quadratic-shared/package.json ./quadratic-shared/
+COPY --link ./quadratic-client/package.json ./quadratic-client/
 
 # Install npm dependencies
 RUN npm install --no-audit --no-fund
