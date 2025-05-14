@@ -83,6 +83,7 @@ export const useSaveAndRunCell = () => {
         }
         mixpanel.track('[CodeEditor].cellRun', {
           type: getLanguage(codeCell.language),
+          language: codeCell.language,
         });
 
         // Google Ads Conversion for running a cell
