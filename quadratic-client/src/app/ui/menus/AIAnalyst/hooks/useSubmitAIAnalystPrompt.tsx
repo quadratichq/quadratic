@@ -25,7 +25,11 @@ import { getScreenImage } from '@/app/gridGL/pixiApp/copyAsPNG';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getPromptMessagesWithoutPDF,
+  removeOldGetToolCalls,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -321,6 +325,8 @@ export function useSubmitAIAnalystPrompt() {
               signal: abortController.signal,
             });
 
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => removeOldGetToolCalls(prev));
+
             if (response.toolCalls.length === 0) {
               break;
             }
@@ -355,7 +361,6 @@ export function useSubmitAIAnalystPrompt() {
                   });
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    fn: toolCall.name,
                     text: result,
                   });
 
@@ -365,14 +370,12 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    fn: toolCall.name,
                     text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  fn: toolCall.name,
                   text: 'Unknown tool',
                 });
               }
@@ -385,7 +388,6 @@ export function useSubmitAIAnalystPrompt() {
               const result = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
                 id: toolCall.id,
-                fn: toolCall.name,
                 text: result,
               });
             }
