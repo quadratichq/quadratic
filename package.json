@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -87,6 +87,6 @@
     "typescript": "^5.8.2"
   },
   "engines": {
-    "node": "23.x"
+    "node": "24.x"
   }
 }
