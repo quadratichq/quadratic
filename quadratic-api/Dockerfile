@@ -1,7 +1,7 @@
 ###########################################################################################
 # Builder - Install dependencies
 ###########################################################################################
-FROM node:23-alpine AS builder
+FROM node:23 AS builder
 WORKDIR /quadratic
 
 # copy package.json for npm install
@@ -12,7 +12,7 @@ COPY ./quadratic-shared/package.json ./quadratic-shared/
 # copy prisma schema and migrations for postinstall step
 COPY ./quadratic-api/prisma/. ./quadratic-api/prisma
 
-RUN npm install
+RUN npm install --no-audit --no-fund
 
 COPY quadratic-api ./quadratic-api
 COPY quadratic-shared ./quadratic-shared
