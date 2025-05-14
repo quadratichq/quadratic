@@ -66,13 +66,22 @@ impl<'de> Deserialize<'de> for CellRefCoord {
 }
 
 impl CellRefCoord {
-    pub const START: Self = Self {
+    pub const REL_START: Self = Self {
         coord: 1,
         is_absolute: false,
     };
-    pub const UNBOUNDED: Self = Self {
+    pub const ABS_START: Self = Self {
+        coord: 1,
+        is_absolute: true,
+    };
+
+    pub const REL_UNBOUNDED: Self = Self {
         coord: UNBOUNDED,
         is_absolute: false,
+    };
+    pub const ABS_UNBOUNDED: Self = Self {
+        coord: UNBOUNDED,
+        is_absolute: true,
     };
 
     pub(crate) fn fmt_as_column(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -281,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_is_unbounded() {
-        assert!(CellRefCoord::UNBOUNDED.is_unbounded());
+        assert!(CellRefCoord::REL_UNBOUNDED.is_unbounded());
         assert!(!CellRefCoord::new_rel(1).is_unbounded());
         assert!(!CellRefCoord::new_abs(1).is_unbounded());
     }
@@ -296,7 +305,7 @@ mod tests {
         let serialized = serde_json::to_string(&coord).unwrap();
         assert_eq!(coord, serde_json::from_str(&serialized).unwrap());
 
-        let coord = CellRefCoord::UNBOUNDED;
+        let coord = CellRefCoord::REL_UNBOUNDED;
         let serialized = serde_json::to_string(&coord).unwrap();
         assert_eq!(coord, serde_json::from_str(&serialized).unwrap());
     }
