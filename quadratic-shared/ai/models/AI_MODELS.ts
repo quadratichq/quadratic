@@ -1,6 +1,6 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
@@ -8,10 +8,10 @@ export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: ModelKey = 'vertexai:gemini-
 
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
-export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-03-25';
+export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 13;
+export const DEFAULT_MODEL_VERSION = 14;
 
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
@@ -77,8 +77,8 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai-anthropic',
     promptCaching: true,
   },
-  'vertexai:gemini-2.5-pro-preview-03-25': {
-    model: 'gemini-2.5-pro-preview-03-25',
+  'vertexai:gemini-2.5-pro-preview-05-06': {
+    model: 'gemini-2.5-pro-preview-05-06',
     displayName: 'gemini 2.5 pro preview',
     temperature: 0,
     max_tokens: 65535,
@@ -242,7 +242,7 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
+    strictParams: false,
   },
   'openai:o4-mini-2025-04-16': {
     model: 'o4-mini-2025-04-16',
@@ -254,7 +254,7 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
+    strictParams: false,
   },
   'openai:o3-2025-04-16': {
     model: 'o3-2025-04-16',
@@ -266,7 +266,7 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
+    strictParams: false,
   },
   'xai:grok-3-beta': {
     model: 'grok-3-beta',

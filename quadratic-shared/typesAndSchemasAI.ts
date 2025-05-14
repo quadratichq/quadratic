@@ -12,7 +12,7 @@ const AIProvidersSchema = z.enum([
 ]);
 const VertexAnthropicModelSchema = z.enum(['claude-3-7-sonnet@20250219', 'claude-3-5-sonnet-v2@20241022']);
 const VertexAIModelSchema = z.enum([
-  'gemini-2.5-pro-preview-03-25',
+  'gemini-2.5-pro-preview-05-06',
   'gemini-2.0-flash-thinking-exp-01-21',
   'gemini-2.0-flash-001',
 ]);
@@ -44,7 +44,7 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
-const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-03-25', 'vertexai:gemini-2.0-flash-001']);
+const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-05-06', 'vertexai:gemini-2.0-flash-001']);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
