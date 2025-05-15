@@ -387,7 +387,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.ConvertToTable]: async (args) => {
     try {
       const sheetId = sheets.getSheetIdFromName(args.sheet_name);
-      let sheetRect = selectionToSheetRect(sheetId, args.selection);
+      const sheetRect = selectionToSheetRect(sheetId, args.selection, sheets.a1Context);
       if (sheetRect) {
         const response = await quadraticCore.gridToDataTable(
           sheetRect,

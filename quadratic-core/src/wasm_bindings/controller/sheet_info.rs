@@ -26,7 +26,7 @@ impl From<&Sheet> for SheetInfo {
             offsets,
             bounds: sheet.bounds(false),
             bounds_without_formatting: sheet.bounds(true),
-            format_bounds: sheet.format_bounds,
+            format_bounds: sheet.format_bounds(),
         }
     }
 }
@@ -45,7 +45,7 @@ impl From<&Sheet> for SheetBounds {
             sheet_id: sheet.id.to_string(),
             bounds: sheet.bounds(false),
             bounds_without_formatting: sheet.bounds(true),
-            format_bounds: sheet.format_bounds,
+            format_bounds: sheet.format_bounds(),
         }
     }
 }

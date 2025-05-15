@@ -77,7 +77,7 @@ pub struct Sheet {
     pub(super) data_bounds: GridBounds,
 
     // bounds for the grid with only formatting
-    pub format_bounds: GridBounds,
+    pub(super) format_bounds: GridBounds,
 
     pub(super) rows_resize: ResizeMap,
 

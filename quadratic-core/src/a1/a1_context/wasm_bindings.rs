@@ -55,10 +55,15 @@ pub fn get_table_name_in_name_or_column(
 }
 
 #[wasm_bindgen(js_name = "selectionToSheetRect")]
-pub fn selection_to_sheet_rect(sheet_id: &str, selection: &str) -> Result<String, String> {
+pub fn selection_to_sheet_rect(
+    sheet_id: &str,
+    selection: &str,
+    context: &str,
+) -> Result<String, String> {
     // we don't need a real context since we're creating a table, so there should be no need for table info
-    let context = A1Context::default();
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
+    let context = serde_json::from_str::<A1Context>(context)
+        .map_err(|e| format!("Error parsing context: {e}"))?;
     let selection = A1Selection::parse_a1(selection, sheet_id, &context)
         .map_err(|e| format!("Invalid selection: {e}"))?;
     let range = selection
