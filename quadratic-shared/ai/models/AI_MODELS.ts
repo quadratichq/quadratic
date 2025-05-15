@@ -315,6 +315,10 @@ export const MODELS_CONFIGURATION: {
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 12,
+    rate_per_million_cache_read_tokens: 0.75,
+    rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
