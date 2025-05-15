@@ -332,7 +332,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetTextFormats]: async (args) => {
     const kind = args.number_type
-      ? (expectedEnum(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL']) as NumericFormatKind)
+      ? expectedEnum<NumericFormatKind>(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL'])
       : null;
     let numericFormat: NumericFormat | null = null;
     if (kind) {
@@ -351,9 +351,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       strike_through: args.strike_through ?? null,
       text_color: args.text_color ?? null,
       fill_color: args.fill_color ?? null,
-      align: expectedEnum(args.align, ['left', 'center', 'right']) as CellAlign | null,
-      vertical_align: expectedEnum(args.vertical_align, ['top', 'middle', 'bottom']) as CellVerticalAlign | null,
-      wrap: expectedEnum(args.wrap, ['wrap', 'overflow', 'clip']) as CellWrap | null,
+      align: expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']),
+      vertical_align: expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom']),
+      wrap: expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']),
       numeric_commas: args.numeric_commas ?? null,
       numeric_format: numericFormat,
       date_time: args.date_time ?? null,

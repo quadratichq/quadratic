@@ -46,18 +46,18 @@ const levenshteinDistance = (a: string, b: string): number => {
 };
 
 /// Ensures the value of an enum, and tries to match if it is close to an expected value
-export const expectedEnum = (value: string | undefined, expected: string[]): string | null => {
+export const expectedEnum = <T>(value: string | undefined, expected: string[]): T | null => {
   if (!value) return null;
 
   // If the value is already in the expected array, return it
   if (expected.includes(value)) {
-    return value;
+    return value as T;
   }
 
   // If the value is close to an expected value, return the expected value
   const index = expected.findIndex((e) => e.toLowerCase() === value.toLowerCase());
   if (index !== -1) {
-    return expected[index];
+    return expected[index] as T;
   }
 
   // Find the closest match using Levenshtein distance
@@ -73,7 +73,7 @@ export const expectedEnum = (value: string | undefined, expected: string[]): str
   }
 
   // If the closest match is reasonably close (e.g., within 2 edits), return it
-  return minDistance <= 2 ? closestMatch : null;
+  return minDistance <= 2 ? (closestMatch as T) : null;
 };
 
 export const describeFormatUpdates = (formatUpdates: FormatUpdate, args: any): string => {
