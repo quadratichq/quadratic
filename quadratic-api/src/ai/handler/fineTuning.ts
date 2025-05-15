@@ -2,12 +2,12 @@ import type { Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIRequestHelperArgs, ModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { getOpenAIApiArgs } from '../helpers/openai.helper';
 
 export const createFileForFineTuning = (
   response: Response,
-  modelKey: ModelKey,
+  modelKey: AIModelKey,
   args: AIRequestHelperArgs,
   parsedResponse: ParsedAIResponse
 ) => {

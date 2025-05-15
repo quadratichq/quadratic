@@ -112,6 +112,9 @@ fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 
+[patch.crates-io]
+calamine = { git = "https://github.com/prophittcorey/calamine", branch = "fix/zip-3.0" }
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "test",
