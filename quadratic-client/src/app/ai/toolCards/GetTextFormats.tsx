@@ -1,6 +1,6 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type GetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.GetTextFormats]['responseSchema']>;
@@ -10,7 +10,7 @@ type GetTextFormatsProps = {
   loading: boolean;
 };
 
-export const GetTextFormats = ({ args, loading }: GetTextFormatsProps) => {
+export const GetTextFormats = memo(({ args, loading }: GetTextFormatsProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<GetTextFormatsResponse, GetTextFormatsResponse>>();
 
   useEffect(() => {
@@ -47,4 +47,4 @@ export const GetTextFormats = ({ args, loading }: GetTextFormatsProps) => {
   }
 
   return <ToolCardQuery label={label} />;
-};
+});

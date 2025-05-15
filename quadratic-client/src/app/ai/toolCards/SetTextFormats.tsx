@@ -1,7 +1,7 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
@@ -11,7 +11,7 @@ type SetTextFormatsProps = {
   loading: boolean;
 };
 
-export const SetTextFormats = ({ args, loading }: SetTextFormatsProps) => {
+export const SetTextFormats = memo(({ args, loading }: SetTextFormatsProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetTextFormatsResponse, SetTextFormatsResponse>>();
 
   useEffect(() => {
@@ -42,4 +42,4 @@ export const SetTextFormats = ({ args, loading }: SetTextFormatsProps) => {
   }
 
   return <ToolCard icon={icon} label={label} description={` from ${toolArgs.data.selection}`} />;
-};
+});

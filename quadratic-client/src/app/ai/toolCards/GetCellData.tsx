@@ -1,17 +1,17 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type GetCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.GetCellData]['responseSchema']>;
+type GetCellDataResponse = z.infer<(typeof aiToolsSpec)[AITool.GetCellData]['responseSchema']>;
 
-type GetCellsProps = {
+type GetCellDataProps = {
   args: string;
   loading: boolean;
 };
 
-export const GetCells = ({ args, loading }: GetCellsProps) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<GetCellsResponse, GetCellsResponse>>();
+export const GetCellData = memo(({ args, loading }: GetCellDataProps) => {
+  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<GetCellDataResponse, GetCellDataResponse>>();
 
   useEffect(() => {
     if (!loading) {
@@ -20,7 +20,7 @@ export const GetCells = ({ args, loading }: GetCellsProps) => {
         setToolArgs(aiToolsSpec[AITool.GetCellData].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[GetCells] Failed to parse args: ', error);
+        console.error('[GetCellData] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
@@ -46,4 +46,4 @@ export const GetCells = ({ args, loading }: GetCellsProps) => {
   }
 
   return <ToolCardQuery label={label} />;
-};
+});

@@ -1,7 +1,7 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { TableIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type ConvertToTableResponse = z.infer<(typeof aiToolsSpec)[AITool.ConvertToTable]['responseSchema']>;
@@ -11,7 +11,7 @@ type ConvertToTableProps = {
   loading: boolean;
 };
 
-export const ConvertToTable = ({ args, loading }: ConvertToTableProps) => {
+export const ConvertToTable = memo(({ args, loading }: ConvertToTableProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ConvertToTableResponse, ConvertToTableResponse>>();
 
   useEffect(() => {
@@ -53,4 +53,4 @@ export const ConvertToTable = ({ args, loading }: ConvertToTableProps) => {
       description={`Converting ${selection} to data table`}
     />
   );
-};
+});

@@ -1,7 +1,7 @@
 import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
-import { GetCells } from '@/app/ai/toolCards/GetCells';
+import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
@@ -42,7 +42,7 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
     case AITool.PDFImport:
       return <PDFImport args={args} loading={loading} />;
     case AITool.GetCellData:
-      return <GetCells args={args} loading={loading} />;
+      return <GetCellData args={args} loading={loading} />;
     case AITool.SetTextFormats:
       return <SetTextFormats args={args} loading={loading} />;
     case AITool.GetTextFormats:
