@@ -237,7 +237,6 @@ export class PointerCellMoving {
         },
         colRows: colsHover ? 'columns' : rowsHover ? 'rows' : undefined,
       };
-      console.log(rectangle, this.movingCells);
       return true;
     }
     this.reset();
