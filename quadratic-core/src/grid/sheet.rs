@@ -509,14 +509,8 @@ impl Sheet {
     /// that index.
     pub(crate) fn get_or_create_column(&mut self, x: i64) -> &mut Column {
         match self.columns.entry(x) {
-            btree_map::Entry::Vacant(e) => {
-                
-                (e.insert(Column::new(x))) as _
-            }
-            btree_map::Entry::Occupied(e) => {
-                
-                (e.into_mut()) as _
-            }
+            btree_map::Entry::Vacant(e) => e.insert(Column::new(x)),
+            btree_map::Entry::Occupied(e) => e.into_mut(),
         }
     }
 

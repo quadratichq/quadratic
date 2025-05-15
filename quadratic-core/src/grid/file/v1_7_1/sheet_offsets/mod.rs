@@ -45,7 +45,6 @@ impl Offsets {
                 end: column + 2,
             })
             .collect();
-        
         *xs.first().unwrap_or(&0f64)
     }
 
