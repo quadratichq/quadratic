@@ -857,7 +857,7 @@ impl GridController {
             }
 
             let old_columns = columns.to_owned().and_then(|columns| {
-                let old_columns = std::mem::replace(&mut data_table.column_headers, Some(columns));
+                let old_columns = data_table.column_headers.replace(columns);
                 data_table.normalize_column_header_names();
                 // mark code cells as dirty to updata meta data
                 transaction.add_code_cell(sheet_id, data_table_pos);
