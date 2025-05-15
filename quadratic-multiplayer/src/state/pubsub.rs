@@ -4,10 +4,7 @@ use quadratic_rust_shared::pubsub::{
 };
 use uuid::Uuid;
 
-use crate::{
-    error::{MpError, Result},
-    message::{proto::response::encode_message, response::MessageResponse},
-};
+use crate::error::{MpError, Result};
 
 use super::State;
 
@@ -34,7 +31,6 @@ impl PubSub {
         Ok(connection)
     }
 
-    // TODO: remove this function once all clients are updated
     pub(crate) async fn push(
         &mut self,
         id: Uuid,
@@ -56,45 +52,6 @@ impl PubSub {
             _ => "active_channels",
         };
 
-        self.connection
-            .publish(
-                &file_id.to_string(),
-                &sequence_num.to_string(),
-                &transaction_compressed,
-                Some(active_channels),
-            )
-            .await?;
-        Ok(sequence_num)
-    }
-
-    pub(crate) async fn push_protobuf(
-        &mut self,
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<u8>,
-        sequence_num: u64,
-    ) -> Result<u64> {
-        let transaction = MessageResponse::BinaryTransaction {
-            id,
-            file_id,
-            operations,
-            sequence_num,
-        };
-
-        // turn BinaryTransaction into Protobuf
-        let encoded = encode_message(transaction)?;
-
-        // add header to the message
-        let transaction_compressed =
-            Transaction::add_header(encoded).map_err(|e| MpError::Serialization(e.to_string()))?;
-
-        // get the active channels name
-        let active_channels = match self.config {
-            PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
-            _ => "active_channels",
-        };
-
-        // publish the message to the PubSub server
         self.connection
             .publish(
                 &file_id.to_string(),
@@ -141,7 +98,6 @@ impl State {
     }
 
     /// Push a transaction to the transaction queue
-    // TODO: remove this function once all clients are updated
     pub(crate) async fn push_pubsub(
         &self,
         id: Uuid,
@@ -153,22 +109,6 @@ impl State {
             .lock()
             .await
             .push(id, file_id, operations, sequence_num)
-            .await
-    }
-
-    /// Push a transaction to the transaction queue
-    // TODO: rename to `push` once all clients are updated
-    pub(crate) async fn push_protobuf_pubsub(
-        &self,
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<u8>,
-        sequence_num: u64,
-    ) -> Result<u64> {
-        self.pubsub
-            .lock()
-            .await
-            .push_protobuf(id, file_id, operations, sequence_num)
             .await
     }
 
