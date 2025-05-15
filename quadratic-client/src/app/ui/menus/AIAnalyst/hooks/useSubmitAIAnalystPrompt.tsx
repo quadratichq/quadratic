@@ -3,7 +3,6 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -30,6 +29,7 @@ import {
   getPromptMessagesWithoutPDF,
   isContentText,
   removeOldFilesInToolResult,
+  replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -49,13 +49,33 @@ export type SubmitAIAnalystPromptArgs = {
   onSubmit?: () => void;
 };
 
+// // Include a screenshot of what the user is seeing
+// async function getUserScreen(): Promise<ChatMessage | undefined> {
+//   const currentScreen = await getScreenImage();
+//   if (currentScreen) {
+//     const reader = new FileReader();
+//     const base64 = await new Promise<string>((resolve) => {
+//       reader.onloadend = () => {
+//         const result = reader.result as string;
+//         resolve(result.split(',')[1]);
+//       };
+//       reader.readAsDataURL(currentScreen);
+//     });
+//     return {
+//       role: 'user',
+//       content: [{ type: 'data', data: base64, mimeType: 'image/png', fileName: 'screen.png' }],
+//       contextType: 'userPrompt',
+//     };
+//   }
+// }
+
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
-  const { getSelectionContext } = useSelectionContextMessages();
+  // const { getSelectionContext } = useSelectionContextMessages();
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const [modelKey] = useAIModel();
@@ -63,22 +83,28 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, selectionContext, filesContext] =
-          await Promise.all([
-            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-            getTablesContext(),
-            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
-            getVisibleContext(),
-            getSelectionContext({ selection: context.selection }),
-            getFilesContext({ chatMessages }),
-          ]);
+        const [
+          otherSheetsContext,
+          tablesContext,
+          currentSheetContext,
+          visibleContext,
+          /*selectionContext,*/
+          filesContext,
+        ] = await Promise.all([
+          getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+          getTablesContext(),
+          getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+          getVisibleContext(),
+          // getSelectionContext({ selection: context.selection }),
+          getFilesContext({ chatMessages }),
+        ]);
 
         const messagesWithContext: ChatMessage[] = [
           ...otherSheetsContext,
           ...tablesContext,
           ...currentSheetContext,
           ...visibleContext,
-          ...selectionContext,
+          // ...selectionContext,
           ...filesContext,
           ...getPromptMessagesWithoutPDF(chatMessages),
         ];
@@ -90,7 +116,7 @@ export function useSubmitAIAnalystPrompt() {
       getTablesContext,
       getCurrentSheetContext,
       getVisibleContext,
-      getSelectionContext,
+      // getSelectionContext,
       getFilesContext,
     ]
   );
@@ -254,7 +280,7 @@ export function useSubmitAIAnalystPrompt() {
                 contextType: 'userPrompt' as const,
                 context: {
                   ...context,
-                  selection: context.selection ?? sheets.sheet.cursor.save(),
+                  selection: context.selection ?? sheets.sheet.cursor.toA1String(),
                 },
               },
             ];
@@ -281,6 +307,7 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
+
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
@@ -295,6 +322,8 @@ export function useSubmitAIAnalystPrompt() {
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
             });
+
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => replaceOldGetToolCallResults(prev));
 
             if (response.toolCalls.length === 0) {
               break;

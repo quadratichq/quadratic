@@ -6,9 +6,8 @@ import {
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { uploadFile } from '@/app/helpers/files';
-import { A1SelectionStringToSelection, getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
+import { getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
-import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -36,7 +35,6 @@ type AIContextProps = {
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
-
 export const AIContext = memo(
   ({
     initialContext,
@@ -55,24 +53,24 @@ export const AIContext = memo(
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [, setCurrentSheet] = useState(sheets.sheet.name);
 
-    useEffect(() => {
-      if (loading || !editing) return;
+    // useEffect(() => {
+    //   if (loading || !editing) return;
 
-      const updateSelection = () => {
-        setContext?.((prev) => ({
-          ...prev,
-          selection: sheets.sheet.cursor.save(),
-        }));
-      };
-      updateSelection();
+    //   const updateSelection = () => {
+    //     setContext?.((prev) => ({
+    //       ...prev,
+    //       selection: sheets.sheet.cursor.save(),
+    //     }));
+    //   };
+    //   updateSelection();
 
-      events.on('cursorPosition', updateSelection);
-      events.on('changeSheet', updateSelection);
-      return () => {
-        events.off('cursorPosition', updateSelection);
-        events.off('changeSheet', updateSelection);
-      };
-    }, [editing, loading, setContext]);
+    //   events.on('cursorPosition', updateSelection);
+    //   events.on('changeSheet', updateSelection);
+    //   return () => {
+    //     events.off('cursorPosition', updateSelection);
+    //     events.off('changeSheet', updateSelection);
+    //   };
+    // }, [editing, loading, setContext]);
 
     useEffect(() => {
       const updateCurrentSheet = () => {
@@ -107,9 +105,9 @@ export const AIContext = memo(
       }
     }, [initialContext, loading, messages, messagesCount, setContext]);
 
-    const handleOnCloseSelectContextMenu = useCallback(() => {
-      textareaRef.current?.focus();
-    }, [textareaRef]);
+    // const handleOnCloseSelectContextMenu = useCallback(() => {
+    //   textareaRef.current?.focus();
+    // }, [textareaRef]);
 
     const handleOnClickFileContext = useCallback(
       (file: FileContent) => {
@@ -118,17 +116,17 @@ export const AIContext = memo(
       [setFiles]
     );
 
-    const handleOnClickSelection = useCallback(() => {
-      setContext?.((prev) => ({ ...prev, selection: undefined }));
-    }, [setContext]);
+    // const handleOnClickSelection = useCallback(() => {
+    //   setContext?.((prev) => ({ ...prev, selection: undefined }));
+    // }, [setContext]);
 
-    const handleOnClickCurrentSheet = useCallback(() => {
-      setContext?.((prev) => ({
-        ...prev,
-        sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
-        currentSheet: '',
-      }));
-    }, [setContext]);
+    // const handleOnClickCurrentSheet = useCallback(() => {
+    //   setContext?.((prev) => ({
+    //     ...prev,
+    //     sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
+    //     currentSheet: '',
+    //   }));
+    // }, [setContext]);
 
     return (
       <div
@@ -138,14 +136,14 @@ export const AIContext = memo(
           loading && 'select-none opacity-60'
         )}
       >
-        {editing && context && setContext && (
+        {/* {editing && context && setContext && (
           <AIAnalystSelectContextMenu
             context={context}
             setContext={setContext}
             disabled={disabled}
             onClose={handleOnCloseSelectContextMenu}
           />
-        )}
+        )} */}
 
         <AttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
 
@@ -160,7 +158,7 @@ export const AIContext = memo(
 
         <CodeCellContextPill codeCell={context.codeCell} />
 
-        {setContext && context && (
+        {/* {setContext && context && (
           <ContextPill
             key="cursor"
             primary={
@@ -182,9 +180,9 @@ export const AIContext = memo(
             onClick={handleOnClickCurrentSheet}
             disabled={disabled || !setContext}
           />
-        )}
+        )} */}
 
-        {context.sheets
+        {/* {context.sheets
           .filter((sheet) => sheet !== context.currentSheet)
           .map((sheet) => (
             <ContextPill
@@ -200,7 +198,7 @@ export const AIContext = memo(
                 }))
               }
             />
-          ))}
+          ))} */}
       </div>
     );
   }
@@ -212,7 +210,6 @@ type ContextPillProps = {
   onClick?: () => void;
   disabled: boolean;
 };
-
 const ContextPill = memo(({ primary, secondary, onClick, disabled }: ContextPillProps) => {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
@@ -239,7 +236,6 @@ type FileContextPillProps = {
   file: FileContent;
   onClick: () => void;
 };
-
 const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps) => {
   return (
     <HoverCard open={isSupportedImageMimeType(file.mimeType) ? undefined : false}>
@@ -264,7 +260,6 @@ type AttachFileButtonProps = {
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
 };
-
 const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileButtonProps) => {
   const handleUploadFiles = useCallback(async () => {
     const files = await uploadFile(fileTypes);
@@ -291,7 +286,6 @@ const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileB
 type CodeCellContextPillProps = {
   codeCell: CodeCell | undefined;
 };
-
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {

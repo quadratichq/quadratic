@@ -437,6 +437,17 @@ export class Tables extends Container<Table> {
     }
   }
 
+  // Returns true if the cell is a table name cell
+  isTableNameCell(cell: JsCoordinate): boolean {
+    return this.children.some(
+      (table) =>
+        table.codeCell.show_name &&
+        cell.x >= table.codeCell.x &&
+        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        cell.y === table.codeCell.y
+    );
+  }
+
   /// Returns true if the cell is a column header cell in a table
   isColumnHeaderCell(cell: JsCoordinate): boolean {
     return !!this.children.find(

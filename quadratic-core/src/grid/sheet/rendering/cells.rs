@@ -109,6 +109,7 @@ impl Sheet {
         data_table: &DataTable,
         render_rect: &Rect,
         code_rect: &Rect,
+        context: &A1Context,
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
 
@@ -155,7 +156,7 @@ impl Sheet {
                             let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                             if let Some(value) = value {
-                                let format = if is_header {
+                                let mut format = if is_header {
                                     // column headers are always clipped and bold
                                     Format {
                                         wrap: Some(CellWrap::Clip),
@@ -175,10 +176,15 @@ impl Sheet {
                                     None
                                 };
 
-                                let special = match value {
-                                    CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
-                                    _ => None,
-                                };
+                                let special = self
+                                    .validations
+                                    .render_special_pos(Pos { x, y }, context)
+                                    .or(match value {
+                                        CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
+                                        _ => None,
+                                    });
+
+                                Self::ensure_lists_are_clipped(&mut format, &special);
 
                                 let mut render_cell =
                                     self.get_render_cell(x, y, &value, format, language, special);
@@ -194,6 +200,17 @@ impl Sheet {
         }
 
         cells
+    }
+
+    /// ensure that list cells are always clipped or wrapped (so the dropdown icon is visible)
+    fn ensure_lists_are_clipped(format: &mut Format, special: &Option<JsRenderCellSpecial>) {
+        if special
+            .as_ref()
+            .is_some_and(|s| matches!(s, JsRenderCellSpecial::List))
+            && !format.wrap.is_some_and(|w| matches!(w, CellWrap::Wrap))
+        {
+            format.wrap = Some(CellWrap::Clip);
+        }
     }
 
     /// Returns cell data in a format useful for rendering. This includes only
@@ -219,7 +236,9 @@ impl Sheet {
                                 }
                             });
 
-                        let format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+
+                        Self::ensure_lists_are_clipped(&mut format, &special);
 
                         render_cells.push(self.get_render_cell(x, y, value, format, None, special));
                     }
@@ -239,6 +258,7 @@ impl Sheet {
                         data_table,
                         &rect,
                         &data_table_rect,
+                        a1_context,
                     ));
                 }
             });
@@ -283,6 +303,11 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
+    use crate::grid::sheet::validations::rules::ValidationRule;
+    use crate::grid::sheet::validations::validation::Validation;
+    use crate::test_util::*;
     use crate::{
         SheetPos, Value,
         a1::A1Selection,
@@ -607,5 +632,72 @@ mod tests {
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
             true,
         );
+    }
+
+    #[test]
+    fn test_get_code_cell_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
+
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+    }
+
+    #[test]
+    fn test_ensure_lists_are_clipped() {
+        // Test case 1: List cell with no wrap setting
+        let mut format = Format::default();
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Clip));
+
+        // Test case 2: List cell with wrap setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Wrap),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Wrap));
+
+        // Test case 3: List cell with clip setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Clip),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Clip));
+
+        // Test case 4: Non-list cell with no wrap setting
+        let mut format = Format::default();
+        let special = Some(JsRenderCellSpecial::Logical);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, None);
+
+        // Test case 5: Non-list cell with wrap setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Wrap),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::Logical);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Wrap));
+
+        // Test case 6: No special type
+        let mut format = Format::default();
+        let special = None;
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, None);
     }
 }

@@ -42,12 +42,20 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
               x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
               y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
             };
-            ensureRectVisible(min, max);
+            ensureRectVisible(codeCell.sheetId, min, max);
           }
         });
       onClick?.();
     },
-    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeCell]
+    [
+      codeCell.pos.x,
+      codeCell.pos.y,
+      codeCell.sheetId,
+      evaluationResult?.size?.h,
+      evaluationResult?.size?.w,
+      onClick,
+      setCodeCell,
+    ]
   );
 
   const handleModeCodeCellRight = useCallback(
@@ -68,12 +76,20 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
               x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
               y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
             };
-            ensureRectVisible(min, max);
+            ensureRectVisible(codeCell.sheetId, min, max);
           }
         });
       onClick?.();
     },
-    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeCell]
+    [
+      codeCell.pos.x,
+      codeCell.pos.y,
+      codeCell.sheetId,
+      evaluationResult?.size?.h,
+      evaluationResult?.size?.w,
+      onClick,
+      setCodeCell,
+    ]
   );
 
   return (

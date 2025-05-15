@@ -6,6 +6,8 @@ Below are in-depth details for Python in Quadratic.
 You can reference cells in the spreadsheet to use in code, and you can return results from your Python code back to the spreadsheet. The last line of code is returned to the spreadsheet.
 Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one type of return from a code cell, data or chart.
 
+When the data that code references is updated, the code cell is automatically re-run. 
+
 Single cell references are placed in a variable of corresponding type. Multi-line references are placed in a DataFrame.
 
 Essential Python basics in Quadratic: 
@@ -274,13 +276,17 @@ x = 3
 x += 1
 \`\`\`
 
+### Formatting 
+
+Do NOT try to use formatting options like f-strings (f"") or .format() on numerical return types. Returning formatted data will not flow through to the sheet; the sheet will read formatted numerical values as strings, keeping formatting options like currencies and significant digits from working on the returned values. 
+
 ## Packages
 
 Using and installing Python packages.
 
 ### Default Packages
 
-Some libraries are included by default, here are some examples:
+Some libraries are included by default, here are some examples (note that they need to be imported in every cell they are used even though they're included by default):
 
 * Pandas 
 * NumPy 
@@ -395,6 +401,33 @@ fig.update_layout(
 )
 \`\`\`
 
+### Trendlines 
+
+When using Trendlines in Plotly you MUST import statsmodels for the trendline to work. Note an example trendline below.
+
+\`\`\`python
+import plotly.express as px
+import pandas as pd
+import statsmodels
+
+# Get the data
+df = q.cells("concrete_data")
+
+# Create scatter plot
+fig = px.scatter(df, x='age', y='strength', 
+                title='Concrete Strength vs Age',
+                trendline="lowess")
+
+# Update layout
+fig.update_layout(
+    xaxis_title="Age (days)",
+    yaxis_title="Strength (MPa)",
+    plot_bgcolor='white'
+)
+
+fig.show()
+\`\`\`
+
 ## Time-series analysis
 
 For time-series analysis a good starting point is using statsmodels library for a simple ARIMA analysis. You can reference sheet data using table and sheet references to build these kinds of analysis.
@@ -404,7 +437,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from statsmodels.tsa.arima.model import ARIMA
+from .tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller
 
 # Generate sample time series data

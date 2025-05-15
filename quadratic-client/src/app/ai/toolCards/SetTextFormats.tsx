@@ -1,0 +1,45 @@
+import { ToolCard } from '@/app/ai/toolCards/ToolCard';
+import { GridActionIcon } from '@/shared/components/Icons';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { memo, useEffect, useState } from 'react';
+import type { z } from 'zod';
+
+type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
+
+type SetTextFormatsProps = {
+  args: string;
+  loading: boolean;
+};
+
+export const SetTextFormats = memo(({ args, loading }: SetTextFormatsProps) => {
+  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetTextFormatsResponse, SetTextFormatsResponse>>();
+
+  useEffect(() => {
+    if (!loading) {
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.SetTextFormats].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[SetTextFormats] Failed to parse args: ', error);
+      }
+    } else {
+      setToolArgs(undefined);
+    }
+  }, [args, loading]);
+
+  const icon = <GridActionIcon />;
+  const label = 'Set text formats';
+
+  if (loading) {
+    return <ToolCard icon={icon} label={label} isLoading />;
+  }
+
+  if (!!toolArgs && !toolArgs.success) {
+    return <ToolCard icon={icon} label={label} hasError />;
+  } else if (!toolArgs || !toolArgs.data) {
+    return <ToolCard icon={icon} label={label} isLoading />;
+  }
+
+  return <ToolCard icon={icon} label={label} description={` from ${toolArgs.data.selection}`} />;
+});

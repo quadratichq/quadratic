@@ -74,11 +74,8 @@ impl Sheet {
         }
     }
 
-    pub fn format_bounds(&self) -> Option<Rect> {
-        match self.format_bounds {
-            GridBounds::Empty => None,
-            GridBounds::NonEmpty(rect) => Some(rect),
-        }
+    pub fn format_bounds(&self) -> GridBounds {
+        self.format_bounds
     }
 
     /// Returns the lower and upper bounds of a column, or `None` if the column
@@ -461,8 +458,8 @@ mod test {
             sheet::{
                 borders::{BorderSelection, BorderStyle},
                 validations::{
+                    rules::{ValidationRule, validation_logical::ValidationLogical},
                     validation::Validation,
-                    validation_rules::{ValidationRule, validation_logical::ValidationLogical},
                 },
             },
         },

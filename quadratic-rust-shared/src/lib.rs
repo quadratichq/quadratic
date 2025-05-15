@@ -4,6 +4,7 @@ pub mod aws;
 pub mod crypto;
 pub mod environment;
 pub mod error;
+pub mod net;
 pub mod parquet;
 pub mod pubsub;
 pub mod quadratic_api;

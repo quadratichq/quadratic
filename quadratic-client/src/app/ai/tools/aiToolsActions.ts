@@ -1,11 +1,20 @@
+import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetRect } from '@/app/quadratic-core-types';
-import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
+import type {
+  CellAlign,
+  CellVerticalAlign,
+  CellWrap,
+  FormatUpdate,
+  NumericFormat,
+  NumericFormatKind,
+  SheetRect,
+} from '@/app/quadratic-core-types';
+import { selectionToSheetRect, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
@@ -173,10 +182,10 @@ export const aiToolsActions: AIToolActionsRecord = {
     return [{ type: 'text', text: `Executed set chat name tool successfully with name: ${args.chat_name}` }];
   },
   [AITool.AddDataTable]: async (args) => {
-    const { top_left_position, table_name, table_data } = args;
-
+    const { sheet_name, top_left_position, table_name, table_data } = args;
     try {
-      const selection = stringToSelection(top_left_position, sheets.current, sheets.a1Context);
+      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const selection = stringToSelection(top_left_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
@@ -184,7 +193,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       if (table_data.length > 0 && table_data[0].length > 0) {
         await quadraticCore.addDataTable({
-          sheetId: sheets.current,
+          sheetId,
           x,
           y,
           name: table_name,
@@ -193,7 +202,7 @@ export const aiToolsActions: AIToolActionsRecord = {
           cursor: sheets.getCursorPosition(),
         });
 
-        ensureRectVisible({ x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
+        ensureRectVisible(sheetId, { x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
 
         return [{ type: 'text', text: `Executed add data table tool successfully with name: ${table_name}` }];
       } else {
@@ -204,18 +213,19 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetCellValues]: async (args) => {
-    const { top_left_position, cell_values } = args;
+    const { sheet_name, top_left_position, cell_values } = args;
     try {
-      const selection = stringToSelection(top_left_position, sheets.current, sheets.a1Context);
+      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const selection = stringToSelection(top_left_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
 
       if (cell_values.length > 0 && cell_values[0].length > 0) {
-        await quadraticCore.setCellValues(sheets.current, x, y, cell_values, sheets.getCursorPosition());
+        await quadraticCore.setCellValues(sheetId, x, y, cell_values, sheets.getCursorPosition());
 
-        ensureRectVisible({ x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
+        ensureRectVisible(sheetId, { x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
 
         return [{ type: 'text', text: 'Executed set cell values tool successfully' }];
       } else {
@@ -226,9 +236,9 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
-    let { code_cell_language, code_string, code_cell_position } = args;
+    let { sheet_name, code_cell_language, code_string, code_cell_position } = args;
     try {
-      const sheetId = sheets.current;
+      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
       const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
       if (!selection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
@@ -256,7 +266,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         if (table) {
           const width = table.codeCell.w;
           const height = table.codeCell.h;
-          ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
         }
 
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
@@ -269,9 +279,10 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.MoveCells]: async (args) => {
-    const { source_selection_rect, target_top_left_position } = args;
+    const { sheet_name, source_selection_rect, target_top_left_position } = args;
     try {
-      const sourceSelection = stringToSelection(source_selection_rect, sheets.current, sheets.a1Context);
+      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const sourceSelection = stringToSelection(source_selection_rect, sheetId, sheets.a1Context);
       const sourceRect = sourceSelection.getSingleRectangleOrCursor();
       if (!sourceRect) {
         return [{ type: 'text', text: 'Invalid source selection, this should be a single rectangle, not a range' }];
@@ -286,17 +297,17 @@ export const aiToolsActions: AIToolActionsRecord = {
           y: sourceRect.max.y,
         },
         sheet_id: {
-          id: sheets.current,
+          id: sheetId,
         },
       };
 
-      const targetSelection = stringToSelection(target_top_left_position, sheets.current, sheets.a1Context);
+      const targetSelection = stringToSelection(target_top_left_position, sheetId, sheets.a1Context);
       if (!targetSelection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = targetSelection.getCursor();
 
-      await quadraticCore.moveCells(sheetRect, x, y, sheets.current, false, false);
+      await quadraticCore.moveCells(sheetRect, x, y, sheetId, false, false);
 
       return [{ type: 'text', text: 'Executed move cells tool successfully.' }];
     } catch (e) {
@@ -304,9 +315,10 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.DeleteCells]: async (args) => {
-    const { selection } = args;
+    const { sheet_name, selection } = args;
+    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
-      const sourceSelection = stringToSelection(selection, sheets.current, sheets.a1Context);
+      const sourceSelection = stringToSelection(selection, sheetId, sheets.a1Context);
 
       await quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
 
@@ -400,5 +412,152 @@ export const aiToolsActions: AIToolActionsRecord = {
         text: 'PDF import tool executed successfully.',
       },
     ];
+  },
+  [AITool.GetCellData]: async (args) => {
+    const { selection, sheet_name, page } = args;
+    try {
+      const sheetId = sheets.getSheetIdFromName(sheet_name);
+      const response = await quadraticCore.getAICells(selection, sheetId, page);
+      if (response) {
+        return [
+          {
+            type: 'text',
+            text: response,
+          },
+        ];
+      } else {
+        return [
+          {
+            type: 'text',
+            text: 'There was an error executing the get cells tool',
+          },
+        ];
+      }
+    } catch (e) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing get cell data tool: ${e}`,
+        },
+      ];
+    }
+  },
+  [AITool.SetTextFormats]: async (args) => {
+    try {
+      const kind = args.number_type
+        ? expectedEnum<NumericFormatKind>(args.number_type, ['NUMBER', 'CURRENCY', 'PERCENTAGE', 'EXPONENTIAL'])
+        : null;
+      let numericFormat: NumericFormat | null = null;
+      if (kind) {
+        numericFormat = args.number_type
+          ? {
+              type: kind,
+              symbol: args.currency_symbol ?? null,
+            }
+          : null;
+      }
+      const formatUpdates: FormatUpdate = {
+        ...defaultFormatUpdate(),
+        bold: args.bold ?? null,
+        italic: args.italic ?? null,
+        underline: args.underline ?? null,
+        strike_through: args.strike_through ?? null,
+        text_color: args.text_color ?? null,
+        fill_color: args.fill_color ?? null,
+        align: expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']),
+        vertical_align: expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom']),
+        wrap: expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']),
+        numeric_commas: args.numeric_commas ?? null,
+        numeric_format: numericFormat,
+        date_time: args.date_time ?? null,
+      };
+
+      const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+      await quadraticCore.setFormats(sheetId, args.selection, formatUpdates);
+      return [
+        {
+          type: 'text',
+          text: `Executed set formats tool on ${args.selection} for ${describeFormatUpdates(formatUpdates, args)} successfully.`,
+        },
+      ];
+    } catch (e) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing set formats tool: ${e}`,
+        },
+      ];
+    }
+  },
+  [AITool.GetTextFormats]: async (args) => {
+    try {
+      const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+      const response = await quadraticCore.getAICellFormats(sheetId, args.selection, args.page);
+      if (response) {
+        return [
+          {
+            type: 'text',
+            text: `The selection ${args.selection} has:\n${response}`,
+          },
+        ];
+      } else {
+        return [
+          {
+            type: 'text',
+            text: 'There was an error executing the get cell formats tool',
+          },
+        ];
+      }
+    } catch (e) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing get text formats tool: ${e}`,
+        },
+      ];
+    }
+  },
+  [AITool.ConvertToTable]: async (args) => {
+    try {
+      const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+      const sheetRect = selectionToSheetRect(sheetId, args.selection, sheets.a1Context);
+      if (sheetRect) {
+        const response = await quadraticCore.gridToDataTable(
+          sheetRect,
+          args.table_name,
+          args.first_row_is_column_names,
+          sheets.getCursorPosition()
+        );
+        if (response) {
+          return [
+            {
+              type: 'text',
+              text: 'Converted sheet data to table.',
+            },
+          ];
+        } else {
+          return [
+            {
+              type: 'text',
+              text: 'Error executing convert to table tool',
+            },
+          ];
+        }
+      } else {
+        return [
+          {
+            type: 'text',
+            text: 'Invalid selection, this should be a single rectangle, not a range',
+          },
+        ];
+      }
+    } catch (e) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing convert to table tool: ${e}`,
+        },
+      ];
+    }
   },
 } as const;

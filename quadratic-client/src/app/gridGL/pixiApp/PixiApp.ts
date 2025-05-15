@@ -1,3 +1,5 @@
+import './pixiApp.css';
+
 import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import {
@@ -37,7 +39,6 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import './pixiApp.css';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -299,12 +300,12 @@ export class PixiApp {
   };
 
   // called before and after a render
-  prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle }): Promise<Container> => {
+  prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
     this.gridLines.visible = options?.gridLines ?? false;
-    this.cursor.visible = false;
+    this.cursor.visible = options?.ai ?? false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
-    this.headings.visible = false;
+    this.headings.visible = options?.ai ?? false;
     this.boxCells.visible = false;
     await this.htmlPlaceholders.prepare();
     this.cellsSheets.toggleOutlines(false);

@@ -3,14 +3,14 @@ import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
@@ -21,7 +21,7 @@ type SetCodeCellValueProps = {
   loading: boolean;
 };
 
-export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
+export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
   const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
@@ -105,7 +105,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       const { code_cell_language: language, code_cell_position: position } = partialJson;
       return (
         <ToolCard
-          icon={<LanguageIcon language={language} className="text-primary" />}
+          icon={<LanguageIcon language={language} />}
           label={language}
           description={
             `${estimatedNumberOfLines} line` +
@@ -156,7 +156,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       }
     />
   );
-};
+});
 
 const parsePartialJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
   try {

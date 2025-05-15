@@ -17,6 +17,10 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
+    /// Note the after is providing the source column, not the direction of the
+    /// insertion. DF: While confusing, it was created originally to support
+    /// copying formats, but later turned into a differentiator for inserting
+    /// columns, since the behavior was different for insert to left vs right.
     pub fn insert_column(
         &mut self,
         sheet_id: SheetId,

@@ -20,7 +20,9 @@ export function keyboardSearch(event: React.KeyboardEvent<HTMLElement>): boolean
     } else {
       setEditorInteractionState((prev) => ({
         ...prev,
-        showSearch: event.shiftKey ? { sheet_id: undefined } : true,
+        showSearch: event.shiftKey
+          ? { sheet_id: null, whole_cell: null, search_code: null, case_sensitive: null }
+          : true,
       }));
     }
     return true;
