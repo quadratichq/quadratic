@@ -1470,12 +1470,19 @@ class QuadraticCore {
   }
 
   gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
-    this.send({
-      type: 'clientCoreGridToDataTable',
-      sheetRect,
-      firstRowIsHeader,
-      tableName,
-      cursor,
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreGridToDataTable',
+        id,
+        sheetRect,
+        firstRowIsHeader,
+        tableName,
+        cursor,
+      });
     });
   }
 

@@ -1156,10 +1156,16 @@ export interface ClientCoreCodeDataTableToDataTable {
 
 export interface ClientCoreGridToDataTable {
   type: 'clientCoreGridToDataTable';
+  id: number;
   sheetRect: string;
   tableName?: string;
   firstRowIsHeader: boolean;
   cursor: string;
+}
+
+export interface CoreClientGridToDataTable {
+  type: 'coreClientGridToDataTable';
+  id: number;
 }
 
 export interface ClientCoreDataTableMeta {
@@ -1529,4 +1535,5 @@ export type CoreClientMessage =
   | CoreClientCoreError
   | CoreClientGetAICells
   | CoreClientSetFormats
-  | CoreClientGetAIFormats;
+  | CoreClientGetAIFormats
+  | CoreClientGridToDataTable;
