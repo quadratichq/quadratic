@@ -309,7 +309,7 @@ impl GridController {
         // expand the data table to the right or bottom if the cell value is
         // touching the right or bottom edge
         let (col, row) =
-            sheet.expand_columns_and_rows(&data_tables, current_sheet_pos, value_is_empty);
+            sheet.expand_columns_and_rows(data_tables, current_sheet_pos, value_is_empty);
 
         // if an expansion happened, adjust the size of the data table rect
         // so that successive iterations continue to expand the data table.

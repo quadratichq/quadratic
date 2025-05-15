@@ -718,8 +718,7 @@ impl GridController {
                                 let current_pos = Pos::new(new_x, new_y);
                                 let within_data_table = existing_data_tables
                                     .iter()
-                                    .find(|rect| rect.contains(current_pos))
-                                    .is_some();
+                                    .any(|rect| rect.contains(current_pos));
 
                                 // we're not within a data table
                                 // expand the data table to the right or bottom if the

@@ -5,7 +5,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::{CodeCellLanguage, DataTableKind};
+use crate::grid::DataTableKind;
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
