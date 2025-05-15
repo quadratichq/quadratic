@@ -33,7 +33,7 @@ impl ValidationNumber {
 
                     // we're looking for one valid range.
                     self.ranges.iter().any(|range| match range {
-                        NumberRange::Equal(equal) => equal.iter().any(|v| n == *v),
+                        NumberRange::Equal(equal) => equal.contains(&n),
                         NumberRange::Range(min, max) => {
                             if let Some(min) = min.as_ref() {
                                 if n < *min {
