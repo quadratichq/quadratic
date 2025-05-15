@@ -78,7 +78,7 @@ const getSelectedRows = (): number[] | undefined => {
   if (!table) return undefined;
 
   return sheets.sheet.cursor
-    .getSelectedRowsFinite()
+    .getRowsWithSelectedCells()
     .map((r) => r - table.y)
     .sort((a, b) => b - a);
 };
@@ -117,7 +117,7 @@ const getSelectedColumns = (): number[] | undefined => {
   if (!table || !displayColumns) return undefined;
 
   const displayIndexes = sheets.sheet.cursor
-    .getSelectedColumnsFinite()
+    .getColumnsWithSelectedCells()
     .map((c) => c - table.x)
     .sort((a, b) => b - a);
 
@@ -187,7 +187,12 @@ export const gridToDataTable = () => {
       min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
-    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
+    quadraticCore.gridToDataTable(
+      JSON.stringify(sheetRect, bigIntReplacer),
+      undefined,
+      false,
+      sheets.getCursorPosition()
+    );
   }
 };
 
@@ -607,7 +612,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.RemoveTableRow]: {
     label: () => {
-      const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
+      const length = sheets.sheet.cursor.getRowsWithSelectedCells().length;
       const plural = length > 1 ? 's' : '';
       return `Delete ${length} row${plural}`;
     },

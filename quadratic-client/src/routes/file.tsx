@@ -1,14 +1,22 @@
 import { EmptyPage } from '@/shared/components/EmptyPage';
-import { DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { Button } from '@/shared/shadcn/ui/button';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { engineName, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
 
 export function Component() {
+  const [overrideNonBlinkMsg, setOverrideNonBlinkMsg] = useLocalStorage('overrideNonBlinkMsg', false);
+  const [showNonBlinkMsg, setShowNonBlinkMsg] = useState(
+    isDesktop && engineName.toLowerCase() !== 'blink' && !overrideNonBlinkMsg
+  );
+
   useEffect(() => {
     if (!isWASMSupported || !isWebGLSupported()) {
       mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {
@@ -22,6 +30,46 @@ export function Component() {
       });
     }
   }, []);
+
+  if (showNonBlinkMsg) {
+    return (
+      <EmptyPage
+        title="Your browser is not officially supported"
+        description={
+          <>
+            Chromium browsers are{' '}
+            <a
+              href={DOCUMENTATION_BROWSER_COMPATIBILITY_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-primary"
+            >
+              officially supported
+            </a>
+            . You’re welcome to try non-Chromium browsers, but things might not work as expected.
+          </>
+        }
+        Icon={InfoCircledIcon}
+        showLoggedInUser={false}
+        actions={
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" asChild>
+              <a href={CONTACT_URL}>Contact us</a>
+            </Button>
+            <Button
+              onClick={() => {
+                mixpanel.track('[BrowserCompatibilityLayoutRoute].userContinuedAnyway');
+                setOverrideNonBlinkMsg(true);
+                setShowNonBlinkMsg(false);
+              }}
+            >
+              Continue anyway
+            </Button>
+          </div>
+        }
+      />
+    );
+  }
 
   if (!isWASMSupported || !isWebGLSupported()) {
     return (

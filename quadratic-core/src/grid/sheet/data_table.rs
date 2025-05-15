@@ -140,6 +140,9 @@ impl Sheet {
             .unwrap_or(false)
     }
 
+    // todo: (DF) not sure how there could be multiple tables in one position if
+    // ignore_spills is false
+
     /// Returns the first data table within a position
     pub fn first_data_table_within(&self, pos: Pos) -> Result<Pos> {
         let data_tables = self.data_tables_within(pos)?;
@@ -259,10 +262,10 @@ impl Sheet {
                     y: output_rect.min.y,
                 };
 
-                // add the CellValue to cells if the code is not included in the clipboard
+                // add the CellValue to cells if the code is not included in the rect
                 let include_in_cells = !rect.contains(data_table_pos);
 
-                // if the source cell is included in the clipboard, add the data_table to the clipboard
+                // if the source cell is included in the rect, add the data_table to data_tables
                 if !include_in_cells {
                     if matches!(data_table.kind, DataTableKind::Import(_))
                         || include_code_table_values
@@ -282,7 +285,7 @@ impl Sheet {
                 let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
                 let y_end = std::cmp::min(output_rect.max.y, rect.max.y);
 
-                // add the code_run output to clipboard.values
+                // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
                         if let Some(value) = data_table.cell_value_at(
@@ -293,6 +296,7 @@ impl Sheet {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
                             };
+
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 if include_in_cells {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
@@ -473,6 +477,12 @@ impl Sheet {
         self.data_table(pos).is_some()
     }
 
+    /// Returns true if the cell at pos is a data table cell
+    pub fn is_data_table_cell(&self, pos: Pos) -> bool {
+        self.data_table(pos)
+            .is_some_and(|dt| matches!(dt.kind, DataTableKind::Import(_)))
+    }
+
     /// You shouldn't be able to create a data table that includes a data table.
     /// Deny the action and give a popup explaining why it was blocked.
     /// Returns true if the data table is not within the rect
@@ -503,7 +513,8 @@ mod test {
         },
         first_sheet_id,
         grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
-        test_create_code_table, test_create_data_table,
+        test_create_code_table, test_create_data_table, test_create_html_chart,
+        test_create_js_chart,
     };
     use bigdecimal::BigDecimal;
 
@@ -676,5 +687,25 @@ mod test {
 
         // The second data table should have index 1
         assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
+    }
+
+    #[test]
+    fn test_is_data_table_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        test_create_code_table(&mut gc, sheet_id, pos![E5], 2, 2);
+        test_create_js_chart(&mut gc, sheet_id, pos![G7], 2, 2);
+        test_create_html_chart(&mut gc, sheet_id, pos![J9], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.is_data_table_cell(pos![E5]));
+        assert!(!sheet.is_data_table_cell(pos![G7]));
+        assert!(!sheet.is_data_table_cell(pos![J9]));
+        assert!(!sheet.is_data_table_cell(pos![B1]));
+        assert!(!sheet.is_data_table_cell(pos![A2]));
+
+        assert!(sheet.is_data_table_cell(pos![A1]));
     }
 }

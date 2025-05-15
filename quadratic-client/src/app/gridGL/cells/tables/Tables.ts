@@ -361,14 +361,15 @@ export class Tables extends Container<Table> {
     }
   }
 
-  isHtmlOrImage(cell: JsCoordinate): boolean {
+  isHtmlOrImage = (sheetId: string, cell: JsCoordinate): boolean => {
     if (this.htmlOrImage.has(`${cell.x},${cell.y}`)) {
       return true;
     }
     return (
-      !!htmlCellsHandler.findCodeCell(cell.x, cell.y) || pixiApp.cellsSheet().cellsImages.isImageCell(cell.x, cell.y)
+      !!htmlCellsHandler.findCodeCell(sheetId, cell.x, cell.y) ||
+      !!pixiApp.cellsSheets.getById(sheetId)?.cellsImages.isImageCell(cell.x, cell.y)
     );
-  }
+  };
 
   /// Returns true if the cell is inside a table's UI (column, table name, or html/image).
   getTableFromCell(cell: JsCoordinate): Table | undefined {
@@ -434,6 +435,17 @@ export class Tables extends Container<Table> {
         }
       }
     }
+  }
+
+  // Returns true if the cell is a table name cell
+  isTableNameCell(cell: JsCoordinate): boolean {
+    return this.children.some(
+      (table) =>
+        table.codeCell.show_name &&
+        cell.x >= table.codeCell.x &&
+        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        cell.y === table.codeCell.y
+    );
   }
 
   /// Returns true if the cell is a column header cell in a table

@@ -2,15 +2,15 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { Editor } from '@monaco-editor/react';
 import mixpanel from 'mixpanel-browser';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
@@ -21,7 +21,7 @@ type UpdateCodeCellProps = {
   loading: boolean;
 };
 
-export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
+export const UpdateCodeCell = memo(({ args, loading }: UpdateCodeCellProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<UpdateCodeCellResponse, UpdateCodeCellResponse>>();
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
@@ -187,4 +187,4 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
       )}
     </div>
   );
-};
+});
