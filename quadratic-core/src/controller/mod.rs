@@ -2,9 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    Pos,
+    Pos, Rect,
     a1::{A1Context, TableMapEntry},
-    grid::{Grid, SheetId},
+    grid::{CodeCellLanguage, Grid, SheetId},
     util::case_fold_ascii,
     viewport::ViewportBuffer,
 };
@@ -158,6 +158,16 @@ impl GridController {
                 .sheet_map
                 .insert_parts(&sheet_name, sheet_id);
         }
+    }
+
+    pub(crate) fn a1_context_sheet_table_bounds(&mut self, sheet_id: SheetId) -> Vec<Rect> {
+        self.a1_context()
+            .tables()
+            .filter(|table| {
+                table.sheet_id == sheet_id && table.language == CodeCellLanguage::Import
+            })
+            .map(|table| table.bounds)
+            .collect::<Vec<_>>()
     }
 
     /// Creates a grid controller for testing purposes in both Rust and TS

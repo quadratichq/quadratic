@@ -55,10 +55,19 @@ impl GridController {
 
         // first try html
         if let Some(html) = html {
-            if let Ok(ops) =
+            if let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at_pos, end_pos, selection, html, special)
             {
-                self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                self.start_user_transaction(ops, cursor.clone(), TransactionName::PasteClipboard);
+
+                if !data_table_ops.is_empty() {
+                    self.start_user_transaction(
+                        data_table_ops,
+                        cursor,
+                        TransactionName::PasteClipboard,
+                    );
+                }
+
                 return;
             }
         }
