@@ -20,8 +20,6 @@ export function useFilesContextMessages() {
               text: `
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 
-Attached as "screen.png" is a screenshot of the user's current screen. Use it to understand the user's current context. The screenshot will be updated after each response.\n
-
 ${
   imageFiles.length === 0 && pdfFiles.length === 0
     ? `No files are attached. Don't use pdf import tool, also do not assume or make any assumptions that files are attached when responding to users. If asked to do anything with an attached files, ask for the file first.`

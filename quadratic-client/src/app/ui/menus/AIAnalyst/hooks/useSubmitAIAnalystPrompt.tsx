@@ -21,7 +21,6 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getScreenImage } from '@/app/gridGL/pixiApp/copyAsPNG';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
@@ -48,25 +47,25 @@ export type SubmitAIAnalystPromptArgs = {
   onSubmit?: () => void;
 };
 
-// Include a screenshot of what the user is seeing
-async function getUserScreen(): Promise<ChatMessage | undefined> {
-  const currentScreen = await getScreenImage();
-  if (currentScreen) {
-    const reader = new FileReader();
-    const base64 = await new Promise<string>((resolve) => {
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        resolve(result.split(',')[1]);
-      };
-      reader.readAsDataURL(currentScreen);
-    });
-    return {
-      role: 'user',
-      content: [{ type: 'data', data: base64, mimeType: 'image/png', fileName: 'screen.png' }],
-      contextType: 'userPrompt',
-    };
-  }
-}
+// // Include a screenshot of what the user is seeing
+// async function getUserScreen(): Promise<ChatMessage | undefined> {
+//   const currentScreen = await getScreenImage();
+//   if (currentScreen) {
+//     const reader = new FileReader();
+//     const base64 = await new Promise<string>((resolve) => {
+//       reader.onloadend = () => {
+//         const result = reader.result as string;
+//         resolve(result.split(',')[1]);
+//       };
+//       reader.readAsDataURL(currentScreen);
+//     });
+//     return {
+//       role: 'user',
+//       content: [{ type: 'data', data: base64, mimeType: 'image/png', fileName: 'screen.png' }],
+//       contextType: 'userPrompt',
+//     };
+//   }
+// }
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -89,7 +88,6 @@ export function useSubmitAIAnalystPrompt() {
           visibleContext,
           /*selectionContext,*/
           filesContext,
-          userScreen,
         ] = await Promise.all([
           getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
           getTablesContext(),
@@ -97,7 +95,6 @@ export function useSubmitAIAnalystPrompt() {
           getVisibleContext(),
           // getSelectionContext({ selection: context.selection }),
           getFilesContext({ chatMessages }),
-          getUserScreen(),
         ]);
 
         const messagesWithContext: ChatMessage[] = [
@@ -107,7 +104,6 @@ export function useSubmitAIAnalystPrompt() {
           ...visibleContext,
           // ...selectionContext,
           ...filesContext,
-          ...(userScreen ? [userScreen] : []),
           ...getPromptMessagesWithoutPDF(chatMessages),
         ];
 
