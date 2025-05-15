@@ -28,7 +28,7 @@ import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
   getPromptMessagesWithoutPDF,
-  removeOldGetToolCalls,
+  replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -325,7 +325,7 @@ export function useSubmitAIAnalystPrompt() {
               signal: abortController.signal,
             });
 
-            set(aiAnalystCurrentChatMessagesAtom, (prev) => removeOldGetToolCalls(prev));
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => replaceOldGetToolCallResults(prev));
 
             if (response.toolCalls.length === 0) {
               break;
