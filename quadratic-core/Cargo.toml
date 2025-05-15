@@ -104,6 +104,7 @@ arrow-data = "54.2.1"
 half = "2.4.0"
 
 # temporary fix until https://github.com/tafia/calamine/pull/506 merges
+# calamine = { version = "0.27.0", features = ["dates"] }
 calamine = { git = "https://github.com/prophittcorey/calamine", branch = "fix/zip-3.0", features = [
     "dates",
 ] }
