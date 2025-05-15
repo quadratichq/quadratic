@@ -2,9 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    Pos,
+    Pos, SheetPos,
     a1::{A1Context, TableMapEntry},
-    grid::{Grid, SheetId},
+    grid::{DataTable, Grid, RegionMap, SheetId},
     util::case_fold_ascii,
     viewport::ViewportBuffer,
 };
@@ -30,6 +30,7 @@ pub struct GridController {
     grid: Grid,
 
     a1_context: A1Context,
+    cells_accessed: RegionMap,
 
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
@@ -46,9 +47,11 @@ impl Default for GridController {
     fn default() -> Self {
         let grid = Grid::default();
         let a1_context = grid.make_a1_context();
+        let cells_accessed = grid.make_cells_accessed(&a1_context);
         Self {
             grid,
             a1_context,
+            cells_accessed,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             transactions: ActiveTransactions::new(0),
@@ -60,9 +63,11 @@ impl Default for GridController {
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
         let a1_context = grid.make_a1_context();
+        let cells_accessed = grid.make_cells_accessed(&a1_context);
         GridController {
             grid,
             a1_context,
+            cells_accessed,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         }
@@ -70,9 +75,11 @@ impl GridController {
 
     pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
         let a1_context = grid.make_a1_context();
+        let cells_accessed = grid.make_cells_accessed(&a1_context);
         GridController {
             grid,
             a1_context,
+            cells_accessed,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         }
@@ -106,46 +113,53 @@ impl GridController {
         &self.a1_context
     }
 
+    pub fn cells_accessed(&self) -> &RegionMap {
+        &self.cells_accessed
+    }
+
     pub(crate) fn update_a1_context_table_map(
         &mut self,
-        code_cells: &HashMap<SheetId, HashSet<Pos>>,
+        code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
+        sort: bool,
     ) {
-        for (sheet_id, positions) in code_cells.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
+        for (sheet_id, table_info) in code_cells_a1_context.into_iter() {
+            let Some(sheet) = self.grid.try_sheet(sheet_id) else {
                 self.a1_context
                     .table_map
                     .tables
-                    .retain(|_, table| table.sheet_id != *sheet_id);
+                    .retain(|_, table| table.sheet_id != sheet_id);
                 continue;
             };
 
-            let mut to_remove = Vec::new();
-            let mut to_insert = Vec::new();
-
-            for pos in positions.iter() {
-                to_remove.push(*pos);
-
-                let Some(table) = sheet.data_table(*pos) else {
+            for pos in table_info.into_iter() {
+                let Some(table) = sheet.data_table_at(&pos) else {
+                    self.a1_context.table_map.remove_at(sheet_id, pos);
                     continue;
                 };
 
-                let table_name = case_fold_ascii(table.name());
-                let table_map_entry = TableMapEntry::from_table(*sheet_id, *pos, table);
-                to_insert.push((table_name, table_map_entry));
-            }
+                let table_name_folded = case_fold_ascii(table.name());
 
-            for pos in to_remove.into_iter() {
-                self.a1_context
+                if !self
+                    .a1_context()
                     .table_map
                     .tables
-                    .retain(|_, table| table.sheet_id != *sheet_id || table.bounds.min != pos);
-            }
+                    .contains_key(&table_name_folded)
+                {
+                    self.a1_context.table_map.remove_at(sheet_id, pos);
+                }
 
-            for (table_name, table_map_entry) in to_insert.into_iter() {
+                let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
                 self.a1_context
                     .table_map
-                    .insert_with_key(table_name, table_map_entry);
+                    .insert_with_key(table_name_folded, table_map_entry);
             }
+        }
+
+        if sort {
+            self.a1_context
+                .table_map
+                .tables
+                .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
         }
     }
 
@@ -157,6 +171,24 @@ impl GridController {
             self.a1_context
                 .sheet_map
                 .insert_parts(&sheet_name, sheet_id);
+        }
+    }
+
+    pub(crate) fn update_cells_accessed(
+        &mut self,
+        sheet_pos: SheetPos,
+        data_table: &Option<DataTable>,
+    ) {
+        self.cells_accessed.remove_pos(sheet_pos);
+        if let Some(code_run) = data_table.as_ref().and_then(|dt| dt.code_run()) {
+            for (sheet_id, ranges) in code_run.cells_accessed.cells.iter() {
+                for range in ranges {
+                    if let Some(rect) = range.to_rect_unbounded(&self.a1_context) {
+                        self.cells_accessed
+                            .insert(sheet_pos, (sheet_id.to_owned(), rect));
+                    }
+                }
+            }
         }
     }
 

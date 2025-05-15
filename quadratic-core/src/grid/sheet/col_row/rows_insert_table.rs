@@ -67,8 +67,10 @@ impl Sheet {
         }
         data_tables_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in data_tables_to_move {
-            if let Some((index, old_pos, data_table)) = self.data_tables.shift_remove_full(&old_pos)
+            if let Some((index, old_pos, data_table, dirty_rects)) =
+                self.data_table_shift_remove_full(&old_pos)
             {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_from_code_run(
@@ -83,7 +85,8 @@ impl Sheet {
                     data_table.is_image(),
                     data_table.is_html(),
                 );
-                self.data_tables.shift_insert(index, new_pos, data_table);
+                let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
     }

@@ -50,7 +50,7 @@ impl Sheet {
             }
 
             // add edges of data tables to the search
-            at_table_edge = self.is_at_table_edge_col(Pos { x, y: row });
+            at_table_edge = self.is_at_table_edge_col(&Pos { x, y: row });
 
             if at_table_edge {
                 return Some(
@@ -129,7 +129,7 @@ impl Sheet {
             }
 
             // add edges of data tables to the search
-            at_table_edge = self.is_at_table_edge_row(Pos { x: column, y });
+            at_table_edge = self.is_at_table_edge_row(&Pos { x: column, y });
 
             if at_table_edge {
                 return Some(
@@ -239,14 +239,12 @@ mod test {
             "test",
             Value::Single(CellValue::Html("html".to_string())),
             false,
-            false,
             Some(true),
             Some(true),
             // make the chart take up 5x5 cells
-            Some((100.0 * 5.0, 20.0 * 5.0)),
+            Some((5, 5)),
         );
         dt.show_name = Some(false);
-        dt.chart_output = Some((5, 5));
         dt
     }
 

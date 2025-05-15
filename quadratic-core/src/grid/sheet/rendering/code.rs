@@ -2,7 +2,6 @@
 
 use crate::{
     CellValue, Pos, Value,
-    a1::A1Context,
     grid::{
         CodeCellLanguage, DataTable, Sheet,
         js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
@@ -11,7 +10,7 @@ use crate::{
 
 impl Sheet {
     pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
-        let dt = self.data_tables.get(&pos)?;
+        let dt = self.data_table_at(&pos)?;
         if !dt.is_html() {
             return None;
         }
@@ -27,7 +26,7 @@ impl Sheet {
                 .map(|(_, h)| h as i32 + 1)
                 .unwrap_or_default(),
             html: Some(output.to_display()),
-            name: dt.name.to_display(),
+            name: dt.name().to_string(),
             show_name: dt.get_show_name(),
         })
     }
@@ -50,7 +49,7 @@ impl Sheet {
                         .map(|(_, h)| h as i32 + 1)
                         .unwrap_or_default(),
                     html: Some(output.to_display()),
-                    name: dt.name.to_display(),
+                    name: dt.name().to_string(),
                     show_name: dt.get_show_name(),
                 })
             })
@@ -61,7 +60,7 @@ impl Sheet {
     fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
         let code = self.cell_value(pos)?;
         let output_size = data_table.output_size();
-        let (state, w, h, spill_error) = if data_table.spill_error {
+        let (state, w, h, spill_error) = if data_table.has_spill() {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
             (
                 JsRenderCodeCellState::SpillError,
@@ -83,7 +82,7 @@ impl Sheet {
             };
             (state, output_size.w.get(), output_size.h.get(), None)
         };
-        let alternating_colors = !data_table.spill_error
+        let alternating_colors = !data_table.has_spill()
             && !data_table.has_error()
             && !data_table.is_image()
             && !data_table.is_html()
@@ -118,7 +117,7 @@ impl Sheet {
 
     // Returns a single code cell for rendering.
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let data_table = self.data_tables.get(&pos)?;
+        let data_table = self.data_table_at(&pos)?;
         self.render_code_cell(pos, data_table)
     }
 
@@ -154,40 +153,6 @@ impl Sheet {
         });
     }
 
-    // Sends an update to a code cell. Sends a message regardless of whether the
-    // code cell is still present.
-    pub fn send_code_cell(&self, pos: Pos, a1_context: &A1Context) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
-
-        if let (Some(code_cell), Some(render_code_cell)) = (
-            self.edit_code_value(pos, a1_context),
-            self.get_render_code_cell(pos),
-        ) {
-            if let (Ok(code_cell), Ok(render_code_cell)) = (
-                serde_json::to_string(&code_cell),
-                serde_json::to_string(&render_code_cell),
-            ) {
-                crate::wasm_bindings::js::jsUpdateCodeCell(
-                    self.id.to_string(),
-                    pos.x,
-                    pos.y,
-                    Some(code_cell),
-                    Some(render_code_cell),
-                );
-            }
-        } else {
-            crate::wasm_bindings::js::jsUpdateCodeCell(
-                self.id.to_string(),
-                pos.x,
-                pos.y,
-                None,
-                None,
-            );
-        }
-    }
-
     /// Sends an image to the client.
     pub fn send_image(&self, pos: Pos) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
@@ -195,7 +160,7 @@ impl Sheet {
         }
 
         let mut sent = false;
-        if let Some(table) = self.data_table(pos) {
+        if let Some(table) = self.data_table_at(&pos) {
             if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
                 let output_size = table.chart_output;
                 crate::wasm_bindings::js::jsSendImage(
@@ -226,6 +191,7 @@ impl Sheet {
 mod tests {
     use crate::{
         Rect, SheetPos,
+        a1::A1Context,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -303,7 +269,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_code_cells() {
+    fn test_get_render_code_cells() {
         let sheet = Sheet::test();
         let code_cell = CellValue::Code(CodeCellValue {
             language: CodeCellLanguage::Python,
@@ -327,18 +293,20 @@ mod tests {
             "Table 1",
             Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
             false,
-            false,
             Some(false),
             Some(false),
             None,
         );
 
+        let context = A1Context::default();
+
         // render rect is larger than code rect
-        let code_cells = sheet.get_code_cells(
+        let code_cells = sheet.get_render_code_cells(
             &code_cell,
             &data_table,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 3, 2),
+            &context,
         );
         assert_eq!(code_cells.len(), 6);
         assert_eq!(code_cells[0].value, "1".to_string());
@@ -348,22 +316,24 @@ mod tests {
         assert_eq!(code_cells[5].language, None);
 
         // code rect overlaps render rect to the top-left
-        let code_cells = sheet.get_code_cells(
+        let code_cells = sheet.get_render_code_cells(
             &code_cell,
             &data_table,
             &Rect::from_numbers(2, 1, 10, 10),
             &Rect::from_numbers(0, 0, 3, 2),
+            &context,
         );
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "6".to_string());
         assert_eq!(code_cells[0].language, None);
 
         // code rect overlaps render rect to the bottom-right
-        let code_cells = sheet.get_code_cells(
+        let code_cells = sheet.get_render_code_cells(
             &code_cell,
             &data_table,
             &Rect::from_numbers(0, 0, 3, 2),
             &Rect::from_numbers(2, 1, 10, 10),
+            &context,
         );
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "1".to_string());
@@ -386,16 +356,16 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Number(1.into())),
             false,
-            false,
             Some(false),
             Some(false),
             None,
         );
-        let code_cells = sheet.get_code_cells(
+        let code_cells = sheet.get_render_code_cells(
             &code_cell,
             &code_run,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 1, 1),
+            &context,
         );
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
@@ -434,7 +404,6 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(2.into())),
-            false,
             false,
             None,
             None,
@@ -501,7 +470,6 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Image(image.clone())),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -541,7 +509,6 @@ mod tests {
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Single(CellValue::Image("image".to_string())),
-                false,
                 false,
                 Some(true),
                 Some(true),

@@ -109,7 +109,7 @@ mod tests {
                 code: ref c,
             }) if c == "code"
         ));
-        assert!(sheet.data_table(pos).unwrap().is_image());
+        assert!(sheet.data_table_at(&pos).unwrap().is_image());
         assert_data_table_size(&gc, sheet_id, pos, width as usize, height as usize, false);
     }
 
@@ -134,7 +134,7 @@ mod tests {
                 code: ref c,
             }) if c == "<html></html>"
         ));
-        assert!(sheet.data_table(pos).unwrap().is_html());
+        assert!(sheet.data_table_at(&pos).unwrap().is_html());
         assert_data_table_size(&gc, sheet_id, pos, width as usize, height as usize, false);
     }
 }

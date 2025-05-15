@@ -57,6 +57,7 @@ mod test {
         controller::GridController,
         grid::{
             CodeCellLanguage, SheetId,
+            js_types::JsUpdateCodeCell,
             sheet::borders::{BorderSelection, BorderStyle},
         },
         wasm_bindings::{
@@ -285,24 +286,19 @@ mod test {
             x: 1,
             y: 1,
         };
-        let code_cell = gc
-            .sheet(duplicated_sheet_id)
-            .edit_code_value(sheet_pos.into(), gc.a1_context())
-            .unwrap();
-        let render_code_cell = gc
-            .sheet(duplicated_sheet_id)
-            .get_render_code_cell(sheet_pos.into())
-            .unwrap();
+
+        let sheet = gc.sheet(duplicated_sheet_id);
+
+        let update_code_cell = JsUpdateCodeCell {
+            sheet_id: duplicated_sheet_id,
+            pos: sheet_pos.into(),
+            code_cell: sheet.edit_code_value(sheet_pos.into(), gc.a1_context()),
+            render_code_cell: sheet.get_render_code_cell(sheet_pos.into()),
+        };
+
         expect_js_call(
-            "jsUpdateCodeCell",
-            format!(
-                "{},{},{},{:?},{:?}",
-                duplicated_sheet_id,
-                sheet_pos.x,
-                sheet_pos.y,
-                Some(serde_json::to_string(&code_cell).unwrap()),
-                Some(serde_json::to_string(&render_code_cell).unwrap())
-            ),
+            "jsUpdateCodeCells",
+            format!("{:?}", serde_json::to_vec(&vec![update_code_cell]).unwrap()),
             true,
         );
 

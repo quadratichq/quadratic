@@ -162,6 +162,11 @@ impl Grid {
             .ok_or_else(|| anyhow!("Sheet not found: {:?}", sheet_id))
     }
 
+    pub fn try_sheet_mut_result(&mut self, sheet_id: SheetId) -> Result<&mut Sheet> {
+        self.try_sheet_mut(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet not found: {:?}", sheet_id))
+    }
+
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
         self.sheets.iter_mut().find(|s| s.id == sheet_id)
     }

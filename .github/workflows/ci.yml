@@ -42,10 +42,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup node
+      - name: Setup Node
         uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
+          node-version: 24
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -53,6 +53,9 @@ jobs:
           toolchain: stable
           components: clippy, llvm-tools-preview
           override: true
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
 
       - uses: useblacksmith/rust-cache@v3
 
@@ -124,10 +127,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
-      - name: Setup node
+      - name: Setup Node
         uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
+          node-version: 24
 
       - uses: useblacksmith/setup-python@v6
         with:
@@ -140,6 +143,9 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
 
       - uses: useblacksmith/rust-cache@v3
 
@@ -169,10 +175,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup node
+      - name: Setup Node
         uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
+          node-version: 24
 
       - uses: useblacksmith/setup-python@v6
         with:
@@ -191,10 +197,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup node
+      - name: Setup Node
         uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
+          node-version: 24
 
       - name: Run npm test:ci in quadratic-api
         run: |
@@ -216,6 +222,9 @@ jobs:
           components: clippy
           override: true
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
       - uses: useblacksmith/rust-cache@v3
 
       - name: Run cargo clippy in quadratic-core
@@ -235,10 +244,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
-      - name: Setup node
+      - name: Setup Node
         uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
+          node-version: 24
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -247,6 +256,9 @@ jobs:
           components: clippy
           target: wasm32-unknown-unknown
           override: true
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
 
       - uses: useblacksmith/rust-cache@v3
 

@@ -22,7 +22,7 @@ impl Sheet {
                 let current_max = (current_min + MAX_OPERATION_SIZE_COL_ROW).min(max);
                 let mut values = CellValues::new(1, (current_max - current_min) as u32 + 1);
 
-                if let Some(col) = self.columns.get(&column) {
+                if let Some(col) = self.columns.get_column(column) {
                     for y in current_min..=current_max {
                         if let Some(cell_value) = col.values.get(&y) {
                             values.set(0, (y - current_min) as u32, cell_value.clone());
@@ -128,26 +128,12 @@ impl Sheet {
         self.borders.remove_column(column);
         transaction.sheet_borders.insert(self.id);
 
-        self.columns.remove(&column);
-
-        // update the indices of all columns impacted by the deletion
-        let mut columns_to_update = Vec::new();
-        for col in self.columns.keys() {
-            if *col > column {
-                columns_to_update.push(*col);
-            }
-        }
-        columns_to_update.sort();
-        for col in columns_to_update {
-            if let Some(mut column_data) = self.columns.remove(&col) {
-                column_data.x -= 1;
-                self.columns.insert(col - 1, column_data);
-            }
-        }
+        self.columns.remove_column(column);
 
         let changed_selections =
             self.validations
                 .remove_column(transaction, self.id, column, a1_context);
+
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
         if transaction.is_user_undo_redo() {

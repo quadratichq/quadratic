@@ -39,7 +39,6 @@ impl GridController {
                     "Formula1",
                     output.inner,
                     false,
-                    false,
                     None,
                     None,
                     None,
@@ -267,7 +266,6 @@ mod test {
                 "JavaScript1",
                 Value::Single(CellValue::Number(12.into())),
                 false,
-                false,
                 None,
                 None,
                 None,
@@ -345,7 +343,6 @@ mod test {
             "JavaScript1",
             Value::Array(array),
             false,
-            false,
             None,
             None,
             None,
@@ -404,9 +401,9 @@ mod test {
         );
         assert!(
             gc.sheet(sheet_id)
-                .data_table(Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
         assert!(
             gc.sheet(sheet_id)
@@ -426,9 +423,9 @@ mod test {
         gc.redo(None);
         assert!(
             gc.sheet(sheet_id)
-                .data_table(Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
 
         // undo the spill error
@@ -459,8 +456,8 @@ mod test {
                 code: "☺".into(),
             }))
         );
-        let result = sheet.data_table(pos).unwrap();
-        assert!(!result.spill_error);
+        let result = sheet.data_table_at(&pos).unwrap();
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
 
         gc.set_code_cell(
@@ -477,8 +474,8 @@ mod test {
                 code: "{0,1/0;2/0,0}".into(),
             }))
         );
-        let result = sheet.data_table(pos).unwrap();
-        assert!(!result.spill_error);
+        let result = sheet.data_table_at(&pos).unwrap();
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
     }
 }

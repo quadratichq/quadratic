@@ -9,16 +9,9 @@ use super::GridController;
 impl GridController {
     /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
     pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
-        let mut dependent_cells = HashSet::new();
-
-        let context = self.a1_context();
-        self.grid.sheets().iter().for_each(|sheet| {
-            sheet.iter_code_runs().for_each(|(pos, code_run)| {
-                if code_run.cells_accessed.intersects(sheet_rect, context) {
-                    dependent_cells.insert(pos.to_sheet_pos(sheet.id));
-                }
-            });
-        });
+        let dependent_cells = self
+            .cells_accessed()
+            .get_positions_associated_with_region(sheet_rect.to_region());
 
         if dependent_cells.is_empty() {
             None
@@ -32,7 +25,9 @@ impl GridController {
 mod test {
     use crate::{
         CellValue, Pos, SheetPos, SheetRect, Value,
-        controller::GridController,
+        controller::{
+            GridController, active_transactions::pending_transaction::PendingTransaction,
+        },
         grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
     };
 
@@ -45,13 +40,13 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = CellsAccessed::default();
         let sheet_pos_00 = SheetPos {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             sheet_id,
         };
         let sheet_pos_01 = SheetPos {
-            x: 0,
-            y: 1,
+            x: 1,
+            y: 2,
             sheet_id,
         };
         let sheet_rect = SheetRect {
@@ -71,24 +66,28 @@ mod test {
             output_type: None,
             cells_accessed: cells_accessed.clone(),
         };
-        sheet.set_data_table(
-            Pos { x: 0, y: 2 },
+
+        let sheet_pos_02 = SheetPos {
+            x: 1,
+            y: 3,
+            sheet_id,
+        };
+
+        let mut transaction = PendingTransaction::default();
+        gc.finalize_data_table(
+            &mut transaction,
+            sheet_pos_02,
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Single(CellValue::Text("test".to_string())),
                 false,
-                false,
                 Some(true),
                 Some(true),
                 None,
             )),
+            None,
         );
-        let sheet_pos_02 = SheetPos {
-            x: 0,
-            y: 2,
-            sheet_id,
-        };
 
         assert_eq!(
             gc.get_dependent_code_cells(&sheet_pos_00.into())

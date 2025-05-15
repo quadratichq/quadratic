@@ -43,7 +43,9 @@ pub fn unique_data_table_name(
 ) -> String {
     let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
 
-    let name = unique_name(name, require_number, check_name);
+    let iter_names = a1_context.table_map.iter_rev_table_names();
+
+    let name = unique_name(name, require_number, check_name, iter_names);
 
     // replace spaces with underscores
     name.replace(' ', "_")
@@ -51,7 +53,7 @@ pub fn unique_data_table_name(
 
 impl Grid {
     /// Returns the data table at the given position.
-    pub fn data_table(&self, sheet_id: SheetId, pos: Pos) -> Result<&DataTable> {
+    pub fn data_table_at(&self, sheet_id: SheetId, pos: &Pos) -> Result<&DataTable> {
         self.try_sheet_result(sheet_id)?.data_table_result(pos)
     }
 
@@ -73,9 +75,10 @@ impl Grid {
             .try_sheet_mut(sheet_pos.sheet_id)
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
 
-        sheet
-            .data_table_mut(sheet_pos.into())?
-            .update_table_name(&unique_name);
+        sheet.modify_data_table_at(&sheet_pos.into(), |dt| {
+            dt.update_table_name(&unique_name);
+            Ok(())
+        })?;
 
         Ok(())
     }
@@ -144,7 +147,12 @@ pub struct DataTable {
     pub sort_dirty: bool,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
-    pub spill_error: bool,
+
+    // spill due to cell value
+    pub spill_value: bool,
+    // spill due to data table output
+    pub spill_data_table: bool,
+
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
     pub formats: SheetFormatting,
@@ -167,7 +175,6 @@ impl From<(Import, Array, &A1Context)> for DataTable {
             &name,
             Value::Array(cell_values),
             false,
-            false,
             None,
             None,
             None,
@@ -184,19 +191,19 @@ impl DataTable {
         kind: DataTableKind,
         name: &str,
         value: Value,
-        spill_error: bool,
         header_is_first_row: bool,
         show_name: Option<bool>,
         show_columns: Option<bool>,
-        chart_pixel_output: Option<(f32, f32)>,
+        chart_output: Option<(u32, u32)>,
     ) -> Self {
         let mut data_table = DataTable {
             kind,
             name: name.into(),
             header_is_first_row,
-            chart_pixel_output,
+            chart_pixel_output: None,
             value,
-            spill_error,
+            spill_value: false,
+            spill_data_table: false,
             last_modified: Utc::now(),
             alternating_colors: true,
 
@@ -211,7 +218,7 @@ impl DataTable {
             formats: Default::default(),
             borders: Default::default(),
 
-            chart_output: None,
+            chart_output,
         };
 
         if header_is_first_row {
@@ -233,7 +240,8 @@ impl DataTable {
             sort_dirty: self.sort_dirty,
             display_buffer: self.display_buffer.clone(),
             value: Value::Single(CellValue::Blank),
-            spill_error: self.spill_error,
+            spill_value: self.spill_value,
+            spill_data_table: self.spill_data_table,
             last_modified: self.last_modified,
             alternating_colors: self.alternating_colors,
             formats: self.formats.clone(),
@@ -486,6 +494,11 @@ impl DataTable {
         }
     }
 
+    /// Helper function to determine if the DataTable has an spill error.
+    pub fn has_spill(&self) -> bool {
+        self.spill_value || self.spill_data_table
+    }
+
     /// Helper function to determine if the DataTable's CodeRun has an error.
     /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
     pub fn has_error(&self) -> bool {
@@ -505,7 +518,7 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
-        if self.spill_error || self.has_error() {
+        if self.has_spill() || self.has_error() {
             Some(CellValue::Blank)
         } else {
             self.display_value_at((x, y).into()).ok().cloned()
@@ -515,7 +528,7 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
-        if self.spill_error || self.has_error() {
+        if self.has_spill() || self.has_error() {
             None
         } else {
             self.display_value_at((x, y).into()).ok()
@@ -525,7 +538,7 @@ impl DataTable {
     /// Returns the cell value at a relative location (0-indexed) into the code
     /// run output, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
-        if self.spill_error {
+        if self.has_spill() {
             CellValue::Blank
         } else {
             match &self.value {
@@ -547,7 +560,7 @@ impl DataTable {
     /// Sets the cell value at a relative location (0-indexed) into the code.
     /// Returns `false` if the value cannot be set.
     pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> bool {
-        if !self.spill_error && !self.has_error() {
+        if !self.has_spill() && !self.has_error() {
             match self.value {
                 Value::Single(_) => {
                     self.value = Value::Single(value);
@@ -637,7 +650,7 @@ impl DataTable {
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
     pub fn output_sheet_rect(&self, sheet_pos: SheetPos, ignore_spill_error: bool) -> SheetRect {
-        if !ignore_spill_error && (self.spill_error || self.has_error()) {
+        if !ignore_spill_error && (self.has_spill() || self.has_error()) {
             SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
         } else {
             SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size())
@@ -647,7 +660,7 @@ impl DataTable {
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
     pub fn output_rect(&self, pos: Pos, ignore_spill_error: bool) -> Rect {
-        if !ignore_spill_error && (self.spill_error || self.has_error()) {
+        if !ignore_spill_error && (self.has_spill() || self.has_error()) {
             Rect::from_pos_and_size(pos, ArraySize::_1X1)
         } else {
             Rect::from_pos_and_size(pos, self.output_size())
@@ -805,7 +818,6 @@ pub mod test {
             "test.csv",
             expected_values,
             false,
-            false,
             None,
             None,
             None,
@@ -843,7 +855,6 @@ pub mod test {
             "Table 1",
             Value::Single(CellValue::Number(1.into())),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -879,7 +890,6 @@ pub mod test {
             "Table 1",
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             false,
-            false,
             Some(true),
             Some(true),
             None,
@@ -914,16 +924,16 @@ pub mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable::new(
+        let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
-            true,
             false,
             Some(true),
             Some(true),
             None,
         );
+        data_table.spill_value = true;
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 
         assert_eq!(data_table.output_size().w.get(), 10);
@@ -964,7 +974,6 @@ pub mod test {
             "Table 1",
             Value::Single(CellValue::Number(1.into())),
             false,
-            false,
             Some(true),
             Some(true),
             None,
@@ -977,7 +986,6 @@ pub mod test {
             DataTableKind::CodeRun(code_run.clone()),
             "Table 1",
             Value::Array(single_column),
-            false,
             false,
             Some(true),
             Some(true),
@@ -992,7 +1000,6 @@ pub mod test {
             "Table 1",
             Value::Array(multi_column),
             false,
-            false,
             Some(true),
             Some(true),
             None,
@@ -1005,7 +1012,6 @@ pub mod test {
             DataTableKind::CodeRun(CodeRun::default()),
             "Table 1",
             Value::Single(CellValue::Html("test".into())),
-            false,
             false,
             Some(true),
             Some(true),
@@ -1021,7 +1027,6 @@ pub mod test {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
-            false,
             false,
             Some(true),
             Some(true),
@@ -1053,7 +1058,6 @@ pub mod test {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
-            false,
             false,
             Some(true),
             Some(true),
@@ -1093,7 +1097,6 @@ pub mod test {
             "Table 1",
             Value::Single(CellValue::Number(1.into())),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -1105,7 +1108,6 @@ pub mod test {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(1.into())),
-            false,
             false,
             Some(true),
             Some(true),
@@ -1295,7 +1297,6 @@ pub mod test {
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Array(Array::new_empty(ArraySize::new(2, 2).unwrap())),
-            false,
             false,
             Some(true),
             Some(true),

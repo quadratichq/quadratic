@@ -3,7 +3,7 @@ use crate::{
     a1::{A1Context, column_name},
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{CodeCellLanguage, GridBounds, Sheet},
+    grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
 };
 
 use std::collections::HashMap;
@@ -29,6 +29,13 @@ pub fn print_sheet(sheet: &Sheet) {
     } else {
         println!("\n{}\nSheet is empty", sheet.name);
     }
+}
+
+/// Util to print a simple grid to assist in TDD
+#[track_caller]
+pub fn print_table_from_grid(grid: &GridController, sheet_id: SheetId, rect: Rect) {
+    let sheet = grid.grid().try_sheet(sheet_id).unwrap();
+    print_table_sheet(sheet, rect, true);
 }
 
 /// Util to print a simple grid to assist in TDD
@@ -64,7 +71,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
             let cell_value = match display_cell_values {
                 true => sheet.cell_value(pos),
                 false => sheet
-                    .data_table(rect.min)
+                    .data_table_at(&rect.min)
                     .unwrap_or_else(|| panic!("Data table not found at {:?}", rect.min))
                     .cell_value_at(x as u32, y as u32),
             };

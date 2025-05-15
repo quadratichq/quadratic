@@ -41,13 +41,8 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
-    // cells: Vec<JsRenderCell>
-    pub fn jsRenderCellSheets(
-        sheet_id: String,
-        hash_x: i64,
-        hash_y: i64,
-        cells: String, /*Vec<JsRenderCell>*/
-    );
+    pub fn jsHashesRenderCells(render_cells: Vec<u8> /*Vec<JsHashRenderCells>*/);
+    pub fn jsHashesDirty(dirty_hashes: Vec<u8> /* Vec<JsHashesDirty> */);
 
     pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */);
     pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */);
@@ -60,13 +55,7 @@ extern "C" {
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
     pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
-    pub fn jsUpdateCodeCell(
-        sheet_id: String,
-        x: i64,
-        y: i64,
-        code_cell: Option<String>,        /*JsCodeCell*/
-        render_code_cell: Option<String>, /*JsRenderCodeCell*/
-    );
+    pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsRenderCodeCell> */);
     pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
     pub fn jsSetCursor(cursor: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
@@ -109,22 +98,14 @@ extern "C" {
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
 
-    pub fn jsSheetValidations(sheet_id: String, validations: String /* Vec<Validation> */);
-    pub fn jsValidationWarning(
+    pub fn jsSheetValidations(
         sheet_id: String,
-        validations: String, /* Vec<(x, y, validation_id, failed) */
+        sheet_validations: Vec<u8>, /* Vec<Validation> */
     );
-    pub fn jsRenderValidationWarnings(
-        sheet_id: String,
-        hash_x: i64,
-        hash_y: i64,
-        validations: String, /* Vec<(x, y, id) */
-    );
+
+    pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
 
     pub fn jsMultiplayerSynced();
-
-    // hashes: Vec<Pos>
-    pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
@@ -307,26 +288,16 @@ pub fn jsRunJavascript(
 }
 
 #[cfg(test)]
-pub fn hash_test<T: std::hash::Hash>(value: &T) -> u64 {
-    use std::hash::{DefaultHasher, Hasher};
-    let mut hasher = DefaultHasher::new();
-    value.hash(&mut hasher);
-    hasher.finish()
+#[allow(non_snake_case)]
+pub fn jsHashesRenderCells(render_cells: Vec<u8> /* Vec<JsHashRenderCells> */) {
+    // we use a hash of cells to avoid storing too large test data
+    js_call("jsHashesRenderCells", format!("{:?}", render_cells));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsRenderCellSheets(
-    sheet_id: String,
-    hash_x: i64,
-    hash_y: i64,
-    cells: String, /*Vec<JsRenderCell>*/
-) {
-    // we use a hash of cells to avoid storing too large test data
-    js_call(
-        "jsRenderCellSheets",
-        format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells)),
-    );
+pub fn jsHashesDirty(dirty_hashes: Vec<u8> /*Vec<JsHashesDirty>*/) {
+    js_call("jsHashesDirty", format!("{:?}", dirty_hashes));
 }
 
 #[cfg(test)]
@@ -373,20 +344,8 @@ pub fn jsRequestTransactions(sequence_num: u64) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsUpdateCodeCell(
-    sheet_id: String,
-    x: i64,
-    y: i64,
-    code_cell: Option<String>,        /*JsCodeCell*/
-    render_code_cell: Option<String>, /*JsRenderCodeCell*/
-) {
-    js_call(
-        "jsUpdateCodeCell",
-        format!(
-            "{},{},{},{:?},{:?}",
-            sheet_id, x, y, code_cell, render_code_cell
-        ),
-    );
+pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsUpdateCodeCell> */) {
+    js_call("jsUpdateCodeCells", format!("{:?}", update_code_cells));
 }
 
 #[cfg(test)]
@@ -537,10 +496,10 @@ pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Opti
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidation */) {
+pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Validation> */) {
     js_call(
         "jsSheetValidations",
-        format!("{},{}", sheet_id, validations),
+        format!("{},{:?}", sheet_id, sheet_validations),
     );
 }
 
@@ -559,46 +518,14 @@ pub fn jsRequestRowHeights(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsValidationWarning(
-    sheet_id: String,
-    validations: String, /* Vec<(x, y, validation_id, failed) */
-) {
-    js_call(
-        "jsValidationWarning",
-        format!("{},{}", sheet_id, validations),
-    );
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsRenderValidationWarnings(
-    sheet_id: String,
-    hash_x: i64,
-    hash_y: i64,
-    validations: String, /* Vec(x, y, id) */
-) {
-    js_call(
-        "jsRenderValidationWarnings",
-        format!(
-            "{},{},{},{}",
-            sheet_id,
-            hash_x,
-            hash_y,
-            hash_test(&validations)
-        ),
-    );
+pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */) {
+    js_call("jsValidationWarnings", format!("{:?}", warnings));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsMultiplayerSynced() {
     js_call("jsMultiplayerSynced", "".into());
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<Pos>*/) {
-    js_call("jsHashesDirty", format!("{},{}", sheet_id, hashes));
 }
 
 #[cfg(test)]

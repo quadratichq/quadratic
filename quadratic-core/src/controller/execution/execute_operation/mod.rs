@@ -58,6 +58,14 @@ impl GridController {
                 format!("{:?}", op).split('{').next().unwrap_or("Unknown")
             );
 
+            // if transaction.operations.len() % 100 == 0 {
+            //     dbgjs!(format!(
+            //         "transaction: {:?}, op: {:?}",
+            //         &transaction.operations.len(),
+            //         &op,
+            //     ));
+            // }
+
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
@@ -162,6 +170,11 @@ impl GridController {
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
                 Operation::ResizeRows { .. } => self.execute_resize_rows(transaction, op),
+                Operation::ResizeColumns { .. } => self.execute_resize_columns(transaction, op),
+                Operation::DefaultColumnSize { .. } => {
+                    self.execute_default_column_size(transaction, op);
+                }
+                Operation::DefaultRowSize { .. } => self.execute_default_row_size(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {

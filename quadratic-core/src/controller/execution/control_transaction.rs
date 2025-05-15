@@ -43,10 +43,8 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
-            self.send_transaction_progress(transaction);
-            self.send_sheet_info(transaction);
-            self.send_code_cells(transaction);
-            self.process_visible_dirty_hashes(transaction);
+
+            self.send_client_updates_during_transaction(transaction, false);
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
@@ -76,8 +74,7 @@ impl GridController {
             }
         }
 
-        self.process_visible_dirty_hashes(transaction);
-        self.process_remaining_dirty_hashes(transaction);
+        self.send_client_updates_during_transaction(transaction, true);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
@@ -124,7 +121,7 @@ impl GridController {
             TransactionSource::Unset => panic!("Expected a transaction type"),
         }
 
-        self.send_transaction_client_updates(&mut transaction);
+        self.send_client_updates_after_transaction(&mut transaction);
 
         transaction.send_transaction();
 
@@ -254,7 +251,6 @@ impl GridController {
                 DataTableKind::CodeRun(code_run),
                 name,
                 value,
-                false,
                 true,
                 None,
                 None,
@@ -306,7 +302,7 @@ mod tests {
 
     fn get_operations(gc: &mut GridController) -> (Operation, Operation) {
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos::from((0, 0, sheet_id));
+        let sheet_pos = SheetPos::from((1, 1, sheet_id));
         let value = CellValue::Text("test".into());
         let operation = add_cell_value(sheet_pos, value.into());
         let operation_undo = add_cell_value(sheet_pos, CellValues::new(1, 1));
@@ -398,7 +394,7 @@ mod tests {
         gc.start_transaction(&mut transaction);
         gc.finalize_transaction(transaction);
 
-        let expected = GridBounds::NonEmpty(Rect::single_pos((0, 0).into()));
+        let expected = GridBounds::NonEmpty(Rect::single_pos((1, 1).into()));
         assert_eq!(gc.grid().sheets()[0].bounds(true), expected);
     }
 

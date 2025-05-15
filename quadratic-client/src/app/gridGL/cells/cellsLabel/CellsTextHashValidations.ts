@@ -28,8 +28,9 @@ export class CellsTextHashValidations extends Container {
   private addWarning(x: number, y: number, color: number): Sprite {
     const sprite = this.addChild(new Sprite(generatedTextures.triangle));
     sprite.tint = color;
-    sprite.scale.set(TRIANGLE_SCALE);
-    sprite.position.set(x, y + sprite.height);
+    // flips the triangle so it properly aligns to the top-right corner
+    sprite.scale.set(-TRIANGLE_SCALE, TRIANGLE_SCALE);
+    sprite.position.set(x, y);
     sprite.anchor.set(1, 0);
     sprite.rotation = Math.PI / 2;
     this.bounds.addRectanglePoints(
@@ -51,7 +52,8 @@ export class CellsTextHashValidations extends Container {
       const sheet = sheets.getById(this.sheetId);
       if (!sheet) throw new Error('Expected sheet to be defined in CellsTextHashValidations');
       warnings.forEach((warning) => {
-        const { x, y, style, validation } = warning;
+        const { pos, validation, style } = warning;
+        const { x, y } = pos;
         if (!validation) return;
 
         const offset = sheet.getCellOffsets(x, y);
@@ -78,7 +80,7 @@ export class CellsTextHashValidations extends Container {
   // This is used when individual cells warnings have updated, but we've not
   // rerendered the entire hash.
   updateWarnings(warning: JsValidationWarning) {
-    const index = this.warnings.findIndex((w) => w.x === warning.x && w.y === warning.y);
+    const index = this.warnings.findIndex((w) => w.pos.x === warning.pos.x && w.pos.y === warning.pos.y);
     if (index === -1) {
       if (warning.validation) {
         this.warnings.push(warning);
@@ -95,7 +97,10 @@ export class CellsTextHashValidations extends Container {
 
   // returns a validation warning id for a cell
   getValidationWarningId(x: number, y: number): string | undefined {
-    return this.warnings.find((warning) => warning.x === BigInt(x) && warning.y === BigInt(y))?.validation ?? undefined;
+    return (
+      this.warnings.find((warning) => warning.pos.x === BigInt(x) && warning.pos.y === BigInt(y))?.validation ??
+      undefined
+    );
   }
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {

@@ -7,6 +7,7 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -19,13 +20,13 @@ import type {
   Direction,
   Format,
   JsCellValue,
-  JsClipboard,
   JsCodeCell,
   JsCodeResult,
+  JsColumnWidth,
   JsCoordinate,
   JsDataTableColumnHeader,
-  JsRenderCell,
   JsResponse,
+  JsRowHeight,
   JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
@@ -37,7 +38,7 @@ import type {
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -181,18 +182,18 @@ class Core {
     y: number;
     width: number;
     height: number;
-  }): Promise<JsRenderCell[]> {
+  }): Promise<Uint8Array | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
       try {
-        const renderCells: JsRenderCell[] = this.gridController.getRenderCells(
+        const renderCells = this.gridController.getRenderCells(
           data.sheetId,
           numbersToRectStringified(data.x, data.y, data.width, data.height)
         );
         resolve(renderCells);
       } catch (e) {
         this.handleCoreError('getRenderCells', e);
-        resolve([]);
+        resolve(undefined);
       }
     });
   }
@@ -308,25 +309,53 @@ class Core {
     });
   }
 
+  // Updates the multiplayer state
+  // This is called when a transaction is received from the server
+  private updateMultiplayerState = async () => {
+    if (await offline.unsentTransactionsCount()) {
+      coreClient.sendMultiplayerState('syncing');
+    } else {
+      coreClient.sendMultiplayerState('connected');
+    }
+  };
+
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     return new Promise(async (resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
         const data = message.transaction;
+        const operations =
+          typeof data.operations === 'string'
+            ? new Uint8Array(Buffer.from(data.operations, 'base64'))
+            : data.operations;
 
-        if (typeof data.operations === 'string') {
-          data.operations = Buffer.from(data.operations, 'base64');
-        }
-
-        this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
+        this.gridController.multiplayerTransaction(data.id, data.sequence_num, operations);
         offline.markTransactionSent(data.id);
-        if (await offline.unsentTransactionsCount()) {
-          coreClient.sendMultiplayerState('syncing');
-        } else {
-          coreClient.sendMultiplayerState('connected');
-        }
+
+        // update the multiplayer state
+        await this.updateMultiplayerState();
       } catch (e) {
+        console.error('error', e);
         this.handleCoreError('receiveTransaction', e);
+      }
+      resolve(undefined);
+    });
+  }
+
+  receiveTransactionAck(transaction_id: string, sequence_num: number) {
+    return new Promise(async (resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        this.gridController.receiveMultiplayerTransactionAck(transaction_id, sequence_num);
+        offline.markTransactionSent(transaction_id);
+
+        // sends multiplayer synced to the client, to proceed from file loading screen
+        coreClient.sendMultiplayerSynced();
+
+        // update the multiplayer state
+        await this.updateMultiplayerState();
+      } catch (e) {
+        this.handleCoreError('receiveTransactionAck', e);
       }
       resolve(undefined);
     });
@@ -352,11 +381,8 @@ class Core {
         // sends multiplayer synced to the client, to proceed from file loading screen
         coreClient.sendMultiplayerSynced();
 
-        if (await offline.unsentTransactionsCount()) {
-          coreClient.sendMultiplayerState('syncing');
-        } else {
-          coreClient.sendMultiplayerState('connected');
-        }
+        // update the multiplayer state
+        await this.updateMultiplayerState();
       } catch (e) {
         this.handleCoreError('receiveTransactions', e);
       }
@@ -458,19 +484,6 @@ class Core {
         this.handleCoreError('setCommas', e);
       }
       resolve(undefined);
-    });
-  }
-
-  getRenderCell(sheetId: string, x: number, y: number): Promise<JsRenderCell | undefined> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const renderCells: JsRenderCell[] | undefined = this.gridController.getRenderCells(sheetId, posToRect(x, y));
-        resolve(renderCells?.[0]);
-      } catch (e) {
-        this.handleCoreError('getRenderCell', e);
-        resolve(undefined);
-      }
     });
   }
 
@@ -799,7 +812,7 @@ class Core {
   }
 
   //#region Clipboard
-  copyToClipboard(selection: string): Promise<JsClipboard> {
+  copyToClipboard(selection: string): Promise<Uint8Array | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
@@ -807,12 +820,12 @@ class Core {
         resolve(jsClipboard);
       } catch (e) {
         this.handleCoreError('copyToClipboard', e);
-        resolve({} as JsClipboard);
+        resolve(undefined);
       }
     });
   }
 
-  cutToClipboard(selection: string, cursor: string): Promise<JsClipboard> {
+  cutToClipboard(selection: string, cursor: string): Promise<Uint8Array | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
@@ -820,7 +833,7 @@ class Core {
         resolve(jsClipboard);
       } catch (e) {
         this.handleCoreError('cutToClipboard', e);
-        resolve({} as JsClipboard);
+        resolve(undefined);
       }
     });
   }
@@ -1559,6 +1572,50 @@ class Core {
       this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
     } catch (e) {
       this.handleCoreError('moveRows', e);
+    }
+  }
+
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsColumnWidth[] = columns.map((column) => ({
+      column: BigInt(column.index),
+      width: column.size,
+    }));
+    try {
+      this.gridController.resizeColumns(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeColumns', e);
+    }
+  }
+
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const sizes: JsRowHeight[] = rows.map((row) => ({
+      row: BigInt(row.index),
+      height: row.size,
+    }));
+    try {
+      this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+    } catch (e) {
+      this.handleCoreError('resizeRows', e);
+    }
+  }
+
+  resizeAllColumns(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllColumns(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllColumns', e);
+    }
+  }
+
+  resizeAllRows(sheetId: string, size: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.resizeAllRows(sheetId, size, cursor);
+    } catch (e) {
+      this.handleCoreError('resizeAllRows', e);
     }
   }
 }

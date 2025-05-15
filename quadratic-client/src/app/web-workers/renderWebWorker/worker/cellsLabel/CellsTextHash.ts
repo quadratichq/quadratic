@@ -10,7 +10,6 @@
  */
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
-import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import type { JsCoordinate, JsRenderCell } from '@/app/quadratic-core-types';
@@ -142,12 +141,7 @@ export class CellsTextHash {
         cell.value === 'true'
       );
     } else if (cell.special === 'List') {
-      this.special.addDropdown(
-        Number(cell.x),
-        Number(cell.y),
-        rectangle.right + DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0],
-        rectangle.top
-      );
+      this.special.addDropdown(Number(cell.x), Number(cell.y), rectangle.right, rectangle.top);
     }
     this.content.add(cell.x, cell.y);
   }

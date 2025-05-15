@@ -2,7 +2,6 @@ use std::{borrow::Cow, io::Cursor};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
-use csv_sniffer::Sniffer;
 
 use crate::{
     Array, ArraySize, CellValue, Pos, SheetPos,
@@ -66,19 +65,8 @@ impl GridController {
             }
         };
 
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
-
         let mut reader = csv::ReaderBuilder::new()
-            .delimiter(delimiter)
+            .delimiter(delimiter.unwrap_or(b','))
             .has_headers(false)
             .flexible(true)
             .from_reader(file);
@@ -127,20 +115,9 @@ impl GridController {
             }
         };
 
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
-
         let reader = |flexible| {
             csv::ReaderBuilder::new()
-                .delimiter(delimiter)
+                .delimiter(delimiter.unwrap_or(b','))
                 .has_headers(false)
                 .flexible(flexible)
                 .from_reader(file)
@@ -536,7 +513,7 @@ mod test {
     fn guesses_the_csv_header() {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
         let sheet = gc.sheet(sheet_id);
-        let values = sheet.data_table(pos).unwrap().value_as_array().unwrap();
+        let values = sheet.data_table_at(&pos).unwrap().value_as_array().unwrap();
         assert!(gc.guess_csv_first_row_is_header(values));
     }
 
@@ -553,9 +530,9 @@ mod test {
     }
 
     #[test]
-    fn test_get_csv_preview_with_auto_delimiter() {
+    fn test_get_csv_preview_with_custom_delimiter() {
         let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, None);
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, Some(b'\t'));
         assert!(result.is_ok());
         let preview = result.unwrap();
         assert_eq!(preview.len(), 3);
@@ -757,7 +734,7 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         // date
         assert_eq!(

@@ -4,10 +4,11 @@ use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::{CodeCellLanguage, DataTableKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
-use anyhow::{Result, bail};
+use anyhow::{Error, Result, bail};
 
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
@@ -246,26 +247,24 @@ impl GridController {
                 let mut delete_data_tables = vec![];
                 let mut data_tables_automatically_deleted = vec![];
 
-                if let Ok(data_tables) = sheet.data_tables_within_rect(rect, false) {
-                    for data_table_pos in data_tables {
-                        if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
-                            let data_table_full_rect =
-                                data_table.output_rect(data_table_pos.to_owned(), false);
-                            let mut data_table_rect = data_table_full_rect;
-                            data_table_rect.min.y += data_table.y_adjustment(true);
+                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect(rect) {
+                    let data_table_full_rect =
+                        data_table.output_rect(data_table_pos.to_owned(), false);
+                    let mut data_table_rect = data_table_full_rect;
+                    data_table_rect.min.y += data_table.y_adjustment(true);
 
-                            let is_full_table_selected = rect.contains_rect(&data_table_rect);
-                            let can_delete_table = is_full_table_selected || data_table.is_code();
-                            let table_column_selection = selection
-                                .table_column_selection(data_table.name(), self.a1_context());
-                            can_delete_column = !is_full_table_selected
-                                && table_column_selection.is_some()
-                                && !data_table.is_code();
+                    let is_full_table_selected = rect.contains_rect(&data_table_rect);
+                    let can_delete_table = is_full_table_selected || data_table.is_code();
+                    let table_column_selection =
+                        selection.table_column_selection(data_table.name(), self.a1_context());
+                    can_delete_column = !is_full_table_selected
+                        && table_column_selection.is_some()
+                        && !data_table.is_code();
 
-                            // we also delete a data table if it is not fully
-                            // selected but any cell in the name ui is selected
-                            if !is_full_table_selected
-                                && data_table.get_show_name()
+                    // we also delete a data table if it is not fully
+                    // selected but any cell in the name ui is selected
+                    if !is_full_table_selected
+                                 && data_table.get_show_name()
                                 // the selection intersects the name ui row
                                 && rect.intersects(Rect::new(
                                     data_table_full_rect.min.x,
@@ -277,60 +276,56 @@ impl GridController {
                                 // top-left cell (as it will automatically
                                 // delete it in that case)
                                 && !rect.contains(data_table_full_rect.min)
-                            {
-                                delete_data_tables.push(data_table_pos);
-                            }
+                    {
+                        delete_data_tables.push(data_table_pos);
+                    }
 
-                            // if a data table is not fully selected and there
-                            // is no name ui, then we delete its contents and
-                            // save its anchor
-                            if !is_full_table_selected
-                                && !data_table.get_show_name()
-                                && rect.contains(data_table_pos)
-                                && matches!(data_table.kind, DataTableKind::Import(_))
-                            {
-                                save_data_table_anchors.push(data_table_pos);
-                            }
-                            if can_delete_table {
-                                // we don't need to manually delete the table as
-                                // the SetCellValues operation below will do
-                                // this properly
-                                data_tables_automatically_deleted.push(data_table_pos);
-                            }
-                            if can_delete_column {
-                                // adjust for hidden columns, reverse the order to delete from right to left
-                                let columns = (rect.min.x..=rect.max.x)
-                                    .map(|x| {
-                                        // account for hidden columns
-                                        data_table.get_column_index_from_display_index(
-                                            (x - data_table_rect.min.x) as u32,
-                                            true,
-                                        )
-                                    })
-                                    .rev()
-                                    .collect();
-                                ops.push(Operation::DeleteDataTableColumns {
-                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                                    columns,
-                                    flatten: false,
-                                    select_table: false,
-                                });
-                            } else if !delete_data_tables.contains(&data_table_pos)
-                                && !data_tables_automatically_deleted.contains(&data_table_pos)
-                            {
-                                // find the intersection of the selection rect and the data table rect
-                                if let Some(intersection) = rect.intersection(&data_table_rect) {
-                                    ops.push(Operation::SetDataTableAt {
-                                        sheet_pos: intersection
-                                            .min
-                                            .to_sheet_pos(selection.sheet_id),
-                                        values: CellValues::new_blank(
-                                            intersection.width(),
-                                            intersection.height(),
-                                        ),
-                                    });
-                                }
-                            }
+                    // if a data table is not fully selected and there
+                    // is no name ui, then we delete its contents and
+                    // save its anchor
+                    if !is_full_table_selected
+                        && !data_table.get_show_name()
+                        && rect.contains(data_table_pos)
+                        && matches!(data_table.kind, DataTableKind::Import(_))
+                    {
+                        save_data_table_anchors.push(data_table_pos);
+                    }
+                    if can_delete_table {
+                        // we don't need to manually delete the table as
+                        // the SetCellValues operation below will do
+                        // this properly
+                        data_tables_automatically_deleted.push(data_table_pos);
+                    }
+                    if can_delete_column {
+                        // adjust for hidden columns, reverse the order to delete from right to left
+                        let columns = (rect.min.x..=rect.max.x)
+                            .map(|x| {
+                                // account for hidden columns
+                                data_table.get_column_index_from_display_index(
+                                    (x - data_table_rect.min.x) as u32,
+                                    true,
+                                )
+                            })
+                            .rev()
+                            .collect();
+                        ops.push(Operation::DeleteDataTableColumns {
+                            sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                            columns,
+                            flatten: false,
+                            select_table: false,
+                        });
+                    } else if !delete_data_tables.contains(&data_table_pos)
+                        && !data_tables_automatically_deleted.contains(&data_table_pos)
+                    {
+                        // find the intersection of the selection rect and the data table rect
+                        if let Some(intersection) = rect.intersection(&data_table_rect) {
+                            ops.push(Operation::SetDataTableAt {
+                                sheet_pos: intersection.min.to_sheet_pos(selection.sheet_id),
+                                values: CellValues::new_blank(
+                                    intersection.width(),
+                                    intersection.height(),
+                                ),
+                            });
                         }
                     }
                 }
@@ -385,6 +380,36 @@ impl GridController {
             }
         }
 
+        ops.extend(self.delete_validations_operations(selection));
+
+        ops
+    }
+
+    pub fn delete_validations_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            for validation in sheet.validations.validations.iter() {
+                if let Some(selection) = validation
+                    .selection
+                    .delete_selection(selection, &self.a1_context)
+                {
+                    if selection != validation.selection {
+                        ops.push(Operation::SetValidation {
+                            validation: Validation {
+                                selection,
+                                ..validation.clone()
+                            },
+                        });
+                    }
+                } else {
+                    ops.push(Operation::RemoveValidation {
+                        sheet_id: validation.selection.sheet_id,
+                        validation_id: validation.id,
+                    });
+                }
+            }
+        }
         ops
     }
 
@@ -397,6 +422,136 @@ impl GridController {
         let mut ops = self.clear_format_borders_operations(selection);
         ops.extend(self.delete_cells_operations(selection, force_table_bounds));
         ops
+    }
+
+    // Replace values in the data table with the
+    // intersection of the data table and `values`.
+    // Otherwise, add to `cell_values`.
+    //
+    // If `delete_value` is true, then the values in `values` are
+    // deleted from `cell_values`.
+    pub fn cell_values_operations(
+        &self,
+        selection: Option<&A1Selection>,
+        start_pos: SheetPos,
+        cell_value_pos: Pos,
+        cell_values: &mut CellValues,
+        mut values: CellValues,
+        delete_value: bool,
+    ) -> Result<Vec<Operation>> {
+        let mut ops = vec![];
+        if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
+            let rect =
+                Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
+
+            for (output_rect, intersection_rect, data_table) in
+                sheet.iter_code_output_intersects_rect(rect)
+            {
+                let contains_source_cell = intersection_rect.contains(output_rect.min);
+
+                let is_table_being_deleted = match (delete_value, selection) {
+                    (true, Some(selection)) => {
+                        start_pos.sheet_id == selection.sheet_id
+                            && selection.contains_pos(output_rect.min, self.a1_context())
+                    }
+                    _ => false,
+                };
+
+                // there is no pasting on top of code cell output
+                if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
+                    let adjusted_rect = Rect::from_numbers(
+                        intersection_rect.min.x - start_pos.x,
+                        intersection_rect.min.y - start_pos.y,
+                        intersection_rect.width() as i64,
+                        intersection_rect.height() as i64,
+                    );
+
+                    // pull the values from `values`, replacing
+                    // the values in `values` with CellValue::Blank
+                    let data_table_cell_values = values.get_rect(adjusted_rect);
+
+                    let paste_table_in_import =
+                        data_table_cell_values.iter().flatten().find(|cell_value| {
+                            cell_value.is_code()
+                                || cell_value.is_import()
+                                || cell_value.is_image()
+                                || cell_value.is_html()
+                        });
+
+                    if let Some(paste_table_in_import) = paste_table_in_import {
+                        let cell_type = match paste_table_in_import {
+                            CellValue::Code(_) => "code",
+                            CellValue::Import(_) => "table",
+                            CellValue::Image(_) => "chart",
+                            CellValue::Html(_) => "chart",
+                            _ => "unknown",
+                        };
+                        let message = format!("Cannot place {} within a table", cell_type);
+
+                        #[cfg(any(target_family = "wasm", test))]
+                        {
+                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                            crate::wasm_bindings::js::jsClientMessage(
+                                message.to_owned(),
+                                severity.to_string(),
+                            );
+                        }
+
+                        return Err(Error::msg(message));
+                    }
+
+                    let contains_header = data_table.get_show_columns()
+                        && intersection_rect.y_range().contains(&output_rect.min.y);
+                    let headers = data_table.column_headers.to_owned();
+
+                    if let (Some(mut headers), true) = (headers, contains_header) {
+                        let y = output_rect.min.y - start_pos.y;
+
+                        for x in intersection_rect.x_range() {
+                            let new_x = x - output_rect.min.x;
+
+                            if let Some(header) = headers.get_mut(new_x as usize) {
+                                let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
+                                let safe_y = u32::try_from(y).unwrap_or(0);
+
+                                let cell_value =
+                                    values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
+
+                                header.name = cell_value;
+                            }
+                        }
+
+                        let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
+                        ops.push(Operation::DataTableMeta {
+                            sheet_pos,
+                            name: None,
+                            alternating_colors: None,
+                            columns: Some(headers.to_vec()),
+                            show_ui: None,
+                            show_name: None,
+                            show_columns: None,
+                            readonly: None,
+                        });
+                    }
+
+                    let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
+                    ops.push(Operation::SetDataTableAt {
+                        sheet_pos,
+                        values: CellValues::from(data_table_cell_values),
+                    });
+                }
+            }
+        }
+
+        for (x, y, value) in values.into_owned_iter() {
+            cell_values.set(
+                cell_value_pos.x as u32 + x,
+                cell_value_pos.y as u32 + y,
+                value,
+            );
+        }
+
+        Ok(ops)
     }
 }
 

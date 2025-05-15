@@ -23,10 +23,15 @@ use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
+use quadratic_core::grid::js_types::JsColumnWidth;
 use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsHashRenderCells;
+use quadratic_core::grid::js_types::JsHashValidationWarnings;
+use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
 use quadratic_core::grid::js_types::JsTablesContext;
+use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosContext, JsClipboard, JsCodeCell,
     JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
@@ -47,18 +52,18 @@ use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
-use quadratic_core::grid::sheet::validations::validation_rules::validation_date_time::{
+use quadratic_core::grid::sheet::validations::rules::ValidationRule;
+use quadratic_core::grid::sheet::validations::rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::validation_list::{
+use quadratic_core::grid::sheet::validations::rules::validation_list::{
     ValidationList, ValidationListSource,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
-use quadratic_core::grid::sheet::validations::validation_rules::validation_number::{
+use quadratic_core::grid::sheet::validations::rules::validation_logical::ValidationLogical;
+use quadratic_core::grid::sheet::validations::rules::validation_number::{
     NumberRange, ValidationNumber,
 };
-use quadratic_core::grid::sheet::validations::validation_rules::validation_text::{
+use quadratic_core::grid::sheet::validations::rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
 use quadratic_core::grid::sort::DataTableSort;
@@ -134,12 +139,16 @@ fn main() {
         JsCodeCell,
         JsCodeResult,
         JsCodeTableContext,
+        JsColumnWidth,
         JsCoordinate,
         JsDataTableColumnHeader,
         JsDataTableContext,
         JsFormulaParseResult,
         JsCellsA1Value,
+        JsHashesDirty,
+        JsHashRenderCells,
         JsHtmlOutput,
+        JsHashValidationWarnings,
         JsNumber,
         JsOffset,
         JsRenderCell,
@@ -156,6 +165,7 @@ fn main() {
         JsSummarizeSelectionResult,
         JsTableInfo,
         JsTablesContext,
+        JsUpdateCodeCell,
         JsValidationWarning,
         MinMax,
         NumberRange,

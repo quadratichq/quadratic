@@ -618,7 +618,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup node
+      - name: Setup Node
         uses: useblacksmith/setup-node@v5
         with:
           node-version: 23

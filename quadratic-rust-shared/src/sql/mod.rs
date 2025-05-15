@@ -6,12 +6,13 @@ use arrow::{
 };
 use async_trait::async_trait;
 use bytes::Bytes;
+use error::Sql as SqlError;
 use parquet::arrow::ArrowWriter;
 use schema::DatabaseSchema;
 use snowflake_connection::SnowflakeConnection;
 use std::sync::Arc;
 
-use crate::{arrow::arrow_type::ArrowType, error::Result};
+use crate::{SharedError, arrow::arrow_type::ArrowType, error::Result};
 
 use self::{
     mssql_connection::MsSqlConnection, mysql_connection::MySqlConnection,
@@ -168,6 +169,34 @@ pub trait Connection {
 
 //     Ok(schema)
 // }
+
+pub trait UsesSsh {
+    // Whether the connection uses SSH
+    fn use_ssh(&self) -> bool;
+
+    // Parse the port to connect to
+    fn parse_port(port: &Option<String>) -> Option<Result<u16>> {
+        port.as_ref().map(|port| {
+            port.parse::<u16>().map_err(|_| {
+                SharedError::Sql(SqlError::Connect(
+                    "Could not parse port into a number".into(),
+                ))
+            })
+        })
+    }
+
+    // The port to connect to
+    fn port(&self) -> Option<Result<u16>>;
+
+    // Set the port to connect to
+    fn set_port(&mut self, port: u16);
+
+    // The host to connect to
+    fn ssh_host(&self) -> Option<String>;
+
+    // Set the SSH key
+    fn set_ssh_key(&mut self, ssh_key: Option<String>);
+}
 
 /// Convert a column data to an ArrowType into an Arrow type
 #[macro_export]
