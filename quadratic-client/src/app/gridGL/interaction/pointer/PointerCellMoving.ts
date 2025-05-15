@@ -211,9 +211,8 @@ export class PointerCellMoving {
     }
     if (!rectangle) return false;
 
-    const origin = sheets.sheet.cursor.position;
-    const column = origin.x;
-    const row = origin.y;
+    const column = rectangle.left;
+    const row = rectangle.top;
 
     const overlap = this.moveOverlaps(world, !!colsHover, !!rowsHover);
     if (overlap) {
@@ -238,6 +237,7 @@ export class PointerCellMoving {
         },
         colRows: colsHover ? 'columns' : rowsHover ? 'rows' : undefined,
       };
+      console.log(rectangle, this.movingCells);
       return true;
     }
     this.reset();
