@@ -35,7 +35,6 @@ type AIContextProps = {
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
-
 export const AIContext = memo(
   ({
     initialContext,
@@ -211,7 +210,6 @@ type ContextPillProps = {
   onClick?: () => void;
   disabled: boolean;
 };
-
 const ContextPill = memo(({ primary, secondary, onClick, disabled }: ContextPillProps) => {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
@@ -238,7 +236,6 @@ type FileContextPillProps = {
   file: FileContent;
   onClick: () => void;
 };
-
 const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps) => {
   return (
     <HoverCard open={isSupportedImageMimeType(file.mimeType) ? undefined : false}>
@@ -263,7 +260,6 @@ type AttachFileButtonProps = {
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
 };
-
 const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileButtonProps) => {
   const handleUploadFiles = useCallback(async () => {
     const files = await uploadFile(fileTypes);
@@ -290,7 +286,6 @@ const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileB
 type CodeCellContextPillProps = {
   codeCell: CodeCell | undefined;
 };
-
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {

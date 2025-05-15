@@ -19,6 +19,7 @@ import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { handleVertexAIRequest } from '../../ai/handler/vertexai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { calculateUsage } from '../../ai/helpers/usage.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
@@ -86,28 +87,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.push(parsedResponse.responseMessage);
   }
 
-  if (DEBUG && parsedResponse?.usage) {
-    const usage: any = parsedResponse.usage;
-    if (parsedResponse.responseMessage?.model.includes('claude-3-5-sonnet')) {
-      const inputTokensPerMillion = 3 / 1_000_000;
-      const outputTokensPerMillion = 15 / 1_000_000;
-      const cacheReadTokensPerMillion = 0.3 / 1_000_000;
-      const cacheWriteTokensPerMillion = 3.75 / 1_000_000;
-      const total =
-        outputTokensPerMillion * usage.outputTokens +
-        inputTokensPerMillion * usage.inputTokens +
-        cacheReadTokensPerMillion * usage.cacheReadTokens +
-        cacheWriteTokensPerMillion * usage.cacheWriteTokens;
-      usage['claude-3-5-sonnet'] = `$${total.toFixed(2)}`;
-    } else if (parsedResponse.responseMessage?.model.includes('gemini-2.0-flash')) {
-      const inputTokensPerMillion = 0.1 / 1_000_000;
-      const outputTokensPerMillion = 0.4 / 1_000_000;
-      const total = outputTokensPerMillion * usage.outputTokens + inputTokensPerMillion * usage.inputTokens;
-      usage['gemini-2.0-flash'] = `$${total.toFixed(2)}`;
-    } else {
-      usage.model = parsedResponse.responseMessage?.model;
-    }
-    console.log('[AI.TokenUsage]', usage);
+  if (DEBUG && !!parsedResponse) {
+    parsedResponse.usage.source = source;
+    parsedResponse.usage.modelKey = modelKey;
+    parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
+    console.log('[AI.Usage]', parsedResponse.usage);
   }
 
   const {
