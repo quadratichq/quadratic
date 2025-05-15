@@ -119,7 +119,7 @@ impl Sheet {
     ) -> Vec<SheetPos> {
         let mut results = vec![];
         self.data_tables
-            .iter()
+            .expensive_iter()
             .filter(|(_, data_table)| !data_table.has_spill() && !data_table.has_error())
             .for_each(|(pos, data_table)| match &data_table.value {
                 Value::Single(v) => {

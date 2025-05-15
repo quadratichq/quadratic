@@ -15,7 +15,7 @@ impl Sheet {
         }
 
         // get table borders and translate them to sheet coordinates
-        self.data_tables.iter().for_each(|(pos, table)| {
+        self.data_tables.expensive_iter().for_each(|(pos, table)| {
             if let Some(h) = table.borders.horizontal_borders(Some((*pos, table))) {
                 horizontal.extend(h);
             }

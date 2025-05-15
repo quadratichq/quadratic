@@ -14,9 +14,8 @@ use crate::{
 impl Sheet {
     /// Returns true if the table has any fills.
     pub fn table_has_fills(&self, pos: Pos) -> bool {
-        self.data_tables
-            .iter()
-            .any(|(p, dt)| p == &pos && !dt.formats.fill_color.is_all_default())
+        self.data_table_at(&pos)
+            .is_some_and(|dt| !dt.formats.fill_color.is_all_default())
     }
 
     /// Returns all data for rendering cell fill color.
@@ -37,7 +36,7 @@ impl Sheet {
                     None
                 }
             })
-            .chain(self.data_tables.iter().flat_map(|(pos, dt)| {
+            .chain(self.data_tables.expensive_iter().flat_map(|(pos, dt)| {
                 dt.formats
                     .fill_color
                     .to_rects()

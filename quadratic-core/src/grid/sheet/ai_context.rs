@@ -104,8 +104,8 @@ impl Sheet {
         for rect in selection_rects {
             let tables_summary_in_rect = self
                 .data_tables
-                .iter()
-                .filter_map(|(pos, table)| {
+                .get_in_rect(rect, false)
+                .filter_map(|(_, pos, table)| {
                     if !seen_tables.insert(pos) {
                         return None;
                     }
@@ -114,20 +114,16 @@ impl Sheet {
                         return None;
                     }
 
-                    if table.output_rect(*pos, false).intersects(rect) {
-                        Some(JsTableSummaryContext {
-                            sheet_name: self.name.clone(),
-                            table_name: table.name().to_string(),
-                            table_type: match self.cell_value_ref(pos.to_owned()) {
-                                Some(CellValue::Code(_)) => JsTableType::CodeTable,
-                                Some(CellValue::Import(_)) => JsTableType::DataTable,
-                                _ => return None,
-                            },
-                            bounds: table.output_rect(*pos, false).a1_string(),
-                        })
-                    } else {
-                        None
-                    }
+                    Some(JsTableSummaryContext {
+                        sheet_name: self.name.clone(),
+                        table_name: table.name().to_string(),
+                        table_type: match self.cell_value_ref(pos.to_owned()) {
+                            Some(CellValue::Code(_)) => JsTableType::CodeTable,
+                            Some(CellValue::Import(_)) => JsTableType::DataTable,
+                            _ => return None,
+                        },
+                        bounds: table.output_rect(pos, false).a1_string(),
+                    })
                 })
                 .collect::<Vec<JsTableSummaryContext>>();
             tables_summary.extend(tables_summary_in_rect);
@@ -146,8 +142,8 @@ impl Sheet {
         for rect in selection_rects {
             let charts_summary_in_rect = self
                 .data_tables
-                .iter()
-                .filter_map(|(pos, table)| {
+                .get_in_rect(rect, false)
+                .filter_map(|(_, pos, table)| {
                     if !seen_tables.insert(pos) {
                         return None;
                     }
@@ -156,15 +152,11 @@ impl Sheet {
                         return None;
                     }
 
-                    if table.output_rect(*pos, false).intersects(rect) {
-                        Some(JsChartSummaryContext {
-                            sheet_name: self.name.clone(),
-                            chart_name: table.name().to_string(),
-                            bounds: table.output_rect(*pos, false).a1_string(),
-                        })
-                    } else {
-                        None
-                    }
+                    Some(JsChartSummaryContext {
+                        sheet_name: self.name.clone(),
+                        chart_name: table.name().to_string(),
+                        bounds: table.output_rect(pos, false).a1_string(),
+                    })
                 })
                 .collect::<Vec<JsChartSummaryContext>>();
             charts_summary.extend(charts_summary_in_rect);
@@ -181,7 +173,7 @@ impl Sheet {
             charts: Vec::new(),
         };
 
-        for (pos, table) in self.data_tables.iter() {
+        for (pos, table) in self.data_tables.expensive_iter() {
             if table.is_single_value() {
                 continue;
             }

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, i64};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -69,6 +69,10 @@ impl SheetDataTables {
 
     pub fn len(&self) -> usize {
         self.data_tables.len()
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &Pos> {
+        self.data_tables.keys()
     }
 
     fn update_spill_and_cache(
@@ -317,6 +321,74 @@ impl SheetDataTables {
             .sorted_by(|a, b| a.0.cmp(&b.0))
     }
 
+    pub fn get_pos_in_columns_sorted(
+        &self,
+        columns: &[i64],
+        ignore_spill_error: bool,
+    ) -> Vec<(usize, Pos)> {
+        let mut all_pos = HashSet::new();
+        for &column in columns.iter() {
+            let column_rect = Rect::new(column, 1, column, i64::MAX);
+            all_pos.extend(
+                self.get_in_rect(column_rect, ignore_spill_error)
+                    .map(|(index, pos, _)| (index, pos)),
+            );
+        }
+        all_pos
+            .into_iter()
+            .sorted_by(|a, b| a.0.cmp(&b.0))
+            .collect::<Vec<_>>()
+    }
+
+    pub fn get_pos_after_column_sorted(
+        &self,
+        column: i64,
+        ignore_spill_error: bool,
+    ) -> Vec<(usize, Pos)> {
+        let column_rect = Rect::new(column, 1, i64::MAX, i64::MAX);
+        let all_pos = self
+            .get_in_rect(column_rect, ignore_spill_error)
+            .map(|(index, pos, _)| (index, pos));
+        all_pos
+            .into_iter()
+            .sorted_by(|a, b| a.0.cmp(&b.0))
+            .collect::<Vec<_>>()
+    }
+
+    pub fn get_pos_in_rows_sorted(
+        &self,
+        rows: &[i64],
+        ignore_spill_error: bool,
+    ) -> Vec<(usize, Pos)> {
+        let mut all_pos = HashSet::new();
+        for &row in rows.iter() {
+            let row_rect = Rect::new(1, row, i64::MAX, row);
+            all_pos.extend(
+                self.get_in_rect(row_rect, ignore_spill_error)
+                    .map(|(index, pos, _)| (index, pos)),
+            );
+        }
+        all_pos
+            .into_iter()
+            .sorted_by(|a, b| a.0.cmp(&b.0))
+            .collect::<Vec<_>>()
+    }
+
+    pub fn get_pos_after_row_sorted(
+        &self,
+        row: i64,
+        ignore_spill_error: bool,
+    ) -> Vec<(usize, Pos)> {
+        let row_rect = Rect::new(1, row, i64::MAX, i64::MAX);
+        let all_pos = self
+            .get_in_rect(row_rect, ignore_spill_error)
+            .map(|(index, pos, _)| (index, pos));
+        all_pos
+            .into_iter()
+            .sorted_by(|a, b| a.0.cmp(&b.0))
+            .collect::<Vec<_>>()
+    }
+
     pub fn insert_full(
         &mut self,
         pos: &Pos,
@@ -431,11 +503,11 @@ impl SheetDataTables {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
+    pub fn expensive_iter(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
         self.data_tables.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Pos, &mut DataTable)> {
+    pub fn expensive_iter_mut(&mut self) -> impl Iterator<Item = (&Pos, &mut DataTable)> {
         self.data_tables.iter_mut()
     }
 

@@ -33,7 +33,7 @@ impl Sheet {
 
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.data_tables
-            .iter()
+            .expensive_iter()
             .filter_map(|(pos, dt)| {
                 let output = dt.cell_value_at(0, 0)?;
                 if !matches!(output, CellValue::Html(_)) {
@@ -124,7 +124,7 @@ impl Sheet {
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.data_tables
-            .iter()
+            .expensive_iter()
             .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
             .collect()
     }
@@ -138,19 +138,21 @@ impl Sheet {
             return;
         }
 
-        self.data_tables.iter().for_each(|(pos, data_table)| {
-            if let Some(CellValue::Image(image)) = data_table.cell_value_at(0, 0) {
-                let cell_size = data_table.chart_output;
-                crate::wasm_bindings::js::jsSendImage(
-                    self.id.to_string(),
-                    pos.x as i32,
-                    pos.y as i32,
-                    cell_size.map(|(w, _)| w as i32).unwrap_or(0),
-                    cell_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
-                    Some(image),
-                );
-            }
-        });
+        self.data_tables
+            .expensive_iter()
+            .for_each(|(pos, data_table)| {
+                if let Some(CellValue::Image(image)) = data_table.cell_value_at(0, 0) {
+                    let cell_size = data_table.chart_output;
+                    crate::wasm_bindings::js::jsSendImage(
+                        self.id.to_string(),
+                        pos.x as i32,
+                        pos.y as i32,
+                        cell_size.map(|(w, _)| w as i32).unwrap_or(0),
+                        cell_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
+                        Some(image),
+                    );
+                }
+            });
     }
 
     /// Sends an image to the client.

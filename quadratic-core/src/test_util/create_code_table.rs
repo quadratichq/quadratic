@@ -103,7 +103,7 @@ pub fn test_create_formula(
         formula.to_string(),
         None,
     );
-    gc.data_table(sheet_pos).unwrap().clone()
+    gc.data_table_at(sheet_pos).unwrap().clone()
 }
 
 #[cfg(test)]

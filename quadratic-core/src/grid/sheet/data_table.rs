@@ -49,13 +49,6 @@ impl Sheet {
         })
     }
 
-    /// Returns a DataTable by name
-    pub fn data_table_by_name(&self, name: String) -> Option<(&Pos, &DataTable)> {
-        self.data_tables
-            .iter()
-            .find(|(_, data_table)| *data_table.name() == name)
-    }
-
     /// Returns the (Pos, DataTable) that intersects a position
     pub fn data_table_that_contains(&self, pos: &Pos) -> Option<(Pos, &DataTable)> {
         self.data_tables.get_contains(pos)
@@ -222,7 +215,7 @@ impl Sheet {
     pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
         let positions = self
             .data_tables
-            .iter()
+            .expensive_iter()
             .map(|(pos, _)| pos.to_owned())
             .collect::<Vec<_>>();
         let sheet_id = self.id;
