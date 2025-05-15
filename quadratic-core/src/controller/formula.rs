@@ -121,7 +121,8 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
     let parse_error: Option<crate::RunError> =
         formulas::parse_formula(formula_string, ctx, pos).err();
 
-    let result = FormulaParseResult {
+    
+    FormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
@@ -130,8 +131,7 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
             .filter_map(|spanned_result| spanned_result.transpose().ok())
             .map(|spanned| spanned.into())
             .collect(),
-    };
-    result
+    }
 }
 
 #[cfg(test)]

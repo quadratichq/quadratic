@@ -210,14 +210,6 @@ pub(crate) async fn handle_message(
             };
             broadcast(vec![session_id], file_id, Arc::clone(&state), response);
 
-            // // send the current transaction to all users in the room (except the initiator)
-            // let broadcasted =
-            //     broadcast_sequence_num(Arc::clone(&state), &file_id, vec![session_id]).await;
-
-            // if let Err(error) = broadcasted {
-            //     tracing::warn!("Error broadcasting sequence number: {:?}", error);
-            // }
-
             // send an ack to the initiator
             let response = MessageResponse::TransactionAck {
                 id,

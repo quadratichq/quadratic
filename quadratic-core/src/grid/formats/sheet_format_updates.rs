@@ -289,7 +289,7 @@ impl SheetFormatUpdates {
     {
         if let (Some(item), Some(other)) = (item, other) {
             item.update_from(other, |value, new_value| {
-                std::mem::replace(value, Some(new_value.clone()))
+                value.replace(new_value.clone())
             });
         }
     }

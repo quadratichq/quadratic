@@ -45,8 +45,8 @@ impl Offsets {
                 end: column + 2,
             })
             .collect();
-        let x1 = *xs.first().unwrap_or(&0f64);
-        x1
+        
+        *xs.first().unwrap_or(&0f64)
     }
 
     /// Returns the width/height of a column/row.
