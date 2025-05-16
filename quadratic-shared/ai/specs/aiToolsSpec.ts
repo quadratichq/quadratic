@@ -209,15 +209,15 @@ This name should be from user's perspective, not the assistant's.\n
     sources: ['AIAnalyst'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
-Do NOT use this tool if there is no data based in the data bounds provided for the sheet.\n
+Do NOT use this tool if there is no data based in the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data to reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-CRITICALLY IMPORTANT: If the results include page information:\n
+IMPORTANT: If the results include page information:\n
 - if the tool tells you it has too many pages, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
 - you MUST perform actions on the current page's results before requesting the next page of results.\n
-- ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
+- as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
 `,
     parameters: {
       type: 'object',
@@ -244,13 +244,13 @@ The string representation (in a1 notation) of the selection of cells to get the 
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
 This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
-Do NOT use this tool if there is no data based on the data bounds provided for the sheet.\n
+Do NOT use this tool if there is no data based in the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
 This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
-CRITICALLY IMPORTANT: If the results include page information:\n
+IMPORTANT: If the results include page information:\n
 - if the tool tells you it has too many pages, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
 - you MUST perform actions on the current page's results before requesting the next page of results.\n
-- ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
+- as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
 `,
   },
   [AITool.SetCellValues]: {
@@ -797,7 +797,7 @@ Don't use this tool to add data to an existing data table. Use set_cell_values f
 Adds a data table to the current sheet defined in the context, requires the sheet name, top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 top_left_position is the anchor position of the data table.\n
 Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
-CRITICALLY IMPORTANT: Unless requested by the user, do not use this tool to add data to the sheet. Use set_cell_values instead.\n
+CRITICALLY IMPORTANT: Unless requested by the user or as part of the PDFImport tool, do not use this tool to add data to the sheet. Use set_cell_values instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
@@ -806,26 +806,5 @@ Don't use this tool to add data to a data table that already exists. Use set_cel
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
 Don't attempt to add formulas or code to data tables.\n`,
-    // IMPORTANT: Before using this tool, you MUST find empty space to place the table:\n
-    // 1. Use the get_cell_data function to check the entire area where the new table will be placed\n
-    // 2. If get_cell_data returns any data in that area, you MUST try again by:\n
-    //    - Calling get_cell_data function again with a different location\n
-    //    - You MUST use the get_cell_data function as many times as needed until you find a completely empty area large enough for the table\n
-    //    - You MUST continue this process until you find an empty area large enough for the table\n
-    //    - You CANNOT avoid the spill error if the table overlaps existing cells\n
-    // 3. The empty area must be large enough to accommodate:\n
-    //    - The table data itself\n
-    //    - The table name row\n
-    //    - 2 rows of padding below\n
-    //    - 2 columns of padding to the right\n
-    // 4. When checking for empty space, you MUST verify:\n
-    //    - The entire area is completely empty, including any cells that might be hidden or not immediately visible\n
-    //    - There are no hidden formulas, conditional formatting, or other invisible content\n
-    //    - The area is not part of an existing table or data structure\n
-    // 5. If you cannot find a suitable empty area:\n
-    //    - Inform the user that there is insufficient space\n
-    //    - Suggest they clear some space or use a different sheet\n
-    //    - DO NOT attempt to force the table into a non-empty area\n
-    // `,
   },
 } as const;
