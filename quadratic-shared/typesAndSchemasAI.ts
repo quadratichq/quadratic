@@ -80,7 +80,7 @@ export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
   'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXe8iYRT',
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXv0t4pw'
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXv0t4pw',
   'openai:gpt-4.1-mini-2025-04-14',
   'openai:gpt-4.1-2025-04-14',
   'openai:o4-mini-2025-04-16',
