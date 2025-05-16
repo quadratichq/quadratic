@@ -69,68 +69,99 @@ impl Sheet {
     pub(crate) fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
         let mut dt_to_update = vec![];
 
-        for (index, (pos, dt)) in self.data_tables.expensive_iter_mut().enumerate() {
-            if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
-                continue;
-            }
-            let output_rect = dt.output_rect(*pos, false);
-            let mut old_dt: Option<DataTable> = None;
-            for row in rows {
-                if *row >= output_rect.min.y && *row <= output_rect.max.y {
-                    // delete the row
-                    if old_dt.is_none() {
-                        old_dt = Some(dt.clone());
-                    }
-
-                    if let Ok(display_row_index) = usize::try_from(*row - output_rect.min.y) {
-                        let _ = dt.delete_row_sorted(display_row_index);
-                    }
+        let min_row = rows.iter().min().unwrap_or(&1);
+        for (index, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
+            if let Some(dt) = self.data_table_at(&pos) {
+                if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
+                    continue;
                 }
-            }
-            if let Some(old_dt) = old_dt {
-                dt_to_update.push((index, *pos, old_dt));
-            }
-        }
 
-        // create undo and signal client of changes
-        for (index, pos, old_dt) in dt_to_update {
-            transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
-            transaction.add_dirty_hashes_from_sheet_rect(
-                old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-            );
-            transaction
-                .reverse_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos: pos.to_sheet_pos(self.id),
-                    data_table: Some(old_dt),
-                    index,
-                });
-        }
-    }
-
-    /// Resize charts if rows in the chart range are deleted
-    pub(crate) fn delete_chart_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
-        for (pos, dt) in self.data_tables.expensive_iter_mut() {
-            if !dt.has_spill() && dt.is_html_or_image() {
-                let output_rect = dt.output_rect(*pos, false);
+                let output_rect = dt.output_rect(pos, false);
                 let count = rows
                     .iter()
                     .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
                     .count();
                 if count > 0 {
-                    if let Some((width, height)) = dt.chart_output {
-                        let min = (height - count as u32).max(1);
-                        if min != height {
-                            dt.chart_output = Some((width, min));
-                            transaction.add_from_code_run(
-                                self.id,
-                                *pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
+                    dt_to_update.push((index, pos));
+                }
+            }
+        }
+
+        for (index, pos) in dt_to_update.into_iter() {
+            let mut old_dt: Option<DataTable> = None;
+
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+                let output_rect = dt.output_rect(pos, false);
+                for row in rows {
+                    if *row >= output_rect.min.y && *row <= output_rect.max.y {
+                        // delete the row
+                        if old_dt.is_none() {
+                            old_dt = Some(dt.clone());
+                        }
+
+                        if let Ok(display_row_index) = usize::try_from(*row - output_rect.min.y) {
+                            let _ = dt.delete_row_sorted(display_row_index);
                         }
                     }
                 }
+
+                Ok(())
+            }) {
+                if let Some(old_dt) = old_dt {
+                    transaction.add_from_code_run(
+                        self.id,
+                        pos,
+                        old_dt.is_image(),
+                        old_dt.is_html(),
+                    );
+                    transaction.add_dirty_hashes_from_sheet_rect(
+                        old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+                    );
+                    transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                    transaction
+                        .reverse_operations
+                        .push(Operation::SetDataTable {
+                            sheet_pos: pos.to_sheet_pos(self.id),
+                            data_table: Some(old_dt),
+                            index,
+                        });
+                }
+            }
+        }
+    }
+
+    /// Resize charts if rows in the chart range are deleted
+    pub(crate) fn delete_chart_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
+        let mut dt_to_update = vec![];
+
+        let min_row = rows.iter().min().unwrap_or(&1);
+        for (_, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
+            if let Some(dt) = self.data_table_at(&pos) {
+                if !dt.has_spill() && dt.is_html_or_image() {
+                    let output_rect = dt.output_rect(pos, false);
+                    let count = rows
+                        .iter()
+                        .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
+                        .count();
+                    if count > 0 {
+                        if let Some((width, height)) = dt.chart_output {
+                            let min = (height - count as u32).max(1);
+                            if min != height {
+                                dt_to_update.push((pos, Some((width, min))));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (pos, chart_output) in dt_to_update.into_iter() {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+                dt.chart_output = chart_output;
+
+                Ok(())
+            }) {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
     }
@@ -411,10 +442,14 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        if let Some((_, dt)) = sheet.data_tables.expensive_iter_mut().next() {
-            dt.show_name = Some(true);
-            dt.show_columns = Some(true);
-        }
+        sheet
+            .modify_data_table_at(&pos![A1], |dt| {
+                dt.show_name = Some(true);
+                dt.show_columns = Some(true);
+
+                Ok(())
+            })
+            .unwrap();
 
         let mut transaction = PendingTransaction::default();
 

@@ -21,7 +21,7 @@ impl Sheet {
             self.data_tables.get_pos_after_row_sorted(row - 1, false);
 
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            let _ = self.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
                 let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the height
                 if dt.is_html_or_image() {
@@ -68,7 +68,9 @@ impl Sheet {
                 }
 
                 Ok(())
-            });
+            }) {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+            }
         }
     }
 

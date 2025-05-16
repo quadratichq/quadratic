@@ -76,7 +76,7 @@ impl Sheet {
         let all_pos_intersecting_columns =
             self.data_tables.get_pos_in_columns_sorted(columns, false);
         for (index, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            let _ = self.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
                 if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
                     return Ok(());
                 }
@@ -123,7 +123,9 @@ impl Sheet {
                 }
 
                 Ok(())
-            });
+            }){
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+            }
         }
 
         // create undo and signal client of changes
@@ -178,7 +180,7 @@ impl Sheet {
         let all_pos_intersecting_columns =
             self.data_tables.get_pos_in_columns_sorted(columns, false);
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            let _ = self.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
                 if !dt.has_spill() && dt.is_html_or_image() {
                     let output_rect = dt.output_rect(pos, false);
                     let count = columns
@@ -202,7 +204,9 @@ impl Sheet {
                 }
 
                 Ok(())
-            });
+            }) {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+            }
         }
     }
 
