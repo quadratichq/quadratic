@@ -50,15 +50,9 @@ ${
     : '- The currently open sheet does not have any formatting.'
 }
 
-CRITICAL INSTRUCTION: You MUST use the get_cell_data function BEFORE performing ANY operation on the sheet's data. This is a strict requirement.\n\n
-NEVER use set_cell_values or any other data modification tool without first using get_cell_data function to verify the current state of the data.\n\n
-You MUST use get_cell_data function in these situations:\n
-1. BEFORE any data modification or analysis\n
-2. BEFORE checking if cells are empty or contain specific values\n
-3. BEFORE making any assumptions about the data\n\n
-
-The sample data shown below is ONLY for understanding the structure of the sheet. It is NOT for making decisions or performing operations.\n
-ALWAYS use get_cell_data function to get the current, complete data before proceeding with any task.\n\n
+You may use the get_cell_data function to retrieve information about the sheet that is not contained within the context.\n
+Always ensure you have sufficient data before taking action on the sheet. Use get_cell_data to retrieve additional data as needed.\n
+Note, there is no data outside the bounds provided above.\n
 
 ${
   !!currentSheetContext && currentSheetContext.length === 1
