@@ -14,12 +14,6 @@ q.cells('A1:B5')
 # Multi-line reference with headers 
 q.cellls('A5:D9', first_row_header=True)
 
-# Table references
-q.cells('table_name')
-
-# Table column reference 
-q.cells('table_name[column_name]')
-
 ## Return data to the sheet 
 Last line is returned to the sheet. Do NOT use the return keyword. Conditional statements do not get returned. Only one variable can be returned.
 

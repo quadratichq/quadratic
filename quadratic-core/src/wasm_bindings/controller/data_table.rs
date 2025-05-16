@@ -24,11 +24,13 @@ impl GridController {
     pub fn js_grid_to_data_table(
         &mut self,
         sheet_rect: String,
+        table_name: Option<String>,
+        first_row_is_header: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let sheet_rect =
             serde_json::from_str::<SheetRect>(&sheet_rect).map_err(|e| e.to_string())?;
-        self.grid_to_data_table(sheet_rect, cursor);
+        self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor);
 
         Ok(())
     }
