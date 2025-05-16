@@ -46,6 +46,7 @@ show-operations = []
 show-first-sheet-operations = []
 dbgjs = []
 function-timer = ["function-timer/enabled"]
+benchmark = ["quadratic-rust-shared/benchmark"]
 
 [dependencies]
 anyhow = "1.0"

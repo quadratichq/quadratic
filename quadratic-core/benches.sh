@@ -8,13 +8,13 @@
 # usage: ./benches.sh src <bench_name>
 
 if [ "$1" = "run" ]; then
-    cargo bench --bench $2 --features function-timer -- --nocapture
+    cargo bench --bench $2 --features function-timer,benchmark -- --nocapture
 fi
 
 if [ "$1" = "bench" ]; then
-    cargo watch -c -w benches -x "bench --bench $2 --features function-timer -- --nocapture"
+    cargo watch -c -w benches -x "bench --bench $2 --features function-timer,benchmark -- --nocapture"
 fi
 
 if [ "$1" = "src" ]; then
-    cargo watch -c -w src -x "bench --bench $2 --features function-timer -- --nocapture"
+    cargo watch -c -w src -x "bench --bench $2 --features function-timer,benchmark -- --nocapture"
 fi
