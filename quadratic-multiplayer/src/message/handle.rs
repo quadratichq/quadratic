@@ -198,7 +198,7 @@ pub(crate) async fn handle_message(
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .push_protobuf_pubsub(id, file_id, decoded_operations, room_sequence_num)
+                .push(id, file_id, decoded_operations, room_sequence_num)
                 .await?;
 
             // broadcast the transaction to all users in the room (except the initiator)
@@ -246,7 +246,7 @@ pub(crate) async fn handle_message(
             // we need to clone operations since we broadcast it later
             let start_push_pubsub = std::time::Instant::now();
             let sequence_num = state
-                .push_protobuf_pubsub(id, file_id, operations.to_owned(), room_sequence_num)
+                .push(id, file_id, operations.to_owned(), room_sequence_num)
                 .await?;
             tracing::trace!("Pushed to pubsub in {:?}", start_push_pubsub.elapsed());
 
