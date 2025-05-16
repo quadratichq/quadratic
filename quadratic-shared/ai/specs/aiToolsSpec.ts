@@ -262,6 +262,7 @@ Values are string representation of text, number, logical, time instant, duratio
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
     parameters: {
       type: 'object',
@@ -303,6 +304,7 @@ When setting cell values, follow these rules for headers:\n
 This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
@@ -313,6 +315,7 @@ Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Do not attempt to add formulas or code to data tables, it will result in an error.\n
 `,
     parameters: {
       type: 'object',

@@ -8,6 +8,8 @@ Get started with Formulas the same way as any other spreadsheet - click \`=\` on
 
 You can also optionally use multi-line Formulas for those Formulas that need to be expanded to become readable. 
 
+IMPORTANT: FORMULAS CAN NOT BE ADDED TO TABLES. DO NOT TRY TO ADD FORMULAS TO TABLES. ENTER THE FORMULA OUTSIDE OF THE TABLE IF TRYING TO PERFORM A CALCULATION ON TABLE DATA.
+
 To open the multi-line editor either use / and select it in the cell type selection menu or use the multi-line editor button from the in-line editor. 
 
 The multi-line editor becomes very useful when Formulas become more difficult to read than the space afforded by the in-line editor. 

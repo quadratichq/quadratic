@@ -134,7 +134,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
@@ -150,7 +150,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
@@ -319,11 +319,27 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.3,
     rate_per_million_cache_write_tokens: 3.75,
   },
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BRLVVZOv': {
+    model: 'ft:gpt-4.1-2025-04-14:quadratic::BRLVVZOv',
+    displayName: 'gpt 4.1 fine-tuned',
+    temperature: 0,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 12,
+    rate_per_million_cache_read_tokens: 0.75,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
     temperature: 0,
-    max_tokens: 32768, // not used for openai
+    max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -339,7 +355,7 @@ export const MODELS_CONFIGURATION: {
     model: 'o4-mini-2025-04-16',
     displayName: 'o4 mini',
     temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 100000, // not used for openai
+    max_tokens: 100000,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -355,7 +371,7 @@ export const MODELS_CONFIGURATION: {
     model: 'o3-2025-04-16',
     displayName: 'o3',
     temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 100000, // not used for openai
+    max_tokens: 100000,
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
     enabled: false,

@@ -10,6 +10,7 @@ import type {
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
+import { createFileForFineTuning } from './fineTuning';
 
 export const handleOpenAIRequest = async (
   modelKey: OpenAIModelKey | XAIModelKey,
@@ -44,8 +45,10 @@ export const handleOpenAIRequest = async (
         },
       };
       const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
-
       const parsedResponse = await parseOpenAIStream(completion, response, modelKey);
+
+      createFileForFineTuning(response, modelKey, args, parsedResponse);
+
       return parsedResponse;
     } else {
       const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
