@@ -86,33 +86,45 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
     // translate code runs's cells_accessed
     for sheet in grid.sheets.iter_mut() {
-        for (_, code_run) in sheet.data_tables.expensive_iter_code_runs_mut() {
-            let cells = &mut code_run.cells_accessed.cells;
-            for (sheet_id, ranges) in cells {
-                // Get shift values for the referenced sheet, skip if not found
-                let Some(&(x_shift, y_shift)) = shifted_offsets_sheet_id.get(sheet_id) else {
-                    continue;
-                };
+        let code_runs_pos = sheet
+            .data_tables
+            .expensive_iter_code_runs()
+            .map(|(pos, _)| pos)
+            .collect::<Vec<_>>();
+        for pos in code_runs_pos {
+            let _ = sheet.modify_data_table_at(&pos, |dt| {
+                if let Some(code_run) = dt.code_run_mut() {
+                    let cells = &mut code_run.cells_accessed.cells;
+                    for (sheet_id, ranges) in cells {
+                        // Get shift values for the referenced sheet, skip if not found
+                        let Some(&(x_shift, y_shift)) = shifted_offsets_sheet_id.get(sheet_id)
+                        else {
+                            continue;
+                        };
 
-                // Skip translation if no shift is needed
-                if x_shift == 0 && y_shift == 0 {
-                    continue;
+                        // Skip translation if no shift is needed
+                        if x_shift == 0 && y_shift == 0 {
+                            continue;
+                        }
+
+                        // Translate all ranges and collect into new HashSet
+                        *ranges = std::mem::take(ranges)
+                            .into_iter()
+                            .filter_map(|r| {
+                                r.adjust(RefAdjust::new_translate_with_start(
+                                    x_shift,
+                                    y_shift,
+                                    i64::MIN,
+                                    i64::MIN,
+                                ))
+                                .ok()
+                            })
+                            .collect();
+                    }
                 }
 
-                // Translate all ranges and collect into new HashSet
-                *ranges = std::mem::take(ranges)
-                    .into_iter()
-                    .filter_map(|r| {
-                        r.adjust(RefAdjust::new_translate_with_start(
-                            x_shift,
-                            y_shift,
-                            i64::MIN,
-                            i64::MIN,
-                        ))
-                        .ok()
-                    })
-                    .collect();
-            }
+                Ok(())
+            });
         }
     }
 

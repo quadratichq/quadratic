@@ -94,7 +94,7 @@ pub fn output_pretty_print_data_table(
 /// Prints the positions of all data tables in a sheet
 pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
-    sheet.data_tables.iter().for_each(|(pos, _)| {
+    sheet.data_tables.expensive_iter().for_each(|(pos, _)| {
         println!("Data table at {:?}", pos);
     });
 }
@@ -127,7 +127,7 @@ pub fn print_data_table_order(sheet: &Sheet) {
     dbgjs!(
         sheet
             .data_tables
-            .iter()
+            .expensive_iter()
             .map(|(pos, _)| pos)
             .collect::<Vec<_>>()
     );
@@ -160,7 +160,7 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 #[cfg(test)]
 pub fn print_data_table_locations(gc: &GridController, sheet_id: SheetId) {
     let sheet = gc.sheet(sheet_id);
-    sheet.data_tables.iter().for_each(|(pos, dt)| {
+    sheet.data_tables.expensive_iter().for_each(|(pos, dt)| {
         let size = dt.output_rect(*pos, false);
         println!("Data table at {:?} {}x{}", pos, size.width(), size.height());
     });

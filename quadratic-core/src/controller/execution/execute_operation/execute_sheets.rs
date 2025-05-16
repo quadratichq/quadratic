@@ -56,35 +56,43 @@ impl GridController {
 
                 let mut context = self.a1_context().to_owned();
 
-                let mut data_tables_pos = vec![];
+                let sheet = self.try_sheet_result(sheet_id)?;
+                let data_tables_pos = sheet
+                    .data_tables
+                    .keys()
+                    .map(|p| p.to_owned())
+                    .collect::<Vec<_>>();
                 let mut table_names_to_update_in_cell_ref = vec![];
 
                 // update table names in data tables in the new sheet
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
-                for (pos, data_table) in sheet.data_tables.iter_mut() {
-                    let old_name = data_table.name().to_string();
-                    let unique_name = unique_data_table_name(&old_name, false, None, &context);
-                    data_table.name = unique_name.to_owned().into();
+                for pos in data_tables_pos.iter() {
+                    sheet.modify_data_table_at(pos, |data_table| {
+                        let old_name = data_table.name().to_string();
+                        let unique_name = unique_data_table_name(&old_name, false, None, &context);
+                        data_table.name = unique_name.to_owned().into();
 
-                    // update table context for replacing table names in code cells
-                    if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
-                        let mut new_table_map_entry = old_table_map_entry.to_owned();
-                        new_table_map_entry.sheet_id = sheet_id;
-                        new_table_map_entry.table_name = unique_name.to_owned();
-                        context.table_map.insert(new_table_map_entry);
-                    }
+                        // update table context for replacing table names in code cells
+                        if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
+                            let mut new_table_map_entry = old_table_map_entry.to_owned();
+                            new_table_map_entry.sheet_id = sheet_id;
+                            new_table_map_entry.table_name = unique_name.to_owned();
+                            context.table_map.insert(new_table_map_entry);
+                        }
 
-                    data_tables_pos.push(*pos);
-                    table_names_to_update_in_cell_ref.push((old_name, unique_name));
+                        table_names_to_update_in_cell_ref.push((old_name, unique_name));
 
-                    transaction.add_code_cell(sheet_id, *pos);
+                        transaction.add_code_cell(sheet_id, *pos);
+
+                        Ok(())
+                    })?;
                 }
 
                 // update table names references in code cells in the new sheet
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
-                for pos in data_tables_pos.iter() {
+                for pos in data_tables_pos.into_iter() {
                     if let Some(code_cell_value) = sheet
-                        .cell_value_mut(*pos)
+                        .cell_value_mut(pos)
                         .and_then(|cv| cv.code_cell_value_mut())
                     {
                         for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {

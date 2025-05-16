@@ -256,7 +256,7 @@ jobs:
       - name: Update Pulumi Infrastructure
         working-directory: infra
         run: |
-          npm ci
+          npm install
 
           pulumi org set-default quadratic
 

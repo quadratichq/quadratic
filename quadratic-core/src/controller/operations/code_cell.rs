@@ -4,7 +4,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
+    grid::{CodeCellLanguage, CodeCellValue, CodeRun, SheetId},
 };
 
 impl GridController {
@@ -31,16 +31,13 @@ impl GridController {
     }
 
     // Returns whether a code_cell is dependent on another code_cell.
-    fn is_dependent_on(&self, current: &DataTable, other_pos: SheetPos) -> bool {
+    fn is_dependent_on(&self, code_run: &CodeRun, other_pos: SheetPos) -> bool {
         let context = self.a1_context();
-        current
-            .code_run()
-            .map(|code_run| code_run.cells_accessed.contains(other_pos, context))
-            .unwrap_or(false)
+        code_run.cells_accessed.contains(other_pos, context)
     }
 
     /// Orders code cells to ensure earlier computes do not depend on later computes.
-    fn order_code_cells(&self, code_cell_positions: &mut Vec<(SheetPos, &DataTable)>) {
+    fn order_code_cells(&self, code_cell_positions: &mut Vec<(SheetPos, &CodeRun)>) {
         // Change the ordering of code_cell_positions to ensure earlier operations do not depend on later operations.
         //
         // Algorithm: iterate through all code cells and check if they are dependent on later code cells. If they are,
@@ -92,7 +89,7 @@ impl GridController {
         };
         let mut code_cell_positions = sheet
             .data_tables
-            .iter()
+            .expensive_iter_code_runs()
             .map(|(pos, code_run)| (pos.to_sheet_pos(sheet_id), code_run))
             .collect::<Vec<_>>();
 
@@ -115,7 +112,7 @@ impl GridController {
             .flat_map(|sheet| {
                 sheet
                     .data_tables
-                    .iter()
+                    .expensive_iter_code_runs()
                     .map(|(pos, code_run)| (pos.to_sheet_pos(sheet.id), code_run))
             })
             .collect::<Vec<_>>();

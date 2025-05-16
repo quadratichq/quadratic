@@ -67,10 +67,12 @@ impl Sheet {
             self.data_bounds.add_rect(rect);
         };
 
-        self.data_tables.iter().for_each(|(pos, code_cell_value)| {
-            let output_rect = code_cell_value.output_rect(*pos, false);
-            self.data_bounds.add_rect(output_rect);
-        });
+        self.data_tables
+            .expensive_iter()
+            .for_each(|(pos, code_cell_value)| {
+                let output_rect = code_cell_value.output_rect(*pos, false);
+                self.data_bounds.add_rect(output_rect);
+            });
 
         for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
