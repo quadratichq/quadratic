@@ -618,7 +618,7 @@ Completion is the delta that will be inserted at the cursor position in the code
 `,
   },
   [AITool.UserPromptSuggestions]: {
-    sources: ['GetUserPromptSuggestions', 'AIAnalyst'],
+    sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n

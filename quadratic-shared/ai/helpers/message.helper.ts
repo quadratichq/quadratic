@@ -45,6 +45,28 @@ export const getPromptMessagesWithoutPDF = (
   });
 };
 
+export const removeOldFilesInToolResult = (
+  messages: ChatMessage[],
+  files: Set<string>
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+  return getPromptMessages(messages).map((message) => {
+    if (message.contextType !== 'toolResult') {
+      return message;
+    }
+
+    return {
+      ...message,
+      content: message.content.map((result) => ({
+        id: result.id,
+        content:
+          result.content.length === 1
+            ? result.content
+            : result.content.filter((content) => isContentText(content) || !files.has(content.fileName)),
+      })),
+    };
+  });
+};
+
 export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
   return getPromptMessages(messages).filter(
     (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'
@@ -121,12 +143,12 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
   const CLEAN_UP_MESSAGE =
     'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST call the tool again.';
 
-  const get_tool_ids = new Set();
+  const getToolIds = new Set();
   messages.forEach((message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       message.toolCalls.forEach((toolCall) => {
         if (toolCall.name === 'get_cell_data' || toolCall.name === 'get_text_formats') {
-          get_tool_ids.add(toolCall.id);
+          getToolIds.add(toolCall.id);
         }
       });
     }
@@ -138,10 +160,19 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
       return {
         ...message,
         content: message.content.map((content) => {
-          return {
-            id: content.id,
-            text: get_tool_ids.has(content.id) ? CLEAN_UP_MESSAGE : content.text,
-          };
+          if (getToolIds.has(content.id)) {
+            return {
+              id: content.id,
+              content: [
+                {
+                  type: 'text' as const,
+                  text: CLEAN_UP_MESSAGE,
+                },
+              ],
+            };
+          } else {
+            return content;
+          }
         }),
       };
     } else {

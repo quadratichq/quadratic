@@ -19,6 +19,7 @@ const VertexAIModelSchema = z.enum([
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']);
@@ -53,6 +54,7 @@ const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
@@ -159,44 +161,6 @@ const TextContentSchema = z.object({
 });
 export type TextContent = z.infer<typeof TextContentSchema>;
 
-const SystemMessageSchema = z.object({
-  role: z.literal('user'),
-  content: z.union([
-    z.string().transform((str) => [
-      {
-        type: 'text' as const,
-        text: str,
-      },
-    ]),
-    z.array(TextContentSchema),
-  ]),
-  contextType: InternalContextTypeSchema,
-});
-export type SystemMessage = z.infer<typeof SystemMessageSchema>;
-
-const ToolResultContentSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-});
-export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
-
-const ToolResultSchema = z.object({
-  role: z.literal('user'),
-  content: z.union([
-    z.array(
-      z
-        .object({
-          id: z.string(),
-          content: z.string(),
-        })
-        .transform((old) => ({ id: old.id, text: old.content }))
-    ),
-    z.array(ToolResultContentSchema),
-  ]),
-  contextType: ToolResultContextTypeSchema,
-});
-export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
-
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
   data: z.string(),
@@ -224,10 +188,37 @@ export type TextFileContent = z.infer<typeof TextFileContentSchema>;
 export const FileContentSchema = z.union([ImageContentSchema, PdfFileContentSchema, TextFileContentSchema]);
 export type FileContent = z.infer<typeof FileContentSchema>;
 
-const ContentSchema = z.array(
-  TextContentSchema.or(ImageContentSchema).or(PdfFileContentSchema).or(TextFileContentSchema)
-);
+const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
 export type Content = z.infer<typeof ContentSchema>;
+
+const SystemMessageSchema = z.object({
+  role: z.literal('user'),
+  content: z.union([
+    z.string().transform((str) => [
+      {
+        type: 'text' as const,
+        text: str,
+      },
+    ]),
+    z.array(TextContentSchema),
+  ]),
+  contextType: InternalContextTypeSchema,
+});
+export type SystemMessage = z.infer<typeof SystemMessageSchema>;
+
+const ToolResultContentSchema = z.array(z.union([TextContentSchema, ImageContentSchema]));
+export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
+const ToolResultSchema = z.object({
+  role: z.literal('user'),
+  content: z.array(
+    z.object({
+      id: z.string(),
+      content: ToolResultContentSchema,
+    })
+  ),
+  contextType: ToolResultContextTypeSchema,
+});
+export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
 
 const convertStringToContent = (val: any): Content => {
   // old chat messages are single strings, being migrated to array of text objects
