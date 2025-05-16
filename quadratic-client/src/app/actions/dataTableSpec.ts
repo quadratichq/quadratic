@@ -78,7 +78,7 @@ const getSelectedRows = (): number[] | undefined => {
   if (!table) return undefined;
 
   return sheets.sheet.cursor
-    .getSelectedRowsFinite()
+    .getRowsWithSelectedCells()
     .map((r) => r - table.y)
     .sort((a, b) => b - a);
 };
@@ -117,7 +117,7 @@ const getSelectedColumns = (): number[] | undefined => {
   if (!table || !displayColumns) return undefined;
 
   const displayIndexes = sheets.sheet.cursor
-    .getSelectedColumnsFinite()
+    .getColumnsWithSelectedCells()
     .map((c) => c - table.x)
     .sort((a, b) => b - a);
 
@@ -607,7 +607,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.RemoveTableRow]: {
     label: () => {
-      const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
+      const length = sheets.sheet.cursor.getRowsWithSelectedCells().length;
       const plural = length > 1 ? 's' : '';
       return `Delete ${length} row${plural}`;
     },
