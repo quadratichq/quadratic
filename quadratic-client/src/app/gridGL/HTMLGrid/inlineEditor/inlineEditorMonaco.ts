@@ -98,6 +98,14 @@ class InlineEditorMonaco {
     model.applyEdits([{ range, text: '' }]);
   }
 
+  replaceRange(text: string, range: monaco.Range) {
+    const model = this.getModel();
+    if (!model) {
+      throw new Error('Expected model to be defined in replaceRange');
+    }
+    model.applyEdits([{ range, text }]);
+  }
+
   focus = () => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in focus');
@@ -192,6 +200,28 @@ class InlineEditorMonaco {
       const model = this.getModel();
       model.applyEdits([{ range, text: '' }]);
     }
+  }
+
+  /// Returns the text and range of the current selection.
+  getSelection(): { text: string; range: monaco.Range } | undefined {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getSelection');
+    }
+    if (!this.hasSelection()) {
+      return undefined;
+    }
+    const selection = this.editor.getSelection();
+    if (selection) {
+      const range = new monaco.Range(
+        selection.startLineNumber,
+        selection.getStartPosition().column,
+        selection.endLineNumber,
+        selection.getEndPosition().column
+      );
+      const model = this.getModel();
+      return { text: model.getValueInRange(range), range };
+    }
+    return undefined;
   }
 
   setBackgroundColor(color: string) {
@@ -350,6 +380,48 @@ class InlineEditorMonaco {
         .at(-1) ?? '';
     return lastCharacter;
   };
+
+  /// Returns the text and range of any cell reference at the cursor.
+  getReferenceAtCursor(): { text: string; range: monaco.Range } | undefined {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getReferenceAtCursor');
+    }
+    const formula = this.get();
+
+    // If there is a selection then check if it's a valid reference
+    const selection = this.getSelection();
+    if (selection) {
+      if (selection.text.match(/^[$A-Za-z0-9']+$/)) {
+        return { text: selection.text, range: selection.range };
+      }
+      return undefined;
+    }
+
+    // Otherwise, use regex to find the reference at the cursor position
+    else {
+      const position = this.getPosition();
+      const cursorIndex = Math.max(0, position.column - 2);
+
+      // Use regex to find the complete reference at or around cursor position
+      const referenceRegex = /[$A-Za-z0-9']+/g;
+      let match;
+
+      while ((match = referenceRegex.exec(formula)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+
+        // Check if cursor is within this reference
+        if (cursorIndex >= start && cursorIndex < end) {
+          return {
+            text: match[0],
+            range: new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 1),
+          };
+        }
+      }
+
+      return undefined;
+    }
+  }
 
   createDecorationsCollection(newDecorations: editor.IModelDeltaDecoration[]) {
     if (!this.editor) {

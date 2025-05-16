@@ -9,7 +9,6 @@ use ts_rs::TS;
 mod sheet_map;
 mod table_map;
 mod table_map_entry;
-pub mod wasm_bindings;
 
 use crate::{
     SheetPos,
