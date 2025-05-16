@@ -198,7 +198,7 @@ pub(crate) async fn handle_message(
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .push_pubsub(id, file_id, decoded_operations, room_sequence_num)
+                .push_protobuf_pubsub(id, file_id, decoded_operations, room_sequence_num)
                 .await?;
 
             // broadcast the transaction to all users in the room (except the initiator)
