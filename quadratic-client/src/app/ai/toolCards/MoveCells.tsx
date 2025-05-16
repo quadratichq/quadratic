@@ -1,7 +1,7 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type MoveCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.MoveCells]['responseSchema']>;
@@ -11,7 +11,7 @@ type MoveCellsProps = {
   loading: boolean;
 };
 
-export const MoveCells = ({ args, loading }: MoveCellsProps) => {
+export const MoveCells = memo(({ args, loading }: MoveCellsProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<MoveCellsResponse, MoveCellsResponse>>();
 
   useEffect(() => {
@@ -48,4 +48,4 @@ export const MoveCells = ({ args, loading }: MoveCellsProps) => {
       description={` from ${toolArgs.data.source_selection_rect} to ${toolArgs.data.target_top_left_position}`}
     />
   );
-};
+});

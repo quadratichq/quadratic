@@ -8,7 +8,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { uploadFile } from '@/app/helpers/files';
 import { A1SelectionStringToSelection, getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
-import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -23,6 +22,7 @@ import {
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { AIAnalystSelectContextMenu } from '../menus/AIAnalyst/AIAnalystSelectContextMenu';
 
 type AIContextProps = {
   initialContext?: Context;
@@ -36,7 +36,6 @@ type AIContextProps = {
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
-
 export const AIContext = memo(
   ({
     initialContext,
@@ -170,7 +169,7 @@ export const AIContext = memo(
             }
             secondary="Cursor"
             onClick={handleOnClickSelection}
-            disabled={disabled || !setContext || !context.selection}
+            noClose
           />
         )}
 
@@ -180,7 +179,7 @@ export const AIContext = memo(
             primary={context.currentSheet}
             secondary={'Sheet'}
             onClick={handleOnClickCurrentSheet}
-            disabled={disabled || !setContext}
+            noClose={disabled || !setContext}
           />
         )}
 
@@ -191,7 +190,7 @@ export const AIContext = memo(
               key={sheet}
               primary={sheet}
               secondary={'Sheet'}
-              disabled={disabled || !setContext}
+              noClose={disabled || !setContext}
               onClick={() =>
                 setContext?.((prev) => ({
                   ...prev,
@@ -210,17 +209,16 @@ type ContextPillProps = {
   primary: string;
   secondary: string;
   onClick?: () => void;
-  disabled: boolean;
+  noClose: boolean;
 };
-
-const ContextPill = memo(({ primary, secondary, onClick, disabled }: ContextPillProps) => {
+const ContextPill = memo(({ primary, secondary, onClick, noClose }: ContextPillProps) => {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
       <span className="max-w-24 truncate">{primary}</span>
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 
-      {!disabled && (
+      {!noClose && (
         <Button
           size="icon-sm"
           className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
@@ -239,7 +237,6 @@ type FileContextPillProps = {
   file: FileContent;
   onClick: () => void;
 };
-
 const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps) => {
   return (
     <HoverCard open={isSupportedImageMimeType(file.mimeType) ? undefined : false}>
@@ -247,7 +244,7 @@ const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps)
         <ContextPill
           primary={file.fileName}
           secondary={getFileTypeLabel(file.mimeType)}
-          disabled={disabled}
+          noClose={disabled}
           onClick={onClick}
         />
       </HoverCardTrigger>
@@ -264,7 +261,6 @@ type AttachFileButtonProps = {
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
 };
-
 const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileButtonProps) => {
   const handleUploadFiles = useCallback(async () => {
     const files = await uploadFile(fileTypes);
@@ -291,7 +287,6 @@ const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileB
 type CodeCellContextPillProps = {
   codeCell: CodeCell | undefined;
 };
-
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {
@@ -313,5 +308,5 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
     return null;
   }
 
-  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" disabled={true} />;
+  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" noClose={true} />;
 });

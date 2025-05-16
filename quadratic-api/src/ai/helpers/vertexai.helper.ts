@@ -1,10 +1,11 @@
 import type {
-  Content,
   FunctionDeclaration,
   GenerateContentResult,
+  Part,
   StreamGenerateContentResult,
   Tool,
   ToolConfig,
+  Content as VertexContent,
 } from '@google-cloud/vertexai';
 import { FunctionCallingMode, SchemaType } from '@google-cloud/vertexai';
 import type { Response } from 'express';
@@ -21,13 +22,38 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
+  Content,
   ParsedAIResponse,
+  TextContent,
+  ToolResultContent,
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
+function convertContent(content: Content): Part[] {
+  return content.map((content) => {
+    if (isContentText(content)) {
+      return { text: content.text };
+    } else {
+      return {
+        inlineData: {
+          data: content.data,
+          mimeType: content.mimeType,
+        },
+      };
+    }
+  });
+}
+
+function convertToolResultContent(content: ToolResultContent): string {
+  return content
+    .filter((content): content is TextContent => isContentText(content))
+    .map((content) => content.text)
+    .join('\n');
+}
+
 export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
-  system: Content | undefined;
-  messages: Content[];
+  system: VertexContent | undefined;
+  messages: VertexContent[];
   tools: Tool[] | undefined;
   tool_choice: ToolConfig | undefined;
 } {
@@ -35,7 +61,7 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
-  const system: Content | undefined =
+  const system: VertexContent | undefined =
     systemMessages.length > 0
       ? {
           role: 'system',
@@ -43,9 +69,9 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
         }
       : undefined;
 
-  const messages: Content[] = promptMessages.reduce<Content[]>((acc, message) => {
+  const messages: VertexContent[] = promptMessages.reduce<VertexContent[]>((acc, message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
-      const vertexaiMessage: Content = {
+      const vertexaiMessage: VertexContent = {
         role: message.role,
         parts: [
           ...message.content.map((content) => ({
@@ -61,13 +87,13 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
       };
       return [...acc, vertexaiMessage];
     } else if (isToolResultMessage(message)) {
-      const vertexaiMessage: Content = {
+      const vertexaiMessage: VertexContent = {
         role: message.role,
         parts: [
           ...message.content.map((toolResult) => ({
             functionResponse: {
               name: toolResult.id,
-              response: { res: toolResult.text },
+              response: { res: convertToolResultContent(toolResult.content) },
             },
           })),
           {
@@ -77,20 +103,9 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
       };
       return [...acc, vertexaiMessage];
     } else if (message.content) {
-      const vertexaiMessage: Content = {
+      const vertexaiMessage: VertexContent = {
         role: message.role,
-        parts: message.content.map((content) => {
-          if (isContentText(content)) {
-            return { text: content.text };
-          } else {
-            return {
-              inlineData: {
-                data: content.data,
-                mimeType: content.mimeType,
-              },
-            };
-          }
-        }),
+        parts: convertContent(message.content),
       };
       return [...acc, vertexaiMessage];
     } else {

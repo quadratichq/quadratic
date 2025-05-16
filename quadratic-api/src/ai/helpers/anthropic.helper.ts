@@ -1,5 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import type {
+  ContentBlockParam,
   DocumentBlockParam,
   ImageBlockParam,
   MessageParam,
@@ -26,9 +27,77 @@ import type {
   AIUsage,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
+  Content,
   ParsedAIResponse,
+  ToolResultContent,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+
+function convertContent(content: Content): Array<ContentBlockParam> {
+  return content.map((content) => {
+    if (isContentImage(content)) {
+      const imageBlockParam: ImageBlockParam = {
+        type: 'image' as const,
+        source: {
+          data: content.data,
+          media_type: content.mimeType,
+          type: 'base64' as const,
+        },
+      };
+      return imageBlockParam;
+    } else if (isContentPdfFile(content)) {
+      const documentBlockParam: DocumentBlockParam = {
+        type: 'document' as const,
+        source: {
+          data: content.data,
+          media_type: content.mimeType,
+          type: 'base64' as const,
+        },
+        title: content.fileName,
+      };
+      return documentBlockParam;
+    } else if (isContentTextFile(content)) {
+      const documentBlockParam: DocumentBlockParam = {
+        type: 'document' as const,
+        source: {
+          data: content.data,
+          media_type: content.mimeType,
+          type: 'text' as const,
+        },
+        title: content.fileName,
+      };
+      return documentBlockParam;
+    } else {
+      const textBlockParam: TextBlockParam = {
+        type: 'text' as const,
+        text: content.text,
+      };
+      return textBlockParam;
+    }
+  });
+}
+
+function convertToolResultContent(content: ToolResultContent): Array<TextBlockParam | ImageBlockParam> {
+  return content.map((content) => {
+    if (isContentImage(content)) {
+      const imageBlockParam: ImageBlockParam = {
+        type: 'image' as const,
+        source: {
+          data: content.data,
+          media_type: content.mimeType,
+          type: 'base64' as const,
+        },
+      };
+      return imageBlockParam;
+    } else {
+      const textBlockParam: TextBlockParam = {
+        type: 'text' as const,
+        text: content.text,
+      };
+      return textBlockParam;
+    }
+  });
+}
 
 export function getAnthropicApiArgs(
   args: AIRequestHelperArgs,
@@ -98,7 +167,7 @@ export function getAnthropicApiArgs(
           ...message.content.map((toolResult) => ({
             type: 'tool_result' as const,
             tool_use_id: toolResult.id,
-            content: toolResult.text,
+            content: convertToolResultContent(toolResult.content),
           })),
           {
             type: 'text' as const,
@@ -110,47 +179,7 @@ export function getAnthropicApiArgs(
     } else if (message.content.length) {
       const anthropicMessage: MessageParam = {
         role: message.role,
-        content: message.content.map((content) => {
-          if (isContentImage(content)) {
-            const imageBlockParam: ImageBlockParam = {
-              type: 'image' as const,
-              source: {
-                data: content.data,
-                media_type: content.mimeType,
-                type: 'base64' as const,
-              },
-            };
-            return imageBlockParam;
-          } else if (isContentPdfFile(content)) {
-            const documentBlockParam: DocumentBlockParam = {
-              type: 'document' as const,
-              source: {
-                data: content.data,
-                media_type: content.mimeType,
-                type: 'base64' as const,
-              },
-              title: content.fileName,
-            };
-            return documentBlockParam;
-          } else if (isContentTextFile(content)) {
-            const documentBlockParam: DocumentBlockParam = {
-              type: 'document' as const,
-              source: {
-                data: content.data,
-                media_type: content.mimeType,
-                type: 'text' as const,
-              },
-              title: content.fileName,
-            };
-            return documentBlockParam;
-          } else {
-            const textBlockParam: TextBlockParam = {
-              type: 'text' as const,
-              text: content.text,
-            };
-            return textBlockParam;
-          }
-        }),
+        content: convertContent(message.content),
       };
       return [...acc, anthropicMessage];
     } else {

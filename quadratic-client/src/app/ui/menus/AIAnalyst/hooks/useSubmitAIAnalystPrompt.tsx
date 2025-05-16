@@ -25,7 +25,13 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getPromptMessagesWithoutPDF,
+  isContentText,
+  removeOldFilesInToolResult,
+  replaceOldGetToolCallResults,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -43,6 +49,26 @@ export type SubmitAIAnalystPromptArgs = {
   messageIndex: number;
   onSubmit?: () => void;
 };
+
+// // Include a screenshot of what the user is seeing
+// async function getUserScreen(): Promise<ChatMessage | undefined> {
+//   const currentScreen = await getScreenImage();
+//   if (currentScreen) {
+//     const reader = new FileReader();
+//     const base64 = await new Promise<string>((resolve) => {
+//       reader.onloadend = () => {
+//         const result = reader.result as string;
+//         resolve(result.split(',')[1]);
+//       };
+//       reader.readAsDataURL(currentScreen);
+//     });
+//     return {
+//       role: 'user',
+//       content: [{ type: 'data', data: base64, mimeType: 'image/png', fileName: 'screen.png' }],
+//       contextType: 'userPrompt',
+//     };
+//   }
+// }
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -249,7 +275,7 @@ export function useSubmitAIAnalystPrompt() {
                 contextType: 'userPrompt' as const,
                 context: {
                   ...context,
-                  selection: context.selection ?? sheets.sheet.cursor.save(),
+                  selection: context.selection ?? sheets.sheet.cursor.toA1String(),
                 },
               },
             ];
@@ -276,6 +302,7 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
+
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
@@ -290,6 +317,8 @@ export function useSubmitAIAnalystPrompt() {
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
             });
+
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => replaceOldGetToolCallResults(prev));
 
             if (response.toolCalls.length === 0) {
               break;
@@ -318,14 +347,14 @@ export function useSubmitAIAnalystPrompt() {
                   const aiTool = toolCall.name as AITool;
                   const argsObject = JSON.parse(toolCall.arguments);
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                  const result = await aiToolsActions[aiTool](args as any, {
+                  const toolResultContent = await aiToolsActions[aiTool](args as any, {
                     source: 'AIAnalyst',
                     chatId,
                     messageIndex: lastMessageIndex + 1,
                   });
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    text: result,
+                    content: toolResultContent,
                   });
 
                   if (aiTool === AITool.UserPromptSuggestions) {
@@ -334,13 +363,23 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                      },
+                    ],
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  text: 'Unknown tool',
+                  content: [
+                    {
+                      type: 'text',
+                      text: 'Unknown tool',
+                    },
+                  ],
                 });
               }
             }
@@ -349,16 +388,25 @@ export function useSubmitAIAnalystPrompt() {
             for (const toolCall of importPDFToolCalls) {
               const argsObject = JSON.parse(toolCall.arguments);
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
-              const result = await importPDF({ pdfImportArgs, context, chatMessages });
+              const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
                 id: toolCall.id,
-                text: result,
+                content: toolResultContent,
               });
             }
 
+            const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
+              result.content.forEach((content) => {
+                if (!isContentText(content)) {
+                  acc.add(content.fileName);
+                }
+              });
+              return acc;
+            }, new Set<string>());
+
             let nextChatMessages: ChatMessage[] = [];
             set(aiAnalystCurrentChatMessagesAtom, (prev) => {
-              nextChatMessages = [...prev, toolResultMessage];
+              nextChatMessages = [...removeOldFilesInToolResult(prev, filesInToolResult), toolResultMessage];
               return nextChatMessages;
             });
             chatMessages = nextChatMessages;

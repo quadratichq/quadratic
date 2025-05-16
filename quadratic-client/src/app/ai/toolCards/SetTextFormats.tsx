@@ -4,24 +4,24 @@ import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type DeleteCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.DeleteCells]['responseSchema']>;
+type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
 
-type DeleteCellsProps = {
+type SetTextFormatsProps = {
   args: string;
   loading: boolean;
 };
 
-export const DeleteCells = memo(({ args, loading }: DeleteCellsProps) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<DeleteCellsResponse, DeleteCellsResponse>>();
+export const SetTextFormats = memo(({ args, loading }: SetTextFormatsProps) => {
+  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetTextFormatsResponse, SetTextFormatsResponse>>();
 
   useEffect(() => {
     if (!loading) {
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.DeleteCells].responseSchema.safeParse(json));
+        setToolArgs(aiToolsSpec[AITool.SetTextFormats].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[MoveCells] Failed to parse args: ', error);
+        console.error('[SetTextFormats] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
@@ -29,7 +29,7 @@ export const DeleteCells = memo(({ args, loading }: DeleteCellsProps) => {
   }, [args, loading]);
 
   const icon = <GridActionIcon />;
-  const label = 'Action: delete';
+  const label = 'Set text formats';
 
   if (loading) {
     return <ToolCard icon={icon} label={label} isLoading />;
@@ -41,5 +41,5 @@ export const DeleteCells = memo(({ args, loading }: DeleteCellsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return <ToolCard icon={icon} label={label} description={`${toolArgs.data.selection}`} />;
+  return <ToolCard icon={icon} label={label} description={` from ${toolArgs.data.selection}`} />;
 });

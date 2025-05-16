@@ -19,6 +19,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -1421,10 +1422,10 @@ class Core {
     }
   }
 
-  gridToDataTable(sheetRect: string, cursor: string) {
+  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.gridToDataTable(sheetRect, cursor);
+      this.gridController.gridToDataTable(sheetRect, tableName, firstRowIsHeader, cursor);
     } catch (e) {
       this.handleCoreError('gridToDataTable', e);
     }
@@ -1567,6 +1568,33 @@ class Core {
       this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
     } catch (e) {
       this.handleCoreError('moveRows', e);
+    }
+  }
+
+  getAICells(selection: string, sheetName: string, page: number): string {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      return this.gridController.getAICells(selection, sheetName, page);
+    } catch (e) {
+      return JSON.stringify(e);
+    }
+  }
+
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.setFormats(sheetId, selection, JSON.stringify(formats));
+    } catch (e) {
+      this.handleCoreError('setFormats', e);
+    }
+  }
+
+  getAICellFormats(sheetId: string, selection: string, page: number): string {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      return this.gridController.getAICellFormats(sheetId, selection, page);
+    } catch (e) {
+      return JSON.stringify(e);
     }
   }
 

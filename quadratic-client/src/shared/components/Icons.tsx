@@ -534,6 +534,10 @@ export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
 
+export const SearchIcon: IconComponent = (props) => {
+  return <Icon {...props}>search</Icon>;
+};
+
 export const SettingsIcon: IconComponent = (props) => {
   return <Icon {...props}>settings</Icon>;
 };

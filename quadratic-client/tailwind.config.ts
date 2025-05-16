@@ -79,11 +79,16 @@ const config: Config = {
           '0%': { transform: 'translateY(100%) translateX(-50%)' },
           '100%': { transform: 'translateY(0) translateX(-50%)' },
         },
+        shimmer: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'slide-up': 'slide-up 0.3s ease-out',
+        shimmer: 'shimmer 2.5s linear infinite',
       },
     },
   },

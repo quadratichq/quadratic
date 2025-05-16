@@ -10,7 +10,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
@@ -21,7 +21,7 @@ type SetCodeCellValueProps = {
   loading: boolean;
 };
 
-export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
+export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
   const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
@@ -156,7 +156,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       }
     />
   );
-};
+});
 
 const parsePartialJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
   try {

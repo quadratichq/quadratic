@@ -2,15 +2,15 @@ import { debug } from '@/app/debugFlags';
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { DEFAULT_MODEL, DEFAULT_MODEL_VERSION, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { useEffect, useMemo } from 'react';
 
 const MODEL_LOCAL_STORAGE_KEY = 'aiModel';
 const THINKING_TOGGLE_LOCAL_STORAGE_KEY = 'aiThinkingToggle';
 const MODEL_VERSION_LOCAL_STORAGE_KEY = 'aiModelVersion';
 
-export function useAIModel(): [ModelKey, SetValue<ModelKey>, ModelConfig, boolean, SetValue<boolean>] {
-  const [modelKey, setModelKey] = useLocalStorage<ModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL);
+export function useAIModel(): [AIModelKey, SetValue<AIModelKey>, AIModelConfig, boolean, SetValue<boolean>] {
+  const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL);
   const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(THINKING_TOGGLE_LOCAL_STORAGE_KEY, false);
   const [version] = useLocalStorage<number>('aiModelVersion', 0);
 

@@ -276,13 +276,17 @@ x = 3
 x += 1
 \`\`\`
 
+### Formatting 
+
+Do NOT try to use formatting options like f-strings (f"") or .format() on numerical return types. Returning formatted data will not flow through to the sheet; the sheet will read formatted numerical values as strings, keeping formatting options like currencies and significant digits from working on the returned values. 
+
 ## Packages
 
 Using and installing Python packages.
 
 ### Default Packages
 
-Some libraries are included by default, here are some examples:
+Some libraries are included by default, here are some examples (note that they need to be imported in every cell they are used even though they're included by default):
 
 * Pandas 
 * NumPy 
@@ -397,6 +401,33 @@ fig.update_layout(
 )
 \`\`\`
 
+### Trendlines 
+
+When using Trendlines in Plotly you MUST import statsmodels for the trendline to work. Note an example trendline below.
+
+\`\`\`python
+import plotly.express as px
+import pandas as pd
+import statsmodels
+
+# Get the data
+df = q.cells("concrete_data")
+
+# Create scatter plot
+fig = px.scatter(df, x='age', y='strength', 
+                title='Concrete Strength vs Age',
+                trendline="lowess")
+
+# Update layout
+fig.update_layout(
+    xaxis_title="Age (days)",
+    yaxis_title="Strength (MPa)",
+    plot_bgcolor='white'
+)
+
+fig.show()
+\`\`\`
+
 ## Time-series analysis
 
 For time-series analysis a good starting point is using statsmodels library for a simple ARIMA analysis. You can reference sheet data using table and sheet references to build these kinds of analysis.
@@ -406,7 +437,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from statsmodels.tsa.arima.model import ARIMA
+from .tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller
 
 # Generate sample time series data

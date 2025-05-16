@@ -5,7 +5,6 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
-import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
@@ -83,7 +82,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-2 overflow-y-auto whitespace-pre-wrap pb-8 text-sm outline-none"
+      className="flex select-text flex-col gap-2 overflow-y-auto whitespace-pre-wrap p-2 text-sm outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -109,9 +108,9 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             key={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-1',
-              message.role === 'user' && message.contextType === 'userPrompt' ? 'px-2 py-2' : 'px-4',
+              message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              message.contextType === 'userPrompt' ? '' : 'bg-accent'
+              message.contextType === 'userPrompt' ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
@@ -121,8 +120,13 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                 messageIndex={index}
               />
             ) : isToolResultMessage(message) ? (
-              message.content.map(({ text }) => (
-                <Markdown key={`${index}-${message.role}-${message.contextType}`}>{text}</Markdown>
+              message.content.map((result, index) => (
+                <AIAssistantUserMessageForm
+                  key={`${index}-${result.id}`}
+                  initialContent={result.content}
+                  textareaRef={textareaRef}
+                  messageIndex={index}
+                />
               ))
             ) : (
               <>

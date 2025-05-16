@@ -39,7 +39,7 @@ Images: ${imageFiles.map((file) => file.fileName).join(', ')}
 ${
   pdfFiles.length > 0
     ? `
-Also I have following pdf files available which you can use for extracting data. Use pdf_import tool for extracting data from these pdfs.\n
+Also I have the following pdf files available which you can use for extracting data. Use pdf_import tool for extracting data from these pdfs.\n
 PDFs: ${pdfFiles.map((file) => file.fileName).join(', ')}\n
 Use pdf files only when prompted by calling the pdf_import for extracting data.\n
 `

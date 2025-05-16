@@ -1,7 +1,7 @@
 import { getRowColSentence, ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { TableRowsIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type SetCellValuesResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCellValues]['responseSchema']>;
@@ -11,7 +11,7 @@ type SetCellValuesProps = {
   loading: boolean;
 };
 
-export const SetCellValues = ({ args, loading }: SetCellValuesProps) => {
+export const SetCellValues = memo(({ args, loading }: SetCellValuesProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCellValuesResponse, SetCellValuesResponse>>();
 
   useEffect(() => {
@@ -47,4 +47,4 @@ export const SetCellValues = ({ args, loading }: SetCellValuesProps) => {
   return (
     <ToolCard icon={icon} label={label} description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`} />
   );
-};
+});
