@@ -834,7 +834,6 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::{PasteSpecial, *};
-    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
@@ -845,6 +844,7 @@ mod test {
         assert_cell_value_row, assert_display_cell_value, print_sheet, print_table_in_rect,
     };
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use crate::{Rect, first_sheet_id, test_create_data_table, test_create_gc};
 
     fn paste(gc: &mut GridController, sheet_id: SheetId, x: i64, y: i64, html: String) {
         gc.paste_from_clipboard(
@@ -1853,5 +1853,40 @@ mod test {
         assert!(sheet.cell_format(pos![G13]).is_table_default());
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
+    }
+
+    #[test]
+    fn test_paste_clipboard_next_to_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        print_sheet(&gc.sheet(sheet_id));
+        assert_eq!(data_table.width(), 3);
+        assert_eq!(data_table.height(false), 5);
+
+        let rect = SheetRect::single_pos(pos![A3], sheet_id);
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::from_rect(rect),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                false,
+            )
+            .unwrap();
+
+        // paste cell to the right of the data table
+        paste(&mut gc, sheet_id, 4, 3, html.clone());
+        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        print_sheet(&gc.sheet(sheet_id));
+        assert_eq!(data_table.width(), 4);
+
+        // paste cell to the bottom of the data table
+        paste(&mut gc, sheet_id, 1, 6, html.clone());
+        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        print_sheet(&gc.sheet(sheet_id));
+        assert_eq!(data_table.height(false), 6);
     }
 }

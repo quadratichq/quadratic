@@ -187,3 +187,26 @@ impl GridController {
         &self.redo_stack
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_a1_context_sheet_table_bounds() {
+        let mut grid_controller = GridController::new();
+        let sheet_id = SheetId::TEST;
+        grid_controller.a1_context = A1Context::test(
+            &[("Sheet1", SheetId::TEST)],
+            &[
+                ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
+                ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
+            ],
+        );
+        let table_bounds = grid_controller.a1_context_sheet_table_bounds(sheet_id);
+
+        assert_eq!(table_bounds.len(), 2);
+        assert_eq!(table_bounds[0], Rect::test_a1("A1:B3"));
+        assert_eq!(table_bounds[1], Rect::test_a1("D1:E3"));
+    }
+}

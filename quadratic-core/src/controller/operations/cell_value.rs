@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
+use crate::grid::DataTableKind;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::DataTableKind;
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
@@ -490,11 +490,9 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    use crate::Rect;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
-    use crate::controller::user_actions::import::tests::simple_csv;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
     use crate::test_util::*;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
@@ -858,22 +856,29 @@ mod test {
     }
 
     #[test]
-    fn test_set_cell_values_operations() {
-        // let mut gc = GridController::test();
-        let (mut gc, _, _, _) = simple_csv();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 13,
-            sheet_id,
-        };
+    fn test_set_cell_values_next_to_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
-        let values = vec![vec!["a".to_string()]];
-        let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
-        println!("{:?}", ops);
-        println!("{:?}", data_table_ops);
-        let sheet = gc.try_sheet(sheet_id).unwrap();
-        print_table_sheet(sheet, Rect::from_numbers(1, 1, 4, 14), true);
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        print_sheet(&gc.sheet(sheet_id));
+        assert_eq!(data_table.width(), 3);
+        assert_eq!(data_table.height(false), 5);
+
+        // add a cell to the right of the data table
+        let sheet_pos = SheetPos::new(sheet_id, 4, 3);
+        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
+        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        print_sheet(&gc.sheet(sheet_id));
+        assert_eq!(data_table.width(), 4);
+
+        // add a cell to the bottom of the data table
+        let sheet_pos = SheetPos::new(sheet_id, 1, 6);
+        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
+        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        print_sheet(&gc.sheet(sheet_id));
+        assert_eq!(data_table.height(false), 6);
     }
 
     #[test]
