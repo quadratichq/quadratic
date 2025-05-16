@@ -3,9 +3,8 @@ use std::collections::{HashMap, HashSet};
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
     Pos, SheetPos,
-    a1::{A1Context, TableMapEntry},
+    a1::A1Context,
     grid::{DataTable, Grid, RegionMap, SheetId},
-    util::case_fold_ascii,
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
@@ -124,10 +123,7 @@ impl GridController {
     ) {
         for (sheet_id, table_info) in code_cells_a1_context.into_iter() {
             let Some(sheet) = self.grid.try_sheet(sheet_id) else {
-                self.a1_context
-                    .table_map
-                    .tables
-                    .retain(|_, table| table.sheet_id != sheet_id);
+                self.a1_context.table_map.remove_sheet(sheet_id);
                 continue;
             };
 
@@ -137,29 +133,20 @@ impl GridController {
                     continue;
                 };
 
-                let table_name_folded = case_fold_ascii(table.name());
-
                 if !self
                     .a1_context()
                     .table_map
-                    .tables
-                    .contains_key(&table_name_folded)
+                    .contains_name(table.name(), None)
                 {
                     self.a1_context.table_map.remove_at(sheet_id, pos);
                 }
 
-                let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
-                self.a1_context
-                    .table_map
-                    .insert_with_key(table_name_folded, table_map_entry);
+                self.a1_context.table_map.insert_table(sheet_id, pos, table);
             }
         }
 
         if sort {
-            self.a1_context
-                .table_map
-                .tables
-                .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
+            self.a1_context.table_map.sort();
         }
     }
 
