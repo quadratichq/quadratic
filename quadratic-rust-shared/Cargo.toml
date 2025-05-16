@@ -68,7 +68,7 @@ record-request-mock = []
 sql = ["arrow", "parquet", "snowflake-api", "sqlx", "tiberius", "tokio", "tokio-util", "tracing"]
 storage = ["aws", "crypto", "tokio"]
 benchmark = ["criterion", "tabled"]
-test = ["httpmock", "criterion", "tabled",]
+test = ["httpmock", "criterion", "tabled"]
 
 [dev-dependencies]
 arrow = { version = "54.2.1", features = ["prettyprint"] }
