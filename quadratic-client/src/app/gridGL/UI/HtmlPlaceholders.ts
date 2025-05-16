@@ -35,9 +35,10 @@ export class HtmlPlaceholders extends Graphics {
         const sprite = this.addChild(new Sprite(Texture.EMPTY));
         sprite.texture = Texture.from(dataUrl);
         sprite.texture.once('update', () => {
-          sprite.width = htmlCell.width;
+          // need to adjust the width to account for the border
+          sprite.width = htmlCell.width - 2;
           sprite.height = htmlCell.height - offsets.height;
-          sprite.x = offsets.x;
+          sprite.x = offsets.x + 1;
           sprite.y = offsets.y + offsets.height;
           resolve();
         });
