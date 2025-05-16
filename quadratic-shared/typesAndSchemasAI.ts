@@ -12,7 +12,7 @@ const AIProvidersSchema = z.enum([
 ]);
 const VertexAnthropicModelSchema = z.enum(['claude-3-7-sonnet@20250219', 'claude-3-5-sonnet-v2@20241022']);
 const VertexAIModelSchema = z.enum([
-  'gemini-2.5-pro-preview-03-25',
+  'gemini-2.5-pro-preview-05-06',
   'gemini-2.0-flash-thinking-exp-01-21',
   'gemini-2.0-flash-001',
 ]);
@@ -22,7 +22,13 @@ const BedrockAnthropicModelSchema = z.enum([
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']);
-const OpenAIModelSchema = z.enum(['gpt-4.1-2025-04-14', 'o4-mini-2025-04-16', 'o3-2025-04-16']);
+const OpenAIModelSchema = z.enum([
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BXVTjXMn',
+  'gpt-4.1-mini-2025-04-14',
+  'gpt-4.1-2025-04-14',
+  'o4-mini-2025-04-16',
+  'o3-2025-04-16',
+]);
 const XAIModelSchema = z.enum(['grok-3-beta']);
 const AIModelSchema = z.union([
   VertexAnthropicModelSchema,
@@ -44,7 +50,7 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
-const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-03-25', 'vertexai:gemini-2.0-flash-001']);
+const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-05-06', 'vertexai:gemini-2.0-flash-001']);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
@@ -68,13 +74,19 @@ const AnthropicModelKeySchema = z.enum([
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
-const OpenAIModelKeySchema = z.enum(['openai:gpt-4.1-2025-04-14', 'openai:o4-mini-2025-04-16', 'openai:o3-2025-04-16']);
+const OpenAIModelKeySchema = z.enum([
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXVTjXMn',
+  'openai:gpt-4.1-mini-2025-04-14',
+  'openai:gpt-4.1-2025-04-14',
+  'openai:o4-mini-2025-04-16',
+  'openai:o3-2025-04-16',
+]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
-const ModelKeySchema = z.union([
+const AIModelKeySchema = z.union([
   VertexAIAnthropicModelKeySchema,
   VertexAIModelKeySchema,
   BedrockAnthropicModelKeySchema,
@@ -83,24 +95,32 @@ const ModelKeySchema = z.union([
   OpenAIModelKeySchema,
   XAIModelKeySchema,
 ]);
-export type ModelKey = z.infer<typeof ModelKeySchema>;
+export type AIModelKey = z.infer<typeof AIModelKeySchema>;
 
-const ModelConfigSchema = z.object({
-  model: AIModelSchema,
-  displayName: z.string(),
-  temperature: z.number(),
-  max_tokens: z.number(),
-  canStream: z.boolean(),
-  canStreamWithToolCalls: z.boolean(),
-  enabled: z.boolean(),
-  provider: AIProvidersSchema,
-  promptCaching: z.boolean(),
-  strictParams: z.boolean().optional(),
-  thinking: z.boolean().optional(),
-  thinkingTemperature: z.number().optional(),
-  thinkingToggle: z.boolean().optional(),
+const AIRatesSchema = z.object({
+  rate_per_million_input_tokens: z.number(),
+  rate_per_million_output_tokens: z.number(),
+  rate_per_million_cache_read_tokens: z.number(),
+  rate_per_million_cache_write_tokens: z.number(),
 });
-export type ModelConfig = z.infer<typeof ModelConfigSchema>;
+export const AIModelConfigSchema = z
+  .object({
+    model: AIModelSchema,
+    displayName: z.string(),
+    temperature: z.number(),
+    max_tokens: z.number(),
+    canStream: z.boolean(),
+    canStreamWithToolCalls: z.boolean(),
+    enabled: z.boolean(),
+    provider: AIProvidersSchema,
+    promptCaching: z.boolean(),
+    strictParams: z.boolean().optional(),
+    thinking: z.boolean().optional(),
+    thinkingTemperature: z.number().optional(),
+    thinkingToggle: z.boolean().optional(),
+  })
+  .extend(AIRatesSchema.shape);
+export type AIModelConfig = z.infer<typeof AIModelConfigSchema>;
 
 const InternalContextTypeSchema = z.enum([
   'quadraticDocs',
@@ -151,44 +171,6 @@ const TextContentSchema = z.object({
 });
 export type TextContent = z.infer<typeof TextContentSchema>;
 
-const SystemMessageSchema = z.object({
-  role: z.literal('user'),
-  content: z.union([
-    z.string().transform((str) => [
-      {
-        type: 'text' as const,
-        text: str,
-      },
-    ]),
-    z.array(TextContentSchema),
-  ]),
-  contextType: InternalContextTypeSchema,
-});
-export type SystemMessage = z.infer<typeof SystemMessageSchema>;
-
-const ToolResultContentSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-});
-export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
-
-const ToolResultSchema = z.object({
-  role: z.literal('user'),
-  content: z.union([
-    z.array(
-      z
-        .object({
-          id: z.string(),
-          content: z.string(),
-        })
-        .transform((old) => ({ id: old.id, text: old.content }))
-    ),
-    z.array(ToolResultContentSchema),
-  ]),
-  contextType: ToolResultContextTypeSchema,
-});
-export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
-
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
   data: z.string(),
@@ -213,13 +195,40 @@ export const TextFileContentSchema = z.object({
 });
 export type TextFileContent = z.infer<typeof TextFileContentSchema>;
 
-const FileContentSchema = z.union([ImageContentSchema, PdfFileContentSchema, TextFileContentSchema]);
+export const FileContentSchema = z.union([ImageContentSchema, PdfFileContentSchema, TextFileContentSchema]);
 export type FileContent = z.infer<typeof FileContentSchema>;
 
-const ContentSchema = z.array(
-  TextContentSchema.or(ImageContentSchema).or(PdfFileContentSchema).or(TextFileContentSchema)
-);
+const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
 export type Content = z.infer<typeof ContentSchema>;
+
+const SystemMessageSchema = z.object({
+  role: z.literal('user'),
+  content: z.union([
+    z.string().transform((str) => [
+      {
+        type: 'text' as const,
+        text: str,
+      },
+    ]),
+    z.array(TextContentSchema),
+  ]),
+  contextType: InternalContextTypeSchema,
+});
+export type SystemMessage = z.infer<typeof SystemMessageSchema>;
+
+const ToolResultContentSchema = z.array(z.union([TextContentSchema, ImageContentSchema]));
+export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
+const ToolResultSchema = z.object({
+  role: z.literal('user'),
+  content: z.array(
+    z.object({
+      id: z.string(),
+      content: ToolResultContentSchema,
+    })
+  ),
+  contextType: ToolResultContextTypeSchema,
+});
+export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
 
 const convertStringToContent = (val: any): Content => {
   // old chat messages are single strings, being migrated to array of text objects
@@ -289,6 +298,7 @@ export const AIMessagePromptSchema = z.object({
     })
   ),
   model: AIModelSchema,
+  fineTuningInput: z.string().optional(),
 });
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
@@ -353,7 +363,7 @@ export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
   source: AISourceSchema,
-  modelKey: ModelKeySchema,
+  modelKey: AIModelKeySchema,
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean(),
   toolName: AIToolSchema.optional(),
@@ -369,11 +379,14 @@ const AIUsageSchema = z.object({
   outputTokens: z.number(),
   cacheReadTokens: z.number(),
   cacheWriteTokens: z.number(),
+  source: AISourceSchema.optional(),
+  modelKey: AIModelKeySchema.optional(),
+  cost: z.number().optional(),
 });
 export type AIUsage = z.infer<typeof AIUsageSchema>;
 
-const parsedAIResponseSchema = z.object({
+export const ParsedAIResponseSchema = z.object({
   responseMessage: AIMessagePromptSchema,
   usage: AIUsageSchema,
 });
-export type ParsedAIResponse = z.infer<typeof parsedAIResponseSchema>;
+export type ParsedAIResponse = z.infer<typeof ParsedAIResponseSchema>;
