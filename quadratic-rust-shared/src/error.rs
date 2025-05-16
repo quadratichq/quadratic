@@ -8,32 +8,35 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::arrow::error::Arrow;
+use crate::auth::error::Auth;
+use crate::aws::error::Aws;
+use crate::crypto::error::Crypto;
+use crate::net::error::Net;
+use crate::sql::error::Sql;
+use crate::storage::error::Storage;
+
 pub type Result<T, E = SharedError> = std::result::Result<T, E>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum SharedError {
-    #[cfg(any(feature = "arrow", feature = "parquet"))]
     #[error("Error with Arrow: {0}")]
-    Arrow(crate::arrow::error::Arrow),
+    Arrow(Arrow),
 
-    #[cfg(feature = "auth")]
     #[error("Error with auth: {0}")]
-    Auth(crate::auth::error::Auth),
+    Auth(Auth),
 
-    #[cfg(feature = "aws")]
     #[error("Error communicating with AWS: {0}")]
-    Aws(crate::aws::error::Aws),
+    Aws(Aws),
 
-    #[cfg(feature = "crypto")]
     #[error("Error with Crypto: {0}")]
-    Crypto(crate::crypto::error::Crypto),
+    Crypto(Crypto),
 
     #[error("{0}")]
     Generic(String),
 
-    #[cfg(feature = "net")]
-    #[error("Error with Net: {0}")]
-    Net(crate::net::error::Net),
+    #[error("{0}")]
+    Net(Net),
 
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
@@ -47,13 +50,11 @@ pub enum SharedError {
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
 
-    #[cfg(feature = "sql")]
     #[error("Error with SQL connector: {0}")]
-    Sql(crate::sql::error::Sql),
+    Sql(Sql),
 
-    #[cfg(feature = "storage")]
     #[error("Error with Storage: {0}")]
-    Storage(crate::storage::error::Storage),
+    Storage(Storage),
 
     #[error("Error with Uuid: {0}")]
     Uuid(String),
@@ -70,7 +71,12 @@ pub fn clean_errors(error: impl ToString) -> String {
     cleaned
 }
 
-#[cfg(any(feature = "auth", feature = "quadratic-api"))]
+impl From<redis::RedisError> for SharedError {
+    fn from(error: redis::RedisError) -> Self {
+        SharedError::PubSub(error.to_string())
+    }
+}
+
 impl From<reqwest::Error> for SharedError {
     fn from(error: reqwest::Error) -> Self {
         SharedError::Request(error.to_string())
@@ -86,5 +92,29 @@ impl From<serde_json::Error> for SharedError {
 impl From<uuid::Error> for SharedError {
     fn from(error: uuid::Error) -> Self {
         SharedError::Uuid(error.to_string())
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for SharedError {
+    fn from(error: jsonwebtoken::errors::Error) -> Self {
+        SharedError::Auth(Auth::Jwt(error.to_string()))
+    }
+}
+
+impl From<parquet::errors::ParquetError> for SharedError {
+    fn from(error: parquet::errors::ParquetError) -> Self {
+        SharedError::Sql(Sql::ParquetConversion(error.to_string()))
+    }
+}
+
+impl From<arrow::error::ArrowError> for SharedError {
+    fn from(error: arrow::error::ArrowError) -> Self {
+        SharedError::Arrow(Arrow::External(error.to_string()))
+    }
+}
+
+impl From<Net> for SharedError {
+    fn from(error: Net) -> Self {
+        SharedError::Net(error)
     }
 }
