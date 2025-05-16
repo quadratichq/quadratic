@@ -320,8 +320,8 @@ mod tests {
             Pos { x: 0, y: 0 },
         );
         assert_eq!(reasons.len(), 2);
-        assert!(reasons.iter().any(|p| *p == Pos { x: 1, y: 0 }));
-        assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 0 }));
+        assert!(reasons.contains(&Pos { x: 1, y: 0 }));
+        assert!(reasons.contains(&Pos { x: 2, y: 0 }));
     }
 
     #[test]

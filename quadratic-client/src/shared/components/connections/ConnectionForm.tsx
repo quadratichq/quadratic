@@ -1,4 +1,5 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
@@ -9,6 +10,7 @@ import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
+import type { SubmitHandler } from 'react-hook-form';
 import { useFetcher, useSubmit } from 'react-router';
 
 export type ConnectionFormProps = {
@@ -107,6 +109,7 @@ export function ConnectionFormEdit({
   );
 }
 
+export const SKIP_TEST_BUTTON_NAME = 'skip-test';
 function ConnectionFormWrapper({
   teamUuid,
   type,
@@ -119,8 +122,37 @@ function ConnectionFormWrapper({
   const { ConnectionForm } = connectionsByType[type];
   const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
+  // This is a middleware that tests the connection before saving
+  const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event: any) => {
+    if (event?.nativeEvent?.submitter?.name === SKIP_TEST_BUTTON_NAME) {
+      props.handleSubmitForm(formValues);
+      return;
+    }
+
+    const { name, type, ...typeDetails } = formValues;
+
+    try {
+      const { connected, message } = await connectionClient.test.run({
+        type,
+        typeDetails,
+        teamUuid,
+      });
+      if (connected === false) {
+        form.setError('root', { message: message ?? 'Unknown error' });
+        return;
+      }
+
+      // If it worked, update the connection
+      props.handleSubmitForm(formValues);
+    } catch (e) {
+      console.error(e);
+      form.setError('root', { message: 'Network error: failed to make connection.' });
+      return;
+    }
+  };
+
   return (
-    <ConnectionForm handleSubmitForm={props.handleSubmitForm} form={form}>
+    <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form}>
       <ConnectionFormActions
         form={form}
         handleNavigateToListView={props.handleNavigateToListView}

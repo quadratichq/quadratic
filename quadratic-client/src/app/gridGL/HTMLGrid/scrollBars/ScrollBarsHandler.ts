@@ -11,7 +11,7 @@ import { Point, Rectangle } from 'pixi.js';
 
 const SCROLLBAR_SIZE = 6;
 const SCROLLBAR_PADDING = 6;
-// const SCROLLBAR_ROUNDED = 3;
+const SCROLLBAR_MINIMUM_SIZE = 15;
 
 export type Scrollbar = 'horizontal' | 'vertical' | undefined;
 
@@ -109,6 +109,7 @@ export class ScrollBarsHandler {
       // content is larger than the viewport
       size = viewportSize / contentSize;
     }
+
     return { start, size };
   };
 
@@ -156,7 +157,7 @@ export class ScrollBarsHandler {
       }
       const horizontalY = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
       horizontalBar.style.left = `${horizontalX}px`;
-      horizontalBar.style.width = `${horizontalWidth}px`;
+      horizontalBar.style.width = `${Math.max(horizontalWidth, SCROLLBAR_MINIMUM_SIZE)}px`;
       horizontalBar.style.display = 'block';
       this.horizontal = new Rectangle(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE);
     } else {
@@ -197,7 +198,7 @@ export class ScrollBarsHandler {
       verticalBar.style.display = 'block';
       verticalBar.style.left = `${verticalX}px`;
       verticalBar.style.top = `${verticalY}px`;
-      verticalBar.style.height = `${verticalHeight}px`;
+      verticalBar.style.height = `${Math.max(verticalHeight, SCROLLBAR_MINIMUM_SIZE)}px`;
       this.vertical = new Rectangle(verticalX, verticalY, SCROLLBAR_SIZE, verticalHeight);
     } else {
       this.vertical = undefined;
