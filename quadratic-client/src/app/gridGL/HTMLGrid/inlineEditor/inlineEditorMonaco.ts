@@ -99,10 +99,7 @@ class InlineEditorMonaco {
   }
 
   replaceRange(text: string, range: monaco.Range) {
-    if (!this.editor) {
-      throw new Error('Expected editor to be defined in replaceRange');
-    }
-    const model = this.editor.getModel();
+    const model = this.getModel();
     if (!model) {
       throw new Error('Expected model to be defined in replaceRange');
     }
