@@ -72,23 +72,24 @@ export class CellHighlights extends Container {
 
     if (!this.cellsAccessed.length) return;
 
-    if (!inlineEditorHandler.cursorIsMoving) {
-      this.cellsAccessed.forEach(({ sheetId, ranges }, index) => {
-        if (sheetId !== sheets.current) return;
+    this.cellsAccessed.forEach(({ sheetId, ranges }, index) => {
+      if (sheetId !== sheets.current) return;
 
-        ranges.forEach((range) => {
-          const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, this.isPython);
-          if (refRangeBounds) {
-            drawDashedRectangle({
-              g: this.highlights,
-              color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
-              isSelected: this.selectedCellIndex === index,
-              range: refRangeBounds,
-            });
-          }
-        });
+      // don't redraw any marching ants highlights
+      if (inlineEditorHandler.cursorIsMoving && index === this.selectedCellIndex) return;
+
+      ranges.forEach((range, i) => {
+        const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, this.isPython);
+        if (refRangeBounds) {
+          drawDashedRectangle({
+            g: this.highlights,
+            color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
+            isSelected: this.selectedCellIndex === index,
+            range: refRangeBounds,
+          });
+        }
       });
-    }
+    });
 
     this.dirty = false;
   };
@@ -130,7 +131,7 @@ export class CellHighlights extends Container {
       return;
     }
 
-    const render = drawDashedRectangleMarching({
+    drawDashedRectangleMarching({
       g: this.marchingHighlight,
       color: colorNumber,
       march: this.march,
@@ -138,9 +139,6 @@ export class CellHighlights extends Container {
       alpha: FILL_SELECTION_ALPHA,
     });
     this.march = (this.march + 1) % Math.floor(DASHED);
-    if (render) {
-      this.dirty = true;
-    }
   };
 
   update = () => {
