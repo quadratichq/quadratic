@@ -13,30 +13,110 @@ use anyhow::{Result, bail};
 use lexicon_fractional_index::key_between;
 
 impl GridController {
-    pub(crate) fn execute_add_sheet(
+    fn handle_add_sheet(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: Operation,
-    ) {
-        if let Operation::AddSheet { sheet } = op {
-            let sheet_id = sheet.id;
-            if self.grid.try_sheet(sheet_id).is_some() {
-                // sheet already exists (unlikely but possible if this operation is run twice)
-                return;
+        sheet: Sheet,
+    ) -> Result<()> {
+        let sheet_id = self.grid.add_sheet(Some(sheet));
+        self.send_add_sheet(transaction, sheet_id);
+
+        let mut context = self.a1_context().to_owned();
+
+        let sheet = self.try_sheet_result(sheet_id)?;
+        let data_tables_pos = sheet
+            .data_tables
+            .keys()
+            .map(|p| p.to_owned())
+            .collect::<Vec<_>>();
+        let mut table_names_to_update_in_cell_ref = vec![];
+
+        // update table names in data tables in the new sheet
+        let sheet = self.try_sheet_mut_result(sheet_id)?;
+        for pos in data_tables_pos.iter() {
+            transaction.add_code_cell(sheet_id, *pos);
+
+            sheet.modify_data_table_at(pos, |data_table| {
+                let old_name = data_table.name().to_string();
+                let unique_name = unique_data_table_name(&old_name, false, None, &context);
+                if old_name != unique_name {
+                    data_table.name = unique_name.to_owned().into();
+
+                    // update table context for replacing table names in code cells
+                    if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
+                        let mut new_table_map_entry = old_table_map_entry.to_owned();
+                        new_table_map_entry.sheet_id = sheet_id;
+                        new_table_map_entry.table_name = unique_name.to_owned();
+                        context.table_map.insert(new_table_map_entry);
+                    }
+
+                    table_names_to_update_in_cell_ref.push((old_name, unique_name));
+                }
+
+                Ok(())
+            })?;
+        }
+
+        for (old_name, unique_name) in table_names_to_update_in_cell_ref.into_iter() {
+            // update table names references in code cells in the new sheet
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            for pos in data_tables_pos.iter() {
+                if let Some(code_cell_value) = sheet
+                    .cell_value_mut(*pos)
+                    .and_then(|cv| cv.code_cell_value_mut())
+                {
+                    code_cell_value.replace_table_name_in_cell_references(
+                        &context,
+                        pos.to_sheet_pos(sheet_id),
+                        &old_name,
+                        &unique_name,
+                    );
+                }
             }
-            let sheet_id = self.grid.add_sheet(Some((*sheet).clone()));
+        }
 
-            self.send_add_sheet(transaction, sheet_id);
-
-            transaction
-                .forward_operations
-                .push(Operation::AddSheetSchema {
-                    schema: Box::new(export_sheet(*sheet)),
-                });
+        if transaction.is_user_undo_redo() {
+            transaction.add_fill_cells(sheet_id);
+            transaction.sheet_borders.insert(sheet_id);
             transaction
                 .reverse_operations
                 .push(Operation::DeleteSheet { sheet_id });
         }
+
+        Ok(())
+    }
+
+    pub(crate) fn execute_add_sheet(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::AddSheet { sheet } = op {
+            let sheet_id = sheet.id;
+            if self.grid.try_sheet(sheet_id).is_some() {
+                // sheet already exists (unlikely but possible if this operation is run twice)
+                return Ok(());
+            }
+
+            // clone only for user/undo/redo transactions
+            let forward_sheet = if transaction.is_user_undo_redo() {
+                Some(sheet.clone())
+            } else {
+                None
+            };
+
+            self.handle_add_sheet(transaction, *sheet)?;
+
+            if let Some(forward_sheet) = forward_sheet {
+                transaction
+                    .forward_operations
+                    .push(Operation::AddSheetSchema {
+                        schema: Box::new(export_sheet(*forward_sheet)),
+                    });
+            }
+        }
+
+        Ok(())
     }
 
     pub(crate) fn execute_add_sheet_schema(
@@ -45,78 +125,29 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::AddSheetSchema { schema } = op {
-            if let Ok(sheet) = schema.clone().into_latest() {
+            // clone only for user/undo/redo transactions
+            let forward_schema = if transaction.is_user_undo_redo() {
+                Some(schema.clone())
+            } else {
+                None
+            };
+
+            if let Ok(sheet) = schema.into_latest() {
                 if self.grid.try_sheet(sheet.id).is_some() {
                     // sheet already exists (unlikely but possible if this operation is run twice)
                     return Ok(());
                 }
 
-                let sheet_id = self.grid.add_sheet(Some(sheet));
-                self.send_add_sheet(transaction, sheet_id);
+                self.handle_add_sheet(transaction, sheet)?;
+            }
 
-                let mut context = self.a1_context().to_owned();
-
-                let sheet = self.try_sheet_result(sheet_id)?;
-                let data_tables_pos = sheet
-                    .data_tables
-                    .keys()
-                    .map(|p| p.to_owned())
-                    .collect::<Vec<_>>();
-                let mut table_names_to_update_in_cell_ref = vec![];
-
-                // update table names in data tables in the new sheet
-                let sheet = self.try_sheet_mut_result(sheet_id)?;
-                for pos in data_tables_pos.iter() {
-                    sheet.modify_data_table_at(pos, |data_table| {
-                        let old_name = data_table.name().to_string();
-                        let unique_name = unique_data_table_name(&old_name, false, None, &context);
-                        data_table.name = unique_name.to_owned().into();
-
-                        // update table context for replacing table names in code cells
-                        if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
-                            let mut new_table_map_entry = old_table_map_entry.to_owned();
-                            new_table_map_entry.sheet_id = sheet_id;
-                            new_table_map_entry.table_name = unique_name.to_owned();
-                            context.table_map.insert(new_table_map_entry);
-                        }
-
-                        table_names_to_update_in_cell_ref.push((old_name, unique_name));
-
-                        transaction.add_code_cell(sheet_id, *pos);
-
-                        Ok(())
-                    })?;
-                }
-
-                // update table names references in code cells in the new sheet
-                let sheet = self.try_sheet_mut_result(sheet_id)?;
-                for pos in data_tables_pos.into_iter() {
-                    if let Some(code_cell_value) = sheet
-                        .cell_value_mut(pos)
-                        .and_then(|cv| cv.code_cell_value_mut())
-                    {
-                        for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
-                            code_cell_value.replace_table_name_in_cell_references(
-                                &context,
-                                pos.to_sheet_pos(sheet_id),
-                                old_name,
-                                unique_name,
-                            );
-                        }
-                    }
-                }
-
-                transaction.add_fill_cells(sheet_id);
-                transaction.sheet_borders.insert(sheet_id);
-
+            if let Some(schema) = forward_schema {
                 transaction
                     .forward_operations
                     .push(Operation::AddSheetSchema { schema });
-                transaction
-                    .reverse_operations
-                    .push(Operation::DeleteSheet { sheet_id });
             }
         }
+
         Ok(())
     }
 
@@ -134,18 +165,20 @@ impl GridController {
                 return;
             };
 
-            transaction
-                .forward_operations
-                .push(Operation::DeleteSheet { sheet_id });
+            if transaction.is_user_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::DeleteSheet { sheet_id });
 
-            for op in code_run_ops {
-                transaction.reverse_operations.push(op);
+                for op in code_run_ops {
+                    transaction.reverse_operations.push(op);
+                }
+                transaction
+                    .reverse_operations
+                    .push(Operation::AddSheetSchema {
+                        schema: Box::new(export_sheet(deleted_sheet)),
+                    });
             }
-            transaction
-                .reverse_operations
-                .push(Operation::AddSheetSchema {
-                    schema: Box::new(export_sheet(deleted_sheet)),
-                });
 
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {
@@ -155,12 +188,14 @@ impl GridController {
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
 
-                transaction.forward_operations.push(Operation::AddSheet {
-                    sheet: Box::new(new_first_sheet),
-                });
-                transaction.reverse_operations.push(Operation::DeleteSheet {
-                    sheet_id: new_first_sheet_id,
-                });
+                if transaction.is_user_undo_redo() {
+                    transaction.forward_operations.push(Operation::AddSheet {
+                        sheet: Box::new(new_first_sheet),
+                    });
+                    transaction.reverse_operations.push(Operation::DeleteSheet {
+                        sheet_id: new_first_sheet_id,
+                    });
+                }
 
                 // if that's the last sheet, then we created a new one and we have to let the workers know
                 self.send_add_sheet(transaction, new_first_sheet_id);
@@ -188,15 +223,18 @@ impl GridController {
             if old_first != self.grid.first_sheet_id() {
                 transaction.generate_thumbnail = true;
             }
-            transaction
-                .forward_operations
-                .push(Operation::ReorderSheet { target, order });
-            transaction
-                .reverse_operations
-                .push(Operation::ReorderSheet {
-                    target,
-                    order: original_order,
-                });
+
+            if transaction.is_user_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::ReorderSheet { target, order });
+                transaction
+                    .reverse_operations
+                    .push(Operation::ReorderSheet {
+                        target,
+                        order: original_order,
+                    });
+            }
 
             self.update_a1_context_sheet_map(target);
             transaction.sheet_info.insert(target);
@@ -223,15 +261,17 @@ impl GridController {
 
             let old_name = self.grid.update_sheet_name(sheet_id, &name)?;
 
-            transaction
-                .forward_operations
-                .push(Operation::SetSheetName { sheet_id, name });
-            transaction
-                .reverse_operations
-                .push(Operation::SetSheetName {
-                    sheet_id,
-                    name: old_name,
-                });
+            if transaction.is_user_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::SetSheetName { sheet_id, name });
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetSheetName {
+                        sheet_id,
+                        name: old_name,
+                    });
+            }
 
             self.update_a1_context_sheet_map(sheet_id);
             transaction.sheet_info.insert(sheet_id);
@@ -253,15 +293,17 @@ impl GridController {
             let old_color = sheet.color.clone();
             sheet.color.clone_from(&color);
 
-            transaction
-                .forward_operations
-                .push(Operation::SetSheetColor { sheet_id, color });
-            transaction
-                .reverse_operations
-                .push(Operation::SetSheetColor {
-                    sheet_id,
-                    color: old_color,
-                });
+            if transaction.is_user_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::SetSheetColor { sheet_id, color });
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetSheetColor {
+                        sheet_id,
+                        color: old_color,
+                    });
+            }
 
             self.update_a1_context_sheet_map(sheet_id);
             transaction.sheet_info.insert(sheet_id);
@@ -300,15 +342,17 @@ impl GridController {
 
             self.send_add_sheet(transaction, new_sheet_id);
 
-            transaction
-                .forward_operations
-                .push(Operation::DuplicateSheet {
-                    sheet_id,
-                    new_sheet_id,
+            if transaction.is_user_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::DuplicateSheet {
+                        sheet_id,
+                        new_sheet_id,
+                    });
+                transaction.reverse_operations.push(Operation::DeleteSheet {
+                    sheet_id: new_sheet_id,
                 });
-            transaction.reverse_operations.push(Operation::DeleteSheet {
-                sheet_id: new_sheet_id,
-            });
+            }
         }
     }
 }

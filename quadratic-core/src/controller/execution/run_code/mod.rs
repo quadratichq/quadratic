@@ -39,7 +39,7 @@ impl GridController {
         transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
 
-        self.update_cells_accessed(sheet_pos, &new_data_table);
+        self.update_cells_accessed_cache(sheet_pos, &new_data_table);
 
         let sheet_id = sheet_pos.sheet_id;
         let pos: Pos = sheet_pos.into();
@@ -76,6 +76,7 @@ impl GridController {
             // then we can preserve other user-selected properties
             if old_data_table.output_size().w == new_data_table.output_size().w {
                 new_data_table.formats = old_data_table.formats.to_owned();
+                new_data_table.borders = old_data_table.borders.to_owned();
 
                 // actually apply the sort if it's set
                 if let Some(sort) = old_data_table.sort.to_owned() {
@@ -127,26 +128,28 @@ impl GridController {
             }
         };
 
-        // update fills if needed in either old or new data table
-        if new_data_table
-            .as_ref()
-            .is_some_and(|dt| dt.formats.has_fills())
-            || old_data_table
+        if !transaction.is_server() {
+            // update fills if needed in either old or new data table
+            if new_data_table
                 .as_ref()
                 .is_some_and(|dt| dt.formats.has_fills())
-        {
-            transaction.add_fill_cells(sheet_id);
-        }
+                || old_data_table
+                    .as_ref()
+                    .is_some_and(|dt| dt.formats.has_fills())
+            {
+                transaction.add_fill_cells(sheet_id);
+            }
 
-        // update borders if needed old or new data table
-        if new_data_table
-            .as_ref()
-            .is_some_and(|dt| !dt.borders.is_default())
-            || old_data_table
+            // update borders if needed old or new data table
+            if new_data_table
                 .as_ref()
                 .is_some_and(|dt| !dt.borders.is_default())
-        {
-            transaction.add_borders(sheet_id);
+                || old_data_table
+                    .as_ref()
+                    .is_some_and(|dt| !dt.borders.is_default())
+            {
+                transaction.add_borders(sheet_id);
+            }
         }
 
         transaction.add_from_code_run(
@@ -161,13 +164,13 @@ impl GridController {
             new_data_table.as_ref().is_some_and(|dt| dt.is_image()),
             new_data_table.as_ref().is_some_and(|dt| dt.is_html()),
         );
-
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
         // index for SetCodeRun is either set by execute_set_code_run or calculated
         let index = index
             .unwrap_or(sheet.data_tables.get_index_of(&pos).unwrap_or(usize::MAX))
             .min(sheet.data_tables.len());
+
         if transaction.is_user_undo_redo() {
             let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
             {
@@ -342,7 +345,7 @@ impl GridController {
                 output_type: None,
                 std_out: None,
                 std_err: Some(error.msg.to_string()),
-                cells_accessed: transaction.cells_accessed.clone(),
+                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
             },
         };
         let table_name = match code_cell_value.language {
@@ -400,7 +403,7 @@ impl GridController {
                 output_type: js_code_result.output_display_type,
                 std_out: None,
                 std_err: None,
-                cells_accessed: transaction.cells_accessed.clone(),
+                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
             };
 
             return DataTable::new(

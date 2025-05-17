@@ -284,8 +284,8 @@ mod tests {
             Pos { x: 1, y: 1 },
         );
         assert_eq!(reasons.len(), 2);
-        assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 1 }));
-        assert!(reasons.iter().any(|p| *p == Pos { x: 3, y: 1 }));
+        assert!(reasons.contains(&Pos { x: 1, y: 0 }));
+        assert!(reasons.contains(&Pos { x: 2, y: 0 }));
     }
 
     #[test]

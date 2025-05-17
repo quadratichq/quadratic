@@ -9,6 +9,11 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
 
+    pub fn server_set_sheet_name(&mut self, sheet_id: SheetId, name: String) {
+        let ops = self.set_sheet_name_operations(sheet_id, name);
+        self.server_apply_transaction(ops, None);
+    }
+
     pub fn set_sheet_color(
         &mut self,
         sheet_id: SheetId,
@@ -27,6 +32,11 @@ impl GridController {
     pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>) {
         let ops = self.add_sheet_operations(Some(name));
         self.start_user_transaction(ops, cursor, TransactionName::SheetAdd);
+    }
+
+    pub fn server_add_sheet_with_name(&mut self, name: String) {
+        let ops = self.add_sheet_operations(Some(name));
+        self.server_apply_transaction(ops, None);
     }
 
     pub fn delete_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {

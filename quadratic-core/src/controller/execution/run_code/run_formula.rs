@@ -3,8 +3,8 @@ use itertools::Itertools;
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    formulas::{Ctx, parse_formula},
-    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+    formulas::{Ctx, find_cell_references, parse_formula},
+    grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
 };
 
 impl GridController {
@@ -49,6 +49,41 @@ impl GridController {
                 let _ = self.code_cell_sheet_error(transaction, &error);
             }
         }
+    }
+
+    pub(crate) fn add_formula_without_eval(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
+        code: String,
+    ) {
+        let parse_ctx = self.a1_context();
+        transaction.current_sheet_pos = Some(sheet_pos);
+
+        let mut cells_accessed = CellsAccessed::default();
+        let cell_references = find_cell_references(&code, parse_ctx, sheet_pos);
+        for cell_ref in cell_references {
+            if let Ok(cell_ref) = cell_ref.inner {
+                cells_accessed.add(cell_ref.sheet_id, cell_ref.cells);
+            }
+        }
+
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code,
+            cells_accessed,
+            ..CodeRun::default()
+        };
+        let new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            "Formula1",
+            "".into(),
+            false,
+            None,
+            None,
+            None,
+        );
+        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
     }
 }
 

@@ -41,14 +41,12 @@ pub fn unique_data_table_name(
     sheet_pos: Option<SheetPos>,
     a1_context: &A1Context,
 ) -> String {
-    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
-
-    let iter_names = a1_context.table_map.iter_rev_table_names();
-
-    let name = unique_name(name, require_number, check_name, iter_names);
-
     // replace spaces with underscores
-    name.replace(' ', "_")
+    let name = name.replace(' ', "_");
+
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
+    let iter_names = a1_context.table_map.iter_rev_table_names();
+    unique_name(&name, require_number, check_name, iter_names)
 }
 
 impl Grid {

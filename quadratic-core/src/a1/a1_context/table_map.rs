@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
@@ -11,34 +13,61 @@ use super::TableMapEntry;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
-    pub tables: IndexMap<String, TableMapEntry>,
+    tables: IndexMap<String, TableMapEntry>,
+    sheet_pos_to_table: HashMap<SheetId, HashMap<Pos, String>>,
 }
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
         let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
+        self.sheet_pos_to_table
+            .entry(table_map_entry.sheet_id)
+            .or_default()
+            .insert(table_map_entry.bounds.min, table_name_folded.clone());
         self.tables.insert(table_name_folded, table_map_entry);
-    }
-
-    /// Inserts a table into the table map with a key that is already case folded.
-    pub fn insert_with_key(&mut self, table_name: String, table_map_entry: TableMapEntry) {
-        self.tables.insert(table_name, table_map_entry);
-    }
-
-    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
-        let table_name_folded = case_fold_ascii(table_name);
-        self.tables.shift_remove(&table_name_folded)
-    }
-
-    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
-        self.tables
-            .retain(|_, table| table.sheet_id != sheet_id || table.bounds.min != pos);
     }
 
     pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
         let table_name_folded = case_fold_ascii(table.name());
         let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
         self.tables.insert(table_name_folded, table_map_entry);
+    }
+
+    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
+        let table_name_folded = case_fold_ascii(table_name);
+        if let Some(table) = self.tables.shift_remove(&table_name_folded) {
+            self.sheet_pos_to_table
+                .get_mut(&table.sheet_id)
+                .map(|pos_table| pos_table.remove(&table.bounds.min));
+            Some(table)
+        } else {
+            None
+        }
+    }
+
+    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
+        let table_name = self
+            .sheet_pos_to_table
+            .get_mut(&sheet_id)
+            .map(|pos_table| pos_table.remove(&pos))
+            .flatten();
+        if let Some(table_name) = table_name {
+            self.tables.shift_remove(&table_name);
+        }
+    }
+
+    pub fn remove_sheet(&mut self, sheet_id: SheetId) {
+        let table_names = self.sheet_pos_to_table.remove(&sheet_id);
+        if let Some(table_names) = table_names {
+            for (_, table_name) in table_names {
+                self.tables.shift_remove(&table_name);
+            }
+        }
+    }
+
+    pub fn sort(&mut self) {
+        self.tables
+            .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
     }
 
     /// Finds a table by name.
@@ -75,6 +104,11 @@ impl TableMap {
     /// Returns an iterator over the table names in the table map in reverse order.
     pub fn iter_rev_table_names(&self) -> impl Iterator<Item = &String> {
         self.tables.keys().rev()
+    }
+
+    /// Returns an iterator over the TableMapEntry in the table map.
+    pub fn iter_table_values(&self) -> impl Iterator<Item = &TableMapEntry> {
+        self.tables.values()
     }
 
     /// Returns a list of all table names in the table map.

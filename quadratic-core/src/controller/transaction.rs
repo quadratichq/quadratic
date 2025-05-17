@@ -57,6 +57,16 @@ impl From<&str> for TransactionHeader {
     }
 }
 
+impl From<TransactionHeader> for TransactionVersion {
+    fn from(header: TransactionHeader) -> Self {
+        match header.version.as_str() {
+            "1.0" => TransactionVersion::v1(),
+            "2.0" => TransactionVersion::v2(),
+            _ => TransactionVersion::current(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionVersion {
     pub header: TransactionHeader,
@@ -162,11 +172,12 @@ impl Transaction {
         // We're currently not doing anything with the transaction version, but will in
         // the future as we use different serialization and compression methods and/or
         // different operation types.
-        let _version = deserialize::<TransactionHeader>(&HEADER_SERIALIZATION_FORMAT, header)?;
+        let header = deserialize::<TransactionHeader>(&HEADER_SERIALIZATION_FORMAT, header)?;
+        let version = TransactionVersion::from(header);
 
         decompress_and_deserialize::<T>(
-            &TransactionVersion::current().serialized_format,
-            &TransactionVersion::current().compression_format,
+            &version.serialized_format,
+            &version.compression_format,
             data,
         )
     }

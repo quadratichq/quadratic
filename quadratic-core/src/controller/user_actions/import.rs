@@ -54,10 +54,6 @@ impl GridController {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        // Rerun all code cells after importing Excel file
-        // This is required to run compute cells in order
-        let code_rerun_ops = self.rerun_all_code_cells_operations();
-        self.server_apply_transaction(code_rerun_ops, None);
         Ok(())
     }
 
@@ -313,8 +309,8 @@ pub(crate) mod tests {
             CellValue::Text("Hello Red".into())
         );
 
-        expect_js_call_count("jsTransactionStart", 2, false);
-        expect_js_call_count("jsTransactionEnd", 2, false);
+        expect_js_call_count("jsTransactionStart", 4, false);
+        expect_js_call_count("jsTransactionEnd", 4, false);
 
         // doesn't appear to import the bold or red formatting yet
         // assert_eq!(
