@@ -1,4 +1,9 @@
 [workspace]
+edition = "2024"
+license-file = "LICENSE"
+description = "Infinite data grid with Python, JavaScript, and SQL built-in"
+repository = "https://github.com/quadratichq/quadratic"
+
 members = [
     "quadratic-rust-shared",
     "quadratic-core",
