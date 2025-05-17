@@ -1,7 +1,9 @@
 import { authClient } from '@/auth/auth';
+import env from '@/env';
 import type { ConnectionType, ConnectionTypeDetails } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
-const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
+
+const API_URL = env.QUADRATIC_CONNECTION_URL;
 
 const jwtHeader = async (): Promise<HeadersInit> => {
   let jwt = await authClient.getTokenOrRedirect();

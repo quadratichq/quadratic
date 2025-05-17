@@ -5,11 +5,13 @@ import { defineConfig, loadEnv } from 'vite';
 import checker from 'vite-plugin-checker';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import generateEnvVars from './scripts/vite-generate-env-vars';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   const plugins = [
+    generateEnvVars(),
     react(),
     tsconfigPaths(),
     svgr(),
