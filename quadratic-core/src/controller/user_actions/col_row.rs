@@ -493,28 +493,28 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         // Set up formatting in column A5 and A10
-        gc.set_cell_value(pos![sheet_id!A1], "hello".to_string(), None);
-        gc.set_bold(&A1Selection::test_a1("A5"), Some(true), None)
+        gc.set_cell_value(pos![sheet_id!C1], "hello".to_string(), None);
+        gc.set_bold(&A1Selection::test_a1("C5"), Some(true), None)
             .unwrap();
 
-        // Insert 3 columns after column A
-        gc.insert_columns(sheet_id, 1, 3, true, None);
-        assert_display_cell_value_first_sheet(&gc, 1, 1, "hello");
-        assert_cell_format_bold(&gc, sheet_id, 1, 5, true);
-        assert_cell_format_bold(&gc, sheet_id, 2, 5, true);
+        // Insert 3 columns after C
+        gc.insert_columns(sheet_id, 4, 3, false, None);
+        assert_display_cell_value_first_sheet(&gc, 3, 1, "hello");
         assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
-        assert_cell_format_bold(&gc, sheet_id, 5, 5, false);
+        assert_cell_format_bold(&gc, sheet_id, 5, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 6, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 7, 5, false);
 
         gc.undo(None);
 
-        // todo...
-        // gc.insert_columns(sheet_id, 1, 3, false, None);
-        // assert_display_cell_value_first_sheet(&gc, 4, 1, "hello");
-        // assert_cell_format_bold(&gc, sheet_id, 1, 5, true);
-        // assert_cell_format_bold(&gc, sheet_id, 2, 5, true);
-        // assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
-        // assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
-        // assert_cell_format_bold(&gc, sheet_id, 5, 5, false);
+        // insert 3 columns before C
+        gc.insert_columns(sheet_id, 3, 3, true, None);
+        assert_display_cell_value_first_sheet(&gc, 7, 1, "hello");
+        assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 5, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 6, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 7, 5, false);
     }
 }
