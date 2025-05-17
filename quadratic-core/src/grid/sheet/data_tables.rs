@@ -312,12 +312,37 @@ impl SheetDataTables {
             })
     }
 
+    pub fn get_code_runs_in_rect(
+        &self,
+        rect: Rect,
+        ignore_spill_error: bool,
+    ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
+        self.get_pos_in_rect(rect, ignore_spill_error)
+            .filter_map(|pos| {
+                self.data_tables
+                    .get_full(&pos)
+                    .map(|(index, _, data_table)| {
+                        data_table.code_run().map(|code_run| (index, pos, code_run))
+                    })
+                    .flatten()
+            })
+    }
+
     pub fn get_in_rect_sorted(
         &self,
         rect: Rect,
         ignore_spill_error: bool,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
         self.get_in_rect(rect, ignore_spill_error)
+            .sorted_by(|a, b| a.0.cmp(&b.0))
+    }
+
+    pub fn get_code_runs_in_sorted(
+        &self,
+        rect: Rect,
+        ignore_spill_error: bool,
+    ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
+        self.get_code_runs_in_rect(rect, ignore_spill_error)
             .sorted_by(|a, b| a.0.cmp(&b.0))
     }
 

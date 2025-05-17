@@ -234,7 +234,7 @@ impl GridController {
                 output_type: Some(return_type),
                 std_out,
                 std_err: std_err.to_owned(),
-                cells_accessed: transaction.cells_accessed.to_owned(),
+                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
             };
 
             let name = match code.language {

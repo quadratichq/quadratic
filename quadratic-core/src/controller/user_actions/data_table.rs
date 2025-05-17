@@ -1,7 +1,9 @@
 use crate::{
     CopyFormats, SheetPos, SheetRect,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
-    grid::{DataTable, data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
+    grid::{
+        CodeRun, DataTable, data_table::column_header::DataTableColumnHeader, sort::DataTableSort,
+    },
 };
 
 use anyhow::Result;
@@ -14,6 +16,13 @@ impl GridController {
         } else {
             None
         }
+    }
+
+    /// Gets a data table based on a sheet position.
+    pub fn code_run_at(&self, sheet_pos: &SheetPos) -> Option<&CodeRun> {
+        self.data_table_at(*sheet_pos)
+            .map(|dt| dt.code_run())
+            .flatten()
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {

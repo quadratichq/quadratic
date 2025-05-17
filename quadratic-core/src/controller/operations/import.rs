@@ -7,15 +7,14 @@ use crate::{
     Array, ArraySize, CellValue, Pos, SheetPos,
     arrow::arrow_col_to_cell_value_vec,
     cellvalue::Import,
-    controller::GridController,
-    grid::{
-        CodeCellLanguage, CodeCellValue, DataTable, Sheet, SheetId,
-        file::sheet_schema::export_sheet, formats::SheetFormatUpdates,
+    controller::{
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        execution::TransactionSource,
     },
+    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates},
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
-use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
@@ -220,7 +219,7 @@ impl GridController {
         file: &[u8],
         file_name: &str,
     ) -> Result<Vec<Operation>> {
-        let mut ops = vec![] as Vec<Operation>;
+        let mut ops: Vec<Operation> = vec![];
         let error = |e: XlsxError| anyhow!("Error parsing Excel file {file_name}: {e}");
 
         let cursor = Cursor::new(file);
@@ -251,11 +250,22 @@ impl GridController {
         let mut current_y_values = 0;
         let mut current_y_formula = 0;
 
-        let mut order = key_between(None, None).unwrap_or("A0".to_string());
+        let mut gc = GridController::default();
+
+        // add all sheets to the grid, this is required for sheet name parsing in cell ref
+        for (sheet_index, sheet_name) in sheets.iter().enumerate() {
+            if sheet_index == 0 {
+                let sheet_id = gc.sheet_ids()[0];
+                gc.server_set_sheet_name(sheet_id, sheet_name.to_owned());
+            } else {
+                gc.server_add_sheet_with_name(sheet_name.to_owned());
+            }
+        }
+
+        // add data from excel file to grid
         for sheet_name in sheets {
-            // add the sheet
-            let mut sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), order.clone());
-            order = key_between(Some(&order), None).unwrap_or("A0".to_string());
+            let sheet = gc.try_sheet_from_name(sheet_name.to_owned()).unwrap();
+            let sheet_id = sheet.id;
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
@@ -304,13 +314,12 @@ impl GridController {
                         ExcelData::Bool(value) => CellValue::Logical(*value),
                     };
 
-                    sheet.set_cell_value(
-                        Pos {
-                            x: insert_at.x + x as i64,
-                            y: insert_at.y + y as i64,
-                        },
-                        cell_value,
-                    );
+                    let pos = Pos {
+                        x: insert_at.x + x as i64,
+                        y: insert_at.y + y as i64,
+                    };
+                    let sheet = gc.try_sheet_mut(sheet_id).unwrap();
+                    sheet.set_cell_value(pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
@@ -334,7 +343,6 @@ impl GridController {
             // formulas
             let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
             let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
-            let mut formula_compute_ops = vec![];
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
@@ -342,15 +350,19 @@ impl GridController {
                             x: insert_at.x + x as i64,
                             y: insert_at.y + y as i64,
                         };
+                        let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let cell_value = CellValue::Code(CodeCellValue {
                             language: CodeCellLanguage::Formula,
                             code: cell.to_string(),
                         });
+                        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
                         sheet.set_cell_value(pos, cell_value);
-                        // add code compute operation, to generate code runs
-                        formula_compute_ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet.id),
-                        });
+                        let mut transaction = PendingTransaction {
+                            source: TransactionSource::Server,
+                            ..Default::default()
+                        };
+                        gc.add_formula_without_eval(&mut transaction, sheet_pos, cell.to_string());
+                        gc.send_client_updates_during_transaction(&mut transaction, false);
                     }
                 }
 
@@ -371,12 +383,16 @@ impl GridController {
                 }
                 current_y_formula += 1;
             }
+        }
 
-            // add new sheets
-            ops.push(Operation::AddSheetSchema {
-                schema: Box::new(export_sheet(sheet)),
+        // rerun all formulas in-order
+        let compute_ops = gc.rerun_all_code_cells_operations();
+        gc.server_apply_transaction(compute_ops, None);
+
+        for sheet in gc.grid.sheets.into_iter() {
+            ops.push(Operation::AddSheet {
+                sheet: Box::new(sheet),
             });
-            ops.extend(formula_compute_ops);
         }
 
         Ok(ops)

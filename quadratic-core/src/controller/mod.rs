@@ -121,13 +121,13 @@ impl GridController {
         code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
         sort: bool,
     ) {
-        for (sheet_id, table_info) in code_cells_a1_context.into_iter() {
+        for (sheet_id, positions) in code_cells_a1_context.into_iter() {
             let Some(sheet) = self.grid.try_sheet(sheet_id) else {
                 self.a1_context.table_map.remove_sheet(sheet_id);
                 continue;
             };
 
-            for pos in table_info.into_iter() {
+            for pos in positions.into_iter() {
                 let Some(table) = sheet.data_table_at(&pos) else {
                     self.a1_context.table_map.remove_at(sheet_id, pos);
                     continue;
@@ -161,20 +161,18 @@ impl GridController {
         }
     }
 
-    pub(crate) fn update_cells_accessed(
+    pub(crate) fn update_cells_accessed_cache(
         &mut self,
         sheet_pos: SheetPos,
         data_table: &Option<DataTable>,
     ) {
         self.cells_accessed.remove_pos(sheet_pos);
         if let Some(code_run) = data_table.as_ref().and_then(|dt| dt.code_run()) {
-            for (sheet_id, ranges) in code_run.cells_accessed.cells.iter() {
-                for range in ranges {
-                    if let Some(rect) = range.to_rect_unbounded(&self.a1_context) {
-                        self.cells_accessed
-                            .insert(sheet_pos, (sheet_id.to_owned(), rect));
-                    }
-                }
+            for (sheet_id, rect) in code_run
+                .cells_accessed
+                .iter_rects_unbounded(&self.a1_context)
+            {
+                self.cells_accessed.insert(sheet_pos, (sheet_id, rect))
             }
         }
     }
