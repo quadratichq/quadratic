@@ -130,24 +130,28 @@ impl GridController {
 
         if !transaction.is_server() {
             // update fills if needed in either old or new data table
-            if new_data_table
-                .as_ref()
-                .is_some_and(|dt| dt.formats.has_fills())
-                || old_data_table
+            if new_data_table.as_ref().is_some_and(|dt| {
+                dt.formats
                     .as_ref()
-                    .is_some_and(|dt| dt.formats.has_fills())
-            {
+                    .is_some_and(|formats| formats.has_fills())
+            }) || old_data_table.as_ref().is_some_and(|dt| {
+                dt.formats
+                    .as_ref()
+                    .is_some_and(|formats| formats.has_fills())
+            }) {
                 transaction.add_fill_cells(sheet_id);
             }
 
             // update borders if needed old or new data table
-            if new_data_table
-                .as_ref()
-                .is_some_and(|dt| !dt.borders.is_default())
-                || old_data_table
+            if new_data_table.as_ref().is_some_and(|dt| {
+                !dt.borders
                     .as_ref()
-                    .is_some_and(|dt| !dt.borders.is_default())
-            {
+                    .is_none_or(|borders| borders.is_default())
+            }) || old_data_table.as_ref().is_some_and(|dt| {
+                !dt.borders
+                    .as_ref()
+                    .is_none_or(|borders| borders.is_default())
+            }) {
                 transaction.add_borders(sheet_id);
             }
         }

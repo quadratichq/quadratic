@@ -7,6 +7,16 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v2_0::DataTabl
     data_tables
         .into_iter()
         .map(|(pos, data_table)| {
+            let formats = if data_table.formats.is_empty() {
+                None
+            } else {
+                Some(data_table.formats)
+            };
+            let borders = if data_table.borders.is_empty() {
+                None
+            } else {
+                Some(data_table.borders)
+            };
             (
                 pos,
                 v2_0::DataTableSchema {
@@ -24,8 +34,8 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v2_0::DataTabl
                     spill_data_table: data_table.spill_error,
                     last_modified: data_table.last_modified,
                     alternating_colors: data_table.alternating_colors,
-                    formats: data_table.formats,
-                    borders: data_table.borders,
+                    formats,
+                    borders,
                     chart_pixel_output: data_table.chart_pixel_output,
                     chart_output: data_table.chart_output,
                 },

@@ -11,3 +11,12 @@ pub struct BordersSchema {
     pub top: BordersSideSchema,
     pub bottom: BordersSideSchema,
 }
+
+impl BordersSchema {
+    pub fn is_empty(&self) -> bool {
+        self.left.is_empty()
+            && self.right.is_empty()
+            && self.top.is_empty()
+            && self.bottom.is_empty()
+    }
+}

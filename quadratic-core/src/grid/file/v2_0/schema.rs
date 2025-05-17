@@ -90,8 +90,8 @@ pub struct DataTableSchema {
     pub spill_data_table: bool,
     pub last_modified: Option<DateTime<Utc>>,
     pub alternating_colors: bool,
-    pub formats: SheetFormattingSchema,
-    pub borders: BordersSchema,
+    pub formats: Option<SheetFormattingSchema>,
+    pub borders: Option<BordersSchema>,
     pub chart_pixel_output: Option<(f32, f32)>,
     pub chart_output: Option<(u32, u32)>,
 }

@@ -639,7 +639,10 @@ impl GridController {
             data_table.show_columns = Some(true);
 
             if !format_update.is_default() {
-                data_table.formats.apply_updates(&format_update);
+                data_table
+                    .formats
+                    .get_or_insert_default()
+                    .apply_updates(&format_update);
             }
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
             let cell_value = CellValue::Import(import);
@@ -1124,7 +1127,9 @@ impl GridController {
                     dt.insert_column_sorted(index as usize, column_header, values)?;
 
                     if !format_update.is_default() {
-                        dt.formats.apply_updates(&format_update);
+                        dt.formats
+                            .get_or_insert_default()
+                            .apply_updates(&format_update);
                     }
 
                     Ok(())
@@ -1311,12 +1316,13 @@ impl GridController {
             if let Some(remove_selection) = remove_selection {
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                    let data_table_reverse_format =
-                        dt.formats
-                            .apply_updates(&SheetFormatUpdates::from_selection(
-                                &remove_selection,
-                                FormatUpdate::cleared(),
-                            ));
+                    let data_table_reverse_format = dt
+                        .formats
+                        .get_or_insert_default()
+                        .apply_updates(&SheetFormatUpdates::from_selection(
+                            &remove_selection,
+                            FormatUpdate::cleared(),
+                        ));
                     if !data_table_reverse_format.is_default() {
                         reverse_operations.push(Operation::DataTableFormats {
                             sheet_pos,
@@ -1524,7 +1530,9 @@ impl GridController {
                     dt.insert_row(index as usize, values)?;
 
                     if !format_update.is_default() {
-                        dt.formats.apply_updates(&format_update);
+                        dt.formats
+                            .get_or_insert_default()
+                            .apply_updates(&format_update);
                     }
 
                     Ok(())
@@ -1679,12 +1687,13 @@ impl GridController {
             {
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                    let data_table_reverse_format =
-                        dt.formats
-                            .apply_updates(&SheetFormatUpdates::from_selection(
-                                &formats_selection,
-                                FormatUpdate::cleared(),
-                            ));
+                    let data_table_reverse_format = dt
+                        .formats
+                        .get_or_insert_default()
+                        .apply_updates(&SheetFormatUpdates::from_selection(
+                            &formats_selection,
+                            FormatUpdate::cleared(),
+                        ));
                     if !data_table_reverse_format.is_default() {
                         reverse_operations.push(Operation::DataTableFormats {
                             sheet_pos,
@@ -1860,7 +1869,7 @@ impl GridController {
             let mut reverse_operations = vec![];
 
             sheet.modify_data_table_at(&data_table_pos, |dt| {
-                let reverse_formats = dt.formats.apply_updates(&formats);
+                let reverse_formats = dt.formats.get_or_insert_default().apply_updates(&formats);
                 dt.mark_formats_dirty(
                     transaction,
                     data_table_pos.to_sheet_pos(sheet_id),
@@ -1902,7 +1911,7 @@ impl GridController {
             let mut reverse_operations = vec![];
 
             sheet.modify_data_table_at(&data_table_pos, |dt| {
-                let reverse_borders = dt.borders.set_borders_a1(&borders);
+                let reverse_borders = dt.borders.get_or_insert_default().set_borders_a1(&borders);
 
                 transaction.add_borders(sheet_id);
 

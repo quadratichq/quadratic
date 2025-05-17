@@ -57,10 +57,18 @@ impl DataTable {
             return;
         }
 
-        if self.formats.has_fills() {
+        if self
+            .formats
+            .as_ref()
+            .is_some_and(|formats| formats.has_fills())
+        {
             transaction.add_fill_cells(sheet_id);
         }
-        if !self.borders.is_default() {
+        if !self
+            .borders
+            .as_ref()
+            .is_none_or(|borders| borders.is_default())
+        {
             transaction.add_borders(sheet_id);
         }
     }
@@ -94,11 +102,12 @@ impl DataTable {
                         .cell_value_at((x - data_table_pos.x) as u32, (y - data_table_pos.y) as u32)
                         .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string());
 
-                let check_wrap = self
-                    .formats
-                    .wrap
-                    .get((x - formats_x_offset, y - formats_y_offset).into())
-                    .is_some_and(|wrap| wrap == CellWrap::Wrap);
+                let check_wrap = self.formats.as_ref().is_some_and(|formats| {
+                    formats
+                        .wrap
+                        .get((x - formats_x_offset, y - formats_y_offset).into())
+                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
+                });
 
                 if check_value && check_wrap {
                     rows.push(y);
