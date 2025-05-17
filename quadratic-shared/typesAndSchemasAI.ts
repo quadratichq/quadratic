@@ -15,6 +15,7 @@ const VertexAIModelSchema = z.enum([
   'gemini-2.5-pro-preview-05-06',
   'gemini-2.0-flash-thinking-exp-01-21',
   'gemini-2.0-flash-001',
+  'gemini-2.5-flash-preview-04-17'
 ]);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -23,7 +24,14 @@ const BedrockAnthropicModelSchema = z.enum([
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']);
-const OpenAIModelSchema = z.enum(['gpt-4.1-2025-04-14', 'o4-mini-2025-04-16', 'o3-2025-04-16']);
+const OpenAIModelSchema = z.enum([
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BXe8iYRT',
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BXv0t4pw',
+  'gpt-4.1-mini-2025-04-14',
+  'gpt-4.1-2025-04-14',
+  'o4-mini-2025-04-16',
+  'o3-2025-04-16',
+]);
 const XAIModelSchema = z.enum(['grok-3-beta']);
 const AIModelSchema = z.union([
   VertexAnthropicModelSchema,
@@ -45,7 +53,7 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
-const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-05-06', 'vertexai:gemini-2.0-flash-001']);
+const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-05-06', 'vertexai:gemini-2.0-flash-001', 'vertexai:gemini-2.5-flash-preview-04-17']);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
@@ -70,7 +78,14 @@ const AnthropicModelKeySchema = z.enum([
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
-const OpenAIModelKeySchema = z.enum(['openai:gpt-4.1-2025-04-14', 'openai:o4-mini-2025-04-16', 'openai:o3-2025-04-16']);
+const OpenAIModelKeySchema = z.enum([
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXe8iYRT',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXv0t4pw',
+  'openai:gpt-4.1-mini-2025-04-14',
+  'openai:gpt-4.1-2025-04-14',
+  'openai:o4-mini-2025-04-16',
+  'openai:o3-2025-04-16',
+]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
@@ -288,6 +303,7 @@ export const AIMessagePromptSchema = z.object({
     })
   ),
   model: AIModelSchema,
+  fineTuningInput: z.string().optional(),
 });
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
