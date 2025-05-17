@@ -41,10 +41,10 @@ impl DataTable {
 
         // formats and borders are 1 indexed
         if let Some(formats) = self.formats.as_mut() {
-            formats.insert_row(row_index + 1, CopyFormats::None)
+            formats.insert_row(row_index + 1, CopyFormats::None);
         }
         if let Some(borders) = self.borders.as_mut() {
-            borders.insert_row(row_index + 1, CopyFormats::None)
+            borders.insert_row(row_index + 1, CopyFormats::None);
         }
 
         let row_index = u64::try_from(row_index)?;
