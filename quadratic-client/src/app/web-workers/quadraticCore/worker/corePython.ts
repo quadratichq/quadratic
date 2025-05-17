@@ -71,10 +71,10 @@ class CorePython {
       responseUint8Array = toUint8Array(cellA1Response);
     }
 
-    const length = responseUint8Array.length;
+    const byteLength = responseUint8Array.byteLength;
 
-    Atomics.store(int32View, 1, length);
-    if (length !== 0) {
+    Atomics.store(int32View, 1, byteLength);
+    if (byteLength !== 0) {
       const id = this.id++;
       this.getCellsResponses[id] = responseUint8Array;
       Atomics.store(int32View, 2, id);

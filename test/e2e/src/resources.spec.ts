@@ -1,0 +1,100 @@
+import { expect, test } from '@playwright/test';
+import { logIn } from './helpers/auth.helpers';
+import { cleanUpFiles } from './helpers/file.helpers';
+import { createNewTeamByURL } from './helpers/team.helper';
+
+test('Create Example', async ({ page }) => {
+  // Constants
+  const newTeamName = `Create Example - ${Date.now()}`;
+  const fileName = 'Python getting started (example)';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_create_example` });
+
+  // Create a new team
+  await createNewTeamByURL(page, { teamName: newTeamName });
+
+  // Go to private files
+  await page.locator(`div a:text("My files")`).click();
+  await cleanUpFiles(page, { fileName, skipFilterClear: true });
+
+  //--------------------------------
+  // Create Example
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // navigate to Examples tab
+  await page.locator(`a:text("Examples")`).click();
+  await page.waitForTimeout(5 * 1000);
+
+  // click on the "Python intro" example
+  await page.locator('h2:has-text("Python intro")').click();
+  await page.waitForTimeout(10 * 1000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // Close Chat
+  try {
+    await page.getByRole(`button`, { name: `close` }).first().click();
+  } catch (err) {
+    console.error(err);
+  }
+
+  // assert that the correct file is created
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Resources_Create_Example.png', {
+    maxDiffPixels: 1000,
+  });
+
+  // click on Back to files
+  await page.locator(`nav a svg`).click();
+
+  // Go to private files
+  await page.locator(`div a:text("My files")`).click();
+
+  // assert that the example file has been created
+  await expect(page.locator(`h2:has-text("${fileName}")`)).toBeVisible();
+  await page.waitForTimeout(3000);
+
+  // assert that thumbnail matches file look
+  await expect(page.locator('[alt="File thumbnail screenshot"]').first()).toHaveScreenshot(
+    'Resources_Create_Example_Thumbnail.png',
+    {
+      maxDiffPixelRatio: 0.01,
+    }
+  );
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Docs page', async ({ page }) => {
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_create_example` });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+
+  // click Docs
+  const [page2] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.locator(`nav [href="https://docs.quadratichq.com"]`).click(),
+  ]);
+  await page2.waitForLoadState('domcontentloaded');
+  await page2.bringToFront();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+
+  // assert that user is redirected to docs page in new tab
+  await expect(page2).toHaveURL('https://docs.quadratichq.com/');
+  await expect(page2.locator(`h1:has-text("Getting Started")`)).toBeVisible();
+});
