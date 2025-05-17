@@ -1,4 +1,4 @@
-use std::{collections::HashSet, i64};
+use std::collections::HashSet;
 
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -321,10 +321,9 @@ impl SheetDataTables {
             .filter_map(|pos| {
                 self.data_tables
                     .get_full(&pos)
-                    .map(|(index, _, data_table)| {
+                    .and_then(|(index, _, data_table)| {
                         data_table.code_run().map(|code_run| (index, pos, code_run))
                     })
-                    .flatten()
             })
     }
 

@@ -49,8 +49,7 @@ impl TableMap {
         let table_name = self
             .sheet_pos_to_table
             .get_mut(&sheet_id)
-            .map(|pos_table| pos_table.remove(&pos))
-            .flatten();
+            .and_then(|pos_table| pos_table.remove(&pos));
         if let Some(table_name) = table_name {
             self.tables.shift_remove(&table_name);
         }

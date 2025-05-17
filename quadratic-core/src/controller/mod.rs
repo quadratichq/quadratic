@@ -172,7 +172,7 @@ impl GridController {
                 .cells_accessed
                 .iter_rects_unbounded(&self.a1_context)
             {
-                self.cells_accessed.insert(sheet_pos, (sheet_id, rect))
+                self.cells_accessed.insert(sheet_pos, (sheet_id, rect));
             }
         }
     }

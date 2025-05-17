@@ -89,14 +89,8 @@ impl SheetColumns {
         }
 
         let column = match self.columns.entry(pos.x) {
-            btree_map::Entry::Vacant(e) => {
-                let column = e.insert(Column::new(pos.x));
-                column
-            }
-            btree_map::Entry::Occupied(e) => {
-                let column = e.into_mut();
-                column
-            }
+            btree_map::Entry::Vacant(e) => e.insert(Column::new(pos.x)),
+            btree_map::Entry::Occupied(e) => e.into_mut(),
         };
 
         if let Some(value) = value {

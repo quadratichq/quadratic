@@ -1142,7 +1142,7 @@ impl GridController {
             let mut sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
-            sheet_rect_for_compute_and_spills.min.x += display_min_column as i64;
+            sheet_rect_for_compute_and_spills.min.x += display_min_column;
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
@@ -1399,7 +1399,7 @@ impl GridController {
             let mut sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
-            sheet_rect_for_compute_and_spills.min.x += display_min_column as i64;
+            sheet_rect_for_compute_and_spills.min.x += display_min_column;
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);

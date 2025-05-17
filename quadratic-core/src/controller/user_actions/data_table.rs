@@ -20,9 +20,7 @@ impl GridController {
 
     /// Gets a data table based on a sheet position.
     pub fn code_run_at(&self, sheet_pos: &SheetPos) -> Option<&CodeRun> {
-        self.data_table_at(*sheet_pos)
-            .map(|dt| dt.code_run())
-            .flatten()
+        self.data_table_at(*sheet_pos).and_then(|dt| dt.code_run())
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {

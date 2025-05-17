@@ -145,7 +145,9 @@ impl GridController {
                 Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 
                 Operation::AddSheet { .. } => {
-                    Self::handle_execution_operation_result(self.execute_add_sheet(transaction, op))
+                    Self::handle_execution_operation_result(
+                        self.execute_add_sheet(transaction, op),
+                    );
                 }
                 Operation::AddSheetSchema { .. } => Self::handle_execution_operation_result(
                     self.execute_add_sheet_schema(transaction, op),
