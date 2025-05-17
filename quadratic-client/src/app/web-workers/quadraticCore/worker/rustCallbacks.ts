@@ -5,7 +5,6 @@ import type {
   JsBordersSheet,
   JsHtmlOutput,
   JsOffset,
-  JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
   JsSnackbarSeverity,
@@ -47,7 +46,7 @@ declare var self: WorkerGlobalScope &
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
@@ -175,9 +174,8 @@ export const jsBordersSheet = (sheetId: string, bordersStringified: string) => {
   }
 };
 
-export const jsSheetCodeCell = (sheetId: string, codeCellsStringified: string) => {
-  const codeCells = JSON.parse(codeCellsStringified) as JsRenderCodeCell[];
-  self.sendSheetCodeCell(sheetId, codeCells);
+export const jsSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
+  self.sendSheetCodeCells(sheetId, renderCodeCells);
 };
 
 export const jsSheetBoundsUpdate = (bounds: string) => {

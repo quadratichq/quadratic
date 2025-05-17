@@ -508,6 +508,5 @@ pub struct JsResponse {
 pub struct JsUpdateCodeCell {
     pub sheet_id: SheetId,
     pub pos: Pos,
-    pub code_cell: Option<JsCodeCell>,
     pub render_code_cell: Option<JsRenderCodeCell>,
 }

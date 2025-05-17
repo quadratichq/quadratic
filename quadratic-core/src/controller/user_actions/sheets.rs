@@ -302,7 +302,6 @@ mod test {
         let update_code_cell = JsUpdateCodeCell {
             sheet_id: duplicated_sheet_id,
             pos: sheet_pos.into(),
-            code_cell: sheet.edit_code_value(sheet_pos.into(), gc.a1_context()),
             render_code_cell: sheet.get_render_code_cell(sheet_pos.into()),
         };
 

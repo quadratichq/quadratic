@@ -18,7 +18,6 @@ import type {
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
-  JsRenderCodeCell,
   JsRenderFill,
   JsSelectionContext,
   JsSheetFill,
@@ -652,9 +651,9 @@ export interface CoreClientBordersSheet {
 }
 
 export interface CoreClientSheetCodeCellRender {
-  type: 'coreClientSheetCodeCellRender';
+  type: 'coreClientSheetCodeCells';
   sheetId: string;
-  codeCells: JsRenderCodeCell[];
+  renderCodeCells: Uint8Array;
 }
 
 //#endregion

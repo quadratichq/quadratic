@@ -1,4 +1,5 @@
 use crate::grid::file::v1_9;
+use crate::util::is_false;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -77,22 +78,54 @@ pub type ValidationsSchema = v1_9::ValidationsSchema;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataTableSchema {
     pub kind: DataTableKindSchema,
+
     pub name: String,
+
+    #[serde(skip_serializing_if = "is_false", default)]
     pub header_is_first_row: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub show_name: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub show_columns: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub columns: Option<Vec<DataTableColumnSchema>>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub sort: Option<Vec<DataTableSortOrderSchema>>,
+
+    #[serde(skip_serializing_if = "is_false", default)]
     pub sort_dirty: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub display_buffer: Option<Vec<u64>>,
+
     pub value: OutputValueSchema,
+
+    #[serde(skip_serializing_if = "is_false", default)]
     pub spill_value: bool,
+
+    #[serde(skip_serializing_if = "is_false", default)]
     pub spill_data_table: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub last_modified: Option<DateTime<Utc>>,
+
+    #[serde(skip_serializing_if = "is_false", default)]
     pub alternating_colors: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub formats: Option<SheetFormattingSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub borders: Option<BordersSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_pixel_output: Option<(f32, f32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
 }
 

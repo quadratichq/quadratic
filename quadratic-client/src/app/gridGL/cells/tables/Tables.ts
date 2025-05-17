@@ -14,6 +14,7 @@ import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point } from 'pixi.js';
 import { Container, Rectangle } from 'pixi.js';
@@ -146,8 +147,9 @@ export class Tables extends Container<Table> {
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
   // listen for the bitmapFontsLoaded event and then render the code cells.
-  private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+  private renderCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
     if (sheetId === this.cellsSheet.sheetId) {
+      const codeCells = fromUint8Array(renderCodeCells) as JsRenderCodeCell[];
       this.removeChildren();
       if (!isBitmapFontLoaded()) {
         console.log('bitmapFontsLoaded event not received');

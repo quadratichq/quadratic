@@ -73,15 +73,8 @@ impl GridController {
                         grid.send_all_fills(*sheet_id);
 
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
-                            let code = sheet.get_all_render_code_cells();
-                            if !code.is_empty() {
-                                if let Ok(code) = serde_json::to_string(&code) {
-                                    crate::wasm_bindings::js::jsSheetCodeCell(
-                                        sheet_id.to_string(),
-                                        code,
-                                    );
-                                }
-                            }
+                            // sends all code cells to the client
+                            sheet.send_all_render_code_cells();
 
                             // sends all images to the client
                             sheet.send_all_images();

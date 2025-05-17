@@ -46,4 +46,34 @@ fn criterion_benchmark(c: &mut Criterion) {
         Some(std::time::Duration::from_secs(1)),
         function,
     );
+
+    let name = "import_excel: 100_000_formulas";
+    let excel_file = include_bytes!("test_files/100_000_formulas.xlsx").to_vec();
+    let function = || execute(&excel_file);
+
+    #[cfg(feature = "function-timer")]
+    single_test_or_benchmark(
+        c,
+        SINGLE_TEST,
+        name,
+        &quadratic_core::FUNCTIONS,
+        Some(10),
+        Some(std::time::Duration::from_secs(1)),
+        function,
+    );
+
+    let name = "import_excel: 200_000_formulas";
+    let excel_file = include_bytes!("test_files/200_000_formulas.xlsx").to_vec();
+    let function = || execute(&excel_file);
+
+    #[cfg(feature = "function-timer")]
+    single_test_or_benchmark(
+        c,
+        SINGLE_TEST,
+        name,
+        &quadratic_core::FUNCTIONS,
+        Some(10),
+        Some(std::time::Duration::from_secs(1)),
+        function,
+    );
 }

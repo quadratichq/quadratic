@@ -46,18 +46,6 @@ export const useSaveAndRunCell = () => {
               {
                 sheet_id: { id: sheetId },
                 pos: { x: BigInt(pos.x), y: BigInt(pos.y) },
-                code_cell: {
-                  x: BigInt(pos.x),
-                  y: BigInt(pos.y),
-                  code_string: codeString,
-                  language,
-                  std_out: null,
-                  std_err: null,
-                  evaluation_result: null,
-                  spill_error: null,
-                  return_info: null,
-                  cells_accessed: null,
-                },
                 render_code_cell: {
                   x: pos.x,
                   y: pos.y,

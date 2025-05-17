@@ -134,8 +134,8 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientGenerateThumbnail') {
       events.emit('generateThumbnail');
       return;
-    } else if (e.data.type === 'coreClientSheetCodeCellRender') {
-      events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
+    } else if (e.data.type === 'coreClientSheetCodeCells') {
+      events.emit('renderCodeCells', e.data.sheetId, e.data.renderCodeCells);
       return;
     } else if (e.data.type === 'coreClientSheetBoundsUpdate') {
       events.emit('sheetBounds', e.data.sheetBounds);

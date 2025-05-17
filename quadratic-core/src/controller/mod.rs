@@ -72,18 +72,6 @@ impl GridController {
         }
     }
 
-    pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        let a1_context = grid.make_a1_context();
-        let cells_accessed = grid.make_cells_accessed(&a1_context);
-        GridController {
-            grid,
-            a1_context,
-            cells_accessed,
-            transactions: ActiveTransactions::new(last_sequence_num),
-            ..Default::default()
-        }
-    }
-
     pub fn grid(&self) -> &Grid {
         &self.grid
     }

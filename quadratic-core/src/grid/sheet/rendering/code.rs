@@ -121,12 +121,23 @@ impl Sheet {
         self.render_code_cell(pos, data_table)
     }
 
-    /// Returns data for all rendering code cells
-    pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
-        self.data_tables
+    /// Sends all sheet code cells for rendering to client
+    pub fn send_all_render_code_cells(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let code = self
+            .data_tables
             .expensive_iter()
             .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
-            .collect()
+            .collect::<Vec<_>>();
+
+        if !code.is_empty() {
+            if let Ok(render_code_cells) = serde_json::to_vec(&code) {
+                crate::wasm_bindings::js::jsSheetCodeCells(self.id.to_string(), render_code_cells);
+            }
+        }
     }
 
     /// Send images in this sheet to the client. Note: we only have images

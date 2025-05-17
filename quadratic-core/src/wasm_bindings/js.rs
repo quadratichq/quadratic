@@ -62,7 +62,10 @@ extern "C" {
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
     pub fn jsGenerateThumbnail();
     pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */);
-    pub fn jsSheetCodeCell(sheet_id: String, code_cells: String);
+    pub fn jsSheetCodeCells(
+        sheet_id: String,
+        render_code_cells: Vec<u8>, /* Vec<JsRenderCodeCell> */
+    );
     pub fn jsSheetBoundsUpdate(bounds: String);
 
     pub fn jsImportProgress(
@@ -386,8 +389,11 @@ pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetCodeCell(sheet_id: String, code_cells: String) {
-    js_call("jsSheetCodeCell", format!("{},{}", sheet_id, code_cells));
+pub fn jsSheetCodeCells(sheet_id: String, render_code_cells: Vec<u8>) {
+    js_call(
+        "jsSheetCodeCells",
+        format!("{},{:?}", sheet_id, render_code_cells),
+    );
 }
 
 #[cfg(test)]

@@ -6,9 +6,16 @@ pub type BordersSideSchema = Contiguous2DSchema<Option<BorderStyleTimestampSchem
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct BordersSchema {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub left: BordersSideSchema,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub right: BordersSideSchema,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub top: BordersSideSchema,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub bottom: BordersSideSchema,
 }
 

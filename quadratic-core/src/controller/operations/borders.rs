@@ -477,7 +477,7 @@ impl GridController {
                 if !data_table
                     .borders
                     .as_ref()
-                    .is_none_or(|borders| borders.is_toggle_borders(&table_borders))
+                    .is_some_and(|borders| borders.is_toggle_borders(&table_borders))
                 {
                     return false;
                 }
