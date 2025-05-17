@@ -592,7 +592,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
         );
-        gc.insert_column(sheet_id, 3, true, None);
+        gc.insert_columns(sheet_id, 3, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -621,7 +621,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 1, 3))
         );
-        gc.insert_row(sheet_id, 3, true, None);
+        gc.insert_rows(sheet_id, 3, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -775,7 +775,7 @@ mod tests {
             None,
         );
 
-        gc.insert_column(sheet_id, 2, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -800,7 +800,7 @@ mod tests {
             None,
         );
 
-        gc.insert_row(sheet_id, 2, true, None);
+        gc.insert_rows(sheet_id, 2, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -934,7 +934,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.insert_column(sheet_id, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -942,7 +942,7 @@ mod tests {
         sheet.offsets.set_column_width(2, 200.0);
         sheet.offsets.set_column_width(4, 400.0);
 
-        gc.insert_column(sheet_id, 2, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
         offsets.insert((Some(3), None), 200.0);
         offsets.insert((Some(4), None), DEFAULT_COLUMN_WIDTH);
@@ -991,7 +991,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.insert_row(sheet_id, 1, true, None);
+        gc.insert_rows(sheet_id, 1, 1, true, None);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -999,7 +999,7 @@ mod tests {
         sheet.offsets.set_row_height(2, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
-        gc.insert_row(sheet_id, 2, true, None);
+        gc.insert_rows(sheet_id, 2, 1, true, None);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
         offsets.insert((None, Some(3)), 200.0);
         offsets.insert((None, Some(4)), DEFAULT_ROW_HEIGHT);
@@ -1087,7 +1087,7 @@ mod tests {
 
         let table = test_create_code_table(&mut gc, sheet_id, pos![C2], 2, 2);
 
-        gc.insert_column(sheet_id, 3, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None);
 
         assert_eq!(&table, gc.data_table(pos![sheet_id!d2]).unwrap());
         assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
@@ -1101,7 +1101,7 @@ mod tests {
         let _table = test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
 
         print_first_sheet(&gc);
-        gc.insert_column(sheet_id, 3, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None);
 
         // todo: this should be correct
         // assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
