@@ -21,22 +21,26 @@ impl GridController {
     /// insertion. DF: While confusing, it was created originally to support
     /// copying formats, but later turned into a differentiator for inserting
     /// columns, since the behavior was different for insert to left vs right.
-    pub fn insert_column(
+    pub fn insert_columns(
         &mut self,
         sheet_id: SheetId,
         column: i64,
+        count: u32,
         after: bool,
         cursor: Option<String>,
     ) {
-        let ops = vec![Operation::InsertColumn {
-            sheet_id,
-            column,
-            copy_formats: if after {
-                CopyFormats::After
-            } else {
-                CopyFormats::Before
-            },
-        }];
+        let mut ops = vec![];
+        for i in 0..count as i64 {
+            ops.push(Operation::InsertColumn {
+                sheet_id,
+                column: if after { column + i } else { column - i },
+                copy_formats: if after {
+                    CopyFormats::After
+                } else {
+                    CopyFormats::Before
+                },
+            })
+        }
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -49,16 +53,30 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
-    pub fn insert_row(&mut self, sheet_id: SheetId, row: i64, after: bool, cursor: Option<String>) {
-        let ops = vec![Operation::InsertRow {
-            sheet_id,
-            row,
-            copy_formats: if after {
-                CopyFormats::After
-            } else {
-                CopyFormats::Before
-            },
-        }];
+    /// Note the after is providing the source row, not the direction of the
+    /// insertion. DF: While confusing, it was created originally to support
+    /// copying formats, but later turned into a differentiator for inserting
+    /// rows, since the behavior was different for insert to above vs below.
+    pub fn insert_rows(
+        &mut self,
+        sheet_id: SheetId,
+        row: i64,
+        count: u32,
+        after: bool,
+        cursor: Option<String>,
+    ) {
+        let mut ops = vec![];
+        for i in 0..count as i64 {
+            ops.push(Operation::InsertRow {
+                sheet_id,
+                row: if after { row + i } else { row - i },
+                copy_formats: if after {
+                    CopyFormats::After
+                } else {
+                    CopyFormats::Before
+                },
+            });
+        }
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -220,7 +238,7 @@ mod tests {
             Some("red".to_string())
         );
 
-        gc.insert_column(sheet_id, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -285,7 +303,7 @@ mod tests {
             }
         );
 
-        gc.insert_column(sheet_id, 2, false, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -351,7 +369,7 @@ mod tests {
             }
         );
 
-        gc.insert_row(sheet_id, 1, true, None);
+        gc.insert_rows(sheet_id, 1, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -417,7 +435,7 @@ mod tests {
             }
         );
 
-        gc.insert_row(sheet_id, 2, false, None);
+        gc.insert_rows(sheet_id, 2, 1, false, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -453,5 +471,70 @@ mod tests {
         );
         assert!(sheet.formats.format(pos![A2]).is_default());
         assert!(sheet.formats.format(pos![B2]).is_default());
+    }
+
+    #[test]
+    fn test_insert_multiple_columns_formatting() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up formatting in column A
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet
+            .formats
+            .text_color
+            .set_rect(1, 1, Some(1), None, Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A1], Some("red".to_string()));
+
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        // Verify initial formatting
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.format(pos![A1]),
+            Format {
+                fill_color: Some("red".to_string()),
+                text_color: Some("blue".to_string()),
+                ..Default::default()
+            }
+        );
+
+        // Insert 3 columns after column A
+        gc.insert_columns(sheet_id, 1, 3, true, None);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Verify formatting was copied to all inserted columns
+        for col in 1..=4 {
+            assert_eq!(
+                sheet.formats.format(Pos::new(col, 1)),
+                Format {
+                    fill_color: Some("red".to_string()),
+                    text_color: Some("blue".to_string()),
+                    ..Default::default()
+                }
+            );
+        }
+
+        // Test undo
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+
+        // Verify only original column has formatting
+        assert_eq!(
+            sheet.formats.format(Pos::new(1, 1)),
+            Format {
+                fill_color: Some("red".to_string()),
+                text_color: Some("blue".to_string()),
+                ..Default::default()
+            }
+        );
+        assert!(sheet.formats.format(Pos::new(2, 1)).is_default());
+        assert!(sheet.formats.format(Pos::new(3, 1)).is_default());
+        assert!(sheet.formats.format(Pos::new(4, 1)).is_default());
     }
 }
