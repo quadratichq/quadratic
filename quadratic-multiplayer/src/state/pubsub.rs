@@ -34,39 +34,6 @@ impl PubSub {
         Ok(connection)
     }
 
-    // TODO: remove this function once all clients are updated
-    pub(crate) async fn push(
-        &mut self,
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<u8>,
-        sequence_num: u64,
-    ) -> Result<u64> {
-        let transaction = TransactionServer {
-            id,
-            file_id,
-            operations,
-            sequence_num,
-        };
-        let transaction_compressed = Transaction::serialize_and_compress(&transaction)
-            .map_err(|e| MpError::Serialization(e.to_string()))?;
-
-        let active_channels = match self.config {
-            PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
-            _ => "active_channels",
-        };
-
-        self.connection
-            .publish(
-                &file_id.to_string(),
-                &sequence_num.to_string(),
-                &transaction_compressed,
-                Some(active_channels),
-            )
-            .await?;
-        Ok(sequence_num)
-    }
-
     pub(crate) async fn push_protobuf(
         &mut self,
         id: Uuid,
@@ -141,24 +108,7 @@ impl State {
     }
 
     /// Push a transaction to the transaction queue
-    // TODO: remove this function once all clients are updated
-    pub(crate) async fn push_pubsub(
-        &self,
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<u8>,
-        sequence_num: u64,
-    ) -> Result<u64> {
-        self.pubsub
-            .lock()
-            .await
-            .push(id, file_id, operations, sequence_num)
-            .await
-    }
-
-    /// Push a transaction to the transaction queue
-    // TODO: rename to `push` once all clients are updated
-    pub(crate) async fn push_protobuf_pubsub(
+    pub(crate) async fn push(
         &self,
         id: Uuid,
         file_id: Uuid,
@@ -233,7 +183,7 @@ mod tests {
             Transaction::serialize_and_compress(vec![operations_2.clone()]).unwrap();
 
         state
-            .push_pubsub(transaction_id_1, file_id, transaction_1.clone(), 1)
+            .push(transaction_id_1, file_id, transaction_1.clone(), 1)
             .await
             .unwrap();
         let transactions = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
@@ -247,7 +197,7 @@ mod tests {
         assert_eq!(transactions[0], expected_transaction_1);
 
         state
-            .push_pubsub(transaction_id_2, file_id, transaction_2.clone(), 2)
+            .push(transaction_id_2, file_id, transaction_2.clone(), 2)
             .await
             .unwrap();
         let transaction = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
