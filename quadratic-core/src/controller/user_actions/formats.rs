@@ -85,7 +85,7 @@ impl GridController {
                 };
 
                 let data_table_pos = table.bounds.min;
-                let Some(data_table) = sheet.data_table(data_table_pos) else {
+                let Some(data_table) = sheet.data_table_at(&data_table_pos) else {
                     dbgjs!(format!(
                         "[format_ops] invalid data table ID: {:?}",
                         data_table_pos

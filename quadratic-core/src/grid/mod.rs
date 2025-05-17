@@ -11,10 +11,11 @@ pub use formatting::{
     NumericDecimals, NumericFormat, NumericFormatKind, StrikeThrough, TextColor, Underline,
 };
 pub use ids::*;
+pub use region_map::RegionMap;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
 pub use sheet_formatting::SheetFormatting;
-pub use region_map::RegionMap;
+pub use sheet_region_map::SheetRegionMap;
 
 use crate::CellValue;
 #[cfg(test)]
@@ -24,23 +25,25 @@ mod a1_context;
 mod block;
 mod bounds;
 mod cells_accessed;
+mod cells_accessed_cache;
 mod code_cell;
 mod code_run;
 pub mod column;
 pub mod contiguous;
 pub mod data_table;
-mod region_map;
 pub mod file;
 pub mod formats;
 pub mod formatting;
 mod ids;
 pub mod js_types;
+mod region_map;
 pub mod resize;
 pub mod search;
 pub mod selection;
 pub mod series;
 pub mod sheet;
 pub mod sheet_formatting;
+mod sheet_region_map;
 pub mod sheets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

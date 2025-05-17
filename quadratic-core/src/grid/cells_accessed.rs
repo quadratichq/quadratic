@@ -167,6 +167,19 @@ impl CellsAccessed {
     pub fn sheet_iter(&self, sheet_id: SheetId) -> impl Iterator<Item = &CellRefRange> {
         self.cells.get(&sheet_id).into_iter().flatten()
     }
+
+    pub fn iter_rects_unbounded(
+        &self,
+        a1_context: &A1Context,
+    ) -> impl Iterator<Item = (SheetId, Rect)> {
+        self.cells.iter().flat_map(|(sheet_id, ranges)| {
+            ranges.iter().flat_map(|range| {
+                range
+                    .to_rect_unbounded(a1_context)
+                    .map(|rect| (*sheet_id, rect))
+            })
+        })
+    }
 }
 
 #[cfg(test)]

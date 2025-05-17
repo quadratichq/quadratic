@@ -1,5 +1,6 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 use quadratic_core::a1::A1Context;
+use quadratic_rust_shared::test::benchmark::benchmark;
 
 use std::time::Duration;
 
@@ -8,7 +9,6 @@ use quadratic_core::controller::operations::clipboard::{ClipboardOperation, Past
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
 use quadratic_core::{Pos, Rect, SheetRect, a1::A1Selection};
-use quadratic_rust_shared::test::benchmark::benchmark;
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);

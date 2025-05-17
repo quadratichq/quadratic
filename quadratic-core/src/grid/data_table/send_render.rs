@@ -311,6 +311,7 @@ pub mod test {
         Pos,
         a1::A1Selection,
         controller::user_actions::import::tests::simple_csv_at,
+        grid::js_types::JsHashesDirty,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
 
@@ -328,13 +329,14 @@ pub mod test {
         .unwrap();
 
         expect_js_call_count("jsRenderCellSheets", 0, false);
+
+        let dirty_hashes = vec![JsHashesDirty {
+            sheet_id,
+            hashes: vec![Pos { x: 0, y: 0 }],
+        }];
         expect_js_call(
             "jsHashesDirty",
-            format!(
-                "{},{}",
-                sheet_id,
-                serde_json::to_string(&vec![Pos::new(0, 0)]).unwrap()
-            ),
+            format!("{:?}", serde_json::to_vec(&dirty_hashes).unwrap()),
             true,
         );
 
@@ -346,13 +348,13 @@ pub mod test {
         .unwrap();
 
         expect_js_call_count("jsRenderCellSheets", 0, false);
+        let dirty_hashes = vec![JsHashesDirty {
+            sheet_id,
+            hashes: vec![Pos { x: 1, y: 1 }],
+        }];
         expect_js_call(
             "jsHashesDirty",
-            format!(
-                "{},{}",
-                sheet_id,
-                serde_json::to_string(&vec![Pos::new(1, 1)]).unwrap()
-            ),
+            format!("{:?}", serde_json::to_vec(&dirty_hashes).unwrap()),
             true,
         );
     }

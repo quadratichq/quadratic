@@ -94,7 +94,7 @@ pub fn output_pretty_print_data_table(
 /// Prints the positions of all data tables in a sheet
 pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
-    sheet.data_tables.iter().for_each(|(pos, _)| {
+    sheet.data_tables.expensive_iter().for_each(|(pos, _)| {
         println!("Data table at {:?}", pos);
     });
 }
@@ -103,7 +103,7 @@ pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
 #[track_caller]
 pub fn print_table_at(gc: &GridController, sheet_id: SheetId, pos: Pos) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
-    let data_table = sheet.data_table(pos).expect("Data table not found");
+    let data_table = sheet.data_table_at(&pos).expect("Data table not found");
     pretty_print_data_table(data_table, None, None);
 }
 
@@ -114,7 +114,7 @@ pub fn print_table_in_rect(grid_controller: &GridController, sheet_id: SheetId, 
         .try_sheet(sheet_id)
         .expect("Sheet not found");
 
-    if let Some(data_table) = sheet.data_table(rect.min) {
+    if let Some(data_table) = sheet.data_table_at(&rect.min) {
         let max = rect.max.y - rect.min.y + 1;
         pretty_print_data_table(data_table, None, Some(max as usize));
     } else {
@@ -127,7 +127,7 @@ pub fn print_data_table_order(sheet: &Sheet) {
     dbgjs!(
         sheet
             .data_tables
-            .iter()
+            .expensive_iter()
             .map(|(pos, _)| pos)
             .collect::<Vec<_>>()
     );
@@ -160,7 +160,7 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 #[cfg(test)]
 pub fn print_data_table_locations(gc: &GridController, sheet_id: SheetId) {
     let sheet = gc.sheet(sheet_id);
-    sheet.data_tables.iter().for_each(|(pos, dt)| {
+    sheet.data_tables.expensive_iter().for_each(|(pos, dt)| {
         let size = dt.output_rect(*pos, false);
         println!("Data table at {:?} {}x{}", pos, size.width(), size.height());
     });

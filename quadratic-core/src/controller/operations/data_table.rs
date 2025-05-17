@@ -274,7 +274,6 @@ impl GridController {
             DataTableKind::Import(import.to_owned()),
             &name,
             cell_values.into(),
-            false,
             first_row_is_header,
             Some(true),
             Some(true),

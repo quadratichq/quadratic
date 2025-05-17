@@ -29,7 +29,7 @@ impl Column {
         }
     }
 
-    pub fn values_range(&self) -> Option<Range<i64>> {
+    pub fn range(&self) -> Option<Range<i64>> {
         let min = self.values.first_key_value();
         let max = self.values.last_key_value();
         if let (Some(min), Some(max)) = (min, max) {
@@ -37,10 +37,6 @@ impl Column {
         } else {
             None
         }
-    }
-
-    pub fn range(&self) -> Option<Range<i64>> {
-        self.values_range()
     }
 
     pub fn has_data_in_row(&self, y: i64) -> bool {

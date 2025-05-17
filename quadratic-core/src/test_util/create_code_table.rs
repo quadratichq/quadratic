@@ -73,7 +73,6 @@ pub fn test_create_code_table_with_values(
         "Table1",
         Value::Array(array),
         false,
-        false,
         Some(false),
         Some(false),
         None,
@@ -87,7 +86,9 @@ pub fn test_create_code_table_with_values(
     };
     gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
 
-    gc.data_table(pos.to_sheet_pos(sheet_id)).unwrap().clone()
+    gc.data_table_at(pos.to_sheet_pos(sheet_id))
+        .unwrap()
+        .clone()
 }
 
 #[cfg(test)]
@@ -102,7 +103,7 @@ pub fn test_create_formula(
         formula.to_string(),
         None,
     );
-    gc.data_table(sheet_pos).unwrap().clone()
+    gc.data_table_at(sheet_pos).unwrap().clone()
 }
 
 #[cfg(test)]
@@ -122,7 +123,7 @@ mod tests {
 
         let sheet = sheet(&gc, sheet_id);
 
-        let table = sheet.data_table(pos).unwrap();
+        let table = sheet.data_table_at(&pos).unwrap();
         if let Value::Array(array) = &table.value {
             assert_eq!(array.width(), 2);
             assert_eq!(array.height(), 2);
@@ -152,7 +153,7 @@ mod tests {
         );
 
         let sheet = sheet(&gc, sheet_id);
-        let table = sheet.data_table(pos).unwrap();
+        let table = sheet.data_table_at(&pos).unwrap();
 
         if let Value::Array(array) = &table.value {
             assert_eq!(

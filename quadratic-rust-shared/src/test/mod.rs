@@ -1,6 +1,9 @@
 //! Test utilities
 
+#[cfg(feature = "benchmark")]
 pub mod benchmark;
+
+#[cfg(feature = "test")]
 pub mod request;
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/auto_gen_path.rs"));

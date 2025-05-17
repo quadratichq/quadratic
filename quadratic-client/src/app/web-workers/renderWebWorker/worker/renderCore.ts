@@ -7,6 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import type { JsRenderCell } from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
   CoreRenderMessage,
@@ -38,8 +39,8 @@ class RenderCore {
         this.renderCells(e.data as CoreRenderCells);
         break;
 
-      case 'coreRenderCompleteRenderCells':
-        renderText.completeRenderCells(e.data);
+      case 'coreRenderHashRenderCells':
+        renderText.hashRenderCells(e.data.hashRenderCells);
         break;
 
       case 'coreRenderAddSheet':
@@ -67,7 +68,7 @@ class RenderCore {
         break;
 
       case 'coreRenderHashesDirty':
-        renderText.setHashesDirty(e.data.sheetId, e.data.hashes);
+        renderText.setHashesDirty(e.data.dirtyHashes);
         break;
 
       case 'coreRenderViewportBuffer':
@@ -154,12 +155,16 @@ class RenderCore {
    * Core API responses *
    **********************/
 
-  private renderCells(event: CoreRenderCells) {
-    const { id, cells } = event;
+  private renderCells(message: CoreRenderCells) {
+    const { id, data } = message;
     const response = this.waitingForResponse.get(id);
     if (!response) {
       console.warn('No callback for requestRenderCells');
       return;
+    }
+    let cells = [] as JsRenderCell[];
+    if (data) {
+      cells = fromUint8Array(data) as JsRenderCell[];
     }
     response(cells);
     this.waitingForResponse.delete(id);

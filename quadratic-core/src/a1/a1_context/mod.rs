@@ -66,14 +66,12 @@ impl A1Context {
 
     /// Returns an iterator over all the tables in the context.
     pub fn tables(&self) -> impl Iterator<Item = &TableMapEntry> {
-        self.table_map.tables.values()
+        self.table_map.iter_table_values()
     }
 
     /// Returns a list of all table names in the context.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
-        self.table_map
-            .tables
-            .values()
+        self.tables()
             .filter_map(|table| {
                 self.sheet_map
                     .try_sheet_id(table.sheet_id)

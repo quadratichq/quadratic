@@ -244,7 +244,6 @@ mod tests {
             "Table 1",
             CellValue::Html("<html></html>".to_string()).into(),
             false,
-            false,
             Some(false),
             Some(false),
             None,
@@ -566,9 +565,13 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3"], false);
 
-        let dt = sheet.data_table_mut(pos![B2]).unwrap();
-        dt.show_name = Some(true);
-        dt.show_columns = Some(true);
+        sheet
+            .modify_data_table_at(&pos![B2], |dt| {
+                dt.show_name = Some(true);
+                dt.show_columns = Some(true);
+                Ok(())
+            })
+            .unwrap();
 
         assert_eq!(sheet.jump_left(pos![D2]), pos![A2]);
     }
