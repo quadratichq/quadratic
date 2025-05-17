@@ -24,24 +24,52 @@ const isRowFinite = () => sheets.sheet.cursor.isSelectedRowsFinite();
 const isColumnRowAvailableAndRowFinite = (args: ActionAvailabilityArgs) => isColumnRowAvailable(args) && isRowFinite();
 
 const insertColumnLeft: ActionSpec<void> = {
-  label: () => 'Insert column left',
+  label: () => {
+    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
+    columnsSelected = Math.max(columnsSelected, 1);
+    if (columnsSelected > 1) {
+      return `Insert ${columnsSelected} columns to the left`;
+    }
+    return 'Insert column left';
+  },
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddColumnLeftIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-
-    quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x, true, sheets.getCursorPosition());
+    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
+    columnsSelected = Math.max(columnsSelected, 1);
+    quadraticCore.insertColumns(
+      sheets.current,
+      sheets.sheet.cursor.position.x,
+      columnsSelected,
+      true,
+      sheets.getCursorPosition()
+    );
   },
 };
 
 const insertColumnRight: ActionSpec<void> = {
-  label: () => 'Insert column right',
+  label: () => {
+    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
+    columnsSelected = Math.max(columnsSelected, 1);
+    if (columnsSelected > 1) {
+      return `Insert ${columnsSelected} columns to the right`;
+    }
+    return 'Insert column right';
+  },
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddColumnRightIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-
-    quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition());
+    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
+    columnsSelected = Math.max(columnsSelected, 1);
+    quadraticCore.insertColumns(
+      sheets.current,
+      sheets.sheet.cursor.position.x + 1,
+      columnsSelected,
+      false,
+      sheets.getCursorPosition()
+    );
   },
 };
 
@@ -62,24 +90,52 @@ const deleteColumns: ActionSpec<void> = {
 };
 
 const insertRowAbove: ActionSpec<void> = {
-  label: () => 'Insert row above',
+  label: () => {
+    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
+    rowsSelected = Math.max(rowsSelected, 1);
+    if (rowsSelected > 1) {
+      return `Insert ${rowsSelected} rows above`;
+    }
+    return 'Insert row above';
+  },
   isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddRowAboveIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-
-    quadraticCore.insertRow(sheets.current, sheets.sheet.cursor.position.y, true, sheets.getCursorPosition());
+    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
+    rowsSelected = Math.max(rowsSelected, 1);
+    quadraticCore.insertRows(
+      sheets.current,
+      sheets.sheet.cursor.position.y,
+      rowsSelected,
+      true,
+      sheets.getCursorPosition()
+    );
   },
 };
 
 const insertRowBelow: ActionSpec<void> = {
-  label: () => 'Insert row below',
+  label: () => {
+    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
+    rowsSelected = Math.max(rowsSelected, 1);
+    if (rowsSelected > 1) {
+      return `Insert ${rowsSelected} rows below`;
+    }
+    return 'Insert row below';
+  },
   isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddRowBelowIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-
-    quadraticCore.insertRow(sheets.current, sheets.sheet.cursor.position.y + 1, false, sheets.getCursorPosition());
+    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
+    rowsSelected = Math.max(rowsSelected, 1);
+    quadraticCore.insertRows(
+      sheets.current,
+      sheets.sheet.cursor.position.y + 1,
+      rowsSelected,
+      false,
+      sheets.getCursorPosition()
+    );
   },
 };
 

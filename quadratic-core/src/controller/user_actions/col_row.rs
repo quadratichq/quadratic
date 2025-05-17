@@ -120,7 +120,9 @@ mod tests {
 
     use crate::{
         CellValue, Pos, SheetPos,
+        a1::A1Selection,
         grid::{CodeCellLanguage, CodeCellValue, formats::Format},
+        test_util::*,
     };
 
     use super::*;
@@ -475,66 +477,32 @@ mod tests {
 
     #[test]
     fn test_insert_multiple_columns_formatting() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
-        // Set up formatting in column A
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet
-            .formats
-            .text_color
-            .set_rect(1, 1, Some(1), None, Some("blue".to_string()));
-        sheet
-            .formats
-            .fill_color
-            .set(pos![A1], Some("red".to_string()));
-
-        let a1_context = gc.a1_context().to_owned();
-        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
-
-        // Verify initial formatting
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.formats.format(pos![A1]),
-            Format {
-                fill_color: Some("red".to_string()),
-                text_color: Some("blue".to_string()),
-                ..Default::default()
-            }
-        );
+        // Set up formatting in column A5 and A10
+        gc.set_cell_value(pos![sheet_id!A1], "hello".to_string(), None);
+        gc.set_bold(&A1Selection::test_a1("A5"), Some(true), None)
+            .unwrap();
 
         // Insert 3 columns after column A
         gc.insert_columns(sheet_id, 1, 3, true, None);
+        assert_display_cell_value_first_sheet(&gc, 1, 1, "hello");
+        assert_cell_format_bold(&gc, sheet_id, 1, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 2, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 5, 5, false);
 
-        let sheet = gc.sheet(sheet_id);
-
-        // Verify formatting was copied to all inserted columns
-        for col in 1..=4 {
-            assert_eq!(
-                sheet.formats.format(Pos::new(col, 1)),
-                Format {
-                    fill_color: Some("red".to_string()),
-                    text_color: Some("blue".to_string()),
-                    ..Default::default()
-                }
-            );
-        }
-
-        // Test undo
         gc.undo(None);
-        let sheet = gc.sheet(sheet_id);
 
-        // Verify only original column has formatting
-        assert_eq!(
-            sheet.formats.format(Pos::new(1, 1)),
-            Format {
-                fill_color: Some("red".to_string()),
-                text_color: Some("blue".to_string()),
-                ..Default::default()
-            }
-        );
-        assert!(sheet.formats.format(Pos::new(2, 1)).is_default());
-        assert!(sheet.formats.format(Pos::new(3, 1)).is_default());
-        assert!(sheet.formats.format(Pos::new(4, 1)).is_default());
+        gc.insert_columns(sheet_id, 1, 3, false, None);
+        assert_display_cell_value_first_sheet(&gc, 4, 1, "hello");
+        assert_cell_format_bold(&gc, sheet_id, 1, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 2, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 5, 5, false);
+
     }
 }

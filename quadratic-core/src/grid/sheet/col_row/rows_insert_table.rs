@@ -99,7 +99,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
-        gc.insert_row(sheet_id, 4, false, None);
+        gc.insert_rows(sheet_id, 4, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
@@ -123,7 +123,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
-        gc.insert_row(sheet_id, 4, true, None);
+        gc.insert_rows(sheet_id, 4, 1, true, None);
         // this is wrong?
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
@@ -147,7 +147,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
-        gc.insert_row(sheet_id, 5, false, None);
+        gc.insert_rows(sheet_id, 5, 1, false, None);
         assert_display_cell_value(&gc, sheet_id, 2, 5, "");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
@@ -155,7 +155,7 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 5, "2");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
 
-        gc.insert_row(sheet_id, 5, true, None);
+        gc.insert_rows(sheet_id, 5, 1, true, None);
         assert_display_cell_value(&gc, sheet_id, 2, 5, "");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
@@ -171,7 +171,7 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
 
-        gc.insert_row(sheet_id, 4, false, None);
+        gc.insert_rows(sheet_id, 4, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
     }
 }
