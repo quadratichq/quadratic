@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "quadratic-rust-shared",
+    "quadratic-core",
+    "quadratic-connection",
+    "quadratic-multiplayer",
+    "quadratic-files",
+]
