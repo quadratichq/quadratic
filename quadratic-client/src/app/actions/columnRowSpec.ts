@@ -65,7 +65,7 @@ const insertColumnRight: ActionSpec<void> = {
     columnsSelected = Math.max(columnsSelected, 1);
     quadraticCore.insertColumns(
       sheets.current,
-      sheets.sheet.cursor.position.x + 1,
+      sheets.sheet.cursor.position.x + columnsSelected,
       columnsSelected,
       false,
       sheets.getCursorPosition()
@@ -131,7 +131,7 @@ const insertRowBelow: ActionSpec<void> = {
     rowsSelected = Math.max(rowsSelected, 1);
     quadraticCore.insertRows(
       sheets.current,
-      sheets.sheet.cursor.position.y + 1,
+      sheets.sheet.cursor.position.y + rowsSelected,
       rowsSelected,
       false,
       sheets.getCursorPosition()

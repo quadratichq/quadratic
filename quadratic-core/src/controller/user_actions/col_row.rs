@@ -1,5 +1,6 @@
 use crate::{
     CopyFormats,
+    a1::A1Selection,
     controller::{
         GridController, active_transactions::transaction_name::TransactionName,
         operations::operation::Operation,
@@ -33,7 +34,7 @@ impl GridController {
         for i in 0..count as i64 {
             ops.push(Operation::InsertColumn {
                 sheet_id,
-                column: if after { column + i } else { column - i },
+                column: column + i,
                 copy_formats: if after {
                     CopyFormats::After
                 } else {
@@ -41,6 +42,12 @@ impl GridController {
                 },
             })
         }
+        if !after && count > 1 {
+            ops.push(Operation::SetCursorA1 {
+                selection: A1Selection::cols(sheet_id, column, column - 1 + count as i64),
+            });
+        }
+
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -69,12 +76,17 @@ impl GridController {
         for i in 0..count as i64 {
             ops.push(Operation::InsertRow {
                 sheet_id,
-                row: if after { row + i } else { row - i },
+                row: row + i,
                 copy_formats: if after {
                     CopyFormats::After
                 } else {
                     CopyFormats::Before
                 },
+            });
+        }
+        if !after && count > 1 {
+            ops.push(Operation::SetCursorA1 {
+                selection: A1Selection::rows(sheet_id, row, row - 1 + count as i64),
             });
         }
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
@@ -503,6 +515,5 @@ mod tests {
         assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 5, 5, false);
-
     }
 }
