@@ -307,6 +307,10 @@ export const ExpandIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_less</Icon>;
 };
 
+export const ExploreSchemaIcon: IconComponent = (props) => {
+  return <Icon {...props}>database_search</Icon>;
+};
+
 export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
 };
