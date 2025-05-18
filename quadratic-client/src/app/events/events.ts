@@ -67,7 +67,7 @@ interface EventTypes {
   htmlUpdate: (html: JsHtmlOutput) => void;
   bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
   hashRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
-  renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+  renderCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
 
   pythonInit: (version: string) => void;
   pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;

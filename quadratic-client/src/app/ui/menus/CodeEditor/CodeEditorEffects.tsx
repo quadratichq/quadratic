@@ -48,7 +48,9 @@ export const CodeEditorEffects = memo(() => {
           Number(updateCodeCell.pos.y) === codeCell.pos.y
       );
       if (updateCodeCell) {
-        updateCodeEditor(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, updateCodeCell.code_cell, undefined, true);
+        quadraticCore.getCodeCell(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y).then((codeCellCore) => {
+          updateCodeEditor(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, codeCellCore, undefined, true);
+        });
       }
     };
 

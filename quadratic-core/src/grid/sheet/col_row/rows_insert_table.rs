@@ -57,10 +57,18 @@ impl Sheet {
                                 dt.is_image(),
                                 dt.is_html(),
                             );
-                            if dt.formats.has_fills() {
+                            if dt
+                                .formats
+                                .as_ref()
+                                .is_some_and(|formats| formats.has_fills())
+                            {
                                 transaction.add_fill_cells(sheet_id);
                             }
-                            if !dt.borders.is_default() {
+                            if !dt
+                                .borders
+                                .as_ref()
+                                .is_none_or(|borders| borders.is_default())
+                            {
                                 transaction.add_borders(sheet_id);
                             }
                         }

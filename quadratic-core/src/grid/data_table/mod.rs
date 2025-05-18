@@ -153,8 +153,9 @@ pub struct DataTable {
 
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
-    pub formats: SheetFormatting,
-    pub borders: Borders,
+
+    pub formats: Option<SheetFormatting>,
+    pub borders: Option<Borders>,
 
     pub show_name: Option<bool>,
     pub show_columns: Option<bool>,
@@ -213,8 +214,8 @@ impl DataTable {
             sort_dirty: false,
             display_buffer: None,
 
-            formats: Default::default(),
-            borders: Default::default(),
+            formats: None,
+            borders: None,
 
             chart_output,
         };

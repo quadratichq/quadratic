@@ -407,7 +407,6 @@ impl GridController {
                 update_code_cells.push(JsUpdateCodeCell {
                     sheet_id: sheet.id,
                     pos,
-                    code_cell: sheet.edit_code_value(pos, &self.a1_context),
                     render_code_cell: sheet.get_render_code_cell(pos),
                 });
             }

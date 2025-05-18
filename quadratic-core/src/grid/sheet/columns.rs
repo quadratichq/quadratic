@@ -89,14 +89,8 @@ impl SheetColumns {
         }
 
         let column = match self.columns.entry(pos.x) {
-            btree_map::Entry::Vacant(e) => {
-                let column = e.insert(Column::new(pos.x));
-                column
-            }
-            btree_map::Entry::Occupied(e) => {
-                let column = e.into_mut();
-                column
-            }
+            btree_map::Entry::Vacant(e) => e.insert(Column::new(pos.x)),
+            btree_map::Entry::Occupied(e) => e.into_mut(),
         };
 
         if let Some(value) = value {
@@ -151,33 +145,6 @@ impl SheetColumns {
 
     pub fn finite_bounds(&self) -> Option<Rect> {
         self.has_cell_value.finite_bounds()
-    }
-
-    pub fn expensive_finite_bounds(&self) -> Option<Rect> {
-        let mut bounds: Option<Rect> = None;
-        for (&x, column) in &self.columns {
-            if let Some(data_range) = column.range() {
-                let column_bound = Rect::new(x, data_range.start, x, data_range.end - 1);
-                bounds = bounds.map_or(Some(column_bound), |bounds| {
-                    Some(bounds.union(&column_bound))
-                });
-            }
-        }
-        bounds
-    }
-
-    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
-    pub fn expensive_regenerate_has_cell_value(&mut self) {
-        self.has_cell_value.set_rect(1, 1, None, None, None);
-        for (&x, column) in &self.columns {
-            if let Some(range) = column.range() {
-                for y in range {
-                    if column.has_data_in_row(y) {
-                        self.has_cell_value.set((x, y).into(), Some(true));
-                    }
-                }
-            }
-        }
     }
 
     pub fn insert_column(&mut self, column: i64) {
@@ -270,5 +237,35 @@ impl SheetColumns {
     pub fn move_cell_value(&mut self, old_pos: &Pos, new_pos: &Pos) {
         let cell_value = self.set_value(old_pos, CellValue::Blank);
         self.set_value(new_pos, cell_value);
+    }
+
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    /// and Contiguous2d cache does not work for -ve coordinates
+    pub fn migration_finite_bounds(&self) -> Option<Rect> {
+        let mut bounds: Option<Rect> = None;
+        for (&x, column) in &self.columns {
+            if let Some(data_range) = column.range() {
+                let column_bound = Rect::new(x, data_range.start, x, data_range.end - 1);
+                bounds = bounds.map_or(Some(column_bound), |bounds| {
+                    Some(bounds.union(&column_bound))
+                });
+            }
+        }
+        bounds
+    }
+
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    /// and Contiguous2d cache does not work for -ve coordinates
+    pub fn migration_regenerate_has_cell_value(&mut self) {
+        self.has_cell_value.set_rect(1, 1, None, None, None);
+        for (&x, column) in &self.columns {
+            if let Some(range) = column.range() {
+                for y in range {
+                    if column.has_data_in_row(y) {
+                        self.has_cell_value.set((x, y).into(), Some(true));
+                    }
+                }
+            }
+        }
     }
 }

@@ -13,6 +13,10 @@ lazy_static! {
     pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
 }
 
+pub(crate) fn is_false(value: &bool) -> bool {
+    !(*value)
+}
+
 pub(crate) mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
 

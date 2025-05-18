@@ -67,10 +67,18 @@ impl Sheet {
                                 dt.is_image(),
                                 dt.is_html(),
                             );
-                            if dt.formats.has_fills() {
+                            if dt
+                                .formats
+                                .as_ref()
+                                .is_some_and(|formats| formats.has_fills())
+                            {
                                 transaction.add_fill_cells(sheet_id);
                             }
-                            if !dt.borders.is_default() {
+                            if !dt
+                                .borders
+                                .as_ref()
+                                .is_none_or(|borders| borders.is_default())
+                            {
                                 transaction.add_borders(sheet_id);
                             }
                         }
@@ -98,7 +106,7 @@ impl Sheet {
             .get_pos_after_column_sorted(column, false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).map_or(false, |dt| {
+                self.data_table_at(pos).is_some_and(|dt| {
                     (copy_formats == CopyFormats::Before && pos.x > column)
                         || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
                         || (copy_formats != CopyFormats::Before && pos.x >= column)
@@ -113,7 +121,7 @@ impl Sheet {
             .get_pos_in_columns_sorted(&[column], false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).map_or(false, |dt| {
+                self.data_table_at(pos).is_some_and(|dt| {
                     (!dt.is_code() || dt.is_html_or_image())
                         && copy_formats == CopyFormats::Before
                         && pos.x == column

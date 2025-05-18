@@ -38,7 +38,9 @@ impl GridController {
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
                     self.add_compute_operations(transaction, &sheet_rect, None);
+                    self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
+                    transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                     if transaction.is_user() {
                         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
                             let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
@@ -51,9 +53,6 @@ impl GridController {
                             }
                         }
                     }
-
-                    self.send_updated_bounds(transaction, sheet_rect.sheet_id);
-                    transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
                     if transaction.is_user_undo_redo() {
                         transaction

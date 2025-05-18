@@ -69,7 +69,7 @@ export type JsSnackbarSeverity = "error" | "warning" | "success";
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, language: CodeCellLanguage, }
 export interface JsTablesContext { sheet_name: string, data_tables: Array<JsDataTableContext>, code_tables: Array<JsCodeTableContext>, charts: Array<JsChartContext>, }
-export interface JsUpdateCodeCell { sheet_id: SheetId, pos: Pos, code_cell: JsCodeCell | null, render_code_cell: JsRenderCodeCell | null, }
+export interface JsUpdateCodeCell { sheet_id: SheetId, pos: Pos, render_code_cell: JsRenderCodeCell | null, }
 export interface JsValidationWarning { pos: Pos, validation: string | null, style: ValidationStyle | null, }
 export interface MinMax { min: number, max: number, }
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };

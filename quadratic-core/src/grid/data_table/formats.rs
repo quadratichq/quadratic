@@ -12,7 +12,11 @@ impl DataTable {
     /// 0,0 is the top left.
     pub fn get_format(&self, pos: Pos) -> Format {
         let pos = self.get_format_pos_from_display_buffer(pos);
-        let mut format = self.formats.try_format(pos).unwrap_or_default();
+        let mut format = self
+            .formats
+            .as_ref()
+            .and_then(|format| format.try_format(pos))
+            .unwrap_or_default();
         format.wrap = format.wrap.or(Some(CellWrap::Clip));
         format
     }
@@ -72,12 +76,13 @@ impl DataTable {
 
                 let format_display_y = u64::try_from(relative_y)?;
                 let format_actual_y = self.get_row_index_from_display_index(format_display_y);
-                let format = self
-                    .formats
-                    .format((format_actual_x as i64 + 1, format_actual_y as i64 + 1).into());
+                if let Some(formats) = self.formats.as_ref() {
+                    let format = formats
+                        .format((format_actual_x as i64 + 1, format_actual_y as i64 + 1).into());
 
-                if !format.is_default() {
-                    sheet_format_updates.set_format_cell((x, y).into(), format.into());
+                    if !format.is_default() {
+                        sheet_format_updates.set_format_cell((x, y).into(), format.into());
+                    }
                 }
             }
         }

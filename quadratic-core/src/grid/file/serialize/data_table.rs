@@ -333,8 +333,8 @@ pub(crate) fn import_data_table_builder(
             spill_data_table: data_table.spill_data_table,
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             alternating_colors: data_table.alternating_colors,
-            formats: import_formats(data_table.formats),
-            borders: import_borders(data_table.borders),
+            formats: data_table.formats.map(import_formats),
+            borders: data_table.borders.map(import_borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
         };
@@ -530,6 +530,22 @@ pub(crate) fn export_data_tables(
                 }
             };
 
+            let formats = data_table.formats.and_then(|formats| {
+                if formats.is_all_default() {
+                    None
+                } else {
+                    Some(export_formats(formats))
+                }
+            });
+
+            let borders = data_table.borders.and_then(|borders| {
+                if borders.is_default() {
+                    None
+                } else {
+                    Some(export_borders(borders))
+                }
+            });
+
             let data_table = current::DataTableSchema {
                 kind,
                 name,
@@ -545,8 +561,8 @@ pub(crate) fn export_data_tables(
                 spill_data_table: data_table.spill_data_table,
                 last_modified: Some(data_table.last_modified),
                 alternating_colors: data_table.alternating_colors,
-                formats: export_formats(data_table.formats),
-                borders: export_borders(data_table.borders),
+                formats,
+                borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };

@@ -1,4 +1,4 @@
-use std::{collections::HashSet, i64};
+use std::collections::HashSet;
 
 use crate::{
     Pos, Rect,

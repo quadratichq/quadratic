@@ -55,15 +55,16 @@ impl Sheet {
     /// Recalculates all bounds of the sheet.
     ///
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    /// and Contiguous2d cache does not work for -ve coordinates
     ///
     /// Returns whether any of the sheet's bounds has changed
-    pub fn expensive_recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
+    pub fn migration_recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
         let old_data_bounds = self.data_bounds.to_bounds_rect();
         let old_format_bounds = self.format_bounds.to_bounds_rect();
         self.data_bounds.clear();
         self.format_bounds.clear();
 
-        if let Some(rect) = self.columns.expensive_finite_bounds() {
+        if let Some(rect) = self.columns.migration_finite_bounds() {
             self.data_bounds.add_rect(rect);
         };
 

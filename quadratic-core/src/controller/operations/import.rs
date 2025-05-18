@@ -195,7 +195,12 @@ impl GridController {
         };
 
         data_table.value = cell_values.into();
-        data_table.formats.apply_updates(&sheet_format_updates);
+        if !sheet_format_updates.is_default() {
+            data_table
+                .formats
+                .get_or_insert_default()
+                .apply_updates(&sheet_format_updates);
+        }
 
         if apply_first_row_as_header {
             data_table.apply_first_row_as_header();
