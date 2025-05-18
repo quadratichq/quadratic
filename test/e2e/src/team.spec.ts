@@ -303,7 +303,7 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   ).toHaveText(viewPermission);
 });
 
-test.only('Manage Members', async ({ page: adminPage, context }) => {
+test('Manage Members', async ({ page: adminPage, context }) => {
   //--------------------------------
   // Manage Members
   //--------------------------------
