@@ -510,4 +510,22 @@ mod tests {
             table.convert_cells_accessed_to_ref_range_bounds(false, context)
         );
     }
+
+    #[test]
+    fn test_convert_to_ref_range_bounds_html_image() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![A1], 2, 2);
+
+        let selection = A1Selection::test_a1_context("Python1", gc.a1_context());
+        let CellRefRange::Table { range: table_ref } = selection.ranges[0].clone() else {
+            panic!("Expected a table reference");
+        };
+
+        assert_eq!(
+            table_ref.convert_to_ref_range_bounds(false, gc.a1_context(), false, false),
+            Some(RefRangeBounds::test_a1("A1:B3"))
+        );
+    }
 }
