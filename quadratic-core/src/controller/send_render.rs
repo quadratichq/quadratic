@@ -50,6 +50,7 @@ impl GridController {
         {
             return;
         }
+        transaction.last_client_update = Some(Instant::now());
 
         self.send_transaction_progress(transaction);
         self.send_sheet_info(transaction);
@@ -58,7 +59,6 @@ impl GridController {
         if send_hashes_dirty {
             self.process_remaining_dirty_hashes(transaction);
         }
-        transaction.last_client_update = Some(Instant::now());
     }
 
     /// Sends all pending updates to the client
