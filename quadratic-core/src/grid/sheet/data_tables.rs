@@ -536,4 +536,18 @@ impl SheetDataTables {
             .iter()
             .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (*pos, code_run)))
     }
+
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    /// and Contiguous2d cache does not work for -ve coordinates
+    pub fn migration_iter_mut(&mut self) -> impl Iterator<Item = (&Pos, &mut DataTable)> {
+        self.data_tables.iter_mut()
+    }
+
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    /// and Contiguous2d cache does not work for -ve coordinates
+    pub fn migration_iter_code_runs_mut(&mut self) -> impl Iterator<Item = (Pos, &mut CodeRun)> {
+        self.data_tables.iter_mut().flat_map(|(pos, data_table)| {
+            data_table.code_run_mut().map(|code_run| (*pos, code_run))
+        })
+    }
 }
