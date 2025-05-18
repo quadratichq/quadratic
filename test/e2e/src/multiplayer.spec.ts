@@ -12,7 +12,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `File Actions - ${Date.now()}`;
+  const teamName = `File Actions - ${Date.now()}`;
   const fileName = 'Action_Visibility';
 
   const user2Browser = await chromium.launch();
@@ -28,13 +28,10 @@ test('Action Visibility', async ({ page: userPage1 }) => {
     logIn(userPage3, { emailPrefix: 'e2e_action_visibility_3' }),
   ]);
 
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   // First user creates a new team and file
   await userPage1.bringToFront();
   const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName: newTeamName,
+    teamName,
   });
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
@@ -386,7 +383,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   */
 
   // Constants
-  const newTeamName = `File Actions - ${Date.now()}`;
+  const teamName = `File Actions - ${Date.now()}`;
   const fileName = 'MultiUser_Connection_Down';
 
   const user2Browser = await chromium.launch();
@@ -402,13 +399,10 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
     logIn(userPage3, { emailPrefix: 'e2e_connection_down_3' }),
   ]);
 
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   // First user creates a new team and file
   await userPage1.bringToFront();
   const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName: newTeamName,
+    teamName,
   });
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
@@ -546,7 +540,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   */
 
   // Constants
-  const newTeamName = `MultiUser - ${Date.now()}`;
+  const teamName = `MultiUser - ${Date.now()}`;
   const fileName = 'MultiUser_Offline_Changes';
 
   const user2Browser = await chromium.launch();
@@ -562,13 +556,10 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
     logIn(userPage3, { emailPrefix: 'e2e_changes_off_network_3' }),
   ]);
 
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   // First user creates a new team and file
   await userPage1.bringToFront();
   const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName: newTeamName,
+    teamName,
   });
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
@@ -740,7 +731,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Test Mouse Visibility - ${Date.now()}`;
+  const teamName = `Test Mouse Visibility - ${Date.now()}`;
   const fileName = 'Mouse_Visibility';
 
   const user2Browser = await chromium.launch();
@@ -756,12 +747,10 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
     logIn(userPage3, { emailPrefix: 'e2e_mouse_visibility_3' }),
   ]);
 
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   // First user creates a new team and file
   await userPage1.bringToFront();
   const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName: newTeamName,
+    teamName,
   });
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
@@ -929,7 +918,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Test MultiUser Tab Switch - ${Date.now()}`;
+  const teamName = `Test MultiUser Tab Switch - ${Date.now()}`;
   const fileName = 'MultiUser_Tab_Switch_Persists';
 
   const user2Browser = await chromium.launch();
@@ -945,13 +934,10 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
     logIn(userPage3, { emailPrefix: 'e2e_switch_tab_3' }),
   ]);
 
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   // First user creates a new team and file
   await userPage1.bringToFront();
   const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName: newTeamName,
+    teamName,
   });
   await userPage1.locator('[placeholder*="Filter by file or creator name"]').waitFor();
   await cleanUpFiles(userPage1, { fileName });
@@ -1104,7 +1090,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Test User Visibility - ${Date.now()}`;
+  const teamName = `Test User Visibility - ${Date.now()}`;
   const fileName = 'User_Visibility';
 
   const user2Browser = await chromium.launch();
@@ -1120,13 +1106,10 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
     logIn(userPage3, { emailPrefix: 'e2e_see_users_3' }),
   ]);
 
-  // Admin user creates a new team
-  await createNewTeamByURL(userPage1, { teamName: newTeamName });
-
   // First user creates a new team and file
   await userPage1.bringToFront();
   const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName: newTeamName,
+    teamName,
   });
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });

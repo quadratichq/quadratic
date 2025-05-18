@@ -2,7 +2,6 @@ import { chromium, expect, test } from '@playwright/test';
 import { navigateOnSheet, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Create New File', async ({ page }) => {
   //--------------------------------
@@ -15,9 +14,9 @@ test('Create New File', async ({ page }) => {
   // Login
   await logIn(page, { emailPrefix: `e2e_create_new_file` });
 
-  // Create new team
-  const teamName = `${fileName} - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  // // Create new team
+  // const teamName = `${fileName} - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up
   await cleanUpFiles(page, { fileName });
@@ -96,9 +95,9 @@ test('Edit Share File Permissions', async ({ page }) => {
     }),
   ]);
 
-  // Create new team
-  const teamName = `${fileName} - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  // // Create new team
+  // const teamName = `${fileName} - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   await page.locator('[placeholder*="Filter by file or creator name"]').waitFor();
 
@@ -300,10 +299,10 @@ test('File Actions - Dashboard', async ({ page }) => {
   await logIn(page, { emailPrefix: `file_actions_dashboard` });
 
   // Define team name
-  const newTeamName = `Test File Actions - ${Date.now()}`;
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Test File Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Cleanup any duplicate copies
   await cleanUpFiles(page, {
@@ -454,7 +453,6 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Log in to user 1 and give page unique name (ie user1Page)
 
   // Define team name
-  const newTeamName = `Share File - ${Date.now()}`;
 
   const user2Browser = await chromium.launch();
   const user2Page = await user2Browser.newPage();
@@ -473,8 +471,9 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
     }),
   ]);
 
-  // Admin user creates a new team
-  await createNewTeamByURL(user1Page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Share File - ${Date.now()}`;
+  // await createNewTeamByURL(user1Page, { teamName });
 
   await user1Page.bringToFront();
   const date = Date.now();
@@ -721,15 +720,15 @@ test('Upload Large File', async ({ page }) => {
   await logIn(page, { emailPrefix: `e2e_upload_large_file` });
 
   // Create new team
-  const teamName = `${largeFileName} - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  // const teamName = `${largeFileName} - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up any existing files with the same name
   await cleanUpFiles(page, { fileName: largeFileName });
 
-  // //--------------------------------
-  // // Act
-  // //--------------------------------
+  //--------------------------------
+  // Act
+  //--------------------------------
   await uploadFile(page, { fileName: largeFileName, fileType });
 
   //--------------------------------

@@ -8,17 +8,17 @@ import { createNewTeamByURL } from './helpers/team.helper';
 
 test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', async ({ page }) => {
   // Constants
-  const teamName = `AI PDF Attach Button - ${Date.now()}`;
   const fileName = `Extract employee count from Broadcom and Apple PDFs`;
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_ai_pdf_attach` });
 
-  // Create new team
-  await createNewTeamByURL(page, { teamName });
+  // // Create new team
+  // const teamName = `AI PDF Attach Button - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
-  // Upgrade to Pro plan
-  await upgradeToProPlan(page);
+  // // Upgrade to Pro plan
+  // await upgradeToProPlan(page);
 
   // Clean up files created by this workflow
   await cleanUpFiles(page, { fileName });
@@ -148,7 +148,6 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
 
 test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) => {
   // Constants
-  const teamName = `AI PDF Drag Drop - ${Date.now()}`;
   const fileName = `Drag_And_Drop_PDF`;
   const pdfFileName = `broadcom-annual-filing.pdf`;
   const filePath = path.join(process.cwd(), './data/', `${pdfFileName}`);
@@ -157,11 +156,12 @@ test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) 
   // Log in
   await logIn(page, { emailPrefix: `e2e_ai_pdf_drag_drop` });
 
-  // Create new team
-  await createNewTeamByURL(page, { teamName });
+  // // Create new team
+  // const teamName = `AI PDF Drag Drop - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
-  // Upgrade to Pro plan
-  await upgradeToProPlan(page);
+  // // Upgrade to Pro plan
+  // await upgradeToProPlan(page);
 
   // Clean up files created by this workflow
   await cleanUpFiles(page, { fileName });
@@ -288,13 +288,13 @@ test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) 
 
 test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => {
   // Constants
-  const teamName = `AI Counter - ${Date.now()}`;
   const fileName = `AI Chat Insert Code, Clear Query, View History`;
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_ai_chat` });
 
   // Create new team
+  const teamName = `AI Counter - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
@@ -395,7 +395,6 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
 
 test.skip('AI Prompt - Create Chart using AI Prompt', async ({ page, context }) => {
   // Constants
-  const teamName = `AI Prompt Chart - ${Date.now()}`;
   const fileName = 'Chat_File_For_AI_Prompt';
   const fileType = 'grid';
   const prompt = `Create a chart using sample data`;
@@ -404,6 +403,7 @@ test.skip('AI Prompt - Create Chart using AI Prompt', async ({ page, context }) 
   await logIn(page, { emailPrefix: `e2e_ai_prompt_chart` });
 
   // Create new team
+  const teamName = `AI Prompt Chart - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
@@ -491,7 +491,6 @@ test.skip('AI Prompt - Create Chart using AI Prompt', async ({ page, context }) 
 
 test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
   // Constants
-  const teamName = `AI Prompt Insert value - ${Date.now()}`;
   const fileName = 'AI_prompt_InsertValue';
   const aiPrompt = 'Put the value 10 in cell A1';
 
@@ -499,6 +498,7 @@ test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
   await logIn(page, { emailPrefix: `e2e_ai_insert_value` });
 
   // Create new team
+  const teamName = `AI Prompt Insert value - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
@@ -548,7 +548,6 @@ test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
 
 test.skip('AI Prompt - Use Python Code to return a value in a cell', async ({ page }) => {
   // Constants
-  const teamName = `AI Prompt Python Code - ${Date.now()}`;
   const fileName = 'AI_prompt_InsertPython';
   const aiPrompt = 'Put python code to return the value 10 in cell A1';
 
@@ -556,6 +555,7 @@ test.skip('AI Prompt - Use Python Code to return a value in a cell', async ({ pa
   await logIn(page, { emailPrefix: `e2e_ai_python_code` });
 
   // Create new team
+  const teamName = `AI Prompt Python Code - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan
@@ -612,13 +612,13 @@ test.skip('AI Prompt - Use Python Code to return a value in a cell', async ({ pa
 
 test.skip('AI Sheet Data analysis', async ({ page }) => {
   // Constants
-  const teamName = `AI Sheet Data analysis - ${Date.now()}`;
   const fileName = `AI Sheet Data analysis`;
   const prompt1 = `Count to 10 and fill the sheet with that data`;
   const prompt2 = `Copy the data from sheet 2 and put it into sheet 1`;
   const assertionPrompt = `Do the two sheets contain the same data? Respond only with Yes. or No.`;
 
   // Log in
+  const teamName = `AI Sheet Data analysis - ${Date.now()}`;
   await logIn(page, { emailPrefix: `e2e_ai_sheet_data` });
 
   // Create new team
@@ -696,7 +696,6 @@ test.skip('AI Sheet Data analysis', async ({ page }) => {
 
 test.skip('Think Enabled Response', async ({ page }) => {
   // Constants
-  const teamName = `Think Enabled Response - ${Date.now()}`;
   const fileName = 'Think_Enabled_Response';
   const question = `What is 7 * 10?`;
 
@@ -710,6 +709,7 @@ test.skip('Think Enabled Response', async ({ page }) => {
   await logIn(page, { emailPrefix: `e2e_ai_think_enabled` });
 
   // Create new team
+  const teamName = `Think Enabled Response - ${Date.now()}`;
   await createNewTeamByURL(page, { teamName });
 
   // Upgrade to Pro plan

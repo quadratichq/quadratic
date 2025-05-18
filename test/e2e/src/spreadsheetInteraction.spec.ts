@@ -5,7 +5,6 @@ import * as xlsx from 'xlsx';
 import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Appearance Customization', async ({ page }) => {
   //--------------------------------
@@ -13,7 +12,6 @@ test('Appearance Customization', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Appearance Customization - ${Date.now()}`;
   const darkClassName = `dark`;
   const darkBackground = `rgb(2, 8, 23)`; // background
   const darkText = `rgb(248, 250, 252)`; // foreground
@@ -22,8 +20,9 @@ test('Appearance Customization', async ({ page }) => {
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_dark_mode` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Appearance Customization - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Assert Quadratic team files page and logged in status
   await expect(page.getByText(email)).toBeVisible({ timeout: 30 * 1000 });
@@ -140,14 +139,14 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Auto Focus after Closing Menus - ${Date.now()}`;
   const fileName = 'Grid_focus';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_autofocus_menus` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Auto Focus after Closing Menus - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -275,14 +274,14 @@ test('Auto-Complete', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Auto-Complete - ${Date.now()}`;
   const fileName = 'Auto Complete';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_auto_complete` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Auto-Complete - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -497,7 +496,6 @@ test('Cancel Test Execution', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Cancel Test Execution - ${Date.now()}`;
   const fileName = 'Cancel Test Execution';
   const pythonCode = `
 import time
@@ -512,8 +510,9 @@ time.sleep(20)
   // Log in
   await logIn(page, { emailPrefix: `e2e_cancel_execution` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Cancel Test Execution - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -582,15 +581,15 @@ test('Cell Actions', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Cell Actions - ${Date.now()}`;
   const fileName = 'Cell_Actions';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_cell_actions` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Cell Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -719,15 +718,15 @@ test('Custom DateTime Options', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Custom DateTime Options - ${Date.now()}`;
   const fileName = 'Custom_Dates';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_custom_datetime` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Custom DateTime Options - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -856,15 +855,15 @@ test('Data Validation', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Data Validation - ${Date.now()}`;
   const fileName = 'Data_Validation';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_data_validations` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Data Validation - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -950,15 +949,15 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   // Delete Reference Table (1 layer reference)
   //--------------------------------
   // Constants
-  const newTeamName = `Delete Reference Table - ${Date.now()}`;
   const fileName = 'Delete_reference_tables';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_delete_reference_tables` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Delete Reference Table - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1102,7 +1101,6 @@ test('Download Sheet', async ({ page }) => {
   // Download Sheet
   //--------------------------------
   // Constants
-  const newTeamName = `Delete Reference Table - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const tabs = [
@@ -1122,8 +1120,9 @@ test('Download Sheet', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_download_sheet` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Delete Reference Table - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up files
   await cleanUpFiles(page, { fileName });
@@ -1204,7 +1203,6 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // Drag and Drop Excel File into Sheet
   //--------------------------------
   // Constants
-  const newTeamName = `Drag Drop Excel - ${Date.now()}`;
   const fileName = 'Drag_And_Drop_Spreadsheet';
   const fileType = 'xlsx';
   const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -1233,8 +1231,9 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_drag_drop_excel` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Drag Drop Excel - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Assert Quadratic team files page and logged in status
   await expect(page.getByText(email)).toBeVisible();
@@ -1366,14 +1365,14 @@ test('File - Clear Recent History', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Clear Recent History - ${Date.now()}`;
   const fileName = 'Clear_Recent_History';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_recent_history` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Clear Recent History - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1444,15 +1443,15 @@ test('File - Open Recent', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Open Recent - ${Date.now()}`;
   const fileName1 = 'open_recent_1';
   const fileName2 = 'open_recent_2';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_open_recent` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Open Recent - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName: fileName1 });
@@ -1518,15 +1517,15 @@ test('Find in current sheet', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Open Recent - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_find_in_sheet` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Open Recent - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1573,15 +1572,15 @@ test('Insert and Delete Columns', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Insert and Delete Columns - ${Date.now()}`;
   const fileName = 'Insert_row_col';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_insert_delete_column` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Insert and Delete Columns - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1726,15 +1725,15 @@ test('Insert and Delete Rows', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Insert and Delete Rows - ${Date.now()}`;
   const fileName = 'Insert_row_col';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_insert_delete_row` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Insert and Delete Rows - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1879,14 +1878,14 @@ test('Insert and Delete Rows', async ({ page }) => {
 
 test('Key Actions', async ({ page }) => {
   // Constants
-  const newTeamName = `Key Actions - ${Date.now()}`;
   const fileName = 'Key Actions';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_insert_delete_row` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Key Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2120,15 +2119,15 @@ test('Key Actions', async ({ page }) => {
 
 test('Left and Right Sheet Navigation', async ({ page }) => {
   // Constants
-  const newTeamName = `Left and Right Sheet Navigation - ${Date.now()}`;
   const fileName = 'LeftAndRight-SheetNavigation';
   const lastSheetNum = 15;
 
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_left_right_navigation` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Left and Right Sheet Navigation - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2320,14 +2319,14 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
 test('Log Out From Sheet', async ({ page }) => {
   // Constants
-  const newTeamName = `Log Out From Sheet - ${Date.now()}`;
   const fileName = 'Log Out From Sheet';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_sheet_logout` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Log Out From Sheet - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2370,15 +2369,15 @@ test('Log Out From Sheet', async ({ page }) => {
 
 test('Multi-Delete Columns', async ({ page }) => {
   // Constants
-  const newTeamName = `Multi-Delete Columns - ${Date.now()}`;
   const fileName = 'Insert_row_col';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_multi_delete_columns` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Multi-Delete Columns - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2437,15 +2436,15 @@ test('Multi-Delete Columns', async ({ page }) => {
 
 test('Multi-Delete Rows', async ({ page }) => {
   // Constants
-  const newTeamName = `Multi-Delete Rows - ${Date.now()}`;
   const fileName = 'Insert_row_col';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_multi_delete_rows` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Multi-Delete Rows - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2505,15 +2504,15 @@ test('Multi-Delete Rows', async ({ page }) => {
 
 test('Panning Behavior', async ({ page }) => {
   // Constants
-  const newTeamName = `Panning Behavior - ${Date.now()}`;
   const fileName = 'Panning_Behavior';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_panning_behavior` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Panning Behavior - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2606,15 +2605,16 @@ test('Panning Behavior', async ({ page }) => {
 
 test('Python More Snippets', async ({ page }) => {
   // Constants
-  const newTeamName = `Python More Snippets - ${Date.now()}`;
+
   const fileName = 'python_more_snippets';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_python_more_snippets` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Python More Snippets - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2699,14 +2699,14 @@ test('Python More Snippets', async ({ page }) => {
 
 test('Python Snippets', async ({ page }) => {
   // Constants
-  const newTeamName = `Python Snippets - ${Date.now()}`;
   const fileName = 'Python_Snippets';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_python_snippets` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Python Snippets - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2792,15 +2792,15 @@ test('Python Snippets', async ({ page }) => {
 
 test('Range Cell Reference - Javascript', async ({ page }) => {
   // Constants
-  const newTeamName = `Range Cell Reference - Javascript - ${Date.now()}`;
   const fileName = 'Cell_Reference_JS';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_references_javascript` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Range Cell Reference - Javascript - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2904,15 +2904,15 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
 
 test('Range Cell Reference - Python', async ({ page }) => {
   // Constants
-  const newTeamName = `Range Cell Reference - Python - ${Date.now()}`;
   const fileName = 'Cell_Reference_Python';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_references_python` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Range Cell Reference - Python - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3010,15 +3010,15 @@ test('Range Cell Reference - Python', async ({ page }) => {
 
 test('Right Click on Column and Row Headers', async ({ page }) => {
   // Constants
-  const newTeamName = `Right Click on Column and Row Headers - ${Date.now()}`;
   const fileName = 'Insert_row_col';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_right_click_header` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Right Click on Column and Row Headers - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3127,15 +3127,15 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
 
 test('Scroll between sheets', async ({ page }) => {
   // Constants
-  const newTeamName = `Scroll between sheets - ${Date.now()}`;
   const fileName = 'Scrolling-SheetNavigation';
   const lastSheetNum = 15;
 
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_scroll_between_sheets` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Scroll between sheets - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3295,15 +3295,15 @@ test('Scroll between sheets', async ({ page }) => {
 
 test('Search - Case sensitive search', async ({ page }) => {
   // Constants
-  const newTeamName = `Search - Case sensitive search - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_case_sensitive_search` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Search - Case sensitive search - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3356,15 +3356,15 @@ test('Search - Case sensitive search', async ({ page }) => {
 
 test('Search - Match entire cell contents', async ({ page }) => {
   // Constants
-  const newTeamName = `Search - Match entire cell contents - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_cell_contents` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Search - Match entire cell contents - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3417,15 +3417,15 @@ test('Search - Match entire cell contents', async ({ page }) => {
 
 test('Search - Search all sheets', async ({ page }) => {
   // Constants
-  const newTeamName = `Search - Search all sheets - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_search_all_sheets` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Search - Search all sheets - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3507,14 +3507,14 @@ test('Search - Search all sheets', async ({ page }) => {
 
 test('Search - Search within code', async ({ page }) => {
   // Constants
-  const newTeamName = `Search - Search within code - ${Date.now()}`;
   const fileName = 'Search_Within_Code';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_search_within_code` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Search - Search within code - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3580,15 +3580,15 @@ test('Search - Search within code', async ({ page }) => {
 
 test('Single Cell Reference - Javascript', async ({ page }) => {
   // Constants
-  const newTeamName = `Single Cell Reference - Javascript - ${Date.now()}`;
   const fileName = 'Cell_Reference_JS';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_reference_javascript` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Single Cell Reference - Javascript - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3690,15 +3690,15 @@ test('Single Cell Reference - Javascript', async ({ page }) => {
 
 test('Single Cell Reference - Python', async ({ page }) => {
   // Constants
-  const newTeamName = `Single Cell Reference - Python - ${Date.now()}`;
   const fileName = 'Cell_Reference_Python';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_reference_python` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Single Cell Reference - Python - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3801,15 +3801,15 @@ test('Single Cell Reference - Python', async ({ page }) => {
 
 test('Spill Auto-Fix', async ({ page }) => {
   // Constants
-  const newTeamName = `Spill Auto-Fix - ${Date.now()}`;
   const fileName = 'Spill_Auto_Fix';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_spill_auto_fix` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Spill Auto-Fix - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -3858,7 +3858,6 @@ test('Spill Auto-Fix', async ({ page }) => {
 
 test('Theme Customization', async ({ page }) => {
   // Constants
-  const newTeamName = `Theme Customization - ${Date.now()}`;
 
   const expectedThemes = [
     {
@@ -3896,8 +3895,9 @@ test('Theme Customization', async ({ page }) => {
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_theme_customization` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Theme Customization - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   //--------------------------------
   // Arrange:
@@ -4000,7 +4000,6 @@ test('Theme Customization', async ({ page }) => {
 
 test('Theme Customization from Sheet', async ({ page }) => {
   // Constants
-  const newTeamName = `Theme Customization from Sheet - ${Date.now()}`;
   const fileName = `theme_customization_from_sheet`;
 
   // Expected accent themes
@@ -4040,8 +4039,9 @@ test('Theme Customization from Sheet', async ({ page }) => {
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_theme_customization_sheet` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Theme Customization from Sheet - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -4294,15 +4294,15 @@ test('Theme Customization from Sheet', async ({ page }) => {
 
 test('Zoom In and Out', async ({ page }) => {
   // Constants
-  const newTeamName = `Zoom In and Out - ${Date.now()}`;
   const fileName = 'ZoomIn_ZoomOut';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_zoomin_zoomout` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Zoom In and Out - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });

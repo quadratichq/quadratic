@@ -303,7 +303,7 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   ).toHaveText(viewPermission);
 });
 
-test('Manage Members', async ({ page: adminPage, context }) => {
+test.only('Manage Members', async ({ page: adminPage, context }) => {
   //--------------------------------
   // Manage Members
   //--------------------------------
@@ -325,7 +325,6 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   // Admin creates a new team
   await adminPage.bringToFront();
 
-  // await createNewTeamByURL(adminPage, newTeamName);
   const { teamUrl } = await createNewTeamByURL(adminPage, {
     teamName: newTeamName,
   });
@@ -343,7 +342,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.bringToFront();
   await manageUserPage.reload();
 
-  // Navigate to tea, URL
+  // Navigate to team URL
   await manageUserPage.goto(buildUrl(`/teams/${teamUrl}`));
   await manageUserPage.waitForTimeout(2000);
   await manageUserPage.waitForLoadState('domcontentloaded');

@@ -2,19 +2,18 @@ import { expect, test } from '@playwright/test';
 import { navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   // Constants
-  const newTeamName = `Convert Data into a Table and Flattened Data - ${Date.now()}`;
   const fileName = 'sample_flat_table';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_flatten_table` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Convert Data into a Table and Flattened Data - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -65,14 +64,14 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
 
 test('Create Table by Code Output', async ({ page }) => {
   // Constants
-  const newTeamName = `Create Table by Code Output - ${Date.now()}`;
   const fileName = 'Create_Table_By_Code_Output';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_create_code_table` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Create Table by Code Output - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -142,14 +141,14 @@ df`);
 
 test('Create Table by Code Output without Headers', async ({ page }) => {
   // Constants
-  const newTeamName = `Create Table by Code Output WO Headers - ${Date.now()}`;
   const fileName = 'Create_Table_By_Code_Output_WO_Headers';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_create_code_table_wo_headers` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Create Table by Code Output WO Headers - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -213,15 +212,15 @@ df`);
 
 test('Edit Table Data', async ({ page }) => {
   // Constants
-  const newTeamName = `Edit Table Data - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_edit_table` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Edit Table Data - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -305,15 +304,15 @@ test('Edit Table Data', async ({ page }) => {
 
 test('Edit Table Formatting', async ({ page }) => {
   // Constants
-  const newTeamName = `Edit Table Formatting - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_edit_table_formatting` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Edit Table Formatting - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -710,15 +709,15 @@ test('Edit Table Formatting', async ({ page }) => {
 
 test('Go To Menu Cell Selection', async ({ page }) => {
   // Constants
-  const newTeamName = `Go To Menu Cell Selection - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_goto_menu_cell_selection` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Go To Menu Cell Selection - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -760,7 +759,6 @@ test('Go To Menu Cell Selection', async ({ page }) => {
 
 test('Go To Menu Navigation', async ({ page }) => {
   // Constants
-  const newTeamName = `Go To Menu Navigation - ${Date.now()}`;
   const fileName = 'Go_To';
   const fileType = 'grid';
   const singleCell = `C6`;
@@ -769,8 +767,9 @@ test('Go To Menu Navigation', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_goto` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Go To Menu Navigation - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -964,15 +963,15 @@ test('Go To Menu Navigation', async ({ page }) => {
 
 test('Insert and Remove Table Rows and Columns', async ({ page }) => {
   // Constants
-  const newTeamName = `Insert and Remove Table Rows and Columns - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_insert_remove_rows_columns` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Insert and Remove Table Rows and Columns - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1090,7 +1089,6 @@ test('Insert and Remove Table Rows and Columns', async ({ page }) => {
 
 test('Jump to table cell location from code editor location button', async ({ page }) => {
   // Constants
-  const newTeamName = `Jump to table cell location from code editor location button - ${Date.now()}`;
   const fileName = 'Single_table_reference';
   const fileType = 'grid';
   const tableName = `Python1`;
@@ -1099,8 +1097,9 @@ test('Jump to table cell location from code editor location button', async ({ pa
   // Log in
   await logIn(page, { emailPrefix: `e2e_jump_table_cell` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Jump to table cell location from code editor location button - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1155,7 +1154,6 @@ test('Jump to table cell location from code editor location button', async ({ pa
 
 test('Rename code table from code editor', async ({ page }) => {
   // Constants
-  const newTeamName = `Rename code table from code editor - ${Date.now()}`;
   const fileName = 'Single_table_reference';
   const fileType = 'grid';
   const initialTableName = `Python1`;
@@ -1164,8 +1162,9 @@ test('Rename code table from code editor', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_rename_code_tables` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Rename code table from code editor - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1228,7 +1227,6 @@ test('Rename code table from code editor', async ({ page }) => {
 
 test('Rename Table', async ({ page }) => {
   // Constants
-  const newTeamName = `Rename Table - ${Date.now()}`;
   const fileName = 'Athletes_Table';
   const fileType = 'grid';
   const tableName1 = `Rename_Table_1`;
@@ -1237,8 +1235,9 @@ test('Rename Table', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_rename_tables` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Rename Table - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1317,15 +1316,15 @@ test('Rename Table', async ({ page }) => {
 
 test('Table is created from Importing Data', async ({ page }) => {
   // Constants
-  const newTeamName = `Table is created from Importing Data - ${Date.now()}`;
   const fileName = 'Athletes_Data';
   const fileType = 'csv';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_from_csv` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Table is created from Importing Data - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1362,15 +1361,15 @@ test('Table is created from Importing Data', async ({ page }) => {
 
 test('Table Menu Options', async ({ page }) => {
   // Constants
-  const newTeamName = `Table Menu Options - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_menu_options` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Table Menu Options - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1503,15 +1502,15 @@ test('Table Menu Options', async ({ page }) => {
 
 test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   // Constants
-  const newTeamName = `Table Multi-Sort and Delete Sort Options - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_multi_sort` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Table Multi-Sort and Delete Sort Options - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1795,15 +1794,15 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
 
 test('Table Multi-Sort Re-arrange', async ({ page }) => {
   // Constants
-  const newTeamName = `Table Multi-Sort Re-arrange - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_sort_rearrange` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Table Multi-Sort Re-arrange - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1971,15 +1970,15 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
 
 test('Table reference from code input', async ({ page }) => {
   // Constants
-  const newTeamName = `Table reference from code input - ${Date.now()}`;
   const fileName = 'Table_references';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_reference` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Table reference from code input - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2191,7 +2190,6 @@ test('Table reference from code input', async ({ page }) => {
 
 test('Table Resize', async ({ page }) => {
   // Constants
-  const newTeamName = `Table Resize - ${Date.now()}`;
   const fileName = 'Athletes_Table';
   const fileType = 'grid';
   const startX = 567; // Bottom right corner of (E, 12)
@@ -2202,8 +2200,9 @@ test('Table Resize', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_resize` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Table Resize - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -2277,15 +2276,15 @@ test('Table Resize', async ({ page }) => {
 
 test('Table Sort', async ({ page }) => {
   // Constants
-  const newTeamName = `Table Sort - ${Date.now()}`;
   const fileName = 'Table_Sort';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_sort` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Table Sort - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });

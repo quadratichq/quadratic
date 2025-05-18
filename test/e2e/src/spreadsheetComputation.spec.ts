@@ -3,7 +3,6 @@ import { POSTGRES_DB } from './constants/db';
 import { cleanUpServerConnections, clearCodeEditor, navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
 
 test('API Calls', async ({ page }) => {
   //--------------------------------
@@ -11,7 +10,6 @@ test('API Calls', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `API Calls - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'API calls';
@@ -19,8 +17,9 @@ test('API Calls', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_api_calls' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `API Calls - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -78,7 +77,6 @@ test('Basic Formula Creation', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Basic Formula Creation - ${Date.now()}`;
   const fileName = 'Formula_Testing';
   const fileType = 'grid';
   const sheetName = 'Basic_Formula_Creation';
@@ -86,8 +84,9 @@ test('Basic Formula Creation', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_formula_creation' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Basic Formula Creation - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -162,7 +161,6 @@ test('Charts', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Charts - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'Charts';
@@ -170,8 +168,9 @@ test('Charts', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_charts' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Charts - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -235,7 +234,6 @@ test('Drag References', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Drag_References - ${Date.now()}`;
   const fileName = 'drag_references';
   const fileType = 'grid';
   const sheetName = 'Drag_References';
@@ -243,8 +241,9 @@ test('Drag References', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_drag_references' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Drag_References - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -350,7 +349,6 @@ test('Formatting', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Formatting - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'Formatting';
@@ -358,8 +356,9 @@ test('Formatting', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_formatting' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Formatting - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -411,15 +410,15 @@ test('Formulas', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Formulas - ${Date.now()}`;
   const fileName = 'QA_Formulas_testing';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: 'e2e_formulas' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Formulas - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -482,7 +481,6 @@ test('JavaScript Console Log', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `JavaScript Console Log - ${Date.now()}`;
   const fileName = 'Javascript_Console_Log';
   const javascriptCode = `
 let data = [1,2,3,4]
@@ -492,8 +490,9 @@ console.log(data)
   // Log in
   await logIn(page, { emailPrefix: 'e2e_javascript_log' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `JavaScript Console Log - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -558,15 +557,15 @@ test('Javascript Formulas', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Javascript Formulas - ${Date.now()}`;
   const fileName = 'Javascript_Formulas';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: 'e2e_javascript_formulas' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Javascript Formulas - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -617,7 +616,6 @@ test('Open and Use Formula Editor', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Open and Use Formula Editor - ${Date.now()}`;
   const fileName = 'Formula_Testing';
   const fileType = 'grid';
   const sheetName = 'Open_and_Use_Formula_Editor';
@@ -625,8 +623,9 @@ test('Open and Use Formula Editor', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_formula_editor' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Open and Use Formula Editor - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -717,7 +716,6 @@ test('Python Print', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Python Print - ${Date.now()}`;
   const fileName = 'Python_Print';
   const pythonCode = `
 my_data = [1,2,3,4]
@@ -727,8 +725,9 @@ print(my_data)
   // Log in
   await logIn(page, { emailPrefix: 'e2e_python_print' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Python Print - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -788,15 +787,15 @@ test('Read JavaScript Output within Formula', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Read JavaScript Output within Formula - ${Date.now()}`;
   const fileName = 'read-js-output-within-formulas';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: 'e2e_javascript_output' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Read JavaScript Output within Formula - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -856,15 +855,15 @@ test('Read Python Output within Formula', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Read Python Output within Formula - ${Date.now()}`;
   const fileName = 'read-python-output-within-formulas';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: 'e2e_python_output' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Read Python Output within Formula - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -921,7 +920,6 @@ test('References', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `References - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'References';
@@ -929,8 +927,9 @@ test('References', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_references' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `References - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -991,7 +990,6 @@ test('Spills', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const newTeamName = `Spills - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'Spills';
@@ -999,8 +997,9 @@ test('Spills', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_spills' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Admin user creates a new team
+  // const teamName = `Spills - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -1055,7 +1054,6 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   //--------------------------------
 
   // Constants
-  const teamName = `SQL_Connection ${Date.now()}`;
   const fileName = 'SQL_Connection';
 
   const codeEditor = page.locator(`[id="QuadraticCodeEditorID"]`);
@@ -1065,8 +1063,9 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   // Log in
   await logIn(page, { emailPrefix: 'e2e_sql_create_connection' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName });
+  // // Admin user creates a new team
+  // const teamName = `SQL_Connection ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -1292,7 +1291,6 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `SQL_Reference_Formula_Python ${Date.now()}`;
   const fileName = 'SQL_Reference_Formula_Python';
   const codeEditor = page.locator(`[id="QuadraticCodeEditorID"]`);
   const typingInput = codeEditor.locator(`section`).first();
@@ -1301,8 +1299,9 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_sql_reference_data' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName });
+  // // Admin user creates a new team
+  // const teamName = `SQL_Reference_Formula_Python ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -1541,7 +1540,6 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `SQL_Reference_Javascript ${Date.now()}`;
   const fileName = 'SQL_Reference_Javascript';
   const codeEditor = page.locator(`[id="QuadraticCodeEditorID"]`);
   const typingInput = codeEditor.locator(`section`).first();
@@ -1551,8 +1549,9 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_sql_reference_data_js' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName });
+  // // Admin user creates a new team
+  // const teamName = `SQL_Reference_Javascript ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -1820,7 +1819,6 @@ test('Switch between Python and Formula', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `Switch_Python_and_Formula ${Date.now()}`;
   const fileName = 'Formula_Testing';
   const fileType = 'grid';
   const sheetName = 'Switch_Python_and_Formula';
@@ -1828,8 +1826,9 @@ test('Switch between Python and Formula', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_python_formula' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName });
+  // // Admin user creates a new team
+  // const teamName = `Switch_Python_and_Formula ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -1953,7 +1952,6 @@ test('Types: Numbers and Strings', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `Types: numbers and strings ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'Types: numbers and strings';
@@ -1961,8 +1959,9 @@ test('Types: Numbers and Strings', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_numbers_strings' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName });
+  // // Admin user creates a new team
+  // const teamName = `Types: numbers and strings ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -2020,7 +2019,6 @@ test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `Types: sequences, mappings, sets ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'Types: sequences, mappings, sets';
@@ -2028,8 +2026,9 @@ test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_sequence_maps_sets' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName });
+  // // Admin user creates a new team
+  // const teamName = `Types: sequences, mappings, sets ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });
@@ -2112,7 +2111,6 @@ test('Types: Series and Data-Frames', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `Types: series, dataframes ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
   const sheetName = 'Types: series, dataframes';
@@ -2120,8 +2118,9 @@ test('Types: Series and Data-Frames', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_series_dataframes' });
 
-  // Admin user creates a new team
-  await createNewTeamByURL(page, { teamName });
+  // // Admin user creates a new team
+  // const teamName = `Types: series, dataframes ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up file
   await cleanUpFiles(page, { fileName });

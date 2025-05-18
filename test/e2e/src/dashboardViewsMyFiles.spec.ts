@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test';
 import { chromium, expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, createSharedFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
 
 const getViewCharacteristics = async (page: Page) => {
   const ulElement = page.locator('ul').first();
@@ -38,9 +37,9 @@ test('Dashboard Views - My Files', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_dashboard_my_files' });
 
-  // Create new team
-  const teamName = `Dashboard Views - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  // // Create new team
+  // const teamName = `Dashboard Views - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Define test file names
   const testFile1 = 'C - Test File 1';
@@ -723,9 +722,9 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   // Login
   await logIn(page, { emailPrefix: 'e2e_dashboard_filter_files_my' });
 
-  // Create new team
-  const teamName = `Filter Files - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  // // Create new team
+  // const teamName = `Filter Files - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   const string1 = 'Test';
   const string2 = 'Random';
@@ -808,9 +807,9 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
     logIn(user2Page, { emailPrefix: 'e2e_dashboard_filter_files_shared_2' }),
   ]);
 
-  // Create new team
-  const teamName = `Filter Shared - ${Date.now()}`;
-  await createNewTeamByURL(user1Page, { teamName });
+  // // Create new team
+  // const teamName = `Filter Shared - ${Date.now()}`;
+  // await createNewTeamByURL(user1Page, { teamName });
 
   // Create a new team with user 1
   await user1Page.bringToFront();

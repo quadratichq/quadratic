@@ -1,18 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Create Example', async ({ page }) => {
   // Constants
-  const newTeamName = `Create Example - ${Date.now()}`;
   const fileName = 'Python getting started (example)';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_create_example` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Create Example - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Go to private files
   await page.locator(`div a:text("My files")`).click();

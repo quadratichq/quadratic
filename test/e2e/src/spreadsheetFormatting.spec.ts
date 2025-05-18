@@ -2,19 +2,18 @@ import { expect, test } from '@playwright/test';
 import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Cell Formatting', async ({ page }) => {
   // Constants
-  const newTeamName = `Cell Formatting - ${Date.now()}`;
   const fileName = 'Cell_Formatting';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_cell_formatting` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Cell Formatting - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -342,15 +341,15 @@ test('Cell Formatting', async ({ page }) => {
 
 test('Code Cell Outlines', async ({ page }) => {
   // Constants
-  const newTeamName = `Code Cell Outlines - ${Date.now()}`;
   const fileName = '(Main) QAWolf test';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_cell_outlines` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Code Cell Outlines - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -402,7 +401,6 @@ test('Code Cell Outlines', async ({ page }) => {
 
 test('Custom time and date formatting', async ({ page }) => {
   // Constants
-  const newTeamName = `Custom time and date formatting - ${Date.now()}`;
   const fileName = 'Format date time';
   const fileType = 'grid';
   const customDate = `%m/%Y`; // mm/YYYY
@@ -410,8 +408,9 @@ test('Custom time and date formatting', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_time_date_formatting` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Custom time and date formatting - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -517,15 +516,15 @@ test('Custom time and date formatting', async ({ page }) => {
 
 test('Date Formatting', async ({ page }) => {
   // Constants
-  const newTeamName = `Date Formatting - ${Date.now()}`;
   const fileName = 'Format date time';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_date_formatting` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Date Formatting - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -624,15 +623,15 @@ test('Date Formatting', async ({ page }) => {
 
 test('Number Formatting', async ({ page }) => {
   // Constants
-  const newTeamName = `Number Formatting - ${Date.now()}`;
   const fileName = 'Number_Formatting';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_number_formatting` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Number Formatting - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -788,14 +787,14 @@ test('Number Formatting', async ({ page }) => {
 
 test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   // Constants
-  const newTeamName = `Text Wrap, Horizontal and Vertical Alignment - ${Date.now()}`;
   const fileName = 'Text Wrap and Vertical Align';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_wrap_align` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Text Wrap, Horizontal and Vertical Alignment - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -942,15 +941,15 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
 test('Time Formatting', async ({ page }) => {
   // Constants
-  const newTeamName = `Time Formatting - ${Date.now()}`;
   const fileName = 'Format date time';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_time_formatting` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Time Formatting - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });

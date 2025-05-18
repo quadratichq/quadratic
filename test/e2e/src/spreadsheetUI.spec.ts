@@ -8,7 +8,6 @@ import { createNewTeamByURL } from './helpers/team.helper';
 
 test.skip('AI Assistant', async ({ page }) => {
   // Constants
-  const newTeamName = `AI Assistant - ${Date.now()}`;
   const fileName = 'AI_Assistant';
   const fileType = 'grid';
   const prompt = 'Write a function add_two_nums that adds two numbers together';
@@ -18,7 +17,8 @@ test.skip('AI Assistant', async ({ page }) => {
   await logIn(page, { emailPrefix: `e2e_ai_assistant` });
 
   // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  const teamName = `AI Assistant - ${Date.now()}`;
+  await createNewTeamByURL(page, { teamName });
 
   await upgradeToProPlan(page);
 
@@ -88,7 +88,6 @@ test.skip('AI Assistant', async ({ page }) => {
 
 test('Can Stop Code Execution', async ({ page }) => {
   // Constants
-  const newTeamName = `Can Stop Code Execution - ${Date.now()}`;
   const fileName = 'Code_Stop_Execution';
   const infinitePythonCode = `
 while True:
@@ -100,8 +99,9 @@ while True:
   // Log in
   await logIn(page, { emailPrefix: `e2e_code_stop_execution` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Can Stop Code Execution - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -175,15 +175,15 @@ while True:
 
 test('Charts Resizing', async ({ page }) => {
   // Constants
-  const newTeamName = `Charts Resizing - ${Date.now()}`;
   const fileName = 'Resize_Charts';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_chart_resizing` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Charts Resizing - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -272,7 +272,6 @@ test('Charts Resizing', async ({ page }) => {
 
 test('Code Editor Displays Return', async ({ page }) => {
   // Constants
-  const newTeamName = `Code Editor Displays Return - ${Date.now()}`;
   const fileName = 'Code Editor Displays Return';
   const pythonCodes = [`5+5`, '"wolf"', 'True'];
   const expectedOutputs = [`int`, `str`, `bool`];
@@ -280,8 +279,9 @@ test('Code Editor Displays Return', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_chart_resizing` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Code Editor Displays Return - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -338,14 +338,14 @@ test('Code Editor Displays Return', async ({ page }) => {
 
 test('Code Snippets', async ({ page }) => {
   // Constants
-  const newTeamName = `Code Snippets - ${Date.now()}`;
   const fileName = 'Code Snippets';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_code_snippets` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Code Snippets - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -395,13 +395,13 @@ test('Code Snippets', async ({ page }) => {
 
 test('Data Actions', async ({ page, context }) => {
   // Constants
-  const newTeamName = `Data Actions - ${Date.now()}`;
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_data_actions` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Data Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   //--------------------------------
   // Import CSV File
@@ -491,15 +491,15 @@ test('Data Actions', async ({ page, context }) => {
 
 test('Discard Changes', async ({ page }) => {
   // Constants
-  const newTeamName = `Discard Changes - ${Date.now()}`;
   const fileName = 'Discard Changes';
   const pythonCode = `frogs`;
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_discard_changes` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Discard Changes - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -676,15 +676,15 @@ test('File Actions', async ({ page }) => {
 
 test('Docs Action', async ({ page }) => {
   // Constants
-  const newTeamName = `Docs Actions - ${Date.now()}`;
   const fileName = 'Import_File_Grid';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_docs` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Docs Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -718,15 +718,15 @@ test('Docs Action', async ({ page }) => {
 
 test('Feedback Action', async ({ page }) => {
   // Constants
-  const newTeamName = `Feedback Action - ${Date.now()}`;
   const fileName = 'Import_File_Grid';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_feedback` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Feedback Action - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -761,15 +761,15 @@ test('Feedback Action', async ({ page }) => {
 
 test('Open Formula Editor', async ({ page }) => {
   // Constants
-  const newTeamName = `Open Formula Editor - ${Date.now()}`;
   const fileName = 'Open Formula Editor';
   const formulaCode = `SUM`;
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_open_formula_editor` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Open Formula Editor - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -827,7 +827,6 @@ test('Open Formula Editor', async ({ page }) => {
 
 test('Open Python Editor', async ({ page }) => {
   // Constants
-  const newTeamName = `Open Python Editor - ${Date.now()}`;
   const fileName = 'Open Python Editor';
   const pythonCode = 'def func():';
   const pythonIndent = `    `;
@@ -835,8 +834,9 @@ test('Open Python Editor', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_open_python_editor` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Open Python Editor - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -891,15 +891,15 @@ test('Open Python Editor', async ({ page }) => {
 
 test('Resize Column width with Fill', async ({ page }) => {
   // Constants
-  const newTeamName = `Resize Column width with Fill - ${Date.now()}`;
   const fileName = 'Resize_Column_Width_Fill_Color';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_resize_column_width` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Resize Column width with Fill - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -944,15 +944,15 @@ test('Resize Column width with Fill', async ({ page }) => {
 
 test('Right Click Actions', async ({ page }) => {
   // Constants
-  const newTeamName = `Right Click Actions - ${Date.now()}`;
   const fileName = 'RightClickActions';
   const fileType = 'csv';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_right_click_actions` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Right Click Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1320,14 +1320,14 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
 test('Sheet Actions', async ({ page }) => {
   // Constants
-  const newTeamName = `Sheet Actions - ${Date.now()}`;
   const fileName = 'Sheet Actions';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_sheet_actions` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Sheet Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1466,7 +1466,6 @@ test('Sheet Actions', async ({ page }) => {
 
 test('View Actions', async ({ page }) => {
   // Constants
-  const newTeamName = `View Actions - ${Date.now()}`;
   const fileName = 'View_Actions';
   const fileType = 'grid';
 
@@ -1482,8 +1481,9 @@ test('View Actions', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_view_actions` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `View Actions - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
@@ -1774,15 +1774,15 @@ test('View Actions', async ({ page }) => {
 
 test('Zoom Options', async ({ page }) => {
   // Constants
-  const newTeamName = `Zoom Options - ${Date.now()}`;
   const fileName = 'Zoom_Options';
   const fileType = 'grid';
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_zoom_options` });
 
-  // Create a new team
-  await createNewTeamByURL(page, { teamName: newTeamName });
+  // // Create a new team
+  // const teamName = `Zoom Options - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });

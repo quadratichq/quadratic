@@ -801,8 +801,8 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_invalid_card' });
 
   // Create new team
-  const teamName = `Invalid - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  // const teamName = `Invalid - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click();
