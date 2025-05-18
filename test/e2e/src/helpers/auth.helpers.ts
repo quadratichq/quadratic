@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { USER_PASSWORD } from '../constants/auth';
 import { buildUrl } from './buildUrl.helpers';
+import { cleanUpFiles } from './file.helpers';
 
 type LogInOptions = {
   emailPrefix: string;
@@ -78,6 +79,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   // Wait for Filter by file or creator name...
   await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+
+  await cleanUpFiles(page, { fileName: 'Untitled' });
 
   return email;
 };
