@@ -132,12 +132,16 @@ impl GridController {
             None => {
                 // auto detect the delimiter, default to ',' if it fails
                 let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
+                Sniffer::new().sniff_reader(cursor).map_or_else(
+                    |e| {
+                        dbg!(&e);
+                        b','
+                    },
+                    |metadata| metadata.dialect.delimiter,
+                )
             }
         };
-
+        dbg!(&delimiter);
         let reader = |flexible| {
             csv::ReaderBuilder::new()
                 .delimiter(delimiter)

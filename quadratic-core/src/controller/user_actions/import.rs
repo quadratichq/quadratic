@@ -91,7 +91,7 @@ pub(crate) mod tests {
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
-        test_util::{assert_cell_value_row, print_table_at, print_table_in_rect},
+        test_util::*,
         wasm_bindings::js::clear_js_calls,
     };
 
@@ -562,4 +562,27 @@ pub(crate) mod tests {
     //         Rect::new_span(pos, Pos { x: 6, y: 10 }),
     //     );
     // }
+
+    #[test]
+    fn test_import_kaggle_csv() {
+        let file_name = "kaggle_top_100_dataset.csv";
+        //data/csv/kaggle_top_100_dataset.csv";
+        let csv_file = read_test_csv_file(file_name);
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let result = gc.import_csv(
+            sheet_id,
+            csv_file.as_slice().to_vec(),
+            file_name,
+            pos![A1],
+            None,
+            None,
+            Some(false),
+        );
+        dbg!(&result);
+
+        // print_first_sheet(&gc);
+    }
 }
