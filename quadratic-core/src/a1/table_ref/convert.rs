@@ -66,13 +66,13 @@ impl TableRef {
             return None;
         };
 
-        // for html and images, we return only the anchor cell
+        // for html and images, we return the full table bounds
         if table.is_html_image {
             return Some(RefRangeBounds::new_relative(
                 table.bounds.min.x,
                 table.bounds.min.y,
-                table.bounds.min.x,
-                table.bounds.min.y,
+                table.bounds.max.x,
+                table.bounds.max.y,
             ));
         }
         let (mut y_start, y_end) = table.to_sheet_rows();
