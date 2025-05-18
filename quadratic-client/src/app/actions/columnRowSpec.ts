@@ -2,6 +2,7 @@ import { Action } from '@/app/actions/actions';
 import type { ActionAvailabilityArgs, ActionSpec } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
@@ -45,6 +46,7 @@ const insertColumnLeft: ActionSpec<void> = {
       true,
       sheets.getCursorPosition()
     );
+    focusGrid();
   },
 };
 
@@ -70,6 +72,7 @@ const insertColumnRight: ActionSpec<void> = {
       false,
       sheets.getCursorPosition()
     );
+    focusGrid();
   },
 };
 
@@ -86,6 +89,7 @@ const deleteColumns: ActionSpec<void> = {
 
     const columns = sheets.sheet.cursor.getColumnsWithSelectedCells();
     quadraticCore.deleteColumns(sheets.current, columns, sheets.getCursorPosition());
+    focusGrid();
   },
 };
 
@@ -111,6 +115,7 @@ const insertRowAbove: ActionSpec<void> = {
       true,
       sheets.getCursorPosition()
     );
+    focusGrid();
   },
 };
 
@@ -136,6 +141,7 @@ const insertRowBelow: ActionSpec<void> = {
       false,
       sheets.getCursorPosition()
     );
+    focusGrid();
   },
 };
 
@@ -152,6 +158,7 @@ const deleteRows: ActionSpec<void> = {
 
     const rows = sheets.sheet.cursor.getRowsWithSelectedCells();
     quadraticCore.deleteRows(sheets.current, rows, sheets.getCursorPosition());
+    focusGrid();
   },
 };
 
