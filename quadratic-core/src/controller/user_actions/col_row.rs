@@ -30,6 +30,7 @@ impl GridController {
         after: bool,
         cursor: Option<String>,
     ) {
+        let count = count.max(1);
         let mut ops = vec![];
         for i in 0..count as i64 {
             ops.push(Operation::InsertColumn {
@@ -72,6 +73,7 @@ impl GridController {
         after: bool,
         cursor: Option<String>,
     ) {
+        let count = count.max(1);
         let mut ops = vec![];
         for i in 0..count as i64 {
             ops.push(Operation::InsertRow {

@@ -1406,7 +1406,7 @@ class Core {
     try {
       this.gridController.insertColumns(sheetId, BigInt(column), count, right, cursor);
     } catch (e) {
-      this.handleCoreError('insertColumn', e);
+      this.handleCoreError('insertColumns', e);
     }
   }
 
