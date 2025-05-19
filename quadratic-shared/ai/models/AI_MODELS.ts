@@ -320,8 +320,8 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.75,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXVTjXMn': {
-    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BXVTjXMn',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXv0t4pw': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BXv0t4pw',
     displayName: 'gpt 4.1 mini fine-tuned',
     temperature: 0,
     max_tokens: 16384,
@@ -330,7 +330,7 @@ export const MODELS_CONFIGURATION: {
     enabled: true,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
+    strictParams: false,
     rate_per_million_input_tokens: 3,
     rate_per_million_output_tokens: 12,
     rate_per_million_cache_read_tokens: 0.75,
