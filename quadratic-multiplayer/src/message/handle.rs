@@ -36,7 +36,7 @@ pub(crate) async fn handle_message(
     sender: UserSocket,
     pre_connection: PreConnection,
 ) -> Result<Option<MessageResponse>> {
-    tracing::trace!("Handling message {:?}", request);
+    tracing::info!("Handling message {:?}", request);
 
     match request {
         // User enters a room.
