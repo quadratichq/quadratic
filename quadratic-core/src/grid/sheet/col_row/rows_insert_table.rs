@@ -19,7 +19,7 @@ impl Sheet {
             // if html or image, then we need to change the height
             if dt.is_html_or_image() {
                 if let Some((width, height)) = dt.chart_output {
-                    if source_row >= pos.y && source_row < pos.y + output_rect.height() as i64 {
+                    if row >= pos.y && row < pos.y + output_rect.height() as i64 {
                         dt.chart_output = Some((width, height + 1));
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                     }
