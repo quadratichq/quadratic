@@ -566,23 +566,22 @@ pub(crate) mod tests {
     #[test]
     fn test_import_kaggle_csv() {
         let file_name = "kaggle_top_100_dataset.csv";
-        //data/csv/kaggle_top_100_dataset.csv";
         let csv_file = read_test_csv_file(file_name);
 
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        let result = gc.import_csv(
+        gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file,
             file_name,
             pos![A1],
             None,
             None,
-            Some(false),
-        );
-        dbg!(&result);
-
-        // print_first_sheet(&gc);
+            Some(true),
+        )
+        .unwrap();
+        assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
+        assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
     }
 }

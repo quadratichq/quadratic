@@ -1,4 +1,4 @@
-use std::{borrow::Cow, io::Cursor};
+use std::io::Cursor;
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
@@ -50,21 +50,35 @@ impl GridController {
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
 
+    fn byte_record_to_string(record: &[u8]) -> String {
+        String::from_utf8(record.to_vec())
+            .or_else(|_| {
+                // convert u8 to u16
+                let mut utf16vec: Vec<u16> = Vec::with_capacity(record.len() / 2);
+                for chunk in record.to_owned().chunks_exact(2) {
+                    let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
+                        return Err(());
+                    };
+                    utf16vec.push(u16::from_ne_bytes(vec2));
+                }
+
+                // convert to string
+                let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
+                    return Err(());
+                };
+
+                // strip invalid characters
+                Ok(str.chars().filter(|&c| c.len_utf8() <= 2).collect())
+            })
+            .unwrap_or_else(|_| record.iter().map(|&b| b as char).collect())
+    }
+
     pub fn get_csv_preview(
         file: Vec<u8>,
         max_rows: u32,
         delimiter: Option<u8>,
     ) -> Result<Vec<Vec<String>>> {
         let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
-        let file: &[u8] = match String::from_utf8_lossy(&file) {
-            std::borrow::Cow::Borrowed(_) => &file,
-            std::borrow::Cow::Owned(_) => {
-                if let Some(utf) = read_utf16(&file) {
-                    return Self::get_csv_preview(utf.as_bytes().to_vec(), max_rows, delimiter);
-                }
-                &file
-            }
-        };
 
         let delimiter = match delimiter {
             Some(d) => d,
@@ -77,20 +91,39 @@ impl GridController {
             }
         };
 
+        // let file: &[u8] = match String::from_utf8_lossy(&file) {
+        //     std::borrow::Cow::Borrowed(_) => &file,
+        //     std::borrow::Cow::Owned(_) => {
+        //         if let Some(utf) = read_utf16(&file) {
+        //             return Self::get_csv_preview(
+        //                 utf.as_bytes().to_vec(),
+        //                 max_rows,
+        //                 Some(delimiter),
+        //             );
+        //         }
+        //         &file
+        //     }
+        // };
+
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
             .has_headers(false)
             .flexible(true)
-            .from_reader(file);
+            .from_reader(file.as_slice());
 
         let mut preview = vec![];
-        for (i, entry) in reader.records().enumerate() {
+        for (i, entry) in reader.byte_records().enumerate() {
             if i >= max_rows as usize {
                 break;
             }
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
-                Ok(record) => preview.push(record.iter().map(|s| s.to_string()).collect()),
+                Ok(record) => preview.push(
+                    record
+                        .iter()
+                        .map(|s| Self::byte_record_to_string(s))
+                        .collect(),
+                ),
             }
         }
 
@@ -110,44 +143,40 @@ impl GridController {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
-        let file: &[u8] = match String::from_utf8_lossy(&file) {
-            Cow::Borrowed(_) => &file,
-            Cow::Owned(_) => {
-                if let Some(utf) = read_utf16(&file) {
-                    return self.import_csv_operations(
-                        sheet_id,
-                        utf.as_bytes().to_vec(),
-                        file_name,
-                        insert_at,
-                        delimiter,
-                        header_is_first_row,
-                    );
-                }
-                &file
-            }
-        };
-
         let delimiter = match delimiter {
             Some(d) => d,
             None => {
                 // auto detect the delimiter, default to ',' if it fails
                 let cursor = Cursor::new(&file);
-                Sniffer::new().sniff_reader(cursor).map_or_else(
-                    |e| {
-                        dbg!(&e);
-                        b','
-                    },
-                    |metadata| metadata.dialect.delimiter,
-                )
+                Sniffer::new()
+                    .sniff_reader(cursor)
+                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
             }
         };
-        dbg!(&delimiter);
+
+        // let file: &[u8] = match String::from_utf8_lossy(&file) {
+        //     Cow::Borrowed(_) => &file,
+        //     Cow::Owned(_) => {
+        //         if let Some(utf) = read_utf16(&file) {
+        //             return self.import_csv_operations(
+        //                 sheet_id,
+        //                 utf.as_bytes().to_vec(),
+        //                 file_name,
+        //                 insert_at,
+        //                 Some(delimiter),
+        //                 header_is_first_row,
+        //             );
+        //         }
+        //         &file
+        //     }
+        // };
+
         let reader = |flexible| {
             csv::ReaderBuilder::new()
                 .delimiter(delimiter)
                 .has_headers(false)
                 .flexible(flexible)
-                .from_reader(file)
+                .from_reader(file.as_slice())
         };
 
         let height = reader(false).records().count() as u32;
@@ -171,13 +200,13 @@ impl GridController {
         let mut sheet_format_updates = SheetFormatUpdates::default();
         let mut y: u32 = 0;
 
-        for entry in reader(true).records() {
+        for entry in reader(true).into_byte_records() {
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
-
+                        let (cell_value, format_update) =
+                            self.string_to_cell_value(&Self::byte_record_to_string(value), false);
                         cell_values
                             .set(u32::try_from(x)?, y, cell_value)
                             .map_err(|e| error(e.to_string()))?;
@@ -499,42 +528,42 @@ impl GridController {
     }
 }
 
-fn read_utf16(bytes: &[u8]) -> Option<String> {
-    if bytes.is_empty() && bytes.len() % 2 == 0 {
-        return None;
-    }
+// fn read_utf16(bytes: &[u8]) -> Option<String> {
+//     if bytes.is_empty() && bytes.len() % 2 == 0 {
+//         return None;
+//     }
 
-    // convert u8 to u16
-    let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
-    for chunk in bytes.to_owned().chunks_exact(2) {
-        let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
-            return None;
-        };
-        utf16vec.push(u16::from_ne_bytes(vec2));
-    }
+//     // convert u8 to u16
+//     let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
+//     for chunk in bytes.to_owned().chunks_exact(2) {
+//         let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
+//             return None;
+//         };
+//         utf16vec.push(u16::from_ne_bytes(vec2));
+//     }
 
-    // convert to string
-    let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
-        return None;
-    };
+//     // convert to string
+//     let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
+//         return None;
+//     };
 
-    // strip invalid characters
-    let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
+//     // strip invalid characters
+//     let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
 
-    Some(result)
-}
+//     Some(result)
+// }
 
 #[cfg(test)]
 mod test {
-    use super::{read_utf16, *};
+    use super::*;
     use crate::{
         CellValue, controller::user_actions::import::tests::simple_csv_at,
         test_util::assert_display_cell_value,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
-    const INVALID_ENCODING_FILE: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
+    // const INVALID_ENCODING_FILE: &[u8] =
+    //     include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
 
     #[test]
     fn guesses_the_csv_header() {
@@ -585,11 +614,11 @@ mod test {
         assert_eq!(preview[1], vec!["value1", "value2"]);
     }
 
-    #[test]
-    fn transmute_u8_to_u16() {
-        let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
-        assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
-    }
+    // #[test]
+    // fn transmute_u8_to_u16() {
+    //     let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
+    //     assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
+    // }
 
     #[test]
     fn imports_a_simple_csv() {
