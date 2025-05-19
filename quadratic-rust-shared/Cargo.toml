@@ -1,17 +1,17 @@
 [package]
 name = "quadratic-rust-shared"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aes = "0.8.4"
-arrow = "54.2.1"
-arrow-array = "54.2.1"
+aes = { version = "0.8.4", optional = true }
+arrow = { version = "54.2.1", optional = true }
+arrow-array = { version = "54.2.1", optional = true }
 async-trait = "0.1.80"
-aws-config = { version = "1.1.1", features = ["behavior-version-latest"] }
-aws-sdk-s3 = { version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"] }
+aws-config = { version = "1.1.1", features = ["behavior-version-latest"], optional = true }
+aws-sdk-s3 = { version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"], optional = true }
 bigdecimal = "0.4.5" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
 cbc = { version = "0.1.2", features = ["alloc"] }
@@ -23,16 +23,17 @@ httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-a
   "proxy",
   "record",
 ], optional = true }
-jsonwebtoken = "9.2.0"
-parquet = { version = "54.2.1", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
-redis = { version = "0.29.1", features = ["tokio-comp"] }
-reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
-russh = "0.51.1"
-russh-config = "0.50.0"
+jsonwebtoken = { version = "9.2.0", optional = true }
+parquet = { version = "54.2.1", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"], optional = true }
+prost = { version = "0.13.5", optional = true, default-features = false }
+redis = { version = "0.29.1", features = ["tokio-comp"], optional = true }
+reqwest = { version = "0.11.22", features = ["json", "serde_json"], optional = true }
+russh = { version = "0.51.1", optional = true }
+russh-config = { version = "0.50.0", optional = true }
 rust_decimal = "1.30.0"
 serde = { version = "1.0.193", features = ["derive"] }
-serde_json = "1.0.108"
-snowflake-api = { git = "https://github.com/quadratichq/snowflake-rs", branch = "main" }
+serde_json = { version = "1.0.108" }
+snowflake-api = { git = "https://github.com/quadratichq/snowflake-rs", branch = "main", optional = true }
 sqlx = { version = "0.8.2", features = [
   "chrono",
   "uuid",
@@ -41,20 +42,32 @@ sqlx = { version = "0.8.2", features = [
   "bigdecimal",
   "json",
   "runtime-tokio-native-tls",
-] }
+], optional = true }
 strum = "0.27.1"
 strum_macros = "0.27.1"
 tabled = { version = "0.14.0", features = ["color"], optional = true }
 thiserror = "2.0.12"
-tiberius = { version = "0.12.3", default-features = false, features = ["vendored-openssl", "bigdecimal", "chrono", "time", "tds73", "rust_decimal"] }
-tokio = { version = "1.44.2", features = ["full"] }
-tokio-util = { version = "0.7.11", features = ["compat"] }
-tracing = "0.1.40"
+tiberius = { version = "0.12.3", default-features = false, features = ["vendored-openssl", "bigdecimal", "chrono", "time", "tds73", "rust_decimal"], optional = true }
+tokio = { version = "1.44.2", features = ["full"], optional = true }
+tokio-util = { version = "0.7.11", features = ["compat"], optional = true }
+tracing = { version = "0.1.40", optional = true }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [features]
 default = []
+arrow = ["dep:arrow", "arrow-array", "parquet"]
+auth = ["jsonwebtoken", "tokio", "reqwest"]
+aws = ["aws-sdk-s3", "aws-config"]
+crypto = ["aes"]
+environment = []
+net = ["russh", "russh-config", "tokio", "tokio-util"]
+protobuf = ["prost", "prost/derive"]
+pubsub = ["reqwest", "redis"]
+quadratic-api = ["reqwest"]
 record-request-mock = []
+sql = ["arrow", "parquet", "snowflake-api", "sqlx", "tiberius", "tokio", "tokio-util", "tracing"]
+storage = ["aws", "crypto", "tokio"]
+benchmark = ["criterion", "tabled"]
 test = ["httpmock", "criterion", "tabled"]
 
 [dev-dependencies]
@@ -65,8 +78,12 @@ aws-smithy-runtime-api = "1.7.1"
 criterion = { version = "0.5" }
 http = "1.1.0"
 httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = [
+  "https",
   "proxy",
   "record",
 ] }
 tabled = { version = "0.14.0", features = ["color"] }
 tracing-test = "0.2.4"
+
+[build-dependencies]
+prost-build = "0.13.5"
