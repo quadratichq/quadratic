@@ -412,7 +412,9 @@ pub(crate) async fn handle_message(
 #[cfg(test)]
 pub(crate) mod tests {
     use quadratic_core::controller::operations::operation::Operation;
-    use quadratic_core::controller::transaction::Transaction as CoreTransaction;
+    use quadratic_core::controller::transaction::{
+        Transaction as CoreTransaction, TransactionServer,
+    };
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio::sync::Mutex;
@@ -585,14 +587,14 @@ pub(crate) mod tests {
             sheet_id: SheetId::new(),
             color: Some("red".to_string()),
         }];
-        let compressed_ops = CoreTransaction::serialize_and_compress(&operations).unwrap();
-        let encoded_ops = STANDARD.encode(&compressed_ops);
 
-        let request = MessageRequest::Transaction {
+        let compressed_ops = CoreTransaction::serialize_and_compress(&operations).unwrap();
+
+        let request = MessageRequest::BinaryTransaction {
             id,
             file_id,
             session_id,
-            operations: encoded_ops.clone(),
+            operations: compressed_ops.clone(),
         };
 
         let response = MessageResponse::TransactionAck {
@@ -601,13 +603,7 @@ pub(crate) mod tests {
             sequence_num: 1,
         };
 
-        let broadcast_response = MessageResponse::Transaction {
-            id,
-            file_id,
-            operations: encoded_ops.clone(),
-            sequence_num: 1,
-        };
-
+        // send a Transaction and expect a TransactionAck
         test_handle(
             socket.clone(),
             state.clone(),
@@ -615,23 +611,23 @@ pub(crate) mod tests {
             user_1.clone(),
             request,
             Some(response.clone()),
-            Some(broadcast_response.clone()),
+            None,
         )
         .await;
 
         // now test get_transactions
-        let request = MessageRequest::GetTransactions {
+        let request = MessageRequest::GetBinaryTransactions {
             file_id,
             session_id,
             min_sequence_num: 1,
         };
-        let transaction = Transaction {
+        let transaction = BinaryTransaction {
             id,
             file_id,
-            operations: encoded_ops,
+            operations: compressed_ops.clone(),
             sequence_num: 1,
         };
-        let response = MessageResponse::Transactions {
+        let response = MessageResponse::BinaryTransactions {
             transactions: vec![transaction],
         };
 

@@ -175,6 +175,9 @@ impl Transaction {
         let header = deserialize::<TransactionHeader>(&HEADER_SERIALIZATION_FORMAT, header)?;
         let version = TransactionVersion::from(header);
 
+        println!("version: {:?}", version);
+        println!("data: {:?}", data.len());
+
         decompress_and_deserialize::<T>(
             &version.serialized_format,
             &version.compression_format,
