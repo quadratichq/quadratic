@@ -15,7 +15,7 @@ const VertexAIModelSchema = z.enum([
   'gemini-2.5-pro-preview-05-06',
   'gemini-2.0-flash-thinking-exp-01-21',
   'gemini-2.0-flash-001',
-  'gemini-2.5-flash-preview-04-17'
+  'gemini-2.5-flash-preview-04-17',
 ]);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -26,7 +26,7 @@ const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']);
 const OpenAIModelSchema = z.enum([
   'ft:gpt-4.1-mini-2025-04-14:quadratic::BYv7cTdE',
-  'gpt-4.1-mini-2025-04-14',
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BZ1fA7at',
   'gpt-4.1-2025-04-14',
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
@@ -52,7 +52,11 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
-const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-05-06', 'vertexai:gemini-2.0-flash-001', 'vertexai:gemini-2.5-flash-preview-04-17']);
+const VertexAIModelKeySchema = z.enum([
+  'vertexai:gemini-2.5-pro-preview-05-06',
+  'vertexai:gemini-2.0-flash-001',
+  'vertexai:gemini-2.5-flash-preview-04-17',
+]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
@@ -79,7 +83,7 @@ export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
   'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BYv7cTdE',
-  'openai:gpt-4.1-mini-2025-04-14',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZ1fA7at',
   'openai:gpt-4.1-2025-04-14',
   'openai:o4-mini-2025-04-16',
   'openai:o3-2025-04-16',

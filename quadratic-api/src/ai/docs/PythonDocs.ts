@@ -139,7 +139,7 @@ df = pd.DataFrame(data, columns=['Name', 'Age'])
 df
 \`\`\`
 
-DataFrame indices will not be returned to the sheet. Reset index to return the index to the sheet. 
+DataFrame and series index will not be returned to the sheet. Reset index to return the index to the sheet. 
 
 \`\`\`python
 # use reset_index() method where df is the dataframe name

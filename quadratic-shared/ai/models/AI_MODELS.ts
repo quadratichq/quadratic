@@ -127,7 +127,7 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-    'vertexai:gemini-2.5-flash-preview-04-17': {
+  'vertexai:gemini-2.5-flash-preview-04-17': {
     model: 'gemini-2.5-flash-preview-04-17',
     displayName: 'gemini 2.5 flash',
     temperature: 0,
@@ -350,25 +350,25 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.75,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:gpt-4.1-2025-04-14': {
-    model: 'gpt-4.1-2025-04-14',
-    displayName: 'gpt 4.1',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZ1fA7at': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BZ1fA7at',
+    displayName: 'gpt 4.1 mini fine-tuned (latest)',
     temperature: 0,
-    max_tokens: 32768,
+    max_tokens: 16384,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: false,
-    rate_per_million_input_tokens: 2,
-    rate_per_million_output_tokens: 8,
-    rate_per_million_cache_read_tokens: 0.5,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 12,
+    rate_per_million_cache_read_tokens: 0.75,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:gpt-4.1-mini-2025-04-14': {
-    model: 'gpt-4.1-mini-2025-04-14',
-    displayName: 'gpt 4.1 mini',
+  'openai:gpt-4.1-2025-04-14': {
+    model: 'gpt-4.1-2025-04-14',
+    displayName: 'gpt 4.1',
     temperature: 0,
     max_tokens: 32768,
     canStream: true,
