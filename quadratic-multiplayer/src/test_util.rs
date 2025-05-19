@@ -6,6 +6,8 @@ use fake::faker::internet::en::FreeEmail;
 use fake::faker::name::en::{FirstName, LastName};
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
+use prost::Message;
+use prost_reflect::{DescriptorPool, DynamicMessage};
 use quadratic_core::cell_values::CellValues;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::operations::operation::Operation;
@@ -260,6 +262,7 @@ pub(crate) async fn integration_test_send(
         println!("Error sending message: {:?}", e);
     };
 }
+
 /// Using the WebSocket created in integration_test_setup(), receive a response.
 /// Returns the optional response.
 /// `response_num` is the number of responses to receive before returning the last one.
@@ -275,6 +278,38 @@ pub(crate) async fn integration_test_receive(
         last_response = match msg {
             tungstenite::Message::Text(msg) => {
                 Some(serde_json::from_str::<MessageResponse>(&msg).unwrap())
+            }
+            tungstenite::Message::Binary(msg) => {
+                let pool_bytes = quadratic_rust_shared::protobuf::FILE_DESCRIPTOR_SET;
+                let pool = DescriptorPool::decode(pool_bytes).unwrap();
+
+                // Try each message type in the pool
+                for descriptor in pool.all_messages() {
+                    if let Ok(_message) = DynamicMessage::decode(descriptor.clone(), &msg[..]) {
+                        println!("Message name: {}", descriptor.full_name());
+                        // println!("transaction: {:?}", message);
+
+                        match descriptor.full_name() {
+                            "quadratic.SendTransactions" => {
+                                let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::SendTransactions::decode(&msg[..]).unwrap();
+                                println!("SendTransaction: {:?}", decoded);
+                                // });
+                            }
+                            "quadratic.SendGetTransactions" => {
+                                let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::SendGetTransactions::decode(&msg[..]).unwrap();
+                                println!("SendGetTransactions: {:?}", decoded);
+                            }
+                            "quadratic.ReceiveTransaction" => {
+                                let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::ReceiveTransaction::decode(&msg[..]).unwrap();
+                                println!("ReceiveTransaction: {:?}", decoded);
+                            }
+                            _ => println!("Unknown message type: {}", descriptor.full_name()),
+                        }
+
+                        break;
+                    }
+                }
+                None
             }
             other => panic!("expected a text message but got {other:?}"),
         };
