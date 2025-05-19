@@ -9,7 +9,7 @@ pub mod quadratic {
 pub const FILE_DESCRIPTOR_SET: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/file_descriptor_set.bin"));
 
-pub const FILE_DESCRIPTOR_SET_BYTES: &'static [u8] =
+pub const FILE_DESCRIPTOR_SET_BYTES: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/file_descriptor_set.bin"));
 // static DESCRIPTOR_POOL: Lazy<DescriptorPool> = Lazy::new(|| {
 //     DescriptorPool::decode(
