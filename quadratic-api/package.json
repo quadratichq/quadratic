@@ -25,7 +25,7 @@
     "docker:down": "docker compose down",
     "docker:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- ts-node-dev --watch src --project ./tsconfig.json -- ./src/server.ts && npm run docker:down",
     "docker:test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles && npm run docker:down",
-    "docker:test:ci": "export NODE_OPTIONS=--max-old-space-size=8192 && npm run docker:up && dotenv -e .env.test -- prisma migrate reset --force && dotenv -e .env.test -- jest --runInBand && npm run docker:down",
+    "docker:test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate reset --force && dotenv -e .env.test -- jest --runInBand && npm run docker:down",
     "key:generate": "openssl rand -hex 32",
     "clean": "npx rimraf node_modules dist build target"
   },
@@ -63,7 +63,7 @@
     "ssh-keygen": "^0.5.0",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",
-    "zod": "=3.24.4"
+    "zod": "^3.25.3"
   },
   "devDependencies": {
     "@aws-sdk/types": "^3.449.0",
