@@ -62,7 +62,7 @@
     "partial-json": "^0.1.7",
     "pixi-viewport": "5.0.3",
     "pixi.js": "^7.4.3",
-    "pyodide": "^0.27.5",
+    "pyodide": "0.27.5",
     "react": "^18.3.1",
     "react-avatar-editor": "^14.0.0-beta.5",
     "react-color": "^2.19.3",
@@ -81,7 +81,7 @@
     "uuid": "^11.1.0",
     "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5",
-    "zod": "^3.24.2"
+    "zod": "^3.25.3"
   },
   "main": "index.html",
   "scripts": {
