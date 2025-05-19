@@ -412,9 +412,7 @@ pub(crate) async fn handle_message(
 #[cfg(test)]
 pub(crate) mod tests {
     use quadratic_core::controller::operations::operation::Operation;
-    use quadratic_core::controller::transaction::{
-        Transaction as CoreTransaction, TransactionServer,
-    };
+    use quadratic_core::controller::transaction::Transaction as CoreTransaction;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio::sync::Mutex;
