@@ -4,6 +4,7 @@
 
 use crate::error::{ErrorLevel, MpError};
 use crate::state::user::{User, UserStateUpdate};
+
 use base64::{Engine, engine::general_purpose::STANDARD};
 use dashmap::DashMap;
 use quadratic_core::controller::transaction::TransactionServer;
@@ -16,6 +17,14 @@ pub(crate) struct Transaction {
     pub(crate) file_id: Uuid,
     pub(crate) sequence_num: u64,
     pub(crate) operations: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub(crate) struct BinaryTransaction {
+    pub(crate) id: Uuid,
+    pub(crate) file_id: Uuid,
+    pub(crate) sequence_num: u64,
+    pub(crate) operations: Vec<u8>,
 }
 
 // TODO: to be deleted after the next release
@@ -48,8 +57,22 @@ pub(crate) enum MessageResponse {
         sequence_num: u64,
         operations: String,
     },
+    BinaryTransaction {
+        id: Uuid,
+        file_id: Uuid,
+        sequence_num: u64,
+        operations: Vec<u8>,
+    },
+    TransactionAck {
+        id: Uuid,
+        file_id: Uuid,
+        sequence_num: u64,
+    },
     Transactions {
         transactions: Vec<Transaction>,
+    },
+    BinaryTransactions {
+        transactions: Vec<BinaryTransaction>,
     },
     EnterRoom {
         file_id: Uuid,
@@ -64,6 +87,15 @@ pub(crate) enum MessageResponse {
     },
 }
 
+impl MessageResponse {
+    pub(crate) fn is_binary(&self) -> bool {
+        matches!(
+            self,
+            MessageResponse::BinaryTransaction { .. } | MessageResponse::BinaryTransactions { .. }
+        )
+    }
+}
+
 impl From<TransactionServer> for Transaction {
     fn from(transaction_server: TransactionServer) -> Self {
         Transaction {
@@ -71,6 +103,17 @@ impl From<TransactionServer> for Transaction {
             file_id: transaction_server.file_id,
             sequence_num: transaction_server.sequence_num,
             operations: STANDARD.encode(&transaction_server.operations),
+        }
+    }
+}
+
+impl From<TransactionServer> for BinaryTransaction {
+    fn from(transaction_server: TransactionServer) -> Self {
+        BinaryTransaction {
+            id: transaction_server.id,
+            file_id: transaction_server.file_id,
+            sequence_num: transaction_server.sequence_num,
+            operations: transaction_server.operations,
         }
     }
 }

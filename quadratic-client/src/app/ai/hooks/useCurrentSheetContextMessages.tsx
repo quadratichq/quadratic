@@ -50,15 +50,9 @@ ${
     : '- The currently open sheet does not have any formatting.'
 }
 
-CRITICAL INSTRUCTION: You MUST use the get_cell_data function BEFORE performing ANY operation on the sheet's data. This is a strict requirement.\n\n
-NEVER use set_cell_values or any other data modification tool without first using get_cell_data function to verify the current state of the data.\n\n
-You MUST use get_cell_data function in these situations:\n
-1. BEFORE any data modification or analysis\n
-2. BEFORE checking if cells are empty or contain specific values\n
-3. BEFORE making any assumptions about the data\n\n
-
-The sample data shown below is ONLY for understanding the structure of the sheet. It is NOT for making decisions or performing operations.\n
-ALWAYS use get_cell_data function to get the current, complete data before proceeding with any task.\n\n
+You may use the get_cell_data function to retrieve information about the sheet that is not contained within the context.\n
+Always ensure you have sufficient data before taking action on the sheet. Use get_cell_data to retrieve additional data as needed.\n
+Note, there is no data outside the bounds provided above.\n
 
 ${
   !!currentSheetContext && currentSheetContext.length === 1
@@ -117,7 +111,7 @@ Each cell value is a JSON object having the following properties:\n
 - kind: The kind of the value. This can be blank, text, number, logical, time instant, duration, error, html, code, image, date, time, date time, null or undefined.\n
 - pos: This is the position of the cell in A1 notation. Columns are represented by letters and rows are represented by numbers.\n\n
 
-WARNING: This is ONLY sample data. You MUST use get_cell_data function to get the current data before performing any operations.\n\n
+WARNING: This is ONLY a subset of the data. Use the get_cell_data function to get additional data as defined by the bounds.\n\n
 
 There are following data in the currently open sheet:\n
 \`\`\`json
@@ -129,7 +123,7 @@ ${JSON.stringify(currentSheetContext[0].data_rects)}
 
 Use the get_cell_data function to get additional data about the tables.
 
-To work with the sheet's data, use the get_cell_data function function in the following ways:\n
+To work with more of the sheet's data, use the get_cell_data function in the following ways:\n
 1. In formulas, use A1 notation directly: \`=SUM(A1:B2)\`\n
 2. In Python and JavaScript, use \`q.cells("A1:B2")\`\n
 3. For different sheets, include the sheet name: \`=SUM('Sheet 1'!A1:B2)\` or \`q.cells("'Sheet 1'!A1:B2")\`\n
