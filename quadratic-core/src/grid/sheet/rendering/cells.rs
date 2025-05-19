@@ -508,6 +508,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id)
@@ -588,6 +589,7 @@ mod tests {
             (1, 1, sheet_id).into(),
             CodeCellLanguage::Formula,
             "{TRUE(), FALSE(), TRUE()}".into(),
+            None,
             None,
         );
         let expected = vec![

@@ -269,6 +269,7 @@ mod tests {
             CodeCellLanguage::Python,
             old_code.to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -327,6 +328,7 @@ mod tests {
             sheet_pos_code_cell,
             CodeCellLanguage::Python,
             old_code.to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;

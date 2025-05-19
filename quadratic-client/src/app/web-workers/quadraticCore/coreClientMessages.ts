@@ -484,6 +484,7 @@ export interface ClientCoreSetCodeCellValue {
   codeString: string;
   cursor?: string;
   id: number;
+  codeCellName?: string;
 }
 
 export interface CoreClientSetCodeCellValue {

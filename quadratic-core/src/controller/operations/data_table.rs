@@ -432,7 +432,13 @@ mod test {
 
         // convert one of the cells to a formula
         let formula_pos = SheetPos::new(sheet_id, 1, 2);
-        gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
+        gc.set_code_cell(
+            formula_pos,
+            CodeCellLanguage::Formula,
+            "=1+1".into(),
+            None,
+            None,
+        );
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());

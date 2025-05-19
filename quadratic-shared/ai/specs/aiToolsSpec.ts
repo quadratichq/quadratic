@@ -101,6 +101,7 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.SetCodeCellValue]: z.object({
     sheet_name: z.string(),
+    code_cell_name: z.string(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
@@ -312,6 +313,8 @@ Sets the value of a code cell and runs it in the current open sheet, requires th
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
+Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Note: we only rename the code cell if its new. Otherwise we keep the old name.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
 `,
     parameters: {
@@ -320,6 +323,11 @@ Always refer to the data from cell by its position in a1 notation from respectiv
         sheet_name: {
           type: 'string',
           description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_name: {
+          type: 'string',
+          description:
+            'What to name the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed). First letter capitalized is preferred.',
         },
         code_cell_language: {
           type: 'string',
@@ -336,7 +344,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
           description: 'The code which will run in the cell',
         },
       },
-      required: ['sheet_name', 'code_cell_language', 'code_cell_position', 'code_string'],
+      required: ['sheet_name', 'code_cell_name', 'code_cell_language', 'code_cell_position', 'code_string'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],

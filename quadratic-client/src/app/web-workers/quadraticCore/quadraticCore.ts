@@ -507,6 +507,7 @@ class QuadraticCore {
     y: number;
     language: CodeCellLanguage;
     codeString: string;
+    codeCellName?: string;
     cursor?: string;
   }): Promise<string | undefined> {
     const id = this.id++;
@@ -522,6 +523,7 @@ class QuadraticCore {
         language: options.language,
         codeString: options.codeString,
         cursor: options.cursor,
+        codeCellName: options.codeCellName,
         id,
       });
     });

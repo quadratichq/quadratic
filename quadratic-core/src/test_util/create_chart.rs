@@ -18,6 +18,7 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
         CodeCellLanguage::Javascript,
         "code".to_string(),
         None,
+        None,
     );
     let sheet = sheet(gc, sheet_id);
     let (cell_width, cell_height) = sheet.offsets.defaults();
@@ -57,6 +58,7 @@ pub fn test_create_html_chart(
         pos.to_sheet_pos(sheet_id),
         CodeCellLanguage::Python,
         "<html></html>".to_string(),
+        None,
         None,
     );
     let sheet = sheet(gc, sheet_id);

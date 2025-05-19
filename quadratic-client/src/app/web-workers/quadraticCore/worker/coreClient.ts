@@ -292,6 +292,7 @@ class CoreClient {
           e.data.y,
           e.data.language,
           e.data.codeString,
+          e.data.codeCellName,
           e.data.cursor
         );
         this.send({
