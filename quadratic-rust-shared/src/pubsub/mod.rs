@@ -1,6 +1,5 @@
 //! Pubsub code that implements the PubSub trait
 
-pub mod error;
 pub mod redis;
 pub mod redis_streams;
 
