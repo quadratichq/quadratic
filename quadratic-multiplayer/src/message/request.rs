@@ -40,7 +40,18 @@ pub(crate) enum MessageRequest {
         file_id: Uuid,
         operations: String,
     },
+    BinaryTransaction {
+        id: Uuid,
+        session_id: Uuid,
+        file_id: Uuid,
+        operations: Vec<u8>,
+    },
     GetTransactions {
+        file_id: Uuid,
+        session_id: Uuid,
+        min_sequence_num: u64,
+    },
+    GetBinaryTransactions {
         file_id: Uuid,
         session_id: Uuid,
         min_sequence_num: u64,

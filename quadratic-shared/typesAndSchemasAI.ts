@@ -19,6 +19,7 @@ const VertexAIModelSchema = z.enum([
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022']);
@@ -60,6 +61,7 @@ const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 

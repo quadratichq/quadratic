@@ -88,8 +88,7 @@ export function useSubmitAIAnalystPrompt() {
           tablesContext,
           currentSheetContext,
           visibleContext,
-          /*selectionContext,*/
-          filesContext,
+          /*selectionContext,*/ filesContext,
         ] = await Promise.all([
           getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
           getTablesContext(),

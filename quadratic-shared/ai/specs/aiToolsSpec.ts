@@ -253,6 +253,61 @@ IMPORTANT: If the results include page information:\n
 - as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
 `,
   },
+  [AITool.AddDataTable]: {
+    sources: ['AIAnalyst', 'PDFImport'],
+    description: `
+Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
+The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
+All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
+Data tables are best for adding new tabular data to the sheet.\n\n
+Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        top_left_position: {
+          type: 'string',
+          description:
+            'The top left position of the data table on the current open sheet, in a1 notation. This should be a single cell, not a range.',
+        },
+        table_name: {
+          type: 'string',
+          description:
+            "The name of the data table to add to the current open sheet. This should be a concise and descriptive name of the data table. Don't use special characters or spaces in the name. Always use a unique name for the data table. Spaces, if any, in name are replaced with underscores.",
+        },
+        table_data: {
+          type: 'array',
+          items: {
+            type: 'array',
+            items: {
+              type: 'string',
+              description: 'The string that is the value to set in the cell',
+            },
+          },
+        },
+      },
+      required: ['sheet_name', 'top_left_position', 'table_name', 'table_data'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddDataTable],
+    prompt: `
+Adds a data table to the current sheet defined in the context, requires the sheet name, top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+top_left_position is the anchor position of the data table.\n
+Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
+The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
+The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
+All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
+Data tables are best for adding new tabular data to the sheet.\n
+Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
+All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
+To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
+Don't attempt to add formulas or code to data tables.\n`,
+  },
   [AITool.SetCellValues]: {
     sources: ['AIAnalyst'],
     description: `
@@ -750,61 +805,5 @@ A data table cannot be created over any existing code cells or data tables.\n
 The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
 The data table will include a table name as the first row, which will push down all data by one row.\n
 `,
-  },
-  [AITool.AddDataTable]: {
-    sources: ['AIAnalyst', 'PDFImport'],
-    description: `
-Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
-Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
-The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
-All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Data tables are best for adding new tabular data to the sheet.\n\n
-Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
-`,
-    parameters: {
-      type: 'object',
-      properties: {
-        sheet_name: {
-          type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
-        },
-        top_left_position: {
-          type: 'string',
-          description:
-            'The top left position of the data table on the current open sheet, in a1 notation. This should be a single cell, not a range.',
-        },
-        table_name: {
-          type: 'string',
-          description:
-            "The name of the data table to add to the current open sheet. This should be a concise and descriptive name of the data table. Don't use special characters or spaces in the name. Always use a unique name for the data table. Spaces, if any, in name are replaced with underscores.",
-        },
-        table_data: {
-          type: 'array',
-          items: {
-            type: 'array',
-            items: {
-              type: 'string',
-              description: 'The string that is the value to set in the cell',
-            },
-          },
-        },
-      },
-      required: ['sheet_name', 'top_left_position', 'table_name', 'table_data'],
-      additionalProperties: false,
-    },
-    responseSchema: AIToolsArgsSchema[AITool.AddDataTable],
-    prompt: `
-Adds a data table to the current sheet defined in the context, requires the sheet name, top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
-top_left_position is the anchor position of the data table.\n
-Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
-CRITICALLY IMPORTANT: Unless requested by the user or as part of the PDFImport tool, do not use this tool to add data to the sheet. Use set_cell_values instead.\n
-The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
-The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
-All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Data tables are best for adding new tabular data to the sheet.\n
-Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
-All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
-To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
-Don't attempt to add formulas or code to data tables.\n`,
   },
 } as const;

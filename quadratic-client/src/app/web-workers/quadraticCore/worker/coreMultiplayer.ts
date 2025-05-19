@@ -46,6 +46,10 @@ class CoreMultiplayer {
         core.receiveTransactions(e.data);
         break;
 
+      case 'multiplayerCoreReceiveTransactionAck':
+        core.receiveTransactionAck(e.data.transactionId, e.data.sequenceNum);
+        break;
+
       default:
         console.warn('[coreMultiplayer] Unhandled message type', e.data);
     }
