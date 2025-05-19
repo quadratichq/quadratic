@@ -50,7 +50,7 @@ lazy_static! {
 }
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
-    let a1_context = grid.make_a1_context();
+    let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         sheet.migration_recalculate_bounds(&a1_context);
         sheet.columns.migration_regenerate_has_cell_value();
@@ -81,9 +81,11 @@ pub fn migrate_code_cell_references(
     grid: &mut Grid,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    let a1_context = grid.make_a1_context();
+    let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         sheet.migration_recalculate_bounds(&a1_context);
+        sheet.columns.migration_regenerate_has_cell_value();
+
         let sheet_name = sheet.name.clone();
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             for x in bounds.x_range() {

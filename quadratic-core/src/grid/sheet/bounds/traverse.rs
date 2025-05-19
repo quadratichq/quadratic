@@ -260,7 +260,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the anchor of the table
@@ -295,7 +295,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 20, y: 5 }, Some(chart_5x5_dt()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the first table
@@ -324,7 +324,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the anchor of the table
@@ -359,7 +359,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 20 }, Some(chart_5x5_dt()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the first table

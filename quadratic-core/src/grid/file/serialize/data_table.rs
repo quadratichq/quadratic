@@ -297,6 +297,8 @@ pub(crate) fn import_data_table_builder(
                 }
             },
             name: CellValue::Text(data_table.name),
+            value,
+            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             header_is_first_row: data_table.header_is_first_row,
             show_name: data_table.show_name,
             show_columns: data_table.show_columns,
@@ -328,10 +330,8 @@ pub(crate) fn import_data_table_builder(
             }),
             sort_dirty: data_table.sort_dirty,
             display_buffer: data_table.display_buffer,
-            value,
             spill_value: data_table.spill_value,
             spill_data_table: data_table.spill_data_table,
-            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             alternating_colors: data_table.alternating_colors,
             formats: data_table.formats.map(import_formats),
             borders: data_table.borders.map(import_borders),
@@ -549,6 +549,8 @@ pub(crate) fn export_data_tables(
             let data_table = current::DataTableSchema {
                 kind,
                 name,
+                value,
+                last_modified: Some(data_table.last_modified),
                 header_is_first_row: data_table.header_is_first_row,
                 show_name: data_table.show_name,
                 show_columns: data_table.show_columns,
@@ -556,10 +558,8 @@ pub(crate) fn export_data_tables(
                 sort,
                 sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
-                value,
                 spill_value: data_table.spill_value,
                 spill_data_table: data_table.spill_data_table,
-                last_modified: Some(data_table.last_modified),
                 alternating_colors: data_table.alternating_colors,
                 formats,
                 borders,

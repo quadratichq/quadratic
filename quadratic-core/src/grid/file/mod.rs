@@ -381,7 +381,7 @@ mod tests {
                 .get_at(&Pos { x: 1, y: 3 })
                 .is_some()
         );
-        let a1_context = imported.make_a1_context();
+        let a1_context = imported.expensive_make_a1_context();
         let code_cell = imported.sheets[0]
             .edit_code_value(Pos { x: 1, y: 3 }, &a1_context)
             .unwrap();

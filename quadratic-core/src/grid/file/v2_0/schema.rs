@@ -81,6 +81,11 @@ pub struct DataTableSchema {
 
     pub name: String,
 
+    pub value: OutputValueSchema,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub last_modified: Option<DateTime<Utc>>,
+
     #[serde(skip_serializing_if = "is_false", default)]
     pub header_is_first_row: bool,
 
@@ -102,16 +107,11 @@ pub struct DataTableSchema {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub display_buffer: Option<Vec<u64>>,
 
-    pub value: OutputValueSchema,
-
     #[serde(skip_serializing_if = "is_false", default)]
     pub spill_value: bool,
 
     #[serde(skip_serializing_if = "is_false", default)]
     pub spill_data_table: bool,
-
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub last_modified: Option<DateTime<Utc>>,
 
     #[serde(skip_serializing_if = "is_false", default)]
     pub alternating_colors: bool,

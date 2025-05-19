@@ -51,8 +51,8 @@ export interface JsFormulaParseResult { parse_error_msg: string | null, parse_er
 export interface JsCellsA1Value { x: number, y: number, v: string, t: number, }
 export interface JsHashesDirty { sheet_id: SheetId, hashes: Array<Pos>, }
 export interface JsHashRenderCells { sheet_id: SheetId, hash: Pos, cells: Array<JsRenderCell>, }
-export interface JsHtmlOutput { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, }
 export interface JsHashValidationWarnings { sheet_id: SheetId, hash: Pos | null, warnings: Array<JsValidationWarning>, }
+export interface JsHtmlOutput { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsOffset { column: number | null, row: number | null, size: number, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special?: JsRenderCellSpecial, number?: JsNumber, underline?: boolean, strikeThrough?: boolean, columnHeader?: boolean, }

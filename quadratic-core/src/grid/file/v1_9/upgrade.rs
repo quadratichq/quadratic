@@ -17,6 +17,7 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v2_0::DataTabl
             } else {
                 Some(data_table.borders)
             };
+
             (
                 pos,
                 v2_0::DataTableSchema {

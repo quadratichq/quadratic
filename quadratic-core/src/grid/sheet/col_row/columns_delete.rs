@@ -251,7 +251,7 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         let mut transaction = PendingTransaction::default();
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.delete_column(&mut transaction, 2, CopyFormats::None, &a1_context);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);

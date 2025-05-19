@@ -9,20 +9,20 @@ use crate::{Pos, Rect};
 /// Bidirectional map between positions and (potentially unbounded) rectangular
 /// regions.
 ///
-/// Positions and regions may be in the same sheet or different sheets. One
-/// position may be associated to multiple regions, and one region may be
-/// associated to multiple positions.
+/// Positions and regions may be in the same sheet. One position may be
+/// associated to multiple regions, and one region may be associated
+/// to multiple positions.
 #[derive(Debug, Default, Clone)]
 pub struct SheetRegionMap {
     /// Associations organized by region.
     ///
-    /// - Regions are represented by `SheetId` and a possibly-unbounded `Rect`.
+    /// - Regions are represented by `Rect`, possibly-unbounded.
     /// - Positions are represented by `Pos`.
     region_to_pos: RTree<GeomWithData<Rect, Pos>>,
 
     /// Associations organized by position.
     ///
-    /// - Regions are represented by `Rect` in the innermost hashmap.
+    /// - Regions are represented by `Rect`.
     /// - Positions are represented by `Pos` in the hashmap keys.
     pos_to_region: HashMap<Pos, Vec<Rect>>,
 }

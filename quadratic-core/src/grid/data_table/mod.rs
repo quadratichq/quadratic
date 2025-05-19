@@ -3,6 +3,7 @@
 //! This lives in sheet.data_tables. CodeRun is optional within sheet.data_tables for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
+use crate::util::is_false;
 
 pub mod column;
 pub mod column_header;
@@ -139,29 +140,52 @@ pub enum DataTableKind {
 pub struct DataTable {
     pub kind: DataTableKind,
     pub name: CellValue,
-    pub header_is_first_row: bool,
-    pub column_headers: Option<Vec<DataTableColumnHeader>>,
-    pub sort: Option<Vec<DataTableSort>>,
-    pub sort_dirty: bool,
-    pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
+    pub last_modified: DateTime<Utc>,
+
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub header_is_first_row: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub column_headers: Option<Vec<DataTableColumnHeader>>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub sort: Option<Vec<DataTableSort>>,
+
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub sort_dirty: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub display_buffer: Option<Vec<u64>>,
 
     // spill due to cell value
+    #[serde(skip_serializing_if = "is_false", default)]
     pub spill_value: bool,
+
     // spill due to data table output
+    #[serde(skip_serializing_if = "is_false", default)]
     pub spill_data_table: bool,
 
-    pub last_modified: DateTime<Utc>,
+    #[serde(skip_serializing_if = "is_false", default)]
     pub alternating_colors: bool,
 
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub formats: Option<SheetFormatting>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub borders: Option<Borders>,
 
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub show_name: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub show_columns: Option<bool>,
 
     // width and height of the chart (html or image) output
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_pixel_output: Option<(f32, f32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
 }
 
@@ -198,25 +222,21 @@ impl DataTable {
         let mut data_table = DataTable {
             kind,
             name: name.into(),
-            header_is_first_row,
-            chart_pixel_output: None,
             value,
-            spill_value: false,
-            spill_data_table: false,
             last_modified: Utc::now(),
-            alternating_colors: true,
-
-            show_name,
-            show_columns,
-
+            header_is_first_row,
             column_headers: None,
             sort: None,
             sort_dirty: false,
             display_buffer: None,
-
+            spill_value: false,
+            spill_data_table: false,
+            alternating_colors: true,
             formats: None,
             borders: None,
-
+            show_name,
+            show_columns,
+            chart_pixel_output: None,
             chart_output,
         };
 
@@ -233,22 +253,20 @@ impl DataTable {
         Self {
             kind: self.kind.clone(),
             name: self.name.clone(),
+            value: Value::Single(CellValue::Blank),
+            last_modified: self.last_modified,
             header_is_first_row: self.header_is_first_row,
             column_headers: self.column_headers.clone(),
             sort: self.sort.clone(),
             sort_dirty: self.sort_dirty,
             display_buffer: self.display_buffer.clone(),
-            value: Value::Single(CellValue::Blank),
             spill_value: self.spill_value,
             spill_data_table: self.spill_data_table,
-            last_modified: self.last_modified,
             alternating_colors: self.alternating_colors,
             formats: self.formats.clone(),
             borders: self.borders.clone(),
-
             show_name: self.show_name,
             show_columns: self.show_columns,
-
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
         }

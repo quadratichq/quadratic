@@ -49,9 +49,6 @@ use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
 use quadratic_core::grid::sheet::keyboard::Direction;
 use quadratic_core::grid::sheet::search::SearchOptions;
-use quadratic_core::grid::sheet::validations::validation::{
-    Validation, ValidationError, ValidationMessage, ValidationStyle,
-};
 use quadratic_core::grid::sheet::validations::rules::ValidationRule;
 use quadratic_core::grid::sheet::validations::rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
@@ -65,6 +62,9 @@ use quadratic_core::grid::sheet::validations::rules::validation_number::{
 };
 use quadratic_core::grid::sheet::validations::rules::validation_text::{
     TextCase, TextMatch, ValidationText,
+};
+use quadratic_core::grid::sheet::validations::validation::{
+    Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
 use quadratic_core::grid::sort::DataTableSort;
 use quadratic_core::grid::sort::SortDirection;
@@ -147,8 +147,8 @@ fn main() {
         JsCellsA1Value,
         JsHashesDirty,
         JsHashRenderCells,
-        JsHtmlOutput,
         JsHashValidationWarnings,
+        JsHtmlOutput,
         JsNumber,
         JsOffset,
         JsRenderCell,

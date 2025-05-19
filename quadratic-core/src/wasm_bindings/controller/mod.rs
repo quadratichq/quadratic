@@ -66,13 +66,6 @@ impl GridController {
                     }
                     drop(sheets_info);
 
-                    if !html.is_empty() {
-                        if let Ok(html) = serde_json::to_string(&html) {
-                            crate::wasm_bindings::js::jsHtmlOutput(html);
-                        }
-                    }
-                    drop(html);
-
                     grid.sheet_ids().iter().for_each(|sheet_id| {
                         grid.send_all_fills(*sheet_id);
 
@@ -93,6 +86,13 @@ impl GridController {
                             sheet.send_sheet_borders();
                         }
                     });
+
+                    if !html.is_empty() {
+                        if let Ok(html) = serde_json::to_string(&html) {
+                            crate::wasm_bindings::js::jsHtmlOutput(html);
+                        }
+                    }
+                    drop(html);
                 }
                 Ok(grid)
             }

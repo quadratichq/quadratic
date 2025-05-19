@@ -269,7 +269,9 @@ impl GridController {
 
         // add data from excel file to grid
         for sheet_name in sheets {
-            let sheet = gc.try_sheet_from_name(sheet_name.to_owned()).unwrap();
+            let sheet = gc
+                .try_sheet_from_name(sheet_name.to_owned())
+                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
             let sheet_id = sheet.id;
 
             // values
@@ -323,8 +325,10 @@ impl GridController {
                         x: insert_at.x + x as i64,
                         y: insert_at.y + y as i64,
                     };
-                    let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-                    sheet.set_cell_value(pos, cell_value);
+                    let sheet = gc
+                        .try_sheet_mut(sheet_id)
+                        .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                    sheet.columns.set_value(&pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
@@ -360,8 +364,10 @@ impl GridController {
                             language: CodeCellLanguage::Formula,
                             code: cell.to_string(),
                         });
-                        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-                        sheet.set_cell_value(pos, cell_value);
+                        let sheet = gc
+                            .try_sheet_mut(sheet_id)
+                            .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                        sheet.columns.set_value(&pos, cell_value);
                         let mut transaction = PendingTransaction {
                             source: TransactionSource::Server,
                             ..Default::default()

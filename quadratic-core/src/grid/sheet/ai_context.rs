@@ -327,7 +327,7 @@ mod tests {
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 300, sheet.id));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let data_rects_in_selection =
             sheet.get_data_rects_in_selection(&selection, None, &a1_context);
 
@@ -476,7 +476,7 @@ mod tests {
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1000, 1000, sheet.id));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let js_errored_code_cells =
             sheet.get_errored_code_cells_in_selection(&selection, &a1_context);
 

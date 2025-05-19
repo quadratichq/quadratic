@@ -302,7 +302,7 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Test fully specified range
@@ -321,7 +321,7 @@ mod tests {
         let sheet = Sheet::test();
         let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let rects = sheet.selection_to_rects(&selection, false, false, &a1_context);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
     }
@@ -332,7 +332,7 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Test unbounded range
@@ -357,7 +357,7 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         let selection = A1Selection::test_a1("A1:C3,E5:");
@@ -386,7 +386,7 @@ mod tests {
         // Setup some data to establish sheet bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Single cell selection

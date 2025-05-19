@@ -1,6 +1,7 @@
 {
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "AABB",
     "acked",
     "actix",
     "autoclean",
@@ -14,6 +15,7 @@
     "bincode",
     "bindgen",
     "bmfont",
+    "btreemap",
     "buildkit",
     "Buildx",
     "cellref",
@@ -48,6 +50,7 @@
     "elif",
     "Embedder",
     "endregion",
+    "EXISTINGSHEET",
     "expressjwt",
     "fholzer",
     "finitize",
@@ -129,6 +132,7 @@
     "revalidator",
     "rfind",
     "ROUNDDOWN",
+    "rstar",
     "RUSTC",
     "RUSTFLAGS",
     "rustup",
