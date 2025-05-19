@@ -9,6 +9,8 @@ When the data that code references is updated, the code cell is automatically re
 
 You can reference tables, individual cells, and ranges of cells using Python.
 
+Use table references by default when referencing data that is in a table; use A1 references when referencing data not in a table. 
+
 ### Referencing tables
 
 \`\`\`python
