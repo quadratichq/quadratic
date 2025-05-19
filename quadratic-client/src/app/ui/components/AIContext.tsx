@@ -6,7 +6,7 @@ import {
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { uploadFile } from '@/app/helpers/files';
-import { getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
+import { A1SelectionStringToSelection, getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
@@ -22,6 +22,7 @@ import {
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { AIAnalystSelectContextMenu } from '../menus/AIAnalyst/AIAnalystSelectContextMenu';
 
 type AIContextProps = {
   initialContext?: Context;
@@ -53,24 +54,24 @@ export const AIContext = memo(
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [, setCurrentSheet] = useState(sheets.sheet.name);
 
-    // useEffect(() => {
-    //   if (loading || !editing) return;
+    useEffect(() => {
+      if (loading || !editing) return;
 
-    //   const updateSelection = () => {
-    //     setContext?.((prev) => ({
-    //       ...prev,
-    //       selection: sheets.sheet.cursor.save(),
-    //     }));
-    //   };
-    //   updateSelection();
+      const updateSelection = () => {
+        setContext?.((prev) => ({
+          ...prev,
+          selection: sheets.sheet.cursor.save(),
+        }));
+      };
+      updateSelection();
 
-    //   events.on('cursorPosition', updateSelection);
-    //   events.on('changeSheet', updateSelection);
-    //   return () => {
-    //     events.off('cursorPosition', updateSelection);
-    //     events.off('changeSheet', updateSelection);
-    //   };
-    // }, [editing, loading, setContext]);
+      events.on('cursorPosition', updateSelection);
+      events.on('changeSheet', updateSelection);
+      return () => {
+        events.off('cursorPosition', updateSelection);
+        events.off('changeSheet', updateSelection);
+      };
+    }, [editing, loading, setContext]);
 
     useEffect(() => {
       const updateCurrentSheet = () => {
@@ -105,9 +106,9 @@ export const AIContext = memo(
       }
     }, [initialContext, loading, messages, messagesCount, setContext]);
 
-    // const handleOnCloseSelectContextMenu = useCallback(() => {
-    //   textareaRef.current?.focus();
-    // }, [textareaRef]);
+    const handleOnCloseSelectContextMenu = useCallback(() => {
+      textareaRef.current?.focus();
+    }, [textareaRef]);
 
     const handleOnClickFileContext = useCallback(
       (file: FileContent) => {
@@ -116,17 +117,17 @@ export const AIContext = memo(
       [setFiles]
     );
 
-    // const handleOnClickSelection = useCallback(() => {
-    //   setContext?.((prev) => ({ ...prev, selection: undefined }));
-    // }, [setContext]);
+    const handleOnClickSelection = useCallback(() => {
+      setContext?.((prev) => ({ ...prev, selection: undefined }));
+    }, [setContext]);
 
-    // const handleOnClickCurrentSheet = useCallback(() => {
-    //   setContext?.((prev) => ({
-    //     ...prev,
-    //     sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
-    //     currentSheet: '',
-    //   }));
-    // }, [setContext]);
+    const handleOnClickCurrentSheet = useCallback(() => {
+      setContext?.((prev) => ({
+        ...prev,
+        sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
+        currentSheet: '',
+      }));
+    }, [setContext]);
 
     return (
       <div
@@ -136,14 +137,14 @@ export const AIContext = memo(
           loading && 'select-none opacity-60'
         )}
       >
-        {/* {editing && context && setContext && (
+        {editing && context && setContext && (
           <AIAnalystSelectContextMenu
             context={context}
             setContext={setContext}
             disabled={disabled}
             onClose={handleOnCloseSelectContextMenu}
           />
-        )} */}
+        )}
 
         <AttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
 
@@ -158,7 +159,7 @@ export const AIContext = memo(
 
         <CodeCellContextPill codeCell={context.codeCell} />
 
-        {/* {setContext && context && (
+        {setContext && context && (
           <ContextPill
             key="cursor"
             primary={
@@ -168,7 +169,7 @@ export const AIContext = memo(
             }
             secondary="Cursor"
             onClick={handleOnClickSelection}
-            disabled={disabled || !setContext || !context.selection}
+            noClose
           />
         )}
 
@@ -178,18 +179,18 @@ export const AIContext = memo(
             primary={context.currentSheet}
             secondary={'Sheet'}
             onClick={handleOnClickCurrentSheet}
-            disabled={disabled || !setContext}
+            noClose={disabled || !setContext}
           />
-        )} */}
+        )}
 
-        {/* {context.sheets
+        {context.sheets
           .filter((sheet) => sheet !== context.currentSheet)
           .map((sheet) => (
             <ContextPill
               key={sheet}
               primary={sheet}
               secondary={'Sheet'}
-              disabled={disabled || !setContext}
+              noClose={disabled || !setContext}
               onClick={() =>
                 setContext?.((prev) => ({
                   ...prev,
@@ -198,7 +199,7 @@ export const AIContext = memo(
                 }))
               }
             />
-          ))} */}
+          ))}
       </div>
     );
   }
@@ -208,16 +209,16 @@ type ContextPillProps = {
   primary: string;
   secondary: string;
   onClick?: () => void;
-  disabled: boolean;
+  noClose: boolean;
 };
-const ContextPill = memo(({ primary, secondary, onClick, disabled }: ContextPillProps) => {
+const ContextPill = memo(({ primary, secondary, onClick, noClose }: ContextPillProps) => {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
       <span className="max-w-24 truncate">{primary}</span>
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 
-      {!disabled && (
+      {!noClose && (
         <Button
           size="icon-sm"
           className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
@@ -243,7 +244,7 @@ const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps)
         <ContextPill
           primary={file.fileName}
           secondary={getFileTypeLabel(file.mimeType)}
-          disabled={disabled}
+          noClose={disabled}
           onClick={onClick}
         />
       </HoverCardTrigger>
@@ -307,5 +308,5 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
     return null;
   }
 
-  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" disabled={true} />;
+  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" noClose={true} />;
 });
