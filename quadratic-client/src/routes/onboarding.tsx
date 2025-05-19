@@ -1,7 +1,8 @@
-import { questionsById } from '@/dashboard/onboarding/questionsById';
 import {
   AIIcon,
-  CheckIcon,
+  ArrowRightIcon,
+  CheckBoxEmptyIcon,
+  CheckBoxIcon,
   DatabaseIcon,
   EducationIcon,
   PersonalIcon,
@@ -23,28 +24,83 @@ export const Component = () => {
   );
 };
 
-const questionFormsById = {
-  role: Question2,
-  languages: Question3,
-  goals: Question4,
-};
+const allQuestions = [
+  {
+    id: 'use', // TODO: `intent`
+    title: 'How will you use Quadratic?',
+    subtitle: 'Your answers help personalize your experience.',
+    type: 'radio',
+    options: [
+      { value: 'work', label: 'Work' },
+      { value: 'personal', label: 'Personal' },
+      { value: 'education', label: 'Education' },
+    ],
+    Form: (props: any) => {
+      const iconsByValue: Record<string, React.ReactNode> = {
+        work: <WorkIcon size="lg" className="text-primary" />,
+        personal: <PersonalIcon size="lg" className="text-primary" />,
+        education: <EducationIcon size="lg" className="text-primary" />,
+      };
+      const className =
+        'flex flex-col items-center gap-2 border border-border rounded-lg px-4 py-8 hover:border-primary shadow-sm font-medium active:bg-accent';
+      return (
+        <Question>
+          <QuestionName caption={props.subtitle}>{props.title}</QuestionName>
+          <QuestionOptions className="grid grid-cols-3 gap-2">
+            {props.options.map((option: any) => (
+              <QuestionOption value={option.value} name={props.id} className={className} type={props.type}>
+                {iconsByValue[option.value]}
+                {option.label}
+              </QuestionOption>
+            ))}
+          </QuestionOptions>
 
-const useCurrentIndex = () => {
+          <aside className="mx-auto flex items-center justify-center rounded-full bg-accent px-4 py-2 text-muted-foreground">
+            <StarShineIcon className="mr-2" />
+            You’ll be rewarded <strong className="mx-1 font-semibold">20 free prompts</strong> on completion!
+          </aside>
+        </Question>
+      );
+    },
+  },
+
+  // Work
+  { id: 'role', Form: Question2, use: 'work' },
+
+  // Personal
+  { id: 'personal-use', Form: Question5, use: 'personal' },
+
+  // Education
+  { id: 'self-describe', Form: Question6, use: 'education' },
+  { id: 'subject-areas', Form: Question7, use: 'education' },
+
+  // Shared
+  { id: 'languages', Form: Question3, showNext: true /* type=checkbox */ },
+  { id: 'goals', Form: Question4, showNext: true },
+];
+
+const useFormNavigation = () => {
   const [searchParams] = useSearchParams();
+  const currentUse = searchParams.get('use');
+  // TODO: how do we handle 'other' if they submit it?
   const uniqueKeys = new Set(searchParams.keys());
-  return uniqueKeys.size;
+  const currentQuestionStack = currentUse ? allQuestions.filter((q) => (q.use ? q.use === currentUse : true)) : [];
+  const currentIndex = uniqueKeys.size;
+  const currentId = currentUse ? currentQuestionStack[currentIndex].id : 'use';
+
+  return {
+    currentUse: currentUse ? currentUse : null,
+    currentIndex: currentIndex,
+    currentId,
+    isLastQuestion: currentId === allQuestions[allQuestions.length - 1].id,
+    currentQuestion: currentUse ? currentQuestionStack[currentIndex] : allQuestions[0],
+  };
 };
 
 function AnimatedOnboarding() {
-  const currentIndex = useCurrentIndex();
-
-  // const [currentIndex, setCurrentIndex] = useState(0);
-  // const handleNext = () => {
-  //   setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
-  // };
-  // const handleBack = () => {
-  //   setCurrentIndex((i) => Math.max(0, i - 1));
-  // };
+  const formNavigation = useFormNavigation();
+  const { currentIndex, currentId } = formNavigation;
+  console.log('formNavigation', formNavigation);
 
   return (
     <>
@@ -53,35 +109,32 @@ function AnimatedOnboarding() {
       </Link>
       <div className="relative w-full max-w-xl transition-all">
         <div className="relative min-h-[4rem]">
-          <div
-            className={cn(
-              'absolute inset-0 transition-all duration-500 ease-in-out',
-              0 === currentIndex
-                ? 'z-10 translate-x-0 opacity-100'
-                : 0 < currentIndex
-                  ? 'invisible z-0 -translate-x-1/3 opacity-0'
-                  : 'invisible z-0 translate-x-1/3 opacity-0',
-              'transform'
-            )}
-          >
-            <Question1 id="use" />
-          </div>
-          {Object.entries(questionFormsById).map(([id, Form], i) => (
-            <div
-              key={id}
-              className={cn(
-                'absolute inset-0 transition-all duration-500 ease-in-out',
-                i + 1 === currentIndex
-                  ? 'z-10 translate-x-0 opacity-100'
-                  : i + 1 < currentIndex
-                    ? 'invisible z-0 -translate-x-1/3 opacity-0'
-                    : 'invisible z-0 translate-x-1/3 opacity-0',
-                'transform'
-              )}
-            >
-              <Form id={id} />
-            </div>
-          ))}
+          {allQuestions.map(({ Form, ...props }, i) => {
+            const id = props.id;
+            // console.log('currentId:%s id:%s currentIndex:%s i:%s', currentId, id, currentIndex, i);
+            // see if the id is before or after the currentId in allQuestions
+            const isBeforeCurrentId = allQuestions.findIndex((q) => q.id === currentId) > i;
+            return (
+              <div
+                key={id}
+                id={id}
+                className={cn(
+                  'absolute inset-0 transition-all duration-500 ease-in-out',
+                  'transform',
+                  // Current question
+                  id === currentId
+                    ? 'z-10 translate-x-0 opacity-100'
+                    : // Previous question(s)
+                      isBeforeCurrentId
+                      ? 'invisible z-0 -translate-x-1/3 opacity-0'
+                      : // Next question(s)
+                        'invisible z-0 translate-x-1/3 opacity-0'
+                )}
+              >
+                <Form {...props} />
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
@@ -89,31 +142,31 @@ function AnimatedOnboarding() {
 }
 
 function QuestionFooter() {
-  const currentIndex = useCurrentIndex();
-  // const [, setSearchParams] = useSearchParams();
+  const { currentIndex, isLastQuestion, currentQuestion } = useFormNavigation();
   const navigate = useNavigate();
+  const isFirstQuestion = currentIndex === 0;
+  const showNext = !isFirstQuestion && currentQuestion.showNext;
+  const className = 'w-28 px-0 select-none transition-opacity delay-200 ease-in-out';
 
   return (
     <div className="mt-10 flex w-full items-center justify-center gap-4">
       <Button
         type="reset"
         onClick={() => {
-          // setSearchParams((prev) => {
-          //   const entries = Array.from(prev.entries());
-          //   const entriesMinusLast = entries.slice(0, -1);
-          //   return new URLSearchParams(entriesMinusLast);
-          // });
           navigate(-1);
         }}
         size="lg"
         variant="link"
-        className={cn('w-20 text-muted-foreground', currentIndex === 0 && 'invisible opacity-0')}
+        className={cn(className, 'justify-start text-muted-foreground', isFirstQuestion && 'invisible opacity-0')}
       >
         Back
       </Button>
-      <span className="flex-grow text-center text-muted-foreground">Question {currentIndex + 1} of X</span>
-      <Button type="submit" className="w-20" size="lg">
-        Next
+      <span className="flex-grow select-none text-center text-sm text-muted-foreground">
+        Question {currentIndex + 1} of X
+      </span>
+
+      <Button type="submit" className={cn(className, !showNext && 'invisible opacity-0')} size="lg">
+        {isLastQuestion ? 'Get started!' : 'Next'}
       </Button>
     </div>
   );
@@ -126,8 +179,8 @@ function Logo({ index }: { index: number }) {
       <div className={cn(className, 'justify-self-end', index >= 0 && 'bg-[#CB8999]')} />
       <div className={cn(className, index > 0 && 'bg-[#8ECB89]')} />
       <div className={cn(className, 'justify-self-end', index > 1 && 'bg-[#5D576B]')} />
-      <div className={cn(className, index > 4 && 'bg-[#6CD4FF]')} />
-      <div className={cn(className, 'col-start-2', index > 4 && 'bg-[#FFC800]')} />
+      <div className={cn(className, index > 2 && 'bg-[#6CD4FF]')} />
+      <div className={cn(className, 'col-start-2', index > 3 && 'bg-[#FFC800]')} />
     </div>
   );
 }
@@ -135,32 +188,49 @@ function Logo({ index }: { index: number }) {
 function Question({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-10">{children}</div>;
 }
+
+// TODO: rename to QuestionForm
 function QuestionOptions({ children, className }: { children: React.ReactNode; className?: string }) {
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { isLastQuestion } = useFormNavigation();
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         const form = e.target as HTMLFormElement;
-
         const formData = new FormData(form);
-        const values = Object.fromEntries(formData.entries());
+        const values = Array.from(formData.entries());
 
-        const valuez = Array.from(formData.entries());
+        console.log('handle submit form', values, searchParams);
+        // TODO: handle empty values, like filter them out
 
-        console.log('handle submit form', values, valuez);
-        setSearchParams((prev) => {
-          valuez.forEach(([key, value]) => {
-            prev.append(key, value as string);
-          });
-          // Object.entries(values).forEach(([key, value]) => {
-          //   prev.set(key, value as string);
-          // });
-          return prev;
+        // Append the new values
+        const newSearchParams = searchParams;
+        values.forEach(([key, value]) => {
+          newSearchParams.append(key, value as string);
         });
 
+        // If it's the last question, convert the search params to a payload
+        // and submit it to the server
+        if (isLastQuestion) {
+          const payload: Record<string, string | string[]> = {};
+          for (const [key, value] of newSearchParams.entries()) {
+            if (payload[key]) {
+              // Convert existing string to array if not already
+              payload[key] = Array.isArray(payload[key]) ? payload[key] : [payload[key]];
+              payload[key].push(value);
+            } else {
+              payload[key] = value;
+            }
+          }
+          // JSON stringify url search params of prev
+          window.alert(JSON.stringify(payload));
+          return;
+        }
+
+        // Otherwise update the search params and reset the current form
+        setSearchParams(newSearchParams);
         form.reset();
-        // handleSubmit();
       }}
     >
       <div className={className}>{children}</div>
@@ -175,34 +245,6 @@ function QuestionName({ children, caption }: { children: React.ReactNode; captio
       <h2 className="text-center text-4xl font-bold">{children}</h2>
       {caption && <p className="text-center text-lg text-muted-foreground">{caption}</p>}
     </header>
-  );
-}
-
-function Question1(props: any) {
-  const className =
-    'flex flex-col items-center gap-2 border border-border rounded-lg px-4 py-8 hover:border-primary shadow-sm font-medium active:bg-accent';
-  return (
-    <Question>
-      <QuestionName caption="You answers help personalize your experience.">How will you use Quadratic?</QuestionName>
-      <QuestionOptions className="grid grid-cols-3 gap-2">
-        <QuestionOption value="work" name={props.id} className={className}>
-          <WorkIcon size="lg" className="text-primary" />
-          Work
-        </QuestionOption>
-        <QuestionOption value="personal" name={props.id} className={className}>
-          <PersonalIcon size="lg" className="text-primary" />
-          Personal
-        </QuestionOption>
-        <QuestionOption value="education" name={props.id} className={className}>
-          <EducationIcon size="lg" className="text-primary" />
-          Education
-        </QuestionOption>
-      </QuestionOptions>
-      <aside className="mx-auto flex items-center justify-center rounded-full bg-accent px-4 py-2 text-muted-foreground">
-        <StarShineIcon className="mr-2" />
-        You’ll be rewarded <strong className="mx-1 font-semibold">20 free prompts</strong> on completion!
-      </aside>
-    </Question>
   );
 }
 
@@ -274,6 +316,7 @@ function Question3(props: any) {
           <AIIcon size="lg" className={languageClassName + ' text-green-600'} />
           AI / Vibe coding
         </QuestionOption>
+        <input type="hidden" name={props.id} value="" />
         {/* <QuestionOption type="reset">None of these</QuestionOption> */}
       </QuestionOptions>
     </Question>
@@ -283,7 +326,7 @@ function Question3(props: any) {
 function Question4(props: any) {
   return (
     <Question>
-      <QuestionName>What are you looking to accomplish in Quadratic?</QuestionName>
+      <QuestionName caption="Select all that apply">What are you looking to accomplish in Quadratic?</QuestionName>
       <QuestionOptions className="grid grid-cols-2 gap-1">
         <QuestionOption type="checkbox" name={props.id} value="db-connections">
           Database connections
@@ -314,6 +357,93 @@ function Question4(props: any) {
   );
 }
 
+function Question5(props: any) {
+  return (
+    <Question>
+      <QuestionName caption="Select all that apply">What are you planning to use Quadratic for?</QuestionName>
+      <QuestionOptions className="grid grid-cols-2 gap-2">
+        <QuestionOption name={props.id} value="personal-finance">
+          Personal finance
+        </QuestionOption>
+        <QuestionOption name={props.id} value="trading-investing">
+          Trading/Investing
+        </QuestionOption>
+        <QuestionOption name={props.id} value="side-projects-hobbies">
+          Side projects or hobbies
+        </QuestionOption>
+        <QuestionOption name={props.id} value="learning-to-code">
+          Learning to code
+        </QuestionOption>
+        <QuestionOption name={props.id} value="getting-better-at-ai">
+          Getting better at AI
+        </QuestionOption>
+        <QuestionOption name={props.id} value="other">
+          Other
+        </QuestionOption>
+      </QuestionOptions>
+    </Question>
+  );
+}
+
+function Question6(props: any) {
+  return (
+    <Question>
+      <QuestionName>What best describes you?</QuestionName>
+      <QuestionOptions className="grid grid-cols-2 gap-2">
+        <QuestionOption name={props.id} value="university-student">
+          University student
+        </QuestionOption>
+        <QuestionOption name={props.id} value="high-school-student">
+          High school student
+        </QuestionOption>
+        <QuestionOption name={props.id} value="educator-professor">
+          Educator / professor
+        </QuestionOption>
+        <QuestionOption name={props.id} value="researcher">
+          Researcher
+        </QuestionOption>
+        <QuestionOption name={props.id} value="bootcamp-self-taught">
+          Bootcamp / self-taught
+        </QuestionOption>
+        <QuestionOption name={props.id} value="other">
+          Other
+        </QuestionOption>
+      </QuestionOptions>
+    </Question>
+  );
+}
+
+function Question7(props: any) {
+  return (
+    <Question>
+      <QuestionName caption="Select all that apply">What subject areas are you working in?</QuestionName>
+      <QuestionOptions className="grid grid-cols-2 gap-2">
+        <QuestionOption type="checkbox" name={props.id} value="math">
+          Math
+        </QuestionOption>
+        <QuestionOption type="checkbox" name={props.id} value="finance-economics">
+          Finance / Economics
+        </QuestionOption>
+        <QuestionOption type="checkbox" name={props.id} value="physics-engineering">
+          Physics / Engineering
+        </QuestionOption>
+        <QuestionOption type="checkbox" name={props.id} value="computer-science-ai">
+          Computer Science / AI
+        </QuestionOption>
+        <QuestionOption type="checkbox" name={props.id} value="business-marketing">
+          Business / Marketing
+        </QuestionOption>
+        <QuestionOption type="checkbox" name={props.id} value="social-sciences">
+          Social sciences
+        </QuestionOption>
+        <QuestionOption type="checkbox" name={props.id} value="other">
+          Other
+        </QuestionOption>
+      </QuestionOptions>
+    </Question>
+  );
+}
+
 function QuestionOption({
   type,
   value,
@@ -328,7 +458,7 @@ function QuestionOption({
   name: string;
 }) {
   const baseClassName =
-    'relative select-none border border-border font-medium shadow-sm hover:border-primary hover:shadow-md has-[input:checked]:border-primary has-[input:checked]:bg-accent has-[input:checked]:shadow-lg';
+    'group relative select-none border border-border font-medium shadow-sm hover:border-primary hover:shadow-md has-[input:checked]:border-primary has-[input:checked]:bg-accent has-[input:checked]:shadow-lg';
   const defaultClassName = 'flex items-center gap-2 rounded-lg p-4';
 
   // if (type === 'reset') {
@@ -342,11 +472,14 @@ function QuestionOption({
   // }
 
   if (type === 'checkbox') {
+    const isLanguage = name === 'languages';
+    const iconClassName = isLanguage ? 'absolute right-2 top-2' : 'absolute right-4 top-1/2 -translate-y-1/2';
     return (
       <label htmlFor={name + value} className={cn(baseClassName, className ? className : defaultClassName)}>
         <input type="checkbox" id={name + value} value={value} name={name} className="peer sr-only" />
         {children}
-        <CheckIcon className="absolute right-2 top-2 ml-auto text-primary opacity-0 peer-checked:opacity-100" />
+        <CheckBoxEmptyIcon className={cn(iconClassName, 'text-border opacity-100 peer-checked:opacity-0')} />
+        <CheckBoxIcon className={cn(iconClassName, 'text-primary opacity-0 peer-checked:opacity-100')} />
       </label>
     );
   }
@@ -367,30 +500,34 @@ function QuestionOption({
       />
 
       {children}
+
+      {name !== 'use' && (
+        <ArrowRightIcon className="ml-auto opacity-20 group-hover:text-primary group-hover:opacity-100" />
+      )}
     </label>
   );
 }
 
-export function Questionnn({ id }: { id: string }) {
-  const question = questionsById[id];
-  return (
-    <div className="flex flex-col gap-10">
-      <header className="flex flex-col gap-2">
-        <h2 className="text-center text-4xl font-bold">{question.label}</h2>
-        {question.subLabel && <p className="text-center text-lg">{question.subLabel}</p>}
-      </header>
-      <main>
-        {question.options.map((option) => (
-          <QuestionOption key={option.value} value={option.value} name={id}>
-            {option.label}
-          </QuestionOption>
-        ))}
-      </main>
-      <aside className="mx-auto flex items-center justify-center rounded-full bg-secondary px-4 py-2 text-muted-foreground">
-        <StarShineIcon className="mr-2" />
-        You’ll be rewarded <strong className="mx-1 font-semibold">20 free prompts</strong> on completion!
-      </aside>
-      <footer></footer>
-    </div>
-  );
-}
+// export function Questionnn({ id }: { id: string }) {
+//   const question = questionsById[id];
+//   return (
+//     <div className="flex flex-col gap-10">
+//       <header className="flex flex-col gap-2">
+//         <h2 className="text-center text-4xl font-bold">{question.label}</h2>
+//         {question.subLabel && <p className="text-center text-lg">{question.subLabel}</p>}
+//       </header>
+//       <main>
+//         {question.options.map((option) => (
+//           <QuestionOption key={option.value} value={option.value} name={id}>
+//             {option.label}
+//           </QuestionOption>
+//         ))}
+//       </main>
+//       <aside className="mx-auto flex items-center justify-center rounded-full bg-secondary px-4 py-2 text-muted-foreground">
+//         <StarShineIcon className="mr-2" />
+//         You’ll be rewarded <strong className="mx-1 font-semibold">20 free prompts</strong> on completion!
+//       </aside>
+//       <footer></footer>
+//     </div>
+//   );
+// }
