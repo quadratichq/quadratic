@@ -29,7 +29,7 @@ impl GridController {
         self.viewport_buffer = Some(viewport_buffer);
     }
 
-    /// Sends all updates to the client during the transacion
+    /// Sends all updates to the client during the transaction
     pub(crate) fn send_client_updates_during_transaction(
         &mut self,
         transaction: &mut PendingTransaction,

@@ -6,11 +6,14 @@ use crate::{
     grid::{Column, Contiguous2D},
 };
 
+// all fields are private intentionally, only use functions on this
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SheetColumns {
     #[serde(with = "crate::util::btreemap_serde")]
     columns: BTreeMap<i64, Column>,
 
+    // boolean map indicating presence of value on the sheet column
+    // uses Contiguous2D for efficient storage and fast lookup
     has_cell_value: Contiguous2D<Option<bool>>,
 }
 
@@ -267,5 +270,193 @@ impl SheetColumns {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{CellValue, Pos, Rect, grid::sheet::columns::SheetColumns};
+
+    #[test]
+    fn test_new_and_default() {
+        let columns = SheetColumns::new();
+        assert!(columns.is_empty());
+        assert_eq!(columns.len(), 0);
+
+        let default_columns = SheetColumns::default();
+        assert!(default_columns.is_empty());
+        assert_eq!(default_columns.len(), 0);
+    }
+
+    #[test]
+    fn test_set_and_get_value() {
+        let mut columns = SheetColumns::new();
+        let pos = Pos::new(1, 1);
+
+        // Set and get a string value
+        columns.set_value(&pos, "test");
+        assert_eq!(columns.get_value(&pos), Some(&CellValue::from("test")));
+
+        // Set and get a number value
+        let pos2 = Pos::new(2, 1);
+        columns.set_value(&pos2, 42.0);
+        assert_eq!(columns.get_value(&pos2), Some(&CellValue::from(42.0)));
+
+        // Test empty value
+        columns.set_value(&pos, "");
+        assert_eq!(columns.get_value(&pos), None);
+    }
+
+    #[test]
+    fn test_delete_values() {
+        let mut columns = SheetColumns::new();
+
+        // Set up some test data
+        columns.set_value(&Pos::new(1, 1), "A1");
+        columns.set_value(&Pos::new(1, 2), "A2");
+        columns.set_value(&Pos::new(2, 1), "B1");
+        columns.set_value(&Pos::new(2, 2), "B2");
+
+        let rect = Rect::new_span((1, 1).into(), (2, 2).into());
+        let deleted = columns.delete_values(rect);
+
+        // Check that values were removed
+        assert_eq!(columns.get_value(&Pos::new(1, 1)), None);
+        assert_eq!(columns.get_value(&Pos::new(1, 2)), None);
+        assert_eq!(columns.get_value(&Pos::new(2, 1)), None);
+        assert_eq!(columns.get_value(&Pos::new(2, 2)), None);
+
+        // Check that deleted array contains the original values
+        assert_eq!(deleted.get(0, 0), Ok(&CellValue::from("A1")));
+        assert_eq!(deleted.get(0, 1), Ok(&CellValue::from("A2")));
+        assert_eq!(deleted.get(1, 0), Ok(&CellValue::from("B1")));
+        assert_eq!(deleted.get(1, 1), Ok(&CellValue::from("B2")));
+    }
+
+    #[test]
+    fn test_insert_and_remove_column() {
+        let mut columns = SheetColumns::new();
+
+        // Set up initial data
+        columns.set_value(&Pos::new(1, 1), "A1");
+        columns.set_value(&Pos::new(2, 1), "B1");
+
+        // Insert a column at position 1
+        columns.insert_column(1);
+
+        // Check that data shifted right
+        assert_eq!(columns.get_value(&Pos::new(1, 1)), None);
+        assert_eq!(
+            columns.get_value(&Pos::new(2, 1)),
+            Some(&CellValue::from("A1"))
+        );
+        assert_eq!(
+            columns.get_value(&Pos::new(3, 1)),
+            Some(&CellValue::from("B1"))
+        );
+
+        // Remove the inserted column
+        columns.remove_column(1);
+
+        // Check that data shifted back
+        assert_eq!(
+            columns.get_value(&Pos::new(1, 1)),
+            Some(&CellValue::from("A1"))
+        );
+        assert_eq!(
+            columns.get_value(&Pos::new(2, 1)),
+            Some(&CellValue::from("B1"))
+        );
+    }
+
+    #[test]
+    fn test_insert_and_remove_row() {
+        let mut columns = SheetColumns::new();
+
+        // Set up initial data
+        columns.set_value(&Pos::new(1, 1), "A1");
+        columns.set_value(&Pos::new(1, 2), "A2");
+
+        // Insert a row at position 1
+        columns.insert_row(1);
+
+        // Check that data shifted down
+        assert_eq!(columns.get_value(&Pos::new(1, 1)), None);
+        assert_eq!(
+            columns.get_value(&Pos::new(1, 2)),
+            Some(&CellValue::from("A1"))
+        );
+        assert_eq!(
+            columns.get_value(&Pos::new(1, 3)),
+            Some(&CellValue::from("A2"))
+        );
+
+        // Remove the inserted row
+        columns.remove_row(1);
+
+        // Check that data shifted back
+        assert_eq!(
+            columns.get_value(&Pos::new(1, 1)),
+            Some(&CellValue::from("A1"))
+        );
+        assert_eq!(
+            columns.get_value(&Pos::new(1, 2)),
+            Some(&CellValue::from("A2"))
+        );
+    }
+
+    #[test]
+    fn test_move_cell_value() {
+        let mut columns = SheetColumns::new();
+
+        let old_pos = Pos::new(1, 1);
+        let new_pos = Pos::new(2, 2);
+
+        // Set initial value
+        columns.set_value(&old_pos, "test");
+
+        // Move the value
+        columns.move_cell_value(&old_pos, &new_pos);
+
+        // Check that value moved correctly
+        assert_eq!(columns.get_value(&old_pos), None);
+        assert_eq!(columns.get_value(&new_pos), Some(&CellValue::from("test")));
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut columns = SheetColumns::new();
+
+        // Set up some test data
+        columns.set_value(&Pos::new(1, 1), "A1");
+        columns.set_value(&Pos::new(2, 1), "B1");
+
+        // Clear all data
+        columns.clear();
+
+        // Check that all data was cleared
+        assert!(columns.is_empty());
+        assert_eq!(columns.len(), 0);
+        assert_eq!(columns.get_value(&Pos::new(1, 1)), None);
+        assert_eq!(columns.get_value(&Pos::new(2, 1)), None);
+    }
+
+    #[test]
+    fn test_finite_bounds() {
+        let mut columns = SheetColumns::new();
+
+        // Empty sheet should have no bounds
+        assert_eq!(columns.finite_bounds(), None);
+
+        // Add some values
+        columns.set_value(&Pos::new(1, 1), "A1");
+        columns.set_value(&Pos::new(3, 4), "C4");
+
+        // Check bounds
+        let bounds = columns.finite_bounds().unwrap();
+        assert_eq!(bounds.min.x, 1);
+        assert_eq!(bounds.min.y, 1);
+        assert_eq!(bounds.max.x, 3);
+        assert_eq!(bounds.max.y, 4);
     }
 }

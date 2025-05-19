@@ -55,7 +55,8 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code: String,
+        code: &str,
+        name: &str,
     ) {
         let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
@@ -70,13 +71,13 @@ impl GridController {
 
         let new_code_run = CodeRun {
             language: CodeCellLanguage::Formula,
-            code,
+            code: code.to_string(),
             cells_accessed,
             ..CodeRun::default()
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Formula1",
+            name,
             "".into(),
             false,
             None,

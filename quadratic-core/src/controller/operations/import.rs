@@ -11,7 +11,10 @@ use crate::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         execution::TransactionSource,
     },
-    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates},
+    grid::{
+        CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
+        unique_data_table_name,
+    },
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -267,6 +270,8 @@ impl GridController {
             }
         }
 
+        let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
+
         // add data from excel file to grid
         for sheet_name in sheets {
             let sheet = gc
@@ -372,7 +377,12 @@ impl GridController {
                             source: TransactionSource::Server,
                             ..Default::default()
                         };
-                        gc.add_formula_without_eval(&mut transaction, sheet_pos, cell.to_string());
+                        gc.add_formula_without_eval(
+                            &mut transaction,
+                            sheet_pos,
+                            cell,
+                            formula_start_name.as_str(),
+                        );
                         gc.send_client_updates_during_transaction(&mut transaction, false);
                     }
                 }
