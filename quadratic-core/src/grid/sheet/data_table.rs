@@ -16,19 +16,6 @@ use anyhow::{Result, anyhow, bail};
 use indexmap::IndexMap;
 
 impl Sheet {
-    /// Sets or deletes a data table.
-    ///
-    /// Returns the old value if it was set.
-    #[cfg(test)]
-    pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
-        if let Some(data_table) = data_table {
-            self.data_table_insert_full(&pos, data_table).1
-        } else {
-            self.data_table_shift_remove(&pos)
-                .map(|(data_table, _)| data_table)
-        }
-    }
-
     /// Returns a DataTable at a Pos
     pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get_at(pos)
@@ -510,6 +497,19 @@ impl Sheet {
         }
 
         !contains_data_table
+    }
+
+    /// Sets or deletes a data table.
+    ///
+    /// Returns the old value if it was set.
+    #[cfg(test)]
+    pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
+        if let Some(data_table) = data_table {
+            self.data_table_insert_full(&pos, data_table).1
+        } else {
+            self.data_table_shift_remove(&pos)
+                .map(|(data_table, _)| data_table)
+        }
     }
 }
 

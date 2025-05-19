@@ -105,6 +105,38 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  perf_core:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, llvm-tools-preview
+          override: true
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
+      - uses: useblacksmith/rust-cache@v3
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Bench quadratic-core
+        run: |
+          cd quadratic-core
+          npm run bench:run import_excel
+
   test_client:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 30

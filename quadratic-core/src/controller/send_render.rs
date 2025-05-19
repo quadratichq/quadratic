@@ -85,11 +85,7 @@ impl GridController {
         self.process_remaining_dirty_hashes(transaction);
         self.send_validations(transaction);
         self.send_borders(transaction);
-
-        transaction.fill_cells.iter().for_each(|sheet_id| {
-            self.send_all_fills(*sheet_id);
-        });
-        transaction.fill_cells.clear();
+        self.send_fills(transaction);
 
         // send updated SheetMap and TableMap to client
         self.send_a1_context();
@@ -256,26 +252,6 @@ impl GridController {
                     ));
                 }
             }
-        }
-    }
-
-    pub(crate) fn send_all_fills(&self, sheet_id: SheetId) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
-
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            return;
-        };
-
-        let fills = sheet.get_all_render_fills();
-        if let Ok(fills) = serde_json::to_string(&fills) {
-            crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
-        }
-
-        let sheet_fills = sheet.get_all_sheet_fills();
-        if let Ok(sheet_fills) = serde_json::to_string(&sheet_fills) {
-            crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
         }
     }
 
@@ -497,6 +473,38 @@ impl GridController {
             sheet.send_sheet_borders();
         }
         transaction.sheet_borders.clear();
+    }
+
+    fn send_fills(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.sheet_borders.clear();
+            return;
+        }
+
+        for sheet_id in transaction.fill_cells.iter() {
+            self.send_all_fills(*sheet_id);
+        }
+        transaction.fill_cells.clear();
+    }
+
+    pub(crate) fn send_all_fills(&self, sheet_id: SheetId) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return;
+        };
+
+        let fills = sheet.get_all_render_fills();
+        if let Ok(fills) = serde_json::to_string(&fills) {
+            crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+        }
+
+        let sheet_fills = sheet.get_all_sheet_fills();
+        if let Ok(sheet_fills) = serde_json::to_string(&sheet_fills) {
+            crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+        }
     }
 
     fn send_html_cells(&self, transaction: &mut PendingTransaction) {

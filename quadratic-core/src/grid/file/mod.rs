@@ -199,6 +199,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             Ok(serialize::import(schema)?)
         }
         "2.0" => {
+            migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<current::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
@@ -264,6 +265,7 @@ fn import_json(file_contents: String) -> Result<Grid> {
             | GridFile::V1_7_1 { .. }
             | GridFile::V1_8 { .. }
             | GridFile::V1_9 { .. }
+            | GridFile::V2_0 { .. }
     );
 
     let file = json.into_latest()?;
