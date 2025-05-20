@@ -8,53 +8,71 @@
  */
 
 import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
+import { wgsl } from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import type { Texture } from 'pixi.js';
-import { Assets, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
+import type { BitmapFont } from 'pixi.js';
+import { Assets, Geometry, Mesh, Shader, UniformGroup } from 'pixi.js';
 
-export class LabelMeshEntry extends Mesh {
+export class LabelMeshEntry extends Mesh<Geometry, Shader> {
   private fontName: string;
   private fontSize = 14;
 
   constructor(message: RenderClientLabelMeshEntry) {
-    const geometry = new MeshGeometry();
-    const shader = message.hasColor ? shaderTint : shaderNoTint;
+    const geometry = new Geometry();
+    geometry.addAttribute('aPosition', { buffer: message.vertices, size: 2 });
+    geometry.addAttribute('aUV', { buffer: message.uvs, size: 2 });
+    geometry.addIndex(message.indices);
+
+    const shaderGL = message.hasColor ? shaderTint : shaderNoTint;
 
     // Get the font from Assets
-    const font = Assets.get(message.fontName);
+    const font = Assets.get(message.fontName) as BitmapFont;
     if (!font) {
       throw new Error(`Font not found: ${message.fontName}`);
     }
-
     // Get the texture from the font's page textures
-    const pages = font.pageTextures;
-    let texture: Texture | undefined;
-    for (const page in pages) {
-      if (pages[page].baseTexture.uid === message.textureUid) {
-        texture = pages[page];
-      }
-    }
+    const pages = font.pages;
+    const page = pages.find((page) => page.texture.source.uid === message.textureUid);
+    const texture = page?.texture;
     if (!texture) {
       throw new Error(`Texture not found for font: ${message.fontName} with uid: ${message.textureUid}`);
     }
 
-    const material = new MeshMaterial(texture, {
-      program: Program.from(shader.msdfVert, shader.msdfFrag),
-      uniforms: { uFWidth: 0 },
+    const myUniforms = new UniformGroup({
+      uFWidth: { value: 0, type: 'f32' },
     });
 
-    geometry.getBuffer('aVertexPosition').update(message.vertices);
-    geometry.getBuffer('aTextureCoord').update(message.uvs);
-    geometry.getIndex().update(message.indices);
+    const shader = Shader.from({
+      gl: {
+        vertex: shaderGL.msdfVert,
+        fragment: shaderGL.msdfFrag,
+      },
+      gpu: {
+        vertex: {
+          source: wgsl,
+          entryPoint: 'mainVertex',
+        },
+        fragment: { source: wgsl, entryPoint: 'mainFrag' },
+      },
+      resources: {
+        myUniforms,
+        uTexture: texture.source,
+        uSampler: texture.source.style,
+        textureUniforms: {
+          uTextureMatrix: { type: 'mat3x3<f32>', value: texture.textureMatrix.mapCoord },
+        },
+      },
+    });
 
     if (message.hasColor && message.colors) {
-      geometry.addAttribute('aColors', message.colors, 4);
+      geometry.addAttribute('aColors', { buffer: message.colors, size: 4 });
     }
 
-    super(geometry, material);
+    super({ geometry, shader });
+
     this.fontName = message.fontName;
-    this.blendMode = BLEND_MODES.NORMAL_NPM;
+    this.blendMode = 'normal-npm';
   }
 
   setUniforms(scale: number) {
@@ -63,8 +81,11 @@ export class LabelMeshEntry extends Mesh {
     if (!font) {
       throw new Error(`Font not found: ${this.fontName}`);
     }
-    const fontScale = this.fontSize / font.size;
-    const ufWidth = font.distanceFieldRange * fontScale * scale;
-    this.shader.uniforms.uFWidth = ufWidth;
+    const fontScale = this.fontSize / font.fontMetrics.fontSize;
+    const ufWidth = font.distanceField.range * fontScale * scale;
+    if (!this.shader) {
+      throw new Error('Expected to find shader for LabelMeshEntry');
+    }
+    this.shader.resources.myUniforms.uniforms.uFWidth = ufWidth;
   }
 }

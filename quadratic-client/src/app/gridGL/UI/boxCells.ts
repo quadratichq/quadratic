@@ -46,16 +46,11 @@ export class BoxCells extends Graphics {
     const screenRectangle = sheets.sheet.getScreenRectangleFromRect(this.gridRectangle);
     this.dirty = false;
     this.clear();
-    this.lineStyle({
-      color: pixiApp.accentColor,
-      alpha: colors.boxCellsAlpha,
-      width: thickness,
-    });
     this.moveTo(screenRectangle.x, screenRectangle.y);
     this.lineTo(screenRectangle.x, screenRectangle.y + screenRectangle.height);
     this.moveTo(screenRectangle.x + screenRectangle.width, screenRectangle.y);
     this.lineTo(screenRectangle.x + screenRectangle.width, screenRectangle.y + screenRectangle.height);
-    this.lineStyle({
+    this.stroke({
       color: pixiApp.accentColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
@@ -64,16 +59,19 @@ export class BoxCells extends Graphics {
     this.lineTo(screenRectangle.x + screenRectangle.width, screenRectangle.y);
     this.moveTo(screenRectangle.x, screenRectangle.y + screenRectangle.height);
     this.lineTo(screenRectangle.x + screenRectangle.width, screenRectangle.y + screenRectangle.height);
+    this.stroke({
+      color: pixiApp.accentColor,
+      alpha: colors.boxCellsAlpha,
+      width: thickness,
+    });
   }
 
   private drawDeleteRectangles(): void {
-    this.lineStyle(0);
     this.deleteRectangles?.forEach((rectangle) => {
-      this.beginFill(colors.boxCellsDeleteColor, colors.boxCellsAlpha);
       const screenRectangle = sheets.sheet.getScreenRectangleFromRect(rectangle);
       screenRectangle.height++;
-      this.drawShape(screenRectangle);
-      this.endFill();
+      this.rect(screenRectangle.x, screenRectangle.y, screenRectangle.width, screenRectangle.height);
+      this.fill({ color: colors.boxCellsDeleteColor, alpha: colors.boxCellsAlpha });
     });
   }
 

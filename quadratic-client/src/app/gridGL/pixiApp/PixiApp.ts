@@ -36,7 +36,8 @@ import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
+import type { Renderer } from 'pixi.js';
+import { autoDetectRenderer, Container, Graphics, Rectangle } from 'pixi.js';
 import './pixiApp.css';
 
 export class PixiApp {
@@ -77,7 +78,7 @@ export class PixiApp {
   validations: UIValidations;
   copy: UICopy;
 
-  renderer: Renderer;
+  renderer!: Renderer;
   momentumDetector: MomentumScrollDetector;
   stage = new Container();
   loading = true;
@@ -99,28 +100,34 @@ export class PixiApp {
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
     this.hoverTableColumnsSelection = new Graphics();
-
+    this.background = new Background();
+    this.momentumDetector = new MomentumScrollDetector();
+    this.copy = new UICopy();
+    this.debug = new Graphics();
     this.canvas = document.createElement('canvas');
-    this.renderer = new Renderer({
-      view: this.canvas,
+    this.prepareRenderer();
+  }
+
+  private async prepareRenderer() {
+    if (this.initialized) return;
+    this.renderer = await autoDetectRenderer({
+      preference: 'webgl',
+      canvas: this.canvas,
       resolution: Math.max(2, window.devicePixelRatio),
       antialias: true,
       backgroundColor: 0xffffff,
     });
     this.viewport = new Viewport(this);
-    this.background = new Background();
-    this.momentumDetector = new MomentumScrollDetector();
-    this.copy = new UICopy();
-    this.debug = new Graphics();
   }
 
-  init = (): Promise<void> => {
-    return new Promise((resolve) => {
+  init = () => {
+    return new Promise(async (resolve) => {
       // we cannot initialize pixi until the bitmap fonts are loaded
       if (!isBitmapFontLoaded()) {
         events.once('bitmapFontsLoaded', () => this.init().then(resolve));
         return;
       }
+
       renderWebWorker.sendBitmapFonts();
       this.initialized = true;
       this.initCanvas();
@@ -138,7 +145,6 @@ export class PixiApp {
   // called after RenderText has no more updates to send
   firstRenderComplete = () => {
     if (this.waitingForFirstRender) {
-      // perform a render to warm up the GPU
       this.cellsSheets.showAll(sheets.current);
       this.renderer.render(this.stage);
       this.waitingForFirstRender();
@@ -229,8 +235,10 @@ export class PixiApp {
     return rectangle;
   };
 
-  setViewportDirty = (): void => {
-    this.viewport.dirty = true;
+  setViewportDirty = () => {
+    if (this.viewport) {
+      this.viewport.dirty = true;
+    }
   };
 
   viewportChanged = (): void => {
