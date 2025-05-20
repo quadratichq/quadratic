@@ -11,7 +11,10 @@ use crate::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         execution::TransactionSource,
     },
-    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates},
+    grid::{
+        CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
+        unique_data_table_name,
+    },
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -267,9 +270,13 @@ impl GridController {
             }
         }
 
+        let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
+
         // add data from excel file to grid
         for sheet_name in sheets {
-            let sheet = gc.try_sheet_from_name(sheet_name.to_owned()).unwrap();
+            let sheet = gc
+                .try_sheet_from_name(sheet_name.to_owned())
+                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
             let sheet_id = sheet.id;
 
             // values
@@ -323,8 +330,10 @@ impl GridController {
                         x: insert_at.x + x as i64,
                         y: insert_at.y + y as i64,
                     };
-                    let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-                    sheet.set_cell_value(pos, cell_value);
+                    let sheet = gc
+                        .try_sheet_mut(sheet_id)
+                        .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                    sheet.columns.set_value(&pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
@@ -360,13 +369,20 @@ impl GridController {
                             language: CodeCellLanguage::Formula,
                             code: cell.to_string(),
                         });
-                        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-                        sheet.set_cell_value(pos, cell_value);
+                        let sheet = gc
+                            .try_sheet_mut(sheet_id)
+                            .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                        sheet.columns.set_value(&pos, cell_value);
                         let mut transaction = PendingTransaction {
                             source: TransactionSource::Server,
                             ..Default::default()
                         };
-                        gc.add_formula_without_eval(&mut transaction, sheet_pos, cell.to_string());
+                        gc.add_formula_without_eval(
+                            &mut transaction,
+                            sheet_pos,
+                            cell,
+                            formula_start_name.as_str(),
+                        );
                         gc.send_client_updates_during_transaction(&mut transaction, false);
                     }
                 }

@@ -1,6 +1,7 @@
 {
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "AABB",
     "acked",
     "actix",
     "autoclean",
@@ -14,6 +15,7 @@
     "bincode",
     "bindgen",
     "bmfont",
+    "btreemap",
     "buildkit",
     "Buildx",
     "cellref",
@@ -40,7 +42,6 @@
     "dearmor",
     "deepseek",
     "demangle",
-    "Deque",
     "dgraph",
     "docgen",
     "domcontentloaded",
@@ -49,6 +50,7 @@
     "elif",
     "Embedder",
     "endregion",
+    "EXISTINGSHEET",
     "expressjwt",
     "fholzer",
     "filechooser",
@@ -116,8 +118,6 @@
     "prec",
     "profraw",
     "proptest",
-    "prost",
-    "protoc",
     "pulumi",
     "pyimport",
     "Pyodide",
@@ -133,6 +133,7 @@
     "revalidator",
     "rfind",
     "ROUNDDOWN",
+    "rstar",
     "RUSTC",
     "RUSTFLAGS",
     "rustup",
@@ -239,8 +240,5 @@
   "[markdown]": {
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
   },
-  "C_Cpp.errorSquiggles": "enabled",
-  "[proto3]": {
-    "editor.defaultFormatter": "zxh404.vscode-proto3"
-  }
+  "C_Cpp.errorSquiggles": "enabled"
 }

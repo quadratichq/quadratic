@@ -41,7 +41,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     let mut changed = false;
     let mut shifted_offsets_sheet_name = HashMap::new(); // for migrating cells to q.cells
     let mut shifted_offsets_sheet_id = HashMap::new(); // for translating code runs's cells_accessed
-    let a1_context = grid.make_a1_context();
+    let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.iter_mut() {
         sheet.migration_recalculate_bounds(&a1_context);
         sheet.columns.migration_regenerate_has_cell_value();

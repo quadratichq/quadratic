@@ -29,7 +29,8 @@ pub struct GridController {
     grid: Grid,
 
     a1_context: A1Context,
-    cells_accessed: RegionMap,
+
+    cells_accessed_cache: RegionMap,
 
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
@@ -45,12 +46,12 @@ pub struct GridController {
 impl Default for GridController {
     fn default() -> Self {
         let grid = Grid::default();
-        let a1_context = grid.make_a1_context();
-        let cells_accessed = grid.make_cells_accessed(&a1_context);
+        let a1_context = grid.expensive_make_a1_context();
+        let cells_accessed_cache = grid.expensive_make_cells_accessed_cache(&a1_context);
         Self {
             grid,
             a1_context,
-            cells_accessed,
+            cells_accessed_cache,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             transactions: ActiveTransactions::new(0),
@@ -61,12 +62,12 @@ impl Default for GridController {
 
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        let a1_context = grid.make_a1_context();
-        let cells_accessed = grid.make_cells_accessed(&a1_context);
+        let a1_context = grid.expensive_make_a1_context();
+        let cells_accessed_cache = grid.expensive_make_cells_accessed_cache(&a1_context);
         GridController {
             grid,
             a1_context,
-            cells_accessed,
+            cells_accessed_cache,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         }
@@ -101,7 +102,7 @@ impl GridController {
     }
 
     pub fn cells_accessed(&self) -> &RegionMap {
-        &self.cells_accessed
+        &self.cells_accessed_cache
     }
 
     pub(crate) fn update_a1_context_table_map(
@@ -154,13 +155,14 @@ impl GridController {
         sheet_pos: SheetPos,
         data_table: &Option<DataTable>,
     ) {
-        self.cells_accessed.remove_pos(sheet_pos);
+        self.cells_accessed_cache.remove_pos(sheet_pos);
         if let Some(code_run) = data_table.as_ref().and_then(|dt| dt.code_run()) {
             for (sheet_id, rect) in code_run
                 .cells_accessed
                 .iter_rects_unbounded(&self.a1_context)
             {
-                self.cells_accessed.insert(sheet_pos, (sheet_id, rect));
+                self.cells_accessed_cache
+                    .insert(sheet_pos, (sheet_id, rect));
             }
         }
     }

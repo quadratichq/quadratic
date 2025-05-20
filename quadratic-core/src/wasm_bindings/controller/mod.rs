@@ -66,7 +66,6 @@ impl GridController {
                     }
                     drop(sheets_info);
 
-
                     grid.sheet_ids().iter().for_each(|sheet_id| {
                         grid.send_all_fills(*sheet_id);
 

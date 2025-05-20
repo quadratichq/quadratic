@@ -14,7 +14,7 @@ impl Sheet {
     /// Creates an A1Context with information only from this sheet (ie, it does
     /// not have info from other sheets within the grid).
     #[cfg(test)]
-    pub(crate) fn make_a1_context(&self) -> A1Context {
+    pub(crate) fn expensive_make_a1_context(&self) -> A1Context {
         let mut context = A1Context::default();
         self.add_sheet_to_a1_context(&mut context);
         context

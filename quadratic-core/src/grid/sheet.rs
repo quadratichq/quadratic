@@ -1,13 +1,11 @@
 use std::collections::HashSet;
-use std::str::FromStr;
 
 use anyhow::{Result, anyhow};
-use bigdecimal::{BigDecimal, RoundingMode};
+use bigdecimal::RoundingMode;
 use borders::Borders;
 use columns::SheetColumns;
 use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
-use rand::Rng;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
@@ -155,29 +153,6 @@ impl Sheet {
                 pos,
             );
         });
-    }
-
-    /// Populates the current sheet with random values
-    /// Should only be used for testing (as it will not propagate in multiplayer)
-    pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
-        self.columns.clear();
-        let mut rng = rand::rng();
-        for x in rect.x_range() {
-            for y in rect.y_range() {
-                let value = rng.random_range(-10000..=10000).to_string();
-                self.set_cell_value(
-                    (x, y).into(),
-                    CellValue::Number(BigDecimal::from_str(&value).unwrap()),
-                );
-            }
-        }
-        self.recalculate_bounds(a1_context);
-    }
-
-    /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
-    /// and did not previously exist (so no change is needed).
-    pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
-        self.columns.set_value(&pos, value)
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
@@ -545,6 +520,36 @@ impl Sheet {
         });
         rows_set.into_iter().collect()
     }
+
+    /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
+    /// and did not previously exist (so no change is needed).
+    #[cfg(test)]
+    pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
+        self.columns.set_value(&pos, value)
+    }
+
+    /// Populates the current sheet with random values
+    /// Should only be used for testing (as it will not propagate in multiplayer)
+    #[cfg(test)]
+    pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
+        use std::str::FromStr;
+
+        use bigdecimal::BigDecimal;
+        use rand::Rng;
+
+        self.columns.clear();
+        let mut rng = rand::rng();
+        for x in rect.x_range() {
+            for y in rect.y_range() {
+                let value = rng.random_range(-10000..=10000).to_string();
+                self.set_cell_value(
+                    (x, y).into(),
+                    CellValue::Number(BigDecimal::from_str(&value).unwrap()),
+                );
+            }
+        }
+        self.recalculate_bounds(a1_context);
+    }
 }
 
 #[cfg(test)]
@@ -804,29 +809,6 @@ mod test {
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
     }
 
-    // TODO(ddimaria): use the code below as a template once cell borders are in place
-    // TODO(jrice): Uncomment and test
-    // #[ignore]
-    // #[tokio::test]
-    // async fn test_set_border() {
-    //     let (grid, sheet_id, selected) = test_setup_basic().await;
-    //     let cell_border = CellBorder {
-    //         color: Some("red".into()),
-    //         style: Some(CellBorderStyle::Line1),
-    //     };
-    //     let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-    //     sheet.set_horizontal_border(selected, cell_border.clone());
-    //     sheet.set_vertical_border(selected, cell_border);
-    //     let _borders = sheet.borders();
-    //
-    //     print_table(&grid, sheet_id, selected);
-    //
-    //     // let formats = grid.get_all_cell_formats(sheet_id, selected);
-    //     // formats
-    //     //     .into_iter()
-    //     //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
-    // }
-
     #[test]
     fn test_get_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
@@ -835,19 +817,6 @@ mod test {
 
         assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
     }
-
-    // #[test]
-    // fn test_get_set_formatting_value() {
-    //     let (grid, sheet_id, _) = test_setup_basic();
-    //     let mut sheet = grid.sheet(sheet_id).clone();
-    //     let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-    //     let bold: Option<bool> = sheet.get_formatting_value::<Bold>((2, 1).into());
-    //     assert_eq!(bold, Some(true));
-
-    //     let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
-    //     let italic = sheet.get_formatting_value::<Italic>((2, 1).into());
-    //     assert_eq!(italic, Some(true));
-    // }
 
     #[test]
     fn cell_format_summary() {
@@ -980,7 +949,7 @@ mod test {
         sheet.set_cell_value(pos![A1], "test");
         sheet.set_cell_value(pos![A3], "test");
         let selection = A1Selection::test_a1("A1:A4");
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         assert_eq!(
             sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context),
             Vec::<i64>::new()

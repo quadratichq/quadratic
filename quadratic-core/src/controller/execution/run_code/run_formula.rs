@@ -55,13 +55,14 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code: String,
+        code: &str,
+        name: &str,
     ) {
         let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
 
         let mut cells_accessed = CellsAccessed::default();
-        let cell_references = find_cell_references(&code, parse_ctx, sheet_pos);
+        let cell_references = find_cell_references(code, parse_ctx, sheet_pos);
         for cell_ref in cell_references {
             if let Ok(cell_ref) = cell_ref.inner {
                 cells_accessed.add(cell_ref.sheet_id, cell_ref.cells);
@@ -70,13 +71,13 @@ impl GridController {
 
         let new_code_run = CodeRun {
             language: CodeCellLanguage::Formula,
-            code,
+            code: code.to_string(),
             cells_accessed,
             ..CodeRun::default()
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Formula1",
+            name,
             "".into(),
             false,
             None,

@@ -36,7 +36,7 @@ export const ConnectionsSidebar = ({
       {staticIpsContent && (
         <SidebarItem
           title="IP allow-list"
-          description="Data behind a firewall may require you explicitly allow our IP addresses."
+          description="Add both of our IPs to your network allow-list."
           linkText="Learn more"
           linkHref={DOCUMENTATION_CONNECTIONS_IP_LIST_URL}
         >

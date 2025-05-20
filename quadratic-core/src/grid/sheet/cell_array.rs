@@ -17,7 +17,7 @@ impl Sheet {
                 let new_value = values
                     .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
                     .unwrap_or(&CellValue::Blank);
-                let old_value = self.set_cell_value((x, y).into(), new_value.to_owned());
+                let old_value = self.columns.set_value(&(x, y).into(), new_value.to_owned());
                 if let Some(old_value) = old_value {
                     let _ =
                         old_values.set((x - rect.min.x) as u32, (y - rect.min.y) as u32, old_value);

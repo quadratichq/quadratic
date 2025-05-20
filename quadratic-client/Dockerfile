@@ -5,8 +5,8 @@ FROM node:24 AS core-builder
 
 ARG CLIENT_DEV
 
-# Install build-essential, llvm, clang and protobuf-compiler
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
+# Install build-essential, llvm, and clang
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -43,8 +43,8 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 FROM node:24 AS ts-rust-types-builder
 
-# Install build-essential, llvm, clang and protobuf-compiler
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
+# Install build-essential, llvm, and clang
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

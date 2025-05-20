@@ -199,6 +199,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             Ok(serialize::import(schema)?)
         }
         "2.0" => {
+            migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<current::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
@@ -264,6 +265,7 @@ fn import_json(file_contents: String) -> Result<Grid> {
             | GridFile::V1_7_1 { .. }
             | GridFile::V1_8 { .. }
             | GridFile::V1_9 { .. }
+            | GridFile::V2_0 { .. }
     );
 
     let file = json.into_latest()?;
@@ -381,7 +383,7 @@ mod tests {
                 .get_at(&Pos { x: 1, y: 3 })
                 .is_some()
         );
-        let a1_context = imported.make_a1_context();
+        let a1_context = imported.expensive_make_a1_context();
         let code_cell = imported.sheets[0]
             .edit_code_value(Pos { x: 1, y: 3 }, &a1_context)
             .unwrap();

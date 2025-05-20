@@ -16,10 +16,19 @@ pub struct SheetDataTables {
     #[serde(with = "crate::util::indexmap_serde")]
     data_tables: IndexMap<Pos, DataTable>,
 
+    // boolean map indicating presence of data table root cell at a position
+    // uses Contiguous2D for efficient storage and fast lookup
     has_data_table: Contiguous2D<Option<bool>>,
 
+    // position map indicating presence of data table output at a position,
+    // each position value is the root cell position of the data table
+    // this accounts for table spills hence values cannot overlap
+    // single cell output values are not stored here, check `has_data_table` map for single cell values
     spilled_output_rects: Contiguous2D<Option<Pos>>,
 
+    // region map indicating output rects of data tables ignoring spills (as if un spilled)
+    // as spills are ignored, rects can overlap i.e. same position can have multiple tables trying to output
+    // single cell output values are not stored here, check `has_data_table` map for single cell values
     un_spilled_output_rects: SheetRegionMap,
 }
 

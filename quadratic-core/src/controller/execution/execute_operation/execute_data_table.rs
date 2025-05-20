@@ -160,7 +160,9 @@ impl GridController {
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
             // update the CellValue
-            let old_value = sheet.set_cell_value(data_table_pos, cell_value.to_owned());
+            let old_value = sheet
+                .columns
+                .set_value(&data_table_pos, cell_value.to_owned());
 
             // insert the data table into the sheet
             let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
@@ -234,7 +236,7 @@ impl GridController {
                 .to_sheet_rect(sheet_id);
 
             let old_cell_value = sheet.cell_value_result(data_table_pos)?;
-            sheet.set_cell_value(data_table_pos, CellValue::Blank);
+            sheet.columns.set_value(&data_table_pos, CellValue::Blank);
 
             self.send_updated_bounds(transaction, sheet_id);
 
@@ -582,7 +584,7 @@ impl GridController {
 
             let sheet_rect_for_compute_and_spills = data_table.output_sheet_rect(sheet_pos, false);
 
-            sheet.set_cell_value(data_table_pos, value);
+            sheet.columns.set_value(&data_table_pos, value);
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
@@ -660,7 +662,7 @@ impl GridController {
 
             // insert data table in sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            sheet.set_cell_value(sheet_rect.min, cell_value);
+            sheet.columns.set_value(&sheet_rect.min, cell_value);
             let (_, _, dirty_rects) =
                 sheet.data_table_insert_full(&sheet_rect.min, data_table.to_owned());
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
@@ -799,7 +801,6 @@ impl GridController {
                         false,
                     )?;
                     // mark code cells dirty to update meta data
-                    transaction.add_code_cell(sheet_id, data_table_pos);
                     transaction.add_code_cell(sheet_id, data_table_pos);
                 }
             }
@@ -1147,7 +1148,7 @@ impl GridController {
             let mut sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
-            sheet_rect_for_compute_and_spills.min.x += display_min_column;
+            sheet_rect_for_compute_and_spills.min.x += (display_min_column - 1).max(0);
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
@@ -1550,7 +1551,7 @@ impl GridController {
             let mut sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
-            sheet_rect_for_compute_and_spills.min.y += min_display_row as i64;
+            sheet_rect_for_compute_and_spills.min.y += (min_display_row as i64 - 1).max(0);
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);

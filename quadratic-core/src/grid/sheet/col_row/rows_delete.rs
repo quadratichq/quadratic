@@ -212,7 +212,7 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.recalculate_bounds(&sheet.make_a1_context());
+        sheet.recalculate_bounds(&sheet.expensive_make_a1_context());
         sheet.columns.remove_row(1);
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
@@ -260,7 +260,7 @@ mod test {
             .italic
             .set_rect(2, 1, Some(2), None, Some(false));
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         sheet.recalculate_bounds(&a1_context);
 
@@ -304,7 +304,7 @@ mod test {
         sheet.offsets.set_row_height(2, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         let mut transaction = PendingTransaction::default();
         sheet.delete_row(&mut transaction, 2, &a1_context);

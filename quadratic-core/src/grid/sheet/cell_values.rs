@@ -40,8 +40,8 @@ impl Sheet {
             for y in 0..cell_values.h {
                 let grid_y = pos.y + y as i64;
 
-                let old_value = self.set_cell_value(
-                    (grid_x, grid_y).into(),
+                let old_value = self.columns.set_value(
+                    &(grid_x, grid_y).into(),
                     cell_values
                         .get(x, y)
                         .unwrap_or(&CellValue::Blank)
@@ -134,7 +134,7 @@ mod test {
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
 
         let mut transaction = PendingTransaction::default();
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let old = sheet.merge_cell_values(
             &mut transaction,
             Pos { x: -1, y: -2 },

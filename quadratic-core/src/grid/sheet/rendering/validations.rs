@@ -132,7 +132,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         });
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let render = sheet.get_render_cells(Rect::single_pos((1, 1).into()), &a1_context);
         assert_eq!(render.len(), 1);
     }
@@ -182,7 +182,7 @@ mod tests {
             .validations
             .warnings
             .insert((1, 1).into(), validation_id);
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
         sheet.send_all_validation_warnings();
         let warnings = vec![JsHashValidationWarnings {

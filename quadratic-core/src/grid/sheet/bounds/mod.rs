@@ -52,51 +52,6 @@ impl Sheet {
             || old_format_bounds != self.format_bounds.to_bounds_rect()
     }
 
-    /// Recalculates all bounds of the sheet.
-    ///
-    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
-    /// and Contiguous2d cache does not work for -ve coordinates
-    ///
-    /// Returns whether any of the sheet's bounds has changed
-    pub fn migration_recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
-        let old_data_bounds = self.data_bounds.to_bounds_rect();
-        let old_format_bounds = self.format_bounds.to_bounds_rect();
-        self.data_bounds.clear();
-        self.format_bounds.clear();
-
-        if let Some(rect) = self.columns.migration_finite_bounds() {
-            self.data_bounds.add_rect(rect);
-        };
-
-        self.data_tables
-            .expensive_iter()
-            .for_each(|(pos, code_cell_value)| {
-                let output_rect = code_cell_value.output_rect(*pos, false);
-                self.data_bounds.add_rect(output_rect);
-            });
-
-        for validation in self.validations.validations.iter() {
-            if validation.render_special().is_some() {
-                if let Some(rect) =
-                    self.selection_bounds(&validation.selection, false, false, a1_context)
-                {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
-            }
-        }
-        for (&pos, _) in self.validations.warnings.iter() {
-            self.data_bounds.add(pos);
-        }
-
-        if let Some(rect) = self.formats.finite_bounds() {
-            self.format_bounds.add_rect(rect);
-        }
-
-        old_data_bounds != self.data_bounds.to_bounds_rect()
-            || old_format_bounds != self.format_bounds.to_bounds_rect()
-    }
-
     /// Returns whether the sheet is completely empty.
     pub fn is_empty(&self) -> bool {
         self.data_bounds.is_empty() && self.format_bounds.is_empty()
@@ -489,6 +444,51 @@ impl Sheet {
 
         tabular_data_rects
     }
+
+    /// Recalculates all bounds of the sheet.
+    ///
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    /// and Contiguous2d cache does not work for -ve coordinates
+    ///
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn migration_recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
+        let old_data_bounds = self.data_bounds.to_bounds_rect();
+        let old_format_bounds = self.format_bounds.to_bounds_rect();
+        self.data_bounds.clear();
+        self.format_bounds.clear();
+
+        if let Some(rect) = self.columns.migration_finite_bounds() {
+            self.data_bounds.add_rect(rect);
+        };
+
+        self.data_tables
+            .expensive_iter()
+            .for_each(|(pos, code_cell_value)| {
+                let output_rect = code_cell_value.output_rect(*pos, false);
+                self.data_bounds.add_rect(output_rect);
+            });
+
+        for validation in self.validations.validations.iter() {
+            if validation.render_special().is_some() {
+                if let Some(rect) =
+                    self.selection_bounds(&validation.selection, false, false, a1_context)
+                {
+                    self.data_bounds.add(rect.min);
+                    self.data_bounds.add(rect.max);
+                }
+            }
+        }
+        for (&pos, _) in self.validations.warnings.iter() {
+            self.data_bounds.add(pos);
+        }
+
+        if let Some(rect) = self.formats.finite_bounds() {
+            self.format_bounds.add_rect(rect);
+        }
+
+        old_data_bounds != self.data_bounds.to_bounds_rect()
+            || old_format_bounds != self.format_bounds.to_bounds_rect()
+    }
 }
 
 #[cfg(test)]
@@ -515,7 +515,7 @@ mod test {
     #[test]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         assert!(!sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
 
@@ -539,7 +539,7 @@ mod test {
             .formats
             .align
             .set(Pos { x: 2, y: 2 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         assert!(sheet.recalculate_bounds(&a1_context));
 
         assert_eq!(
@@ -571,7 +571,7 @@ mod test {
             .formats
             .wrap
             .set(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         assert!(sheet.recalculate_bounds(&a1_context));
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
@@ -595,7 +595,7 @@ mod test {
             .formats
             .align
             .set(Pos { x: 200, y: 100 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.row_bounds(100, true), Some((1, 80)));
@@ -625,7 +625,7 @@ mod test {
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
@@ -660,7 +660,7 @@ mod test {
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.rows_bounds(1, 100, true), Some((1, 80)));
@@ -683,7 +683,7 @@ mod test {
             max: Pos { x: 49, y: 49 },
         };
         let mut sheet = Sheet::test();
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.random_numbers(&rect, &a1_context);
         assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(true));
         assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(false));
@@ -732,7 +732,7 @@ mod test {
             }
         }
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
         assert_eq!(expected_bounds, sheet.bounds(false));
         assert_eq!(expected_bounds, sheet.bounds(true));

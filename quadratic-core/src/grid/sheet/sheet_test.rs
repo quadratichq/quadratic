@@ -41,7 +41,7 @@ impl Sheet {
                 }
             }
         }
-        let a1_context = self.make_a1_context();
+        let a1_context = self.expensive_make_a1_context();
         self.recalculate_bounds(&a1_context);
     }
 
@@ -140,7 +140,7 @@ impl Sheet {
                 None,
             )),
         );
-        let a1_context = self.make_a1_context();
+        let a1_context = self.expensive_make_a1_context();
         self.recalculate_bounds(&a1_context);
     }
 
