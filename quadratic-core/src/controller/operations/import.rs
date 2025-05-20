@@ -53,6 +53,10 @@ impl GridController {
     fn byte_record_to_string(record: &[u8]) -> String {
         String::from_utf8(record.to_vec())
             .or_else(|_| {
+                if record.is_empty() || record.len() % 2 != 0 {
+                    return Err(());
+                }
+
                 // convert u8 to u16
                 let mut utf16vec: Vec<u16> = Vec::with_capacity(record.len() / 2);
                 for chunk in record.to_owned().chunks_exact(2) {
@@ -70,10 +74,7 @@ impl GridController {
                 // strip invalid characters
                 Ok(str.chars().filter(|&c| c.len_utf8() <= 2).collect())
             })
-            .unwrap_or_else(|_| {
-                dbg!("converting to string");
-                record.iter().map(|&b| b as char).collect()
-            })
+            .unwrap_or_else(|_| record.iter().map(|&b| b as char).collect())
     }
 
     pub fn get_csv_preview(
@@ -94,17 +95,6 @@ impl GridController {
             }
         };
 
-        // let file = match String::from_utf8_lossy(&file) {
-        //     Cow::Borrowed(_) => file,
-        //     Cow::Owned(_) => {
-        //         if let Some(utf) = read_utf16(&file) {
-        //             utf.into_bytes()
-        //         } else {
-        //             file
-        //         }
-        //     }
-        // };
-
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
             .has_headers(false)
@@ -119,7 +109,11 @@ impl GridController {
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
                 Ok(record) => {
-                    preview.push(record.iter().map(Self::byte_record_to_string).collect())
+                    let mut preview_row = vec![];
+                    for value in record.iter() {
+                        preview_row.push(Self::byte_record_to_string(value));
+                    }
+                    preview.push(preview_row);
                 }
             }
         }
@@ -151,17 +145,6 @@ impl GridController {
             }
         };
 
-        // let file = match String::from_utf8_lossy(&file) {
-        //     Cow::Borrowed(_) => file,
-        //     Cow::Owned(_) => {
-        //         if let Some(utf) = read_utf16(&file) {
-        //             utf.into_bytes()
-        //         } else {
-        //             file
-        //         }
-        //     }
-        // };
-
         let reader = |flexible| {
             csv::ReaderBuilder::new()
                 .delimiter(delimiter)
@@ -191,7 +174,7 @@ impl GridController {
         let mut sheet_format_updates = SheetFormatUpdates::default();
         let mut y: u32 = 0;
 
-        for entry in reader(true).into_byte_records() {
+        for entry in reader(true).byte_records() {
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
@@ -547,10 +530,7 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        CellValue, controller::user_actions::import::tests::simple_csv_at,
-        test_util::assert_display_cell_value,
-    };
+    use crate::{CellValue, controller::user_actions::import::tests::simple_csv_at, test_util::*};
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     const INVALID_ENCODING_FILE: &[u8] =
@@ -919,6 +899,89 @@ mod test {
             sheet.cell_value((3, 4).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_byte_record_to_string() {
+        // Test UTF-8 string
+        let utf8_bytes = b"Hello, World!";
+        assert_eq!(
+            GridController::byte_record_to_string(utf8_bytes),
+            "Hello, World!"
+        );
+
+        // Test UTF-16 string (little endian)
+        let utf16_bytes = vec![
+            0xFF, 0xFE, // BOM
+            0x48, 0x00, // H
+            0x65, 0x00, // e
+            0x6C, 0x00, // l
+            0x6C, 0x00, // l
+            0x6F, 0x00, // o
+        ];
+        assert_eq!(GridController::byte_record_to_string(&utf16_bytes), "Hello");
+
+        // Test invalid UTF-8 that falls back to character conversion
+        let invalid_utf8 = vec![0xFF, 0xFE, 0x48, 0x65, 0x6C, 0x6C, 0x6F];
+        let result = GridController::byte_record_to_string(&invalid_utf8);
+        assert!(!result.is_empty());
+        assert!(result.chars().all(|c| c.len_utf8() <= 2));
+
+        // Test preview
+        let utf16_data: Vec<u8> = vec![
+            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
+            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
+            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x32, 0x00,
+        ];
+        let result = GridController::byte_record_to_string(&utf16_data);
+        assert_eq!(result, "header1,header2\nvalue1,value2");
+
+        // Test empty input
+        assert_eq!(GridController::byte_record_to_string(b""), "");
+    }
+
+    #[test]
+    fn test_import_utf16() {
+        let utf16_data: Vec<u8> = vec![
+            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
+            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
+            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x32, 0x00,
+        ];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        gc.import_csv(
+            sheet_id,
+            utf16_data,
+            "utf16.csv",
+            pos![A1],
+            None,
+            Some(b','),
+            Some(true),
+        )
+        .unwrap();
+
+        print_first_sheet(&gc);
+
+        let sheet = gc.sheet(sheet_id);
+        dbg!(&sheet.display_value((1, 2).into()));
+        assert_eq!(
+            sheet.display_value((1, 2).into()),
+            Some(CellValue::Text(
+                String::from_utf16(&[0x0068, 0x0065, 0x0061, 0x0064, 0x0065, 0x0072, 0x0031])
+                    .unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.display_value((2, 2).into()),
+            Some(CellValue::Text(
+                String::from_utf16(&[0x0068, 0x0065, 0x0061, 0x0064, 0x0065, 0x0072, 0x0032])
+                    .unwrap()
             ))
         );
     }
