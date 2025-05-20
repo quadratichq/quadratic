@@ -301,6 +301,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1 + 1".into(),
             None,
+            None,
         );
         gc.set_code_cell(
             SheetPos {
@@ -310,6 +311,7 @@ mod tests {
             },
             CodeCellLanguage::Formula,
             "{1, 2, 3}".into(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);

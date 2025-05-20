@@ -617,6 +617,7 @@ mod test {
             crate::grid::CodeCellLanguage::Python,
             "test".to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id.to_string();
         gc.calculation_complete(JsCodeResult {

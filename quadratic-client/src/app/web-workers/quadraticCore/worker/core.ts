@@ -646,12 +646,13 @@ class Core {
     y: number,
     language: CodeCellLanguage,
     codeString: string,
+    codeCellName?: string,
     cursor?: string
   ): Promise<string | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
-        resolve(this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, cursor));
+        resolve(this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, codeCellName, cursor));
       } catch (e) {
         this.handleCoreError('setCodeCellValue', e);
         resolve(undefined);
