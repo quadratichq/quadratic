@@ -12,12 +12,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     fs::write("src/auto_gen_path.rs", output).expect("Failed to write src/auto_gen_path.rs");
 
-<<<<<<< HEAD
-    prost_build::compile_protos(
-        &["src/protobuf/proto/transaction.proto"],
-        &["src/protobuf/proto/"],
-    )?;
-=======
     // Create a prost_build Config
     let mut config = prost_build::Config::new();
 
@@ -42,7 +36,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &["src/protobuf/proto/"],
         )?;
 
->>>>>>> origin/qa
     println!("cargo:rerun-if-changed=src/protobuf/proto/transaction.proto");
 
     Ok(())
