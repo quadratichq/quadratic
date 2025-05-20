@@ -315,6 +315,10 @@ export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
 };
 
+export const ErrorIcon: IconComponent = (props) => {
+  return <Icon {...props}>error</Icon>;
+};
+
 export const ExpandCircleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>expand_circle_down</Icon>;
 };

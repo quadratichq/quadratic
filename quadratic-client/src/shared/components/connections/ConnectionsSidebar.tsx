@@ -76,9 +76,8 @@ function SidebarCopyContent({ text }: { text: string }) {
           className="w-full resize-none bg-accent px-3 py-2 font-mono"
           readOnly
           rows={text.split('\n').length}
-        >
-          {text}
-        </textarea>
+          value={text}
+        ></textarea>
       </TooltipTrigger>
       <TooltipContent>Copied</TooltipContent>
     </Tooltip>
