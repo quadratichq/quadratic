@@ -60,14 +60,6 @@ class MultiplayerCore {
       transactions: receive_transactions.transactions,
     });
   }
-
-  receiveTransactionAck(transactionId: string, sequenceNum: number) {
-    this.send({
-      type: 'multiplayerCoreReceiveTransactionAck',
-      transactionId,
-      sequenceNum,
-    });
-  }
 }
 
 export const multiplayerCore = new MultiplayerCore();
