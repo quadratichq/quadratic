@@ -2,6 +2,7 @@ import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { z } from 'zod';
 
 const AIProvidersSchema = z.enum([
+  'quadratic',
   'vertexai-anthropic',
   'bedrock-anthropic',
   'anthropic',
@@ -10,12 +11,9 @@ const AIProvidersSchema = z.enum([
   'vertexai',
   'bedrock',
 ]);
+const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum(['claude-3-7-sonnet@20250219', 'claude-3-5-sonnet-v2@20241022']);
-const VertexAIModelSchema = z.enum([
-  'gemini-2.5-pro-preview-05-06',
-  'gemini-2.0-flash-thinking-exp-01-21',
-  'gemini-2.0-flash-001',
-]);
+const VertexAIModelSchema = z.enum(['gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-04-17']);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
@@ -33,6 +31,7 @@ const OpenAIModelSchema = z.enum([
 ]);
 const XAIModelSchema = z.enum(['grok-3-beta']);
 const AIModelSchema = z.union([
+  QuadraticModelSchema,
   VertexAnthropicModelSchema,
   VertexAIModelSchema,
   BedrockAnthropicModelSchema,
@@ -43,6 +42,9 @@ const AIModelSchema = z.union([
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
+const QuadraticModelKeySchema = z.enum(['quadratic:quadratic-auto']);
+export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
+
 const VertexAIAnthropicModelKeySchema = z.enum([
   'vertexai-anthropic:claude:thinking-toggle-off',
   'vertexai-anthropic:claude:thinking-toggle-on',
@@ -52,7 +54,10 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
-const VertexAIModelKeySchema = z.enum(['vertexai:gemini-2.5-pro-preview-05-06', 'vertexai:gemini-2.0-flash-001']);
+const VertexAIModelKeySchema = z.enum([
+  'vertexai:gemini-2.5-pro-preview-05-06',
+  'vertexai:gemini-2.5-flash-preview-04-17',
+]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
@@ -91,6 +96,7 @@ const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
 const AIModelKeySchema = z.union([
+  QuadraticModelKeySchema,
   VertexAIAnthropicModelKeySchema,
   VertexAIModelKeySchema,
   BedrockAnthropicModelKeySchema,
@@ -138,6 +144,7 @@ const InternalContextTypeSchema = z.enum([
   'codeCell',
   'tables',
   'files',
+  'modelRouter',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
@@ -301,7 +308,7 @@ export const AIMessagePromptSchema = z.object({
       loading: z.boolean(),
     })
   ),
-  model: AIModelSchema,
+  modelKey: AIModelKeySchema,
   fineTuningInput: z.string().optional(),
 });
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
@@ -360,6 +367,7 @@ const AISourceSchema = z.enum([
   'CodeEditorCompletions',
   'GetUserPromptSuggestions',
   'PDFImport',
+  'ModelRouter',
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 

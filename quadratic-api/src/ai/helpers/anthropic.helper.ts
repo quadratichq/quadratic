@@ -17,7 +17,6 @@ import {
   isContentTextFile,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -222,18 +221,18 @@ function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
 
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
-  response: Response,
-  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
+  response?: Response
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   const usage: AIUsage = {
     inputTokens: 0,
@@ -243,7 +242,7 @@ export async function parseAnthropicStream(
   };
 
   for await (const chunk of chunks) {
-    if (!response.writableEnded) {
+    if (!response?.writableEnded) {
       switch (chunk.type) {
         case 'content_block_start':
           if (chunk.content_block.type === 'text') {
@@ -366,7 +365,7 @@ export async function parseAnthropicStream(
           break;
       }
 
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
     } else {
       break;
     }
@@ -394,15 +393,15 @@ export async function parseAnthropicStream(
 
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
-  response: Response,
-  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
+  response?: Response
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
   result.content?.forEach((message) => {
@@ -446,7 +445,7 @@ export function parseAnthropicResponse(
     });
   }
 
-  response.json(responseMessage);
+  response?.json(responseMessage);
 
   const usage: AIUsage = {
     inputTokens: result.usage.input_tokens,

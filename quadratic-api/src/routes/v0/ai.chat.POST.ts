@@ -1,29 +1,14 @@
 import type { Response } from 'express';
 import { getLastAIPromptMessageIndex, getLastPromptMessageType } from 'quadratic-shared/ai/helpers/message.helper';
-import {
-  getModelFromModelKey,
-  isAnthropicModel,
-  isBedrockAnthropicModel,
-  isBedrockModel,
-  isOpenAIModel,
-  isVertexAIAnthropicModel,
-  isVertexAIModel,
-  isXAIModel,
-} from 'quadratic-shared/ai/helpers/model.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import type { ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
-import { handleAnthropicRequest } from '../../ai/handler/anthropic';
-import { handleBedrockRequest } from '../../ai/handler/bedrock';
-import { handleOpenAIRequest } from '../../ai/handler/openai';
-import { handleVertexAIRequest } from '../../ai/handler/vertexai';
-import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
-import { calculateUsage } from '../../ai/helpers/usage.helper';
+import { handleAIRequest } from '../../ai/handler/ai.handler';
+import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
-import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
-import { DEBUG, STORAGE_TYPE } from '../../env-vars';
+import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -52,46 +37,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   // }
 
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, modelKey, ...args } = body;
+  const { chatId, fileUuid, modelKey: clientModelKey, ...args } = body;
+
   const source = args.source;
+  const modelKey = await getModelKey(clientModelKey, args.messages);
 
-  if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(source);
-    args.messages.unshift(...toolUseContext);
-  }
-
-  if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(args.language);
-    args.messages.unshift(...quadraticContext);
-  }
-
-  let parsedResponse: ParsedAIResponse | undefined;
-  if (isVertexAIAnthropicModel(modelKey)) {
-    parsedResponse = await handleAnthropicRequest(modelKey, args, res, vertex_anthropic);
-  } else if (isBedrockAnthropicModel(modelKey)) {
-    parsedResponse = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
-  } else if (isAnthropicModel(modelKey)) {
-    parsedResponse = await handleAnthropicRequest(modelKey, args, res, anthropic);
-  } else if (isOpenAIModel(modelKey)) {
-    parsedResponse = await handleOpenAIRequest(modelKey, args, res, openai);
-  } else if (isXAIModel(modelKey)) {
-    parsedResponse = await handleOpenAIRequest(modelKey, args, res, xai);
-  } else if (isVertexAIModel(modelKey)) {
-    parsedResponse = await handleVertexAIRequest(modelKey, args, res, vertexai);
-  } else if (isBedrockModel(modelKey)) {
-    parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
-  } else {
-    throw new Error(`Model not supported: ${modelKey}`);
-  }
+  const parsedResponse = await handleAIRequest(modelKey, args, res);
   if (parsedResponse) {
     args.messages.push(parsedResponse.responseMessage);
-  }
-
-  if (DEBUG && !!parsedResponse) {
-    parsedResponse.usage.source = source;
-    parsedResponse.usage.modelKey = modelKey;
-    parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
-    console.log('[AI.Usage]', parsedResponse.usage);
   }
 
   const {

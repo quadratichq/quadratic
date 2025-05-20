@@ -1,0 +1,171 @@
+import {
+  getLastAIPromptMessageModelKey,
+  getPromptMessages,
+  isContentText,
+} from 'quadratic-shared/ai/helpers/message.helper';
+import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
+import { DEFAULT_BACKUP_MODEL, DEFAULT_MODEL_ROUTER_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIModelKey, AIRequestHelperArgs, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { handleAIRequest } from '../handler/ai.handler';
+
+export const getModelKey = async (modelKey: AIModelKey, messages: ChatMessage[]): Promise<AIModelKey> => {
+  try {
+    if (!isQuadraticModel(modelKey)) {
+      return modelKey;
+    }
+
+    if (messages.length === 0) {
+      throw new Error('No messages provided');
+    }
+
+    const promptMessages = getPromptMessages(messages);
+    const lastPromptMessage = promptMessages[promptMessages.length - 1];
+    if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
+      return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
+    }
+
+    const userTextPrompt = lastPromptMessage.content
+      .filter(isContentText)
+      .map((content) => content.text)
+      .join('\n');
+
+    const args: AIRequestHelperArgs = {
+      source: 'ModelRouter',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `
+You are an AI model selector for a data analysis application. Based on the user's prompt, choose the most suitable model.\n
+
+<models>
+  <model name="gpt-4.1">
+    <capabilities>
+      <capability>Applying formatting</capability>
+      <capability>Handling prompts that involve frustration</capability>
+      <capability>Processing images and PDFs</capability>
+      <capability>Code and data analysis tasks - charting, summarizing, correlations, api requests, etc.</capability>
+      <capability>Requests to repeat that don't make it clear it didn't work</capability>
+      <capability>Calculations that are best solved by code</capability>
+      <capability>Calculations of any relative complexity</capability>
+    </capabilities>
+  </model>
+  <model name="gpt-4.1-mini">
+    <capabilities>
+      <capability>Creating simple formulas for the most basic calculations</capability>
+      <capability>Any explicit formula request</capability>
+    </capabilities>
+  </model>
+</models>
+
+<instructions>
+  Only respond with set_ai_model tool call have one of these model name: "gpt-4.1" or "gpt-4.1-mini" exactly. Do not include any additional text, explanations, or formatting.
+</instructions>
+
+<examples>
+  <example>
+    <user>Insert some sample manufacturing data</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>Create a chart</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>Add an extra axis to my chart</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>That didn't work</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>Analyze my PDFs</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>Highlight all the cells with value > 50</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>try again</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>do that again</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>move to A7</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>change text color to blue in all the rows that have gender male</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>Remove column B from the data</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>How much does each crop produce per year?</user>
+    <answer>gpt-4.1</answer>
+  </example>
+  <example>
+    <user>Sum the values in column F</user>
+    <answer>gpt-4.1-mini</answer>
+  </example>
+  <example>
+    <user>Calculate the mean of costs</user>
+    <answer>gpt-4.1-mini</answer>
+  </example>
+  <example>
+    <user>Find the mean, filtered by product type</user>
+    <answer>gpt-4.1</answer>
+  </example>
+</examples>
+`,
+            },
+          ],
+          contextType: 'modelRouter',
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `
+Choose the most suitable model for the following prompt:
+${userTextPrompt}
+`,
+            },
+          ],
+          contextType: 'userPrompt',
+        },
+      ],
+      useStream: false,
+      toolName: AITool.SetAIModel,
+      useToolsPrompt: false,
+      language: undefined,
+      useQuadraticContext: false,
+    };
+
+    const parsedResponse = await handleAIRequest(DEFAULT_MODEL_ROUTER_MODEL, args);
+
+    const setAIModelToolCall = parsedResponse?.responseMessage.toolCalls.find(
+      (toolCall) => toolCall.name === AITool.SetAIModel
+    );
+    if (setAIModelToolCall) {
+      const argsObject = JSON.parse(setAIModelToolCall.arguments);
+      const { ai_model } = aiToolsSpec[AITool.SetAIModel].responseSchema.parse(argsObject);
+      return MODELS_ROUTER_CONFIGURATION[ai_model];
+    }
+  } catch (error) {
+    console.error('Error in getModelKey:', error);
+  }
+
+  return DEFAULT_BACKUP_MODEL;
+};

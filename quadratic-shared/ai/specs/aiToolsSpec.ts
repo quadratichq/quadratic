@@ -1,7 +1,9 @@
-import type { AISource, AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
+  SetAIModel = 'set_ai_model',
   SetChatName = 'set_chat_name',
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
@@ -19,6 +21,7 @@ export enum AITool {
 }
 
 export const AIToolSchema = z.enum([
+  AITool.SetAIModel,
   AITool.SetChatName,
   AITool.AddDataTable,
   AITool.SetCellValues,
@@ -89,7 +92,15 @@ const cellLanguageSchema = z
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
   .pipe(z.enum(['Python', 'Javascript', 'Formula']));
 
+const modelRouterModels = z
+  .string()
+  .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
+  .pipe(z.enum(['gpt-4.1', 'gpt-4.1-mini']));
+
 export const AIToolsArgsSchema = {
+  [AITool.SetAIModel]: z.object({
+    ai_model: modelRouterModels,
+  }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
   }),
@@ -176,7 +187,35 @@ export type AIToolSpecRecord = {
   [K in AITool]: AIToolSpec<K>;
 };
 
+export const MODELS_ROUTER_CONFIGURATION: {
+  [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
+} = {
+  'gpt-4.1': 'openai:ft:gpt-4.1-2025-04-14:quadratic::BXVgVPsT',
+  'gpt-4.1-mini': 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BXv0t4pw',
+};
+
 export const aiToolsSpec: AIToolSpecRecord = {
+  [AITool.SetAIModel]: {
+    sources: ['ModelRouter'],
+    description: `
+Sets the AI Model to use for this user prompt.\n
+Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        ai_model: {
+          type: 'string',
+          description:
+            'Value can we only one of the following: "gpt-4.1", "gpt-4.1-mini" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+        },
+      },
+      required: ['ai_model'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetAIModel],
+    prompt: '',
+  },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
     description: `
@@ -198,12 +237,7 @@ This name should be from user's perspective, not the assistant's.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetChatName],
-    prompt: `
-You can use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
-This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
-The chat name should be based on user's messages and should reflect his/her queries and goals.\n
-This name should be from user's perspective, not the assistant's.\n
-`,
+    prompt: '',
   },
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],

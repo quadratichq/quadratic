@@ -17,13 +17,13 @@ import type {
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
-import { createFileForFineTuning } from './fineTuning';
+import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 
 export const handleAnthropicRequest = async (
   modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
   args: AIRequestHelperArgs,
-  response: Response,
-  anthropic: AnthropicVertex | AnthropicBedrock | Anthropic
+  anthropic: AnthropicVertex | AnthropicBedrock | Anthropic,
+  response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
@@ -56,31 +56,31 @@ export const handleAnthropicRequest = async (
       };
     }
     if (options.stream) {
-      response.setHeader('Content-Type', 'text/event-stream');
-      response.setHeader('Cache-Control', 'no-cache');
-      response.setHeader('Connection', 'keep-alive');
-      response.write(`stream\n\n`);
+      response?.setHeader('Content-Type', 'text/event-stream');
+      response?.setHeader('Cache-Control', 'no-cache');
+      response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
 
       const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
 
-      const parsedResponse = await parseAnthropicStream(chunks, response, modelKey);
+      const parsedResponse = await parseAnthropicStream(chunks, modelKey, response);
 
-      createFileForFineTuning(response, modelKey, args, parsedResponse);
+      createFileForFineTuning(modelKey, args, parsedResponse, response);
 
       return parsedResponse;
     } else {
       const result = await anthropic.messages.create(apiArgs as MessageCreateParamsNonStreaming);
 
-      const parsedResponse = parseAnthropicResponse(result, response, modelKey);
+      const parsedResponse = parseAnthropicResponse(result, modelKey, response);
       return parsedResponse;
     }
   } catch (error: any) {
-    if (!options.stream || !response.headersSent) {
+    if (!options.stream || !response?.headersSent) {
       if (error instanceof Anthropic.APIError) {
-        response.status(error.status ?? 400).json({ error: error.message });
+        response?.status(error.status ?? 400).json({ error: error.message });
         console.error(error.status, error.message);
       } else {
-        response.status(400).json({ error });
+        response?.status(400).json({ error });
         console.error(error);
       }
     } else {
@@ -94,7 +94,7 @@ export const handleAnthropicRequest = async (
         ],
         contextType: 'userPrompt',
         toolCalls: [],
-        model: getModelFromModelKey(modelKey),
+        modelKey,
       };
       response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response.end();

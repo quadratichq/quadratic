@@ -6,10 +6,10 @@ import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadrati
 import { getOpenAIApiArgs } from '../helpers/openai.helper';
 
 export const createFileForFineTuning = (
-  response: Response,
   modelKey: AIModelKey,
   args: AIRequestHelperArgs,
-  parsedResponse: ParsedAIResponse
+  parsedResponse: ParsedAIResponse,
+  response?: Response
 ) => {
   const model = getModelFromModelKey(modelKey);
 
@@ -24,9 +24,9 @@ export const createFileForFineTuning = (
   copyResponse.fineTuningInput = JSON.stringify(fineTuningInput);
 
   // send back to client with fine tuning input
-  response.write(`data: ${JSON.stringify(copyResponse)}\n\n`);
-  if (!response.writableEnded) {
-    response.end();
+  response?.write(`data: ${JSON.stringify(copyResponse)}\n\n`);
+  if (!response?.writableEnded) {
+    response?.end();
   }
 
   // write local file at quadratic/finetuning/<model>_<timestamp>.json
