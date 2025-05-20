@@ -54,9 +54,6 @@ jobs:
           components: clippy, llvm-tools-preview
           override: true
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-
       - uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
@@ -144,9 +141,6 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-
       - uses: useblacksmith/rust-cache@v3
 
       - uses: jetli/wasm-pack-action@v0.4.0
@@ -222,9 +216,6 @@ jobs:
           components: clippy
           override: true
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-
       - uses: useblacksmith/rust-cache@v3
 
       - name: Run cargo clippy in quadratic-core
@@ -256,9 +247,6 @@ jobs:
           components: clippy
           target: wasm32-unknown-unknown
           override: true
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
 
       - uses: useblacksmith/rust-cache@v3
 
