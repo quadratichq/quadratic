@@ -36,7 +36,7 @@ pub(crate) async fn handle_message(
     sender: UserSocket,
     pre_connection: PreConnection,
 ) -> Result<Option<MessageResponse>> {
-    tracing::trace!("Handling message {:?}", request);
+    tracing::info!("Handling message {:?}", request);
 
     match request {
         // User enters a room.
@@ -585,29 +585,25 @@ pub(crate) mod tests {
             sheet_id: SheetId::new(),
             color: Some("red".to_string()),
         }];
-        let compressed_ops = CoreTransaction::serialize_and_compress(&operations).unwrap();
-        let encoded_ops = STANDARD.encode(&compressed_ops);
+
+        // old transaction version
+        let compressed_ops_1 =
+            CoreTransaction::serialize_and_compress_version(&operations, "1.0").unwrap();
+        let encoded_ops_1 = STANDARD.encode(&compressed_ops_1);
 
         let request = MessageRequest::Transaction {
             id,
             file_id,
             session_id,
-            operations: encoded_ops.clone(),
+            operations: encoded_ops_1.clone(),
         };
-
         let response = MessageResponse::TransactionAck {
             id,
             file_id,
             sequence_num: 1,
         };
 
-        let broadcast_response = MessageResponse::Transaction {
-            id,
-            file_id,
-            operations: encoded_ops.clone(),
-            sequence_num: 1,
-        };
-
+        // send a Transaction and expect a TransactionAck
         test_handle(
             socket.clone(),
             state.clone(),
@@ -615,24 +611,58 @@ pub(crate) mod tests {
             user_1.clone(),
             request,
             Some(response.clone()),
-            Some(broadcast_response.clone()),
+            None,
+        )
+        .await;
+
+        // new transaction version
+        let compressed_ops_2 = CoreTransaction::serialize_and_compress(&operations).unwrap();
+
+        let request = MessageRequest::BinaryTransaction {
+            id,
+            file_id,
+            session_id,
+            operations: compressed_ops_2.clone(),
+        };
+
+        let response = MessageResponse::TransactionAck {
+            id,
+            file_id,
+            sequence_num: 2,
+        };
+
+        // send a Transaction and expect a TransactionAck
+        test_handle(
+            socket.clone(),
+            state.clone(),
+            file_id,
+            user_1.clone(),
+            request,
+            Some(response.clone()),
+            None,
         )
         .await;
 
         // now test get_transactions
-        let request = MessageRequest::GetTransactions {
+        let request = MessageRequest::GetBinaryTransactions {
             file_id,
             session_id,
             min_sequence_num: 1,
         };
-        let transaction = Transaction {
+        let transaction_1 = BinaryTransaction {
             id,
             file_id,
-            operations: encoded_ops,
+            operations: compressed_ops_1.clone(),
             sequence_num: 1,
         };
-        let response = MessageResponse::Transactions {
-            transactions: vec![transaction],
+        let transaction_2 = BinaryTransaction {
+            id,
+            file_id,
+            operations: compressed_ops_2.clone(),
+            sequence_num: 2,
+        };
+        let response = MessageResponse::BinaryTransactions {
+            transactions: vec![transaction_1, transaction_2],
         };
 
         test_handle(
