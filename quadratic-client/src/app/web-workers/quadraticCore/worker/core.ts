@@ -311,25 +311,53 @@ class Core {
     });
   }
 
+  // Updates the multiplayer state
+  // This is called when a transaction is received from the server
+  private updateMultiplayerState = async () => {
+    if (await offline.unsentTransactionsCount()) {
+      coreClient.sendMultiplayerState('syncing');
+    } else {
+      coreClient.sendMultiplayerState('connected');
+    }
+  };
+
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     return new Promise(async (resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
         const data = message.transaction;
+        const operations =
+          typeof data.operations === 'string'
+            ? new Uint8Array(Buffer.from(data.operations, 'base64'))
+            : data.operations;
 
-        if (typeof data.operations === 'string') {
-          data.operations = Buffer.from(data.operations, 'base64');
-        }
-
-        this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
+        this.gridController.multiplayerTransaction(data.id, data.sequence_num, operations);
         offline.markTransactionSent(data.id);
-        if (await offline.unsentTransactionsCount()) {
-          coreClient.sendMultiplayerState('syncing');
-        } else {
-          coreClient.sendMultiplayerState('connected');
-        }
+
+        // update the multiplayer state
+        await this.updateMultiplayerState();
       } catch (e) {
+        console.error('error', e);
         this.handleCoreError('receiveTransaction', e);
+      }
+      resolve(undefined);
+    });
+  }
+
+  receiveTransactionAck(transaction_id: string, sequence_num: number) {
+    return new Promise(async (resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        this.gridController.receiveMultiplayerTransactionAck(transaction_id, sequence_num);
+        offline.markTransactionSent(transaction_id);
+
+        // sends multiplayer synced to the client, to proceed from file loading screen
+        coreClient.sendMultiplayerSynced();
+
+        // update the multiplayer state
+        await this.updateMultiplayerState();
+      } catch (e) {
+        this.handleCoreError('receiveTransactionAck', e);
       }
       resolve(undefined);
     });
@@ -355,11 +383,8 @@ class Core {
         // sends multiplayer synced to the client, to proceed from file loading screen
         coreClient.sendMultiplayerSynced();
 
-        if (await offline.unsentTransactionsCount()) {
-          coreClient.sendMultiplayerState('syncing');
-        } else {
-          coreClient.sendMultiplayerState('connected');
-        }
+        // update the multiplayer state
+        await this.updateMultiplayerState();
       } catch (e) {
         this.handleCoreError('receiveTransactions', e);
       }
