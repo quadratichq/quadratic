@@ -61,6 +61,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Conditional formatting</capability>
     <capability>Handling prompts that involve frustration</capability>
     <capability>Processing images and PDFs</capability>
+    <capability>Writing JavaScript</capability>
    </capabilities>
   </model>
   <model name="Flash">
