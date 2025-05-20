@@ -77,6 +77,8 @@ export const debugSaveURLState = debug && false;
 
 export const debugShowUILogs = debug && false;
 
+export const debugShowFocus = debug && false;
+
 //-----------
 // WebWorkers
 //-----------
