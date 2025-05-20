@@ -135,7 +135,7 @@ impl State {
             .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string(), false)
             .await?
             .into_iter()
-            .flat_map(|(_, message)| Self::decompress_and_deserialize(message))
+            .flat_map(|(_, message)| Transaction::process_incoming(&message))
             .collect::<Vec<TransactionServer>>())
     }
 
@@ -153,12 +153,10 @@ impl State {
             .last_message(&file_id.to_string(), false)
             .await?;
 
-        Ok((message.0, Self::decompress_and_deserialize(message.1)?))
-    }
+        let transaction = Transaction::process_incoming(&message.1)
+            .map_err(|e| MpError::Serialization(e.to_string()))?;
 
-    fn decompress_and_deserialize(transaction: Vec<u8>) -> Result<TransactionServer> {
-        Transaction::decompress_and_deserialize::<TransactionServer>(&transaction)
-            .map_err(|e| MpError::Serialization(e.to_string()))
+        Ok((message.0, transaction))
     }
 }
 
@@ -169,14 +167,17 @@ mod tests {
     use crate::test_util::{operation, setup};
 
     use super::*;
+
     #[tokio::test]
     async fn all_pubsub_functionality() {
         let (_, state, _, file_id, _, _) = setup().await;
         let mut grid = GridController::test();
+
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
         let transaction_1 =
             Transaction::serialize_and_compress(vec![operations_1.clone()]).unwrap();
+
         let transaction_id_2 = Uuid::new_v4();
         let operations_2 = operation(&mut grid, 1, 0, "2");
         let transaction_2 =

@@ -82,7 +82,7 @@
     "uuid": "^11.1.0",
     "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5",
-    "zod": "^3.24.2"
+    "zod": "^3.25.3"
   },
   "main": "index.html",
   "scripts": {
