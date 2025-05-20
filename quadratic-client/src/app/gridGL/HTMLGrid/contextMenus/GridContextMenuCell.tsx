@@ -9,20 +9,29 @@ import { useEffect, useState } from 'react';
  * Context menu for a regular cell _or_ a formula cell on the grid.
  */
 export function GridContextMenuCell() {
-  const [columnRowAvailable, setColumnRowAvailable] = useState(false);
+  const [columnAvailable, setColumnAvailable] = useState(false);
+  const [rowAvailable, setRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
 
   useEffect(() => {
     const updateCursor = () => {
-      setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
+      if (sheets.sheet.cursor.canInsertColumnRow()) {
+        setColumnAvailable(sheets.sheet.cursor.canInsertColumn());
+        setRowAvailable(sheets.sheet.cursor.canInsertRow());
+      } else {
+        setColumnAvailable(false);
+        setRowAvailable(false);
+      }
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
     };
 
     updateCursor();
+    events.on('cursorPosition', updateCursor);
     events.on('contextMenu', updateCursor);
 
     return () => {
       events.off('contextMenu', updateCursor);
+      events.off('cursorPosition', updateCursor);
     };
   }, []);
 
@@ -36,12 +45,12 @@ export function GridContextMenuCell() {
       <ContextMenuItemAction action={Action.CopyAsPng} />
       <ContextMenuItemAction action={Action.DownloadAsCsv} />
       <DropdownMenuSeparator />
-      {columnRowAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} />}
-      {columnRowAvailable && <ContextMenuItemAction action={Action.InsertColumnRight} />}
+      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} />}
+      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnRight} />}
       <ContextMenuItemAction action={Action.DeleteColumn} />
-      {columnRowAvailable && <DropdownMenuSeparator />}
-      {columnRowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} />}
-      {columnRowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} />}
+      {columnAvailable && (rowAvailable || canConvertToDataTable) && <DropdownMenuSeparator />}
+      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} />}
+      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} />}
       <ContextMenuItemAction action={Action.DeleteRow} />
       {canConvertToDataTable && (
         <>

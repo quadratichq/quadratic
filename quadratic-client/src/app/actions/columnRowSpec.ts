@@ -13,32 +13,41 @@ import {
   DeleteIcon,
 } from '@/shared/components/Icons';
 
-const isColumnRowAvailable = ({ isAuthenticated }: ActionAvailabilityArgs) => {
-  if (!sheets.sheet.cursor.hasOneColumnRowSelection(true)) return false;
-  return !isEmbed && isAuthenticated;
+/// Gets the number of columns that will be inserted.
+const getColumnsSelected = (): number => {
+  let columnsSelected: number;
+  if (sheets.sheet.cursor.isColumnRow()) {
+    columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
+  } else {
+    columnsSelected = sheets.sheet.cursor.getColumnsWithSelectedCells().length;
+  }
+  return Math.max(columnsSelected, 1);
 };
 
-const isColumnFinite = () => sheets.sheet.cursor.isSelectedColumnsFinite();
-const isColumnRowAvailableAndColumnFinite = (args: ActionAvailabilityArgs) =>
-  isColumnRowAvailable(args) && isColumnFinite();
-const isRowFinite = () => sheets.sheet.cursor.isSelectedRowsFinite();
-const isColumnRowAvailableAndRowFinite = (args: ActionAvailabilityArgs) => isColumnRowAvailable(args) && isRowFinite();
+/// Gets the number of rows that will be inserted.
+const getRowsSelected = (): number => {
+  let rowsSelected: number;
+  if (sheets.sheet.cursor.isColumnRow()) {
+    rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
+  } else {
+    rowsSelected = sheets.sheet.cursor.getRowsWithSelectedCells().length;
+  }
+  return Math.max(rowsSelected, 1);
+};
 
 const insertColumnLeft: ActionSpec<void> = {
   label: () => {
-    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
-    columnsSelected = Math.max(columnsSelected, 1);
+    const columnsSelected = getColumnsSelected();
     if (columnsSelected > 1) {
       return `Insert ${columnsSelected} columns to the left`;
     }
     return 'Insert column left';
   },
-  isAvailable: isColumnRowAvailableAndColumnFinite,
+  isAvailable: ({ isAuthenticated }) => !isEmbed && isAuthenticated && sheets.sheet.cursor.canInsertColumn(),
   Icon: AddColumnLeftIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
-    columnsSelected = Math.max(columnsSelected, 1);
+    const columnsSelected = getColumnsSelected();
     quadraticCore.insertColumns(
       sheets.current,
       sheets.sheet.cursor.position.x,
@@ -52,19 +61,17 @@ const insertColumnLeft: ActionSpec<void> = {
 
 const insertColumnRight: ActionSpec<void> = {
   label: () => {
-    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
-    columnsSelected = Math.max(columnsSelected, 1);
+    const columnsSelected = getColumnsSelected();
     if (columnsSelected > 1) {
       return `Insert ${columnsSelected} columns to the right`;
     }
     return 'Insert column right';
   },
-  isAvailable: isColumnRowAvailableAndColumnFinite,
+  isAvailable: ({ isAuthenticated }) => !isEmbed && isAuthenticated && sheets.sheet.cursor.canInsertColumn(),
   Icon: AddColumnRightIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-    let columnsSelected = sheets.sheet.cursor.getSelectedColumns().length;
-    columnsSelected = Math.max(columnsSelected, 1);
+    const columnsSelected = getColumnsSelected();
     quadraticCore.insertColumns(
       sheets.current,
       sheets.sheet.cursor.position.x + columnsSelected,
@@ -82,7 +89,8 @@ const deleteColumns: ActionSpec<void> = {
     const plural = length > 1 ? 's' : '';
     return `Delete ${length} column${plural}`;
   },
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isColumnFinite(),
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) =>
+    !isEmbed && isAuthenticated && sheets.sheet.cursor.isSelectedColumnsFinite(),
   Icon: DeleteIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
@@ -95,19 +103,17 @@ const deleteColumns: ActionSpec<void> = {
 
 const insertRowAbove: ActionSpec<void> = {
   label: () => {
-    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
-    rowsSelected = Math.max(rowsSelected, 1);
+    const rowsSelected = getRowsSelected();
     if (rowsSelected > 1) {
       return `Insert ${rowsSelected} rows above`;
     }
     return 'Insert row above';
   },
-  isAvailable: isColumnRowAvailableAndRowFinite,
+  isAvailable: ({ isAuthenticated }) => !isEmbed && isAuthenticated && sheets.sheet.cursor.canInsertRow(),
   Icon: AddRowAboveIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
-    rowsSelected = Math.max(rowsSelected, 1);
+    const rowsSelected = getRowsSelected();
     quadraticCore.insertRows(
       sheets.current,
       sheets.sheet.cursor.position.y,
@@ -121,19 +127,17 @@ const insertRowAbove: ActionSpec<void> = {
 
 const insertRowBelow: ActionSpec<void> = {
   label: () => {
-    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
-    rowsSelected = Math.max(rowsSelected, 1);
+    const rowsSelected = getRowsSelected();
     if (rowsSelected > 1) {
       return `Insert ${rowsSelected} rows below`;
     }
     return 'Insert row below';
   },
-  isAvailable: isColumnRowAvailableAndRowFinite,
+  isAvailable: ({ isAuthenticated }) => !isEmbed && isAuthenticated && sheets.sheet.cursor.canInsertRow(),
   Icon: AddRowBelowIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
-    let rowsSelected = sheets.sheet.cursor.getSelectedRows().length;
-    rowsSelected = Math.max(rowsSelected, 1);
+    const rowsSelected = getRowsSelected();
     quadraticCore.insertRows(
       sheets.current,
       sheets.sheet.cursor.position.y + rowsSelected,
@@ -151,7 +155,8 @@ const deleteRows: ActionSpec<void> = {
     const plural = length > 1 ? 's' : '';
     return `Delete ${length} row${plural}`;
   },
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isRowFinite(),
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) =>
+    !isEmbed && isAuthenticated && sheets.sheet.cursor.isSelectedRowsFinite(),
   Icon: DeleteIcon,
   run: () => {
     pixiAppSettings.setContextMenu?.({});
