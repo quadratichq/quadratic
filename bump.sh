@@ -30,6 +30,7 @@ VERSION=$(cat VERSION)
 TYPE=$1
 
 RUST=(
+  "Cargo.toml"
   "quadratic-connection/Cargo.toml"
   "quadratic-core/Cargo.toml"
   "quadratic-files/Cargo.toml"
