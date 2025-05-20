@@ -84,7 +84,7 @@ impl SshTunnel {
 
                     // create a stream to send and receive messages on
                     let mut remote_stream = channel.into_stream();
-                    let local_to_remote_buffer_size = 1 * 1024; // 1kb
+                    let local_to_remote_buffer_size = 1024; // 1kb
                     let remote_to_local_buffer_size = 8 * 1024; // 8kb
 
                     tokio::spawn(async move {
