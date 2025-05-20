@@ -4,10 +4,7 @@ use quadratic_rust_shared::pubsub::{
 };
 use uuid::Uuid;
 
-use crate::{
-    error::{MpError, Result},
-    message::{proto::response::encode_message, response::MessageResponse},
-};
+use crate::error::{MpError, Result};
 
 use super::State;
 
@@ -34,34 +31,27 @@ impl PubSub {
         Ok(connection)
     }
 
-    pub(crate) async fn push_protobuf(
+    pub(crate) async fn push(
         &mut self,
         id: Uuid,
         file_id: Uuid,
         operations: Vec<u8>,
         sequence_num: u64,
     ) -> Result<u64> {
-        let transaction = MessageResponse::BinaryTransaction {
+        let transaction = TransactionServer {
             id,
             file_id,
             operations,
             sequence_num,
         };
+        let transaction_compressed = Transaction::serialize_and_compress(&transaction)
+            .map_err(|e| MpError::Serialization(e.to_string()))?;
 
-        // turn BinaryTransaction into Protobuf
-        let encoded = encode_message(transaction)?;
-
-        // add header to the message
-        let transaction_compressed =
-            Transaction::add_header(encoded).map_err(|e| MpError::Serialization(e.to_string()))?;
-
-        // get the active channels name
         let active_channels = match self.config {
             PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
             _ => "active_channels",
         };
 
-        // publish the message to the PubSub server
         self.connection
             .publish(
                 &file_id.to_string(),
@@ -108,7 +98,7 @@ impl State {
     }
 
     /// Push a transaction to the transaction queue
-    pub(crate) async fn push(
+    pub(crate) async fn push_pubsub(
         &self,
         id: Uuid,
         file_id: Uuid,
@@ -118,7 +108,7 @@ impl State {
         self.pubsub
             .lock()
             .await
-            .push_protobuf(id, file_id, operations, sequence_num)
+            .push(id, file_id, operations, sequence_num)
             .await
     }
 
@@ -135,7 +125,7 @@ impl State {
             .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string(), false)
             .await?
             .into_iter()
-            .flat_map(|(_, message)| Transaction::process_incoming(&message))
+            .flat_map(|(_, message)| Self::decompress_and_deserialize(message))
             .collect::<Vec<TransactionServer>>())
     }
 
@@ -153,10 +143,12 @@ impl State {
             .last_message(&file_id.to_string(), false)
             .await?;
 
-        let transaction = Transaction::process_incoming(&message.1)
-            .map_err(|e| MpError::Serialization(e.to_string()))?;
+        Ok((message.0, Self::decompress_and_deserialize(message.1)?))
+    }
 
-        Ok((message.0, transaction))
+    fn decompress_and_deserialize(transaction: Vec<u8>) -> Result<TransactionServer> {
+        Transaction::decompress_and_deserialize::<TransactionServer>(&transaction)
+            .map_err(|e| MpError::Serialization(e.to_string()))
     }
 
     #[cfg(test)]
@@ -198,24 +190,21 @@ mod tests {
     use crate::test_util::{operation, setup};
 
     use super::*;
-
     #[tokio::test]
     async fn all_pubsub_functionality() {
         let (_, state, _, file_id, _, _) = setup().await;
         let mut grid = GridController::test();
-
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
         let transaction_1 =
             Transaction::serialize_and_compress(vec![operations_1.clone()]).unwrap();
-
         let transaction_id_2 = Uuid::new_v4();
         let operations_2 = operation(&mut grid, 1, 0, "2");
         let transaction_2 =
             Transaction::serialize_and_compress(vec![operations_2.clone()]).unwrap();
 
         state
-            .push(transaction_id_1, file_id, transaction_1.clone(), 1)
+            .push_pubsub(transaction_id_1, file_id, transaction_1.clone(), 1)
             .await
             .unwrap();
         let transactions = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
@@ -229,7 +218,7 @@ mod tests {
         assert_eq!(transactions[0], expected_transaction_1);
 
         state
-            .push(transaction_id_2, file_id, transaction_2.clone(), 2)
+            .push_pubsub(transaction_id_2, file_id, transaction_2.clone(), 2)
             .await
             .unwrap();
         let transaction = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
