@@ -87,6 +87,7 @@ impl TryFrom<MySqlConnection> for SshConfig {
 
 impl MySqlConnection {
     /// Create a new MySQL connection
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         username: Option<String>,
         password: Option<String>,
