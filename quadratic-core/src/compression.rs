@@ -4,7 +4,7 @@ use flate2::{
     Compression,
     write::{ZlibDecoder, ZlibEncoder},
 };
-use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::io::prelude::*;
 
 const HEADER_DELIMITER: u8 = "*".as_bytes()[0];
@@ -18,11 +18,13 @@ const BINCODE_CONFIG: bincode::config::Configuration<
     .with_fixed_int_encoding()
     .with_limit::<MAX_FILE_SIZE>();
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CompressionFormat {
     None,
     Zlib,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum SerializationFormat {
     Bincode,
     Json,
