@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{Pos, controller::GridController, grid::DataTable, grid::SheetId};
+use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::DataTable, grid::SheetId};
 
 /// Runs an assertion that a cell value is equal to the given value. The col/row
 /// are 0-indexed to the table and ignore all ui elements (ie, table name and
@@ -56,6 +56,28 @@ pub fn assert_chart_size(
     assert_data_table_size(gc, sheet_id, pos, width, height, include_ui);
 }
 
+/// Run an assertion that a data table is equal to the given data table.
+#[cfg(test)]
+#[track_caller]
+pub fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataTable) {
+    let sheet = gc.sheet(sheet_pos.sheet_id);
+    assert!(
+        matches!(
+            sheet.cell_value(sheet_pos.into()),
+            Some(CellValue::Import(_) | CellValue::Code(_))
+        ),
+        "Cell Value at {:?} is not an import cell or code cell, it's {:?}",
+        sheet_pos,
+        sheet.cell_value(sheet_pos.into())
+    );
+    let data_table = sheet.data_table(Pos::from(sheet_pos)).unwrap();
+    assert_eq!(
+        data_table, dt,
+        "Data table at {:?} is not equal to provided data table",
+        sheet_pos
+    );
+}
+
 /// Run an assertion that the size of a data table is equal to the given width
 /// and height. Also works with charts.
 #[cfg(test)]
@@ -100,12 +122,8 @@ pub fn assert_data_table_size(
     }
 
     let adjust_height = if !include_ui {
-        if data_table.show_ui {
-            (if data_table.show_name { 1 } else { 0 })
-                + (if data_table.show_columns { 1 } else { 0 })
-        } else {
-            0
-        }
+        (if data_table.get_show_name() { 1 } else { 0 })
+            + (if data_table.get_show_columns() { 1 } else { 0 })
     } else {
         0
     };
@@ -293,5 +311,33 @@ mod tests {
         // Add another data table
         test_create_data_table(&mut gc, SheetId::TEST, pos![D1], 1, 1);
         assert_table_count(&gc, sheet_id, 2);
+    }
+
+    #[test]
+    fn test_assert_data_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a data table with some values
+        let dt = test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+
+        // Assert that the data table matches the expected one
+        assert_data_table_eq(&gc, pos![sheet_id!a1], &dt);
+    }
+
+    #[test]
+    #[should_panic(expected = "Data table at SheetPos")]
+    fn test_assert_data_table_failure() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a data table with some values
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+
+        // Create a different data table to compare against
+        let different_dt = test_create_data_table(&mut gc, sheet_id, pos![D1], 2, 2);
+
+        // This should panic since the data tables are different
+        assert_data_table_eq(&gc, pos![sheet_id!a1], &different_dt);
     }
 }

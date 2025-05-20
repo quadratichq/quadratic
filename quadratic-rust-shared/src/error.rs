@@ -12,6 +12,7 @@ use crate::arrow::error::Arrow;
 use crate::auth::error::Auth;
 use crate::aws::error::Aws;
 use crate::crypto::error::Crypto;
+use crate::net::error::Net;
 use crate::sql::error::Sql;
 use crate::storage::error::Storage;
 
@@ -30,8 +31,12 @@ pub enum SharedError {
 
     #[error("Error with Crypto: {0}")]
     Crypto(Crypto),
+
     #[error("{0}")]
     Generic(String),
+
+    #[error("{0}")]
+    Net(Net),
 
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
@@ -105,5 +110,11 @@ impl From<parquet::errors::ParquetError> for SharedError {
 impl From<arrow::error::ArrowError> for SharedError {
     fn from(error: arrow::error::ArrowError) -> Self {
         SharedError::Arrow(Arrow::External(error.to_string()))
+    }
+}
+
+impl From<Net> for SharedError {
+    fn from(error: Net) -> Self {
+        SharedError::Net(error)
     }
 }

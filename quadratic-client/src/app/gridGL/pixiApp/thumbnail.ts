@@ -28,9 +28,7 @@ class Thumbnail {
 
   destroy() {
     events.off('generateThumbnail', this.setThumbnailDirty);
-    if (this.renderer) {
-      this.renderer.destroy(false);
-    }
+    this.renderer?.destroy(false);
   }
 
   rendererBusy() {

@@ -82,7 +82,6 @@ export class Cursor extends Container {
     }
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
-    const insideTable = tables.getInTable(cell);
     const tableName = table?.getTableNameBounds();
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
@@ -96,9 +95,8 @@ export class Cursor extends Container {
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      (!insideTable || insideTable?.isSingleValue()) &&
+      !pixiApp.cellsSheet().tables.isTableNameCell(cell) &&
       !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
-      (!pixiApp.cellsSheet().tables.cursorOnDataTable() || cursor.isSingleSelection()) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
@@ -112,6 +110,8 @@ export class Cursor extends Container {
     const inlineShowing = inlineEditorHandler.getShowing();
     if (showInput) {
       if (inlineShowing) {
+        x = inlineEditorHandler.x - CURSOR_THICKNESS;
+        y = inlineEditorHandler.y - CURSOR_THICKNESS;
         width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * 2, width);
         height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * 2, height);
       } else {
@@ -258,9 +258,14 @@ export class Cursor extends Container {
     const { visible, editMode, formula } = pixiAppSettings.inlineEditorState;
     if (!visible || !editMode) return;
 
-    let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
+    let { x, y } = inlineEditorHandler;
+    x = inlineEditorHandler.x - CURSOR_THICKNESS;
+    y = inlineEditorHandler.y - CURSOR_THICKNESS;
+
+    let { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
+
     const color = formula ? getCSSVariableTint('primary') : pixiApp.accentColor;
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
@@ -307,11 +312,13 @@ export class Cursor extends Container {
       this.cursorRectangle = undefined;
     } else if (finiteRanges.length) {
       this.cursorRectangle = new Rectangle();
-      const start = sheet.getCellOffsets(finiteRanges[0].start.col.coord, finiteRanges[0].start.row.coord);
-      const end = sheet.getCellOffsets(
-        Number(finiteRanges[0].end.col.coord) + 1,
-        Number(finiteRanges[0].end.row.coord) + 1
-      );
+      // normalize the coordinates so pointerHeading calculations work correctly
+      const xStart = Math.min(Number(finiteRanges[0].start.col.coord), Number(finiteRanges[0].end.col.coord));
+      const yStart = Math.min(Number(finiteRanges[0].start.row.coord), Number(finiteRanges[0].end.row.coord));
+      const xEnd = Math.max(Number(finiteRanges[0].start.col.coord), Number(finiteRanges[0].end.col.coord));
+      const yEnd = Math.max(Number(finiteRanges[0].start.row.coord), Number(finiteRanges[0].end.row.coord));
+      const start = sheet.getCellOffsets(xStart, yStart);
+      const end = sheet.getCellOffsets(xEnd + 1, yEnd + 1);
       this.cursorRectangle = new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y);
     } else if (infiniteRanges.length) {
       this.cursorRectangle = infiniteRectangle;

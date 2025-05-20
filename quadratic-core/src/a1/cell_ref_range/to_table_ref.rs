@@ -39,20 +39,11 @@ impl CellRefRange {
                     return None;
                 }
                 let b = table.bounds;
-                let adjust_for_name = if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                };
-                let adjust_for_columns = if table.show_ui && table.show_columns {
-                    1
-                } else {
-                    0
-                };
+                let adjust_for_name = if table.show_name { 1 } else { 0 };
+                let adjust_for_columns = if table.show_columns { 1 } else { 0 };
 
                 // if we're in the name cell of the table, then we should return the table ref
                 if start == end
-                    && table.show_ui
                     && table.show_name
                     && start.x >= b.min.x
                     && start.x <= b.max.x
@@ -86,22 +77,22 @@ impl CellRefRange {
                     return None;
                 }
 
+                // Handle contiguous columns by creating a single TableRef with ColRange::ColRange
                 let col_range = if start.x == b.min.x && end.x == b.max.x {
                     ColRange::All
-                } else if start.x == end.x {
-                    let col_name =
-                        table.col_name_from_index(start.x as usize - b.min.x as usize)?;
-                    ColRange::Col(col_name)
                 } else {
                     let col1_name =
                         table.col_name_from_index(start.x as usize - b.min.x as usize)?;
                     let col2_name = table.col_name_from_index(end.x as usize - b.min.x as usize)?;
-                    ColRange::ColRange(col1_name, col2_name)
+                    if col1_name == col2_name {
+                        ColRange::Col(col1_name)
+                    } else {
+                        ColRange::ColRange(col1_name, col2_name)
+                    }
                 };
 
                 // only column headers
-                if table.show_ui
-                    && table.show_columns
+                if table.show_columns
                     && start.y == b.min.y + adjust_for_name
                     && end.y == b.min.y + adjust_for_name
                 {
@@ -306,7 +297,7 @@ mod tests {
 
         // Modify the table to hide UI elements
         if let Some(table) = context.table_mut("Table1") {
-            table.show_ui = false;
+            table.show_name = false;
             table.show_columns = false;
         }
 
@@ -334,7 +325,7 @@ mod tests {
 
         // Modify the table to hide only columns but keep UI
         if let Some(table) = context.table_mut("Table1") {
-            table.show_ui = true;
+            table.show_name = true;
             table.show_columns = false;
         }
 
@@ -344,5 +335,36 @@ mod tests {
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
         assert_eq!(table_ref, None);
+    }
+
+    #[test]
+    fn test_check_for_table_ref_contiguous_columns() {
+        let context = A1Context::test(
+            &[("Sheet1", SheetId::TEST)],
+            &[(
+                "Table1",
+                &["col1", "col2", "col3", "col4"],
+                Rect::test_a1("A1:D5"),
+            )],
+        );
+
+        // Test selecting multiple contiguous columns
+        let cell_ref_range = CellRefRange::Sheet {
+            range: RefRangeBounds::test_a1("B3:C5"),
+        };
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
+
+        assert_eq!(
+            table_ref,
+            Some(CellRefRange::Table {
+                range: TableRef {
+                    table_name: "Table1".to_string(),
+                    col_range: ColRange::ColRange("col2".to_string(), "col3".to_string()),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                },
+            })
+        );
     }
 }

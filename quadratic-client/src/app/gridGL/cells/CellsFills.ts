@@ -187,7 +187,7 @@ export class CellsFills extends Container {
   // this is called by Table.ts
   updateAlternatingColors = (x: number, y: number, table?: JsRenderCodeCell) => {
     const key = `${x},${y}`;
-    if (table && table.show_ui && table.alternating_colors && !table.is_html_image) {
+    if (table && table.alternating_colors && !table.is_html_image) {
       this.alternatingColors.set(key, table);
       this.dirtyTables = true;
     } else {
@@ -205,7 +205,7 @@ export class CellsFills extends Container {
       let yOffset = bounds.y;
       for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
-        if (y % 2 !== (table.show_ui && table.show_name !== table.show_columns ? 1 : 0)) {
+        if (y % 2 !== (table.show_name !== table.show_columns ? 1 : 0)) {
           this.alternatingColorsGraphics.rect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.fill({ color: ALTERNATING_BG_COLOR, alpha: ALTERNATING_BG_OPACITY });
         }

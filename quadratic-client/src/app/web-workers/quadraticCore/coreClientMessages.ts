@@ -1,3 +1,4 @@
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -1168,7 +1169,6 @@ export interface ClientCoreDataTableMeta {
   columns?: JsDataTableColumnHeader[];
   showName?: boolean;
   showColumns?: boolean;
-  showUI?: boolean;
   cursor: string;
 }
 
@@ -1275,6 +1275,34 @@ export interface CoreClientCoreError {
   error: Error | unknown;
 }
 
+export interface ClientCoreResizeColumns {
+  type: 'clientCoreResizeColumns';
+  sheetId: string;
+  columns: ColumnRowResize[];
+  cursor: string;
+}
+
+export interface ClientCoreResizeRows {
+  type: 'clientCoreResizeRows';
+  sheetId: string;
+  rows: ColumnRowResize[];
+  cursor: string;
+}
+
+export interface ClientCoreResizeAllColumns {
+  type: 'clientCoreResizeAllColumns';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
+export interface ClientCoreResizeAllRows {
+  type: 'clientCoreResizeAllRows';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1371,7 +1399,11 @@ export type ClientCoreMessage =
   | ClientCoreGetCsvPreview
   | ClientCoreAddDataTable
   | ClientCoreMoveColumns
-  | ClientCoreMoveRows;
+  | ClientCoreMoveRows
+  | ClientCoreResizeColumns
+  | ClientCoreResizeRows
+  | ClientCoreResizeAllColumns
+  | ClientCoreResizeAllRows;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

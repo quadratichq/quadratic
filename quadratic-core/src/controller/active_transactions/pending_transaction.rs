@@ -15,7 +15,7 @@ use crate::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellLanguage, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -62,7 +62,7 @@ pub struct PendingTransaction {
     pub current_sheet_pos: Option<SheetPos>,
 
     /// whether we are awaiting an async call
-    pub waiting_for_async: Option<CodeCellLanguage>,
+    pub waiting_for_async: Option<CodeCellValue>,
 
     /// whether transaction is complete
     pub complete: bool,
@@ -100,11 +100,13 @@ pub struct PendingTransaction {
     /// sheets w/updated fill cells
     pub fill_cells: HashSet<SheetId>,
 
-    /// sheets w/updated offsets
+    /// sheets w/updated info
     pub sheet_info: HashSet<SheetId>,
 
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
+
+    pub offsets_reloaded: HashSet<SheetId>,
 
     // update selection after transaction completes
     pub update_selection: Option<String>,
@@ -138,6 +140,7 @@ impl Default for PendingTransaction {
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
+            offsets_reloaded: HashSet::new(),
             update_selection: None,
         }
     }
@@ -509,7 +512,7 @@ mod tests {
     use crate::{
         CellValue, Value,
         controller::operations::operation::Operation,
-        grid::{CodeRun, DataTable, DataTableKind, Sheet, SheetId},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, Sheet, SheetId},
     };
 
     use super::*;
@@ -637,6 +640,8 @@ mod tests {
         assert_eq!(transaction.image_cells.len(), 0);
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -652,7 +657,8 @@ mod tests {
             Value::Single(CellValue::Html("html".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
@@ -661,6 +667,8 @@ mod tests {
         assert_eq!(transaction.image_cells.len(), 0);
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -676,7 +684,8 @@ mod tests {
             Value::Single(CellValue::Image("image".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());

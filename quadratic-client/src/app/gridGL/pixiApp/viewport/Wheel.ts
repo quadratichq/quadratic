@@ -309,7 +309,19 @@ export class Wheel extends Plugin {
     });
   }
 
+  // This is a hack to double check that the zoom key is pressed. This fixes a
+  // bug where the zoom key is pressed when on the app, but the keyup is not
+  // caught b/c an external program is called (eg, taking a screen shot with
+  // meta+4)
+  private doubleCheckZoomKey(e: WheelEvent) {
+    if (this.zoomKeyIsPressed && !e.ctrlKey && !e.metaKey) {
+      this.zoomKeyIsPressed = false;
+    }
+  }
+
   public wheel(e: WheelEvent, adjust?: { x: number; y: number }): boolean {
+    this.doubleCheckZoomKey(e);
+
     // If paused or both zoom and horizontal keys are pressed do nothing
     if (this.paused || (this.zoomKeyIsPressed && this.horizontalScrollKeyIsPressed)) {
       return false;

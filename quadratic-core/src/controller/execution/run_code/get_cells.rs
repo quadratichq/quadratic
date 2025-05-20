@@ -564,15 +564,14 @@ mod test {
 
         gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
-        // set show_ui = true
+        // set show_name and show_column true
         gc.data_table_meta(
             SheetPos::new(sheet_id, 1, 1),
             None,
             None,
             None,
-            Some(true),
-            None,
-            None,
+            Some(Some(true)),
+            Some(Some(true)),
             None,
         );
 
@@ -623,15 +622,14 @@ mod test {
 
         gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 1, vec!["1", "2"]);
 
-        // set show_ui = true
+        // set show_name and show_column true
         gc.data_table_meta(
             SheetPos::new(sheet_id, 1, 1),
             None,
             None,
             None,
-            Some(true),
-            None,
-            None,
+            Some(Some(true)),
+            Some(Some(true)),
             None,
         );
 

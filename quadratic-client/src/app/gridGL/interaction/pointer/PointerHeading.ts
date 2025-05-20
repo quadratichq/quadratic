@@ -8,7 +8,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
-import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomToFit } from '@/app/gridGL/helpers/zoom';
@@ -26,9 +25,15 @@ import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
+export interface ColumnRowResize {
+  index: number;
+  size: number;
+}
+
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
 }
+
 export class PointerHeading {
   private downTimeout: number | undefined;
   cursor?: string;
@@ -127,9 +132,9 @@ export class PointerHeading {
       };
       this.active = true;
     } else if (
-      debug &&
       !isRightClick &&
       !cursor.isMultiRange() &&
+      !cursor.isAllSelected() &&
       (intersects.column == null || cursor.isEntireColumnSelected(intersects.column)) &&
       (intersects.row == null || cursor.isEntireRowSelected(intersects.row))
     ) {
@@ -234,7 +239,6 @@ export class PointerHeading {
         if (result) {
           const cursor = sheets.sheet.cursor;
           if (
-            debug &&
             !cursor.isMultiRange() &&
             !result.corner &&
             (result.column == null || cursor.isEntireColumnSelected(result.column)) &&
@@ -327,7 +331,7 @@ export class PointerHeading {
 
   private pointerUpMovingColRows(): boolean {
     if (this.movingColRows) {
-      if (this.movingColRows.place !== this.movingColRows.start) {
+      if (this.movingColRows.place !== this.movingColRows.start && this.movingColRows.indicies.length >= 1) {
         if (this.movingColRows.isColumn) {
           quadraticCore.moveColumns(
             sheets.current,
@@ -364,16 +368,48 @@ export class PointerHeading {
     if (this.active) {
       this.active = false;
       if (this.resizing) {
-        const transientResize = sheets.sheet.offsets.getResizeToApply();
-        if (transientResize) {
-          try {
-            const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
-            const delta = old_size - new_size;
-            if (delta !== 0) {
-              quadraticCore.commitTransientResize(sheets.current, transientResize);
+        // if multiple columns or rows are selected, we need to resize all of them
+        const columns = sheets.sheet.cursor.getSelectedColumns();
+        if (this.resizing.column !== null) {
+          if (!columns.includes(this.resizing.column)) {
+            columns.push(this.resizing.column);
+          }
+        }
+        const rows = sheets.sheet.cursor.getSelectedRows();
+        if (this.resizing.row !== null) {
+          if (!rows.includes(this.resizing.row)) {
+            rows.push(this.resizing.row);
+          }
+        }
+        if (sheets.sheet.cursor.isAllSelected()) {
+          if (this.resizing.column && this.resizing.width !== undefined) {
+            quadraticCore.resizeAllColumns(sheets.current, this.resizing.width);
+          } else if (this.resizing.row && this.resizing.height !== undefined) {
+            quadraticCore.resizeAllRows(sheets.current, this.resizing.height);
+          }
+        } else if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
+          const size = this.resizing.width;
+          const columnSizes = columns.map((column) => ({ index: column, size }));
+          quadraticCore.resizeColumns(sheets.current, columnSizes, sheets.getCursorPosition());
+        } else if (this.resizing.row && rows.length !== 1 && this.resizing.height !== undefined) {
+          const size = this.resizing.height;
+          const rowSizes = rows.map((row) => ({ index: row, size }));
+          quadraticCore.resizeRows(sheets.current, rowSizes, sheets.getCursorPosition());
+        }
+
+        // otherwise work with the transient resize (if available)
+        else {
+          const transientResize = sheets.sheet.offsets.getResizeToApply();
+          if (transientResize) {
+            try {
+              const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
+              const delta = old_size - new_size;
+              if (delta !== 0) {
+                quadraticCore.commitTransientResize(sheets.current, transientResize);
+              }
+            } catch (error) {
+              console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
             }
-          } catch (error) {
-            console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
           }
         }
         this.resizing = undefined;
@@ -387,28 +423,48 @@ export class PointerHeading {
   }
 
   async autoResizeColumn(column: number) {
-    const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
-    let size: number;
-    if (maxWidth === 0) {
-      size = CELL_WIDTH;
-    } else {
-      const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-      size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+    const columns = sheets.sheet.cursor.getSelectedColumns();
+    if (!columns.includes(column)) {
+      columns.push(column);
     }
-    const sheetId = sheets.current;
-    const originalSize = sheets.sheet.getCellOffsets(column, 0);
-    if (originalSize.width !== size) {
-      quadraticCore.commitSingleResize(sheetId, column, undefined, size);
+    const resizing: ColumnRowResize[] = [];
+    for (const column of columns) {
+      const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+      let size: number;
+      if (maxWidth === 0) {
+        size = CELL_WIDTH;
+      } else {
+        const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+        size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+      }
+      const originalSize = sheets.sheet.getCellOffsets(column, 0);
+      if (originalSize.width !== size) {
+        resizing.push({ index: column, size });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
     }
   }
 
   async autoResizeRow(row: number) {
-    const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-    const size = Math.max(maxHeight, CELL_HEIGHT);
-    const sheetId = sheets.current;
-    const originalSize = sheets.sheet.getCellOffsets(0, row);
-    if (originalSize.height !== size) {
-      quadraticCore.commitSingleResize(sheetId, undefined, row, size);
+    const rows = sheets.sheet.cursor.getSelectedRows();
+    if (!rows.includes(row)) {
+      rows.push(row);
+    }
+    const resizing: ColumnRowResize[] = [];
+    for (const row of rows) {
+      const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+      const size = Math.max(maxHeight, CELL_HEIGHT);
+      const originalSize = sheets.sheet.getCellOffsets(0, row);
+      if (originalSize.height !== size) {
+        resizing.push({ index: row, size });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
     }
   }
 
