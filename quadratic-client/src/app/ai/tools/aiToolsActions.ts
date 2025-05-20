@@ -236,7 +236,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
-    let { sheet_name, code_cell_language, code_string, code_cell_position } = args;
+    let { sheet_name, code_cell_language, code_string, code_cell_position, code_cell_name } = args;
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
       const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
@@ -255,6 +255,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         y,
         codeString: code_string,
         language: code_cell_language,
+        codeCellName: code_cell_name,
         cursor: sheets.getCursorPosition(),
       });
 
