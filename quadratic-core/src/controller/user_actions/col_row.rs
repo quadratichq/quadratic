@@ -117,6 +117,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1".to_string(),
             None,
+            None,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -160,6 +161,7 @@ mod tests {
             SheetPos::new(sheet_id, 2, 2),
             CodeCellLanguage::Formula,
             "5".to_string(),
+            None,
             None,
         );
 

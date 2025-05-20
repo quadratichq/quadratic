@@ -129,6 +129,7 @@ mod test {
             CodeCellLanguage::Formula,
             "A1 + 1".to_string(),
             None,
+            None,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -145,6 +146,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "B1 + 1".to_string(),
+            None,
             None,
         );
 
@@ -201,6 +203,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "A1 + 1".into(),
+            None,
             None,
         );
 
@@ -386,6 +389,7 @@ mod test {
             CodeCellLanguage::Formula,
             "A1:A4".into(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
@@ -450,7 +454,7 @@ mod test {
         };
         let pos: Pos = sheet_pos.into();
 
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None);
+        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(pos),
@@ -467,6 +471,7 @@ mod test {
             sheet_pos,
             CodeCellLanguage::Formula,
             "{0,1/0;2/0,0}".into(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);
