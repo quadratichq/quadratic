@@ -42,11 +42,9 @@ impl GridController {
                     CellRefRange::Sheet { range } => range.to_rect(),
                     CellRefRange::Table { range } => {
                         // we need the entire table bounds for a paste operation
-                        if let Some(table) = self.a1_context().try_table(&range.table_name) {
-                            Some(table.bounds)
-                        } else {
-                            None
-                        }
+                        self.a1_context()
+                            .try_table(&range.table_name)
+                            .map(|table| table.bounds)
                     }
                 };
                 end_pos = rect
