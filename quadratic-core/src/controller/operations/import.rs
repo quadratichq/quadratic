@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{borrow::Cow, io::Cursor};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
@@ -70,7 +70,10 @@ impl GridController {
                 // strip invalid characters
                 Ok(str.chars().filter(|&c| c.len_utf8() <= 2).collect())
             })
-            .unwrap_or_else(|_| record.iter().map(|&b| b as char).collect())
+            .unwrap_or_else(|_| {
+                dbg!("converting to string");
+                record.iter().map(|&b| b as char).collect()
+            })
     }
 
     pub fn get_csv_preview(
@@ -91,17 +94,14 @@ impl GridController {
             }
         };
 
-        // let file: &[u8] = match String::from_utf8_lossy(&file) {
-        //     std::borrow::Cow::Borrowed(_) => &file,
-        //     std::borrow::Cow::Owned(_) => {
+        // let file = match String::from_utf8_lossy(&file) {
+        //     Cow::Borrowed(_) => file,
+        //     Cow::Owned(_) => {
         //         if let Some(utf) = read_utf16(&file) {
-        //             return Self::get_csv_preview(
-        //                 utf.as_bytes().to_vec(),
-        //                 max_rows,
-        //                 Some(delimiter),
-        //             );
+        //             utf.into_bytes()
+        //         } else {
+        //             file
         //         }
-        //         &file
         //     }
         // };
 
@@ -118,12 +118,9 @@ impl GridController {
             }
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
-                Ok(record) => preview.push(
-                    record
-                        .iter()
-                        .map(|s| Self::byte_record_to_string(s))
-                        .collect(),
-                ),
+                Ok(record) => {
+                    preview.push(record.iter().map(Self::byte_record_to_string).collect())
+                }
             }
         }
 
@@ -154,20 +151,14 @@ impl GridController {
             }
         };
 
-        // let file: &[u8] = match String::from_utf8_lossy(&file) {
-        //     Cow::Borrowed(_) => &file,
+        // let file = match String::from_utf8_lossy(&file) {
+        //     Cow::Borrowed(_) => file,
         //     Cow::Owned(_) => {
         //         if let Some(utf) = read_utf16(&file) {
-        //             return self.import_csv_operations(
-        //                 sheet_id,
-        //                 utf.as_bytes().to_vec(),
-        //                 file_name,
-        //                 insert_at,
-        //                 Some(delimiter),
-        //                 header_is_first_row,
-        //             );
+        //             utf.into_bytes()
+        //         } else {
+        //             file
         //         }
-        //         &file
         //     }
         // };
 
@@ -528,30 +519,30 @@ impl GridController {
     }
 }
 
-// fn read_utf16(bytes: &[u8]) -> Option<String> {
-//     if bytes.is_empty() && bytes.len() % 2 == 0 {
-//         return None;
-//     }
+fn read_utf16(bytes: &[u8]) -> Option<String> {
+    if bytes.is_empty() && bytes.len() % 2 == 0 {
+        return None;
+    }
 
-//     // convert u8 to u16
-//     let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
-//     for chunk in bytes.to_owned().chunks_exact(2) {
-//         let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
-//             return None;
-//         };
-//         utf16vec.push(u16::from_ne_bytes(vec2));
-//     }
+    // convert u8 to u16
+    let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
+    for chunk in bytes.to_owned().chunks_exact(2) {
+        let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
+            return None;
+        };
+        utf16vec.push(u16::from_ne_bytes(vec2));
+    }
 
-//     // convert to string
-//     let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
-//         return None;
-//     };
+    // convert to string
+    let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
+        return None;
+    };
 
-//     // strip invalid characters
-//     let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
+    // strip invalid characters
+    let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
 
-//     Some(result)
-// }
+    Some(result)
+}
 
 #[cfg(test)]
 mod test {
@@ -562,8 +553,8 @@ mod test {
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
-    // const INVALID_ENCODING_FILE: &[u8] =
-    //     include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
+    const INVALID_ENCODING_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
 
     #[test]
     fn guesses_the_csv_header() {
@@ -614,11 +605,11 @@ mod test {
         assert_eq!(preview[1], vec!["value1", "value2"]);
     }
 
-    // #[test]
-    // fn transmute_u8_to_u16() {
-    //     let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
-    //     assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
-    // }
+    #[test]
+    fn transmute_u8_to_u16() {
+        let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
+        assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
+    }
 
     #[test]
     fn imports_a_simple_csv() {
