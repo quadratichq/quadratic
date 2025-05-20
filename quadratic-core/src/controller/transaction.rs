@@ -1,6 +1,4 @@
-use anyhow::{Result, bail};
-use prost::Message;
-use quadratic_rust_shared::protobuf::quadratic::transaction::ReceiveTransaction;
+use anyhow::Result;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -14,86 +12,14 @@ use crate::compression::{
     remove_header, serialize, serialize_and_compress,
 };
 
+pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
+pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TransactionHeader {
-    pub version: String,
-}
-
-impl Default for TransactionHeader {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TransactionHeader {
-    pub fn new() -> Self {
-        Self {
-            version: TransactionVersion::current().header.version,
-        }
-    }
-
-    pub fn new_serialized() -> Result<Vec<u8>> {
-        let transaction_header = TransactionHeader::new();
-        serialize(&HEADER_SERIALIZATION_FORMAT, transaction_header)
-    }
-
-    pub fn parse(header: &[u8]) -> Result<TransactionHeader> {
-        deserialize::<TransactionHeader>(&HEADER_SERIALIZATION_FORMAT, header)
-    }
-
-    pub fn parse_version(header: &[u8]) -> Result<String> {
-        let transaction_version = Self::parse(header)?;
-        Ok(transaction_version.version)
-    }
-}
-
-impl From<&str> for TransactionHeader {
-    fn from(version: &str) -> Self {
-        Self {
-            version: version.into(),
-        }
-    }
-}
-
-impl From<TransactionHeader> for TransactionVersion {
-    fn from(header: TransactionHeader) -> Self {
-        match header.version.as_str() {
-            "1.0" => TransactionVersion::v1(),
-            "2.0" => TransactionVersion::v2(),
-            _ => TransactionVersion::current(),
-        }
-    }
-}
+pub static CURRENT_VERSION: &str = "1.0";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionVersion {
-    pub header: TransactionHeader,
-    pub serialized_format: SerializationFormat,
-    pub compression_format: CompressionFormat,
-}
-
-impl TransactionVersion {
-    pub fn current() -> Self {
-        Self::v2()
-    }
-
-    pub fn v1() -> Self {
-        Self {
-            header: TransactionHeader::from("1.0"),
-            serialized_format: SerializationFormat::Json,
-            compression_format: CompressionFormat::Zlib,
-        }
-    }
-
-    pub fn v2() -> Self {
-        Self {
-            header: TransactionHeader::from("2.0"),
-            serialized_format: SerializationFormat::Json,
-            compression_format: CompressionFormat::Zlib,
-        }
-    }
+    pub version: String,
 }
 
 // Transaction created by client
@@ -122,64 +48,31 @@ impl Transaction {
     }
 
     /// Serializes and compresses the transaction's operations, adding a header with the version
-    pub fn add_header(operations: Vec<u8>) -> Result<Vec<u8>> {
-        let header = TransactionHeader::new_serialized()?;
-        add_header(header, operations)
-    }
-
-    pub fn process_incoming(operations: &[u8]) -> Result<TransactionServer> {
-        let (header, data) = remove_header(operations)?;
-        let version = TransactionHeader::parse(header)?.version;
-
-        match version.as_str() {
-            "1.0" => decompress_and_deserialize::<TransactionServer>(
-                &TransactionVersion::v1().serialized_format,
-                &TransactionVersion::v1().compression_format,
-                data,
-            ),
-            "2.0" => {
-                let decoded: ReceiveTransaction =
-                    Message::decode(data).map_err(|e| anyhow::anyhow!(e))?;
-
-                Ok(TransactionServer {
-                    id: Uuid::parse_str(&decoded.id)?,
-                    file_id: Uuid::parse_str(&decoded.file_id)?,
-                    operations: decoded.operations,
-                    sequence_num: decoded.sequence_num,
-                })
-            }
-            _ => bail!("Invalid transaction version: {version}"),
-        }
-    }
-
-    /// Serializes and compresses the transaction's operations, adding a header with the version
     pub fn serialize_and_compress<T: Serialize>(operations: T) -> Result<Vec<u8>> {
-        let header = TransactionHeader::new_serialized()?;
-        let compressed = serialize_and_compress::<T>(
-            &TransactionVersion::current().serialized_format,
-            &TransactionVersion::current().compression_format,
-            operations,
-        )?;
+        let version = TransactionVersion {
+            version: CURRENT_VERSION.into(),
+        };
+        let header = serialize(&HEADER_SERIALIZATION_FORMAT, &version)?;
+        let compressed =
+            serialize_and_compress::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, operations)?;
 
         add_header(header, compressed)
     }
 
     /// Decompress and deserialize the transaction's operations, removing the
     /// version header.
+    ///
+    /// When we start to add different transaction versions, we will need to
+    /// match the version and handle the versions separately.
     pub fn decompress_and_deserialize<T: DeserializeOwned>(operations: &[u8]) -> Result<T> {
         let (header, data) = remove_header(operations)?;
 
         // We're currently not doing anything with the transaction version, but will in
         // the future as we use different serialization and compression methods and/or
         // different operation types.
-        let header = deserialize::<TransactionHeader>(&HEADER_SERIALIZATION_FORMAT, header)?;
-        let version = TransactionVersion::from(header);
+        let _version = deserialize::<TransactionVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
 
-        decompress_and_deserialize::<T>(
-            &version.serialized_format,
-            &version.compression_format,
-            data,
-        )
+        decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, data)
     }
 }
 

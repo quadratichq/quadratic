@@ -16,12 +16,6 @@ export interface MultiplayerCoreReceiveTransactions {
   transactions: ReceiveTransaction[];
 }
 
-export interface MultiplayerCoreReceiveTransactionAck {
-  type: 'multiplayerCoreReceiveTransactionAck';
-  transactionId: string;
-  sequenceNum: number;
-}
-
 export interface MultiplayerCoreReceiveTransaction {
   type: 'multiplayerCoreReceiveTransaction';
   transaction: ReceiveTransaction;
@@ -41,7 +35,6 @@ export type MultiplayerCoreMessage =
   | MultiplayerCoreSequenceNum
   | MultiplayerCoreReceiveTransactions
   | MultiplayerCoreReceiveTransaction
-  | MultiplayerCoreReceiveCurrentTransaction
-  | MultiplayerCoreReceiveTransactionAck;
+  | MultiplayerCoreReceiveCurrentTransaction;
 
 export type CoreMultiplayerMessage = CoreMultiplayerTransaction | CoreMultiplayerRequestTransactions;
