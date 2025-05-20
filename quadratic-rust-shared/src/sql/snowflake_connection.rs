@@ -130,6 +130,13 @@ impl Connection for SnowflakeConnection {
         ))]
         record_stop(scenario, _recording).await;
 
+        #[cfg(all(
+            any(test, feature = "test"),
+            feature = "record-request-mock",
+            not(clippy)
+        ))]
+        println!("query_result: {:?}", query_result);
+
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
             let mut chunks = vec![];
 

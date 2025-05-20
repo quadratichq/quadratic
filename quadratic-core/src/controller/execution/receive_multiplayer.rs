@@ -15,21 +15,6 @@ use crate::controller::transaction::{Transaction, TransactionServer};
 const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
 
 impl GridController {
-    pub fn received_transaction(
-        &mut self,
-        transaction_id: Uuid,
-        sequence_num: u64,
-        operations: Vec<Operation>,
-    ) {
-        let transaction = PendingTransaction {
-            id: transaction_id,
-            source: TransactionSource::Multiplayer,
-            operations: operations.into(),
-            ..Default::default()
-        };
-        self.client_apply_transaction(transaction, sequence_num);
-    }
-
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
     fn rollback_unsaved_transactions(&mut self) {
         if self.transactions.unsaved_transactions.is_empty() {
@@ -176,7 +161,11 @@ impl GridController {
                 // otherwise we need to rollback all transaction and properly apply it
                 else {
                     self.rollback_unsaved_transactions();
-                    self.transactions.unsaved_transactions.remove(index);
+
+                    // use the operations from the unsaved_transaction queue as an optimization
+                    let unsaved = self.transactions.unsaved_transactions.remove(index);
+                    transaction.operations = unsaved.forward.operations.into();
+
                     self.mark_transaction_sent(transaction.id);
                     self.start_transaction(&mut transaction);
                     self.finalize_transaction(transaction);
@@ -211,6 +200,22 @@ impl GridController {
         }
     }
 
+    /// Received a transaction from the server
+    pub fn received_transaction(
+        &mut self,
+        transaction_id: Uuid,
+        sequence_num: u64,
+        operations: Vec<Operation>,
+    ) {
+        let transaction = PendingTransaction {
+            id: transaction_id,
+            source: TransactionSource::Multiplayer,
+            operations: operations.into(),
+            ..Default::default()
+        };
+        self.client_apply_transaction(transaction, sequence_num);
+    }
+
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
         self.rollback_unsaved_transactions();
@@ -221,15 +226,7 @@ impl GridController {
                 Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations);
 
             if let Ok(operations) = operations {
-                let transaction = PendingTransaction {
-                    id: t.id,
-                    source: TransactionSource::Multiplayer,
-                    operations: operations.into(),
-                    cursor: None,
-                    ..Default::default()
-                };
-
-                self.client_apply_transaction(transaction, t.sequence_num);
+                self.received_transaction(t.id, t.sequence_num, operations);
             } else {
                 dbgjs!(
                     "Unable to decompress and deserialize operations in received_transactions()"
@@ -460,7 +457,7 @@ mod tests {
         // we should generate the thumbnail as we overwrite the unsaved value again
         // assert!(summary.generate_thumbnail);
 
-        // we should still have out unsaved transaction
+        // we should still have our unsaved transaction
         assert_eq!(client.transactions.unsaved_transactions.len(), 1);
 
         // our unsaved value overwrites the older multiplayer value
@@ -1005,6 +1002,7 @@ mod tests {
 
         let mut receive = GridController::test();
         receive.sheet_mut(receive.sheet_ids()[0]).id = sheet_id;
+
         receive
             .apply_offline_unsaved_transaction(unsaved_transaction.forward.id, unsaved_transaction);
 
@@ -1012,6 +1010,48 @@ mod tests {
         // assert!(summary.generate_thumbnail);
         assert_eq!(
             receive.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_acked_transaction() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
+
+        // there is one unsaved transaction
+        let unsaved_transactions = gc.active_transactions().unsaved_transactions.clone();
+        assert_eq!(unsaved_transactions.len(), 1);
+
+        // simulate an acked transaction that has no operations
+        let ack_transaction = PendingTransaction {
+            id: unsaved_transactions[0].forward.id,
+            operations: VecDeque::new(),
+            ..Default::default()
+        };
+
+        // apply the acked transaction
+        gc.client_apply_transaction(ack_transaction, 1);
+
+        // there are no unsaved transactions
+        let unsaved_transactions = gc.active_transactions().unsaved_transactions.clone();
+        assert_eq!(unsaved_transactions.len(), 0);
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("test".to_string()))
         );
     }
@@ -1107,18 +1147,11 @@ mod tests {
         gc.received_transaction(transaction_id_0, 1, operations_0);
         gc.received_transaction(transaction_id_1, 2, operations_1);
 
+        let cell_value_num = |n: i64| CellValue::Number(BigDecimal::from(n));
         let sheet = gc.grid.first_sheet();
-        assert_eq!(
-            sheet.display_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(1)))
-        );
-        assert_eq!(
-            sheet.display_value(pos![B1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
-        );
-        assert_eq!(
-            sheet.display_value(pos![C1]),
-            Some(CellValue::Number(BigDecimal::from(3)))
-        );
+
+        assert_eq!(sheet.display_value(pos![A1]), Some(cell_value_num(1)));
+        assert_eq!(sheet.display_value(pos![B1]), Some(cell_value_num(2)));
+        assert_eq!(sheet.display_value(pos![C1]), Some(cell_value_num(3)));
     }
 }
