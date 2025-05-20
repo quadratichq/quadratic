@@ -337,6 +337,30 @@ impl CellRefRangeEnd {
     pub fn is_multi_range(self) -> bool {
         self.col.is_unbounded() || self.row.is_unbounded()
     }
+
+    /// Toggles the absolute status of the range end.
+    pub fn toggle_absolute(&mut self) {
+        let col_abs = self.col.is_absolute;
+        let row_abs = self.row.is_absolute;
+
+        if !col_abs && !row_abs {
+            // from A1 to $A$1
+            self.col.is_absolute = true;
+            self.row.is_absolute = true;
+        } else if col_abs && row_abs {
+            // from $A$1 to $A1
+            self.col.is_absolute = true;
+            self.row.is_absolute = false;
+        } else if col_abs && !row_abs {
+            // from $A1 to A$1
+            self.col.is_absolute = false;
+            self.row.is_absolute = true;
+        } else if !col_abs && row_abs {
+            // from A$1 to $A$1
+            self.col.is_absolute = false;
+            self.row.is_absolute = false;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -614,5 +638,34 @@ mod tests {
         let ref_end = CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3);
         let res = ref_end.adjust(RefAdjust::new_insert_row(sheet_id, 1));
         assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(UNBOUNDED, 4));
+    }
+
+    #[test]
+    fn test_toggle_absolute() {
+        let mut cell_ref = CellRefRangeEnd::parse_start("A1", None).unwrap();
+
+        // Initial state: A1
+        assert!(!cell_ref.col.is_absolute);
+        assert!(!cell_ref.row.is_absolute);
+
+        // First toggle: $A$1
+        cell_ref.toggle_absolute();
+        assert!(cell_ref.col.is_absolute);
+        assert!(cell_ref.row.is_absolute);
+
+        // Second toggle: $A1
+        cell_ref.toggle_absolute();
+        assert!(cell_ref.col.is_absolute);
+        assert!(!cell_ref.row.is_absolute);
+
+        // Third toggle: A$1
+        cell_ref.toggle_absolute();
+        assert!(!cell_ref.col.is_absolute);
+        assert!(cell_ref.row.is_absolute);
+
+        // Fourth toggle: A1
+        cell_ref.toggle_absolute();
+        assert!(!cell_ref.col.is_absolute);
+        assert!(!cell_ref.row.is_absolute);
     }
 }

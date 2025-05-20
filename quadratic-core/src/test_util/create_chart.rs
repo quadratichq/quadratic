@@ -1,8 +1,10 @@
 #[cfg(test)]
 use crate::{
     CellValue, Pos,
-    controller::{GridController, transaction_types::JsCodeResult},
-    grid::{CodeCellLanguage, CodeCellValue, SheetId},
+    controller::{
+        GridController, transaction_types::JsCellValueResult, transaction_types::JsCodeResult,
+    },
+    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
 };
 
 #[cfg(test)]
@@ -51,9 +53,7 @@ pub fn test_create_html_chart(
     pos: Pos,
     w: u32,
     h: u32,
-) {
-    use crate::controller::transaction_types::JsCellValueResult;
-
+) -> DataTable {
     gc.set_code_cell(
         pos.to_sheet_pos(sheet_id),
         CodeCellLanguage::Python,
@@ -61,8 +61,8 @@ pub fn test_create_html_chart(
         None,
         None,
     );
-    let sheet = sheet(gc, sheet_id);
-    let (cell_width, cell_height) = sheet.offsets.defaults();
+    let s = sheet(gc, sheet_id);
+    let (cell_width, cell_height) = s.offsets.defaults();
 
     let transaction = gc.last_transaction().unwrap();
     gc.calculation_complete(JsCodeResult {
@@ -82,6 +82,9 @@ pub fn test_create_html_chart(
         has_headers: false,
     })
     .unwrap();
+
+    let s = sheet(gc, sheet_id);
+    s.data_table(pos).unwrap().clone()
 }
 
 #[cfg(test)]

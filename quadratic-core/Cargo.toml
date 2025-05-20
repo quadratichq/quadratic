@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.9.0"
+version = "0.8.0"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -117,17 +117,13 @@ dateparser = "0.2.1"
 fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
-quadratic-rust-shared = { path = "../quadratic-rust-shared", default-features = false, features = [
-    "protobuf",
-] }
-prost = { version = "0.13.5", default-features = false }
 
 [patch.crates-io]
 calamine = { git = "https://github.com/prophittcorey/calamine", branch = "fix/zip-3.0" }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
-    "benchmark",
+    "test",
 ] }
 
 [dev-dependencies]
