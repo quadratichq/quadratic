@@ -9,8 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "sourceMap": false,
-    "outDir": "dist",
-    "skipLibCheck": true
+    "outDir": "dist"
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "scripts/**/*.ts"],
   "exclude": ["src/**/*.test.ts", "scripts/templates/*.ts"]

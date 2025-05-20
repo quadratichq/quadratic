@@ -16,6 +16,7 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
+use futures_util::stream::SplitSink;
 use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
@@ -30,13 +31,9 @@ use crate::{
     error::{ErrorLevel, MpError, Result},
     health::{full_healthcheck, healthcheck},
     message::{
-        broadcast,
-        handle::handle_message,
-        proto::{request::decode_transaction, response::encode_message},
-        request::MessageRequest,
-        response::MessageResponse,
+        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{State, connection::PreConnection, user::UserSocket},
+    state::{State, connection::PreConnection},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -293,26 +290,31 @@ async fn handle_socket(
 #[tracing::instrument(level = "trace")]
 async fn process_message(
     msg: Message,
-    sender: UserSocket,
+    sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     state: Arc<State>,
     pre_connection: PreConnection,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
-            let message_request = serde_json::from_str::<MessageRequest>(&text)?;
+            let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
+                handle_message(messsage_request, state, Arc::clone(&sender), pre_connection)
+                    .await?;
 
-            send_response(sender, message_response).await?;
+            if let Some(message_response) = message_response {
+                let response_text = serde_json::to_string(&message_response)?;
+                (*sender.lock().await)
+                    .send(Message::Text(response_text.into()))
+                    .await
+                    .map_err(|e| MpError::SendingMessage(e.to_string()))?;
+            }
         }
-        // binary messages are protocol buffers
-        Message::Binary(b) => {
-            let transaction = decode_transaction(&b)?;
-            let message_request = MessageRequest::try_from(transaction)?;
-            let message_response =
-                handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
-
-            send_response(sender, message_response).await?;
+        Message::Binary(d) => {
+            tracing::info!(
+                "Binary messages are not yet supported.  {} bytes: {:?}",
+                d.len(),
+                d
+            );
         }
         Message::Close(c) => {
             if let Some(cf) = c {
@@ -328,38 +330,6 @@ async fn process_message(
     }
 
     Ok(ControlFlow::Continue(()))
-}
-
-pub(crate) async fn send_text(sender: UserSocket, message: MessageResponse) -> Result<()> {
-    let text = serde_json::to_string(&message)?;
-
-    (*sender.lock().await)
-        .send(Message::Text(text.into()))
-        .await
-        .map_err(|e| MpError::SendingMessage(e.to_string()))
-}
-
-pub(crate) async fn send_binary(sender: UserSocket, message: MessageResponse) -> Result<()> {
-    let binary = encode_message(message)?;
-
-    (*sender.lock().await)
-        .send(Message::Binary(binary.into()))
-        .await
-        .map_err(|e| MpError::SendingMessage(e.to_string()))
-}
-
-pub(crate) async fn send_response(
-    sender: UserSocket,
-    message: Option<MessageResponse>,
-) -> Result<()> {
-    if let Some(message) = message {
-        return match message.is_binary() {
-            true => send_binary(sender, message).await,
-            false => send_text(sender, message).await,
-        };
-    }
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -391,7 +361,7 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
         assert_eq!(response, Some(expected));
     }
 
@@ -445,7 +415,7 @@ pub(crate) mod tests {
             },
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
 
         assert_eq!(response, Some(expected));
     }
@@ -576,13 +546,14 @@ pub(crate) mod tests {
             file_id,
             operations: encoded_ops.clone(),
         };
-        let expected = MessageResponse::TransactionAck {
+        let expected = MessageResponse::Transaction {
             id,
             file_id,
+            operations: encoded_ops,
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
 
         assert_eq!(response, Some(expected));
     }
