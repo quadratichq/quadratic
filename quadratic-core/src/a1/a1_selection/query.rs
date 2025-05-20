@@ -237,7 +237,9 @@ impl A1Selection {
                     return;
                 }
                 if range.is_col_range() {
-                    for col in range.start.col()..=range.end.col() {
+                    let start = range.start.col().min(range.end.col());
+                    let end = range.start.col().max(range.end.col());
+                    for col in start..=end {
                         columns.insert(col);
                     }
                 }
@@ -322,7 +324,9 @@ impl A1Selection {
                     return;
                 }
                 if range.is_row_range() {
-                    for row in range.start.row()..=range.end.row() {
+                    let start = range.start.row().min(range.end.row());
+                    let end = range.start.row().max(range.end.row());
+                    for row in start..=end {
                         rows.insert(row);
                     }
                 }
@@ -1707,6 +1711,9 @@ mod tests {
         let selection = A1Selection::test_a1("A:C");
         assert_eq!(selection.selected_columns(), vec![1, 2, 3]);
 
+        let selection = A1Selection::test_a1("C:A");
+        assert_eq!(selection.selected_columns(), vec![1, 2, 3]);
+
         // Test multiple column ranges
         let selection = A1Selection::test_a1("A:C,E:G");
         assert_eq!(selection.selected_columns(), vec![1, 2, 3, 5, 6, 7]);
@@ -1740,6 +1747,10 @@ mod tests {
 
         // Test row range
         let selection = A1Selection::test_a1("1:3");
+        assert_eq!(selection.selected_rows(), vec![1, 2, 3]);
+
+        // Test reverse row range
+        let selection = A1Selection::test_a1("3:1");
         assert_eq!(selection.selected_rows(), vec![1, 2, 3]);
 
         // Test multiple row ranges
