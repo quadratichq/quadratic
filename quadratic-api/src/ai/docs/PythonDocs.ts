@@ -53,9 +53,9 @@ q.cells('A5:A') # Returns all values in column A starting at A5 and going down u
 q.cells('A5:C') # Returns all values in columns A to C, starting at A5 and going down
 \`\`\`
 
-If the first row of cells is a header, you should set \`first_row_header\` as an argument. This makes the first row of your DataFrame the column names, otherwise will default to the default integer column names as 0, 1, 2, 3, etc.
+If the first row of cells is a header, you should set \`first_row_header\` as an argument. This makes the first row of your received DataFrame the column names, otherwise will default to the default integer column names as 0, 1, 2, 3, etc. If the data being referenced in a ranged reference has headers, you should ALWAYS set first_row_header=True.
 
-Use first_row_header when you have column names that you want as the header of the DataFrame. This should be used commonly. You can tell when a column name should be a header when the column name describes the data below. 
+IMPORTANT: Use first_row_header when you have column names that you want as the header of the DataFrame. You can tell when a column name should be a header when the column name describes the data below. 
 
 \`\`\`python
 # first_row_header=True will be used any time the first row is the intended header for that data.
@@ -66,7 +66,7 @@ q.cells('A1:B9', first_row_header=True) # returns a 2x9 DataFrame with first row
 
 \`\`\`python
 # Use the sheet name as an argument for referencing range of cells 
-q.cells("'Sheet_name_here'!A1:C9")
+q.cells("'Sheet_name_here'!A1:C9", first_row_header=True)
 
 # For individual cell reference 
 q.cells("'Sheet_name_here'!A1")
