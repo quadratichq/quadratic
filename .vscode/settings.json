@@ -42,6 +42,7 @@
     "dearmor",
     "deepseek",
     "demangle",
+    "Deque",
     "dgraph",
     "docgen",
     "dotenv",
@@ -114,6 +115,8 @@
     "prec",
     "profraw",
     "proptest",
+    "prost",
+    "protoc",
     "pulumi",
     "pyimport",
     "Pyodide",
@@ -235,5 +238,8 @@
   "[markdown]": {
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
   },
-  "C_Cpp.errorSquiggles": "enabled"
+  "C_Cpp.errorSquiggles": "enabled",
+  "[proto3]": {
+    "editor.defaultFormatter": "zxh404.vscode-proto3"
+  }
 }
