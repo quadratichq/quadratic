@@ -91,6 +91,7 @@ impl TryFrom<MsSqlConnection> for SshConfig {
 
 impl MsSqlConnection {
     /// Create a new Microsoft SQL Server connection
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         username: Option<String>,
         password: Option<String>,
