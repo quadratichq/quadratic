@@ -21,6 +21,8 @@ futures-util = { version = "0.3.29", default-features = false, features = [
 headers = "0.4.0"
 jsonwebtoken = "9.2.0"
 prost = "0.13.5"
+prost-reflect = "0.15.2"
+prost-types = "0.13.5"
 quadratic-core = { path = "../quadratic-core", default-features = false, features = [
     "console_error_panic_hook",
     "js",
