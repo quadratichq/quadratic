@@ -423,7 +423,7 @@ pub(crate) mod tests {
     use crate::message::response::MinVersion;
     use crate::state::settings::version;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{integration_test_receive, new_user, setup};
+    use crate::test_util::{integration_test_receive, new_user, setup, setup_existing_room};
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
@@ -709,5 +709,127 @@ pub(crate) mod tests {
             None,
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn validate_v2_transaction_bug() {
+        let (socket, state, _, file_id, user_1, user_2) = setup().await;
+        let id = Uuid::new_v4();
+        let session_id = user_1.session_id;
+        let operations = vec![Operation::SetSheetColor {
+            sheet_id: SheetId::new(),
+            color: Some("red".to_string()),
+        }];
+
+        // step 1: send a v2 transaction
+        let compressed_ops = CoreTransaction::serialize_and_compress(&operations).unwrap();
+        let request = MessageRequest::BinaryTransaction {
+            id,
+            file_id,
+            session_id,
+            operations: compressed_ops.clone(),
+        };
+        let response = MessageResponse::TransactionAck {
+            id,
+            file_id,
+            sequence_num: 1,
+        };
+        // send a Transaction and expect a TransactionAck
+        test_handle(
+            socket.clone(),
+            state.clone(),
+            file_id,
+            user_1.clone(),
+            request,
+            Some(response.clone()),
+            None,
+        )
+        .await;
+
+        // step 2: leave the room
+        let request = MessageRequest::LeaveRoom {
+            file_id,
+            session_id,
+        };
+        test_handle(
+            socket.clone(),
+            state.clone(),
+            file_id,
+            user_1.clone(),
+            request,
+            None,
+            None,
+        )
+        .await;
+
+        // increment the sequence_num since it defaults to 0 in tests
+        get_mut_room!(state, file_id)
+            .unwrap()
+            .increment_sequence_num();
+
+        // step 3: re-enter the room
+        let (socket, state, _, file_id, user_1, _) =
+            setup_existing_room(file_id, user_1, user_2).await;
+
+        // step 4: simulate processed file
+        state.trim_message(&file_id, 2).await.unwrap();
+
+        // step 4: send a v2 transaction
+        let compressed_ops = CoreTransaction::serialize_and_compress(&operations).unwrap();
+        let request = MessageRequest::BinaryTransaction {
+            id,
+            file_id,
+            session_id,
+            operations: compressed_ops.clone(),
+        };
+        let response = MessageResponse::TransactionAck {
+            id,
+            file_id,
+            sequence_num: 2,
+        };
+        // send a Transaction and expect a TransactionAck
+        test_handle(
+            socket.clone(),
+            state.clone(),
+            file_id,
+            user_1.clone(),
+            request,
+            Some(response.clone()),
+            None,
+        )
+        .await;
+
+        // now test get_transactions
+        let request = MessageRequest::GetBinaryTransactions {
+            file_id,
+            session_id,
+            min_sequence_num: 1,
+        };
+        // let transaction_1 = BinaryTransaction {
+        //     id,
+        //     file_id,
+        //     operations: compressed_ops.clone(),
+        //     sequence_num: 1,
+        // };
+        let transaction_2 = BinaryTransaction {
+            id,
+            file_id,
+            operations: compressed_ops.clone(),
+            sequence_num: 2,
+        };
+        let response = MessageResponse::BinaryTransactions {
+            transactions: vec![transaction_2],
+        };
+
+        // test_handle(
+        //     socket,
+        //     state,
+        //     file_id,
+        //     user_1,
+        //     request,
+        //     Some(response),
+        //     None,
+        // )
+        // .await;
     }
 }

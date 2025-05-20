@@ -794,17 +794,15 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::{PasteSpecial, *};
-    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
-    use crate::test_util::{
-        assert_cell_value_row, assert_display_cell_value, print_sheet, print_table_in_rect,
-    };
+    use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use crate::{Rect, test_create_html_chart};
 
     fn paste(gc: &mut GridController, sheet_id: SheetId, x: i64, y: i64, html: String) {
         gc.paste_from_clipboard(
@@ -1810,5 +1808,31 @@ mod test {
         assert!(sheet.cell_format(pos![G13]).is_table_default());
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
+    }
+
+    #[test]
+    fn test_paste_chart_over_chart() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let dt = test_create_html_chart(&mut gc, sheet_id, pos![A1], 5, 5);
+        let mut selection = A1Selection::table(pos![sheet_id!A1], dt.name());
+        selection.cursor = pos![A1];
+        let sheet = gc.sheet(sheet_id);
+        let clipboard = sheet
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &selection,
+            None,
+            Some(clipboard.html),
+            PasteSpecial::None,
+            None,
+        );
+
+        // ensures we're pasting over the chart (there was a bug where it would
+        // paste under the chart and cause a spill)
+        assert_table_count(&gc, sheet_id, 1);
     }
 }
