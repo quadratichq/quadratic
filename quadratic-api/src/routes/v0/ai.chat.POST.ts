@@ -40,7 +40,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const { chatId, fileUuid, modelKey: clientModelKey, ...args } = body;
 
   const source = args.source;
-  const modelKey = await getModelKey(clientModelKey, args.messages);
+  const modelKey = await getModelKey(clientModelKey, args);
 
   const parsedResponse = await handleAIRequest(modelKey, args, res);
   if (parsedResponse) {

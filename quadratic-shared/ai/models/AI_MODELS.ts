@@ -13,6 +13,10 @@ export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-pre
 
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-04-17';
 
+export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
+export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
+
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 14;
 

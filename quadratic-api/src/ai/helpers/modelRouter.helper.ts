@@ -4,17 +4,29 @@ import {
   isContentText,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
-import { DEFAULT_BACKUP_MODEL, DEFAULT_MODEL_ROUTER_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import {
+  DEFAULT_BACKUP_MODEL,
+  DEFAULT_MODEL_ROUTER_MODEL,
+  DEFAULT_SQL_MODEL,
+  DEFAULT_SQL_MODEL_THINKING,
+  MODELS_CONFIGURATION,
+} from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIModelKey, AIRequestHelperArgs, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { handleAIRequest } from '../handler/ai.handler';
 
-export const getModelKey = async (modelKey: AIModelKey, messages: ChatMessage[]): Promise<AIModelKey> => {
+export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelperArgs): Promise<AIModelKey> => {
   try {
+    if (inputArgs.source === 'AIAssistant' && inputArgs.language === 'Connection') {
+      const thinking = MODELS_CONFIGURATION[modelKey].thinking;
+      return thinking ? DEFAULT_SQL_MODEL_THINKING : DEFAULT_SQL_MODEL;
+    }
+
     if (!isQuadraticModel(modelKey)) {
       return modelKey;
     }
 
+    const messages = inputArgs.messages;
     if (messages.length === 0) {
       throw new Error('No messages provided');
     }
