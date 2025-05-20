@@ -28,7 +28,22 @@ message SendTransaction {
   bytes operations = 5;
 }
 
+message BinaryTransaction {
+  string type = 1;
+  string id = 2;
+  string file_id = 4;
+  string session_id = 3;
+  bytes operations = 5;
+}
+
 message SendGetTransactions {
+  string type = 1;
+  string session_id = 2;
+  string file_id = 3;
+  uint64 min_sequence_num = 4;
+}
+
+message SendTransactions {
   string type = 1;
   string session_id = 2;
   string file_id = 3;
