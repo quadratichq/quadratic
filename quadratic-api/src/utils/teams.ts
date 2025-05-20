@@ -7,14 +7,29 @@ export type DecryptedTeam = Omit<Team, 'sshPublicKey' | 'sshPrivateKey'> & {
   sshPrivateKey: string;
 };
 
+// keys singleton
+let keys: Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> | null = null;
+export async function getKeys(): Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> {
+  if (keys === null || !isRunningInTest()) {
+    keys = generateSshKeys().then(({ privateKey, publicKey }) => {
+      const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
+      const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
+      return { sshPublicKey, sshPrivateKey };
+    });
+  }
+  return keys;
+}
+
+function isRunningInTest() {
+  return process.env.NODE_ENV === 'test';
+}
+
 export async function createTeam<T extends Prisma.TeamSelect>(
   name: string,
   ownerUserId: number,
   select: T
 ): Promise<Team> {
-  const { privateKey, publicKey } = await generateSshKeys();
-  const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
-  const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
+  const { sshPublicKey, sshPrivateKey } = await getKeys();
 
   const result = await dbClient.team.create({
     data: {
@@ -30,7 +45,6 @@ export async function createTeam<T extends Prisma.TeamSelect>(
     },
     select,
   });
-
   return result as Team;
 }
 
@@ -44,9 +58,7 @@ export async function getDecryptedTeam(team: Team): Promise<DecryptedTeam> {
   let encryptedTeam = { ...team };
 
   if (encryptedTeam.sshPublicKey === null || encryptedTeam.sshPrivateKey === null) {
-    const { privateKey, publicKey } = await generateSshKeys();
-    const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
-    const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
+    const { sshPublicKey, sshPrivateKey } = await getKeys();
 
     encryptedTeam = await dbClient.team.update({
       where: { id: encryptedTeam.id },
