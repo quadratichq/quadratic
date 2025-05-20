@@ -90,3 +90,4 @@ export const debugWebWorkersMessages = debug && false;
 // -----------
 
 export const debugShowAIInternalContext = debug && false;
+export const debugShowAIModel = url.get('debugAIModel') || (debug && false);
