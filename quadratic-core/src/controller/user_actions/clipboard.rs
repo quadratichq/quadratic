@@ -1,3 +1,4 @@
+use crate::a1::CellRefRange;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::PasteSpecial;
@@ -37,8 +38,16 @@ impl GridController {
 
         if is_multi_cursor {
             if let Some(range) = selection.ranges.first() {
-                end_pos = range
-                    .to_rect(self.a1_context())
+                let rect = match &range {
+                    CellRefRange::Sheet { range } => range.to_rect(),
+                    CellRefRange::Table { range } => {
+                        // we need the entire table bounds for a paste operation
+                        self.a1_context()
+                            .try_table(&range.table_name)
+                            .map(|table| table.bounds)
+                    }
+                };
+                end_pos = rect
                     .map_or_else(
                         || None,
                         |rect| {

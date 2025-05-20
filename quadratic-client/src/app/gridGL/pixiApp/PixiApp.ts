@@ -301,6 +301,7 @@ export class PixiApp {
 
   // called before and after a render
   prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+    this.paused = true;
     this.gridLines.visible = options?.gridLines ?? false;
     this.cursor.visible = options?.ai ?? false;
     this.cellHighlights.visible = false;
@@ -329,6 +330,7 @@ export class PixiApp {
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());
     }
+    this.paused = false;
   }
 
   // helper for playwright
