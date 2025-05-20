@@ -82,7 +82,7 @@ pub fn test_create_html_chart(
     .unwrap();
 
     let s = sheet(gc, sheet_id);
-    s.data_table(pos).unwrap().clone()
+    s.data_table_at(&pos).unwrap().clone()
 }
 
 #[cfg(test)]
