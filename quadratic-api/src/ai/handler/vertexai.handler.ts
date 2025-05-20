@@ -102,8 +102,8 @@ export const handleVertexAIRequest = async (
         toolCalls: [],
         modelKey,
       };
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-      response.end();
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.end();
       console.error('Error occurred after headers were sent:', error);
     }
   }
