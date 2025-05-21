@@ -7,7 +7,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsFormulaParseResult } from '@/app/quadratic-core-types';
-import { checkFormula, parseFormula } from '@/app/quadratic-core/quadratic_core';
+import { checkFormula, parseFormula, toggleReferenceTypes } from '@/app/quadratic-core/quadratic_core';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import { colors } from '@/app/theme/colors';
 import type { editor } from 'monaco-editor';
@@ -183,6 +183,17 @@ class InlineEditorFormula {
       }
     }
     return formula;
+  }
+
+  toggleReference() {
+    const reference = inlineEditorMonaco.getReferenceAtCursor();
+    if (!reference) return;
+    try {
+      const newReference = toggleReferenceTypes(reference.text);
+      inlineEditorMonaco.replaceRange(newReference, reference.range);
+    } catch (e) {
+      // the reference is not valid, so we do nothing
+    }
   }
 }
 

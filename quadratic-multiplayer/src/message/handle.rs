@@ -423,7 +423,7 @@ pub(crate) mod tests {
     use crate::message::response::MinVersion;
     use crate::state::settings::version;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{integration_test_receive, new_user, setup};
+    use crate::test_util::{integration_test_receive, new_user, setup, setup_existing_room};
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,

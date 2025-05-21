@@ -8,14 +8,14 @@ export type DecryptedTeam = Omit<Team, 'sshPublicKey' | 'sshPrivateKey'> & {
 };
 
 // keys singleton
-let keys: { sshPublicKey: Buffer; sshPrivateKey: Buffer } | null = null;
-
+let keys: Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> | null = null;
 export async function getKeys(): Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> {
   if (keys === null || !isRunningInTest()) {
-    const { privateKey, publicKey } = await generateSshKeys();
-    const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
-    const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
-    keys = { sshPublicKey, sshPrivateKey };
+    keys = generateSshKeys().then(({ privateKey, publicKey }) => {
+      const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
+      const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
+      return { sshPublicKey, sshPrivateKey };
+    });
   }
   return keys;
 }
@@ -45,7 +45,6 @@ export async function createTeam<T extends Prisma.TeamSelect>(
     },
     select,
   });
-
   return result as Team;
 }
 
