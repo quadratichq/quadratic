@@ -28,9 +28,8 @@ impl TableMap {
     }
 
     pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
-        let table_name_folded = case_fold_ascii(table.name());
         let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
-        self.tables.insert(table_name_folded, table_map_entry);
+        self.insert(table_map_entry);
     }
 
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
@@ -110,6 +109,22 @@ impl TableMap {
         self.tables.values()
     }
 
+    /// Returns an iterator over the TableMapEntry in a sheet.
+    pub fn iter_table_values_in_sheet(
+        &self,
+        sheet_id: &SheetId,
+    ) -> impl Iterator<Item = &TableMapEntry> {
+        self.sheet_pos_to_table
+            .get(sheet_id)
+            .map(|pos_table| {
+                pos_table
+                    .values()
+                    .filter_map(|table_name| self.tables.get(table_name))
+            })
+            .into_iter()
+            .flatten()
+    }
+
     /// Returns a list of all table names in the table map.
     pub fn table_names(&self) -> Vec<String> {
         self.tables.values().map(|t| t.table_name.clone()).collect()
@@ -178,17 +193,13 @@ impl TableMap {
         bounds: crate::Rect,
         language: crate::grid::CodeCellLanguage,
     ) {
-        let table_name_folded = case_fold_ascii(table_name);
-        self.tables.insert(
-            table_name_folded,
-            TableMapEntry::test(table_name, visible_columns, all_columns, bounds, language),
-        );
-    }
-
-    #[cfg(test)]
-    pub fn get_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_name_folded = case_fold_ascii(table_name);
-        self.tables.get_mut(&table_name_folded)
+        self.insert(TableMapEntry::test(
+            table_name,
+            visible_columns,
+            all_columns,
+            bounds,
+            language,
+        ));
     }
 }
 
