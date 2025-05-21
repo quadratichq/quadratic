@@ -9,7 +9,7 @@ import { events } from '../events/events';
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
   transactionsInfo: TransactionInfo[];
-  showCellTypeMenu: boolean;
+  showCellTypeMenu: boolean | 'connections';
   showCommandPalette: boolean;
   showConnectionsMenu: boolean;
   showGoToMenu: boolean;
