@@ -39,7 +39,7 @@ class Thumbnail {
     if (this.thumbnailDirty) {
       const now = performance.now();
       // don't do anything while the app is paused (since it may already be generating thumbnails)
-      if (!pixiApp.paused && this.lastUpdate + TIME_FOR_IDLE > now) {
+      if (this.lastUpdate + TIME_FOR_IDLE > now) {
         const url = window.location.pathname.split('/');
         const uuid = url[2];
         if (uuid) {
