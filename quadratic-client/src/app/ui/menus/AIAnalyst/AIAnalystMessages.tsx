@@ -8,7 +8,7 @@ import {
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { debugShowAIInternalContext, debugShowAIModel } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -28,6 +28,7 @@ import {
   getUserPromptMessages,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -164,6 +165,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         }
 
         const isCurrentMessage = index === messagesCount - 1;
+        const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
         return (
           <div
@@ -217,6 +219,10 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                     />
                   ))}
               </>
+            )}
+
+            {!debugShowAIModel && !!modelKey && (
+              <span className="text-xs text-muted-foreground">{getModelFromModelKey(modelKey)}</span>
             )}
           </div>
         );

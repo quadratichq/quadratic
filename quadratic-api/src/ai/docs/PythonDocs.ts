@@ -1,7 +1,9 @@
 export const PythonDocs = `# Python Docs
 
 You can reference cells in the spreadsheet to use in code, and you can return results from your Python code back to the spreadsheet. The last line of code is returned to the spreadsheet.
-Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one type of return from a code cell, data or chart.
+Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one variable returned to the sheet per code cell.
+
+Data, variables, and imports are not global; they are scoped to the code cell they exist in and must be imported or referenced in every code cell that uses them.
 
 When the data that code references is updated, the code cell is automatically re-run. Editing code and data dependencies always re-runs any dependencies.
 
@@ -27,7 +29,7 @@ df_headers = q.cells("Table1[#HEADERS]")
 df_columns = q.cells("Table1[[Column 1]:[Column 3]]")
 \`\`\`python
 
-Tables should be used whenever possible. Use ranged A1 references or single cell references otherwise. 
+Tables should be used whenever possible with tables. Use ranged A1 references or single cell references otherwise. 
 
 ### Referencing individual cells
 
@@ -53,9 +55,9 @@ q.cells('A5:A') # Returns all values in column A starting at A5 and going down u
 q.cells('A5:C') # Returns all values in columns A to C, starting at A5 and going down
 \`\`\`
 
-If the first row of cells is a header, you should set \`first_row_header\` as an argument. This makes the first row of your DataFrame the column names, otherwise will default to the default integer column names as 0, 1, 2, 3, etc.
+If the first row of cells is a header, you should set \`first_row_header\` as an argument. This makes the first row of your received DataFrame the column names, otherwise will default to the default integer column names as 0, 1, 2, 3, etc. If the data being referenced in a ranged reference has headers, you should ALWAYS set first_row_header=True.
 
-Use first_row_header when you have column names that you want as the header of the DataFrame. This should be used commonly. You can tell when a column name should be a header when the column name describes the data below. 
+IMPORTANT: Use first_row_header when you have column names that you want as the header of the DataFrame. You can tell when a column name should be a header when the column name describes the data below. 
 
 \`\`\`python
 # first_row_header=True will be used any time the first row is the intended header for that data.
@@ -66,7 +68,7 @@ q.cells('A1:B9', first_row_header=True) # returns a 2x9 DataFrame with first row
 
 \`\`\`python
 # Use the sheet name as an argument for referencing range of cells 
-q.cells("'Sheet_name_here'!A1:C9")
+q.cells("'Sheet_name_here'!A1:C9", first_row_header=True)
 
 # For individual cell reference 
 q.cells("'Sheet_name_here'!A1")
