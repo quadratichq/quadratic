@@ -1,5 +1,6 @@
 use crate::error::{MpError, Result};
 use crate::message::request::MessageRequest;
+use crate::message::response::MessageResponse;
 
 use prost::Message;
 use quadratic_rust_shared::protobuf::quadratic::transaction::SendTransaction;
@@ -17,6 +18,19 @@ impl TryFrom<SendTransaction> for MessageRequest {
             id: transaction.id.parse()?,
             session_id: transaction.session_id.parse()?,
             file_id: transaction.file_id.parse()?,
+            operations: transaction.operations,
+        })
+    }
+}
+
+impl TryFrom<SendTransaction> for MessageResponse {
+    type Error = MpError;
+
+    fn try_from(transaction: SendTransaction) -> Result<Self> {
+        Ok(MessageResponse::BinaryTransaction {
+            id: transaction.id.parse()?,
+            file_id: transaction.file_id.parse()?,
+            sequence_num: 0, // This will be set by the server
             operations: transaction.operations,
         })
     }

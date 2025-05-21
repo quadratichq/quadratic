@@ -1,6 +1,7 @@
 {
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "acked",
     "actix",
     "autoclean",
     "autoincrement",
@@ -38,6 +39,7 @@
     "dearmor",
     "deepseek",
     "demangle",
+    "Deque",
     "dgraph",
     "docgen",
     "dotenv",

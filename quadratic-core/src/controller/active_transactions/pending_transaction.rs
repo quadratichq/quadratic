@@ -146,21 +146,6 @@ impl Default for PendingTransaction {
     }
 }
 
-impl From<Transaction> for PendingTransaction {
-    fn from(transaction: Transaction) -> Self {
-        PendingTransaction {
-            id: transaction.id,
-            transaction_name: TransactionName::Unknown,
-            source: TransactionSource::User,
-            cursor: transaction.cursor,
-            operations: VecDeque::new(),
-            reverse_operations: Vec::new(),
-            forward_operations: Vec::new(),
-            ..Default::default()
-        }
-    }
-}
-
 impl PendingTransaction {
     pub fn to_transaction(&self, sequence_num: Option<u64>) -> Transaction {
         Transaction {

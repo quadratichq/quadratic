@@ -15,7 +15,6 @@ import type {
   MultiplayerServerMessage,
   ReceiveMessages,
   ReceiveRoom,
-  ReceiveTransaction,
   SendEnterRoom,
   SendGetBinaryTransactions,
   SendTransaction,
@@ -129,7 +128,7 @@ export class MultiplayerServer {
     }
 
     this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
-    this.websocket.addEventListener('message', async (e) => await this.handleMessage(e));
+    this.websocket.addEventListener('message', this.handleMessage);
 
     this.websocket.addEventListener('close', () => {
       if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
@@ -236,7 +235,7 @@ export class MultiplayerServer {
    * Receive Messages from Multiplayer Server *
    ********************************************/
 
-  private async handleMessage(e: MessageEvent<string | Blob>) {
+  private handleMessage = async (e: MessageEvent<string | Blob>) => {
     const isBinary = e.data instanceof Blob;
 
     // brute force parsing of the message to determine the type
@@ -279,7 +278,7 @@ export class MultiplayerServer {
           ...data,
           sequence_num: Number(data.sequence_num),
           type: 'Transaction',
-        } as ReceiveTransaction);
+        });
         break;
 
       case 'Transactions':
@@ -325,7 +324,7 @@ export class MultiplayerServer {
           console.warn(`Unknown message type: ${data}`);
         }
     }
-  }
+  };
 
   private receiveUsersInRoom(room: ReceiveRoom) {
     multiplayerClient.sendUsersInRoom(room);

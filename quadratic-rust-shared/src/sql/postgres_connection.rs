@@ -87,6 +87,7 @@ impl TryFrom<PostgresConnection> for SshConfig {
 
 impl PostgresConnection {
     /// Create a new PostgreSQL connection
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         username: Option<String>,
         password: Option<String>,

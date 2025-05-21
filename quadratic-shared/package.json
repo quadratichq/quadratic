@@ -1,6 +1,6 @@
 {
   "name": "quadratic-shared",
-  "version": "0.7.1",
+  "version": "0.9.0",
   "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
   "main": "index.js",
   "scripts": {
@@ -12,13 +12,15 @@
     "clean": "npx rimraf node_modules dist build target"
   },
   "dependencies": {
+    "zod": "^3.25.3"
+  },
+  "devDependencies": {
     "tsc-watch": "^6.3.0",
-    "typescript": "^5.8.2",
-    "zod": "^3.24.2"
+    "typescript": "^5.8.2"
   },
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": "23.x"
+    "node": "24.x"
   }
 }

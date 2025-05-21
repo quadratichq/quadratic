@@ -42,10 +42,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
-          cache: "npm"
+          node-version: 24
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -90,7 +90,7 @@ jobs:
           grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ./target/debug/ \
+            --binary-path ../target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
@@ -127,10 +127,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
-          cache: "npm"
+          node-version: 24
 
       - uses: useblacksmith/setup-python@v6
         with:
@@ -175,10 +175,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
-          cache: "npm"
+          node-version: 24
 
       - uses: useblacksmith/setup-python@v6
         with:
@@ -197,10 +197,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
-          cache: "npm"
+          node-version: 24
 
       - name: Run npm test:ci in quadratic-api
         run: |
@@ -244,10 +244,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
-      - uses: useblacksmith/setup-node@v5
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
-          cache: "npm"
+          node-version: 24
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
