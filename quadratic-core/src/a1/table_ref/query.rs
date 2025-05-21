@@ -813,7 +813,7 @@ mod tests {
 
         // Test when show_ui is false
         {
-            let table = context.table_map.get_mut("test_table").unwrap();
+            let table = context.table_map.try_table_mut("test_table").unwrap();
             table.show_name = false;
             table.show_columns = false;
             assert_eq!(
@@ -824,7 +824,7 @@ mod tests {
 
         // Test when show_columns is false
         {
-            let table = context.table_map.get_mut("test_table").unwrap();
+            let table = context.table_map.try_table_mut("test_table").unwrap();
             table.show_name = false;
             table.show_columns = false;
             assert_eq!(
@@ -841,7 +841,7 @@ mod tests {
             headers: true,
             totals: false,
         };
-        let table = context.table_map.get_mut("test_table").unwrap();
+        let table = context.table_map.try_table_mut("test_table").unwrap();
         table.show_columns = true;
         assert_eq!(
             table_ref.table_column_selection("test_table", &context),

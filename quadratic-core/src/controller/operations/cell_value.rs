@@ -32,10 +32,8 @@ impl GridController {
         let mut data_table_ops = vec![];
         let existing_data_tables = self
             .a1_context()
-            .tables()
-            .filter(|table| {
-                table.sheet_id == sheet_pos.sheet_id && table.language == CodeCellLanguage::Import
-            })
+            .iter_tables_in_sheet(&sheet_pos.sheet_id)
+            .filter(|table| table.language == CodeCellLanguage::Import)
             .map(|table| table.bounds)
             .collect::<Vec<_>>();
         let mut growing_data_tables = existing_data_tables.clone();

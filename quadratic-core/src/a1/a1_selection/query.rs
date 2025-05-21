@@ -456,7 +456,7 @@ impl A1Selection {
     /// Returns true if the selection is on an image.
     pub fn cursor_is_on_html_image(&self, a1_context: &A1Context) -> bool {
         let table = a1_context
-            .tables()
+            .iter_tables()
             .find(|table| table.contains(self.cursor.to_sheet_pos(self.sheet_id)));
         table.is_some_and(|table| table.is_html_image)
     }
@@ -494,11 +494,13 @@ impl A1Selection {
                     names.push(range.table_name.clone());
                 }
             }
-            CellRefRange::Sheet { range } => context.tables().for_each(|table| {
-                if table.sheet_id == self.sheet_id {
-                    if let Some(rect) = range.to_rect() {
-                        // if the selection intersects the name ui row of the table
-                        if (table.show_name
+            CellRefRange::Sheet { range } => {
+                context
+                    .iter_tables_in_sheet(&self.sheet_id)
+                    .for_each(|table| {
+                        if let Some(rect) = range.to_rect() {
+                            // if the selection intersects the name ui row of the table
+                            if (table.show_name
                             && rect.intersects(Rect::new(
                                 table.bounds.min.x,
                                 table.bounds.min.y,
@@ -510,12 +512,12 @@ impl A1Selection {
                             // or if the selection contains the code cell of a code table
                             (table.language != CodeCellLanguage::Import
                                 && rect.contains(table.bounds.min))
-                        {
-                            names.push(table.table_name.clone());
+                            {
+                                names.push(table.table_name.clone());
+                            }
                         }
-                    }
-                }
-            }),
+                    });
+            }
         });
         names.sort();
         names.dedup();

@@ -64,13 +64,18 @@ impl A1Context {
     }
 
     /// Returns an iterator over all the tables in the context.
-    pub fn tables(&self) -> impl Iterator<Item = &TableMapEntry> {
+    pub fn iter_tables(&self) -> impl Iterator<Item = &TableMapEntry> {
         self.table_map.iter_table_values()
+    }
+
+    /// Returns an iterator over all the tables in the context.
+    pub fn iter_tables_in_sheet(&self, sheet_id: &SheetId) -> impl Iterator<Item = &TableMapEntry> {
+        self.table_map.iter_table_values_in_sheet(sheet_id)
     }
 
     /// Returns a list of all table names in the context.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
-        self.tables()
+        self.iter_tables()
             .filter_map(|table| {
                 self.sheet_map
                     .try_sheet_id(table.sheet_id)
@@ -149,7 +154,7 @@ impl A1Context {
 
     #[cfg(test)]
     pub fn table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        self.table_map.get_mut(table_name)
+        self.table_map.try_table_mut(table_name)
     }
 
     /// Constructs an A1 context with only a single sheet.
@@ -182,7 +187,7 @@ mod tests {
         assert!(context.try_table("NonexistentTable").is_none());
 
         // Test tables iterator
-        let mut table_names: Vec<_> = context.tables().map(|t| &t.table_name).collect();
+        let mut table_names: Vec<_> = context.iter_tables().map(|t| &t.table_name).collect();
         table_names.sort();
         assert_eq!(table_names, vec!["Table1", "Table2"]);
 

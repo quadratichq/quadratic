@@ -171,9 +171,7 @@ impl GridController {
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
         // index for SetCodeRun is either set by execute_set_code_run or calculated
-        let index = index
-            .unwrap_or(sheet.data_tables.get_index_of(&pos).unwrap_or(usize::MAX))
-            .min(sheet.data_tables.len());
+        let index = index.unwrap_or(sheet.data_tables.get_index_of(&pos).unwrap_or(usize::MAX));
 
         if transaction.is_user_undo_redo() {
             let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
