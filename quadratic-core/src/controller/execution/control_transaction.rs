@@ -246,6 +246,11 @@ impl GridController {
                     ConnectionKind::Mysql => "MySQL1",
                     ConnectionKind::Mssql => "MSSQL1",
                     ConnectionKind::Snowflake => "Snowflake1",
+                    ConnectionKind::Cockroachdb => "Cockroachdb1",
+                    ConnectionKind::Bigquery => "Bigquery1",
+                    ConnectionKind::Mariadb => "Mariadb1",
+                    ConnectionKind::Supabase => "Supabase1",
+                    ConnectionKind::Neon => "Neon1",
                 },
                 // this should not happen
                 _ => "Connection 1",
