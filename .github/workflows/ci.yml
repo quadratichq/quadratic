@@ -108,7 +108,7 @@ jobs:
 
   perf_core:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           components: clippy, llvm-tools-preview
           override: true
 
