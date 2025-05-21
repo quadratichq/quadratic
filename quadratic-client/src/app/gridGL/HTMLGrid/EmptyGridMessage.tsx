@@ -26,8 +26,7 @@ export function EmptyGridMessage() {
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorCodeCell = useSetRecoilState(codeEditorCodeCellAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
-  const { data } = useConnectionsFetcher();
-  const connections = data?.connections ?? [];
+  const { connections } = useConnectionsFetcher();
 
   // Show/hide depending on whether the file has any data in it
   useEffect(() => {
