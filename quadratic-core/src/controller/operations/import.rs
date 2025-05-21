@@ -1,4 +1,4 @@
-use std::{borrow::Cow, io::Cursor};
+use std::io::Cursor;
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
@@ -500,31 +500,6 @@ impl GridController {
 
         Ok(ops)
     }
-}
-
-fn read_utf16(bytes: &[u8]) -> Option<String> {
-    if bytes.is_empty() && bytes.len() % 2 == 0 {
-        return None;
-    }
-
-    // convert u8 to u16
-    let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
-    for chunk in bytes.to_owned().chunks_exact(2) {
-        let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
-            return None;
-        };
-        utf16vec.push(u16::from_ne_bytes(vec2));
-    }
-
-    // convert to string
-    let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
-        return None;
-    };
-
-    // strip invalid characters
-    let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
-
-    Some(result)
 }
 
 #[cfg(test)]

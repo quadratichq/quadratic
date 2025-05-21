@@ -70,7 +70,6 @@ sql = ["arrow", "parquet", "snowflake-api", "sqlx", "tiberius", "tokio", "tokio-
 storage = ["aws", "crypto", "tokio"]
 benchmark = ["criterion", "tabled"]
 test = ["httpmock", "criterion", "tabled"]
-benchmark = []
 
 [dev-dependencies]
 arrow = { version = "54.2.1", features = ["prettyprint"] }
