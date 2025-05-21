@@ -12,6 +12,14 @@
   ul {
     @apply list-disc pl-4;
   }
+  a {
+    color: #0066cc; // Standard blue for links
+    text-decoration: underline;
+
+    &:hover {
+      color: #004499; // Slightly darker blue on hover
+    }
+  }
 }
 
 .markdown pre {

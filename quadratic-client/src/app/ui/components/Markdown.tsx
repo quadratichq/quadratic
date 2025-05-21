@@ -10,7 +10,18 @@ interface Props {
 export const Markdown = memo(({ children }: Props) => {
   return (
     <div className="markdown">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ node, children, ...props }) => (
+            <a target="_blank" rel="noreferrer" {...props} className="test-link">
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {children}
+      </ReactMarkdown>
     </div>
   );
 });
