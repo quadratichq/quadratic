@@ -193,7 +193,7 @@ export const MODELS_ROUTER_CONFIGURATION: {
 } = {
   claude: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
   flash: 'vertexai:gemini-2.5-flash-preview-05-20',
-  'gpt-4.1-mini': 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZeVmEzh',
+  'gpt-4.1-mini': 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZgTLGW5',
 };
 
 export const aiToolsSpec: AIToolSpecRecord = {
