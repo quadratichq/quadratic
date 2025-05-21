@@ -343,8 +343,8 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.3,
     rate_per_million_cache_write_tokens: 3.75,
   },
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZgTLGW5': {
-    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BZgTLGW5',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
     displayName: 'gpt 4.1 mini fine-tuned (stable)',
     temperature: 0,
     max_tokens: 16384,
