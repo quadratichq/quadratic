@@ -1351,11 +1351,12 @@ class QuadraticCore {
     });
   }
 
-  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertColumn',
+      type: 'clientCoreInsertColumns',
       sheetId,
       column,
+      count,
       right,
       cursor,
     });
@@ -1370,11 +1371,12 @@ class QuadraticCore {
     });
   }
 
-  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertRow',
+      type: 'clientCoreInsertRows',
       sheetId,
       row,
+      count,
       below,
       cursor,
     });
