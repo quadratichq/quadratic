@@ -258,16 +258,11 @@ impl GridController {
         let mut current_y_values = 0;
         let mut current_y_formula = 0;
 
-        let mut gc = GridController::default();
+        let mut gc = GridController::new_blank();
 
         // add all sheets to the grid, this is required for sheet name parsing in cell ref
-        for (sheet_index, sheet_name) in sheets.iter().enumerate() {
-            if sheet_index == 0 {
-                let sheet_id = gc.sheet_ids()[0];
-                gc.server_set_sheet_name(sheet_id, sheet_name.to_owned());
-            } else {
-                gc.server_add_sheet_with_name(sheet_name.to_owned());
-            }
+        for sheet_name in sheets.iter() {
+            gc.server_add_sheet_with_name(sheet_name.to_owned());
         }
 
         let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
@@ -909,6 +904,70 @@ mod test {
             sheet.cell_value((3, 4).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn import_excel_dependent_formulas() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/income_statement.xlsx");
+        gc.import_excel(file.as_ref(), "excel", None).unwrap();
+
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.cell_value((4, 3).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E3,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 3).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 12).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "D5-D10".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 12).into()),
+            Some(CellValue::Number(3831163.into()))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 29).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E29,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 29).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 67).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E67,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 67).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
             ))
         );
     }

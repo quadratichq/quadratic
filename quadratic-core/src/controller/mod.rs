@@ -171,6 +171,10 @@ impl GridController {
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
     }
+
+    pub fn new_blank() -> Self {
+        Self::from_grid(Grid::new_blank(), 0)
+    }
 }
 
 impl GridController {

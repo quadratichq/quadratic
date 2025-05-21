@@ -31,10 +31,6 @@ impl GridController {
         gc
     }
 
-    pub fn new_blank() -> Self {
-        Self::from_grid(Grid::new_blank(), 0)
-    }
-
     pub fn test_set_code_run_array_2d(
         &mut self,
         sheet_id: SheetId,

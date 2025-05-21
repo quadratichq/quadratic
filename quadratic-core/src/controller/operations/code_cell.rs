@@ -84,7 +84,7 @@ impl GridController {
         let nodes = code_cell_positions.iter().collect::<HashSet<_>>();
         let mut seen = HashSet::new();
         for node in code_cell_positions.iter() {
-            for upstream_node in self.get_upstream_dependencies(node, &mut seen).into_iter() {
+            for upstream_node in self.get_upstream_dependents(node, &mut seen).into_iter() {
                 if nodes.contains(&upstream_node) {
                     ordered_positions.push(upstream_node);
                 }
@@ -94,7 +94,7 @@ impl GridController {
         ordered_positions
     }
 
-    fn get_upstream_dependencies(
+    fn get_upstream_dependents(
         &self,
         sheet_pos: &SheetPos,
         seen: &mut HashSet<SheetPos>,
@@ -124,9 +124,8 @@ impl GridController {
 
         let mut upstream = vec![];
         for node in parent_nodes.into_iter() {
-            upstream.extend(self.get_upstream_dependencies(&node, seen));
+            upstream.extend(self.get_upstream_dependents(&node, seen));
         }
-        upstream.reverse();
         upstream.push(*sheet_pos);
         upstream
     }
