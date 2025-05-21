@@ -17,6 +17,15 @@ import { Progress } from '@/shared/shadcn/ui/progress';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
+import { atom, RecoilRoot, useRecoilState } from 'recoil';
+
+const otherCheckboxAtom = atom<boolean>({
+  key: 'onboardingOtherCheckboxAtom',
+  default: false,
+});
+const useOtherCheckbox = () => {
+  return useRecoilState(otherCheckboxAtom);
+};
 
 const CONTROL_BASE =
   'group relative select-none rounded border border-border font-medium shadow-sm hover:border-primary hover:shadow-md has-[input:checked]:border-primary has-[input:checked]:bg-accent has-[input:checked]:shadow-lg has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-ring';
@@ -88,9 +97,11 @@ function ControlCheckboxStacked(
 export const Component = () => {
   useRemoveInitialLoadingUI();
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
-      <AnimatedOnboarding />
-    </div>
+    <RecoilRoot>
+      <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
+        <AnimatedOnboarding />
+      </div>
+    </RecoilRoot>
   );
 };
 
@@ -177,11 +188,11 @@ const allQuestions: Questions = [
     ],
     Form: (props) => {
       const [searchParams] = useSearchParams();
-      const [other, setOther] = useState<boolean>(false);
+      const [other, setOther] = useOtherCheckbox();
 
       return (
         <Question title={props.title}>
-          <QuestionForm className="grid grid-cols-2 gap-2" onSubmit={() => setOther(false)}>
+          <QuestionForm className="grid grid-cols-2 gap-2">
             {props.options.map((option) =>
               option.value === 'other' ? (
                 <CheckboxInputOther
@@ -194,15 +205,12 @@ const allQuestions: Questions = [
                   {option.label}
                 </CheckboxInputOther>
               ) : (
-                <Link
-                  to={`./?${searchParams.toString()}&${props.id}=${option.value}`}
-                  onClick={() => setOther(false)}
-                  key={option.value}
-                >
+                <Link to={`./?${searchParams.toString()}&${props.id}=${option.value}`} key={option.value}>
                   <ControlLinkInline>{option.label}</ControlLinkInline>
                 </Link>
               )
             )}
+            <QuestionFormFooter id={props.id} disabled={!other} />
           </QuestionForm>
         </Question>
       );
@@ -224,14 +232,21 @@ const allQuestions: Questions = [
       { value: 'other', label: 'Other' },
     ],
     Form: (props) => {
-      const [other, setOther] = useState<boolean>(false);
+      const [other, setOther] = useOtherCheckbox();
+      const [isValid, setIsValid] = useState<boolean>(false);
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm
             className="grid grid-cols-2 gap-2"
+            onChange={(e) => {
+              const form = e.currentTarget;
+              const formData = new FormData(form);
+              const values = Array.from(formData.entries());
+              setIsValid(values.length > 0);
+            }}
             onSubmit={() => {
-              setOther(false);
+              setIsValid(false);
             }}
           >
             {props.options.map((option) =>
@@ -251,6 +266,7 @@ const allQuestions: Questions = [
                 </ControlCheckboxInline>
               )
             )}
+            <QuestionFormFooter id={props.id} disabled={!isValid} />
           </QuestionForm>
         </Question>
       );
@@ -272,7 +288,7 @@ const allQuestions: Questions = [
     ],
     Form: (props) => {
       const [searchParams] = useSearchParams();
-      const [other, setOther] = useState<boolean>(false);
+      const [other, setOther] = useOtherCheckbox();
 
       return (
         <Question title={props.title}>
@@ -298,6 +314,7 @@ const allQuestions: Questions = [
                 </Link>
               )
             )}
+            <QuestionFormFooter id={props.id} disabled={!other} />
           </QuestionForm>
         </Question>
       );
@@ -318,10 +335,24 @@ const allQuestions: Questions = [
       { value: 'other', label: 'Other' },
     ],
     Form: (props) => {
-      const [other, setOther] = useState<boolean>(false);
+      const [other, setOther] = useOtherCheckbox();
+
+      const [isValid, setIsValid] = useState<boolean>(false);
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="grid grid-cols-2 gap-2">
+          <QuestionForm
+            className="grid grid-cols-2 gap-2"
+            onChange={(e) => {
+              const form = e.currentTarget;
+              const formData = new FormData(form);
+              const values = Array.from(formData.entries());
+              setIsValid(values.length > 0);
+            }}
+            onSubmit={() => {
+              setOther(false);
+              setIsValid(false);
+            }}
+          >
             {props.options.map((option) =>
               option.value === 'other' ? (
                 <CheckboxInputOther
@@ -339,6 +370,7 @@ const allQuestions: Questions = [
                 </ControlCheckboxInline>
               )
             )}
+            <QuestionFormFooter id={props.id} disabled={!isValid} />
           </QuestionForm>
         </Question>
       );
@@ -382,6 +414,7 @@ const allQuestions: Questions = [
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
+            <QuestionFormFooter id={props.id} />
           </QuestionForm>
         </Question>
       );
@@ -403,11 +436,24 @@ const allQuestions: Questions = [
     ],
 
     Form: (props) => {
-      const [other, setOther] = useState<boolean>(false);
+      const [other, setOther] = useOtherCheckbox();
+      // TODO: make form validity be in recoil too
+      const [isValid, setIsValid] = useState<boolean>(false);
       return (
         <Question>
           <QuestionName caption={props.subtitle}>{props.title}</QuestionName>
-          <QuestionForm className="grid grid-cols-2 gap-1">
+          <QuestionForm
+            className="grid grid-cols-2 gap-1"
+            onChange={(e) => {
+              const form = e.currentTarget;
+              const formData = new FormData(form);
+              const values = Array.from(formData.entries());
+              setIsValid(values.length > 0);
+            }}
+            onSubmit={() => {
+              setIsValid(false);
+            }}
+          >
             {props.options.map((option) =>
               option.value === 'other' ? (
                 <CheckboxInputOther
@@ -425,7 +471,9 @@ const allQuestions: Questions = [
                 </ControlCheckboxInline>
               )
             )}
+            <QuestionFormFooter id={props.id} disabled={!isValid} />
           </QuestionForm>
+          {isValid && <FreePromptsMsg isLastQuestion={true} />}
         </Question>
       );
     },
@@ -468,7 +516,16 @@ const useFormNavigation = () => {
 function AnimatedOnboarding() {
   const formNavigation = useFormNavigation();
   const { currentIndex, currentId } = formNavigation;
+  const [, setOther] = useOtherCheckbox();
   // console.log('formNavigation', formNavigation);
+
+  const [searchParams] = useSearchParams();
+
+  // Whenever the search params change, that means a new form is being rendered
+  // so we want to reset any state used to represent the current active form
+  useEffect(() => {
+    setOther((prev) => (prev === true ? false : prev));
+  }, [searchParams, setOther]);
 
   return (
     <>
@@ -552,21 +609,25 @@ function CheckboxInputOther(props: {
   );
 }
 
-function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
+function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }) {
   const navigate = useNavigate();
-  const { currentIndex, totalQuestions, isFirstQuestion, isLastQuestion } = useFormNavigation();
+  const [searchParams] = useSearchParams();
+  const currentUse = searchParams.get('use');
   const btnClassName = 'select-none';
+
+  const currentQuestionStack = allQuestions.filter((q) => (q.use ? q.use === currentUse : true));
+  const countCurrent = currentQuestionStack.findIndex((q) => q.id === id);
+  const countTotal = currentQuestionStack.length - 1;
 
   return (
     <div
       className={cn(
-        'col-span-full grid grid-cols-2 items-center justify-between gap-4 pt-10 transition-opacity delay-300 duration-300 ease-in-out',
-        isFirstQuestion && 'invisible opacity-0'
+        'col-span-full grid grid-cols-2 items-center justify-between gap-4 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
       )}
     >
-      <div className="flex select-none items-center gap-2 text-sm text-muted-foreground">
-        <Progress value={(currentIndex / totalQuestions) * 100} className="hidden h-3 w-1/3 delay-500" /> Question{' '}
-        {currentIndex} / {totalQuestions}
+      <div className={cn('flex select-none items-center gap-2 text-sm text-muted-foreground')}>
+        <Progress value={(countCurrent / countTotal) * 100} className="h-3 w-1/3" /> Question {countCurrent} /{' '}
+        {countTotal}
       </div>
       <div className="flex items-center justify-end gap-2">
         <Button
@@ -586,7 +647,7 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
           size="lg"
           disabled={disabled === undefined ? false : disabled}
         >
-          {isLastQuestion ? 'Submit' : 'Next'}
+          {countCurrent === countTotal ? 'Submit' : 'Next'}
         </Button>
       </div>
     </div>
@@ -599,7 +660,7 @@ function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
       <StarShineIcon className="mr-2" />
       {isLastQuestion ? (
         <>
-          You've unlocked <strong className="mx-1 font-semibold">20 free prompts</strong>, let's get started!
+          You've unlocked <strong className="ml-1 font-semibold">20 free prompts</strong>!
         </>
       ) : (
         <>
@@ -655,6 +716,7 @@ function QuestionForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLastQuestion } = useFormNavigation();
+  const [, setOther] = useOtherCheckbox();
   // TODO: consider what you want to do here
   // reset on form submit
   // const [isValid, setIsValid] = useState(false);
@@ -679,6 +741,9 @@ function QuestionForm({
       //     setIsValid(false);
       //   }
       // }}
+      onReset={() => {
+        setOther(false);
+      }}
       onChange={(e) => {
         if (onChange) onChange(e);
       }}
@@ -691,7 +756,7 @@ function QuestionForm({
         }
 
         // Get the current form's data
-        const form = e.target as HTMLFormElement;
+        const form = e.currentTarget as HTMLFormElement;
         const formData = new FormData(form);
         const values = Array.from(formData.entries());
 
@@ -728,6 +793,7 @@ function QuestionForm({
           }
           // JSON stringify url search params of prev
           window.alert(JSON.stringify(payload));
+          form.reset();
           return;
         }
 
@@ -738,7 +804,6 @@ function QuestionForm({
       className={className}
     >
       {children}
-      <QuestionFormFooter disabled={false} />
     </form>
   );
 }
