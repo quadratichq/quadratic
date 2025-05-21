@@ -41,8 +41,8 @@ pub(crate) async fn add_key_to_connection<T: DeserializeOwned + UsesSsh>(
     claims: &Claims,
 ) -> Result<()> {
     if connection.use_ssh() {
-        let team_id = get_team_id_header(&headers)?;
-        let team = get_api_team(&state, "", &claims.sub, &team_id).await?;
+        let team_id = get_team_id_header(headers)?;
+        let team = get_api_team(state, "", &claims.sub, &team_id).await?;
         connection.set_ssh_key(Some(team.ssh_private_key));
     }
 
