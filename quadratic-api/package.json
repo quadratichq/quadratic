@@ -55,7 +55,7 @@
     "helmet": "^6.0.1",
     "jsonwebtoken": "^9.0.1",
     "jwks-rsa": "^3.0.0",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.0",
     "multer-s3": "^3.0.1",
     "newrelic": "^11.17.0",
     "openai": "^4.100.0",
