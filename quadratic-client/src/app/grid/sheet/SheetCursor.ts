@@ -152,6 +152,19 @@ export class SheetCursor {
     return this.jsSelection.overlapsA1Selection(a1Selection);
   };
 
+  /// Returns true if we can insert columns or rows at the selection
+  canInsertColumnRow = (): boolean => {
+    return this.jsSelection.canInsertColumnRow();
+  };
+
+  canInsertColumn = (): boolean => {
+    return this.canInsertColumnRow() && this.isSelectedColumnsFinite();
+  };
+
+  canInsertRow = (): boolean => {
+    return this.canInsertColumnRow() && this.isSelectedRowsFinite();
+  };
+
   // Returns true if the selection is a single cell or a single column or single row.
   hasOneColumnRowSelection = (oneCell?: boolean): boolean => {
     return this.jsSelection.hasOneColumnRowSelection(oneCell ?? false);
@@ -338,7 +351,7 @@ export class SheetCursor {
     return ranges;
   };
 
-  // Returns true if there is one multiselect of > 1 size
+  // Checks whether the selection can be converted to a data table
   canConvertToDataTable = (): boolean => {
     return !!this.sheet.cursor.getSingleRectangle();
   };

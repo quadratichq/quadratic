@@ -227,6 +227,11 @@ impl JsSelection {
             .collect()
     }
 
+    #[wasm_bindgen(js_name = "canInsertColumnRow")]
+    pub fn can_insert_column_row(&self) -> bool {
+        self.selection.can_insert_column_row()
+    }
+
     #[wasm_bindgen(js_name = "hasOneColumnRowSelection")]
     pub fn has_one_column_row_selection(&self, one_cell: bool) -> bool {
         self.selection

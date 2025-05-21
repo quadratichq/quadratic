@@ -1386,12 +1386,12 @@ class Core {
     }
   }
 
-  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.insertColumn(sheetId, BigInt(column), right, cursor);
+      this.gridController.insertColumns(sheetId, BigInt(column), count, right, cursor);
     } catch (e) {
-      this.handleCoreError('insertColumn', e);
+      this.handleCoreError('insertColumns', e);
     }
   }
 
@@ -1404,12 +1404,12 @@ class Core {
     }
   }
 
-  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
+      this.gridController.insertRows(sheetId, BigInt(row), count, below, cursor);
     } catch (e) {
-      this.handleCoreError('insertRow', e);
+      this.handleCoreError('insertRows', e);
     }
   }
 
