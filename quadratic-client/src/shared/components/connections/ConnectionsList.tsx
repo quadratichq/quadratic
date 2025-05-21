@@ -39,7 +39,7 @@ export const ConnectionsList = ({
 
   return (
     <>
-      <div className="grid gap-4">
+      <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
             <Button
@@ -147,8 +147,8 @@ function ListItems({
             <div className="flex h-6 w-6 items-center justify-center">
               <LanguageIcon language={type} />
             </div>
-            <div className="flex flex-grow flex-col text-left">
-              <span className="text-sm">{name}</span>
+            <div className="flex max-w-full flex-grow flex-col text-left">
+              <span className="truncate pr-8 text-sm">{name}</span>
               <time dateTime={createdDate} className="text-xs text-muted-foreground">
                 Created {timeAgo(createdDate)}
               </time>
