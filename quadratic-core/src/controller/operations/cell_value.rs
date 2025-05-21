@@ -8,7 +8,7 @@ use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::{CodeCellLanguage, DataTableKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
-use anyhow::{Result, bail};
+use anyhow::{Error, Result, bail};
 
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
@@ -428,6 +428,136 @@ impl GridController {
         let mut ops = self.clear_format_borders_operations(selection);
         ops.extend(self.delete_cells_operations(selection, force_table_bounds));
         ops
+    }
+
+    // Replace values in the data table with the
+    // intersection of the data table and `values`.
+    // Otherwise, add to `cell_values`.
+    //
+    // If `delete_value` is true, then the values in `values` are
+    // deleted from `cell_values`.
+    pub fn cell_values_operations(
+        &self,
+        selection: Option<&A1Selection>,
+        start_pos: SheetPos,
+        cell_value_pos: Pos,
+        cell_values: &mut CellValues,
+        mut values: CellValues,
+        delete_value: bool,
+    ) -> Result<Vec<Operation>> {
+        let mut ops = vec![];
+        if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
+            let rect =
+                Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
+
+            for (output_rect, intersection_rect, data_table) in
+                sheet.iter_code_output_intersects_rect(rect)
+            {
+                let contains_source_cell = intersection_rect.contains(output_rect.min);
+
+                let is_table_being_deleted = match (delete_value, selection) {
+                    (true, Some(selection)) => {
+                        start_pos.sheet_id == selection.sheet_id
+                            && selection.contains_pos(output_rect.min, self.a1_context())
+                    }
+                    _ => false,
+                };
+
+                // there is no pasting on top of code cell output
+                if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
+                    let adjusted_rect = Rect::from_numbers(
+                        intersection_rect.min.x - start_pos.x,
+                        intersection_rect.min.y - start_pos.y,
+                        intersection_rect.width() as i64,
+                        intersection_rect.height() as i64,
+                    );
+
+                    // pull the values from `values`, replacing
+                    // the values in `values` with CellValue::Blank
+                    let data_table_cell_values = values.get_rect(adjusted_rect);
+
+                    let paste_table_in_import =
+                        data_table_cell_values.iter().flatten().find(|cell_value| {
+                            cell_value.is_code()
+                                || cell_value.is_import()
+                                || cell_value.is_image()
+                                || cell_value.is_html()
+                        });
+
+                    if let Some(paste_table_in_import) = paste_table_in_import {
+                        let cell_type = match paste_table_in_import {
+                            CellValue::Code(_) => "code",
+                            CellValue::Import(_) => "table",
+                            CellValue::Image(_) => "chart",
+                            CellValue::Html(_) => "chart",
+                            _ => "unknown",
+                        };
+                        let message = format!("Cannot place {} within a table", cell_type);
+
+                        #[cfg(any(target_family = "wasm", test))]
+                        {
+                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                            crate::wasm_bindings::js::jsClientMessage(
+                                message.to_owned(),
+                                severity.to_string(),
+                            );
+                        }
+
+                        return Err(Error::msg(message));
+                    }
+
+                    let contains_header = data_table.get_show_columns()
+                        && intersection_rect.y_range().contains(&output_rect.min.y);
+                    let headers = data_table.column_headers.to_owned();
+
+                    if let (Some(mut headers), true) = (headers, contains_header) {
+                        let y = output_rect.min.y - start_pos.y;
+
+                        for x in intersection_rect.x_range() {
+                            let new_x = x - output_rect.min.x;
+
+                            if let Some(header) = headers.get_mut(new_x as usize) {
+                                let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
+                                let safe_y = u32::try_from(y).unwrap_or(0);
+
+                                let cell_value =
+                                    values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
+
+                                header.name = cell_value;
+                            }
+                        }
+
+                        let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
+                        ops.push(Operation::DataTableMeta {
+                            sheet_pos,
+                            name: None,
+                            alternating_colors: None,
+                            columns: Some(headers.to_vec()),
+                            show_ui: None,
+                            show_name: None,
+                            show_columns: None,
+                            readonly: None,
+                        });
+                    }
+
+                    let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
+                    ops.push(Operation::SetDataTableAt {
+                        sheet_pos,
+                        values: CellValues::from(data_table_cell_values),
+                    });
+                }
+            }
+        }
+
+        for (x, y, value) in values.into_owned_iter() {
+            cell_values.set(
+                cell_value_pos.x as u32 + x,
+                cell_value_pos.y as u32 + y,
+                value,
+            );
+        }
+
+        Ok(ops)
     }
 }
 

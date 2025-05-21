@@ -198,127 +198,20 @@ impl GridController {
         cell_values: &mut CellValues,
         cell_value_pos: Pos,
         start_pos: SheetPos,
-        mut values: CellValues,
+        values: CellValues,
         clipboard_selection: Option<&A1Selection>,
         clipboard_operation: Option<&ClipboardOperation>,
     ) -> Result<Vec<Operation>> {
-        let mut ops = vec![];
+        let delete_value = matches!(clipboard_operation, Some(ClipboardOperation::Cut));
 
-        if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
-            let rect =
-                Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
-
-            // Determine if the paste is happening within a data table.
-            // If so, replace values in the data table with the
-            // intersection of the data table and the paste
-            for (output_rect, intersection_rect, data_table) in
-                sheet.iter_code_output_intersects_rect(rect)
-            {
-                let contains_source_cell = intersection_rect.contains(output_rect.min);
-
-                let is_table_being_deleted = match (clipboard_operation, clipboard_selection) {
-                    (Some(ClipboardOperation::Cut), Some(clipboard_selection)) => {
-                        start_pos.sheet_id == clipboard_selection.sheet_id
-                            && clipboard_selection.contains_pos(output_rect.min, self.a1_context())
-                    }
-                    _ => false,
-                };
-
-                // there is no pasting on top of code cell output
-                if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
-                    let adjusted_rect = Rect::from_numbers(
-                        intersection_rect.min.x - start_pos.x,
-                        intersection_rect.min.y - start_pos.y,
-                        intersection_rect.width() as i64,
-                        intersection_rect.height() as i64,
-                    );
-
-                    // pull the values from `values`, replacing
-                    // the values in `values` with CellValue::Blank
-                    let data_table_cell_values = values.get_rect(adjusted_rect);
-
-                    let paste_table_in_import =
-                        data_table_cell_values.iter().flatten().find(|cell_value| {
-                            cell_value.is_code()
-                                || cell_value.is_import()
-                                || cell_value.is_image()
-                                || cell_value.is_html()
-                        });
-
-                    if let Some(paste_table_in_import) = paste_table_in_import {
-                        let cell_type = match paste_table_in_import {
-                            CellValue::Code(_) => "code",
-                            CellValue::Import(_) => "table",
-                            CellValue::Image(_) => "chart",
-                            CellValue::Html(_) => "chart",
-                            _ => "unknown",
-                        };
-                        let message = format!("Cannot place {} within a table", cell_type);
-
-                        #[cfg(any(target_family = "wasm", test))]
-                        {
-                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
-                            crate::wasm_bindings::js::jsClientMessage(
-                                message.to_owned(),
-                                severity.to_string(),
-                            );
-                        }
-
-                        return Err(Error::msg(message));
-                    }
-
-                    let contains_header = data_table.get_show_columns()
-                        && intersection_rect.y_range().contains(&output_rect.min.y);
-                    let headers = data_table.column_headers.to_owned();
-
-                    if let (Some(mut headers), true) = (headers, contains_header) {
-                        let y = output_rect.min.y - start_pos.y;
-
-                        for x in intersection_rect.x_range() {
-                            let new_x = x - output_rect.min.x;
-
-                            if let Some(header) = headers.get_mut(new_x as usize) {
-                                let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
-                                let safe_y = u32::try_from(y).unwrap_or(0);
-
-                                let cell_value =
-                                    values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
-
-                                header.name = cell_value;
-                            }
-                        }
-
-                        let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
-                        ops.push(Operation::DataTableMeta {
-                            sheet_pos,
-                            name: None,
-                            alternating_colors: None,
-                            columns: Some(headers.to_vec()),
-                            show_ui: None,
-                            show_name: None,
-                            show_columns: None,
-                            readonly: None,
-                        });
-                    }
-
-                    let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
-                    ops.push(Operation::SetDataTableAt {
-                        sheet_pos,
-                        values: CellValues::from(data_table_cell_values),
-                    });
-                }
-            }
-        }
-
-        for (x, y, value) in values.into_owned_iter() {
-            cell_values.set(
-                cell_value_pos.x as u32 + x,
-                cell_value_pos.y as u32 + y,
-                value,
-            );
-        }
-
-        Ok(ops)
+        self.cell_values_operations(
+            clipboard_selection,
+            start_pos,
+            cell_value_pos,
+            cell_values,
+            values,
+            delete_value,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -901,17 +794,15 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::{PasteSpecial, *};
-    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
-    use crate::test_util::{
-        assert_cell_value_row, assert_display_cell_value, print_sheet, print_table_in_rect,
-    };
+    use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use crate::{Rect, test_create_html_chart};
 
     fn paste(gc: &mut GridController, sheet_id: SheetId, x: i64, y: i64, html: String) {
         gc.paste_from_clipboard(
@@ -1917,5 +1808,31 @@ mod test {
         assert!(sheet.cell_format(pos![G13]).is_table_default());
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
+    }
+
+    #[test]
+    fn test_paste_chart_over_chart() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let dt = test_create_html_chart(&mut gc, sheet_id, pos![A1], 5, 5);
+        let mut selection = A1Selection::table(pos![sheet_id!A1], dt.name());
+        selection.cursor = pos![A1];
+        let sheet = gc.sheet(sheet_id);
+        let clipboard = sheet
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &selection,
+            None,
+            Some(clipboard.html),
+            PasteSpecial::None,
+            None,
+        );
+
+        // ensures we're pasting over the chart (there was a bug where it would
+        // paste under the chart and cause a spill)
+        assert_table_count(&gc, sheet_id, 1);
     }
 }

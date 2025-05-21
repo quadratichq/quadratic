@@ -1,15 +1,23 @@
+import { connectionFormSshAtom } from '@/shared/atom/connectionFormSshAtom';
 import {
   DOCUMENTATION_CONNECTIONS_IP_LIST_URL,
   DOCUMENTATION_CONNECTIONS_URL,
   TRUST_CENTER,
 } from '@/shared/constants/urls';
-import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import { CopyIcon, ExternalLinkIcon } from '@radix-ui/react-icons';
-import { useState } from 'react';
+import { ExternalLinkIcon } from '@radix-ui/react-icons';
+import { useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
-export const ConnectionsSidebar = ({ staticIps }: { staticIps: string[] | null }) => {
+export const ConnectionsSidebar = ({
+  sshPublicKey,
+  staticIps,
+}: {
+  staticIps: string[] | null;
+  sshPublicKey: string;
+}) => {
   const staticIpsContent = staticIps ? staticIps.join('\n') : '';
+  const useSsh = useRecoilValue(connectionFormSshAtom);
 
   return (
     <div className="flex flex-col gap-4 text-sm">
@@ -28,21 +36,67 @@ export const ConnectionsSidebar = ({ staticIps }: { staticIps: string[] | null }
       {staticIpsContent && (
         <SidebarItem
           title="IP allow-list"
-          description="Data behind a firewall may require you explicitly allow our IP addresses."
+          description="Add both of our IPs to your network allow-list."
           linkText="Learn more"
           linkHref={DOCUMENTATION_CONNECTIONS_IP_LIST_URL}
         >
-          <pre className="relative mt-2 bg-accent px-3 py-2">
-            <SidebarCopyButton contentToCopy={staticIpsContent} />
-            {staticIpsContent}
-          </pre>
+          <SidebarCopyContent text={staticIpsContent} />
+        </SidebarItem>
+      )}
+      {useSsh && (
+        <SidebarItem
+          title="Public SSH key"
+          description="If you’re connecting via SSH, you’ll need your team’s public key."
+        >
+          <SidebarCopyContent text={sshPublicKey} />
         </SidebarItem>
       )}
     </div>
   );
 };
 
-function SidebarItem({ title, description, linkText, linkHref, children }: any) {
+function SidebarCopyContent({ text }: { text: string }) {
+  const [showCopied, setShowCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  return (
+    <Tooltip open={showCopied}>
+      <TooltipTrigger
+        onClick={(event) => {
+          event.preventDefault();
+          navigator.clipboard.writeText(text);
+          textareaRef.current?.select();
+          setShowCopied(true);
+          setTimeout(() => setShowCopied(false), 1000);
+        }}
+        asChild
+      >
+        <textarea
+          ref={textareaRef}
+          className="w-full resize-none bg-accent px-3 py-2 font-mono"
+          readOnly
+          rows={text.split('\n').length}
+          value={text}
+        ></textarea>
+      </TooltipTrigger>
+      <TooltipContent>Copied</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function SidebarItem({
+  title,
+  description,
+  linkText,
+  linkHref,
+  children,
+}: {
+  title: string;
+  description: string;
+  linkText?: string;
+  linkHref?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div>
       <div>
@@ -57,42 +111,7 @@ function SidebarItem({ title, description, linkText, linkHref, children }: any) 
           </p>
         )}
       </div>
-      {children}
+      <div className="relative mt-2">{children}</div>
     </div>
-  );
-}
-
-function SidebarCopyButton({ contentToCopy }: { contentToCopy: string }) {
-  const [copyTriggered, setCopyTriggered] = useState(false);
-
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        onClick={(event) => {
-          event.preventDefault();
-        }}
-        asChild
-      >
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="absolute right-1 top-1 text-muted-foreground hover:text-foreground"
-          onClick={() => {
-            navigator.clipboard.writeText(contentToCopy);
-            setCopyTriggered(true);
-            setTimeout(() => setCopyTriggered(false), 1000);
-          }}
-        >
-          <CopyIcon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent
-        onPointerDownOutside={(event) => {
-          event.preventDefault();
-        }}
-      >
-        {copyTriggered ? 'Copied!' : 'Copy'}
-      </TooltipContent>
-    </Tooltip>
   );
 }

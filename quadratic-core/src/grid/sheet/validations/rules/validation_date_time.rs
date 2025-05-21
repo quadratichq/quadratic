@@ -64,7 +64,7 @@ impl ValidationDateTime {
 
             // we're looking for one valid range.
             self.ranges.iter().any(|range| match range {
-                DateTimeRange::DateEqual(equal) => equal.iter().any(|v| date == *v),
+                DateTimeRange::DateEqual(equal) => equal.contains(&date),
                 DateTimeRange::DateNotEqual(not_equal) => not_equal.iter().all(|v| date != *v),
                 DateTimeRange::DateRange(min, max) => {
                     if let Some(min) = min.as_ref() {
@@ -80,7 +80,7 @@ impl ValidationDateTime {
                     true
                 }
 
-                DateTimeRange::TimeEqual(equal) => equal.iter().any(|v| time == *v),
+                DateTimeRange::TimeEqual(equal) => equal.contains(&time),
                 DateTimeRange::TimeRange(min, max) => {
                     if let Some(min) = min.as_ref() {
                         if time < *min {
