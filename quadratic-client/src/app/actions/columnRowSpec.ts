@@ -39,7 +39,7 @@ const insertColumnLeft: ActionSpec<void> = {
   label: () => {
     const columnsSelected = getColumnsSelected();
     if (columnsSelected > 1) {
-      return `Insert ${columnsSelected} columns to the left`;
+      return `Insert ${columnsSelected} columns left`;
     }
     return 'Insert column left';
   },
@@ -63,7 +63,7 @@ const insertColumnRight: ActionSpec<void> = {
   label: () => {
     const columnsSelected = getColumnsSelected();
     if (columnsSelected > 1) {
-      return `Insert ${columnsSelected} columns to the right`;
+      return `Insert ${columnsSelected} columns right`;
     }
     return 'Insert column right';
   },
