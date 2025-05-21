@@ -516,7 +516,7 @@ impl A1Selection {
                                 names.push(table.table_name.clone());
                             }
                         }
-                    })
+                    });
             }
         });
         names.sort();
