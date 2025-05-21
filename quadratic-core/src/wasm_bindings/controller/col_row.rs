@@ -18,12 +18,13 @@ impl GridController {
         &mut self,
         sheet_id: &str,
         column: i64,
-        count: u32,
+        count: i32,
         after: bool,
         cursor: Option<String>,
     ) {
         if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
-            self.insert_columns(sheet_id, column, count, after, cursor);
+            let count = count.max(1);
+            self.insert_columns(sheet_id, column, count as u32, after, cursor);
         }
     }
 
@@ -42,12 +43,13 @@ impl GridController {
         &mut self,
         sheet_id: &str,
         row: i64,
-        count: u32,
+        count: i32,
         after: bool,
         cursor: Option<String>,
     ) {
         if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
-            self.insert_rows(sheet_id, row, count, after, cursor);
+            let count = count.max(1);
+            self.insert_rows(sheet_id, row, count as u32, after, cursor);
         }
     }
 

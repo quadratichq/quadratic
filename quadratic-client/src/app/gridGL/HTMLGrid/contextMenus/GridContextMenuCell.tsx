@@ -30,8 +30,8 @@ export function GridContextMenuCell() {
     events.on('contextMenu', updateCursor);
 
     return () => {
-      events.off('contextMenu', updateCursor);
       events.off('cursorPosition', updateCursor);
+      events.off('contextMenu', updateCursor);
     };
   }, []);
 
