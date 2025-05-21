@@ -1,23 +1,41 @@
-use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{postgres_connection::PostgresConnection, Connection},
+    sql::{Connection, postgres_connection::PostgresConnection},
 };
 use uuid::Uuid;
 
 use crate::{
     auth::Claims,
-    connection::get_api_connection,
+    connection::{add_key_to_connection, get_api_connection},
     error::Result,
-    server::{test_connection, SqlQuery, TestResponse},
+    header::get_team_id_header,
+    server::{SqlQuery, TestResponse, test_connection},
+    ssh::open_ssh_tunnel_for_connection,
     state::State,
 };
 
-use super::{query_generic, Schema};
+use super::{Schema, query_generic};
 
 /// Test the connection to the database.
-pub(crate) async fn test(Json(connection): Json<PostgresConnection>) -> Json<TestResponse> {
-    test_connection(connection).await
+// #[axum::debug_handler]
+pub(crate) async fn test(
+    headers: HeaderMap,
+    state: Extension<State>,
+    claims: Claims,
+    Json(mut connection): Json<PostgresConnection>,
+) -> Result<Json<TestResponse>> {
+    add_key_to_connection(&mut connection, &state, &headers, &claims).await?;
+
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
+    let result = test_connection(connection).await;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
+    Ok(result)
 }
 
 /// Get the connection details from the API and create a PostgresConnection.
@@ -25,58 +43,70 @@ async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
+    team_id: &Uuid,
 ) -> Result<(PostgresConnection, ApiConnection<PostgresConnection>)> {
-    let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id).await?
-    } else {
-        ApiConnection {
-            uuid: Uuid::new_v4(),
-            name: "".into(),
-            r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
-            type_details: PostgresConnection {
-                host: "0.0.0.0".into(),
-                port: Some("5433".into()),
-                username: Some("user".into()),
-                password: Some("password".into()),
-                database: "postgres-connection".into(),
-            },
-        }
-    };
+    let connection = get_api_connection(state, "", &claims.sub, connection_id, team_id).await?;
 
-    let pg_connection = PostgresConnection::new(
-        connection.type_details.username.to_owned(),
-        connection.type_details.password.to_owned(),
-        connection.type_details.host.to_owned(),
-        connection.type_details.port.to_owned(),
-        connection.type_details.database.to_owned(),
-    );
-
-    Ok((pg_connection, connection))
+    Ok(((&connection).into(), connection))
 }
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let connection = get_connection(&state, &claims, &sql_query.connection_id)
+    let team_id = get_team_id_header(&headers)?;
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
         .await?
         .0;
-    query_generic::<PostgresConnection>(connection, state, sql_query).await
+
+    query_with_connection(state, sql_query, connection).await
+}
+
+/// Query the database and return the results as a parquet file.
+pub(crate) async fn query_with_connection(
+    state: Extension<State>,
+    sql_query: Json<SqlQuery>,
+    mut connection: PostgresConnection,
+) -> Result<impl IntoResponse> {
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
+    let result = query_generic::<PostgresConnection>(connection, state, sql_query).await?;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
+    Ok(result)
 }
 
 /// Get the schema of the database
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-    let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
+    let team_id = get_team_id_header(&headers)?;
+    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+
+    schema_with_connection(connection, api_connection).await
+}
+
+/// Get the schema of the database
+pub(crate) async fn schema_with_connection(
+    mut connection: PostgresConnection,
+    api_connection: ApiConnection<PostgresConnection>,
+) -> Result<Json<Schema>> {
+    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
     let schema = Schema {
         id: api_connection.uuid,
         name: api_connection.name,
@@ -89,33 +119,79 @@ pub(crate) async fn schema(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::{
         num_vec, test_connection,
-        test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet},
+        test_util::{new_state, response_bytes, str_vec, validate_parquet},
     };
+
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
     use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::{
+        net::ssh::tests::get_ssh_config,
+        sql::schema::{SchemaColumn, SchemaTable},
+    };
     use tracing_test::traced_test;
     use uuid::Uuid;
+
+    fn get_connection(ssh: bool) -> ApiConnection<PostgresConnection> {
+        let type_details = if ssh {
+            let ssh_config = get_ssh_config();
+
+            PostgresConnection {
+                host: "localhost".into(),
+                port: Some("5432".into()),
+                username: Some("dbuser".into()),
+                password: Some("dbpassword".into()),
+                database: "mydb".into(),
+                use_ssh: Some(true),
+                ssh_host: Some(ssh_config.host.to_string()),
+                ssh_port: Some(ssh_config.port.to_string()),
+                ssh_username: Some(ssh_config.username.to_string()),
+                ssh_key: Some(ssh_config.private_key.to_string()),
+            }
+        } else {
+            PostgresConnection {
+                host: "0.0.0.0".into(),
+                port: Some("5433".into()),
+                username: Some("user".into()),
+                password: Some("password".into()),
+                database: "postgres-connection".into(),
+                use_ssh: Some(false),
+                ssh_host: None,
+                ssh_port: None,
+                ssh_username: None,
+                ssh_key: None,
+            }
+        };
+
+        ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            created_date: "".into(),
+            updated_date: "".into(),
+            type_details,
+        }
+    }
 
     #[tokio::test]
     #[traced_test]
     async fn postgres_test_connection() {
-        test_connection!(get_connection);
+        let connection = get_connection(false);
+        test_connection!(connection.type_details);
     }
 
     #[tokio::test]
     #[traced_test]
     async fn postgres_schema() {
-        let connection_id = Uuid::new_v4();
-        let state = Extension(new_state().await);
-        let response = schema(Path(connection_id), state, get_claims())
+        let api_connection = get_connection(false);
+        let connection = (&api_connection).into();
+        let response = schema_with_connection(connection, api_connection)
             .await
             .unwrap();
 
@@ -318,6 +394,11 @@ mod tests {
                         r#type: "_int4".into(),
                         is_nullable: true,
                     },
+                    SchemaColumn {
+                        name: "null_bool_col".into(),
+                        r#type: "bool".into(),
+                        is_nullable: true,
+                    },
                 ],
             }],
         };
@@ -333,7 +414,10 @@ mod tests {
             connection_id,
         };
         let state = Extension(new_state().await);
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let connection = get_connection(false);
+        let data = query_with_connection(state, Json(sql_query), connection.type_details)
+            .await
+            .unwrap();
         let response = data.into_response();
 
         let expected = vec![
@@ -363,13 +447,12 @@ mod tests {
             ), // unsupported
             (
                 DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::parse_from_str(
-                    "2024-05-20 06:34:56+00",
-                    "%Y-%m-%d %H:%M:%S%#z"
-                )
-                .unwrap()
-                .and_utc()
-                .timestamp_millis()),
+                num_vec!(
+                    NaiveDateTime::parse_from_str("2024-05-20 06:34:56+00", "%Y-%m-%d %H:%M:%S%#z")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
             ),
             (
                 DataType::Date32,
@@ -379,15 +462,19 @@ mod tests {
             ),
             (
                 DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
-                    .unwrap()
-                    .num_seconds_from_midnight()),
+                num_vec!(
+                    NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
+                        .unwrap()
+                        .num_seconds_from_midnight()
+                ),
             ),
             (
                 DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::parse_from_str("12:34:56+09:30", "%H:%M:%S%z")
-                    .unwrap()
-                    .num_seconds_from_midnight()),
+                num_vec!(
+                    NaiveTime::parse_from_str("12:34:56+09:30", "%H:%M:%S%z")
+                        .unwrap()
+                        .num_seconds_from_midnight()
+                ),
             ),
             (DataType::Utf8, vec![]), // unsupported
             (DataType::Boolean, vec![1]),
@@ -410,6 +497,7 @@ mod tests {
             ),
             (DataType::Utf8, vec![]), // unsupported
             (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // null
         ];
 
         validate_parquet(response, expected).await;
@@ -426,12 +514,33 @@ mod tests {
         };
         let mut state = Extension(new_state().await);
         state.settings.max_response_bytes = 0;
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let connection = get_connection(false);
+        let data = query_with_connection(state, Json(sql_query), connection.type_details)
+            .await
+            .unwrap();
         let response = data.into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = response_bytes(response).await;
         assert_eq!(body, Bytes::new());
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn postgres_test_connection_with_ssh() {
+        let connection = get_connection(true);
+        let result = query_with_connection(
+            Extension(new_state().await),
+            Json(SqlQuery {
+                query: "SELECT * FROM pg_catalog.pg_tables;".into(),
+                connection_id: Uuid::new_v4(),
+            }),
+            connection.type_details,
+        )
+        .await
+        .unwrap();
+
+        println!("result: {:?}", result.into_response());
     }
 }

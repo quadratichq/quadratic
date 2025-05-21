@@ -3,7 +3,7 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
 export const TopBarShareButton = () => {

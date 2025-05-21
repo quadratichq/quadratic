@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use super::{column_header::DataTableColumnHeader, DataTable};
+use super::{DataTable, column_header::DataTableColumnHeader};
 use crate::{CellValue, CopyFormats};
 
 impl DataTable {
@@ -15,6 +15,22 @@ impl DataTable {
             .collect();
 
         Ok(column)
+    }
+
+    /// Gets the name of a column from the column_index (not the display index).
+    pub fn column_name(&self, column_index: usize) -> Result<String> {
+        if let Some(headers) = &self.column_headers {
+            if column_index >= headers.len() {
+                return Err(anyhow::anyhow!(
+                    "Column index {} out of bounds for {} columns",
+                    column_index,
+                    headers.len()
+                ));
+            }
+            return Ok(headers[column_index].name.to_string());
+        }
+
+        Err(anyhow::anyhow!("No column name found"))
     }
 
     /// Get the values of a column taking into account sorted columns.
@@ -34,7 +50,7 @@ impl DataTable {
     }
 
     /// Insert a new column at the given index.
-    pub fn insert_column(
+    fn insert_column(
         &mut self,
         column_index: usize,
         column_header: Option<String>,
@@ -55,7 +71,13 @@ impl DataTable {
 
         if let Some(headers) = &mut self.column_headers {
             let new_header = DataTableColumnHeader::new(column_name, true, column_index as u32);
-            headers.insert(column_index, new_header);
+
+            if column_index < headers.len() {
+                headers.insert(column_index, new_header);
+            } else {
+                headers.push(new_header);
+            }
+
             for (index, header) in headers.iter_mut().enumerate() {
                 header.value_index = index as u32;
             }
@@ -84,6 +106,7 @@ impl DataTable {
         if self.display_buffer.is_some() {
             if let Some(cell_values) = values {
                 let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
+
                 for (index, cell_value) in cell_values.into_iter().enumerate() {
                     let actual_index = self.get_row_index_from_display_index(index as u64);
                     sorted_cell_values[actual_index as usize] = cell_value;
@@ -98,7 +121,7 @@ impl DataTable {
     }
 
     /// Remove a column at the given index.
-    pub fn delete_column(&mut self, column_index: usize) -> Result<()> {
+    fn delete_column(&mut self, column_index: usize) -> Result<()> {
         let array = self.mut_value_as_array()?;
         array.delete_column(column_index)?;
 
@@ -177,8 +200,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        grid::test::{new_data_table, pretty_print_data_table},
-        ArraySize, CellValue,
+        ArraySize, CellValue, grid::test::new_data_table, test_util::pretty_print_data_table,
     };
 
     #[test]
@@ -279,5 +301,25 @@ pub mod test {
         {
             assert_eq!(header.value_index, index as u32);
         }
+    }
+
+    #[test]
+    fn test_data_table_column_name() {
+        let (_, mut data_table) = new_data_table();
+
+        // Test when no column headers exist
+        assert_eq!(data_table.column_name(0).unwrap(), "Column 1".to_string());
+
+        // Apply headers and test valid column names
+        data_table.apply_first_row_as_header();
+
+        // "city", "region", "country", "population"
+        assert_eq!(data_table.column_name(0).unwrap(), "city");
+        assert_eq!(data_table.column_name(1).unwrap(), "region");
+        assert_eq!(data_table.column_name(2).unwrap(), "country");
+        assert_eq!(data_table.column_name(3).unwrap(), "population");
+
+        // Test out of bounds
+        assert!(data_table.column_name(4).is_err());
     }
 }

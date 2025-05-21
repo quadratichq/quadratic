@@ -1,3 +1,4 @@
+import { RefreshType } from '@/app/shared/types/RefreshType';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -6,9 +7,10 @@ import { useEffect, useState } from 'react';
 import { events } from '../events/events';
 
 export const UpdateAlertVersion = () => {
-  const [showDialog, setShowDialog] = useState<false | 'recommended' | 'required' | 'force'>(false);
+  const [showDialog, setShowDialog] = useState<false | RefreshType>(false);
+
   useEffect(() => {
-    const needRefresh = (refresh: 'required' | 'recommended' | 'force') => setShowDialog(refresh);
+    const needRefresh = (refresh: RefreshType) => setShowDialog(refresh);
     events.on('needRefresh', needRefresh);
     return () => {
       events.off('needRefresh', needRefresh);
@@ -16,11 +18,6 @@ export const UpdateAlertVersion = () => {
   });
 
   if (showDialog === false) return null;
-
-  if (showDialog === 'force') {
-    window.location.reload();
-    return null;
-  }
 
   return (
     <FixedBottomAlert>
@@ -31,7 +28,7 @@ export const UpdateAlertVersion = () => {
         <strong>App update:</strong> there’s a new version available.
       </Type>
       <div className="flex justify-end gap-2">
-        {showDialog === 'recommended' && (
+        {showDialog === RefreshType.RECOMMENDED && (
           <Button variant="outline" onClick={() => setShowDialog(false)}>
             Dismiss
           </Button>

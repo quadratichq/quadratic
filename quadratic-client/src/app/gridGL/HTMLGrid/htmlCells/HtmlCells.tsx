@@ -15,6 +15,7 @@ export const HtmlCells = () => {
   return (
     <div
       ref={divRef}
+      className="dark-mode-hack"
       style={{
         pointerEvents: 'none',
       }}

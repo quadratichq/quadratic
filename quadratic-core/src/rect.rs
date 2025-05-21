@@ -1,10 +1,10 @@
 use std::{collections::HashSet, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 use wasm_bindgen::prelude::*;
 
-use crate::{cell_values::CellValues, grid::SheetId, ArraySize, Pos, SheetRect};
+use crate::{ArraySize, Pos, SheetRect, cell_values::CellValues, grid::SheetId};
 
 // TODO: these methods should take `Rect`, not `&Rect` (because `Rect` is `Copy`)
 
@@ -125,6 +125,7 @@ impl Rect {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 
+    /// Returns whether other is fully contained within self
     pub fn contains_rect(&self, other: &Rect) -> bool {
         self.x_range().contains(&other.min.x)
             && self.x_range().contains(&other.max.x)
@@ -167,7 +168,13 @@ impl Rect {
         self.width() == 0 || self.height() == 0
     }
 
-    pub fn translate(&mut self, x: i64, y: i64) {
+    pub fn translate(&self, x: i64, y: i64) -> Self {
+        let mut rect = *self;
+        rect.translate_in_place(x, y);
+        rect
+    }
+
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
         self.min.x += x;
         self.min.y += y;
         self.max.x += x;
@@ -516,9 +523,9 @@ mod test {
     }
 
     #[test]
-    fn test_translate() {
+    fn test_translate_in_place() {
         let mut rect = Rect::from_ranges(1..=3, 2..=4);
-        rect.translate(1, 2);
+        rect.translate_in_place(1, 2);
         assert_eq!(rect.min, Pos { x: 2, y: 4 });
         assert_eq!(rect.max, Pos { x: 4, y: 6 });
     }

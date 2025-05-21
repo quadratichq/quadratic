@@ -1,16 +1,18 @@
 import type { JsNumber } from '@/app/quadratic-core-types';
-import { BigNumber } from 'bignumber.js';
+import BigNumber from 'bignumber.js';
 
 // Converts a number to a string with the given cell formatting
 export const convertNumber = (n: string, format: JsNumber, currentFractionDigits?: number): string => {
   let number = new BigNumber(n);
-  let suffix = '';
+  const isNegative = number.isNegative();
+
+  let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',', prefix: isNegative ? '-' : '' };
+
   if (format.format?.type === 'PERCENTAGE') {
     number = number.times(100);
-    suffix = '%';
+    options.suffix = '%';
   }
 
-  let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',' };
   const isCurrency = format.format?.type === 'CURRENCY';
   const isScientific = format.format?.type === 'EXPONENTIAL';
   const isPercent = format.format?.type === 'PERCENTAGE';
@@ -34,7 +36,7 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
   if (format.format?.type === 'CURRENCY') {
     if (format.format.symbol) {
-      options.prefix = format.format.symbol;
+      options.prefix += format.format.symbol;
     } else {
       throw new Error('Expected format.symbol to be defined in convertNumber.ts');
     }
@@ -49,9 +51,9 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   }
 
   if (currentFractionDigits !== undefined) {
-    return number.toFormat(currentFractionDigits, options) + suffix;
+    return number.abs().toFormat(currentFractionDigits, options);
   }
-  return number.toFormat(options) + suffix;
+  return number.abs().toFormat(options);
 };
 
 // Reduces the number of decimals (used by rendering to show a fractional number in a smaller-width cell)

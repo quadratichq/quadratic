@@ -2,9 +2,25 @@ export const JavascriptDocs = `# Javascript Docs
 
 With Javascript in Quadratic, the world's most popular programming language meets the world's most popular tool for working with data - spreadsheets. 
 
-# Reference cells from JavaScript
+In Quadratic, reference tables and named outputs for simplest reference, reference individual cells from JavaScript for single values or reference a range of cells for multiple values. 
 
-In Quadratic, reference individual cells from Javascript for single values or reference a range of cells for multiple values. 
+## Referencing tables (and named outputs)
+
+\`\`\`javascript
+To reference a table, use the global function q.cells along with the table's name in the fashion outlined below. 
+// NOTE: uses the same A1 notation as Formulas
+// References existing Table1 and is read in as array of arrays
+let x = q.cells("Table_name")
+
+// Get a single column out of table into an array
+let x = q.cells("Table_name[column_name]")
+
+// Get the table headers 
+let x = q.cells("Table_name[#HEADERS]")
+
+// Reference a range of columns in a table
+let x = q.cells("Table_name[[Column_name]:[Column_name]]")
+\`\`\`
 
 ## Referencing individual cells
 
@@ -28,13 +44,13 @@ let let x = q.cells('A1:A5') // Returns a 1x5 array spanning from A1 to A5
 
 let let x = q.cells('A1:C7') // Returns a 3x7 array of arrays spanning from A1 to C7
 
-let let x = q.cells('A') // Returns all values in column A into a single-column DataFrame
+let let x = q.cells('A') // Returns all values in column A into a single array
 
-let let x = q.cells('A:C') // Returns all values in columns A to C into a three-column DataFrame
+let let x = q.cells('A:C') // Returns all values in columns A to C into an array of three arrays 
 
-let let x = q.cells('A5:A') // Returns all values in column A starting at A5 and going down
+let let x = q.cells('A5:A') // Returns all values in column A starting at A5 and going down as an array 
 
-let let x = q.cells('A5:C') // Returns all values in column A to C, starting at A5 and going down
+let let x = q.cells('A5:C') // Returns all values in column A to C, starting at A5 and going down as an array of arrays
 \`\`\`
 
 ## Referencing another sheet
@@ -382,4 +398,9 @@ const output = net.run([1, 0]); // [0.987]
 
 return output[0]
 \`\`\`
+
+# File imports and exports
+JavaScript can not be used to import files like .xlsx or .csv. Users should import those files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into JavaScript with q.cells(). JavaScript can not be used to import files (.xlsx, .csv, .pqt, etc).
+
+JavaScript can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.
 `;

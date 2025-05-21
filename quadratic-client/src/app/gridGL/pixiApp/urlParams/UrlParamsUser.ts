@@ -80,13 +80,13 @@ export class UrlParamsUser {
     }
 
     submitAIAnalystPrompt({
-      userPrompt: prompt,
+      content: [{ type: 'text', text: prompt }],
       context: {
         sheets: [],
         currentSheet: sheets.sheet.name,
         selection: undefined,
       },
-      clearMessages: true,
+      messageIndex: 0,
     });
 
     // Remove the `prompt` param when we're done

@@ -3,8 +3,8 @@
 use super::*;
 
 use crate::{
-    grid::{formats::Format, GridBounds},
     Pos, Rect,
+    grid::{GridBounds, formats::Format},
 };
 
 impl SheetFormatting {
@@ -144,11 +144,7 @@ impl SheetFormatting {
             self.strike_through.col_min(column),
         ];
         let min = col_mins.iter().filter(|&&x| x != 0).min()?;
-        if *min == 0 {
-            None
-        } else {
-            Some(*min)
-        }
+        if *min == 0 { None } else { Some(*min) }
     }
 
     /// Returns the maximum value in the column for which formatting exists.
@@ -169,11 +165,7 @@ impl SheetFormatting {
             self.strike_through.col_max(column),
         ];
         let max = col_maxes.iter().max()?;
-        if *max == 0 {
-            None
-        } else {
-            Some(*max)
-        }
+        if *max == 0 { None } else { Some(*max) }
     }
 
     pub fn row_min(&self, row: i64) -> Option<i64> {
@@ -193,11 +185,7 @@ impl SheetFormatting {
             self.strike_through.row_min(row),
         ];
         let min = row_mins.iter().filter(|&&x| x != 0).min()?;
-        if *min == 0 {
-            None
-        } else {
-            Some(*min)
-        }
+        if *min == 0 { None } else { Some(*min) }
     }
 
     /// Returns the maximum value in the row for which formatting exists.
@@ -218,34 +206,12 @@ impl SheetFormatting {
             self.strike_through.row_max(row),
         ];
         let max = row_maxes.iter().max()?;
-        if *max == 0 {
-            None
-        } else {
-            Some(*max)
-        }
+        if *max == 0 { None } else { Some(*max) }
     }
 
     /// Returns true if there is any formatting with a fill color.
     pub fn has_fills(&self) -> bool {
         !self.fill_color.is_all_default()
-    }
-
-    /// Returns the rows with wrap in the given rect.
-    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect) -> Vec<i64> {
-        let mut rows = vec![];
-        for y in rect.y_range() {
-            for x in rect.x_range() {
-                if self
-                    .wrap
-                    .get((x, y).into())
-                    .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
-                    rows.push(y);
-                    break;
-                }
-            }
-        }
-        rows
     }
 }
 

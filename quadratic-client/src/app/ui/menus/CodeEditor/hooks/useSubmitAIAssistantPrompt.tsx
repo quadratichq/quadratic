@@ -1,30 +1,44 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { AI_FREE_TIER_WAIT_TIME_SECONDS, useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAssistantAbortControllerAtom,
+  aiAssistantCurrentChatMessagesCountAtom,
+  aiAssistantDelaySecondsAtom,
   aiAssistantIdAtom,
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
+  aiAssistantWaitingOnMessageIndexAtom,
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorWaitingForEditorClose,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
+import { apiClient } from '@/shared/api/apiClient';
+import mixpanel from 'mixpanel-browser';
+import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessage, AIMessagePrompt, ChatMessage, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { useRef } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
 const MAX_TOOL_CALL_ITERATIONS = 25;
+
+export type SubmitAIAssistantPromptArgs = {
+  content: Content;
+  messageIndex: number;
+  codeCell?: CodeCell;
+  onSubmit?: () => void;
+};
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -34,48 +48,77 @@ export function useSubmitAIAssistantPrompt() {
   const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
-    ({ set }) =>
+    ({ snapshot }) =>
       async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
-        const [currentSheetContext, visibleContext, codeContext] = await Promise.all([
+        const [currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
           getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
           getVisibleContext(),
           getCodeCellContext({ codeCell }),
+          snapshot.getPromise(aiAssistantMessagesAtom),
         ]);
-        let updatedMessages: ChatMessage[] = [];
-        set(aiAssistantMessagesAtom, (prevMessages) => {
-          prevMessages = getPromptMessages(prevMessages);
 
-          updatedMessages = [...currentSheetContext, ...visibleContext, ...codeContext, ...prevMessages];
+        const messagesWithContext: ChatMessage[] = [
+          ...currentSheetContext,
+          ...visibleContext,
+          ...codeContext,
+          ...getPromptMessagesWithoutPDF(prevMessages),
+        ];
 
-          return updatedMessages;
-        });
-
-        return updatedMessages;
+        return messagesWithContext;
       },
     [getCurrentSheetContext, getVisibleContext, getCodeCellContext]
   );
 
+  const delayTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({
-        userPrompt,
-        messageIndex,
-        clearMessages,
-        codeCell,
-      }: {
-        userPrompt: string;
-        messageIndex?: number;
-        clearMessages?: boolean;
-        codeCell?: CodeCell;
-      }) => {
+      async ({ content, messageIndex, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
         if (previousLoading) return;
-        set(aiAssistantLoadingAtom, true);
+
+        // fork chat, if we are editing an existing chat
+        const currentMessageCount = await snapshot.getPromise(aiAssistantCurrentChatMessagesCountAtom);
+        if (messageIndex < currentMessageCount) {
+          set(aiAssistantIdAtom, v4());
+          set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
+        }
+
+        set(codeEditorDiffEditorContentAtom, undefined);
+        const currentCodeCellInEditor = await snapshot.getPromise(codeEditorCodeCellAtom);
+        if (codeCell && !isSameCodeCell(codeCell, currentCodeCellInEditor)) {
+          set(codeEditorWaitingForEditorClose, {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: false,
+          });
+        } else if (!codeCell) {
+          codeCell = currentCodeCellInEditor;
+        }
+
+        if (!onSubmit) {
+          set(aiAssistantMessagesAtom, (prevMessages) => [
+            ...prevMessages,
+            {
+              role: 'user' as const,
+              content,
+              contextType: 'userPrompt' as const,
+            },
+          ]);
+        }
 
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
+          let prevWaitingOnMessageIndex: number | undefined = undefined;
+          clearTimeout(delayTimerRef.current);
+          set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
+            prevWaitingOnMessageIndex = prev;
+            return undefined;
+          });
+
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
@@ -90,6 +133,10 @@ export function useSubmitAIAssistantPrompt() {
               newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
             } else if (lastMessage?.role === 'user') {
+              if (prevWaitingOnMessageIndex !== undefined) {
+                return prevMessages;
+              }
+
               const newLastMessage: AIMessage = {
                 role: 'assistant',
                 content: [{ type: 'text', text: 'Request aborted by the user.' }],
@@ -104,38 +151,60 @@ export function useSubmitAIAssistantPrompt() {
         });
         set(aiAssistantAbortControllerAtom, abortController);
 
-        if (clearMessages) {
-          set(aiAssistantIdAtom, v4());
-          set(aiAssistantMessagesAtom, []);
-        }
+        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
+        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
+          await apiClient.teams.billing.aiUsage(teamUuid);
+        if (exceededBillingLimit) {
+          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
+          set(aiAssistantDelaySecondsAtom, localDelaySeconds);
+          set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
 
-        // fork chat, if we are editing an existing chat
-        if (messageIndex !== undefined) {
-          set(aiAssistantIdAtom, v4());
-          set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
-        }
-
-        set(codeEditorDiffEditorContentAtom, undefined);
-        if (codeCell) {
-          set(codeEditorWaitingForEditorClose, {
-            codeCell,
-            showCellTypeMenu: false,
-            initialCode: '',
-            inlineEditor: false,
+          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+            exceededBillingLimit: exceededBillingLimit,
+            billingLimit: billingLimit,
+            currentPeriodUsage: currentPeriodUsage,
+            localDelaySeconds: localDelaySeconds,
+            location: 'AIAssistant',
           });
-        } else {
-          codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+
+          await new Promise<void>((resolve) => {
+            const resolveAfterDelay = () => {
+              localDelaySeconds -= 1;
+              if (localDelaySeconds <= 0) {
+                resolve();
+              } else {
+                set(aiAssistantDelaySecondsAtom, localDelaySeconds);
+                clearTimeout(delayTimerRef.current);
+                delayTimerRef.current = setTimeout(resolveAfterDelay, 1000);
+              }
+            };
+
+            resolveAfterDelay();
+          });
+        }
+        set(aiAssistantWaitingOnMessageIndexAtom, undefined);
+
+        if (abortController.signal.aborted) {
+          set(aiAssistantAbortControllerAtom, undefined);
+          set(aiAssistantLoadingAtom, false);
+          return;
         }
 
-        set(aiAssistantMessagesAtom, (prevMessages) => [
-          ...prevMessages,
-          {
-            role: 'user' as const,
-            content: userPrompt,
-            contextType: 'userPrompt' as const,
-          },
-        ]);
+        if (onSubmit) {
+          onSubmit();
+          set(aiAssistantMessagesAtom, (prevMessages) => [
+            ...prevMessages,
+            {
+              role: 'user' as const,
+              content,
+              contextType: 'userPrompt' as const,
+            },
+          ]);
+        }
 
+        set(aiAssistantLoadingAtom, true);
+
+        let lastMessageIndex = -1;
         let chatId = '';
         set(aiAssistantIdAtom, (prev) => {
           chatId = prev ? prev : v4();
@@ -143,26 +212,30 @@ export function useSubmitAIAssistantPrompt() {
         });
 
         try {
-          // Send user prompt to API
-          const updatedMessages = await updateInternalContext({ codeCell });
-          const response = await handleAIRequestToAPI({
-            chatId,
-            source: 'AIAssistant',
-            modelKey,
-            messages: updatedMessages,
-            useStream: true,
-            toolName: undefined,
-            useToolsPrompt: true,
-            language: getLanguage(codeCell.language),
-            useQuadraticContext: true,
-            setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
-            signal: abortController.signal,
-          });
-          let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
-
           // Handle tool calls
           let toolCallIterations = 0;
-          while (toolCalls.length > 0 && toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+          while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+            // Send tool call results to API
+            const messagesWithContext = await updateInternalContext({ codeCell });
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
+            const response = await handleAIRequestToAPI({
+              chatId,
+              source: 'AIAssistant',
+              modelKey,
+              messages: messagesWithContext,
+              useStream: true,
+              toolName: undefined,
+              useToolsPrompt: true,
+              language: getLanguage(codeCell.language),
+              useQuadraticContext: true,
+              setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
+              signal: abortController.signal,
+            });
+
+            if (response.toolCalls.length === 0) {
+              break;
+            }
+
             toolCallIterations++;
 
             // Message containing tool call results
@@ -172,43 +245,29 @@ export function useSubmitAIAssistantPrompt() {
               contextType: 'toolResult',
             };
 
-            for (const toolCall of toolCalls) {
+            for (const toolCall of response.toolCalls) {
               if (Object.values(AITool).includes(toolCall.name as AITool)) {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any);
+                const result = await aiToolsActions[aiTool](args as any, {
+                  source: 'AIAssistant',
+                  chatId,
+                  messageIndex: lastMessageIndex + 1,
+                });
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: result,
+                  text: result,
                 });
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: 'Unknown tool',
+                  text: 'Unknown tool',
                 });
               }
             }
-            toolCalls = [];
 
             set(aiAssistantMessagesAtom, (prev) => [...prev, toolResultMessage]);
-
-            // Send tool call results to API
-            const updatedMessages = await updateInternalContext({ codeCell });
-            const response = await handleAIRequestToAPI({
-              chatId,
-              source: 'AIAssistant',
-              modelKey,
-              messages: updatedMessages,
-              useStream: true,
-              toolName: undefined,
-              useToolsPrompt: true,
-              language: getLanguage(codeCell.language),
-              useQuadraticContext: true,
-              setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
-              signal: abortController.signal,
-            });
-            toolCalls = response.toolCalls;
           }
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {

@@ -1,6 +1,7 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { redirect } from 'react-router-dom';
+import { isMobile } from 'react-device-detect';
+import { redirect } from 'react-router';
 
 export const loader = async () => {
   // try/catch here handles case where this _could_ error out and we
@@ -42,6 +43,11 @@ export const loader = async () => {
       }
 
       let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
+      // For new users coming directly to `/`, we'll send them to a new file
+      // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
+      if (userCreated && !isMobile && redirectTo === '/') {
+        return redirect('/files/create?private=false');
+      }
       return redirect(redirectTo);
     }
   } catch (e) {

@@ -1,12 +1,14 @@
 import { focusGrid } from '@/app/helpers/focusGrid.js';
 import type { SearchOptions } from '@/app/quadratic-core-types';
+import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { User } from '@/auth/auth';
-import type { FilePermission } from 'quadratic-shared/typesAndSchemas';
-import { type TeamSettings } from 'quadratic-shared/typesAndSchemas';
+import type { FilePermission, TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
+import { events } from '../events/events';
 
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
+  transactionsInfo: TransactionInfo[];
   showCellTypeMenu: boolean;
   showCommandPalette: boolean;
   showConnectionsMenu: boolean;
@@ -30,6 +32,7 @@ export interface EditorInteractionState {
 
 export const defaultEditorInteractionState: EditorInteractionState = {
   isRunningAsyncAction: false,
+  transactionsInfo: [],
   showCellTypeMenu: false,
   showCommandPalette: false,
   showConnectionsMenu: false,
@@ -57,6 +60,64 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
   key: 'editorInteractionState',
   default: defaultEditorInteractionState,
   effects: [
+    ({ setSelf }) => {
+      const handleTransaction = (transaction: TransactionInfo, add: boolean) => {
+        setSelf((prev) => {
+          if (prev instanceof DefaultValue) return prev;
+          return {
+            ...prev,
+            transactionsInfo: [
+              ...prev.transactionsInfo.filter((t) => t.transactionId !== transaction.transactionId),
+              ...(add ? [transaction] : []),
+            ],
+          };
+        });
+      };
+
+      const handleTransactionStart = (transaction: TransactionInfo) => {
+        handleTransaction(transaction, true);
+      };
+      events.on('transactionStart', handleTransactionStart);
+
+      const handleTransactionEnd = (transaction: TransactionInfo) => {
+        handleTransaction(transaction, false);
+      };
+      events.on('transactionEnd', handleTransactionEnd);
+
+      return () => {
+        events.off('transactionStart', handleTransactionStart);
+        events.off('transactionEnd', handleTransactionEnd);
+      };
+    },
+    // this effect is used to focus the grid when the modal is closed
+    ({ onSet }) => {
+      onSet((newValue, oldValue) => {
+        if (oldValue instanceof DefaultValue) return;
+        const oldModalShow =
+          oldValue.showCellTypeMenu ||
+          oldValue.showCommandPalette ||
+          oldValue.showConnectionsMenu ||
+          oldValue.showGoToMenu ||
+          oldValue.showFeedbackMenu ||
+          oldValue.showRenameFileMenu ||
+          oldValue.showShareFileMenu ||
+          oldValue.showSearch ||
+          oldValue.showContextMenu;
+        const newModelShow =
+          newValue.showCellTypeMenu ||
+          newValue.showCommandPalette ||
+          newValue.showConnectionsMenu ||
+          newValue.showGoToMenu ||
+          newValue.showFeedbackMenu ||
+          newValue.showRenameFileMenu ||
+          newValue.showShareFileMenu ||
+          newValue.showSearch ||
+          newValue.showContextMenu;
+        if (oldModalShow && !newModelShow) {
+          focusGrid();
+        }
+      });
+    },
     // this effect is used to focus the grid when the modal is closed
     ({ onSet }) => {
       onSet((newValue, oldValue) => {
@@ -101,6 +162,7 @@ const createSelector = <T extends keyof EditorInteractionState>(key: T) =>
   });
 
 export const editorInteractionStateShowIsRunningAsyncActionAtom = createSelector('isRunningAsyncAction');
+export const editorInteractionStateTransactionsInfoAtom = createSelector('transactionsInfo');
 export const editorInteractionStateShowCellTypeMenuAtom = createSelector('showCellTypeMenu');
 export const editorInteractionStateShowCommandPaletteAtom = createSelector('showCommandPalette');
 export const editorInteractionStateShowConnectionsMenuAtom = createSelector('showConnectionsMenu');

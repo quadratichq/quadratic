@@ -5,8 +5,8 @@
 //! to only include the relevant elements. (Otherwise it throws an error.)
 
 use crate::{
-    date_time::{date_time_to_date_time_string, date_to_date_string, time_to_time_string},
     CellValue,
+    date_time::{date_time_to_date_time_string, date_to_date_string, time_to_time_string},
 };
 
 use super::Sheet;
@@ -35,9 +35,9 @@ mod tests {
     use chrono::{NaiveDateTime, NaiveTime};
 
     use crate::{
-        controller::GridController,
-        grid::{js_types::JsRenderCell, CellAlign},
         Rect,
+        controller::GridController,
+        grid::{CellAlign, js_types::JsRenderCell},
     };
 
     use super::*;
@@ -87,7 +87,8 @@ mod tests {
                 .unwrap(),
         );
         sheet.set_cell_value(pos, value);
-        let rendering = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1));
+        let sheet = gc.sheet(sheet_id);
+        let rendering = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(rendering.len(), 1);
         assert_eq!(
             rendering[0],
@@ -99,11 +100,13 @@ mod tests {
                 ..Default::default()
             }
         );
-        sheet
+        gc.sheet_mut(sheet_id)
             .formats
             .date_time
             .set_rect(1, 1, Some(1), None, Some(date_time));
-        let rendering = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1));
+        let rendering = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(rendering.len(), 1);
         assert_eq!(
             rendering[0],
@@ -116,11 +119,16 @@ mod tests {
             }
         );
 
-        sheet
-            .formats
-            .date_time
-            .set_rect(1, 1, Some(1), None, Some("%Y-%m-%d".to_string()));
-        let rendering = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1));
+        gc.sheet_mut(sheet_id).formats.date_time.set_rect(
+            1,
+            1,
+            Some(1),
+            None,
+            Some("%Y-%m-%d".to_string()),
+        );
+        let rendering = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(rendering.len(), 1);
         assert_eq!(
             rendering[0],

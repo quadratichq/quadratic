@@ -1,5 +1,7 @@
+//! Interacting with the Quadratic API
+
 use reqwest::{RequestBuilder, Response, StatusCode};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::Display;
 use uuid::Uuid;
 
@@ -48,6 +50,18 @@ pub struct LastCheckpoint {
 #[serde(rename_all = "camelCase")]
 pub struct Checkpoint {
     last_checkpoint: LastCheckpoint,
+}
+
+/// Check if the quadratic API server is healthy.
+pub async fn is_healthy(base_url: &str) -> bool {
+    let url = format!("{base_url}/health");
+    let client = get_client(&url, "");
+    let response = client.send().await;
+
+    match response {
+        Ok(response) => response.status() == StatusCode::OK,
+        Err(_) => false,
+    }
 }
 
 /// Retrieve file perms from the quadratic API server.
@@ -126,7 +140,6 @@ pub async fn set_file_checkpoint(
     let deserialized = response.json::<Checkpoint>().await?.last_checkpoint;
     Ok(deserialized)
 }
-
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Connection<T> {
@@ -144,8 +157,11 @@ pub async fn get_connection<T: DeserializeOwned>(
     jwt: &str,
     user_id: &str,
     connection_id: &Uuid,
+    team_id: &Uuid,
 ) -> Result<Connection<T>> {
-    let url = format!("{base_url}/v0/internal/user/{user_id}/connections/{connection_id}");
+    let url = format!(
+        "{base_url}/v0/internal/user/{user_id}/teams/{team_id}/connections/{connection_id}"
+    );
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
@@ -159,6 +175,23 @@ pub async fn get_connection<T: DeserializeOwned>(
     handle_response(&response)?;
 
     Ok(response.json::<Connection<T>>().await?)
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Team {
+    pub ssh_private_key: String,
+}
+
+/// Retrieve user's team from the quadratic API server.
+pub async fn get_team(base_url: &str, jwt: &str, user_id: &str, team_id: &Uuid) -> Result<Team> {
+    let url = format!("{base_url}/v0/internal/user/{user_id}/teams/{team_id}");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    handle_response(&response)?;
+
+    Ok(response.json::<Team>().await?)
 }
 
 fn handle_response(response: &Response) -> Result<()> {
@@ -209,9 +242,11 @@ pub mod tests {
     #[tokio::test]
     async fn test_file_perms_parse() {
         let perms = serde_json::from_str::<FilePermsPayload>(PERMS).unwrap();
-        assert!(perms
-            .user_making_request
-            .file_permissions
-            .contains(&FilePermRole::FileView));
+        assert!(
+            perms
+                .user_making_request
+                .file_permissions
+                .contains(&FilePermRole::FileView)
+        );
     }
 }

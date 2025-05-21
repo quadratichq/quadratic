@@ -6,20 +6,20 @@ use std::str::FromStr;
 
 #[cfg(test)]
 use crate::{
+    Array, ArraySize, CellValue, SheetPos, Value,
     cellvalue::Import,
-    grid::column_header::DataTableColumnHeader,
     grid::Grid,
     grid::SheetId,
+    grid::column_header::DataTableColumnHeader,
     grid::{CodeCellLanguage, CodeCellValue, CodeRun},
     grid::{DataTable, DataTableKind},
     viewport::ViewportBuffer,
-    Array, ArraySize, CellValue, SheetPos, Value,
 };
 
 #[cfg(test)]
 use super::{
-    active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-    GridController,
+    GridController, active_transactions::transaction_name::TransactionName,
+    operations::operation::Operation,
 };
 
 #[cfg(test)]
@@ -63,6 +63,8 @@ impl GridController {
         }
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "code".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -78,7 +80,8 @@ impl GridController {
             Value::Array(array),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
 
@@ -86,6 +89,7 @@ impl GridController {
             sheet_pos: SheetPos::new(sheet_id, x, y),
             data_table,
             cell_value,
+            index: None,
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }
@@ -96,7 +100,8 @@ impl GridController {
         w: u32,
         h: u32,
         header_is_first_row: bool,
-        show_ui: bool,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
     ) {
         let cell_value = CellValue::Import(Import {
             file_name: "test".to_string(),
@@ -110,7 +115,8 @@ impl GridController {
             value,
             false,
             header_is_first_row,
-            show_ui,
+            show_name,
+            show_columns,
             None,
         );
 
@@ -118,6 +124,7 @@ impl GridController {
             sheet_pos,
             data_table,
             cell_value,
+            index: None,
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }
@@ -138,19 +145,16 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
         show_name: Option<bool>,
         show_columns: Option<bool>,
     ) {
-        let op = Operation::DataTableMeta {
+        let op = Operation::DataTableOptionMeta {
             sheet_pos,
             name: None,
             alternating_colors: None,
             columns,
-            show_ui,
-            show_name,
-            show_columns,
-            readonly: None,
+            show_name: show_name.map(|show_name| Some(show_name).into()),
+            show_columns: show_columns.map(|show_columns| Some(show_columns).into()),
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }

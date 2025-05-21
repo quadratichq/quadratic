@@ -9,7 +9,7 @@ services:
       - "6379:6379"
       - "8001:8001"
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: "5s"
     volumes:
       - ./docker/redis/data:/data:rw
@@ -31,7 +31,7 @@ services:
       POSTGRES_PASSWORD: postgres
       ADDITIONAL_DATABASES: kratos
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -99,7 +99,7 @@ services:
     command: >
       /bin/sh -c "/client/scripts/replace_env_vars.sh && nginx -g \"daemon off;\""
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
+      test: ["CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1"]
       start_period: 10s
       interval: 10s
       timeout: 5s
@@ -132,6 +132,12 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      BILLING_AI_USAGE_LIMIT: ${BILLING_AI_USAGE_LIMIT}
+      GCP_REGION: ${GCP_REGION}
+      GCP_REGION_ANTHROPIC: ${GCP_REGION_ANTHROPIC}
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID}
+      GCP_CLIENT_EMAIL: ${GCP_CLIENT_EMAIL}
+      GCP_PRIVATE_KEY: ${GCP_PRIVATE_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       XAI_API_KEY: ${XAI_API_KEY}
@@ -319,6 +325,12 @@ services:
       DATABASE_URL: ${DATABASE_DSN}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      BILLING_AI_USAGE_LIMIT: ${BILLING_AI_USAGE_LIMIT}
+      GCP_REGION: ${GCP_REGION}
+      GCP_REGION_ANTHROPIC: ${GCP_REGION_ANTHROPIC}
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID}
+      GCP_CLIENT_EMAIL: ${GCP_CLIENT_EMAIL}
+      GCP_PRIVATE_KEY: ${GCP_PRIVATE_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       XAI_API_KEY: ${XAI_API_KEY}
@@ -523,17 +535,43 @@ services:
       PGUSER: user
       POSTGRES_PASSWORD: password
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d postgres-connection" ]
+      test: ["CMD-SHELL", "pg_isready -U user -d postgres-connection"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
-      - postgres-connection-data:/var/lib/postgresql/data
+      - ./docker/postgres-connection/data:/var/lib/postgresql/data
       - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
     profiles:
       - quadratic-connection
       - quadratic-connection-db
       - quadratic-connection-db-postgres
+
+  ssh-postgres-connection:
+    build:
+      context: .
+      dockerfile: docker/ssh-postgres-connection/Dockerfile
+    restart: always
+    container_name: ssh-postgres-connection
+    ports:
+      - "2222:22"
+    environment:
+      POSTGRES_DB: ssh-postgres-connection
+      POSTGRES_USER: user
+      PGUSER: user
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d ssh-postgres-connection" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ssh-postgres-connection-data:/var/lib/postgresql/data
+      - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-postgres-ssh
 
   mysql-connection:
     image: mysql:8
@@ -547,54 +585,78 @@ services:
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
-      - mysql-connection-data:/var/lib/mysql
+      - ./docker/mysql-connection/data:/var/lib/mysql
       - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
       - quadratic-connection-db
       - quadratic-connection-db-mysql
 
-  mssql-connection:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+  ssh-mysql-connection:
+    build:
+      context: .
+      dockerfile: docker/ssh-mysql-connection/Dockerfile
     restart: always
-    container_name: mssql-connection
-    user: root
+    container_name: ssh-mysql-connection
     ports:
-      - 1433:1433
+      - "2223:22"
     environment:
-      ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: yourStrong(!)Password
-      MSSQL_PID: Express
+      MYSQL_DATABASE: mysql-connection
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
     volumes:
-      - mssql-connection-data:/var/opt/mssql
+      - ./docker/mssql-connection/data:/var/opt/mssql
       - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
-    healthcheck:
-      test: [ "CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "yourStrong(!)Password", "-Q", "SELECT 1", "-C", "-N", "-t", "30" ]
-      interval: 10s
-      timeout: 5s
-      start_period: 30s
-      retries: 5
-    command: >
-      bash -c " /opt/mssql/bin/sqlservr & sleep 10 && /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/create_db.sql -C -N -t 30 && /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/seed_db.sql -C -N -t 30 && tail -f /dev/null"
     profiles:
       - quadratic-connection
       - quadratic-connection-db
-      - quadratic-connection-db-mssql
+      - quadratic-connection-db-mysql-ssh
+
+  # This service covers non-ssh mssql connections as well since it's a complex build
+  ssh-mssql-connection:
+    build:
+      context: .
+      # platforms:
+      #   - "linux/amd64"
+      dockerfile: docker/ssh-mssql-connection/Dockerfile
+    restart: always
+    container_name: ssh-mssql-connection
+    ports:
+      - "1433:1433"
+      - "2224:22"
+    environment:
+      MSSQL_SA_PASSWORD: yourStrong(!)Password
+      # MSSQL_PID: Evaluation
+    volumes:
+      - ssh-mssql-connection-data:/var/opt/mssql
+      - ./docker/ssh-mssql-connection/scripts:/docker-entrypoint-initdb.d/
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-mssql  
+      - quadratic-connection-db-mssql-ssh  
 
 volumes:
   postgres-connection-data:
     name: postgres-connection-data
     driver: local
-  mysql-connection-data:
-    name: mysql-connection
+  ssh-postgres-connection-data:
+    name: ssh-postgres-connection-data
     driver: local
-  mssql-connection-data:
-    name: mssql-connection-data
+  mysql-connection-data:
+    name: mysql-connection-data
+    driver: local
+  ssh-mysql-connection-data:
+    name: ssh-mysql-connection-data
+    driver: local
+  ssh-mssql-connection-data:
+    name: ssh-mssql-connection-data
     driver: local
 
 networks:

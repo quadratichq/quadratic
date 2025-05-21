@@ -2,14 +2,15 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
+    CellValue, Pos, Rect, Value,
+    a1::A1Context,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
     grid::{
+        CodeCellLanguage, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
-        CodeCellLanguage, DataTableKind,
     },
-    CellValue, Pos, Rect, Value,
 };
 
 impl Sheet {
@@ -70,8 +71,7 @@ impl Sheet {
     pub fn table_header_at(&self, pos: Pos) -> Option<(Pos, Rect)> {
         for (code_cell_pos, data_table) in &self.data_tables {
             let output_rect = data_table.output_rect(*code_cell_pos, false);
-            if data_table.show_ui
-                && data_table.show_name
+            if data_table.get_show_name()
                 && pos.y == output_rect.min.y
                 && pos.x >= output_rect.min.x
                 && pos.x <= output_rect.max.x
@@ -88,7 +88,7 @@ impl Sheet {
     /// If ignore_readonly is true, it will ignore readonly tables.
     pub fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
         self.data_tables.iter().any(|(code_cell_pos, data_table)| {
-            if ignore_readonly && data_table.readonly {
+            if ignore_readonly && data_table.is_code() {
                 return false;
             }
 
@@ -112,7 +112,7 @@ impl Sheet {
                     })
                     || data_table.is_html_or_image()
                     // also check if its the table name (the entire width of the table is valid for content)
-                    || (data_table.show_ui && data_table.show_name && pos.y == code_cell_pos.y))
+                    || (data_table.get_show_name() && pos.y == code_cell_pos.y))
         })
     }
 
@@ -243,7 +243,7 @@ impl Sheet {
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
-    pub fn edit_code_value(&self, pos: Pos) -> Option<JsCodeCell> {
+    pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         let mut code_pos = pos;
         let cell_value = if let Some(cell_value) = self.cell_value(pos) {
             Some(cell_value)
@@ -268,11 +268,9 @@ impl Sheet {
             Some(mut code_cell_value) => {
                 // replace internal cell references with a1 notation
                 if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-                    // `self.a1_context()` is unaware of other sheets, which might cause issues?
-                    let parse_ctx = self.a1_context();
                     let replaced = convert_rc_to_a1(
                         &code_cell_value.code,
-                        &parse_ctx,
+                        a1_context,
                         code_pos.to_sheet_pos(self.id),
                     );
                     code_cell_value.code = replaced;
@@ -351,9 +349,9 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRun},
         Array, SheetPos, Value,
+        controller::GridController,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
     };
     use std::vec;
 
@@ -370,6 +368,8 @@ mod test {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "=".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -384,12 +384,14 @@ mod test {
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 1, y: 1 }),
+            sheet.edit_code_value(Pos { x: 1, y: 1 },gc.a1_context()),
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -404,7 +406,7 @@ mod test {
             })
         );
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 2, y: 1 }),
+            sheet.edit_code_value(Pos { x: 2, y: 1 },gc.a1_context()),
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -418,7 +420,10 @@ mod test {
                 cells_accessed: Some(Default::default())
             })
         );
-        assert_eq!(sheet.edit_code_value(Pos { x: 3, y: 3 }), None);
+        assert_eq!(
+            sheet.edit_code_value(Pos { x: 3, y: 3 }, gc.a1_context()),
+            None
+        );
     }
 
     #[test]
@@ -449,9 +454,11 @@ mod test {
             sheet.cell_value(Pos { x: 1, y: 0 }),
             Some("should cause spill".into())
         );
-        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1));
+        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1), gc.a1_context());
         assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
-        let code = sheet.edit_code_value(Pos { x: 0, y: 0 }).unwrap();
+        let code = sheet
+            .edit_code_value(Pos { x: 0, y: 0 }, gc.a1_context())
+            .unwrap();
         assert_eq!(code.spill_error, Some(vec![Pos { x: 1, y: 0 }]));
     }
 
@@ -461,6 +468,8 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -475,7 +484,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["1"], vec!["2"], vec!["3"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
@@ -497,6 +507,8 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -511,7 +523,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["1", "2", "3'"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
@@ -538,7 +551,8 @@ mod test {
             CellValue::Html("<html></html>".to_string()).into(),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         dt.chart_output = Some((2, 2));

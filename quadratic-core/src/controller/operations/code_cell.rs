@@ -1,11 +1,10 @@
 use super::operation::Operation;
 use crate::{
-    a1::A1Selection,
+    CellValue, SheetPos,
     cell_values::CellValues,
     controller::GridController,
-    formulas::convert_a1_to_rc,
-    grid::{formats::SheetFormatUpdates, CodeCellLanguage, CodeCellValue, DataTable, SheetId},
-    CellValue, Pos, SheetPos,
+    formulas::convert_rc_to_a1,
+    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
 };
 
 impl GridController {
@@ -18,7 +17,7 @@ impl GridController {
     ) -> Vec<Operation> {
         let parse_ctx = self.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => convert_a1_to_rc(&code, parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
             _ => code,
         };
 
@@ -29,66 +28,6 @@ impl GridController {
             },
             Operation::ComputeCode { sheet_pos },
         ]
-    }
-
-    pub fn set_data_table_operations_at(
-        &self,
-        sheet_pos: SheetPos,
-        value: String,
-    ) -> Vec<Operation> {
-        let mut ops = vec![];
-        let pos = Pos::from(sheet_pos);
-
-        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
-            return ops;
-        };
-
-        let Ok(data_table_pos) = sheet.first_data_table_within(pos) else {
-            return ops;
-        };
-
-        let Some(data_table) = sheet.data_table(data_table_pos) else {
-            return ops;
-        };
-
-        // strip whitespace
-        let value = value.trim();
-        let (cell_value, format_update) = self.string_to_cell_value(value, false);
-        let is_formula_cell = sheet
-            .get_table_language(pos, data_table)
-            .is_some_and(|lang| lang == CodeCellLanguage::Formula);
-        let is_source_cell =
-            pos == data_table_pos && !(!data_table.show_name && !data_table.show_columns);
-
-        // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
-        if is_formula_cell && is_source_cell {
-            ops.push(Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::from(cell_value),
-            });
-            return ops;
-        }
-
-        ops.push(Operation::SetDataTableAt {
-            sheet_pos,
-            values: CellValues::from(cell_value),
-        });
-
-        if !format_update.is_default() {
-            ops.push(Operation::DataTableFormats {
-                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                formats: SheetFormatUpdates::from_selection(
-                    &A1Selection::from_xy(
-                        sheet_pos.x - data_table_pos.x + 1,
-                        sheet_pos.y - data_table_pos.y + 1 - data_table.y_adjustment(true),
-                        sheet_pos.sheet_id,
-                    ),
-                    format_update,
-                ),
-            });
-        }
-
-        ops
     }
 
     // Returns whether a code_cell is dependent on another code_cell.
@@ -206,7 +145,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
-    use crate::Pos;
+    use crate::{Pos, constants::SHEET_NAME};
 
     #[test]
     fn test_set_code_cell_operations() {
@@ -285,7 +224,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet1'!A1".to_string(),
+                format!("'{}1'!A1", SHEET_NAME.to_owned()),
                 None,
             );
         };

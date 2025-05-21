@@ -2,7 +2,7 @@ use std::{iter::Peekable, str::Chars};
 
 use itertools::PeekingNext;
 
-use crate::{a1::ColRange, CodeResultExt, TableRef};
+use crate::{CodeResultExt, TableRef, a1::ColRange};
 
 use super::*;
 
@@ -142,7 +142,7 @@ impl SyntaxRule for TableReference {
                                 }
                                 TableRefToken::Special(s) => special_segments.push(s),
                                 TableRefToken::Comma | TableRefToken::Colon => {
-                                    return Err(RunErrorMsg::BadCellReference)
+                                    return Err(RunErrorMsg::BadCellReference);
                                 }
                             }
                             if tokens.next().is_some_and(|t| t != Ok(TableRefToken::Comma)) {
@@ -155,7 +155,7 @@ impl SyntaxRule for TableReference {
                             TableRefToken::Column(c) => col_range = Some(ColRange::Col(c)),
                             TableRefToken::Special(s) => special_segments.push(s),
                             TableRefToken::Comma | TableRefToken::Colon => {
-                                return Err(RunErrorMsg::BadCellReference)
+                                return Err(RunErrorMsg::BadCellReference);
                             }
                         }
                     }
@@ -209,6 +209,7 @@ impl SyntaxRule for SheetTableReference {
                     .ok_or(RunErrorMsg::BadCellReference)?
                     .sheet_id,
                 cells: CellRefRange::Table { range: table_ref },
+                explicit_sheet_name: false,
             })
         })
     }

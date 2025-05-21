@@ -1,17 +1,17 @@
 import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Avatar } from '@/shared/components/Avatar';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';
 import { FileIcon } from '@radix-ui/react-icons';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export const Component = () => {
   const {
@@ -60,7 +60,7 @@ export const Component = () => {
                 <div
                   className={cn(
                     sharedAvatarClasses,
-                    ' flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground text-sm text-foreground '
+                    'flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground text-sm text-foreground'
                   )}
                 >
                   <AddIcon className="text-background" />
@@ -92,7 +92,7 @@ export const Component = () => {
           canEdit ? (
             <FilesListEmptyState />
           ) : (
-            <Empty
+            <EmptyState
               title="No team files yet"
               description={`Files created by your team members will show up here.`}
               Icon={FileIcon}

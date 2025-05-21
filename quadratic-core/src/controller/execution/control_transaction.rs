@@ -15,12 +15,24 @@ use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
 impl GridController {
     // loop compute cycle until complete or an async call is made
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if cfg!(target_family = "wasm") {
+        if cfg!(target_family = "wasm") || cfg!(test) {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)
                 .unwrap_or("Unknown".to_string());
             crate::wasm_bindings::js::jsTransactionStart(
                 transaction.id.to_string(),
                 transaction_name,
+            );
+        }
+
+        #[cfg(feature = "show-first-sheet-operations")]
+        if transaction.is_undo() {
+            println!("\n========= Starting undo transaction =========\n");
+        } else if transaction.is_redo() {
+            println!("\n========= Starting redo transaction =========\n");
+        } else {
+            println!(
+                "\n========= Starting transaction {:?} =========\n",
+                transaction.transaction_name
             );
         }
 
@@ -115,6 +127,15 @@ impl GridController {
         self.send_transaction_client_updates(&mut transaction);
 
         transaction.send_transaction();
+
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            let transaction_name = serde_json::to_string(&transaction.transaction_name)
+                .unwrap_or("Unknown".to_string());
+            crate::wasm_bindings::js::jsTransactionEnd(
+                transaction.id.to_string(),
+                transaction_name,
+            );
+        }
     }
 
     pub fn start_user_transaction(
@@ -122,7 +143,7 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
         transaction_name: TransactionName,
-    ) {
+    ) -> String {
         let mut transaction = PendingTransaction {
             source: TransactionSource::User,
             operations: operations.into(),
@@ -130,8 +151,10 @@ impl GridController {
             transaction_name,
             ..Default::default()
         };
+        let transaction_id = transaction.id.to_string();
         self.start_transaction(&mut transaction);
         self.finalize_transaction(transaction);
+        transaction_id
     }
 
     pub fn start_undo_transaction(
@@ -190,15 +213,6 @@ impl GridController {
                 msg: RunErrorMsg::CodeRunError(msg.into()),
             });
 
-            let code_run = CodeRun {
-                error,
-                return_type: Some(return_type.to_owned()),
-                line_number: Some(1),
-                output_type: Some(return_type),
-                std_out,
-                std_err: std_err.to_owned(),
-                cells_accessed: transaction.cells_accessed.to_owned(),
-            };
             let value = if std_err.is_some() {
                 Value::default() // TODO(ddimaria): this will be an empty vec
             } else {
@@ -212,6 +226,18 @@ impl GridController {
                 return Err(CoreError::CodeCellSheetError(
                     "Code cell not found".to_string(),
                 ));
+            };
+
+            let code_run = CodeRun {
+                language: code.language.to_owned(),
+                code: code.code.to_owned(),
+                error,
+                return_type: Some(return_type.to_owned()),
+                line_number: Some(1),
+                output_type: Some(return_type),
+                std_out,
+                std_err: std_err.to_owned(),
+                cells_accessed: transaction.cells_accessed.to_owned(),
             };
 
             let name = match code.language {
@@ -230,7 +256,8 @@ impl GridController {
                 value,
                 false,
                 true,
-                true,
+                None,
+                None,
                 None,
             );
 
@@ -269,6 +296,7 @@ mod tests {
 
     use super::*;
     use crate::cell_values::CellValues;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
     use crate::{CellValue, Pos, Rect, SheetPos};
 
@@ -405,7 +433,7 @@ mod tests {
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["1".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("1".into(), 2)),
             ..Default::default()
         });
         assert!(result.is_ok());

@@ -14,8 +14,8 @@ import type { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cell
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { Link } from '@/app/gridGL/types/links';
 import type { JsValidationWarning } from '@/app/quadratic-core-types';
+import type { Link } from '@/app/shared/types/links';
 import type {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -83,7 +83,7 @@ export class CellsLabels extends Container {
       );
       this.cellsTextHash.set(key, cellsTextHash);
     }
-    cellsTextHash.content.import(message.content);
+    cellsTextHash.content.import(message.content as Uint32Array<ArrayBuffer>);
     cellsTextHash.links = message.links;
     cellsTextHash.newDrawRects = message.drawRects;
   }

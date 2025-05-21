@@ -47,25 +47,53 @@ impl ColRange {
     pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
         match self {
             ColRange::Col(col) => {
-                if col == old_name {
+                if col.eq_ignore_ascii_case(old_name) {
                     *col = new_name.to_string();
                 }
             }
             ColRange::ColRange(col1, col2) => {
-                if col1 == old_name {
+                if col1.eq_ignore_ascii_case(old_name) {
                     *col1 = new_name.to_string();
                 }
-                if col2 == old_name {
+                if col2.eq_ignore_ascii_case(old_name) {
                     *col2 = new_name.to_string();
                 }
             }
             ColRange::ColToEnd(col) => {
-                if col == old_name {
+                if col.eq_ignore_ascii_case(old_name) {
                     *col = new_name.to_string();
                 }
             }
             // ignore the ALL case
             _ => {}
+        }
+    }
+
+    /// Returns the number of columns in the range.
+    pub fn col_count(&self, table: &TableMapEntry) -> usize {
+        match self {
+            ColRange::All => table.visible_columns.len(),
+            ColRange::Col(name) => {
+                if table.try_col_index(name).is_some() {
+                    1
+                } else {
+                    0
+                }
+            }
+            ColRange::ColRange(start, end) => {
+                if let Some((start_index, end_index)) = table.try_col_range(start, end) {
+                    (end_index - start_index + 1) as usize
+                } else {
+                    0
+                }
+            }
+            ColRange::ColToEnd(col) => {
+                if let Some((start, end)) = table.try_col_range_to_end(col) {
+                    (end - start + 1) as usize
+                } else {
+                    0
+                }
+            }
         }
     }
 }
@@ -84,7 +112,7 @@ impl fmt::Display for ColRange {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::CodeCellLanguage, Rect};
+    use crate::{Rect, grid::CodeCellLanguage};
 
     use super::*;
 
@@ -146,5 +174,49 @@ mod tests {
         assert!(!ColRange::Col("Z".to_string()).has_col(0, &table));
         assert!(!ColRange::ColRange("Y".to_string(), "Z".to_string()).has_col(0, &table));
         assert!(!ColRange::ColToEnd("Z".to_string()).has_col(0, &table));
+    }
+
+    #[test]
+    fn test_col_count() {
+        let table = TableMapEntry::test(
+            "test",
+            &["A", "B", "C", "D", "E"],
+            None,
+            Rect::test_a1("A1:E5"),
+            CodeCellLanguage::Import,
+        );
+
+        // Test ColRange::All
+        assert_eq!(ColRange::All.col_count(&table), 5);
+
+        // Test ColRange::Col
+        assert_eq!(ColRange::Col("A".to_string()).col_count(&table), 1);
+        assert_eq!(ColRange::Col("C".to_string()).col_count(&table), 1);
+        assert_eq!(ColRange::Col("E".to_string()).col_count(&table), 1);
+        assert_eq!(ColRange::Col("Z".to_string()).col_count(&table), 0); // Invalid column
+
+        // Test ColRange::ColRange
+        assert_eq!(
+            ColRange::ColRange("A".to_string(), "C".to_string()).col_count(&table),
+            3
+        );
+        assert_eq!(
+            ColRange::ColRange("B".to_string(), "E".to_string()).col_count(&table),
+            4
+        );
+        assert_eq!(
+            ColRange::ColRange("C".to_string(), "C".to_string()).col_count(&table),
+            1
+        );
+        assert_eq!(
+            ColRange::ColRange("Z".to_string(), "Y".to_string()).col_count(&table),
+            0
+        ); // Invalid columns
+
+        // Test ColRange::ColToEnd
+        assert_eq!(ColRange::ColToEnd("A".to_string()).col_count(&table), 5);
+        assert_eq!(ColRange::ColToEnd("C".to_string()).col_count(&table), 3);
+        assert_eq!(ColRange::ColToEnd("E".to_string()).col_count(&table), 1);
+        assert_eq!(ColRange::ColToEnd("Z".to_string()).col_count(&table), 0); // Invalid column
     }
 }

@@ -1,9 +1,10 @@
 use crate::{
-    grid::{
-        js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
-        CellAlign, CodeCellLanguage, DataTable, Format, Sheet,
-    },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
+    a1::A1Context,
+    grid::{
+        CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
+        js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
+    },
 };
 
 impl Sheet {
@@ -108,6 +109,7 @@ impl Sheet {
         data_table: &DataTable,
         render_rect: &Rect,
         code_rect: &Rect,
+        context: &A1Context,
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
 
@@ -138,9 +140,8 @@ impl Sheet {
                 if let Some(intersection) = code_rect.intersection(render_rect) {
                     for x in intersection.x_range() {
                         for y in intersection.y_range() {
-                            let is_header = data_table.show_ui
-                                && data_table.show_columns
-                                && y == code_rect_start_y - 1;
+                            let is_header =
+                                data_table.get_show_columns() && y == code_rect_start_y - 1;
 
                             // We skip rendering the header rows because we render it separately.
                             if y < code_rect_start_y && !is_header {
@@ -155,9 +156,10 @@ impl Sheet {
                             let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                             if let Some(value) = value {
-                                let format = if is_header {
-                                    // column headers are bold
+                                let mut format = if is_header {
+                                    // column headers are always clipped and bold
                                     Format {
+                                        wrap: Some(CellWrap::Clip),
                                         bold: Some(true),
                                         ..Default::default()
                                     }
@@ -174,10 +176,15 @@ impl Sheet {
                                     None
                                 };
 
-                                let special = match value {
-                                    CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
-                                    _ => None,
-                                };
+                                let special = self
+                                    .validations
+                                    .render_special_pos(Pos { x, y }, context)
+                                    .or(match value {
+                                        CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
+                                        _ => None,
+                                    });
+
+                                Self::ensure_lists_are_clipped(&mut format, &special);
 
                                 let mut render_cell =
                                     self.get_render_cell(x, y, &value, format, language, special);
@@ -195,9 +202,20 @@ impl Sheet {
         cells
     }
 
+    /// ensure that list cells are always clipped or wrapped (so the dropdown icon is visible)
+    fn ensure_lists_are_clipped(format: &mut Format, special: &Option<JsRenderCellSpecial>) {
+        if special
+            .as_ref()
+            .is_some_and(|s| matches!(s, JsRenderCellSpecial::List))
+            && !format.wrap.is_some_and(|w| matches!(w, CellWrap::Wrap))
+        {
+            format.wrap = Some(CellWrap::Clip);
+        }
+    }
+
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
-    pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
+    pub fn get_render_cells(&self, rect: Rect, a1_context: &A1Context) -> Vec<JsRenderCell> {
         let mut render_cells = vec![];
 
         // Fetch ordinary value cells.
@@ -207,10 +225,9 @@ impl Sheet {
                 column.values.range(rect.y_range()).for_each(|(&y, value)| {
                     // ignore code cells when rendering since they will be taken care in the next part
                     if !matches!(value, CellValue::Code(_) | CellValue::Import(_)) {
-                        let context = self.a1_context();
                         let special = self
                             .validations
-                            .render_special_pos(Pos { x, y }, &context)
+                            .render_special_pos(Pos { x, y }, a1_context)
                             .or({
                                 if matches!(value, CellValue::Logical(_)) {
                                     Some(JsRenderCellSpecial::Logical)
@@ -219,7 +236,9 @@ impl Sheet {
                                 }
                             });
 
-                        let format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+
+                        Self::ensure_lists_are_clipped(&mut format, &special);
 
                         render_cells.push(self.get_render_cell(x, y, value, format, None, special));
                     }
@@ -239,17 +258,14 @@ impl Sheet {
                         data_table,
                         &rect,
                         &data_table_rect,
+                        a1_context,
                     ));
                 }
             });
 
-        // need a sheet-specific table map to get validations (since
-        // validation.selection may have a reference to table w/in the sheet)
-        let context = self.a1_context();
-
         // Populate validations for cells that are not yet in the render_cells
         self.validations
-            .in_rect(rect, &context)
+            .in_rect(rect, a1_context)
             .iter()
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {
@@ -259,7 +275,7 @@ impl Sheet {
                         .ranges
                         .iter()
                         .for_each(|validations_range| {
-                            if let Some(validation_rect) = validations_range.to_rect(&context) {
+                            if let Some(validation_rect) = validations_range.to_rect(a1_context) {
                                 validation_rect
                                     .iter()
                                     .filter(|pos| rect.contains(*pos))
@@ -287,12 +303,17 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
+    use crate::grid::sheet::validations::rules::ValidationRule;
+    use crate::grid::sheet::validations::validation::Validation;
+    use crate::test_util::*;
     use crate::{
+        SheetPos, Value,
         a1::A1Selection,
         controller::GridController,
         grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
-        SheetPos, Value,
     };
 
     use super::*;
@@ -323,6 +344,8 @@ mod tests {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "1 + 1".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -339,7 +362,8 @@ mod tests {
                 Value::Single(CellValue::Text("hello".to_string())),
                 false,
                 false,
-                true,
+                Some(true),
+                Some(true),
                 None,
             )),
         );
@@ -390,10 +414,14 @@ mod tests {
             })),
         );
 
-        let render = sheet.get_render_cells(Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 10, y: 10 },
-        });
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 10, y: 10 },
+            },
+            gc.a1_context(),
+        );
         assert_eq!(render.len(), 6);
 
         let get = |x: i64, y: i64| -> Option<&JsRenderCell> {
@@ -483,7 +511,7 @@ mod tests {
         );
         assert_eq!(
             gc.sheet(sheet_id)
-                .get_render_cells(Rect::from_numbers(1, 2, 1, 1)),
+                .get_render_cells(Rect::from_numbers(1, 2, 1, 1), gc.a1_context()),
             vec![JsRenderCell {
                 x: 1,
                 y: 2,
@@ -509,10 +537,13 @@ mod tests {
         gc.set_cell_value((5, 5, sheet_id).into(), "fALSE".to_string(), None);
 
         let sheet = gc.sheet(sheet_id);
-        let rendering = sheet.get_render_cells(Rect {
-            min: (0, 0).into(),
-            max: (5, 5).into(),
-        });
+        let rendering = sheet.get_render_cells(
+            Rect {
+                min: (0, 0).into(),
+                max: (5, 5).into(),
+            },
+            gc.a1_context(),
+        );
         for (i, rendering) in rendering.iter().enumerate().take(5 + 1) {
             if i % 2 == 0 {
                 assert_eq!(rendering.value, "true".to_string());
@@ -533,10 +564,13 @@ mod tests {
         gc.set_cell_value((0, 3, sheet_id).into(), "0.2 millisecond".to_string(), None);
 
         let sheet = gc.sheet(sheet_id);
-        let rendering = sheet.get_render_cells(Rect {
-            min: (0, 0).into(),
-            max: (0, 3).into(),
-        });
+        let rendering = sheet.get_render_cells(
+            Rect {
+                min: (0, 0).into(),
+                max: (0, 3).into(),
+            },
+            gc.a1_context(),
+        );
         assert_eq!(rendering[0].value, "10d");
         assert_eq!(rendering[1].value, "3y 0d 0h 0m 0.5s");
         assert_eq!(rendering[2].value, "1m 0.01s");
@@ -584,7 +618,7 @@ mod tests {
             },
         ];
         let sheet = gc.sheet(sheet_id);
-        let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1));
+        let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1), gc.a1_context());
 
         println!("{:?}", cells);
         println!("{:?}", expected);
@@ -598,5 +632,76 @@ mod tests {
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
             true,
         );
+    }
+
+    #[test]
+    fn test_get_code_cell_validations() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
+
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let code_cell = sheet.get_render_cells(Rect::test_a1("b2:b7"), gc.a1_context());
+        dbg!(&code_cell);
+    }
+
+    #[test]
+    fn test_ensure_lists_are_clipped() {
+        // Test case 1: List cell with no wrap setting
+        let mut format = Format::default();
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Clip));
+
+        // Test case 2: List cell with wrap setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Wrap),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Wrap));
+
+        // Test case 3: List cell with clip setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Clip),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::List);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Clip));
+
+        // Test case 4: Non-list cell with no wrap setting
+        let mut format = Format::default();
+        let special = Some(JsRenderCellSpecial::Logical);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, None);
+
+        // Test case 5: Non-list cell with wrap setting
+        let mut format = Format {
+            wrap: Some(CellWrap::Wrap),
+            ..Default::default()
+        };
+        let special = Some(JsRenderCellSpecial::Logical);
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, Some(CellWrap::Wrap));
+
+        // Test case 6: No special type
+        let mut format = Format::default();
+        let special = None;
+        Sheet::ensure_lists_are_clipped(&mut format, &special);
+        assert_eq!(format.wrap, None);
     }
 }

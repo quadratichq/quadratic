@@ -4,9 +4,10 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debug, debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   BorderSelection,
@@ -70,6 +71,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientNeighborText,
   CoreClientSearch,
+  CoreClientSetCodeCellValue,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -148,6 +150,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientTransactionProgress') {
       events.emit('transactionProgress', e.data);
       return;
+    } else if (e.data.type === 'coreClientTransactionEnd') {
+      events.emit('transactionEnd', e.data);
+      return;
     } else if (e.data.type === 'coreClientUpdateCodeCell') {
       events.emit('updateCodeCell', {
         sheetId: e.data.sheetId,
@@ -206,6 +211,12 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientA1Context') {
       events.emit('a1Context', e.data.context);
       return;
+    } else if (e.data.type === 'coreClientCoreError') {
+      events.emit('coreError', e.data.from, e.data.error);
+      if (debug) {
+        console.error('[quadraticCore] core error', e.data.from, e.data.error);
+      }
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -227,7 +238,7 @@ class QuadraticCore {
     }
   };
 
-  private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
+  send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
     // worker may not be defined during hmr
     if (!this.worker) return;
 
@@ -241,11 +252,13 @@ class QuadraticCore {
   // Loads a Grid file and initializes renderWebWorker upon response
   async load({
     fileId,
+    teamUuid,
     url,
     version,
     sequenceNumber,
   }: {
     fileId: string;
+    teamUuid: string;
     url: string;
     version: string;
     sequenceNumber: number;
@@ -275,6 +288,7 @@ class QuadraticCore {
         sequenceNumber,
         id,
         fileId,
+        teamUuid,
       };
       if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);
@@ -482,15 +496,22 @@ class QuadraticCore {
     language: CodeCellLanguage;
     codeString: string;
     cursor?: string;
-  }) {
-    this.send({
-      type: 'clientCoreSetCodeCellValue',
-      sheetId: options.sheetId,
-      x: options.x,
-      y: options.y,
-      language: options.language,
-      codeString: options.codeString,
-      cursor: options.cursor,
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetCodeCellValue) => {
+        resolve(message.transactionId);
+      };
+      this.send({
+        type: 'clientCoreSetCodeCellValue',
+        sheetId: options.sheetId,
+        x: options.x,
+        y: options.y,
+        language: options.language,
+        codeString: options.codeString,
+        cursor: options.cursor,
+        id,
+      });
     });
   }
 
@@ -971,7 +992,14 @@ class QuadraticCore {
     });
   }
 
-  moveCells(source: SheetRect, targetX: number, targetY: number, targetSheetId: string) {
+  moveCells(
+    source: SheetRect,
+    targetX: number,
+    targetY: number,
+    targetSheetId: string,
+    columns: boolean,
+    rows: boolean
+  ) {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = () => {
@@ -984,6 +1012,8 @@ class QuadraticCore {
         targetSheetId,
         targetX,
         targetY,
+        columns,
+        rows,
         cursor: sheets.getCursorPosition(),
       });
     });
@@ -1350,6 +1380,28 @@ class QuadraticCore {
     });
   }
 
+  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveColumns',
+      sheetId,
+      colStart,
+      colEnd,
+      to,
+      cursor,
+    });
+  }
+
+  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveRows',
+      sheetId,
+      rowStart,
+      rowEnd,
+      to,
+      cursor,
+    });
+  }
+
   //#endregion
   //#region data tables
 
@@ -1389,9 +1441,8 @@ class QuadraticCore {
       name?: string;
       alternatingColors?: boolean;
       columns?: JsDataTableColumnHeader[];
-      showColumns?: boolean;
       showName?: boolean;
-      showUI?: boolean;
+      showColumns?: boolean;
     },
     cursor?: string
   ) {
@@ -1403,7 +1454,6 @@ class QuadraticCore {
       name: options.name,
       alternatingColors: options.alternatingColors,
       columns: options.columns,
-      showUI: options.showUI,
       showName: options.showName,
       showColumns: options.showColumns,
       cursor: cursor || '',
@@ -1496,6 +1546,42 @@ class QuadraticCore {
     });
   }
   //#endregion
+
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
+    this.send({
+      type: 'clientCoreResizeColumns',
+      sheetId,
+      columns,
+      cursor,
+    });
+  }
+
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
+    this.send({
+      type: 'clientCoreResizeRows',
+      sheetId,
+      rows,
+      cursor,
+    });
+  }
+
+  resizeAllColumns(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllColumns',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  resizeAllRows(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllRows',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();

@@ -18,7 +18,6 @@ import {
   toggleTableAlternatingColorsAction,
   toggleTableColumnsAction,
   toggleTableNameAction,
-  toggleTableUIAction,
 } from '@/app/actions';
 import {
   codeToDataTable,
@@ -38,7 +37,6 @@ import {
   toggleTableAlternatingColors,
   toggleTableColumns,
   toggleTableName,
-  toggleTableUI,
 } from '@/app/actions/dataTableSpec';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
@@ -74,13 +72,6 @@ const dataTableCommandGroup: CommandGroup = {
       isAvailable: toggleFirstRowAsHeaderAction.isAvailable,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={toggleFirstRowAsHeader} />;
-      },
-    },
-    {
-      label: toggleTableUIAction.label,
-      isAvailable: toggleTableUIAction.isAvailable,
-      Component: (props) => {
-        return <CommandPaletteListItem {...props} action={toggleTableUI} />;
       },
     },
     {

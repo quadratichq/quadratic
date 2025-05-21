@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsDataTableColumnHeader } from '@/app/quadratic-core-types';
-import { validateColumnName } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { validateColumnName } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useCallback } from 'react';
@@ -14,6 +14,7 @@ export function useRenameTableColumnName() {
       x,
       y,
       tableName,
+      index,
       oldColumnName,
       newColumnName,
       columns,
@@ -22,12 +23,13 @@ export function useRenameTableColumnName() {
       x: number;
       y: number;
       tableName: string;
+      index: number;
       oldColumnName: string;
       newColumnName: string;
       columns: JsDataTableColumnHeader[];
     }) => {
       try {
-        validateColumnName(tableName, newColumnName, sheets.a1Context);
+        validateColumnName(tableName, index, newColumnName, sheets.a1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;

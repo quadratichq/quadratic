@@ -1,5 +1,5 @@
-//! Contains context for use by quadratic-rust-client (and core) when using A1.
-//! This is needed because rust-client does not have access to the grid, so it
+//! Contains context for use by quadratic-core when using A1. This is needed
+//! because quadratic-client's core does not have access to the grid, so it
 //! needs a mapping of sheet names to ids, table information, and (eventually)
 //! named ranges.
 
@@ -9,11 +9,10 @@ use ts_rs::TS;
 mod sheet_map;
 mod table_map;
 mod table_map_entry;
-pub mod wasm_bindings;
 
 use crate::{
-    grid::{CodeCellLanguage, SheetId},
     SheetPos,
+    grid::{CodeCellLanguage, SheetId},
 };
 pub use sheet_map::*;
 pub use table_map::*;
@@ -153,6 +152,13 @@ impl A1Context {
     #[cfg(test)]
     pub fn table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
         self.table_map.get_mut(table_name)
+    }
+
+    /// Constructs an A1 context with only a single sheet.
+    pub fn with_single_sheet(sheet_name: &str, sheet_id: SheetId) -> Self {
+        let mut ret = Self::default();
+        ret.sheet_map.insert_parts(sheet_name, sheet_id);
+        ret
     }
 }
 

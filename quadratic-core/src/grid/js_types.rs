@@ -305,10 +305,9 @@ pub struct JsRenderCodeCell {
     pub sort: Option<Vec<DataTableSort>>,
     pub sort_dirty: bool,
     pub alternating_colors: bool,
-    pub readonly: bool,
+    pub is_code: bool,
     pub is_html: bool,
     pub is_html_image: bool,
-    pub show_ui: bool,
     pub show_name: bool,
     pub show_columns: bool,
 }
@@ -381,6 +380,12 @@ impl From<JsDataTableColumnHeader> for DataTableColumnHeader {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
+pub struct JsColumnWidth {
+    pub column: i64,
+    pub width: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsRowHeight {
     pub row: i64,
     pub height: f64,
@@ -443,8 +448,8 @@ impl fmt::Display for JsSnackbarSeverity {
 mod test {
 
     use super::JsNumber;
-    use crate::grid::formats::Format;
     use crate::grid::NumericFormat;
+    use crate::grid::formats::Format;
 
     #[test]
     fn to_js_number() {
@@ -472,4 +477,10 @@ mod test {
         let js_number: JsNumber = (&Format::default()).into();
         assert_eq!(js_number, JsNumber::default());
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsResponse {
+    pub result: bool,
+    pub error: Option<String>,
 }

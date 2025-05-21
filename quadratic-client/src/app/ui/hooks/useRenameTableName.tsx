@@ -1,5 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { validateTableName } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { validateTableName } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useCallback } from 'react';
@@ -24,7 +24,7 @@ export function useRenameTableName() {
       newName = newName.trim();
 
       try {
-        validateTableName(newName, sheets.a1Context);
+        validateTableName(newName, sheetId, x, y, sheets.a1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;

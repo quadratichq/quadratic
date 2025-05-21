@@ -4,19 +4,16 @@ import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tab
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const TableRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
-  const [inputElement, setInputElement] = useState<HTMLInputElement | undefined>(undefined);
-  const getInputElement = useCallback(
-    (element: HTMLInputElement) => {
-      setInputElement(element);
-    },
-    [setInputElement]
-  );
+  const inputRef = useRef<HTMLInputElement>(null);
+  const getInputElement = useCallback((element: HTMLInputElement) => {
+    inputRef.current = element;
+  }, []);
 
   const [width, setWidth] = useState<number | undefined>(undefined);
   useEffect(() => {
@@ -29,15 +26,12 @@ export const TableRename = () => {
       ) {
         return;
       } else {
-        const bounds = pixiApp.cellsSheets.current?.tables.getTableNamePosition(
-          contextMenu.table.x,
-          contextMenu.table.y
-        );
-        if (bounds && inputElement) {
+        const bounds = pixiApp.cellsSheet().tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
+        if (bounds && inputRef.current) {
           setWidth(bounds.width);
-          inputElement.style.top = `${bounds.y}px`;
-          inputElement.style.left = `${bounds.x}px`;
-          inputElement.style.height = `${bounds.height}px`;
+          inputRef.current.style.top = `${bounds.y}px`;
+          inputRef.current.style.left = `${bounds.x}px`;
+          inputRef.current.style.height = `${bounds.height}px`;
         }
       }
     };
@@ -46,7 +40,7 @@ export const TableRename = () => {
     return () => {
       events.off('viewportChanged', updatePosition);
     };
-  }, [contextMenu, inputElement]);
+  }, [contextMenu.rename, contextMenu.selectedColumn, contextMenu.table, contextMenu.type]);
 
   const { renameTable } = useRenameTableName();
 

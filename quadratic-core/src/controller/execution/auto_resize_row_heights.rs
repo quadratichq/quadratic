@@ -4,8 +4,8 @@ use super::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::error_core::Result;
-use crate::grid::js_types::JsRowHeight;
 use crate::grid::SheetId;
+use crate::grid::js_types::JsRowHeight;
 
 impl GridController {
     pub fn start_auto_resize_row_heights(
@@ -40,7 +40,9 @@ impl GridController {
                     return true;
                 }
             } else {
-                dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
+                dbgjs!(
+                    "[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows"
+                );
             }
         } else {
             dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
@@ -73,13 +75,15 @@ mod tests {
 
     use bigdecimal::BigDecimal;
 
+    use crate::controller::GridController;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Value;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Values;
     use crate::controller::operations::operation::Operation;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::controller::transaction_types::JsCodeResult;
-    use crate::controller::GridController;
+    use crate::controller::user_actions::import::tests::simple_csv_at;
     use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::SheetFormatUpdates;
     use crate::grid::formatting::RenderSize;
@@ -92,7 +96,7 @@ mod tests {
     use crate::wasm_bindings::js::{
         clear_js_calls, expect_js_call, expect_js_call_count, expect_js_offsets,
     };
-    use crate::{a1::A1Selection, CellValue, Pos, SheetPos};
+    use crate::{CellValue, Pos, SheetPos, a1::A1Selection};
 
     fn mock_auto_resize_row_heights(
         gc: &mut GridController,
@@ -137,12 +141,14 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_values_operations(
-            sheet_pos,
-            vec![vec![
-                "test_auto_resize_row_heights_on_set_cell_value_1".to_string()
-            ]],
-        );
+        let ops = gc
+            .set_cell_values_operations(
+                sheet_pos,
+                vec![vec![
+                    "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
+                ]],
+            )
+            .unwrap();
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
             row: 1,
@@ -174,12 +180,14 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
 
-        let ops = gc.set_cell_values_operations(
-            sheet_pos,
-            vec![vec![
-                "test_auto_resize_row_heights_on_set_cell_value_2".to_string()
-            ]],
-        );
+        let ops = gc
+            .set_cell_values_operations(
+                sheet_pos,
+                vec![vec![
+                    "test_auto_resize_row_heights_on_set_cell_value_2".to_string(),
+                ]],
+            )
+            .unwrap();
         let row_heights = vec![JsRowHeight {
             row: 1,
             height: 40f64,
@@ -504,8 +512,8 @@ mod tests {
                     cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
-                        value: "9".into(),
-                        type_name: "number".into(),
+                        v: "9".into(),
+                        t: 2,
                     }],
                     x: 1,
                     y: 1,
@@ -522,17 +530,18 @@ mod tests {
         let transaction = gc.async_transactions().first().unwrap();
         assert_eq!(transaction.has_async, 1);
 
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["10".into(), "number".into()]),
+                output_value: Some(JsCellValueResult("10".into(), 2)),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 3 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
 
@@ -651,12 +660,14 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_values_operations(
-            sheet_pos,
-            vec![vec![
-                "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
-            ]],
-        );
+        let ops = gc
+            .set_cell_values_operations(
+                sheet_pos,
+                vec![vec![
+                    "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+                ]],
+            )
+            .unwrap();
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
             row: 1,
@@ -756,5 +767,124 @@ mod tests {
         // confirm no pending async transaction
         let async_transaction = gc.transactions.get_async_transaction(next_transaction.id);
         assert!(async_transaction.is_err());
+    }
+
+    #[test]
+    fn test_table_rows_resize_on_cell_wrap() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos![M20]);
+
+        clear_js_calls();
+
+        // should trigger auto resize row heights for wrap
+        let ops = vec![Operation::DataTableFormats {
+            sheet_pos: pos.to_sheet_pos(sheet_id),
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1_sheet_id("A2", sheet_id),
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 22,
+            height: 40f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[22]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 40f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
+    }
+
+    #[test]
+    fn test_table_rows_resize_on_set_value() {
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos![M20]);
+
+        // pre set cell wrap at M22 and clear js calls
+        gc.set_cell_wrap(
+            &A1Selection::test_a1_sheet_id("M22", sheet_id),
+            CellWrap::Wrap,
+            None,
+        )
+        .unwrap();
+        clear_js_calls();
+
+        // should trigger auto resize row heights for setting value at cell having wrap
+        let ops = vec![Operation::SetDataTableAt {
+            sheet_pos: pos![M22].to_sheet_pos(sheet_id),
+            values: vec![vec!["value"]].into(),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 22,
+            height: 40f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[22]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 40f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
+    }
+
+    #[test]
+    fn test_table_rows_resize_on_delete_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos![M20]);
+
+        // pre set cell wrap at M22 and clear js calls
+        gc.set_cell_wrap(
+            &A1Selection::test_a1_sheet_id("M22", sheet_id),
+            CellWrap::Wrap,
+            None,
+        )
+        .unwrap();
+        clear_js_calls();
+
+        // should trigger auto resize row heights for setting value at cell having wrap
+        let ops = vec![Operation::SetDataTableAt {
+            sheet_pos: pos![M22].to_sheet_pos(sheet_id),
+            values: vec![vec!["value"]].into(),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 22,
+            height: 40f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[22]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 40f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
+
+        // should trigger auto resize row heights for deleting table having wrap
+        let ops = vec![Operation::DeleteDataTable {
+            sheet_pos: pos.to_sheet_pos(sheet_id),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 22,
+            height: 21f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[22]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 21f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
+
+        gc.undo(None);
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 40f64);
     }
 }

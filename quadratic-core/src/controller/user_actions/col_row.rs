@@ -1,29 +1,26 @@
 use crate::{
+    CopyFormats,
     controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
+        GridController, active_transactions::transaction_name::TransactionName,
+        operations::operation::Operation,
     },
     grid::SheetId,
-    CopyFormats,
 };
 
 impl GridController {
-    pub fn delete_columns(
-        &mut self,
-        sheet_id: SheetId,
-        mut columns: Vec<i64>,
-        cursor: Option<String>,
-    ) {
-        columns.sort_unstable();
-        columns.dedup();
-        columns.reverse();
-        let ops = columns
-            .into_iter()
-            .map(|column| Operation::DeleteColumn { sheet_id, column })
-            .collect();
+    pub fn delete_columns(&mut self, sheet_id: SheetId, columns: Vec<i64>, cursor: Option<String>) {
+        let ops = vec![Operation::DeleteColumns {
+            sheet_id,
+            columns,
+            copy_formats: CopyFormats::After,
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
+    /// Note the after is providing the source column, not the direction of the
+    /// insertion. DF: While confusing, it was created originally to support
+    /// copying formats, but later turned into a differentiator for inserting
+    /// columns, since the behavior was different for insert to left vs right.
     pub fn insert_column(
         &mut self,
         sheet_id: SheetId,
@@ -43,17 +40,12 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
-    pub fn delete_rows(&mut self, sheet_id: SheetId, mut rows: Vec<i64>, cursor: Option<String>) {
-        rows.sort_unstable();
-        rows.dedup();
-        rows.reverse();
-        let ops = rows
-            .iter()
-            .map(|row| Operation::DeleteRow {
-                sheet_id,
-                row: *row,
-            })
-            .collect();
+    pub fn delete_rows(&mut self, sheet_id: SheetId, rows: Vec<i64>, cursor: Option<String>) {
+        let ops = vec![Operation::DeleteRows {
+            sheet_id,
+            rows,
+            copy_formats: CopyFormats::None,
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -69,14 +61,48 @@ impl GridController {
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
+
+    pub fn move_columns(
+        &mut self,
+        sheet_id: SheetId,
+        col_start: i64,
+        col_end: i64,
+        to: i64,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::MoveColumns {
+            sheet_id,
+            col_start,
+            col_end,
+            to,
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+    }
+
+    pub fn move_rows(
+        &mut self,
+        sheet_id: SheetId,
+        row_start: i64,
+        row_end: i64,
+        to: i64,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::MoveRows {
+            sheet_id,
+            row_start,
+            row_end,
+            to,
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+    }
 }
 
 #[cfg(test)]
 mod tests {
 
     use crate::{
-        grid::{formats::Format, CodeCellLanguage, CodeCellValue},
         CellValue, Pos, SheetPos,
+        grid::{CodeCellLanguage, CodeCellValue, formats::Format},
     };
 
     use super::*;
@@ -184,8 +210,11 @@ mod tests {
             .formats
             .fill_color
             .set(Pos::new(1, 1), Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.fill_color.get(pos![A1]),
             Some("red".to_string())
@@ -242,8 +271,11 @@ mod tests {
             .formats
             .fill_color
             .set(pos![A1], Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
             Format {
@@ -305,8 +337,11 @@ mod tests {
             .formats
             .fill_color
             .set(pos![A1], Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
             Format {
@@ -368,8 +403,11 @@ mod tests {
             .formats
             .fill_color
             .set(Pos::new(1, 1), Some("red".to_string()));
-        sheet.recalculate_bounds();
 
+        let a1_context = gc.a1_context().to_owned();
+        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
+
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
             Format {

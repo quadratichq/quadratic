@@ -9,29 +9,35 @@
 use std::io::Read;
 
 use arrow_schema::DataType;
+use axum::body::Body;
 use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
+use http::{HeaderMap, HeaderName, HeaderValue};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::data_type::AsBytes;
 use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 use serde::de::DeserializeOwned;
+use tower::ServiceExt;
+use uuid::Uuid;
 
 use crate::auth::Claims;
 use crate::config::config;
+use crate::server::app;
 use crate::state::State;
 
 /// Utility to test a connection over various databases.
 #[macro_export]
 macro_rules! test_connection {
-    ( $get_connection:expr ) => {{
-        let connection_id = Uuid::new_v4();
-        let state = new_state().await;
-        let claims = get_claims();
-        let (mysql_connection, _) = $get_connection(&state, &claims, &connection_id)
+    ( $connection:expr ) => {{
+        let (_, headers) = crate::test_util::new_team_id_with_header().await;
+        let state = Extension(crate::test_util::new_state().await);
+        let claims = crate::test_util::get_claims();
+        let response = test(headers, state, claims, axum::Json($connection))
             .await
             .unwrap();
-        let response = test(axum::Json(mysql_connection)).await;
+
+        println!("response: {:?}", response);
 
         assert_eq!(response.0, TestResponse::new(true, None));
     }};
@@ -40,9 +46,7 @@ macro_rules! test_connection {
 /// Convert a number into a vector of bytes.
 #[macro_export]
 macro_rules! num_vec {
-    ( $value:expr ) => {{
-        $value.to_le_bytes().to_vec()
-    }};
+    ( $value:expr ) => {{ $value.to_le_bytes().to_vec() }};
 }
 
 // Convert a string into a vector of bytes.
@@ -55,6 +59,16 @@ pub(crate) async fn new_state() -> State {
     State::new(&config, None).unwrap()
 }
 
+pub(crate) async fn new_team_id_with_header() -> (Uuid, HeaderMap) {
+    let team_id = Uuid::new_v4();
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("x-team-id"),
+        HeaderValue::from_str(&team_id.to_string()).unwrap(),
+    );
+
+    (team_id, headers)
+}
 /// TODO(ddimaria): remove once API is setup to return connections
 pub(crate) fn _new_postgres_connection() -> PostgresConnection {
     PostgresConnection::new(
@@ -63,6 +77,11 @@ pub(crate) fn _new_postgres_connection() -> PostgresConnection {
         "0.0.0.0".into(),
         Some("5432".into()),
         "postgres".into(),
+        Some(false),
+        Some("".into()),
+        Some("".into()),
+        Some("".into()),
+        Some("".into()),
     )
 }
 
@@ -74,10 +93,7 @@ pub(crate) fn get_claims() -> Claims {
 }
 
 pub(crate) async fn response_bytes(response: Response) -> Bytes {
-    response
-        .into_body()
-        .into_data_stream()
-        .into_future()
+    StreamExt::into_future(response.into_body().into_data_stream())
         .await
         .0
         .unwrap_or(Ok(Bytes::new()))
@@ -127,8 +143,27 @@ pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType
 
     for (count, expect) in expected.iter().enumerate() {
         let (data_type, value) = output.get(count).unwrap().to_owned();
+        println!("data_type: {:?}, value: {:?}", data_type, value);
+        println!("expected data_type: {:?}", expect.0);
 
-        assert_eq!(data_type, expect.0);
-        assert_eq!(value, expect.1);
+        assert_eq!(data_type, expect.0, "Invalid data type at index {}", count);
+        assert_eq!(value, expect.1, "Invalid value at index {}", count);
     }
+}
+
+/// Process a route and return the response.
+/// TODO(ddimaria): move to quadratic-rust-shared
+pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
+    let state = new_state().await;
+    let app = app(state).unwrap();
+
+    app.oneshot(
+        axum::http::Request::builder()
+            .method(method)
+            .uri(uri)
+            .body(body)
+            .unwrap(),
+    )
+    .await
+    .unwrap()
 }

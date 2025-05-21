@@ -1,7 +1,7 @@
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { Empty } from '@/dashboard/components/Empty';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { AddIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
   ConnectionsListConnection,
@@ -22,7 +22,7 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
   handleNavigateToCreateView: NavigateToCreateView;
-  hangleNavigateToDetailsView: NavigateToView;
+  handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
 };
 
@@ -30,7 +30,7 @@ export const ConnectionsList = ({
   connections,
   connectionsAreLoading,
   handleNavigateToCreateView,
-  hangleNavigateToDetailsView,
+  handleNavigateToDetailsView,
   handleNavigateToEditView,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
@@ -92,13 +92,14 @@ export const ConnectionsList = ({
             <ListItems
               filterQuery={filterQuery}
               items={connections}
-              hangleNavigateToDetailsView={hangleNavigateToDetailsView}
+              handleNavigateToDetailsView={handleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
             />
           </>
         ) : (
-          <Empty
+          <EmptyState
             title="No connections"
+            className="mt-8"
             description="Create a connection from the options above, then open a spreadsheet and pull in data from it."
             Icon={ConnectionsIcon}
           />
@@ -110,12 +111,12 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
-  hangleNavigateToDetailsView,
+  handleNavigateToDetailsView,
   handleNavigateToEditView,
   items,
 }: {
   filterQuery: string;
-  hangleNavigateToDetailsView: Props['hangleNavigateToDetailsView'];
+  handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   items: ConnectionsListConnection[];
 }) {
@@ -129,7 +130,7 @@ function ListItems({
         <div className="group relative flex items-center gap-1" key={uuid}>
           <button
             onClick={() => {
-              hangleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
+              handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
             }}
             disabled={disabled}
             key={uuid}
@@ -140,7 +141,7 @@ function ListItems({
             )}
           >
             <div className="flex h-6 w-6 items-center justify-center">
-              <LanguageIcon language={type} fontSize="small" />
+              <LanguageIcon language={type} />
             </div>
             <div className="flex flex-grow flex-col text-left">
               <span className="text-sm">{name}</span>

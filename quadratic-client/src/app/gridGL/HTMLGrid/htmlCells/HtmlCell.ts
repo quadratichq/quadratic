@@ -6,8 +6,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { Wheel } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import type { JsHtmlOutput } from '@/app/quadratic-core-types';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import type { InteractionEvent } from 'pixi.js';
-import { Point, Rectangle } from 'pixi.js';
+import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
 
 // number of screen pixels to trigger the resize cursor
 const tolerance = 5;
@@ -82,7 +81,8 @@ export class HtmlCell {
     this.iframe.setAttribute('scrolling', 'no');
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
-    this.iframe.style.backgroundColor = 'hsl(var(--background))';
+    // Hard-coded for now, since we invert this color
+    this.iframe.style.backgroundColor = '#fff';
 
     this.border = document.createElement('div');
     this.border.className = 'w-full h-full absolute top-0 left-0';
@@ -186,7 +186,7 @@ export class HtmlCell {
     return sheetId === this.htmlCell.sheet_id;
   }
 
-  hover(e: InteractionEvent): 'right' | 'bottom' | 'corner' | 'body' | undefined {
+  hover(e: FederatedPointerEvent): 'right' | 'bottom' | 'corner' | 'body' | undefined {
     const target = this.intersects(e);
     if (target === 'right' || target === 'bottom' || target === 'corner') {
       this.hoverSide = target;
@@ -198,13 +198,13 @@ export class HtmlCell {
     return target;
   }
 
-  private intersects(e: InteractionEvent): 'right' | 'bottom' | 'corner' | 'body' | undefined {
+  private intersects(e: FederatedPointerEvent): 'right' | 'bottom' | 'corner' | 'body' | undefined {
     const rect = this.div.getBoundingClientRect();
     const { left, top } = pixiApp.canvas.getBoundingClientRect();
     const viewport = pixiApp.viewport;
     const toleranceScaled = tolerance * viewport.scale.x;
-    const pointerX = e.data.global.x + left;
-    const pointerY = e.data.global.y + top;
+    const pointerX = e.global.x + left;
+    const pointerY = e.global.y + top;
     const right = pointerX - rect.right < toleranceScaled && pointerX - rect.right > 0;
     const bottom = Math.abs(pointerY - rect.bottom) < toleranceScaled;
     if (right && bottom) {
@@ -324,6 +324,12 @@ export class HtmlCell {
     this.active = true;
     this.border.style.border = '2px solid hsl(var(--primary))';
     this.pointerEvents = 'auto';
+    this.iframe.style.pointerEvents = this.pointerEvents;
+  }
+
+  temporarilyDeactivate() {
+    this.border.style.border = '1px solid hsl(var(--muted-foreground))';
+    this.pointerEvents = 'none';
     this.iframe.style.pointerEvents = this.pointerEvents;
   }
 

@@ -11,6 +11,8 @@ import {
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilCallback } from 'recoil';
 
+export const AI_FREE_TIER_WAIT_TIME_SECONDS = 5;
+
 type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
   setMessages?: SetterOrUpdater<ChatMessage[]> | ((value: React.SetStateAction<ChatMessage[]>) => void);
   signal: AbortSignal;
@@ -53,22 +55,30 @@ export function useAIRequestToAPI() {
 
           if (!response.ok) {
             const data = await response.json();
-            const error =
-              response.status === 429
-                ? 'You have exceeded the maximum number of requests. Please try again later.'
-                : `Looks like there was a problem. Error: ${data}`;
+            let text = '';
+            switch (response.status) {
+              case 429:
+                text = 'You have exceeded the maximum number of requests. Please try again later.';
+                break;
+              case 402:
+                text = 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
+                break;
+              default:
+                text = `Looks like there was a problem. Error: ${JSON.stringify(data.error)}`;
+                break;
+            }
             setMessages?.((prev) => [
               ...prev.slice(0, -1),
               {
                 role: 'assistant',
-                content: [{ type: 'text', text: error }],
+                content: [{ type: 'text', text }],
                 contextType: 'userPrompt',
                 model: getModelFromModelKey(args.modelKey),
                 toolCalls: [],
               },
             ]);
             console.error(`Error retrieving data from AI API. Error: ${data}`);
-            return { error: true, content: [{ type: 'text', text: error }], toolCalls: [] };
+            return { error: true, content: [{ type: 'text', text }], toolCalls: [] };
           }
 
           if (stream) {
@@ -92,7 +102,7 @@ export function useAIRequestToAPI() {
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
                     responseMessage = newResponseMessage;
                   } catch (error) {
-                    console.error('Error parsing AI response: ', { error, line, lines });
+                    console.warn('Error parsing AI response: ', { error, line });
                   }
                 }
               }

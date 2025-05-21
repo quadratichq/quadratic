@@ -1,4 +1,5 @@
 use crate::{
+    RefAdjust,
     a1::CellRefRangeEnd,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -12,7 +13,7 @@ use wasm_bindgen::prelude::*;
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
-    Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
+    Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
 )]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Pos {
@@ -85,27 +86,36 @@ impl Pos {
     }
 
     /// Returns a new Pos translated by the given delta, clamping the result to the given min.
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
         let mut pos = *self;
         pos.translate_in_place(x, y, min_x, min_y);
         pos
     }
 
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        if let Some(column) = column {
-            if self.x >= column {
-                self.x = self.x.saturating_add(delta).max(1);
-            }
-        }
-        if let Some(row) = row {
-            if self.y >= row {
-                self.y = self.y.saturating_add(delta).max(1);
-            }
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns a new Pos.
+    pub fn saturating_translate(&self, dx: i64, dy: i64) -> Self {
+        let adjust = RefAdjust::new_translate(dx, dy);
+        self.saturating_adjust(adjust)
+    }
+
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds.
+    ///
+    /// **Note:** `adjust.sheet_id` and `adjust.relative_only` are ignored by
+    /// this method.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
+        let x_start = adjust.x_start;
+        let dx = if self.x < x_start { 0 } else { adjust.dx };
+
+        let y_start = adjust.y_start;
+        let dy = if self.y < y_start { 0 } else { adjust.dy };
+
+        Self {
+            x: self.x.saturating_add(dx).max(1),
+            y: self.y.saturating_add(dy).max(1),
         }
     }
 
@@ -141,6 +151,14 @@ impl From<(i32, i32)> for Pos {
 }
 impl From<(u32, u32)> for Pos {
     fn from(pos: (u32, u32)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
+impl From<(usize, usize)> for Pos {
+    fn from(pos: (usize, usize)) -> Self {
         Pos {
             x: pos.0 as i64,
             y: pos.1 as i64,
@@ -194,6 +212,12 @@ pub struct SheetPos {
 }
 
 impl SheetPos {
+    /// Replace the pos with a new pos
+    pub fn replace_pos(&mut self, pos: Pos) {
+        self.x = pos.x;
+        self.y = pos.y;
+    }
+
     #[cfg(test)]
     pub fn test() -> Self {
         Self {
@@ -234,6 +258,12 @@ impl FromStr for SheetPos {
     }
 }
 
+impl fmt::Debug for Pos {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Pos ({}, {}) {}", self.x, self.y, self.a1_string())
+    }
+}
+
 impl SheetPos {
     pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }
@@ -243,9 +273,9 @@ impl SheetPos {
 #[cfg(test)]
 mod test {
     use crate::{
+        Pos, RefAdjust, SheetPos, SheetRect,
         grid::SheetId,
         renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        Pos, SheetPos, SheetRect,
     };
 
     #[test]
@@ -488,28 +518,24 @@ mod test {
 
     #[test]
     fn test_adjust_column_row() {
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(Some(2), None, 1);
+        let sheet_id = SheetId::TEST;
+
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_column(sheet_id, 2));
         assert_eq!(pos, pos![C3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(None, Some(2), 1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_row(sheet_id, 2));
         assert_eq!(pos, pos![B4]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(Some(3), None, 1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_column(sheet_id, 3));
         assert_eq!(pos, pos![B3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(None, Some(4), 1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_column(sheet_id, 4));
         assert_eq!(pos, pos![B3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(Some(1), None, -1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_delete_column(sheet_id, 1));
         assert_eq!(pos, pos![A3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(None, Some(1), -1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_delete_row(sheet_id, 1));
         assert_eq!(pos, pos![B2]);
     }
 }

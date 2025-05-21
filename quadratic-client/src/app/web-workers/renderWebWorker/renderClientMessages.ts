@@ -1,17 +1,21 @@
-import type { Link } from '@/app/gridGL/types/links';
-import type { DrawRects } from '@/app/gridGL/types/size';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { Link } from '@/app/shared/types/links';
+import type { DrawRects } from '@/app/shared/types/size';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import type { Rectangle } from 'pixi.js';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';
-  bitmapFonts: RenderBitmapFonts;
 
   // this is taken from the CSS variable (which is not accessible in the
   // worker): --table-column-header-foreground
   tableColumnHeaderForeground: number;
+}
+
+export interface ClientRenderBitmapFonts {
+  type: 'clientRenderBitmapFonts';
+  bitmapFonts: RenderBitmapFonts;
 }
 
 // also includes sending the data as transferable ArrayBuffers
@@ -121,6 +125,7 @@ export type RenderClientMessage =
 
 export type ClientRenderMessage =
   | ClientRenderInit
+  | ClientRenderBitmapFonts
   | ClientRenderViewport
   | ClientRenderSheetOffsetsTransient
   | ClientRenderShowLabel

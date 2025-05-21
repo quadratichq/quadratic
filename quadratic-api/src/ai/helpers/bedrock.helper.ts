@@ -1,13 +1,23 @@
 import {
-  type ConverseOutput,
+  type ConverseResponse,
   type ConverseStreamOutput,
+  type DocumentBlock,
+  type DocumentFormat,
+  type ImageBlock,
+  type ImageFormat,
   type Message,
   type SystemContentBlock,
   type Tool,
   type ToolChoice,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentImage,
+  isContentPdfFile,
+  isContentTextFile,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -15,7 +25,9 @@ import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
   AISource,
+  AIUsage,
   BedrockModelKey,
+  ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
@@ -48,7 +60,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
         ],
       };
       return [...acc, bedrockMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -57,7 +69,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
               toolUseId: toolResult.id,
               content: [
                 {
-                  text: toolResult.content,
+                  text: toolResult.text,
                 },
               ],
               status: 'success' as const,
@@ -69,11 +81,26 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     } else if (message.content) {
       const bedrockMessage: Message = {
         role: message.role,
-        content: [
-          {
-            text: message.content,
-          },
-        ],
+        content: message.content.map((content) => {
+          if (isContentImage(content)) {
+            const image: ImageBlock = {
+              format: content.mimeType.split('/')[1] as ImageFormat,
+              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+            };
+            return { image };
+          } else if (isContentPdfFile(content) || isContentTextFile(content)) {
+            const document: DocumentBlock = {
+              format: content.mimeType.split('/')[1] as DocumentFormat,
+              name: content.fileName,
+              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+            };
+            return { document };
+          } else {
+            return {
+              text: content.text,
+            };
+          }
+        }),
       };
       return [...acc, bedrockMessage];
     } else {
@@ -114,16 +141,15 @@ function getBedrockTools(source: AISource, toolName?: AITool): Tool[] | undefine
   return bedrockTools;
 }
 
-function getBedrockToolChoice(toolName?: AITool): ToolChoice | undefined {
-  const toolChoice: ToolChoice = toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
-  return toolChoice;
+function getBedrockToolChoice(toolName?: AITool): ToolChoice {
+  return toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
 }
 
 export async function parseBedrockStream(
   chunks: AsyncIterable<ConverseStreamOutput> | never[],
   response: Response,
   modelKey: BedrockModelKey
-) {
+): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
@@ -132,16 +158,33 @@ export async function parseBedrockStream(
     model: getModelFromModelKey(modelKey),
   };
 
+  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+
+  const usage: AIUsage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
+
   for await (const chunk of chunks) {
+    if (chunk.metadata) {
+      usage.inputTokens = Math.max(usage.inputTokens, chunk.metadata.usage?.inputTokens ?? 0);
+      usage.outputTokens = Math.max(usage.outputTokens, chunk.metadata.usage?.outputTokens ?? 0);
+    }
+
     if (!response.writableEnded) {
-      if (chunk.contentBlockStart && chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
-        const toolCall = {
-          id: chunk.contentBlockStart.start.toolUse.toolUseId ?? '',
-          name: chunk.contentBlockStart.start.toolUse.name ?? '',
-          arguments: '',
-          loading: true,
-        };
-        responseMessage.toolCalls.push(toolCall);
+      if (chunk.contentBlockStart) {
+        // tool use start
+        if (chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
+          const toolCall = {
+            id: chunk.contentBlockStart.start.toolUse.toolUseId ?? '',
+            name: chunk.contentBlockStart.start.toolUse.name ?? '',
+            arguments: '',
+            loading: true,
+          };
+          responseMessage.toolCalls.push(toolCall);
+        }
       }
       // tool use stop
       else if (chunk.contentBlockStop) {
@@ -150,30 +193,32 @@ export async function parseBedrockStream(
           toolCall = { ...toolCall, loading: false };
           responseMessage.toolCalls.push(toolCall);
         }
-      } else if (chunk.contentBlockDelta && chunk.contentBlockDelta.delta) {
-        // text delta
-        if ('text' in chunk.contentBlockDelta.delta) {
-          const currentContent = {
-            ...(responseMessage.content.pop() ?? {
-              type: 'text',
-              text: '',
-            }),
-          };
-          currentContent.text += chunk.contentBlockDelta.delta.text ?? '';
-          responseMessage.content.push(currentContent);
-        }
-        // tool use delta
-        if ('toolUse' in chunk.contentBlockDelta.delta) {
-          const toolCall = {
-            ...(responseMessage.toolCalls.pop() ?? {
-              id: '',
-              name: '',
-              arguments: '',
-              loading: true,
-            }),
-          };
-          toolCall.arguments += chunk.contentBlockDelta.delta.toolUse?.input ?? '';
-          responseMessage.toolCalls.push(toolCall);
+      } else if (chunk.contentBlockDelta) {
+        if (chunk.contentBlockDelta.delta) {
+          // text delta
+          if ('text' in chunk.contentBlockDelta.delta) {
+            const currentContent = {
+              ...(responseMessage.content.pop() ?? {
+                type: 'text',
+                text: '',
+              }),
+            };
+            currentContent.text += chunk.contentBlockDelta.delta.text ?? '';
+            responseMessage.content.push(currentContent);
+          }
+          // tool use delta
+          if ('toolUse' in chunk.contentBlockDelta.delta) {
+            const toolCall = {
+              ...(responseMessage.toolCalls.pop() ?? {
+                id: '',
+                name: '',
+                arguments: '',
+                loading: true,
+              }),
+            };
+            toolCall.arguments += chunk.contentBlockDelta.delta.toolUse?.input ?? '';
+            responseMessage.toolCalls.push(toolCall);
+          }
         }
       }
 
@@ -188,7 +233,7 @@ export async function parseBedrockStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -205,14 +250,14 @@ export async function parseBedrockStream(
     response.end();
   }
 
-  return responseMessage;
+  return { responseMessage, usage };
 }
 
 export function parseBedrockResponse(
-  result: ConverseOutput | undefined,
+  result: ConverseResponse,
   response: Response,
   modelKey: BedrockModelKey
-): AIMessagePrompt {
+): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
@@ -221,7 +266,7 @@ export function parseBedrockResponse(
     model: getModelFromModelKey(modelKey),
   };
 
-  result?.message?.content?.forEach((contentBlock) => {
+  result.output?.message?.content?.forEach((contentBlock) => {
     if ('text' in contentBlock) {
       responseMessage.content.push({
         type: 'text',
@@ -246,11 +291,18 @@ export function parseBedrockResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
   response.json(responseMessage);
 
-  return responseMessage;
+  const usage: AIUsage = {
+    inputTokens: result.usage?.inputTokens ?? 0,
+    outputTokens: result.usage?.outputTokens ?? 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
+
+  return { responseMessage, usage };
 }

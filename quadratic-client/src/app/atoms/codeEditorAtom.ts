@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
@@ -19,6 +19,8 @@ export interface CodeEditorState {
     loading: boolean;
     id: string;
     messages: ChatMessage[];
+    waitingOnMessageIndex?: number;
+    delaySeconds: number;
   };
   showCodeEditor: boolean;
   escapePressed: boolean;
@@ -52,6 +54,8 @@ export const defaultCodeEditorState: CodeEditorState = {
     loading: false,
     id: '',
     messages: [],
+    waitingOnMessageIndex: undefined,
+    delaySeconds: 0,
   },
   showCodeEditor: false,
   escapePressed: false,
@@ -97,6 +101,7 @@ export const codeEditorAtom = atom<CodeEditorState>({
         }
 
         if (oldValue.showCodeEditor && !newValue.showCodeEditor) {
+          oldValue.aiAssistant.abortController?.abort();
           events.emit('codeEditorCodeCell', undefined);
           resetSelf();
           focusGrid();
@@ -122,7 +127,53 @@ const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant'
 export const aiAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
 export const aiAssistantLoadingAtom = createAIAssistantSelector('loading');
 export const aiAssistantIdAtom = createAIAssistantSelector('id');
+
 export const aiAssistantMessagesAtom = createAIAssistantSelector('messages');
+export const aiAssistantMessagesCountAtom = selector<number>({
+  key: 'aiAssistantMessagesCountAtom',
+  get: ({ get }) => get(aiAssistantMessagesAtom).length,
+});
+
+export const aiAssistantWaitingOnMessageIndexAtom = selector<number | undefined>({
+  key: 'aiAssistantWaitingOnMessageIndexAtom',
+  get: ({ get }) => get(codeEditorAtom).aiAssistant.waitingOnMessageIndex,
+  set: ({ set }, newValue) => {
+    set(codeEditorAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        aiAssistant: {
+          ...prev.aiAssistant,
+          waitingOnMessageIndex: newValue,
+        },
+      };
+    });
+  },
+});
+
+export const aiAssistantDelaySecondsAtom = selector<number>({
+  key: 'aiAssistantDelaySecondsAtom',
+  get: ({ get }) => get(codeEditorAtom).aiAssistant.delaySeconds,
+  set: ({ set }, newValue) => {
+    set(codeEditorAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        aiAssistant: {
+          ...prev.aiAssistant,
+          delaySeconds: newValue,
+        },
+      };
+    });
+  },
+});
+
 export const aiAssistantCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAssistantCurrentChatMessagesCountAtom',
   get: ({ get }) => getPromptMessages(get(aiAssistantMessagesAtom)).length,

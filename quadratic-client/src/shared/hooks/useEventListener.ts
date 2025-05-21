@@ -14,14 +14,14 @@ function useEventListener<K extends keyof HTMLElementEventMap, T extends HTMLEle
 function useEventListener<
   KW extends keyof WindowEventMap,
   KH extends keyof HTMLElementEventMap,
-  T extends HTMLElement | void = void
+  T extends HTMLElement | void = void,
 >(
   eventName: KW | KH,
   handler: (event: WindowEventMap[KW] | HTMLElementEventMap[KH] | Event) => void,
   element?: RefObject<T>
 ) {
   // Create a ref that stores handler
-  const savedHandler = useRef<typeof handler>();
+  const savedHandler = useRef<typeof handler>(handler);
 
   useEffect(() => {
     // Define the listening target
@@ -37,7 +37,6 @@ function useEventListener<
 
     // Create event listener that calls handler function stored in ref
     const eventListener: typeof handler = (event) => {
-      // eslint-disable-next-line no-extra-boolean-cast
       if (!!savedHandler?.current) {
         savedHandler.current(event);
       }
@@ -49,7 +48,7 @@ function useEventListener<
     return () => {
       targetElement.removeEventListener(eventName, eventListener);
     };
-  }, [eventName, element, handler]);
+  }, [element, eventName, handler]);
 }
 
 export default useEventListener;

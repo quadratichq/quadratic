@@ -1,5 +1,6 @@
 use axum::extract::ws::Message;
 use futures_util::SinkExt;
+use proto::response::encode_message;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -10,6 +11,7 @@ use crate::message::response::MessageResponse;
 use crate::state::State;
 
 pub mod handle;
+pub mod proto;
 pub mod request;
 pub mod response;
 
@@ -76,14 +78,23 @@ pub(crate) fn broadcast(
                     return Ok::<_, MpError>(());
                 }
 
-                let serialized_message = serde_json::to_string(&message)?;
+                let send_message = match message.is_binary() {
+                    true => {
+                        let serialized_message = encode_message(message)?;
+                        Message::Binary(serialized_message.into())
+                    }
+                    false => {
+                        let serialized_message = serde_json::to_string(&message)?;
+                        Message::Text(serialized_message.into())
+                    }
+                };
 
                 for user in included_users {
                     if let Some(sender) = &user.socket {
                         let sent = sender
                             .lock()
                             .await
-                            .send(Message::Text(serialized_message.clone()))
+                            .send(send_message.to_owned())
                             .await
                             .map_err(|e| MpError::SendingMessage(e.to_string()));
 
@@ -127,7 +138,7 @@ pub(crate) fn send_user_message(
                     sender
                         .lock()
                         .await
-                        .send(Message::Text(serde_json::to_string(&message)?))
+                        .send(Message::Text(serde_json::to_string(&message)?.into()))
                         .await
                         .map_err(|e| MpError::SendingMessage(e.to_string()))?;
                 }

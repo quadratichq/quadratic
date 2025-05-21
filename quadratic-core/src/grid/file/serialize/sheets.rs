@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::Result;
 
 use crate::{
-    grid::{sheet::borders::Borders, GridBounds, Sheet, SheetFormatting, SheetId},
+    grid::{GridBounds, Sheet, SheetFormatting, SheetId, sheet::borders::Borders},
     sheet_offsets::SheetOffsets,
 };
 
@@ -33,7 +33,6 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         borders: import_borders(sheet.borders),
         formats: import_formats(sheet.formats),
     };
-    new_sheet.recalculate_bounds();
     Ok(new_sheet)
 }
 

@@ -1,4 +1,5 @@
 use crate::a1::{A1Context, SheetCellRefRange};
+use std::fmt;
 
 use super::*;
 
@@ -8,8 +9,8 @@ impl A1Selection {
     /// from the ID of the sheet containing the range.
     ///
     /// The cursor position has no effect on the output.
-    pub fn to_string(&self, default_sheet_id: Option<SheetId>, context: &A1Context) -> String {
-        self.to_string_force_sheet_name(default_sheet_id, context, false)
+    pub fn to_string(&self, default_sheet_id: Option<SheetId>, a1_context: &A1Context) -> String {
+        self.to_string_force_sheet_name(default_sheet_id, a1_context, false)
     }
 
     /// Returns an A1-style string describing the selection. The sheet name is
@@ -21,7 +22,7 @@ impl A1Selection {
     pub fn to_string_force_sheet_name(
         &self,
         default_sheet_id: Option<SheetId>,
-        context: &A1Context,
+        a1_context: &A1Context,
         force_sheet_name: bool,
     ) -> String {
         let sheet_id = self.sheet_id;
@@ -31,8 +32,9 @@ impl A1Selection {
                 SheetCellRefRange {
                     sheet_id,
                     cells: cells.clone(),
+                    explicit_sheet_name: force_sheet_name,
                 }
-                .to_a1_string(default_sheet_id, context, force_sheet_name)
+                .to_a1_string(default_sheet_id, a1_context)
             })
             .collect::<Vec<_>>()
             .join(",")
@@ -47,6 +49,12 @@ impl A1Selection {
     #[cfg(test)]
     pub fn test_to_string(&self) -> String {
         self.to_string(Some(SheetId::TEST), &A1Context::default())
+    }
+}
+
+impl fmt::Debug for A1Selection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_string(None, &A1Context::default()))
     }
 }
 
@@ -142,7 +150,7 @@ mod tests {
     #[test]
     fn test_extra_comma() {
         let sheet_id = SheetId::TEST;
-        let selection = A1Selection::parse_a1("1,", &sheet_id, &A1Context::default()).unwrap();
+        let selection = A1Selection::parse_a1("1,", sheet_id, &A1Context::default()).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &A1Context::default()),
             "1:1",
@@ -152,8 +160,7 @@ mod tests {
     #[test]
     fn test_multiple_one_sized_rects() {
         let sheet_id = SheetId::TEST;
-        let selection =
-            A1Selection::parse_a1("A1,B1,C1", &sheet_id, &A1Context::default()).unwrap();
+        let selection = A1Selection::parse_a1("A1,B1,C1", sheet_id, &A1Context::default()).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &A1Context::default()),
             "A1,B1,C1",
@@ -166,7 +173,7 @@ mod tests {
         let sheet_second = SheetId::new();
         let context = A1Context::test(&[("First", sheet_id), ("Second", sheet_second)], &[]);
         let selection =
-            A1Selection::parse_a1("second!A1,second!B1,second!C1", &sheet_id, &context).unwrap();
+            A1Selection::parse_a1("second!A1,second!B1,second!C1", sheet_id, &context).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &context),
             "Second!A1,Second!B1,Second!C1",

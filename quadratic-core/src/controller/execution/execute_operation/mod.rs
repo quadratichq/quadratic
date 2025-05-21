@@ -1,6 +1,6 @@
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 
 /// Asserts that an operation is a particular type, and unpacks its contents
 /// into the current scope.
@@ -46,16 +46,20 @@ impl GridController {
         }
     }
 
-    /// Executes the given operation.
-    ///
+    /// Removes the first operation from a transaction and executes it.
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
         if let Some(op) = transaction.operations.pop_front() {
             #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {:?}", &op));
 
+            #[cfg(feature = "show-first-sheet-operations")]
+            println!(
+                "{}",
+                format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+            );
+
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
-                Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
                     self.execute_set_chart_size(transaction, op),
                 ),
@@ -65,6 +69,7 @@ impl GridController {
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
+
                 Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table(transaction, op),
                 ),
@@ -82,6 +87,9 @@ impl GridController {
                 ),
                 Operation::DataTableMeta { .. } => Self::handle_execution_operation_result(
                     self.execute_data_table_meta(transaction, op),
+                ),
+                Operation::DataTableOptionMeta { .. } => Self::handle_execution_operation_result(
+                    self.execute_data_table_option_meta(transaction, op),
                 ),
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
@@ -122,9 +130,6 @@ impl GridController {
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
-                Operation::SetCodeRunVersion { .. } => {
-                    self.execute_set_code_run_version(transaction, op);
-                }
                 Operation::SetDataTable { .. } => {
                     self.execute_set_data_table(transaction, op);
                 }
@@ -157,6 +162,11 @@ impl GridController {
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
                 Operation::ResizeRows { .. } => self.execute_resize_rows(transaction, op),
+                Operation::ResizeColumns { .. } => self.execute_resize_columns(transaction, op),
+                Operation::DefaultColumnSize { .. } => {
+                    self.execute_default_column_size(transaction, op);
+                }
+                Operation::DefaultRowSize { .. } => self.execute_default_row_size(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
@@ -173,34 +183,42 @@ impl GridController {
                 }
 
                 Operation::DeleteColumn { .. } => self.execute_delete_column(transaction, op),
-                Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
+                Operation::DeleteColumns { .. } => self.execute_delete_columns(transaction, op),
+                Operation::DeleteRow { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_row(transaction, op),
+                    );
+                }
+                Operation::DeleteRows { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_rows(transaction, op),
+                    );
+                }
+
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
+
+                Operation::MoveColumns { .. } => self.execute_move_columns(transaction, op),
+                Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
             }
         }
+        #[cfg(feature = "show-first-sheet-operations")]
+        print_first_sheet!(&self);
     }
 }
 
 #[cfg(test)]
 pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
-    let mut undo_transaction = PendingTransaction {
-        operations: transaction.reverse_operations.clone().into(),
-        ..Default::default()
-    };
+    use super::TransactionSource;
 
-    while !undo_transaction.operations.is_empty() {
-        gc.execute_operation(&mut undo_transaction);
-    }
+    let undo_transaction = transaction.to_undo_transaction();
+    gc.start_undo_transaction(undo_transaction, TransactionSource::Undo, None);
 }
 
 #[cfg(test)]
 pub fn execute_forward_operations(gc: &mut GridController, transaction: &mut PendingTransaction) {
-    let mut undo_transaction = PendingTransaction {
-        operations: transaction.forward_operations.clone().into(),
-        ..Default::default()
-    };
+    use super::TransactionSource;
 
-    while !undo_transaction.operations.is_empty() {
-        gc.execute_operation(&mut undo_transaction);
-    }
+    let redo_transaction = transaction.to_forward_transaction();
+    gc.start_undo_transaction(redo_transaction, TransactionSource::Redo, None);
 }

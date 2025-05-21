@@ -2,10 +2,11 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
+    Pos,
     a1::{A1Context, TableMapEntry},
     grid::{Grid, SheetId},
+    util::case_fold_ascii,
     viewport::ViewportBuffer,
-    Pos,
 };
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
@@ -44,7 +45,7 @@ pub struct GridController {
 impl Default for GridController {
     fn default() -> Self {
         let grid = Grid::default();
-        let a1_context = grid.a1_context();
+        let a1_context = grid.make_a1_context();
         Self {
             grid,
             a1_context,
@@ -58,7 +59,7 @@ impl Default for GridController {
 
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        let a1_context = grid.a1_context();
+        let a1_context = grid.make_a1_context();
         GridController {
             grid,
             a1_context,
@@ -68,7 +69,7 @@ impl GridController {
     }
 
     pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        let a1_context = grid.a1_context();
+        let a1_context = grid.make_a1_context();
         GridController {
             grid,
             a1_context,
@@ -128,11 +129,9 @@ impl GridController {
                     continue;
                 };
 
-                if let Some(language) = sheet.get_table_language(*pos, table) {
-                    let table_map_entry =
-                        TableMapEntry::from_table(*sheet_id, *pos, table, language);
-                    to_insert.push(table_map_entry);
-                }
+                let table_name = case_fold_ascii(table.name());
+                let table_map_entry = TableMapEntry::from_table(*sheet_id, *pos, table);
+                to_insert.push((table_name, table_map_entry));
             }
 
             for pos in to_remove.into_iter() {
@@ -142,8 +141,10 @@ impl GridController {
                     .retain(|_, table| table.sheet_id != *sheet_id || table.bounds.min != pos);
             }
 
-            for table_map_entry in to_insert.into_iter() {
-                self.a1_context.table_map.insert(table_map_entry);
+            for (table_name, table_map_entry) in to_insert.into_iter() {
+                self.a1_context
+                    .table_map
+                    .insert_with_key(table_name, table_map_entry);
             }
         }
     }
@@ -162,5 +163,17 @@ impl GridController {
     /// Creates a grid controller for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
+    }
+}
+
+impl GridController {
+    /// Returns the undo stack for testing purposes
+    pub fn undo_stack(&self) -> &Vec<Transaction> {
+        &self.undo_stack
+    }
+
+    /// Returns the redo stack for testing purposes
+    pub fn redo_stack(&self) -> &Vec<Transaction> {
+        &self.redo_stack
     }
 }

@@ -1,6 +1,25 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+/*
+  Blank = 0,
+  Text = 1,
+  Number = 2,
+  Logical = 3,
+  Duration = 4,
+  Error = 5,
+  Html = 6,
+  Code = 7,
+  Image = 8,
+  Date = 9,
+  Time = 10,
+  DateTime = 11,
+  Import = 12,
+*/
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TS)]
+pub struct JsCellValueResult(pub String, pub u8);
+
 #[derive(Default, Debug, Serialize, Deserialize, TS)]
 pub struct JsCodeResult {
     pub transaction_id: String,
@@ -8,8 +27,8 @@ pub struct JsCodeResult {
     pub std_out: Option<String>,
     pub std_err: Option<String>,
     pub line_number: Option<u32>,
-    pub output_value: Option<Vec<String>>,
-    pub output_array: Option<Vec<Vec<Vec<String>>>>,
+    pub output_value: Option<JsCellValueResult>,
+    pub output_array: Option<Vec<Vec<JsCellValueResult>>>,
     pub output_display_type: Option<String>,
     pub cancel_compute: Option<bool>,
     pub chart_pixel_output: Option<(f32, f32)>,

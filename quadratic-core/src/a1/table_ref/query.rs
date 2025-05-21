@@ -1,8 +1,8 @@
 //! Querying a TableRef.
 
 use crate::{
-    a1::{A1Context, UNBOUNDED},
     Pos, Rect,
+    a1::{A1Context, UNBOUNDED},
 };
 
 use super::*;
@@ -10,10 +10,10 @@ use super::*;
 impl TableRef {
     /// Returns any columns that have content in the TableRef that are between
     /// from and to.
-    pub fn selected_cols(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
+    pub fn selected_cols(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut cols = vec![];
 
-        if let Some(table) = context.try_table(&self.table_name) {
+        if let Some(table) = a1_context.try_table(&self.table_name) {
             match &self.col_range {
                 ColRange::All => {
                     let start = table.bounds.min.x;
@@ -55,25 +55,18 @@ impl TableRef {
     }
 
     /// Returns all columns that have content in the TableRef.
-    pub fn selected_cols_finite(&self, context: &A1Context) -> Vec<i64> {
+    pub fn selected_cols_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         // a table cannot be infinite, so we can just use UNBOUNDED
-        self.selected_cols(1, UNBOUNDED, context)
+        self.selected_cols(1, UNBOUNDED, a1_context)
     }
 
-    pub fn selected_rows(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
+    pub fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut rows = vec![];
 
-        if let Some(table) = context.try_table(&self.table_name) {
+        if let Some(table) = a1_context.try_table(&self.table_name) {
             let bounds = table.bounds;
             if self.headers && !self.data {
-                rows.push(
-                    bounds.min.y
-                        + (if table.show_ui && table.show_name {
-                            1
-                        } else {
-                            0
-                        }),
-                );
+                rows.push(bounds.min.y + (if table.show_name { 1 } else { 0 }));
             } else {
                 let min_y = bounds.min.y + table.y_adjustment(false);
                 if min_y > to || bounds.max.y < from {
@@ -88,14 +81,14 @@ impl TableRef {
         rows
     }
 
-    pub fn selected_rows_finite(&self, context: &A1Context) -> Vec<i64> {
+    pub fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         // a table cannot be infinite, so we can just use UNBOUNDED
-        self.selected_rows(1, UNBOUNDED, context)
+        self.selected_rows(1, UNBOUNDED, a1_context)
     }
 
     /// Whether the TableRef has more than one cell.
-    pub fn is_multi_cursor(&self, context: &A1Context) -> bool {
-        let Some(table_entry) = context.try_table(&self.table_name) else {
+    pub fn is_multi_cursor(&self, a1_context: &A1Context) -> bool {
+        let Some(table_entry) = a1_context.try_table(&self.table_name) else {
             return false;
         };
         if self.headers && self.data {
@@ -129,16 +122,12 @@ impl TableRef {
         };
 
         table_entry.bounds.height()
-            != if table_entry.show_ui {
-                1 + if table_entry.show_name { 1 } else { 0 }
-                    + if table_entry.show_columns { 1 } else { 0 }
-            } else {
-                1
-            }
+            != 1 + if table_entry.show_name { 1 } else { 0 }
+                + if table_entry.show_columns { 1 } else { 0 }
     }
 
-    pub fn to_largest_rect(&self, context: &A1Context) -> Option<Rect> {
-        let table = context.try_table(&self.table_name)?;
+    pub fn to_largest_rect(&self, a1_context: &A1Context) -> Option<Rect> {
+        let table = a1_context.try_table(&self.table_name)?;
         let bounds = table.bounds;
         let mut min_x = bounds.max.x;
         let mut max_x = bounds.min.x;
@@ -177,21 +166,21 @@ impl TableRef {
         }
 
         let min_y = bounds.min.y
-            + if table.show_ui {
-                (if table.show_name { 1 } else { 0 }) + (if table.show_columns { 1 } else { 0 })
-            } else {
-                0
-            };
+            + (if table.show_name { 1 } else { 0 })
+            + (if table.show_columns { 1 } else { 0 });
         let max_y = bounds.max.y;
         Some(Rect::new(min_x, min_y, max_x, max_y))
     }
 
     /// Returns the cursor position from the last range.
-    pub fn cursor_pos_from_last_range(&self, context: &A1Context) -> Pos {
-        if let Some(table) = context.try_table(&self.table_name) {
+    pub fn cursor_pos_from_last_range(&self, a1_context: &A1Context) -> Pos {
+        if let Some(table) = a1_context.try_table(&self.table_name) {
             let x = table.bounds.min.x;
             let y = table.bounds.min.y
-                + if self.headers || !table.show_ui || table.bounds.height() == 1 {
+                + if self.headers
+                    || (!table.show_name && !table.show_columns)
+                    || table.bounds.height() == 1
+                {
                     0
                 } else {
                     1
@@ -215,8 +204,8 @@ impl TableRef {
     }
 
     /// Tries to convert the TableRef to a Pos.
-    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
-        let range = self.convert_to_ref_range_bounds(false, context, false, false)?;
+    pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
+        let range = self.convert_to_ref_range_bounds(false, a1_context, false, false)?;
         range.try_to_pos()
     }
 
@@ -224,14 +213,14 @@ impl TableRef {
     pub fn table_column_selection(
         &self,
         table_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Option<Vec<i64>> {
         let mut cols = vec![];
         if table_name != self.table_name {
             return None;
         }
-        let table = context.try_table(&self.table_name)?;
-        if !table.show_ui || !table.show_columns {
+        let table = a1_context.try_table(&self.table_name)?;
+        if !table.show_columns {
             return None;
         }
 
@@ -505,22 +494,14 @@ mod tests {
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
-        context
-            .table_map
-            .tables
-            .values_mut()
-            .next()
-            .unwrap()
-            .show_ui = false;
+        let table = context.table_map.tables.values_mut().next().unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
 
-        context
-            .table_map
-            .tables
-            .values_mut()
-            .next()
-            .unwrap()
-            .show_ui = true;
+        let table = context.table_map.tables.values_mut().next().unwrap();
+        table.show_name = true;
+        table.show_columns = true;
         table_ref.headers = true;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }
@@ -765,8 +746,9 @@ mod tests {
         assert!(table_ref.is_multi_cursor(&context));
 
         // Test headers only with show_ui false
-        let table = context.table_map.get_mut("test_table").unwrap();
-        table.show_ui = false;
+        let table = context.table_map.tables.values_mut().next().unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
@@ -829,7 +811,8 @@ mod tests {
         // Test when show_ui is false
         {
             let table = context.table_map.get_mut("test_table").unwrap();
-            table.show_ui = false;
+            table.show_name = false;
+            table.show_columns = false;
             assert_eq!(
                 table_ref.table_column_selection("test_table", &context),
                 None
@@ -839,7 +822,7 @@ mod tests {
         // Test when show_columns is false
         {
             let table = context.table_map.get_mut("test_table").unwrap();
-            table.show_ui = true;
+            table.show_name = false;
             table.show_columns = false;
             assert_eq!(
                 table_ref.table_column_selection("test_table", &context),

@@ -1,9 +1,8 @@
-import type { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import type {
   JsBordersSheet,
   JsCodeCell,
@@ -18,6 +17,9 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { CodeCell } from '@/app/shared/types/codeCell';
+import type { RefreshType } from '@/app/shared/types/RefreshType';
+import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -25,6 +27,7 @@ import type { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWeb
 import type {
   CoreClientImage,
   CoreClientImportProgress,
+  CoreClientTransactionEnd,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -32,7 +35,7 @@ import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
+  needRefresh: (state: RefreshType) => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
@@ -82,8 +85,10 @@ interface EventTypes {
   updateImage: (message: CoreClientImage) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
+
   transactionStart: (message: CoreClientTransactionStart) => void;
   transactionProgress: (message: CoreClientTransactionProgress) => void;
+  transactionEnd: (message: CoreClientTransactionEnd) => void;
 
   multiplayerUpdate: (users: MultiplayerUser[]) => void;
   multiplayerChangeSheet: () => void;
@@ -127,7 +132,7 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
 
   // trigger a context menu
-  contextMenu: (options: ContextMenuOptions) => void;
+  contextMenu: (options: ContextMenuState) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
@@ -148,6 +153,13 @@ interface EventTypes {
   pixiAppSettingsInitialized: () => void;
 
   gridLinesDirty: () => void;
+
+  coreError: (from: string, error: Error | unknown) => void;
+
+  scrollBarsHandler: (scrollBarsHandler: ScrollBarsHandler) => void;
+  scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
+
+  bitmapFontsLoaded: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

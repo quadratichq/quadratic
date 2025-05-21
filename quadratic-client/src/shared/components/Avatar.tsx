@@ -4,7 +4,7 @@ import type { ImgHTMLAttributes } from 'react';
 import React, { forwardRef } from 'react';
 
 interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {
-  size?: 'small' | 'medium' | 'large';
+  size?: 'xs' | 'small' | 'medium' | 'large';
   children?: string | React.ReactNode;
 }
 
@@ -13,9 +13,36 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
     const [error, setError] = React.useState(false);
 
     const stylePreset = {
-      width: size === 'small' ? '24px' : size === 'medium' ? '32px' : size === 'large' ? '40px' : '24px',
-      height: size === 'small' ? '24px' : size === 'medium' ? '32px' : size === 'large' ? '40px' : '24px',
-      fontSize: size === 'small' ? '0.75rem' : size === 'medium' ? '1rem' : size === 'large' ? '1.125rem' : '0.8125rem',
+      width:
+        size === 'xs'
+          ? '20px'
+          : size === 'small'
+            ? '24px'
+            : size === 'medium'
+              ? '32px'
+              : size === 'large'
+                ? '40px'
+                : '24px',
+      height:
+        size === 'xs'
+          ? '20px'
+          : size === 'small'
+            ? '24px'
+            : size === 'medium'
+              ? '32px'
+              : size === 'large'
+                ? '40px'
+                : '24px',
+      fontSize:
+        size === 'xs'
+          ? '0.625rem'
+          : size === 'small'
+            ? '0.75rem'
+            : size === 'medium'
+              ? '1rem'
+              : size === 'large'
+                ? '1.125rem'
+                : '0.8125rem',
       borderRadius: '50%',
       display: 'flex',
       alignItems: 'center',
@@ -41,6 +68,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
             crossOrigin="anonymous"
             onError={() => setError(true)}
             style={{ ...stylePreset, ...style }}
+            className={className}
             {...rest}
           />
         )}

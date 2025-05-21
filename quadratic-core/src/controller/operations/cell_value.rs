@@ -1,94 +1,24 @@
-use std::str::FromStr;
-
-use bigdecimal::BigDecimal;
+use std::collections::HashMap;
 
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
-use crate::Pos;
-use crate::{a1::A1Selection, CellValue, SheetPos};
-
-// when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
-// there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
-// see original issue here: https://github.com/akubera/bigdecimal-rs/issues/108
-const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
+use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::{CodeCellLanguage, DataTableKind};
+use crate::{CellValue, SheetPos, a1::A1Selection};
+use crate::{Pos, Rect};
+use anyhow::{Error, Result, bail};
 
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
+    /// TODO(ddimaria): remove this and reference CellValue::string_to_cell_value directly
     pub(super) fn string_to_cell_value(
         &self,
         value: &str,
         allow_code: bool,
     ) -> (CellValue, FormatUpdate) {
-        let mut format_update = FormatUpdate::default();
-
-        let cell_value = if value.is_empty() {
-            CellValue::Blank
-        } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
-            format_update = FormatUpdate {
-                numeric_format: Some(Some(NumericFormat {
-                    kind: NumericFormatKind::Currency,
-                    symbol: Some(currency),
-                })),
-                ..Default::default()
-            };
-
-            if value.contains(',') {
-                format_update.numeric_commas = Some(Some(true));
-            }
-
-            // We no longer automatically set numeric decimals for
-            // currency; instead, we handle changes in currency decimal
-            // length by using 2 if currency is set by default.
-
-            CellValue::Number(number)
-        } else if let Some(bool) = CellValue::unpack_boolean(value) {
-            bool
-        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
-            if (bd.fractional_digit_count().unsigned_abs() as usize) > MAX_BIG_DECIMAL_SIZE {
-                CellValue::Text(value.into())
-            } else {
-                if value.contains(',') {
-                    format_update = FormatUpdate {
-                        numeric_commas: Some(Some(true)),
-                        ..Default::default()
-                    };
-                }
-                CellValue::Number(bd)
-            }
-        } else if let Some(percent) = CellValue::unpack_percentage(value) {
-            format_update = FormatUpdate {
-                numeric_format: Some(Some(NumericFormat {
-                    kind: NumericFormatKind::Percentage,
-                    symbol: None,
-                })),
-                ..Default::default()
-            };
-            CellValue::Number(percent)
-        } else if let Some(time) = CellValue::unpack_time(value) {
-            time
-        } else if let Some(date) = CellValue::unpack_date(value) {
-            date
-        } else if let Some(date_time) = CellValue::unpack_date_time(value) {
-            date_time
-        } else if let Some(duration) = CellValue::unpack_duration(value) {
-            duration
-        } else if let Some(code) = value.strip_prefix("=") {
-            if allow_code {
-                CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Formula,
-                    code: code.to_string(),
-                })
-            } else {
-                CellValue::Text(code.to_string())
-            }
-        } else {
-            CellValue::Text(value.into())
-        };
-
-        (cell_value, format_update)
+        CellValue::string_to_cell_value(value, allow_code)
     }
 
     /// Generate operations for a user-initiated change to a cell value
@@ -96,57 +26,139 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
-    ) -> (Vec<Operation>, Vec<Operation>) {
+    ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
-        let data_table_ops = vec![];
+        let mut data_table_ops = vec![];
+        let existing_data_tables = self
+            .a1_context()
+            .tables()
+            .filter(|table| {
+                table.sheet_id == sheet_pos.sheet_id && table.language == CodeCellLanguage::Import
+            })
+            .map(|table| table.bounds)
+            .collect::<Vec<_>>();
+        let mut growing_data_tables = existing_data_tables.clone();
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
+
             if height == 0 {
-                dbgjs!("[set_cell_values] Empty values");
-                return (ops, data_table_ops);
+                bail!("[set_cell_values] Empty values");
             }
 
             let width = values[0].len();
+
             if width == 0 {
-                dbgjs!("[set_cell_values] Empty values");
-                return (ops, data_table_ops);
+                bail!("[set_cell_values] Empty values");
             }
 
             let init_cell_values = || vec![vec![None; height]; width];
             let mut cell_values = init_cell_values();
+            let mut data_table_cell_values = init_cell_values();
+            let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
+            let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
             let mut sheet_format_updates = SheetFormatUpdates::default();
 
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
-                    let (cell_value, format_update) = self.string_to_cell_value(&value, true);
+                    let (cell_value, format_update) = CellValue::string_to_cell_value(&value, true);
 
-                    let pos = Pos {
-                        x: sheet_pos.x + x as i64,
-                        y: sheet_pos.y + y as i64,
-                    };
+                    let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
+                    let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
-                    let is_data_table =
-                        matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
-                            || sheet.has_table_content(pos, true);
+                    let data_table_pos = existing_data_tables
+                        .iter()
+                        .find(|rect| rect.contains(pos))
+                        .map(|rect| rect.min);
 
-                    match is_data_table {
-                        true => {
-                            ops.extend(self.set_data_table_operations_at(sheet_pos, value));
-                        }
-                        false => {
+                    // (x,y) is within a data table
+                    if let Some(data_table_pos) = data_table_pos {
+                        let is_source_cell = sheet.is_source_cell(pos);
+                        let is_formula_cell = sheet.is_formula_cell(pos);
+
+                        // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
+                        if is_formula_cell && is_source_cell {
                             cell_values[x][y] = Some(cell_value);
-                            // TODO(ddimaria): temporary disabling the below until bugs are fixed
-                            // also re-enable the test_expand_data_table_column_row_on_setting_value test
-                            // data_table_ops.extend(self.set_cell_value_data_table_operations(
-                            //     SheetPos::from((pos, sheet_pos.sheet_id)),
-                            //     value,
-                            // ));
+                        } else {
+                            data_table_cell_values[x][y] = Some(cell_value);
+
+                            if !format_update.is_default() {
+                                ops.push(Operation::DataTableFormats {
+                                    sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                    formats: sheet.to_sheet_format_updates(
+                                        sheet_pos,
+                                        data_table_pos,
+                                        format_update.to_owned(),
+                                    )?,
+                                });
+                            }
                         }
-                    };
+                    }
+                    // (x,y) is not within a data table
+                    else {
+                        cell_values[x][y] = Some(cell_value);
+
+                        // expand the data table to the right if the cell
+                        // value is touching the right edge
+                        let (col, row) = sheet.expand_columns_and_rows(
+                            &growing_data_tables,
+                            current_sheet_pos,
+                            value,
+                        );
+
+                        // if an expansion happened, adjust the size of the
+                        // data table rect so that successive iterations
+                        // continue to expand the data table.
+                        if let Some((sheet_pos, col)) = col {
+                            let entry = data_table_columns.entry(sheet_pos).or_default();
+
+                            if !entry.contains(&col) {
+                                // add the column to data_table_columns
+                                entry.push(col);
+
+                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                                // adjust the size of the data table rect so that
+                                // successive iterations continue to expand the data
+                                // table.
+                                growing_data_tables
+                                    .iter_mut()
+                                    .filter(|rect| rect.contains(pos_to_check))
+                                    .for_each(|rect| {
+                                        rect.max.x += 1;
+                                    });
+                            }
+                        }
+
+                        // expand the data table to the bottom if the cell
+                        // value is touching the bottom edge
+                        if let Some((sheet_pos, row)) = row {
+                            let entry = data_table_rows.entry(sheet_pos).or_default();
+
+                            // if an expansion happened, adjust the size of the
+                            // data table rect so that successive iterations
+                            // continue to expand the data table.
+                            if !entry.contains(&row) {
+                                // add the row to data_table_rows
+                                entry.push(row);
+
+                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                                // adjust the size of the data table rect so that
+                                // successive iterations continue to expand the data
+                                // table.
+                                growing_data_tables
+                                    .iter_mut()
+                                    .filter(|rect| rect.contains(pos_to_check))
+                                    .for_each(|rect| {
+                                        rect.max.y += 1;
+                                    });
+                            }
+                        }
+                    }
 
                     if !format_update.is_default() {
                         sheet_format_updates.set_format_cell(pos, format_update);
@@ -154,10 +166,17 @@ impl GridController {
 
                     if is_code {
                         compute_code_ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet_pos.sheet_id),
+                            sheet_pos: current_sheet_pos,
                         });
                     }
                 }
+            }
+
+            if data_table_cell_values != init_cell_values() {
+                ops.push(Operation::SetDataTableAt {
+                    sheet_pos,
+                    values: data_table_cell_values.into(),
+                });
             }
 
             if cell_values != init_cell_values() {
@@ -174,93 +193,36 @@ impl GridController {
                 });
             }
 
+            if !data_table_columns.is_empty() {
+                for (sheet_pos, columns) in data_table_columns {
+                    data_table_ops.push(Operation::InsertDataTableColumns {
+                        sheet_pos,
+                        columns: columns.into_iter().map(|c| (c, None, None)).collect(),
+                        swallow: true,
+                        select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
+                    });
+                }
+            }
+
+            if !data_table_rows.is_empty() {
+                for (sheet_pos, rows) in data_table_rows {
+                    data_table_ops.push(Operation::InsertDataTableRows {
+                        sheet_pos,
+                        rows: rows.into_iter().map(|r| (r, None)).collect(),
+                        swallow: true,
+                        select_table: false,
+                        copy_formats_from: None,
+                        copy_formats: None,
+                    });
+                }
+            }
+
             ops.extend(compute_code_ops);
         }
 
-        (ops, data_table_ops)
-    }
-
-    /// Generate operations adding columns and rows to data tables when the cells to add are touching the data table
-    pub fn set_cell_value_data_table_operations(
-        &self,
-        sheet_pos: SheetPos,
-        value: String,
-    ) -> Vec<Operation> {
-        let mut ops = vec![];
-        let pos = Pos::from(sheet_pos);
-
-        if !value.is_empty() {
-            if let Ok(sheet) = self.try_sheet_result(sheet_pos.sheet_id) {
-                if pos.x > 1 {
-                    let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
-                    if let Ok(data_table_left) = data_table_left {
-                        if let Some(data_table) =
-                            sheet.data_table(data_table_left).filter(|data_table| {
-                                if data_table.readonly {
-                                    return false;
-                                }
-
-                                if data_table.show_ui
-                                    && data_table.show_name
-                                    && data_table_left.y == pos.y
-                                {
-                                    return false;
-                                }
-
-                                // check if next column is blank
-                                for y in 0..data_table.height(false) {
-                                    let pos = Pos::new(pos.x, data_table_left.y + y as i64);
-                                    if sheet.has_content(pos) {
-                                        return false;
-                                    }
-                                }
-                                true
-                            })
-                        {
-                            let column_index = data_table.width();
-                            ops.push(Operation::InsertDataTableColumns {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                columns: vec![(column_index as u32, None, None)],
-                                swallow: true,
-                                select_table: false,
-                            });
-                        }
-                    }
-                }
-
-                if pos.y > 1 {
-                    let data_table_above =
-                        sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
-                    if let Ok(data_table_above) = data_table_above {
-                        if let Some(data_table) =
-                            sheet.data_table(data_table_above).filter(|data_table| {
-                                if data_table.readonly {
-                                    return false;
-                                }
-                                // check if next row is blank
-                                for x in 0..data_table.width() {
-                                    let pos = Pos::new(data_table_above.x + x as i64, pos.y);
-                                    if sheet.has_content(pos) {
-                                        return false;
-                                    }
-                                }
-                                true
-                            })
-                        {
-                            // insert row with swallow
-                            ops.push(Operation::InsertDataTableRows {
-                                sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
-                                rows: vec![(data_table.height(false) as u32, None)],
-                                swallow: true,
-                                select_table: false,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        ops
+        Ok((ops, data_table_ops))
     }
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
@@ -275,73 +237,143 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
+            let rects =
+                sheet.selection_to_rects(selection, false, force_table_bounds, &self.a1_context);
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
-                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
                 let mut can_delete_column = false;
+                let mut save_data_table_anchors = vec![];
+                let mut delete_data_tables = vec![];
+                let mut data_tables_automatically_deleted = vec![];
 
-                if let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) {
-                    if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
-                        let mut data_table_rect =
-                            data_table.output_rect(data_table_pos.to_owned(), false);
-                        data_table_rect.min.y += data_table.y_adjustment(true);
+                if let Ok(data_tables) = sheet.data_tables_within_rect(rect, false) {
+                    for data_table_pos in data_tables {
+                        if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
+                            let data_table_full_rect =
+                                data_table.output_rect(data_table_pos.to_owned(), false);
+                            let mut data_table_rect = data_table_full_rect;
+                            data_table_rect.min.y += data_table.y_adjustment(true);
 
-                        let is_full_table_selected = rect.contains_rect(&data_table_rect);
-                        let can_delete_table = is_full_table_selected || data_table.readonly;
-                        let table_column_selection = selection.table_column_selection(
-                            &data_table.name.to_display(),
-                            self.a1_context(),
-                        );
-                        can_delete_column = !is_full_table_selected
-                            && table_column_selection.is_some()
-                            && !data_table.readonly;
+                            let is_full_table_selected = rect.contains_rect(&data_table_rect);
+                            let can_delete_table = is_full_table_selected || data_table.is_code();
+                            let table_column_selection = selection
+                                .table_column_selection(data_table.name(), self.a1_context());
+                            can_delete_column = !is_full_table_selected
+                                && table_column_selection.is_some()
+                                && !data_table.is_code();
 
-                        if can_delete_table {
-                            ops.push(Operation::DeleteDataTable {
-                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                            });
-                        } else if can_delete_column {
-                            // adjust for hidden columns, reverse the order to delete from right to left
-                            let columns = (rect.min.x..=rect.max.x)
-                                .map(|x| {
-                                    // account for hidden columns
-                                    data_table.get_column_index_from_display_index(
-                                        (x - data_table_rect.min.x) as u32,
-                                        true,
-                                    )
-                                })
-                                .rev()
-                                .collect();
-                            ops.push(Operation::DeleteDataTableColumns {
-                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                                columns,
-                                flatten: false,
-                                select_table: false,
-                            });
-                        } else {
-                            ops.push(Operation::SetDataTableAt {
-                                sheet_pos,
-                                values: CellValues::new_blank(
-                                    rect.width().min(
-                                        (data_table_rect.max.x - sheet_pos.x + 1).max(1) as u32,
-                                    ),
-                                    rect.height().min(
-                                        (data_table_rect.max.y - sheet_pos.y + 1).max(1) as u32,
-                                    ),
-                                ),
-                            });
+                            // we also delete a data table if it is not fully
+                            // selected but any cell in the name ui is selected
+                            if !is_full_table_selected
+                                && data_table.get_show_name()
+                                // the selection intersects the name ui row
+                                && rect.intersects(Rect::new(
+                                    data_table_full_rect.min.x,
+                                    data_table_full_rect.min.y,
+                                    data_table_full_rect.max.x,
+                                    data_table_full_rect.min.y,
+                                ))
+                                // but the selection does not contain the
+                                // top-left cell (as it will automatically
+                                // delete it in that case)
+                                && !rect.contains(data_table_full_rect.min)
+                            {
+                                delete_data_tables.push(data_table_pos);
+                            }
+
+                            // if a data table is not fully selected and there
+                            // is no name ui, then we delete its contents and
+                            // save its anchor
+                            if !is_full_table_selected
+                                && !data_table.get_show_name()
+                                && rect.contains(data_table_pos)
+                                && matches!(data_table.kind, DataTableKind::Import(_))
+                            {
+                                save_data_table_anchors.push(data_table_pos);
+                            }
+                            if can_delete_table {
+                                // we don't need to manually delete the table as
+                                // the SetCellValues operation below will do
+                                // this properly
+                                data_tables_automatically_deleted.push(data_table_pos);
+                            }
+                            if can_delete_column {
+                                // adjust for hidden columns, reverse the order to delete from right to left
+                                let columns = (rect.min.x..=rect.max.x)
+                                    .map(|x| {
+                                        // account for hidden columns
+                                        data_table.get_column_index_from_display_index(
+                                            (x - data_table_rect.min.x) as u32,
+                                            true,
+                                        )
+                                    })
+                                    .rev()
+                                    .collect();
+                                ops.push(Operation::DeleteDataTableColumns {
+                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                    columns,
+                                    flatten: false,
+                                    select_table: false,
+                                });
+                            } else if !delete_data_tables.contains(&data_table_pos)
+                                && !data_tables_automatically_deleted.contains(&data_table_pos)
+                            {
+                                // find the intersection of the selection rect and the data table rect
+                                if let Some(intersection) = rect.intersection(&data_table_rect) {
+                                    ops.push(Operation::SetDataTableAt {
+                                        sheet_pos: intersection
+                                            .min
+                                            .to_sheet_pos(selection.sheet_id),
+                                        values: CellValues::new_blank(
+                                            intersection.width(),
+                                            intersection.height(),
+                                        ),
+                                    });
+                                }
+                            }
                         }
                     }
                 }
 
                 if !can_delete_column {
-                    ops.push(Operation::SetCellValues {
-                        sheet_pos,
-                        values: CellValues::new(rect.width(), rect.height()),
-                    });
+                    if save_data_table_anchors.is_empty() {
+                        ops.push(Operation::SetCellValues {
+                            sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
+                            values: CellValues::new(rect.width(), rect.height()),
+                        });
+                    } else {
+                        // remove all saved_data_table_anchors from the rect
+                        // (which may result in multiple resulting rects)
+                        let mut rects = vec![rect];
+                        for data_table_pos in save_data_table_anchors {
+                            let mut next_rects = vec![];
+                            for rect in rects {
+                                let result = rect.subtract(Rect::single_pos(data_table_pos));
+                                next_rects.extend(result);
+                            }
+                            rects = next_rects;
+                        }
+
+                        // set the cell values for each of the resulting rects
+                        for rect in rects {
+                            ops.push(Operation::SetCellValues {
+                                sheet_pos: SheetPos::new(
+                                    selection.sheet_id,
+                                    rect.min.x,
+                                    rect.min.y,
+                                ),
+                                values: CellValues::new(rect.width(), rect.height()),
+                            });
+                        }
+                    }
                 }
+
+                delete_data_tables.iter().for_each(|data_table_pos| {
+                    ops.push(Operation::DeleteDataTable {
+                        sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                    });
+                });
 
                 // need to update the selection if a table was deleted (since we
                 // can no longer use the table ref)
@@ -354,6 +386,36 @@ impl GridController {
             }
         }
 
+        ops.extend(self.delete_validations_operations(selection));
+
+        ops
+    }
+
+    pub fn delete_validations_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            for validation in sheet.validations.validations.iter() {
+                if let Some(selection) = validation
+                    .selection
+                    .delete_selection(selection, &self.a1_context)
+                {
+                    if selection != validation.selection {
+                        ops.push(Operation::SetValidation {
+                            validation: Validation {
+                                selection,
+                                ..validation.clone()
+                            },
+                        });
+                    }
+                } else {
+                    ops.push(Operation::RemoveValidation {
+                        sheet_id: validation.selection.sheet_id,
+                        validation_id: validation.id,
+                    });
+                }
+            }
+        }
         ops
     }
 
@@ -367,6 +429,136 @@ impl GridController {
         ops.extend(self.delete_cells_operations(selection, force_table_bounds));
         ops
     }
+
+    // Replace values in the data table with the
+    // intersection of the data table and `values`.
+    // Otherwise, add to `cell_values`.
+    //
+    // If `delete_value` is true, then the values in `values` are
+    // deleted from `cell_values`.
+    pub fn cell_values_operations(
+        &self,
+        selection: Option<&A1Selection>,
+        start_pos: SheetPos,
+        cell_value_pos: Pos,
+        cell_values: &mut CellValues,
+        mut values: CellValues,
+        delete_value: bool,
+    ) -> Result<Vec<Operation>> {
+        let mut ops = vec![];
+        if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
+            let rect =
+                Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
+
+            for (output_rect, intersection_rect, data_table) in
+                sheet.iter_code_output_intersects_rect(rect)
+            {
+                let contains_source_cell = intersection_rect.contains(output_rect.min);
+
+                let is_table_being_deleted = match (delete_value, selection) {
+                    (true, Some(selection)) => {
+                        start_pos.sheet_id == selection.sheet_id
+                            && selection.contains_pos(output_rect.min, self.a1_context())
+                    }
+                    _ => false,
+                };
+
+                // there is no pasting on top of code cell output
+                if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
+                    let adjusted_rect = Rect::from_numbers(
+                        intersection_rect.min.x - start_pos.x,
+                        intersection_rect.min.y - start_pos.y,
+                        intersection_rect.width() as i64,
+                        intersection_rect.height() as i64,
+                    );
+
+                    // pull the values from `values`, replacing
+                    // the values in `values` with CellValue::Blank
+                    let data_table_cell_values = values.get_rect(adjusted_rect);
+
+                    let paste_table_in_import =
+                        data_table_cell_values.iter().flatten().find(|cell_value| {
+                            cell_value.is_code()
+                                || cell_value.is_import()
+                                || cell_value.is_image()
+                                || cell_value.is_html()
+                        });
+
+                    if let Some(paste_table_in_import) = paste_table_in_import {
+                        let cell_type = match paste_table_in_import {
+                            CellValue::Code(_) => "code",
+                            CellValue::Import(_) => "table",
+                            CellValue::Image(_) => "chart",
+                            CellValue::Html(_) => "chart",
+                            _ => "unknown",
+                        };
+                        let message = format!("Cannot place {} within a table", cell_type);
+
+                        #[cfg(any(target_family = "wasm", test))]
+                        {
+                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                            crate::wasm_bindings::js::jsClientMessage(
+                                message.to_owned(),
+                                severity.to_string(),
+                            );
+                        }
+
+                        return Err(Error::msg(message));
+                    }
+
+                    let contains_header = data_table.get_show_columns()
+                        && intersection_rect.y_range().contains(&output_rect.min.y);
+                    let headers = data_table.column_headers.to_owned();
+
+                    if let (Some(mut headers), true) = (headers, contains_header) {
+                        let y = output_rect.min.y - start_pos.y;
+
+                        for x in intersection_rect.x_range() {
+                            let new_x = x - output_rect.min.x;
+
+                            if let Some(header) = headers.get_mut(new_x as usize) {
+                                let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
+                                let safe_y = u32::try_from(y).unwrap_or(0);
+
+                                let cell_value =
+                                    values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
+
+                                header.name = cell_value;
+                            }
+                        }
+
+                        let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
+                        ops.push(Operation::DataTableMeta {
+                            sheet_pos,
+                            name: None,
+                            alternating_colors: None,
+                            columns: Some(headers.to_vec()),
+                            show_ui: None,
+                            show_name: None,
+                            show_columns: None,
+                            readonly: None,
+                        });
+                    }
+
+                    let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
+                    ops.push(Operation::SetDataTableAt {
+                        sheet_pos,
+                        values: CellValues::from(data_table_cell_values),
+                    });
+                }
+            }
+        }
+
+        for (x, y, value) in values.into_owned_iter() {
+            cell_values.set(
+                cell_value_pos.x as u32 + x,
+                cell_value_pos.y as u32 + y,
+                value,
+            );
+        }
+
+        Ok(ops)
+    }
 }
 
 #[cfg(test)]
@@ -375,11 +567,14 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
+    use crate::Rect;
     use crate::cell_values::CellValues;
-    use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
+    use crate::controller::operations::operation::Operation;
+    use crate::controller::user_actions::import::tests::simple_csv;
+    use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
+    use crate::test_util::*;
+    use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
     #[test]
     fn test() {
@@ -468,6 +663,150 @@ mod test {
             CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // currency with comma
+        let (value, format_update) = gc.string_to_cell_value("$123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with comma
+        let (value, format_update) = gc.string_to_cell_value("(123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // parentheses with -ve
+        let (value, format_update) = gc.string_to_cell_value("(-123,456)", true);
+        assert_eq!(value, CellValue::Text("(-123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // currency with a space
+        let (value, format_update) = gc.string_to_cell_value("$ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve outside
+        let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve inside
+        let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses outside
+        let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses inside
+        let (value, format_update) = gc.string_to_cell_value("$(123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses and space
+        let (value, format_update) = gc.string_to_cell_value("$ ( 123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with -ve
+        let (value, format_update) = gc.string_to_cell_value("(-$123,456)", true);
+        assert_eq!(value, CellValue::Text("(-$123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // percent with a space
+        let (value, format_update) = gc.string_to_cell_value("123456 %", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
+
+        // percent with a comma
+        let (value, format_update) = gc.string_to_cell_value("123,456%", true);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
     }
 
     #[test]
@@ -506,7 +845,7 @@ mod test {
     }
 
     #[test]
-    fn problematic_number() {
+    fn test_problematic_number() {
         let gc = GridController::test();
         let value = "980E92207901934";
         let (cell_value, _) = gc.string_to_cell_value(value, true);
@@ -514,7 +853,7 @@ mod test {
     }
 
     #[test]
-    fn delete_cells_operations() {
+    fn test_delete_cells_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
@@ -535,6 +874,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
+
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
         let operations = gc.delete_cells_operations(&selection, false);
         let sheet_pos = SheetPos {
@@ -542,17 +882,19 @@ mod test {
             y: 2,
             sheet_id,
         };
-        let values = CellValues::new(2, 1);
 
         assert_eq!(operations.len(), 1);
         assert_eq!(
             operations,
-            vec![Operation::SetCellValues { sheet_pos, values },]
+            vec![Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::new(2, 1)
+            },]
         );
     }
 
     #[test]
-    fn delete_columns() {
+    fn test_delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
@@ -590,5 +932,67 @@ mod test {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn test_set_cell_values_operations() {
+        // let mut gc = GridController::test();
+        let (mut gc, _, _, _) = simple_csv();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 13,
+            sheet_id,
+        };
+
+        let values = vec![vec!["a".to_string()]];
+        let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
+        println!("{:?}", ops);
+        println!("{:?}", data_table_ops);
+        let sheet = gc.try_sheet(sheet_id).unwrap();
+        print_table_sheet(sheet, Rect::from_numbers(1, 1, 4, 14), true);
+    }
+
+    #[test]
+    fn test_delete_cells_within_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["3", "4", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["6", "7", "8"]);
+
+        let selection = A1Selection::test_a1("A5:C7");
+        gc.delete_cells(&selection, None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["3", "4", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["6", "7", "8"]);
+
+        gc.redo(None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
+    }
+
+    #[test]
+    fn test_delete_cells_from_data_table_without_ui() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // create a data table without ui
+        test_create_data_table_no_ui(&mut gc, sheet_id, pos![B2], 3, 3);
+        assert_cell_value_row(&gc, sheet_id, 1, 4, 2, vec!["", "0", "1", "2"]);
+
+        // should delete part of the first row of the data table
+        gc.delete_cells(&A1Selection::test_a1("A1:C4"), None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 4, 2, vec!["", "0", "1", "2"]);
+
+        gc.redo(None);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
     }
 }

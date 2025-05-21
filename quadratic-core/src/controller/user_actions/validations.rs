@@ -1,19 +1,19 @@
 use uuid::Uuid;
 
 use crate::{
+    CellValue, Pos,
     a1::A1Selection,
     controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
+        GridController, active_transactions::transaction_name::TransactionName,
+        operations::operation::Operation,
     },
     grid::{
-        sheet::validations::{
-            validation::{Validation, ValidationStyle},
-            validation_rules::ValidationRule,
-        },
         SheetId,
+        sheet::validations::{
+            rules::ValidationRule,
+            validation::{Validation, ValidationStyle},
+        },
     },
-    CellValue, Pos,
 };
 
 impl GridController {
@@ -37,7 +37,24 @@ impl GridController {
 
     /// Creates or updates a validation.
     pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
-        let ops = vec![Operation::SetValidation { validation }];
+        // Update the selection to take advantage of any table-based selections.
+        // DF: This helps validations work better with tables--there are still
+        // edge cases where it doesn't work, like setting individual cells
+        // within a table, and then hiding that column--one way to fix this is
+        // to provide a1 notation for entries within tables, eg, Table1[Column
+        // 2][3], and using that for validations. Alternatively, we could
+        // provide a data_table.validations, similar to what we do for
+        // formatting (but that makes it more difficult to work with the
+        // validations DOM UI)
+        let mut selection = validation.selection.clone();
+        selection.change_to_table_refs(validation.selection.sheet_id, &self.a1_context);
+
+        let ops = vec![Operation::SetValidation {
+            validation: Validation {
+                selection,
+                ..validation
+            },
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::Validation);
     }
 
@@ -73,7 +90,7 @@ impl GridController {
         self.try_sheet(sheet_id).and_then(|sheet| {
             sheet
                 .validations
-                .get_validation_from_pos(pos, &sheet.a1_context())
+                .get_validation_from_pos(pos, &self.a1_context)
         })
     }
 
@@ -82,9 +99,9 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations
-            .get_validation_from_pos(Pos { x, y }, &sheet.a1_context())?;
+            .get_validation_from_pos(Pos { x, y }, &self.a1_context)?;
         match validation.rule {
-            ValidationRule::List(ref list) => list.to_drop_down(sheet),
+            ValidationRule::List(ref list) => list.to_drop_down(sheet, &self.a1_context),
             _ => None,
         }
     }
@@ -96,12 +113,15 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations
-            .get_validation_from_pos(pos, &sheet.a1_context())?;
+            .get_validation_from_pos(pos, &self.a1_context)?;
         if validation.error.style != ValidationStyle::Stop {
             return None;
         }
         let cell_value = CellValue::parse_from_str(input);
-        if validation.rule.validate(sheet, Some(&cell_value)) {
+        if validation
+            .rule
+            .validate(sheet, Some(&cell_value), &self.a1_context)
+        {
             None
         } else {
             Some(validation.id)
@@ -111,15 +131,16 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-
+    use crate::grid::js_types::JsRenderCellSpecial;
+    use crate::{Rect, test_util::*};
     use crate::{
         grid::sheet::validations::{
-            validation::ValidationError,
-            validation_rules::{
+            rules::{
+                ValidationRule,
                 validation_list::{ValidationList, ValidationListSource},
                 validation_logical::ValidationLogical,
-                ValidationRule,
             },
+            validation::ValidationError,
         },
         wasm_bindings::js::expect_js_call,
     };
@@ -141,7 +162,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -173,7 +194,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
         let validation1 = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -246,9 +267,10 @@ mod tests {
         );
 
         // missing sheet_id should return None
-        assert!(gc
-            .get_validation_from_pos(SheetId::new(), (1, 1).into())
-            .is_none());
+        assert!(
+            gc.get_validation_from_pos(SheetId::new(), (1, 1).into())
+                .is_none()
+        );
     }
 
     #[test]
@@ -290,7 +312,7 @@ mod tests {
 
         let list = ValidationList {
             source: ValidationListSource::Selection(A1Selection::test_a1_sheet_id(
-                "A1:A4", &sheet_id,
+                "A1:A4", sheet_id,
             )),
             ignore_blank: true,
             drop_down: true,
@@ -376,5 +398,40 @@ mod tests {
             gc.validate_input(sheet_id, (1, 3).into(), "random"),
             Some(validation.id)
         );
+    }
+
+    #[test]
+    fn test_validate_checkbox_in_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = gc.sheet_ids()[0];
+
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![b2], 2, 2, &["", "", "", ""]);
+        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("c4"));
+
+        let sheet = gc.sheet(sheet_id);
+
+        // ensure the checkbox is rendered
+        let cells = sheet.get_render_cells(Rect::test_a1("c4"), gc.a1_context());
+        assert_eq!(cells[0].special, Some(JsRenderCellSpecial::Checkbox));
+
+        // there should be no warning since the contents is empty in the table
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
+
+        // set the contents to true
+        gc.set_cell_value(pos![sheet_id!c4], "true".to_string(), None);
+
+        // there should be no warning since the content is true
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
+
+        // set the contents to a, causing a validation error
+        gc.set_cell_value(pos![sheet_id!c4], "a".to_string(), None);
+
+        // there should be a warning since the content is not true, false, or empty
+        assert_validation_warning(&gc, pos![sheet_id!c4], Some(validation));
+
+        gc.set_cell_value(pos![sheet_id!c4], "false".to_string(), None);
+
+        // there should be no warning since the content is false
+        assert_validation_warning(&gc, pos![sheet_id!c4], None);
     }
 }

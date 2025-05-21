@@ -51,7 +51,7 @@ export class TableColumnHeaders extends Container {
 
     // draw borders on the top and bottom of the column headers (either active or inactive)
     const active = pixiApp.cellsSheet().tables.isActive(this.table);
-    if ((this.table.inOverHeadings && active) || this.table.codeCell.show_ui) {
+    if (this.table.inOverHeadings && active) {
       const width = active ? 1 : 0;
       this.background.lineStyle({
         color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
@@ -131,7 +131,7 @@ export class TableColumnHeaders extends Container {
   };
 
   private createColumnHeaders() {
-    if (!this.table.codeCell.show_ui || !this.table.codeCell.show_columns || this.table.codeCell.is_html_image) {
+    if (!this.table.codeCell.show_columns || this.table.codeCell.is_html_image) {
       this.columns.visible = false;
       return;
     }
@@ -153,7 +153,7 @@ export class TableColumnHeaders extends Container {
       }
 
       const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + displayIndex);
-
+      const columnY = codeCell.show_name ? this.table.sheet.offsets.getRowHeight(codeCell.y) : 0;
       if (columnHeader) {
         // existing column, update it
         columnHeader.updateHeader({
@@ -163,7 +163,7 @@ export class TableColumnHeaders extends Container {
           name: column.name,
           sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
           dirtySort: codeCell.sort_dirty,
-          columnY: this.columnsHeight,
+          columnY,
         });
       } else {
         // new column, add it
@@ -178,7 +178,7 @@ export class TableColumnHeaders extends Container {
             sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
             dirtySort: codeCell.sort_dirty,
             onSortPressed: () => this.onSortPressed(column),
-            columnY: this.columnsHeight,
+            columnY,
           })
         );
       }
@@ -191,7 +191,7 @@ export class TableColumnHeaders extends Container {
   // update appearance when there is an updated code cell
   update() {
     const codeCell = this.table.codeCell;
-    if (codeCell.show_ui && codeCell.show_columns && !codeCell.spill_error) {
+    if (codeCell.show_columns && !codeCell.spill_error) {
       this.visible = true;
       this.columnsHeight = this.table.sheet.offsets.getRowHeight(codeCell.y + (codeCell.show_name ? 1 : 0));
       this.drawBackground();

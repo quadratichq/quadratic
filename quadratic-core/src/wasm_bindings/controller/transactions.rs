@@ -60,6 +60,23 @@ impl GridController {
         }
     }
 
+    #[wasm_bindgen(js_name = "receiveMultiplayerTransactionAck")]
+    pub fn js_receive_multiplayer_transaction_ack(
+        &mut self,
+        transaction_id: String,
+        sequence_num: u32,
+    ) -> Result<JsValue, JsValue> {
+        let transaction_id = Uuid::parse_str(&transaction_id)
+            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {}", e)))?;
+
+        self.received_transaction(transaction_id, sequence_num as u64, vec![]);
+
+        Ok(serde_wasm_bindgen::to_value(&JsResponse {
+            result: true,
+            error: None,
+        })?)
+    }
+
     #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
     pub fn js_apply_offline_unsaved_transaction(
         &mut self,
@@ -68,19 +85,37 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let transaction_id = match Uuid::parse_str(&transaction_id) {
             Ok(transaction_id) => transaction_id,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
+            Err(e) => {
+                return Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    result: false,
+                    error: Some(format!(
+                        "Invalid transaction id: {:?}, error: {:?}",
+                        transaction_id, e
+                    )),
+                })?);
+            }
         };
-        if let Ok(unsaved_transaction) =
-            serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction)
-        {
-            Ok(serde_wasm_bindgen::to_value(
-                &self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction),
-            )?)
-        } else {
-            Err(JsValue::from_str(&format!(
-                "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {}",
-                unsaved_transaction
-            )))
+        match serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction) {
+            Ok(unsaved_transaction) => {
+                self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
+                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    result: true,
+                    error: None,
+                })?)
+            }
+            Err(e) => {
+                dbgjs!(format!(
+                    "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {:?}, error: {:?}",
+                    unsaved_transaction, e
+                ));
+                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    result: false,
+                    error: Some(format!(
+                        "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {:?}, error: {:?}",
+                        unsaved_transaction, e
+                    )),
+                })?)
+            }
         }
     }
 }

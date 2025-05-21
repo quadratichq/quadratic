@@ -13,7 +13,7 @@ use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
     /// Finds the remaining rectangles after excluding the given rectangle from a range.
-    fn find_excluded_rects(mut range: RefRangeBounds, exclude: Rect) -> Vec<CellRefRange> {
+    pub fn find_excluded_rects(mut range: RefRangeBounds, exclude: Rect) -> Vec<CellRefRange> {
         range.normalize_in_place();
 
         let mut ranges = Vec::new();
@@ -97,7 +97,7 @@ impl A1Selection {
         range: CellRefRange,
         p1: Pos,
         p2: Pos,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) -> Vec<CellRefRange> {
         let mut ranges = Vec::new();
         let exclude_rect = Rect { min: p1, max: p2 };
@@ -108,7 +108,7 @@ impl A1Selection {
             }
             CellRefRange::Table { range } => {
                 if let Some(table_range) =
-                    range.convert_to_ref_range_bounds(false, context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
                 {
                     ranges.extend(A1Selection::find_excluded_rects(table_range, exclude_rect));
                 }
@@ -118,7 +118,7 @@ impl A1Selection {
     }
 
     /// Excludes the given cells from the selection.
-    pub fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>, context: &A1Context) {
+    pub fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>, a1_context: &A1Context) {
         // normalize p1 and p2
         let (p1, p2) = if let Some(p2) = p2 {
             (
@@ -138,17 +138,18 @@ impl A1Selection {
         let mut ranges = Vec::new();
         for range in self.ranges.drain(..) {
             // skip range if it's the entire range or the reverse of the entire range
-            if !range.is_pos_range(p1, p2, context)
-                && (p2.is_none() || p2.is_some_and(|p2| !range.is_pos_range(p2, Some(p1), context)))
+            if !range.is_pos_range(p1, p2, a1_context)
+                && (p2.is_none()
+                    || p2.is_some_and(|p2| !range.is_pos_range(p2, Some(p1), a1_context)))
             {
                 if let Some(p2) = p2 {
-                    if range.might_intersect_rect(Rect { min: p1, max: p2 }, context) {
-                        ranges.extend(A1Selection::remove_rect(range, p1, p2, context));
+                    if range.might_intersect_rect(Rect { min: p1, max: p2 }, a1_context) {
+                        ranges.extend(A1Selection::remove_rect(range, p1, p2, a1_context));
                     } else {
                         ranges.push(range);
                     }
-                } else if range.might_contain_pos(p1, context) {
-                    ranges.extend(A1Selection::remove_rect(range, p1, p1, context));
+                } else if range.might_contain_pos(p1, a1_context) {
+                    ranges.extend(A1Selection::remove_rect(range, p1, p1, a1_context));
                 } else {
                     ranges.push(range);
                 }
@@ -164,7 +165,7 @@ impl A1Selection {
         self.ranges = ranges;
 
         // if the cursor is no longer in the range, then set the cursor to the last range
-        if !self.contains_pos(self.cursor, context) {
+        if !self.contains_pos(self.cursor, a1_context) {
             // we find a finite range to set the cursor to, starting at the end and working backwards
             if let Some(cursor) = self.ranges.iter().rev().find_map(|range| match range {
                 CellRefRange::Sheet { range } => {

@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
 use crate::{
-    a1::A1Selection,
+    CellValue, Rect,
+    a1::{A1Context, A1Selection},
     grid::js_types::{
         JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
         JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
         JsTableType, JsTablesContext,
     },
-    CellValue, Rect,
 };
 
 use super::Sheet;
@@ -20,16 +20,17 @@ impl Sheet {
         include_errored_code_cells: bool,
         include_tables_summary: bool,
         include_charts_summary: bool,
+        a1_context: &A1Context,
     ) -> JsSelectionContext {
         JsSelectionContext {
             sheet_name: self.name.clone(),
-            data_rects: self.get_data_rects_in_selection(&selection, max_rects),
+            data_rects: self.get_data_rects_in_selection(&selection, max_rects, a1_context),
             errored_code_cells: include_errored_code_cells
-                .then(|| self.get_errored_code_cells_in_selection(&selection)),
+                .then(|| self.get_errored_code_cells_in_selection(&selection, a1_context)),
             tables_summary: include_tables_summary
-                .then(|| self.get_tables_summary_in_selection(&selection)),
+                .then(|| self.get_tables_summary_in_selection(&selection, a1_context)),
             charts_summary: include_charts_summary
-                .then(|| self.get_charts_summary_in_selection(&selection)),
+                .then(|| self.get_charts_summary_in_selection(&selection, a1_context)),
         }
     }
 
@@ -38,9 +39,10 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         max_rects: Option<usize>,
+        a1_context: &A1Context,
     ) -> Vec<JsCellValuePosContext> {
         let mut data_rects = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
@@ -57,9 +59,13 @@ impl Sheet {
     }
 
     /// Returns JsCodeCell for all code cells in selection rects that have errors
-    fn get_errored_code_cells_in_selection(&self, selection: &A1Selection) -> Vec<JsCodeCell> {
+    fn get_errored_code_cells_in_selection(
+        &self,
+        selection: &A1Selection,
+        a1_context: &A1Context,
+    ) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
         for selection_rect in selection_rects {
             for x in selection_rect.x_range() {
                 if let Some(column) = self.get_column(x) {
@@ -73,7 +79,9 @@ impl Sheet {
                                 .unwrap_or(false)
                             {
                                 // if there is an error, then add the code cell to the vec
-                                if let Some(code_cell) = self.edit_code_value((x, y).into()) {
+                                if let Some(code_cell) =
+                                    self.edit_code_value((x, y).into(), a1_context)
+                                {
                                     code_cells.push(code_cell);
                                 }
                             }
@@ -88,9 +96,10 @@ impl Sheet {
     fn get_tables_summary_in_selection(
         &self,
         selection: &A1Selection,
+        a1_context: &A1Context,
     ) -> Vec<JsTableSummaryContext> {
         let mut tables_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let tables_summary_in_rect = self
@@ -131,9 +140,10 @@ impl Sheet {
     fn get_charts_summary_in_selection(
         &self,
         selection: &A1Selection,
+        a1_context: &A1Context,
     ) -> Vec<JsChartSummaryContext> {
         let mut charts_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let charts_summary_in_rect = self
@@ -231,8 +241,8 @@ impl Sheet {
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
-                    show_name: table.show_name,
-                    show_columns: table.show_columns,
+                    show_name: table.get_show_name(),
+                    show_columns: table.get_show_columns(),
                     language: code_cell_value.language.to_owned(),
                     code_string: code_cell_value.code.to_owned(),
                     std_err: code_run.std_err.to_owned(),
@@ -248,8 +258,8 @@ impl Sheet {
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
-                    show_name: table.show_name,
-                    show_columns: table.show_columns,
+                    show_name: table.get_show_name(),
+                    show_columns: table.get_show_columns(),
                 });
             }
         }
@@ -269,12 +279,12 @@ impl Sheet {
 mod tests {
 
     use crate::{
+        Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
         a1::A1Selection,
         grid::{
-            js_types::{JsCellValuePosContext, JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
+            js_types::{JsCellValuePosContext, JsCodeCell, JsReturnInfo},
         },
-        Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
     };
 
     use super::Sheet;
@@ -327,7 +337,9 @@ mod tests {
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 300, sheet.id));
-        let data_rects_in_selection = sheet.get_data_rects_in_selection(&selection, None);
+        let a1_context = sheet.make_a1_context();
+        let data_rects_in_selection =
+            sheet.get_data_rects_in_selection(&selection, None, &a1_context);
 
         let max_rows = 3;
 
@@ -368,6 +380,8 @@ mod tests {
         let mut sheet = Sheet::test();
 
         let code_run_1 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "abcd".to_string(),
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -394,12 +408,15 @@ mod tests {
                 Default::default(),
                 false,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let code_run_2 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "abcd".to_string(),
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -426,12 +443,15 @@ mod tests {
                 Default::default(),
                 false,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let code_run_3 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "[[1, 2], [3, 4]]".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -462,13 +482,16 @@ mod tests {
                 ])),
                 true,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1000, 1000, sheet.id));
-        let js_errored_code_cells = sheet.get_errored_code_cells_in_selection(&selection);
+        let a1_context = sheet.make_a1_context();
+        let js_errored_code_cells =
+            sheet.get_errored_code_cells_in_selection(&selection, &a1_context);
 
         assert_eq!(js_errored_code_cells.len(), 2);
 

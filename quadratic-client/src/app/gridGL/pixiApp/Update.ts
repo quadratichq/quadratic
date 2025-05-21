@@ -1,4 +1,6 @@
-import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
+import { events } from '@/app/events/events';
+import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
+import { debugShowFocus, debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
@@ -14,29 +16,47 @@ export class Update {
   private raf?: number;
   private fps?: FPS;
 
+  private scrollBarsHandler?: ScrollBarsHandler;
+
   firstRenderComplete = false;
 
   constructor() {
     if (debugShowFPS) {
       this.fps = new FPS();
     }
+    events.on('scrollBarsHandler', this.setScrollBarsHandler);
   }
 
-  start(): void {
+  private setScrollBarsHandler = (scrollBarsHandler: ScrollBarsHandler) => {
+    this.scrollBarsHandler = scrollBarsHandler;
+  };
+
+  start() {
     if (!this.raf) {
       this.raf = requestAnimationFrame(this.update);
     }
   }
 
-  destroy(): void {
+  destroy() {
     if (this.raf) {
       cancelAnimationFrame(this.raf);
       this.raf = undefined;
     }
+    events.off('scrollBarsHandler', this.setScrollBarsHandler);
+    this.scrollBarsHandler = undefined;
   }
 
+  private lastFocusElement?: HTMLElement;
+  private showFocus = () => {
+    const focus = document.activeElement;
+    if (focus !== this.lastFocusElement) {
+      this.lastFocusElement = focus as HTMLElement;
+      console.log('current focus:', focus);
+    }
+  };
+
   // update loop w/debug checks
-  private update = (): void => {
+  private update = () => {
     if (pixiApp.destroyed) return;
 
     if (pixiApp.paused) {
@@ -49,6 +69,11 @@ export class Update {
       this.raf = requestAnimationFrame(this.update);
       return;
     }
+
+    if (debugShowFocus) {
+      this.showFocus();
+    }
+
     pixiApp.viewport.updateViewport();
 
     let rendererDirty =
@@ -108,6 +133,8 @@ export class Update {
     debugTimeCheck('[Update] backgrounds');
     pixiApp.copy.update();
     debugTimeCheck('[Update] copy');
+    this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
+    debugTimeCheck('[Update] scrollbars');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

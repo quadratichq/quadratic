@@ -43,7 +43,7 @@ export class TableHeader extends Container {
   }
 
   updatePosition() {
-    if (!this.table.codeCell.show_ui || (!this.table.codeCell.show_name && !this.table.codeCell.show_columns)) {
+    if (!this.table.codeCell.show_name && !this.table.codeCell.show_columns) {
       this.visible = false;
     } else {
       this.visible = true;
@@ -100,8 +100,7 @@ export class TableHeader extends Container {
     this.columnHeadersGridLines.visible = false;
     this.tableName.toGrid();
     this.columnHeaders.toHoverGrid(
-      this.table.tableBounds.y +
-        (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
+      this.table.tableBounds.y + (this.table.codeCell.show_name ? this.columnHeaders.y : 0)
     );
 
     // need to keep columnHeaders in the same position in the z-order
@@ -121,9 +120,7 @@ export class TableHeader extends Container {
       Math.min(this.bottomOfTable, this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top)
     );
 
-    this.columnHeaders.toHoverGrid(
-      this.y + (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
-    );
+    this.columnHeaders.toHoverGrid(this.y + (this.table.codeCell.show_name ? this.columnHeaders.y : 0));
     this.tableName.toHover(this.y);
     if (this.parent !== this.table.hoverTableHeaders) {
       this.table.hoverTableHeaders.addChild(this);
@@ -143,7 +140,7 @@ export class TableHeader extends Container {
     if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
       return undefined;
     }
-    if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
+    if (this.table.codeCell.show_name) {
       return this.tableName.intersects(world);
     }
   }
@@ -156,19 +153,19 @@ export class TableHeader extends Container {
     if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
       return undefined;
     }
-    if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
+    if (this.table.codeCell.show_name) {
       const result = this.tableName.intersects(world);
       if (result?.type === 'table-name') {
         return { table: this.table.codeCell, type: 'table-name' };
       }
     }
-    if (this.table.codeCell.show_ui && this.table.codeCell.show_columns) {
+    if (this.table.codeCell.show_columns) {
       return this.columnHeaders.pointerDown(world);
     }
   }
 
   pointerMove(world: Point): boolean {
-    if (this.table.codeCell.show_ui && this.table.codeCell.show_columns) {
+    if (this.table.codeCell.show_columns) {
       const result = this.columnHeaders.pointerMove(world);
       if (result) {
         this.tableCursor = this.columnHeaders.tableCursor;
@@ -183,7 +180,7 @@ export class TableHeader extends Container {
     // flicker since the update normally happens on the tick instead of on the
     // viewport event (caused by inconsistency between React and pixi's update
     // loop)
-    if (!this.table.codeCell.show_ui || !this.table.codeCell.show_columns) {
+    if (!this.table.codeCell.show_columns) {
       return { x: this.tableName.x, y: this.tableName.y };
     }
     this.update(false);

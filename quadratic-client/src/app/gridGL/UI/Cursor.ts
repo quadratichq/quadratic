@@ -8,7 +8,6 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
 export const CURSOR_THICKNESS = 2;
@@ -83,7 +82,6 @@ export class Cursor extends Container {
     }
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
-    const insideTable = tables.getInTable(cell);
     const tableName = table?.getTableNameBounds();
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
@@ -97,9 +95,8 @@ export class Cursor extends Container {
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      (!insideTable || insideTable?.isSingleValue()) &&
+      !pixiApp.cellsSheet().tables.isTableNameCell(cell) &&
       !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
-      (!pixiApp.cellsSheet().tables.cursorOnDataTable() || cursor.isSingleSelection()) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
@@ -113,6 +110,8 @@ export class Cursor extends Container {
     const inlineShowing = inlineEditorHandler.getShowing();
     if (showInput) {
       if (inlineShowing) {
+        x = inlineEditorHandler.x - CURSOR_THICKNESS;
+        y = inlineEditorHandler.y - CURSOR_THICKNESS;
         width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * 2, width);
         height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * 2, height);
       } else {
@@ -220,7 +219,7 @@ export class Cursor extends Container {
     let color: number | undefined, offsets: { x: number; y: number; width: number; height: number } | undefined;
     const inlineShowing = inlineEditorHandler.getShowing();
     if (inlineEditorHandler.formula && inlineShowing && sheets.current === inlineShowing.sheetId) {
-      color = colors.cellColorUserFormula;
+      color = getCSSVariableTint('primary');
       const { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
       offsets = {
         x: inlineEditorHandler.x - CURSOR_THICKNESS * 0.5,
@@ -262,10 +261,15 @@ export class Cursor extends Container {
     const { visible, editMode, formula } = pixiAppSettings.inlineEditorState;
     if (!visible || !editMode) return;
 
-    let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
+    let { x, y } = inlineEditorHandler;
+    x = inlineEditorHandler.x - CURSOR_THICKNESS;
+    y = inlineEditorHandler.y - CURSOR_THICKNESS;
+
+    let { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
-    const color = formula ? colors.cellColorUserFormula : colors.cursorCell;
+
+    const color = formula ? getCSSVariableTint('primary') : pixiApp.accentColor;
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
     const corners = [
@@ -304,18 +308,26 @@ export class Cursor extends Container {
     return table?.codeCell.spill_error;
   }
 
-  private calculateCursorRectangle(finiteRanges: RefRangeBounds[], infiniteRanges: RefRangeBounds[]) {
+  private calculateCursorRectangle(
+    finiteRanges: RefRangeBounds[],
+    infiniteRanges: RefRangeBounds[],
+    infiniteRectangle: Rectangle | undefined
+  ) {
     const sheet = sheets.sheet;
-    if (finiteRanges.length + infiniteRanges.length === 0) {
+    if (finiteRanges.length + infiniteRanges.length !== 1) {
       this.cursorRectangle = undefined;
     } else if (finiteRanges.length) {
       this.cursorRectangle = new Rectangle();
-      const start = sheet.getCellOffsets(finiteRanges[0].start.col.coord, finiteRanges[0].start.row.coord);
-      const end = sheet.getCellOffsets(
-        Number(finiteRanges[0].end.col.coord) + 1,
-        Number(finiteRanges[0].end.row.coord) + 1
-      );
+      // normalize the coordinates so pointerHeading calculations work correctly
+      const xStart = Math.min(Number(finiteRanges[0].start.col.coord), Number(finiteRanges[0].end.col.coord));
+      const yStart = Math.min(Number(finiteRanges[0].start.row.coord), Number(finiteRanges[0].end.row.coord));
+      const xEnd = Math.max(Number(finiteRanges[0].start.col.coord), Number(finiteRanges[0].end.col.coord));
+      const yEnd = Math.max(Number(finiteRanges[0].start.row.coord), Number(finiteRanges[0].end.row.coord));
+      const start = sheet.getCellOffsets(xStart, yStart);
+      const end = sheet.getCellOffsets(xEnd + 1, yEnd + 1);
       this.cursorRectangle = new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y);
+    } else if (infiniteRanges.length) {
+      this.cursorRectangle = infiniteRectangle;
     } else {
       this.cursorRectangle = new Rectangle();
     }
@@ -347,13 +359,13 @@ export class Cursor extends Container {
       const finiteRanges = cursor.getFiniteRefRangeBounds();
       this.drawFiniteCursor(finiteRanges);
       const infiniteRanges = cursor.getInfiniteRefRangeBounds();
-      drawInfiniteSelection({
+      const infiniteRectangle = drawInfiniteSelection({
         g: this.graphics,
         color: pixiApp.accentColor,
         alpha: FILL_SELECTION_ALPHA,
         ranges: infiniteRanges,
       });
-      this.calculateCursorRectangle(finiteRanges, infiniteRanges);
+      this.calculateCursorRectangle(finiteRanges, infiniteRanges, infiniteRectangle);
       if (
         !columnRow &&
         cursor.rangeCount() === 1 &&

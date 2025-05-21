@@ -17,6 +17,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import '@szhsin/react-menu/dist/index.css';
 import mixpanel from 'mixpanel-browser';
+import type { JSX } from 'react';
 import type { ColorResult } from 'react-color';
 
 interface Props {
@@ -49,10 +50,8 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         {numberOfSheets > 1 && (
           <DropdownMenuItem
             onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
-                mixpanel.track('[Sheets].delete');
-                sheets.userDeleteSheet(sheets.current);
-              }
+              mixpanel.track('[Sheets].delete');
+              sheets.userDeleteSheet(sheets.current);
               setTimeout(focusGrid);
             }}
           >

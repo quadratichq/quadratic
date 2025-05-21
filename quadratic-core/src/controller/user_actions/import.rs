@@ -1,9 +1,9 @@
 use anyhow::Result;
 
-use crate::controller::active_transactions::transaction_name::TransactionName;
-use crate::controller::GridController;
-use crate::grid::SheetId;
 use crate::Pos;
+use crate::controller::GridController;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::grid::SheetId;
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -40,9 +40,10 @@ impl GridController {
     /// Imports an Excel file into the grid.
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
+    #[function_timer::function_timer]
     pub fn import_excel(
         &mut self,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         cursor: Option<String>,
     ) -> Result<()> {
@@ -88,12 +89,10 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
-        grid::{CodeCellLanguage, CodeCellValue},
-        test_util::{
-            assert_cell_value_row, assert_data_table_cell_value_row, print_data_table, print_table,
-        },
-        wasm_bindings::js::clear_js_calls,
         CellValue, Rect, RunError, RunErrorMsg, Span,
+        grid::{CodeCellLanguage, CodeCellValue},
+        test_util::{assert_cell_value_row, print_table_at, print_table_in_rect},
+        wasm_bindings::js::clear_js_calls,
     };
 
     use bigdecimal::BigDecimal;
@@ -155,10 +154,10 @@ pub(crate) mod tests {
         );
 
         let first_row = vec!["city", "region", "country", "population"];
-        assert_data_table_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 1, first_row);
+        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 1, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 12, last_row);
+        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 12, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
@@ -238,7 +237,7 @@ pub(crate) mod tests {
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(file, "basic.xlsx", None);
+        let _ = gc.import_excel(&file, "basic.xlsx", Some("".to_string()));
         let sheet_id = gc.grid.sheets()[0].id;
 
         assert_cell_value_row(
@@ -312,6 +311,9 @@ pub(crate) mod tests {
             CellValue::Text("Hello Red".into())
         );
 
+        expect_js_call_count("jsTransactionStart", 2, false);
+        expect_js_call_count("jsTransactionEnd", 2, false);
+
         // doesn't appear to import the bold or red formatting yet
         // assert_eq!(
         //     sheet.format_cell(9, 2, false),
@@ -331,19 +333,14 @@ pub(crate) mod tests {
 
     #[test]
     fn import_all_excel_functions() {
-        let mut grid_controller = GridController::new_blank();
-        let pos = pos![A1];
+        let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
-        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);
-        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let _ = gc.import_excel(&file, "all_excel_functions.xlsx", None);
+        let sheet_id = gc.grid.sheets()[0].id;
 
-        print_table(
-            &grid_controller,
-            sheet_id,
-            Rect::new_span(pos, Pos { x: 10, y: 10 }),
-        );
+        print_table_at(&gc, sheet_id, pos![A1]);
 
-        let sheet = grid_controller.grid.try_sheet(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let (y_start, y_end) = sheet.column_bounds(1, true).unwrap();
         assert_eq!(y_start, 1);
         assert_eq!(y_end, 512);
@@ -378,7 +375,7 @@ pub(crate) mod tests {
         let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
         let _result = grid_controller.import_parquet(sheet_id, file, file_name, pos, None);
 
-        assert_data_table_cell_value_row(
+        assert_cell_value_row(
             &grid_controller,
             sheet_id,
             1,
@@ -514,18 +511,11 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
+        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
-        assert_data_table_cell_value_row(
-            &gc,
-            sheet_id,
-            0,
-            2,
-            4,
-            vec!["c1", " c2", " Sample column3"],
-        );
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -548,11 +538,11 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
+        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
 
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["issue", " test", " value"]);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 3, vec!["0", " 1", " Invalid"]);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["0", " 2", " Valid"]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["issue", " test", " value"]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 3, vec!["0", "1", " Invalid"]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {

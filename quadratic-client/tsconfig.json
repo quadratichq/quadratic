@@ -5,11 +5,5 @@
     "types": ["vite/client"]
   },
   "include": ["src", "public/pyright.worker.js"],
-  "exclude": [
-    "node_modules/*",
-    "src/grid/controller/runners/*",
-    "quadratic-core/*",
-    "quadratic-api/*",
-    "quadratic-rust-client/*"
-  ]
+  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"]
 }

@@ -1,17 +1,16 @@
 use chrono::Utc;
-use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use uuid::Uuid;
 
 use quadratic_core::{
     controller::{
+        GridController,
         operations::operation::Operation,
         transaction::{Transaction, TransactionServer},
-        GridController,
     },
     grid::{
-        file::{export, import, CURRENT_VERSION},
         Grid,
+        file::{CURRENT_VERSION, export, import},
     },
 };
 use quadratic_rust_shared::{
@@ -22,7 +21,7 @@ use quadratic_rust_shared::{
 
 use crate::{
     error::{FilesError, Result},
-    state::{settings::Settings, State},
+    state::{State, settings::Settings},
     truncate::{add_processed_transaction, processed_transaction_key},
 };
 
@@ -120,13 +119,8 @@ pub(crate) async fn process_queue_for_room(
         .get_messages_from(channel, &(checkpoint_sequence_num + 1).to_string(), false)
         .await?
         .into_iter()
-        .flat_map(|(_, message)| decompress_and_deserialize::<TransactionServer>(message))
+        .flat_map(|(_, message)| Transaction::process_incoming(&message))
         .collect::<Vec<TransactionServer>>();
-
-    tracing::trace!(
-        "Found {} transaction(s) for room {file_id}",
-        transactions.len()
-    );
 
     if transactions.is_empty() {
         return Ok(None);
@@ -156,12 +150,15 @@ pub(crate) async fn process_queue_for_room(
             //     transaction.id,
             //     transaction.sequence_num
             // );
-            decompress_and_deserialize::<Vec<Operation>>(transaction.operations)
+
+            Transaction::decompress_and_deserialize::<Vec<Operation>>(&transaction.operations)
+                .map_err(|e| FilesError::Serialization(e.to_string()))
         })
         .flatten()
         .collect::<Vec<Operation>>();
 
     // process the transactions and save the file to S3
+    let start_processing = Utc::now();
     let last_sequence_num = process_transactions(
         storage,
         file_id,
@@ -170,6 +167,11 @@ pub(crate) async fn process_queue_for_room(
         operations,
     )
     .await?;
+
+    tracing::trace!(
+        "Processed transactions in {:?}ms",
+        (Utc::now() - start_processing).num_milliseconds()
+    );
 
     // convert keys to &str requires 2 iterations
     let keys = sequence_numbers
@@ -188,7 +190,6 @@ pub(crate) async fn process_queue_for_room(
 
     // update the checkpoint in quadratic-api
     let key = &key(file_id, last_sequence_num);
-
     set_file_checkpoint(
         quadratic_api_uri,
         m2m_auth_token,
@@ -217,7 +218,8 @@ pub(crate) async fn process_queue_for_room(
     state.stats.lock().await.last_processed_file_time = Some(Utc::now());
 
     tracing::info!(
-        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}ms", (Utc::now() - start).num_milliseconds()
+        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}ms",
+        (Utc::now() - start).num_milliseconds()
     );
 
     Ok(Some(last_sequence_num))
@@ -249,7 +251,7 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
     for file_id in files.into_iter() {
-        let state = Arc::clone(&state);
+        let state = Arc::clone(state);
         let active_channels = active_channels.to_owned();
 
         // process file in a separate thread
@@ -262,11 +264,6 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     }
 
     Ok(())
-}
-
-fn decompress_and_deserialize<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
-    Transaction::decompress_and_deserialize::<T>(&data)
-        .map_err(|e| FilesError::Serialization(e.to_string()))
 }
 
 #[cfg(test)]

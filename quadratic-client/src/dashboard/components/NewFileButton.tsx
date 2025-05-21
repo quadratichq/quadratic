@@ -1,10 +1,10 @@
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, DraftIcon, ExamplesIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
 const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
@@ -106,7 +106,9 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
               return (
                 <DropdownMenuItem key={uuid} asChild>
                   <Link to={to} reloadDocument>
-                    <LanguageIcon language={type} className="mr-3" />
+                    <div className="mr-3">
+                      <LanguageIcon language={type} />
+                    </div>
                     <span className="flex flex-col">
                       {name}
                       <span className="text-xs text-muted-foreground">{label}</span>

@@ -1,7 +1,7 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
-import type { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -10,6 +10,7 @@ import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -145,13 +146,24 @@ export class Tables extends Container<Table> {
     }
   };
 
+  // We cannot start rendering code cells until the bitmap fonts are loaded. We
+  // listen for the bitmapFontsLoaded event and then render the code cells.
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
-      codeCells.forEach((codeCell) => {
-        this.addChild(new Table(this.sheet, codeCell));
-      });
+      if (!isBitmapFontLoaded()) {
+        console.log('bitmapFontsLoaded event not received');
+        events.once('bitmapFontsLoaded', () => this.completeRenderCodeCells(codeCells));
+        return;
+      }
+      this.completeRenderCodeCells(codeCells);
     }
+  };
+
+  private completeRenderCodeCells = (codeCells: JsRenderCodeCell[]) => {
+    codeCells.forEach((codeCell) => {
+      this.addChild(new Table(this.sheet, codeCell));
+    });
   };
 
   update(dirtyViewport: boolean) {
@@ -236,7 +248,7 @@ export class Tables extends Container<Table> {
   // track and activate a table whose context menu is open (this handles the
   // case where you hover a table and open the context menu; we want to keep
   // that table active while the context menu is open)
-  contextMenu = (options?: ContextMenuOptions) => {
+  contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
@@ -310,7 +322,7 @@ export class Tables extends Container<Table> {
   }
 
   getSortDialogPosition(codeCell: JsRenderCodeCell): JsCoordinate | undefined {
-    const table = this.children.find((table) => table.codeCell === codeCell);
+    const table = this.children.find((table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y);
     if (!table) {
       return;
     }
@@ -323,11 +335,9 @@ export class Tables extends Container<Table> {
       this.saveToggleOutlines = false;
       this.activeTables.forEach((table) => table.showActive());
       const contextMenuTable = pixiAppSettings.contextMenu?.table;
-      if (contextMenuTable) {
+      if (contextMenuTable && pixiAppSettings.contextMenu?.column === undefined) {
         const table = this.children.find((table) => table.codeCell === contextMenuTable);
-        if (table) {
-          table.showActive();
-        }
+        table?.showActive();
       }
       this.actionDataTable?.showActive();
       this.children.forEach((table) => table.header.toggleTableColumnSelection(false));
@@ -376,7 +386,6 @@ export class Tables extends Container<Table> {
       ) {
         return true;
       }
-      if (!code.show_ui) return false;
       return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y === code.y;
     });
   }
@@ -405,7 +414,7 @@ export class Tables extends Container<Table> {
     cell: JsCoordinate
   ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
     for (const table of this.children) {
-      if (table.codeCell.show_ui && table.codeCell.show_columns && table.inOverHeadings) {
+      if (table.codeCell.show_columns && table.inOverHeadings) {
         if (
           cell.x >= table.codeCell.x &&
           cell.x < table.codeCell.x + table.codeCell.w &&
@@ -427,11 +436,21 @@ export class Tables extends Container<Table> {
     }
   }
 
+  // Returns true if the cell is a table name cell
+  isTableNameCell(cell: JsCoordinate): boolean {
+    return this.children.some(
+      (table) =>
+        table.codeCell.show_name &&
+        cell.x >= table.codeCell.x &&
+        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        cell.y === table.codeCell.y
+    );
+  }
+
   /// Returns true if the cell is a column header cell in a table
   isColumnHeaderCell(cell: JsCoordinate): boolean {
     return !!this.children.find(
       (table) =>
-        table.codeCell.show_ui &&
         table.codeCell.show_columns &&
         cell.x >= table.codeCell.x &&
         cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
@@ -441,8 +460,12 @@ export class Tables extends Container<Table> {
 
   intersectsCodeInfo(world: Point): JsRenderCodeCell | undefined {
     for (const table of this.children) {
-      if (table.codeCell.state === 'SpillError' || table.codeCell.state === 'RunError') {
-        if (intersects.rectanglePoint(table.tableBounds, world)) {
+      if (
+        pixiAppSettings.showCodePeek ||
+        table.codeCell.state === 'SpillError' ||
+        table.codeCell.state === 'RunError'
+      ) {
+        if (!table.codeCell.is_html_image && intersects.rectanglePoint(table.tableBounds, world)) {
           return table.codeCell;
         }
       }

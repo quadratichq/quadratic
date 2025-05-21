@@ -15,7 +15,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 
 export const TopBar = () => {
-  // TODO: what about embedable view? should we show the file menu?
+  // TODO: what about embeddable view? should we show the file menu?
 
   return (
     <div
@@ -33,31 +33,34 @@ export const TopBar = () => {
         }}
       >
         {!isEmbed && (
-          <div className="hidden lg:block">
-            <TopBarMenus />
-          </div>
+          <>
+            <div className="hidden lg:block">
+              <TopBarMenus />
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 md:hidden">
+                <QuadraticLogo />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                onCloseAutoFocus={(e) => {
+                  e.preventDefault();
+                  focusGrid();
+                }}
+              >
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.location.href = '/';
+                  }}
+                >
+                  Back to dashboard
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled>Quadratic {VERSION}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         )}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 md:hidden">
-            <QuadraticLogo />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            onCloseAutoFocus={(e) => {
-              e.preventDefault();
-              focusGrid();
-            }}
-          >
-            <DropdownMenuItem
-              onClick={() => {
-                window.location.href = '/';
-              }}
-            >
-              Back to dashboard
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>{VERSION}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       <TopBarFileNameAndLocationMenu />

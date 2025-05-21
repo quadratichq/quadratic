@@ -183,6 +183,7 @@ class InlineEditorKeyboard {
     // Shift+Enter key
     else if (matchShortcut(Action.SaveInlineEditorMoveUp, e)) {
       e.stopPropagation();
+      e.preventDefault();
       if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, -1, false);
       }
@@ -271,6 +272,14 @@ class InlineEditorKeyboard {
         inlineEditorFormula.removeInsertingCells();
         inlineEditorFormula.endInsertingCells();
         this.resetKeyboardPosition();
+      }
+
+      // F4 key toggles the current reference between absolute and relative
+    } else if (e.code === 'F4') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inlineEditorHandler.formula) {
+        inlineEditorFormula.toggleReference();
       }
     }
 

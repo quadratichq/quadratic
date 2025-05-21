@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use quadratic_rust_shared::quadratic_api::{can_edit, can_view, FilePermRole};
+use quadratic_rust_shared::quadratic_api::{FilePermRole, can_edit, can_view};
 use uuid::Uuid;
 
 use crate::{

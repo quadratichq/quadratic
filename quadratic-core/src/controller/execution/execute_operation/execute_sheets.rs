@@ -1,14 +1,15 @@
 use crate::{
+    constants::SHEET_NAME,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::{
-        file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, unique_data_table_name,
-        Sheet, SheetId,
+        Sheet, SheetId, file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity,
+        unique_data_table_name,
     },
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use lexicon_fractional_index::key_between;
 
 impl GridController {
@@ -66,9 +67,11 @@ impl GridController {
                     data_table.name = unique_name.to_owned().into();
 
                     // update table context for replacing table names in code cells
-                    if let Some(mut table_map_entry) = context.table_map.remove(&old_name) {
-                        table_map_entry.sheet_id = sheet_id;
-                        context.table_map.insert(table_map_entry);
+                    if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
+                        let mut new_table_map_entry = old_table_map_entry.to_owned();
+                        new_table_map_entry.sheet_id = sheet_id;
+                        new_table_map_entry.table_name = unique_name.to_owned();
+                        context.table_map.insert(new_table_map_entry);
                     }
 
                     data_tables_pos.push(*pos);
@@ -86,10 +89,10 @@ impl GridController {
                     {
                         for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
                             code_cell_value.replace_table_name_in_cell_references(
+                                &context,
+                                pos.to_sheet_pos(sheet_id),
                                 old_name,
                                 unique_name,
-                                &sheet_id,
-                                &context,
                             );
                         }
                     }
@@ -139,7 +142,7 @@ impl GridController {
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {
                 let new_first_sheet_id = SheetId::new();
-                let name = String::from("Sheet1");
+                let name = SHEET_NAME.to_owned() + "1";
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
@@ -197,7 +200,7 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::SetSheetName { sheet_id, name } = op {
-            if let Err(e) = Sheet::validate_sheet_name(&name, self.a1_context()) {
+            if let Err(e) = Sheet::validate_sheet_name(&name, sheet_id, self.a1_context()) {
                 if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsClientMessage(
                         e.to_owned(),
@@ -209,12 +212,7 @@ impl GridController {
                 bail!(e);
             }
 
-            let context = self.a1_context().to_owned();
-
-            let sheet = self.try_sheet_result(sheet_id)?;
-            let old_name = sheet.name.to_owned();
-
-            self.grid.update_sheet_name(&old_name, &name, &context);
+            let old_name = self.grid.update_sheet_name(sheet_id, &name)?;
 
             transaction
                 .forward_operations
@@ -277,7 +275,7 @@ impl GridController {
             new_sheet.id = new_sheet_id;
             let right = self.grid.next_sheet(sheet_id);
             let right_order = right.map(|right| right.order.clone());
-            if let Ok(order) = key_between(&Some(sheet.order.clone()), &right_order) {
+            if let Ok(order) = key_between(Some(&sheet.order), right_order.as_deref()) {
                 new_sheet.order = order;
             };
             let name = format!("{} Copy", sheet.name);
@@ -307,17 +305,16 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, SheetPos,
         controller::{
-            active_transactions::transaction_name::TransactionName,
+            GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
-            GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue, SheetId},
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
 
@@ -416,7 +413,9 @@ mod tests {
         );
 
         // code cells should rerun and send updated code cell
-        let code_cell = sheet.edit_code_value(sheet_pos.into()).unwrap();
+        let code_cell = sheet
+            .edit_code_value(sheet_pos.into(), gc.a1_context())
+            .unwrap();
         let render_code_cell = sheet.get_render_code_cell(sheet_pos.into()).unwrap();
         expect_js_call(
             "jsUpdateCodeCell",
@@ -448,7 +447,7 @@ mod tests {
         );
 
         gc.undo(None);
-        assert_eq!(gc.grid.sheets()[0].name, "Sheet1".to_string());
+        assert_eq!(gc.grid.sheets()[0].name, "Sheet 1".to_string());
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
@@ -538,7 +537,7 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_sheet() {
+    fn test_duplicate_sheet() {
         clear_js_calls();
 
         let mut gc = GridController::test();
@@ -561,7 +560,7 @@ mod tests {
         }];
         gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 2);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
@@ -598,8 +597,8 @@ mod tests {
         }];
         gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy 1");
-        assert_eq!(gc.grid.sheets()[2].name, "Sheet1 Copy");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
+        assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");
         let duplicated_sheet_id3 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
@@ -610,7 +609,7 @@ mod tests {
 
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 2);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         expect_js_call(
             "jsDeleteSheet",
             format!("{},{}", duplicated_sheet_id3, true),
@@ -619,7 +618,7 @@ mod tests {
 
         gc.redo(None);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy 1");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
@@ -634,26 +633,27 @@ mod tests {
 
         gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 10,
-                y: 10,
-            },
+            pos![sheet_id!J10],
             CodeCellLanguage::Python,
             format!("q.cells('{}')", file_name),
             None,
         );
+        assert_eq!(
+            gc.sheet(sheet_id).data_table(pos![J10]).unwrap().name(),
+            "Table1"
+        );
 
         gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
+        let quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[0]);
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 20,
-                y: 20,
-            },
+            pos![sheet_id!T20],
             CodeCellLanguage::Python,
-            "q.cells('Sheet1!A1')".to_string(),
+            format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).data_table(pos![T20]).unwrap().name(),
+            "Table2"
         );
 
         let ops = gc.duplicate_sheet_operations(sheet_id);
@@ -670,12 +670,28 @@ mod tests {
             })
         );
 
+        let new_quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[1]);
         assert_eq!(
             gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
-                code: "q.cells(\"A1\")".to_string(),
+                code: format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#),
             })
+        );
+
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .data_table(pos![J10])
+                .unwrap()
+                .name(),
+            "Table3"
+        );
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .data_table(pos![T20])
+                .unwrap()
+                .name(),
+            "Table4"
         );
     }
 }

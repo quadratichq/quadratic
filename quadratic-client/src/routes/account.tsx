@@ -1,10 +1,13 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
+import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import type { ReactNode } from 'react';
-import { Form } from 'react-router-dom';
+import { Form } from 'react-router';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
@@ -12,7 +15,7 @@ export const Component = () => {
   return (
     <>
       <div className="max-w-xl">
-        <DashboardHeader title="My account" />
+        <DashboardHeader title="Profile & preferences" />
 
         <Row>
           <Type variant="body2" className="font-bold">
@@ -27,6 +30,22 @@ export const Component = () => {
           <Type variant="body2">{user?.email}</Type>
         </Row>
         <Row>
+          <Type variant="body2" className="font-bold">
+            Theme
+          </Type>
+          <div className="flex items-center gap-2">
+            <ThemeAccentColors />
+          </div>
+        </Row>
+        <Row>
+          <Type variant="body2" className="font-bold">
+            Appearance
+          </Type>
+          <div className="flex items-center gap-2">
+            <ThemeAppearanceModes />
+          </div>
+        </Row>
+        <Row className="mt-12">
           <Form method="post" action={ROUTES.LOGOUT}>
             <Button variant="outline" type="submit">
               Log out
@@ -38,9 +57,9 @@ export const Component = () => {
   );
 };
 
-function Row(props: { children: ReactNode }) {
+function Row(props: { children: ReactNode; className?: string }) {
   return (
-    <div className={`mt-4 grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+    <div className={cn(`mt-4 grid items-center`, props.className)} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
   );

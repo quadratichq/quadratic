@@ -14,7 +14,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { cn } from '@/shared/shadcn/utils';
 import { useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useRecoilState } from 'recoil';
 
 export const ImportProgressList = () => {
@@ -85,12 +85,12 @@ const ImportProgressItem = ({
     file.step === 'error'
       ? 'Import failed'
       : file.step === 'cancel'
-      ? 'Import canceled'
-      : file.step === 'done'
-      ? 'Imported'
-      : file.step === 'read' && current < index
-      ? 'Pending...'
-      : 'Importing...';
+        ? 'Import canceled'
+        : file.step === 'done'
+          ? 'Imported'
+          : file.step === 'read' && current < index
+            ? 'Pending...'
+            : 'Importing...';
 
   const disabled = file.uuid === undefined;
 

@@ -1,10 +1,11 @@
+import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -12,6 +13,7 @@ import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javas
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { StopIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,12 +24,15 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent } from '@/shared/shadcn/ui/tooltip';
-import StopIcon from '@mui/icons-material/Stop';
+import { cn } from '@/shared/shadcn/utils';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 // Update the KernelMenu component to accept a custom trigger
 export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) => {
+  const transactionsInfo = useRecoilValue(editorInteractionStateTransactionsInfoAtom);
+
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
     const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.isCursorOnCodeCell());
@@ -85,9 +90,14 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
         <DropdownMenuTrigger asChild>
           <SidebarToggle>
             {triggerIcon}
-            {running > 0 && (
-              <div className="pointer-events-none absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background">
-                {running}
+            {transactionsInfo.length > 0 && (
+              <div
+                className={cn(
+                  'pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-background',
+                  running ? 'right-0 top-0 h-4 w-4' : 'right-1 top-1 h-2 w-2'
+                )}
+              >
+                {running || ''}
               </div>
             )}
           </SidebarToggle>

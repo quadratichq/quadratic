@@ -1,4 +1,4 @@
-use a1::A1Selection;
+use crate::a1::A1Selection;
 use sheet::keyboard::Direction;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
@@ -165,8 +165,8 @@ impl GridController {
             .ok_or(JsValue::UNDEFINED)?;
 
         // we want `true` for both `force_columns` and `force_table_bounds` to capture the table bounds
-        let selection = sheet.finitize_selection(&selection, true, true);
-        serde_wasm_bindgen::to_value(&selection.ranges[0].to_rect(&sheet.a1_context()))
+        let selection = sheet.finitize_selection(&selection, true, true, self.a1_context());
+        serde_wasm_bindgen::to_value(&selection.ranges[0].to_rect(self.a1_context()))
             .map_err(|_| JsValue::UNDEFINED)
     }
 }

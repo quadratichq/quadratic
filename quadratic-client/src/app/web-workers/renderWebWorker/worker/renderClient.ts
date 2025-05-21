@@ -6,9 +6,9 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
-import type { Link } from '@/app/gridGL/types/links';
-import type { DrawRects } from '@/app/gridGL/types/size';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { Link } from '@/app/shared/types/links';
+import type { DrawRects } from '@/app/shared/types/size';
 import type {
   ClientRenderMessage,
   RenderClientCellsTextHashClear,
@@ -35,9 +35,12 @@ class RenderClient {
     }
 
     switch (e.data.type) {
-      case 'clientRenderInit':
+      case 'clientRenderBitmapFonts':
         renderText.clientInit(e.data.bitmapFonts);
-        renderCore.init(e.ports[0]);
+        return;
+
+      case 'clientRenderInit':
+        renderCore.clientInit(e.ports[0]);
         this.tableColumnHeaderForeground = e.data.tableColumnHeaderForeground;
         return;
 

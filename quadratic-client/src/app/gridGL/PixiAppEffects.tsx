@@ -54,10 +54,11 @@ export const PixiAppEffects = memo(() => {
     }
   }, [codeEditorState, setCodeEditorState]);
 
-  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { addGlobalSnackbar, closeCurrentSnackbar } = useGlobalSnackbar();
   useEffect(() => {
     pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
-  }, [addGlobalSnackbar]);
+    pixiAppSettings.closeCurrentSnackbar = closeCurrentSnackbar;
+  }, [addGlobalSnackbar, closeCurrentSnackbar]);
 
   const [gridSettings, setGridSettings] = useRecoilState(gridSettingsAtom);
   useEffect(() => {
@@ -86,11 +87,17 @@ export const PixiAppEffects = memo(() => {
 
   useEffect(() => {
     const handleMouseUp = () => {
-      setGridPanMode((prev) => ({ ...prev, mouseIsDown: false }));
+      setGridPanMode((prev) => {
+        if (!prev.mouseIsDown) return prev;
+        return { ...prev, mouseIsDown: false };
+      });
     };
 
     const disablePanMode = () => {
-      setGridPanMode((prev) => ({ ...prev, mouseIsDown: false, spaceIsDown: false }));
+      setGridPanMode((prev) => {
+        if (!prev.mouseIsDown && !prev.spaceIsDown) return prev;
+        return { ...prev, mouseIsDown: false, spaceIsDown: false };
+      });
     };
 
     window.addEventListener('mouseup', handleMouseUp);

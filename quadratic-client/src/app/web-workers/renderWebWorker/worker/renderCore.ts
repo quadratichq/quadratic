@@ -20,7 +20,7 @@ class RenderCore {
   private waitingForResponse: Map<number, Function> = new Map();
   private id = 0;
 
-  init(renderPort: MessagePort) {
+  clientInit(renderPort: MessagePort) {
     this.renderCorePort = renderPort;
     this.renderCorePort.onmessage = this.handleMessage;
     if (debugWebWorkers) console.log('[renderCore] initialized');
@@ -74,6 +74,14 @@ class RenderCore {
         renderText.receiveViewportBuffer(e.data.buffer);
         break;
 
+      case 'coreRenderTransactionStart':
+        renderText.transactionStart(e.data.transactionId, e.data.transactionName);
+        break;
+
+      case 'coreRenderTransactionEnd':
+        renderText.transactionEnd(e.data.transactionId, e.data.transactionName);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }
@@ -105,7 +113,14 @@ class RenderCore {
    * Core API requests *
    *********************/
 
-  getRenderCells = (sheetId: string, x: number, y: number, width: number, height: number): Promise<JsRenderCell[]> => {
+  getRenderCells = (
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    abortSignal?: AbortSignal
+  ): Promise<JsRenderCell[]> => {
     return new Promise((resolve, reject) => {
       if (!this.renderCorePort) {
         console.warn('Expected renderCorePort to be defined in RenderCore.getRenderCells');
@@ -127,6 +142,11 @@ class RenderCore {
         resolve(cells);
       });
       this.id++;
+
+      abortSignal?.addEventListener('abort', () => {
+        this.waitingForResponse.set(id, () => {});
+        reject('Render cells request aborted');
+      });
     });
   };
 

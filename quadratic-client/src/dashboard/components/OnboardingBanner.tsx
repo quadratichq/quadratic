@@ -1,9 +1,9 @@
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { useNewFileFromStatePythonApi } from '@/shared/hooks/useNewFileFromState';
@@ -34,7 +34,7 @@ import mixpanel from 'mixpanel-browser';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSubmit } from 'react-router-dom';
+import { Link, useSubmit } from 'react-router';
 import { z } from 'zod';
 
 const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';

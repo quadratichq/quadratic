@@ -1,30 +1,27 @@
 use crate::{
-    controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
-    Pos, SheetPos, SheetRect,
+    CopyFormats, Pos, SheetPos, SheetRect,
+    controller::{GridController, active_transactions::transaction_name::TransactionName},
+    grid::{DataTable, data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 impl GridController {
+    /// Gets a data table based on a sheet position.
+    pub fn data_table(&self, sheet_pos: SheetPos) -> Option<&DataTable> {
+        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+            sheet.data_table(sheet_pos.into())
+        } else {
+            None
+        }
+    }
+
     /// Returns all data tables within the given sheet position.
     pub fn data_tables_within(&self, sheet_pos: SheetPos) -> Result<Vec<Pos>> {
-        let sheet = self
-            .try_sheet(sheet_pos.sheet_id)
-            .ok_or_else(|| anyhow!("Sheet not found"))?;
+        let sheet = self.try_sheet_result(sheet_pos.sheet_id)?;
         let pos = Pos::from(sheet_pos);
 
         sheet.data_tables_within(pos)
-    }
-
-    pub fn set_data_table_value(
-        &mut self,
-        sheet_pos: SheetPos,
-        value: String,
-        cursor: Option<String>,
-    ) {
-        let ops = self.set_data_table_operations_at(sheet_pos, value);
-        self.start_user_transaction(ops, cursor, TransactionName::SetDataTableAt);
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
@@ -55,9 +52,8 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
-        show_name: Option<bool>,
-        show_columns: Option<bool>,
+        show_name: Option<Option<bool>>,
+        show_columns: Option<Option<bool>>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_meta_operations(
@@ -65,7 +61,6 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_ui,
             show_name,
             show_columns,
         );
@@ -94,6 +89,44 @@ impl GridController {
             rows_to_remove,
             flatten_on_delete,
             swallow_on_insert,
+        );
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+    }
+
+    pub fn data_table_insert_columns(
+        &mut self,
+        sheet_pos: SheetPos,
+        columns: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.data_table_insert_columns_operations(
+            sheet_pos,
+            columns,
+            swallow,
+            copy_formats_from,
+            copy_formats,
+        );
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+    }
+
+    pub fn data_table_insert_rows(
+        &mut self,
+        sheet_pos: SheetPos,
+        rows: Vec<u32>,
+        swallow: bool,
+        copy_formats_from: Option<u32>,
+        copy_formats: Option<CopyFormats>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.data_table_insert_rows_operations(
+            sheet_pos,
+            rows,
+            swallow,
+            copy_formats_from,
+            copy_formats,
         );
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
     }
@@ -134,21 +167,25 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        Array, CellValue, Pos, Rect, SheetPos, Value,
         a1::A1Selection,
         cellvalue::Import,
         controller::{
-            transaction_types::JsCodeResult, user_actions::import::tests::simple_csv,
             GridController,
+            transaction_types::{JsCellValueResult, JsCodeResult},
+            user_actions::import::tests::simple_csv,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-        test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
+        test_create_data_table,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call},
-        Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
     #[test]
     fn test_code_data_table_to_data_table() {
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: "return [1,2,3]".into(),
             std_err: None,
             std_out: None,
             error: None,
@@ -163,7 +200,8 @@ mod tests {
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
 
@@ -182,8 +220,8 @@ mod tests {
         let import = Import::new("".into());
 
         // initial value
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 1));
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
+        print_table_in_rect(&gc, sheet_id, Rect::new(0, 0, 2, 1));
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         assert_cell_value(
             &gc,
             sheet_id,
@@ -194,8 +232,8 @@ mod tests {
 
         gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
+        print_table_in_rect(&gc, sheet_id, Rect::new(0, 0, 2, 2));
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import.clone()));
 
         // undo, the value should be a code run data table again
@@ -231,7 +269,7 @@ mod tests {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["1".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("1".into(), 2)),
             ..Default::default()
         });
 
@@ -245,7 +283,6 @@ mod tests {
         gc.data_table_meta(
             sheet_pos,
             Some(new_name.clone()),
-            None,
             None,
             None,
             None,
@@ -291,7 +328,7 @@ mod tests {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["1".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("1".into(), 2)),
             ..Default::default()
         });
 
@@ -309,7 +346,6 @@ mod tests {
             None,
             None,
             Some(new_column_headers),
-            None,
             None,
             None,
             cursor,
@@ -337,7 +373,7 @@ mod tests {
 
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
 
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
 
@@ -362,17 +398,17 @@ mod tests {
             cursor,
         );
 
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 12);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
 
         gc.undo(None);
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
 
         gc.redo(None);
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 12);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
 
@@ -447,6 +483,12 @@ mod tests {
         // Data table without headers
         let values_no_header = vec![vec!["A".into(), "B".into()], vec!["C".into(), "D".into()]];
 
+        gc.set_cell_value(
+            SheetPos::from((pos![D1], sheet_id)),
+            "Test value".into(),
+            None,
+        );
+
         gc.add_data_table(
             SheetPos::from((pos![D1], sheet_id)),
             "Table 2".to_string(),
@@ -463,7 +505,10 @@ mod tests {
             // Check basic properties
             assert_eq!(data_table.name, "Table_2".into());
             assert!(!data_table.header_is_first_row);
-            assert_eq!(data_table.value, Value::Array(values_no_header.into()));
+            assert_eq!(
+                data_table.value,
+                Value::Array(values_no_header.to_owned().into())
+            );
 
             // Check that column headers are automatically generated
             let headers = data_table.column_headers.as_ref().unwrap();
@@ -476,13 +521,96 @@ mod tests {
         gc.undo(None);
         {
             let sheet = gc.sheet(sheet_id);
+            assert_eq!(
+                sheet.cell_value(pos![D1]),
+                Some(CellValue::Text("Test value".into()))
+            );
             assert!(sheet.data_table(pos![D1]).is_none());
         }
 
         gc.redo(None);
         {
             let sheet = gc.sheet(sheet_id);
+            assert!(sheet.cell_value(pos![D1]).is_some());
             assert!(sheet.data_table(pos![D1]).is_some());
         }
+
+        // overwrite second data table with a new data table
+        let table_3_values = vec![vec!["Z".into(), "Y".into()], vec!["X".into(), "W".into()]];
+        gc.add_data_table(
+            SheetPos::from((pos![D1], sheet_id)),
+            "Table 3".to_string(),
+            table_3_values.to_owned(),
+            false,
+            None,
+        );
+        // Verify the third data table
+        {
+            let sheet = gc.sheet(sheet_id);
+            let data_table = sheet.data_table(pos![D1]).unwrap();
+
+            // Check basic properties
+            assert_eq!(data_table.name, "Table_3".into());
+            assert!(!data_table.header_is_first_row);
+            assert_eq!(
+                data_table.value,
+                Value::Array(table_3_values.to_owned().into())
+            );
+
+            // Check that column headers are automatically generated
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 2);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
+        }
+
+        // undo, the third data table should be gone, second data table should be back
+        gc.undo(None);
+        // Verify the second data table
+        {
+            let sheet = gc.sheet(sheet_id);
+            let data_table = sheet.data_table(pos![D1]).unwrap();
+
+            // Check basic properties
+            // assert_eq!(data_table.name, "Table_2".into());
+            assert!(!data_table.header_is_first_row);
+            assert_eq!(data_table.value, Value::Array(values_no_header.into()));
+
+            // Check that column headers are automatically generated
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 2);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
+        }
+
+        // redo, the third data table should be back
+        gc.redo(None);
+        // Verify the third data table
+        {
+            let sheet = gc.sheet(sheet_id);
+            let data_table = sheet.data_table(pos![D1]).unwrap();
+
+            // Check basic properties
+            assert_eq!(data_table.name, "Table_3".into());
+            assert!(!data_table.header_is_first_row);
+            assert_eq!(data_table.value, Value::Array(table_3_values.into()));
+
+            // Check that column headers are automatically generated
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 2);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
+        }
+    }
+
+    #[test]
+    fn test_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let dt = test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+
+        assert_eq!(gc.data_table(pos![sheet_id!A1]), Some(&dt));
+        assert!(gc.data_table(pos![sheet_id!A2]).is_none());
     }
 }

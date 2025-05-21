@@ -6,9 +6,9 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
 import type { JsFormulaParseResult } from '@/app/quadratic-core-types';
-import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { checkFormula, parseFormula, toggleReferenceTypes } from '@/app/quadratic-core/quadratic_core';
+import type { SheetPosTS } from '@/app/shared/types/size';
 import { colors } from '@/app/theme/colors';
 import type { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor';
@@ -29,7 +29,7 @@ class InlineEditorFormula {
       this.clearDecorations();
       return;
     }
-    pixiApp.cellHighlights.fromCellsAccessed(parseResult.cells_accessed);
+    pixiApp.cellHighlights.fromCellsAccessed(parseResult.cells_accessed, false);
 
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
     const cellColorReferences = new Map<string, number>();
@@ -113,7 +113,7 @@ class InlineEditorFormula {
 
       inlineEditorHandler.cursorIsMoving = true;
       inlineEditorMonaco.removeSelection();
-      this.insertInsertingCells(cursor.toA1String());
+      this.insertInsertingCells(cursor.toA1String(inlineEditorHandler.location?.sheetId));
 
       inlineEditorHandler.sendMultiplayerUpdate();
 
@@ -183,6 +183,17 @@ class InlineEditorFormula {
       }
     }
     return formula;
+  }
+
+  toggleReference() {
+    const reference = inlineEditorMonaco.getReferenceAtCursor();
+    if (!reference) return;
+    try {
+      const newReference = toggleReferenceTypes(reference.text);
+      inlineEditorMonaco.replaceRange(newReference, reference.range);
+    } catch (e) {
+      // the reference is not valid, so we do nothing
+    }
   }
 }
 

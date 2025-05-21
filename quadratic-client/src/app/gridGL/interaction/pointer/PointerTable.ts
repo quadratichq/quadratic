@@ -12,7 +12,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { isMac } from '@/shared/utils/isMac';
-import type { Point } from 'pixi.js';
+import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 // todo: dragging on double click
 
@@ -47,6 +47,8 @@ export class PointerTable {
             loading: false,
             id: '',
             messages: [],
+            waitingOnMessageIndex: undefined,
+            delaySeconds: 0,
           },
           diffEditorContent: undefined,
           waitingForEditorClose: {
@@ -121,6 +123,8 @@ export class PointerTable {
             loading: false,
             id: '',
             messages: [],
+            waitingOnMessageIndex: undefined,
+            delaySeconds: 0,
           },
           diffEditorContent: undefined,
           waitingForEditorClose: {
@@ -155,7 +159,7 @@ export class PointerTable {
     }
   };
 
-  pointerDown = (world: Point, event: PointerEvent): boolean => {
+  pointerDown = (world: Point, event: FederatedPointerEvent): boolean => {
     let tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
     if (!tableDown) return false;
 
@@ -175,11 +179,15 @@ export class PointerTable {
     }
 
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
-      const columnName = tableDown.column ? tableDown.table.columns[tableDown.column].name : undefined;
-      const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
-      if (!sheets.sheet.cursor.contains(column, row)) {
-        sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, false, false);
+      if (tableDown.column !== undefined) {
+        const columnName = tableDown.table.columns[tableDown.column].name;
+        if (!sheets.sheet.cursor.isTableColumnSelected(tableDown.table.name, tableDown.column)) {
+          sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, false, false);
+        }
+      } else {
+        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, false, false);
       }
+
       events.emit('contextMenu', {
         type: tableDown.type === 'column-name' ? ContextMenuType.TableColumn : ContextMenuType.Table,
         world,

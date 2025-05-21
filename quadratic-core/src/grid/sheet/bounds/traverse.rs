@@ -168,8 +168,8 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, Sheet},
         CellValue, Pos, Value,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, Sheet},
     };
 
     #[test]
@@ -240,11 +240,12 @@ mod test {
             Value::Single(CellValue::Html("html".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             // make the chart take up 5x5 cells
             Some((100.0 * 5.0, 20.0 * 5.0)),
         );
-        dt.show_name = false;
+        dt.show_name = Some(false);
         dt.chart_output = Some((5, 5));
         dt
     }
@@ -261,7 +262,8 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         // should find the anchor of the table
         assert_eq!(sheet.find_next_column(1, 5, false, true), Some(5));
@@ -295,7 +297,8 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 20, y: 5 }, Some(chart_5x5_dt()));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         // should find the first table
         assert_eq!(sheet.find_next_column(1, 6, false, true), Some(5));
@@ -323,7 +326,8 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         // should find the anchor of the table
         assert_eq!(sheet.find_next_row(1, 5, false, true), Some(5));
@@ -357,7 +361,8 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 20 }, Some(chart_5x5_dt()));
-        sheet.recalculate_bounds();
+        let a1_context = sheet.make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
 
         // should find the first table
         assert_eq!(sheet.find_next_row(1, 6, false, true), Some(5));

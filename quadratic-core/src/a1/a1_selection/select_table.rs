@@ -8,12 +8,12 @@ impl A1Selection {
         &mut self,
         table_name: &str,
         col: Option<String>,
-        context: &A1Context,
+        a1_context: &A1Context,
         screen_col_left: i64,
         shift_key: bool,
         ctrl_key: bool,
     ) {
-        let Some(table) = context.try_table(table_name) else {
+        let Some(table) = a1_context.try_table(table_name) else {
             return;
         };
 
@@ -137,7 +137,7 @@ impl A1Selection {
 
         let (col_range, x) = if let Some(col) = col {
             if let Some(col_index) = table.try_col_index(&col) {
-                if table.show_ui && table.show_name {
+                if table.show_name {
                     y += 1;
                 }
                 (
@@ -164,7 +164,7 @@ impl A1Selection {
                     // handle toggle for single column selection
                     if matches!(col_range, ColRange::Col(_)) {
                         if !range.headers && range.data {
-                            headers = table.show_ui && table.show_columns;
+                            headers = table.show_columns;
                             data = false;
                         } else {
                             headers = false;
@@ -173,7 +173,7 @@ impl A1Selection {
                         self.ranges.pop();
                     } else if matches!(col_range, ColRange::All) {
                         // handle toggle for column selection
-                        headers = table.show_ui && table.show_columns && !range.headers;
+                        headers = table.show_columns && !range.headers;
                         self.ranges.pop();
                     }
                 }
@@ -202,7 +202,7 @@ impl A1Selection {
                         self.ranges
                             .push(CellRefRange::new_relative_pos(self.cursor));
                     }
-                    self.update_cursor(context);
+                    self.update_cursor(a1_context);
                     return;
                 }
             }
@@ -216,14 +216,16 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::RefRangeBounds, Rect};
+    use crate::{Rect, a1::RefRangeBounds};
 
     use super::*;
 
     #[test]
     fn test_select_table() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
-        context.table_mut("Table1").unwrap().show_ui = false;
+        let table = context.table_mut("Table1").unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, false, false);
         assert_eq!(selection.ranges.len(), 1);
@@ -239,7 +241,9 @@ mod tests {
     #[test]
     fn test_select_table_col() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
-        context.table_mut("Table1").unwrap().show_ui = false;
+        let table = context.table_mut("Table1").unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table(
             "Table1",
@@ -271,7 +275,9 @@ mod tests {
     #[test]
     fn test_select_table_append() {
         let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
-        context.table_mut("Table1").unwrap().show_ui = false;
+        let table = context.table_mut("Table1").unwrap();
+        table.show_name = false;
+        table.show_columns = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);

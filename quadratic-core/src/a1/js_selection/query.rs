@@ -51,6 +51,16 @@ impl JsSelection {
         Ok(self.selection.single_rect_or_cursor(&self.context))
     }
 
+    #[wasm_bindgen(js_name = "getContiguousColumns")]
+    pub fn get_contiguous_columns(&self) -> Option<Vec<u32>> {
+        self.selection.contiguous_columns()
+    }
+
+    #[wasm_bindgen(js_name = "getContiguousRows")]
+    pub fn get_contiguous_rows(&self) -> Option<Vec<u32>> {
+        self.selection.contiguous_rows()
+    }
+
     #[wasm_bindgen(js_name = "contains")]
     pub fn contains(&self, x: u32, y: u32) -> bool {
         self.selection
@@ -161,6 +171,16 @@ impl JsSelection {
         self.selection.is_all_selected()
     }
 
+    #[wasm_bindgen(js_name = "isEntireColumnSelected")]
+    pub fn is_entire_column_selected(&self, column: u32) -> bool {
+        self.selection.is_entire_column_selected(column as i64)
+    }
+
+    #[wasm_bindgen(js_name = "isEntireRowSelected")]
+    pub fn is_entire_row_selected(&self, row: u32) -> bool {
+        self.selection.is_entire_row_selected(row as i64)
+    }
+
     #[wasm_bindgen(js_name = "isSelectedColumnsFinite")]
     pub fn is_selected_columns_finite(&self) -> bool {
         self.selection.is_selected_columns_finite(&self.context)
@@ -171,19 +191,19 @@ impl JsSelection {
         self.selection.is_selected_rows_finite(&self.context)
     }
 
-    #[wasm_bindgen(js_name = "getSelectedColumns")]
-    pub fn get_selected_columns(&self) -> Vec<u32> {
+    #[wasm_bindgen(js_name = "getColumnsWithSelectedCells")]
+    pub fn get_selected_columns_finite(&self) -> Vec<u32> {
         self.selection
-            .selected_columns_finite(&self.context)
+            .columns_with_selected_cells(&self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
-    #[wasm_bindgen(js_name = "getSelectedRows")]
-    pub fn get_selected_rows(&self) -> Vec<u32> {
+    #[wasm_bindgen(js_name = "getRowsWithSelectedCells")]
+    pub fn get_selected_rows_finite(&self) -> Vec<u32> {
         self.selection
-            .selected_rows_finite(&self.context)
+            .rows_with_selected_cells(&self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -238,7 +258,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
     pub fn get_selected_table_names(&self) -> Result<JsValue, String> {
-        serde_wasm_bindgen::to_value(&self.selection.selected_table_names())
+        serde_wasm_bindgen::to_value(&self.selection.selected_table_names(&self.context))
             .map_err(|e| e.to_string())
     }
 
@@ -254,5 +274,34 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "getSingleFullTableSelectionName")]
     pub fn get_single_full_table_selection_name(&self) -> Option<String> {
         self.selection.get_single_full_table_selection_name()
+    }
+
+    #[wasm_bindgen(js_name = "isTableColumnSelected")]
+    pub fn is_table_column_selected(&self, table_name: &str, column: u32) -> bool {
+        self.selection
+            .is_table_column_selected(table_name, column as i64, &self.context)
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedTableColumnsCount")]
+    pub fn get_selected_table_columns(&self) -> u32 {
+        self.selection.selected_table_columns(&self.context) as u32
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedColumns")]
+    pub fn get_selected_columns(&self) -> Vec<u32> {
+        self.selection
+            .selected_columns()
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedRows")]
+    pub fn get_selected_rows(&self) -> Vec<u32> {
+        self.selection
+            .selected_rows()
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
     }
 }

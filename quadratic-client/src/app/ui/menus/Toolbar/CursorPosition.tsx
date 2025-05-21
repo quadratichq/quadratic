@@ -2,7 +2,7 @@ import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorIntera
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsTableInfo } from '@/app/quadratic-core-types';
-import { getTableInfo } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getTableInfo } from '@/app/quadratic-core/quadratic_core';
 import { useCursorPosition } from '@/app/ui/hooks/useCursorPosition';
 import GoTo from '@/app/ui/menus/GoTo';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
@@ -30,11 +30,9 @@ export const CursorPosition = () => {
 
     sync();
 
-    events.on('updateCodeCell', sync);
-    events.on('renderCodeCells', sync);
+    events.on('a1ContextUpdated', sync);
     return () => {
-      events.off('updateCodeCell', sync);
-      events.off('renderCodeCells', sync);
+      events.off('a1ContextUpdated', sync);
     };
   }, []);
 

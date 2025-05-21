@@ -1,7 +1,9 @@
 use std::str::FromStr;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-use crate::{controller::GridController, grid::SheetId, Rect};
+use crate::{
+    Rect, controller::GridController, grid::SheetId, wasm_bindings::error::handle_core_result,
+};
 
 #[allow(non_snake_case)]
 #[wasm_bindgen]
@@ -15,12 +17,15 @@ impl GridController {
         final_range: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let initial_range: Rect =
-            serde_json::from_str(&initial_range).map_err(|e| e.to_string())?;
-        let final_range: Rect = serde_json::from_str(&final_range).map_err(|e| e.to_string())?;
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.autocomplete(sheet_id, initial_range, final_range, cursor)
-            .map_err(|e| e.to_string())?;
+        handle_core_result(|| -> Result<(), String> {
+            let initial_range: Rect =
+                serde_json::from_str(&initial_range).map_err(|e| e.to_string())?;
+            let final_range: Rect =
+                serde_json::from_str(&final_range).map_err(|e| e.to_string())?;
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+            self.autocomplete(sheet_id, initial_range, final_range, cursor)
+                .map_err(|e| e.to_string())
+        });
         Ok(())
     }
 }

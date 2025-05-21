@@ -4,17 +4,19 @@ import {
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
 import { cn } from '@/shared/shadcn/utils';
+import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAssistantMessagesProps = {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {
@@ -114,40 +116,34 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
           >
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAssistantUserMessageForm
-                initialPrompt={message.content}
-                messageIndex={index}
+                initialContent={message.content}
                 textareaRef={textareaRef}
+                messageIndex={index}
               />
-            ) : message.role === 'user' && message.contextType === 'toolResult' ? (
-              message.content.map((messageContent) => (
-                <Markdown key={messageContent.content}>{messageContent.content}</Markdown>
+            ) : isToolResultMessage(message) ? (
+              message.content.map(({ text }) => (
+                <Markdown key={`${index}-${message.role}-${message.contextType}`}>{text}</Markdown>
               ))
             ) : (
               <>
-                {message.content && Array.isArray(message.content) ? (
-                  <>
-                    {message.content.map((item, contentIndex) =>
-                      item.type === 'anthropic_thinking' ? (
-                        <ThinkingBlock
-                          key={item.text}
-                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
-                          isLoading={loading}
-                          thinkingContent={item}
-                          expandedDefault={false}
-                        />
-                      ) : item.type === 'text' ? (
-                        <AICodeBlockParser key={item.text} input={item.text} />
-                      ) : null
-                    )}
-                  </>
-                ) : (
-                  <Markdown key={message.content}>{message.content}</Markdown>
+                {message.content.map((item, contentIndex) =>
+                  item.type === 'anthropic_thinking' ? (
+                    <ThinkingBlock
+                      key={item.text}
+                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                      isLoading={loading}
+                      thinkingContent={item}
+                      expandedDefault={false}
+                    />
+                  ) : item.type === 'text' ? (
+                    <AICodeBlockParser key={item.text} input={item.text} />
+                  ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}
@@ -158,6 +154,10 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
           </div>
         );
       })}
+
+      <div className="px-2 py-2">
+        <AILoading loading={loading} />
+      </div>
     </div>
   );
 });

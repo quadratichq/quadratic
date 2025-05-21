@@ -32,7 +32,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .join(", "),
                     Some(Spanned { inner: 1, .. }) => array.repr(),
                     Some(Spanned { span, .. }) => {
-                        return Err(RunErrorMsg::InvalidArgument.with_span(span))
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span));
                     }
                 }
             }
@@ -322,7 +322,9 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// Returns the lowercase equivalent of a string.
-            #[examples("LOWER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"ὀδυσσεύς is my favorite character!\"")]
+            #[examples(
+                "LOWER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"ὀδυσσεύς is my favorite character!\""
+            )]
             #[zip_map]
             fn LOWER([s]: String) {
                 s.to_lowercase()
@@ -339,7 +341,9 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Capitalizes letters that do not have another letter before them,
             /// and lowercases the rest.
-            #[examples("PROPER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"Ὀδυσσεύς Is My Favorite Character!\"")]
+            #[examples(
+                "PROPER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"Ὀδυσσεύς Is My Favorite Character!\""
+            )]
             #[zip_map]
             fn PROPER([s]: String) {
                 let mut last_char = '\0';
@@ -527,12 +531,12 @@ fn first_char_of_nonempty_string(arg: &Option<Spanned<String>>) -> CodeResult<Op
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{controller::GridController, formulas::tests::*};
 
     #[test]
     fn test_formula_array_to_text() {
         let a = array!["Apple", "banana"; 42.0, "Hello, world!"];
-        let g = Grid::from_array(pos![A1], &a);
+        let g = GridController::from_grid(Grid::from_array(pos![A1], &a), 0);
         assert_eq!(
             "Apple, banana, 42, Hello, world!",
             eval_to_string(&g, "ARRAYTOTEXT(A1:B2)"),
@@ -553,7 +557,7 @@ mod tests {
 
     #[test]
     fn test_formula_concat() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(
             "Hello, 14000605 worlds!".to_string(),
             eval_to_string(&g, "\"Hello, \" & 14000605 & ' worlds!'"),
@@ -570,7 +574,7 @@ mod tests {
 
     #[test]
     fn test_formula_left_right_mid() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         for (formula, expected_output) in [
             // LEFT
@@ -648,7 +652,7 @@ mod tests {
 
     #[test]
     fn test_formula_len_and_lenb() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         // Excel uses UTF-16 code points, so those are included here in case we
         // later decide we want that for compatibility.
@@ -685,7 +689,7 @@ mod tests {
 
     #[test]
     fn test_formula_code() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         // These share implementation so we only need to thoroughly test one.
         assert_eq!("65", eval_to_string(&g, "CODE('ABC')"));
@@ -701,7 +705,7 @@ mod tests {
 
     #[test]
     fn test_formula_char() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         // These share implementation so we only need to thoroughly test one.
         assert_eq!("A", eval_to_string(&g, "CHAR(65)"));
@@ -731,7 +735,7 @@ mod tests {
 
     #[test]
     fn test_formula_clean() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_eq!(
             "  A BC",
@@ -744,7 +748,7 @@ mod tests {
 
     #[test]
     fn test_formula_trim() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_eq!(
             "I'm in \t space!\n",
@@ -760,7 +764,7 @@ mod tests {
 
     #[test]
     fn test_formula_casing() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         let odysseus = "ὈΔΥΣΣΕΎΣ is my FAVORITE character!";
         assert_eq!(
@@ -803,7 +807,7 @@ mod tests {
 
     #[test]
     fn test_formula_t() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("some text", eval_to_string(&g, "T(\"some text\")"));
         assert_eq!("123", eval_to_string(&g, "T(\"123\")"));
         assert_eq!("", eval_to_string(&g, "T(123)"));
@@ -812,7 +816,7 @@ mod tests {
 
     #[test]
     fn test_formula_numbervalue() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         for (decimal_sep, group_sep) in [
             (None, None),
@@ -892,7 +896,7 @@ mod tests {
 
     #[test]
     fn test_formula_exact() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"Abc\", \"abc\")"));
         assert_eq!("TRUE", eval_to_string(&g, "EXACT(\"abc\", \"abc\")"));

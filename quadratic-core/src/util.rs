@@ -6,8 +6,8 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::a1::UNBOUNDED;
 use crate::RefError;
+use crate::a1::UNBOUNDED;
 
 lazy_static! {
     pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
@@ -102,15 +102,75 @@ macro_rules! row {
 }
 
 /// Parses a cell position in A1 notation.
-#[allow(unused)]
+///
+/// Expressions evalulating to sheet IDs are allowed but must be surrounded in
+/// parentheses if they are anything other than a single identifier.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{pos, Pos, grid::SheetId};
+/// assert_eq!(pos![A1], Pos::new(1, 1));
+/// assert_eq!(pos![C418], Pos::new(3, 418));
+///
+/// // With a sheet ID (identifier)
+/// let my_sheet = SheetId::new();
+/// assert_eq!(pos![my_sheet!A1], Pos::new(1, 1).to_sheet_pos(my_sheet));
+///
+/// // With a sheet ID (arbitrary expression)
+/// let some_tuple = (10, 20, my_sheet);
+/// assert_eq!(pos![(some_tuple.2)!B3], Pos::new(2, 3).to_sheet_pos(some_tuple.2));
+/// ```
+#[macro_export]
 macro_rules! pos {
+    [$sheet_id:ident ! $s:ident] => { pos![($sheet_id) ! $s] };
+    [($sheet_id:expr) ! $s:ident] => { pos![$s].to_sheet_pos($sheet_id) };
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
         let pos = $crate::formulas::legacy_cell_ref::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
             .expect("invalid cell reference")
-            .resolve_from(crate::Pos::ORIGIN);
+            .resolve_from($crate::Pos::ORIGIN);
         pos
     }};
+}
+
+/// Parses a cell rectangle in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{rect, Rect};
+/// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
+/// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
+/// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
+/// ```
+#[macro_export]
+macro_rules! rect {
+    ($corner1:ident : $corner2:ident) => {
+        $crate::Rect::new_span($crate::pos![$corner1], $crate::pos![$corner2])
+    };
+}
+
+/// Parses a cell reference range in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord}};
+/// assert_eq!(ref_range_bounds![:$C], RefRangeBounds {
+///     start: CellRefRangeEnd::new_relative_xy(1, 1),
+///     end: CellRefRangeEnd {
+///         col: CellRefCoord::new_abs(3),
+///         row: CellRefCoord::UNBOUNDED,
+///     },
+/// });
+/// ```
+#[macro_export]
+macro_rules! ref_range_bounds {
+    ($($tok:tt)*) => {
+        $crate::a1::RefRangeBounds::from_str(stringify!($($tok)*), None)
+            .expect("invalid range")
+    };
 }
 
 /// Returns a human-friendly list of things, joined at the end by the given
@@ -142,11 +202,7 @@ macro_rules! impl_display {
 
 /// Returns the minimum and maximum of two values, in that order.
 pub fn minmax<T: PartialOrd>(a: T, b: T) -> (T, T) {
-    if a > b {
-        (b, a)
-    } else {
-        (a, b)
-    }
+    if a > b { (b, a) } else { (a, b) }
 }
 /// Returns the minimum and maximum extent of two values, in that order. `None`
 /// is considered the largest possible possible.
@@ -286,6 +342,16 @@ pub fn case_fold(s: &str) -> String {
     s.to_uppercase() // TODO: want proper Unicode case folding
 }
 
+/// Uppercase ascii-only string suitable for case-insensitive comparison.
+pub fn case_fold_ascii(s: &str) -> String {
+    s.to_ascii_uppercase()
+}
+
+/// Uppercase ascii-only string suitable for case-insensitive comparison.
+pub fn case_fold_ascii_in_place(s: &mut str) {
+    s.make_ascii_uppercase();
+}
+
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then
@@ -303,6 +369,22 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
         Some(b) if b < a => (b, Some(a)),
         _ => (a, b),
     }
+}
+
+#[allow(unused)]
+macro_rules! print_sheet {
+    ($gc:expr, $sheet_id:expr) => {
+        let sheet = $gc.try_sheet($sheet_id).unwrap();
+        $crate::test_util::print_sheet::print_sheet(&sheet);
+    };
+}
+
+#[allow(unused)]
+macro_rules! print_first_sheet {
+    ($gc:expr) => {
+        let sheet = $gc.try_sheet($gc.sheet_ids()[0]).unwrap();
+        $crate::test_util::print_sheet::print_sheet(&sheet);
+    };
 }
 
 #[cfg(test)]

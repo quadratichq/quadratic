@@ -1,5 +1,6 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellsA1Response, JsCodeResult } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
@@ -11,7 +12,7 @@ declare var self: WorkerGlobalScope &
 class CorePython {
   private corePythonPort?: MessagePort;
   private id = 0;
-  private getCellsResponses: Record<number, string> = {};
+  private getCellsResponses: Record<number, Uint8Array> = {};
 
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
@@ -30,35 +31,7 @@ class CorePython {
         if (this.lastTransactionId === e.data.transactionId) {
           this.lastTransactionId = undefined;
         }
-        if (e.data.results.input_python_stack_trace) {
-          e.data.results.std_err = e.data.results.input_python_stack_trace;
-        }
-        const results = e.data.results;
-        let output_array: string[][][] | null = null;
-        if (results.array_output) {
-          // A 1d list was provided. We convert it to a 2d array by changing each entry into an array.
-          if (!Array.isArray(results.array_output?.[0]?.[0])) {
-            output_array = (results.array_output as any).map((row: any) => [row]);
-          } else {
-            output_array = results.array_output as any as string[][][];
-          }
-        }
-
-        const codeResult: JsCodeResult = {
-          transaction_id: e.data.transactionId,
-          success: results.success,
-          std_err: results.std_err,
-          std_out: results.std_out,
-          output_value: results.output ? (results.output as any as string[]) : null,
-          output_array,
-          line_number: results.lineno ?? null,
-          output_display_type: results.output_type ?? null,
-          cancel_compute: false,
-          chart_pixel_output: null,
-          has_headers: !!results.has_headers,
-        };
-
-        core.calculationComplete(codeResult);
+        core.calculationComplete(e.data.jsCodeResultBuffer);
         break;
 
       case 'pythonCoreGetCellsA1Length':
@@ -85,9 +58,9 @@ class CorePython {
   private sendGetCellsA1Length = (sharedBuffer: SharedArrayBuffer, transactionId: string, a1: string) => {
     const int32View = new Int32Array(sharedBuffer, 0, 3);
 
-    let responseString: string | undefined;
+    let responseUint8Array: Uint8Array;
     try {
-      responseString = core.getCellsA1(transactionId, a1);
+      responseUint8Array = core.getCellsA1(transactionId, a1);
     } catch (e: any) {
       const cellA1Response: JsCellsA1Response = {
         values: null,
@@ -95,16 +68,15 @@ class CorePython {
           core_error: e,
         },
       };
-      responseString = JSON.stringify(cellA1Response);
+      responseUint8Array = toUint8Array(cellA1Response);
     }
 
-    // need to get the bytes of the string (which covers unicode characters)
-    const length = new Blob([responseString]).size;
+    const length = responseUint8Array.length;
 
     Atomics.store(int32View, 1, length);
     if (length !== 0) {
       const id = this.id++;
-      this.getCellsResponses[id] = responseString;
+      this.getCellsResponses[id] = responseUint8Array;
       Atomics.store(int32View, 2, id);
     }
     Atomics.store(int32View, 0, 1);
@@ -112,16 +84,14 @@ class CorePython {
   };
 
   private sendGetCellsA1Data = (id: number, sharedBuffer: SharedArrayBuffer) => {
-    const cellsString = this.getCellsResponses[id];
+    const responseUint8View = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
     const int32View = new Int32Array(sharedBuffer, 0, 1);
-    if (cellsString === undefined) {
+    if (responseUint8View === undefined) {
       console.warn('[corePython] No cells found for id:', id);
     } else {
-      const encoder = new TextEncoder();
-      const encodedCells = encoder.encode(cellsString);
-      const uint8View = new Uint8Array(sharedBuffer, 4, encodedCells.length);
-      uint8View.set(encodedCells);
+      const uint8View = new Uint8Array(sharedBuffer, 4, responseUint8View.length);
+      uint8View.set(responseUint8View);
     }
     Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);
@@ -144,6 +114,7 @@ class CorePython {
     // received.
     if (this.lastTransactionId) {
       core.cancelExecution(this.lastTransactionId);
+      this.lastTransactionId = undefined;
     }
   }
 }

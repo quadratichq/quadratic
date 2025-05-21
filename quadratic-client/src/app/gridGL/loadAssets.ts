@@ -1,71 +1,60 @@
-import { debugShowFileIO } from '@/app/debugFlags';
+import { debugShowFileIO, debugStartupTime } from '@/app/debugFlags';
+import { events } from '@/app/events/events';
 import FontFaceObserver from 'fontfaceobserver';
-import { BitmapFont, Loader } from 'pixi.js';
+import { Assets, BitmapFont } from 'pixi.js';
 import { createBorderTypes } from './generateTextures';
 
-const intervalToCheckBitmapFonts = 100;
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
+
+const TIMEOUT = 10000;
 
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);
-  font.load();
+  font.load(undefined, TIMEOUT);
 }
 
-export function ensureBitmapFontLoaded(resolve: () => void): void {
-  const waitForLoad = () => {
-    if (bitmapFonts.find((font) => !BitmapFont.available[font])) {
-      setTimeout(waitForLoad, intervalToCheckBitmapFonts);
-    } else {
-      if (debugShowFileIO) console.log('[pixiApp] assets loaded.');
-      resolve();
-    }
+export function isBitmapFontLoaded(): boolean {
+  return bitmapFonts.every((font) => BitmapFont.available[font]);
+}
+
+export function loadAssets() {
+  if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+  if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
+  createBorderTypes();
+
+  // Load HTML fonts for Input
+  loadFont('OpenSans');
+  loadFont('OpenSans-Bold');
+  loadFont('OpenSans-Italic');
+  loadFont('OpenSans-BoldItalic');
+
+  // Load PixiJS fonts for canvas
+  const bundle = {
+    OpenSans: '/fonts/opensans/OpenSans.fnt',
+    'OpenSans-Bold': '/fonts/opensans/OpenSans-Bold.fnt',
+    'OpenSans-Italic': '/fonts/opensans/OpenSans-Italic.fnt',
+    'OpenSans-BoldItalic': '/fonts/opensans/OpenSans-BoldItalic.fnt',
+
+    'icon-formula': '/images/icon-formula.png',
+    'icon-python': '/images/icon-python.png',
+    'icon-javascript': '/images/icon-javascript.png',
+    'icon-postgres': '/images/icon-postgres.png',
+    'icon-mysql': '/images/icon-mysql.png',
+    'icon-snowflake': '/images/icon-snowflake.png',
+    'icon-mssql': '/images/icon-mssql.png',
+    'checkbox-icon': '/images/checkbox.png',
+    'checkbox-checked-icon': '/images/checkbox-checked.png',
+    'dropdown-icon': '/images/dropdown.png',
+    'dropdown-white-icon': '/images/dropdown-white.png',
+    'chart-placeholder': '/images/chart-placeholder.png',
+    'sort-ascending': '/images/sort-ascending.svg',
+    'sort-descending': '/images/sort-descending.svg',
   };
 
-  waitForLoad();
-}
-
-export function loadAssets(): Promise<void> {
-  return new Promise((resolve) => {
-    if (debugShowFileIO) console.log('[pixiApp] Loading assets...');
-    createBorderTypes();
-
-    // Load HTML fonts for Input
-    loadFont('OpenSans');
-    loadFont('OpenSans-Bold');
-    loadFont('OpenSans-Italic');
-    loadFont('OpenSans-BoldItalic');
-
-    // Load PixiJS fonts for canvas
-    addResourceOnce('OpenSans', '/fonts/opensans/OpenSans.fnt');
-    addResourceOnce('OpenSans-Bold', '/fonts/opensans/OpenSans-Bold.fnt');
-    addResourceOnce('OpenSans-Italic', '/fonts/opensans/OpenSans-Italic.fnt');
-    addResourceOnce('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
-
-    // CellsMarker
-    addResourceOnce('icon-formula', '/images/icon-formula.png');
-    addResourceOnce('icon-python', '/images/icon-python.png');
-    addResourceOnce('icon-javascript', '/images/icon-javascript.png');
-    addResourceOnce('icon-postgres', '/images/icon-postgres.png');
-    addResourceOnce('icon-mysql', '/images/icon-mysql.png');
-    addResourceOnce('icon-snowflake', '/images/icon-snowflake.png');
-    addResourceOnce('icon-mssql', '/images/icon-mssql.png');
-    addResourceOnce('checkbox-icon', '/images/checkbox.png');
-    addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
-    addResourceOnce('dropdown-icon', '/images/dropdown.png');
-    addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
-
-    addResourceOnce('sort-ascending', '/images/sort-ascending.svg');
-    addResourceOnce('sort-descending', '/images/sort-descending.svg');
-
-    // Wait until pixi fonts are loaded before resolving
-    Loader.shared.load(() => {
-      ensureBitmapFontLoaded(resolve);
-    });
+  // Add bundles to Assets
+  Assets.addBundle('bundle', bundle);
+  Assets.loadBundle('bundle').then(() => {
+    if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+    events.emit('bitmapFontsLoaded');
   });
-}
-
-function addResourceOnce(name: string, url: string) {
-  if (!Loader.shared.resources[name]) {
-    Loader.shared.add(name, url);
-  }
 }

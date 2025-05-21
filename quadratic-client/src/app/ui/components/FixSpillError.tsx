@@ -1,7 +1,7 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDownIcon, SpillErrorMoveIcon } from '@/shared/components/Icons';
@@ -42,12 +42,20 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
               x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
               y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
             };
-            ensureRectVisible(min, max);
+            ensureRectVisible(codeCell.sheetId, min, max);
           }
         });
       onClick?.();
     },
-    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeCell]
+    [
+      codeCell.pos.x,
+      codeCell.pos.y,
+      codeCell.sheetId,
+      evaluationResult?.size?.h,
+      evaluationResult?.size?.w,
+      onClick,
+      setCodeCell,
+    ]
   );
 
   const handleModeCodeCellRight = useCallback(
@@ -68,12 +76,20 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
               x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
               y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
             };
-            ensureRectVisible(min, max);
+            ensureRectVisible(codeCell.sheetId, min, max);
           }
         });
       onClick?.();
     },
-    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeCell]
+    [
+      codeCell.pos.x,
+      codeCell.pos.y,
+      codeCell.sheetId,
+      evaluationResult?.size?.h,
+      evaluationResult?.size?.w,
+      onClick,
+      setCodeCell,
+    ]
   );
 
   return (

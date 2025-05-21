@@ -1,10 +1,10 @@
-use std::fmt::Debug;
+use std::{collections::HashSet, fmt, hash::Hash};
 
 use crate::{
-    a1::{A1Selection, CellRefRange, UNBOUNDED},
+    CopyFormats, Pos, Rect,
+    a1::{A1Selection, CellRefRange, RefRangeBounds, UNBOUNDED},
     grid::GridBounds,
     util::sort_bounds,
-    CopyFormats, Pos, Rect,
 };
 
 use serde::{Deserialize, Serialize};
@@ -16,11 +16,54 @@ use super::{block::Block, contiguous_blocks::ContiguousBlocks};
 /// many) values are initialized to default.
 ///
 /// Supports infinite blocks down, right, and down-right.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Contiguous2D<T>(
     #[serde(bound = "T: Serialize + for<'a> Deserialize<'a>")] // shouldn't serde infer this?
     ContiguousBlocks<ContiguousBlocks<T>>,
 );
+impl<T: fmt::Debug> fmt::Debug for Contiguous2D<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for xy_block in &self.0 {
+            let x1 = xy_block.start as i64;
+            let x2 = match xy_block.end {
+                u64::MAX => None,
+                finite => Some(finite as i64 - 1),
+            };
+
+            let x1_name = crate::a1::column_name(x1);
+            let x2_name = x2.map(crate::a1::column_name).unwrap_or_default();
+
+            if xy_block.len() == Some(1) {
+                writeln!(f, "column {x1_name} ({})", xy_block.start)?;
+            } else {
+                write!(f, "columns {x1_name}:{x2_name} ")?;
+                match x2 {
+                    Some(x2) => write!(f, "({x1}..={x2})")?,
+                    None => write!(f, "({x1}..)")?,
+                }
+                writeln!(f)?;
+            }
+
+            for y_block in &xy_block.value {
+                let y1 = y_block.start as i64;
+                let y2 = match y_block.end {
+                    u64::MAX => None,
+                    finite => Some(finite as i64 - 1),
+                };
+                let ref_range_bounds = RefRangeBounds::new_relative(
+                    x1,
+                    y1,
+                    x2.unwrap_or(i64::MAX),
+                    y2.unwrap_or(i64::MAX),
+                )
+                .to_string(); // required for padding
+                writeln!(f, "    {ref_range_bounds:<10}  {:?}", y_block.value)?;
+            }
+        }
+
+        Ok(())
+    }
+}
 impl<T: Default> Default for Contiguous2D<T> {
     fn default() -> Self {
         Self(ContiguousBlocks::default())
@@ -46,7 +89,7 @@ impl<T: Default + Clone + PartialEq> From<Contiguous2D<T>>
         value.0.map(|col| (!col.is_all_default()).then_some(col))
     }
 }
-impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
+impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// Constructs a [`Contiguous2D`] containing `value` inside a (possibly
     /// infinite) rectangle and `T::default()` everywhere else.
     ///
@@ -95,9 +138,72 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
         c
     }
 
+    /// Returns an exact set of blocks representing the values in `range`.
+    fn xy_blocks_in_range(
+        &self,
+        range: RefRangeBounds,
+    ) -> impl Iterator<Item = Block<Vec<Block<&T>>>> {
+        let [x1, x2, y1, y2] = range_to_rect(range);
+        self.0.blocks_for_range(x1, x2).map(move |columns_block| {
+            columns_block.map(|column| column.blocks_for_range(y1, y2).collect())
+        })
+    }
+
     /// Returns whether the whole sheet is default.
     pub fn is_all_default(&self) -> bool {
         self.0.is_all_default()
+    }
+
+    /// Returns whether the values in a rectangle are all default.
+    pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
+        self.is_all_default_in_range(RefRangeBounds::new_relative_rect(rect))
+    }
+
+    /// Returns whether the values in a range are all default.
+    pub fn is_all_default_in_range(&self, range: RefRangeBounds) -> bool {
+        let [x1, x2, y1, y2] = range_to_rect(range);
+        self.0
+            .blocks_touching_range(x1, x2)
+            .all(move |columns_block| columns_block.value.is_all_default_in_range(y1, y2))
+    }
+
+    /// Returns a set of unique values in a range.
+    pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<T>
+    where
+        T: Eq + Hash,
+    {
+        let [x1, x2, y1, y2] = range_to_rect(range);
+        self.0
+            .blocks_touching_range(x1, x2)
+            .flat_map(move |columns_block| columns_block.value.blocks_touching_range(y1, y2))
+            .map(|y_block| y_block.value.clone())
+            .collect()
+    }
+
+    /// Returns a list of rectangles containing non-default values.
+    pub fn nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, T)> {
+        let [x1, x2, y1, y2] = range_to_rect(RefRangeBounds::new_relative_rect(rect));
+        let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
+        self.0
+            .blocks_for_range(x1, x2)
+            .flat_map(move |columns_block| {
+                let default = T::default();
+                columns_block
+                    .value
+                    .blocks_for_range(y1, y2)
+                    .filter(move |y_block| *y_block.value != default)
+                    .map(move |y_block| {
+                        // Rectangle is guaranteed to be finite because input is
+                        // also a finite rectangle.
+                        let rect = Rect::new(
+                            u64_to_i64(columns_block.start),
+                            u64_to_i64(y_block.start),
+                            u64_to_i64(columns_block.end.saturating_sub(1)),
+                            u64_to_i64(y_block.end.saturating_sub(1)),
+                        );
+                        (rect, y_block.value.clone())
+                    })
+            })
     }
 
     /// Returns a single value. Returns `T::default()` if `pos` is invalid.
@@ -197,11 +303,14 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
             .map(|column_block| column_block.map(|column_data| column_data.into_iter()))
     }
 
+    /// Translates all non-default values.
+    ///
+    /// Values before 1,1 are truncated.
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
         self.0.translate_in_place(x);
-        self.0
-            .values_mut()
-            .for_each(|column_data| column_data.value.translate_in_place(y));
+        for column_data in self.0.values_mut() {
+            column_data.value.translate_in_place(y);
+        }
     }
 
     /// Sets a rectangle to the same value and returns the blocks to set undo
@@ -480,7 +589,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
     }
 }
 
-impl<T: Clone + PartialEq + Debug> Contiguous2D<Option<T>> {
+impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     /// Constructs an update Contiguous2D from a selection and a value set
     /// across the selection, or returns `None` if the value is `None`.
     ///
@@ -564,6 +673,32 @@ impl<T: Clone + PartialEq + Debug> Contiguous2D<Option<T>> {
             })
     }
 
+    /// Constructs an update for a selection, taking values from `self` at every
+    /// location in the selection.
+    pub fn get_update_for_selection(
+        &self,
+        selection: &A1Selection,
+    ) -> Contiguous2D<Option<crate::ClearOption<T>>> {
+        let mut c: Contiguous2D<Option<crate::ClearOption<T>>> = Contiguous2D::new();
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                for xy_block in self.xy_blocks_in_range(*range) {
+                    c.0.update_range(xy_block.start, xy_block.end, |column| {
+                        for y_block in &xy_block.value {
+                            column.update_range(y_block.start, y_block.end, |old_value| {
+                                *old_value = Some(crate::ClearOption::from(y_block.value.clone()));
+                            });
+                        }
+                    });
+                }
+            }
+            // this is handled separately as we need to create different format
+            // operations for tables
+            CellRefRange::Table { .. } => (),
+        });
+        c
+    }
+
     /// Returns an iterator over the blocks in the contiguous 2d.
     pub fn into_iter(&self) -> impl '_ + Iterator<Item = (u64, u64, Option<u64>, Option<u64>, T)> {
         self.0.iter().flat_map(|x_block| {
@@ -602,10 +737,32 @@ fn convert_coord(x: i64) -> Option<u64> {
     x.try_into().ok().filter(|&x| x >= 1)
 }
 
+/// Returns `[x1, x2, y1, y2]` for `range`.
+///
+/// `x1` and `y1` are inclusive; `x2` and `y2` are exclusive.
+fn range_to_rect(range: RefRangeBounds) -> [u64; 4] {
+    fn i64_to_u64(i: i64) -> u64 {
+        if i == i64::MAX {
+            u64::MAX
+        } else {
+            i.try_into().unwrap_or(0)
+        }
+    }
+
+    let r = range.to_rect_unbounded();
+    let x1 = i64_to_u64(r.min.x);
+    let x2 = i64_to_u64(r.max.x).saturating_add(1);
+    let y1 = i64_to_u64(r.min.y);
+    let y2 = i64_to_u64(r.max.y).saturating_add(1);
+    [x1, x2, y1, y2]
+}
+
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that
 /// INCLUDES the starts and EXCLUDES the ends. Clamps the results to greater
 /// than 1. Returns `None` if there is no part of the rectangle that intersects
 /// the valid region. `u64::MAX` represents infinity.
+///
+/// Returns `(x1, y1, x2, y2)`.
 ///
 /// TODO: when doing `i64 -> u64` refactor, consider making `Rect` do this
 ///       validation on construction. this means we'd need to handle infinity
@@ -995,5 +1152,67 @@ mod tests {
         assert_eq!(c.row_min(2), 5);
         assert_eq!(c.row_min(3), 5);
         assert_eq!(c.row_min(4), 0);
+    }
+
+    #[test]
+    fn test_is_all_default_in_range() {
+        let mut c = Contiguous2D::<bool>::new();
+        assert!(c.is_all_default());
+        c.set_rect(5, 2, Some(10), Some(3), true);
+        assert!(!c.is_all_default());
+        assert!(c.is_all_default_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 1)));
+        assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 2)));
+        assert!(c.is_all_default_in_range(RefRangeBounds::new_relative(5, 4, 5, 4)));
+        assert!(!c.is_all_default_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)));
+        assert!(c.is_all_default_in_rect(Rect::new(5, 4, 5, 4)));
+        assert!(!c.is_all_default_in_rect(Rect::new(8, 3, 8, 3)));
+    }
+
+    #[test]
+    fn test_unique_values_in_range() {
+        let mut c = Contiguous2D::<u8>::new();
+        assert_eq!(
+            HashSet::from_iter([0]),
+            c.unique_values_in_range(RefRangeBounds::ALL),
+        );
+        c.set_rect(5, 2, Some(10), Some(3), 42);
+        c.set_rect(8, 1, Some(9), Some(5), 99);
+        assert_eq!(
+            HashSet::from_iter([0, 42, 99]),
+            c.unique_values_in_range(RefRangeBounds::ALL),
+        );
+        assert_eq!(
+            HashSet::from_iter([0, 99]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 1)),
+        );
+        assert_eq!(
+            HashSet::from_iter([0, 42, 99]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(8, 1, i64::MAX, 2)),
+        );
+        assert_eq!(
+            HashSet::from_iter([0]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(5, 4, 5, 4)),
+        );
+        assert_eq!(
+            HashSet::from_iter([99]),
+            c.unique_values_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)),
+        );
+    }
+
+    #[test]
+    fn test_nondefault_rects_in_rect() {
+        let mut c = Contiguous2D::<u8>::new();
+        let r = Rect::new(5, 5, 10, 10);
+        assert_eq!(HashSet::from([]), c.nondefault_rects_in_rect(r).collect());
+        c.set_rect(1, 1, Some(8), Some(6), 42);
+        c.set_rect(8, 3, None, None, 99);
+        assert_eq!(
+            HashSet::from([
+                (Rect::new(5, 5, 7, 6), 42),
+                (Rect::new(8, 5, 8, 10), 99),
+                (Rect::new(9, 5, 10, 10), 99),
+            ]),
+            c.nondefault_rects_in_rect(r).collect()
+        );
     }
 }

@@ -9,7 +9,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use quadratic_rust_shared::{clean_errors, SharedError};
+use quadratic_rust_shared::{SharedError, clean_errors};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -25,6 +25,9 @@ pub enum ConnectionError {
 
     #[error("Connection error: {0}")]
     Connection(String),
+
+    #[error("Header error: {0}")]
+    Header(String),
 
     #[error("Internal server error: {0}")]
     InternalServer(String),
@@ -44,12 +47,19 @@ pub enum ConnectionError {
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
 
+    #[error("SSH error: {0}")]
+    Ssh(String),
+
     #[error("unknown error: {0}")]
     Unknown(String),
 }
 
 pub(crate) fn proxy_error(e: impl ToString) -> ConnectionError {
     ConnectionError::Proxy(e.to_string())
+}
+
+pub(crate) fn header_error(e: impl ToString) -> ConnectionError {
+    ConnectionError::Header(e.to_string())
 }
 
 impl From<SharedError> for ConnectionError {

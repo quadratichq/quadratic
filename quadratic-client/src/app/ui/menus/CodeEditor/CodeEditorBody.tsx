@@ -8,14 +8,17 @@ import {
   codeEditorShowDiffEditorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { provideCompletionItems, provideHover } from '@/app/quadratic-core/quadratic_core';
+import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
+import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
+import { useCodeEditorCompletions } from '@/app/ui/menus/CodeEditor/hooks/useCodeEditorCompletions';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
@@ -33,13 +36,15 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import type { Monaco } from '@monaco-editor/react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 interface CodeEditorBodyProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
 }
+
+const AI_COMPLETION_DEBOUNCE_TIME_MS = 300;
 
 // need to track globally since monaco is a singleton
 const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
@@ -49,13 +54,14 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Import: false,
 };
 
-export const CodeEditorBody = (props: CodeEditorBodyProps) => {
+export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
   const { editorInst, setEditorInst } = props;
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const monacoLanguage = useMemo(() => getLanguageForMonaco(codeCell.language), [codeCell.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const { getAICompletion } = useCodeEditorCompletions({ language: codeCell.language });
 
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
@@ -105,7 +111,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     };
   }, [editorInst]);
 
-  const lastLocation = useRef<CodeCell | undefined>();
+  const lastLocation = useRef<CodeCell | undefined>(undefined);
   // This is to clear monaco editor's undo/redo stack when the cell location
   // changes useEffect gets triggered when the cell location changes, but the
   // editor content is not loaded in the editor new editor content for the next
@@ -117,12 +123,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     const model = editorInst.getModel();
     if (!model) return;
 
-    if (
-      lastLocation.current &&
-      codeCell.sheetId === lastLocation.current.sheetId &&
-      codeCell.pos.x === lastLocation.current.pos.x &&
-      codeCell.pos.x === lastLocation.current.pos.y
-    ) {
+    if (lastLocation.current && isSameCodeCell(lastLocation.current, codeCell)) {
       return;
     }
     lastLocation.current = codeCell;
@@ -134,15 +135,14 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     return () => {
       (model as any)?._commandManager?.clear();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y]);
+  }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, codeCell]);
 
   const addCommands = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
       editor.addCommand(
         monaco.KeyCode.Escape,
         () => closeEditor(false),
-        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
+        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible && !inlineSuggestionVisible'
       );
       editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
         insertCellRef(codeCell.sheetId, codeCell.language);
@@ -244,8 +244,108 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         monaco.editor.createModel(javascriptLibraryForEditor, 'javascript');
         registered.Javascript = true;
       }
+
+      // Add ai assistant completion provider
+      let completionTimeoutAndController: {
+        timeout: NodeJS.Timeout | undefined; // to debounce the completion request
+        abortController: AbortController | null; // to abort the completion api request
+      } = {
+        timeout: undefined,
+        abortController: null,
+      };
+
+      const suggestionWidget = (editor.getContribution('editor.contrib.suggestController') as SuggestController | null)
+        ?.widget;
+      if (suggestionWidget) {
+        clearTimeout(completionTimeoutAndController.timeout);
+        completionTimeoutAndController.abortController?.abort();
+      }
+
+      const completionProvider = monaco.languages.registerInlineCompletionsProvider(monacoLanguage, {
+        provideInlineCompletions: (
+          model: monaco.editor.ITextModel,
+          position: monaco.Position,
+          _context: monaco.languages.InlineCompletionContext,
+          token: monaco.CancellationToken
+        ) => {
+          // enabled in debug mode only
+          if (!debug) return;
+
+          return new Promise((resolve) => {
+            clearTimeout(completionTimeoutAndController.timeout);
+            completionTimeoutAndController.abortController?.abort();
+
+            completionTimeoutAndController.timeout = setTimeout(async () => {
+              try {
+                completionTimeoutAndController.abortController = new AbortController();
+
+                const value = model.getValue();
+                if (!value) {
+                  return resolve(null);
+                }
+
+                const prefix = model.getValueInRange({
+                  startLineNumber: 1,
+                  startColumn: 1,
+                  endLineNumber: position.lineNumber,
+                  endColumn: position.column,
+                });
+
+                const endLineNumber = model.getLineCount();
+                const endColumn = model.getLineMaxColumn(endLineNumber);
+                const suffix = model.getValueInRange({
+                  startLineNumber: position.lineNumber,
+                  startColumn: position.column,
+                  endLineNumber,
+                  endColumn,
+                });
+
+                const completion = await getAICompletion({
+                  language: monacoLanguage,
+                  prefix,
+                  suffix,
+                  signal: completionTimeoutAndController.abortController.signal,
+                });
+
+                if (!completion || token.isCancellationRequested) {
+                  return resolve(null);
+                }
+
+                const result = {
+                  items: [
+                    {
+                      insertText: completion,
+                      range: {
+                        startLineNumber: position.lineNumber,
+                        startColumn: position.column,
+                        endLineNumber: position.lineNumber,
+                        endColumn: position.column,
+                      },
+                    },
+                  ],
+                };
+                resolve(result);
+              } catch (error) {
+                console.warn('[CodeEditorBody] Error fetching AI completion: ', error);
+                resolve(null);
+              }
+            }, AI_COMPLETION_DEBOUNCE_TIME_MS);
+          });
+        },
+        freeInlineCompletions: () => {
+          clearTimeout(completionTimeoutAndController.timeout);
+          completionTimeoutAndController.abortController?.abort();
+        },
+      });
+
+      // Cleanup provider when editor is disposed
+      editor.onDidDispose(() => {
+        clearTimeout(completionTimeoutAndController.timeout);
+        completionTimeoutAndController.abortController?.abort();
+        completionProvider.dispose();
+      });
     },
-    [addCommands, monacoLanguage, setEditorInst]
+    [addCommands, getAICompletion, monacoLanguage, setEditorInst]
   );
 
   const onChange = useCallback(
@@ -317,34 +417,38 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         <CodeEditorPlaceholder />
       </div>
 
-      <div className={`${!loading && showDiffEditor ? 'h-full w-full' : 'h-0 w-0 opacity-0'}`}>
-        <DiffEditor
-          height="100%"
-          width="100%"
-          language={monacoLanguage}
-          original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
-          modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
-          onMount={onMountDiff}
-          loading={<SpinnerIcon className="text-primary" />}
-          theme="light"
-          options={{
-            readOnly: true,
-            minimap: { enabled: true },
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            scrollbar: {
-              horizontal: 'hidden',
-            },
-            wordWrap: 'on',
+      {!loading && showDiffEditor && (
+        <div className="h-full w-full">
+          <DiffEditor
+            height="100%"
+            width="100%"
+            language={monacoLanguage}
+            original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
+            originalLanguage={monacoLanguage}
+            modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
+            modifiedLanguage={monacoLanguage}
+            onMount={onMountDiff}
+            loading={<SpinnerIcon className="text-primary" />}
+            theme="light"
+            options={{
+              readOnly: true,
+              minimap: { enabled: true },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                horizontal: 'hidden',
+              },
+              wordWrap: 'on',
 
-            // need to ignore unused b/c of the async wrapper around the code and import code
-            showUnused: codeCell.language === 'Javascript' ? false : true,
+              // need to ignore unused b/c of the async wrapper around the code and import code
+              showUnused: codeCell.language === 'Javascript' ? false : true,
 
-            renderSideBySide: false,
-          }}
-        />
-      </div>
+              renderSideBySide: false,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
-};
+});

@@ -1,9 +1,9 @@
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
-use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
-use crate::grid::{unique_data_table_name, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
+use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, unique_data_table_name};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
@@ -38,70 +38,34 @@ impl GridController {
         transaction.waiting_for_async = None;
 
         let sheet_id = sheet_pos.sheet_id;
-
-        // enforce unique data table names
-        if let Some(new_data_table) = &mut new_data_table {
-            let unique_name = unique_data_table_name(
-                &new_data_table.name.to_display(),
-                false,
-                Some(sheet_pos),
-                self.a1_context(),
-            );
-            new_data_table.update_table_name(&unique_name);
-        }
-
-        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+        let pos: Pos = sheet_pos.into();
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted
             return;
         };
-        let pos: Pos = sheet_pos.into();
-
-        // index for SetCodeRun is either set by execute_set_code_run or calculated
-        let index = index.unwrap_or(
-            sheet
-                .data_tables
-                .iter()
-                .position(|(p, _)| p == &pos)
-                .unwrap_or(sheet.data_tables.len()),
-        );
-
-        // calculate the chart_output if it is an image or html data table based on the pixel output
-        if let Some(new_data_table) = &mut new_data_table {
-            if new_data_table.is_html_or_image() && new_data_table.chart_output.is_none() {
-                let (pixel_width, pixel_height) = new_data_table
-                    .chart_pixel_output
-                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
-                let chart_output =
-                    sheet
-                        .offsets
-                        .calculate_grid_size(pos, pixel_width, pixel_height);
-                new_data_table.chart_output = Some(chart_output);
-            }
-        }
 
         // preserve some settings from the previous code run
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
-            new_data_table.show_ui = old_data_table.show_ui;
-            new_data_table.show_name = old_data_table.show_name;
-            new_data_table.alternating_colors = old_data_table.alternating_colors;
-
             // for python dataframes, we don't want preserve the show_columns setting
-            if !new_data_table.is_dataframe() {
-                new_data_table.show_columns = old_data_table.show_columns;
-
+            // for other data tables types, we want to preserve most settings
+            if !new_data_table.is_dataframe()
+                && !new_data_table.is_list()
+                && !new_data_table.is_series()
+                && !new_data_table.is_html_or_image()
+            {
                 // since we don't automatically apply the first row as headers in JS,
                 // we need to do it manually here
                 if old_data_table.header_is_first_row {
                     new_data_table.apply_first_row_as_header();
                 }
-
-                // if the old data table has headers, then the new data table should
-                // have headers; if the data table already has headers (eg, via data
-                // frames), then leave them in.
-                new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
             }
+
+            new_data_table.alternating_colors = old_data_table.alternating_colors;
+            new_data_table.name = old_data_table.name.to_owned();
+            new_data_table.show_name = old_data_table.show_name.to_owned();
+            new_data_table.show_columns = old_data_table.show_columns.to_owned();
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
@@ -123,25 +87,49 @@ impl GridController {
             // TODO (DF): we should be tracking whether a user set this, and
             // if not, we should use the pixel output.
             if new_data_table.is_html_or_image() {
-                if let Some(chart_output) = old_data_table.chart_output {
-                    new_data_table.chart_output = Some(chart_output);
-                }
+                new_data_table.chart_output = old_data_table.chart_output.to_owned();
             }
         }
 
+        // calculate the chart_output if it is an image or html data table based on the pixel output
+        if let Some(new_data_table) = &mut new_data_table {
+            if new_data_table.is_html_or_image() && new_data_table.chart_output.is_none() {
+                let (pixel_width, pixel_height) = new_data_table
+                    .chart_pixel_output
+                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+                let chart_output =
+                    sheet
+                        .offsets
+                        .calculate_grid_size(pos, pixel_width, pixel_height);
+                new_data_table.chart_output = Some(chart_output);
+            }
+        }
+
+        // enforce unique data table names
+        if let Some(new_data_table) = &mut new_data_table {
+            let unique_name = unique_data_table_name(
+                new_data_table.name(),
+                false,
+                Some(sheet_pos),
+                &self.a1_context,
+            );
+            new_data_table.update_table_name(&unique_name);
+        }
+
+        // index for SetCodeRun is either set by execute_set_code_run or calculated
+        let index = index.unwrap_or(
+            sheet
+                .data_tables
+                .get_index_of(&pos)
+                .unwrap_or(sheet.data_tables.len()),
+        );
+
         let old_data_table = if let Some(new_data_table) = &new_data_table {
-            let (old_index, old_data_table) =
-                sheet.data_tables.insert_sorted(pos, new_data_table.clone());
-
-            // keep the orderings of the code runs consistent, particularly when undoing/redoing
-            let index = if index > sheet.data_tables.len() - 1 {
-                sheet.data_tables.len() - 1
-            } else {
-                index
-            };
-
-            sheet.data_tables.move_index(old_index, index);
-            old_data_table
+            let index = index.min(sheet.data_tables.len());
+            sheet
+                .data_tables
+                .insert_before(index, pos, new_data_table.to_owned())
+                .1
         } else {
             sheet.data_tables.shift_remove(&pos)
         };
@@ -255,7 +243,7 @@ impl GridController {
             None => {
                 return Err(CoreError::TransactionNotFound(
                     "Expected current_sheet_pos to be defined in after_calculation_async".into(),
-                ))
+                ));
             }
         };
 
@@ -263,33 +251,20 @@ impl GridController {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
-            Some(language) => {
-                if !language.is_code_language() {
+            Some(code_cell) => {
+                if !code_cell.language.is_code_language() {
                     return Err(CoreError::UnhandledLanguage(
                         "Transaction.complete called for an unhandled language".into(),
                     ));
                 }
 
-                let mut new_data_table = self.js_code_result_to_code_cell_value(
+                let new_data_table = self.js_code_result_to_code_cell_value(
                     transaction,
                     result,
                     current_sheet_pos,
-                    language.clone(),
+                    code_cell.language.clone(),
+                    code_cell.code.clone(),
                 );
-
-                // Keep chart_pixel_output and table name consistent if
-                // there already exists a data table at the same position.
-                if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
-                    if let Some((_, existing_data_table)) = sheet
-                        .data_tables
-                        .iter()
-                        .find(|(p, _)| **p == current_sheet_pos.into())
-                    {
-                        // new_data_table.chart_pixel_output = existing_data_table.chart_pixel_output;
-                        new_data_table.name = existing_data_table.name.clone();
-                        new_data_table.show_ui = existing_data_table.show_ui;
-                    }
-                }
 
                 self.finalize_data_table(
                     transaction,
@@ -299,6 +274,13 @@ impl GridController {
                 );
             }
         }
+
+        #[cfg(feature = "show-first-sheet-operations")]
+        {
+            println!("\n========= After calculation async =========");
+            print_first_sheet!(&self);
+        }
+
         // continue the compute loop after a successful async call
         self.start_transaction(transaction);
         Ok(())
@@ -315,7 +297,7 @@ impl GridController {
                 return Err(CoreError::TransactionNotFound(
                     "Expected current_sheet_pos to be defined in transaction::code_cell_error"
                         .into(),
-                ))
+                ));
             }
         };
         let sheet_id = sheet_pos.sheet_id;
@@ -342,6 +324,8 @@ impl GridController {
         let new_code_run = match code_run {
             Some(old_code_run) => {
                 CodeRun {
+                    language: code_cell_value.language.to_owned(),
+                    code: code_cell_value.code.to_owned(),
                     error: Some(error.to_owned()),
                     return_type: None,
                     line_number: old_code_run.line_number,
@@ -354,6 +338,8 @@ impl GridController {
                 }
             }
             None => CodeRun {
+                language: code_cell_value.language.to_owned(),
+                code: code_cell_value.code.to_owned(),
                 error: Some(error.to_owned()),
                 return_type: None,
                 line_number: error
@@ -377,7 +363,8 @@ impl GridController {
             Value::Single(CellValue::Blank),
             false,
             false,
-            false,
+            None,
+            None,
             None,
         );
 
@@ -393,6 +380,7 @@ impl GridController {
         js_code_result: JsCodeResult,
         start: SheetPos,
         language: CodeCellLanguage,
+        code: String,
     ) -> DataTable {
         let table_name = match language {
             CodeCellLanguage::Formula => "Formula1",
@@ -401,10 +389,13 @@ impl GridController {
             _ => "Table1",
         };
 
+        // sheet may have been deleted before the async operation completed
         let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
             // todo: this is probably not the best place to handle this
             // sheet may have been deleted before the async operation completed
             let code_run = CodeRun {
+                language,
+                code,
                 error: Some(RunError {
                     span: None,
                     msg: RunErrorMsg::CodeRunError(
@@ -425,7 +416,8 @@ impl GridController {
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
-                false,
+                None,
+                None,
                 None,
             );
         };
@@ -440,12 +432,11 @@ impl GridController {
                     Value::Single("".into())
                 }
             } else if let Some(output_value) = js_code_result.output_value {
-                let (cell_value, ops) =
-                    CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
-                        .unwrap_or_else(|e| {
-                            dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
-                            (CellValue::Blank, vec![])
-                        });
+                let (cell_value, ops) = CellValue::from_js(output_value, start.into(), sheet)
+                    .unwrap_or_else(|e| {
+                        dbgjs!(format!("Error parsing output value: {}", e));
+                        (CellValue::Blank, vec![])
+                    });
                 transaction.reverse_operations.extend(ops);
                 Value::Single(cell_value)
             } else {
@@ -477,30 +468,35 @@ impl GridController {
         });
 
         let code_run = CodeRun {
+            language,
+            code,
             error,
             return_type,
             line_number: js_code_result.line_number,
             output_type: js_code_result.output_display_type,
             std_out: js_code_result.std_out,
             std_err: js_code_result.std_err,
-            cells_accessed: transaction.cells_accessed.clone(),
+            cells_accessed: std::mem::take(&mut transaction.cells_accessed),
         };
 
-        let mut data_table = DataTable::new(
+        let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
             false,
             js_code_result.has_headers,
-            true,
+            None,
+            None,
             js_code_result.chart_pixel_output,
         );
 
-        transaction.cells_accessed.clear();
-        data_table.show_columns = js_code_result.has_headers;
-
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
-        if !js_code_result.has_headers {
+        if !js_code_result.has_headers
+            && !data_table.is_dataframe()
+            && !data_table.is_list()
+            && !data_table.is_series()
+            && !data_table.is_html_or_image()
+        {
             let column_headers =
                 data_table.default_header_with_name(|i| format!("{}", i - 1), None);
             data_table.with_column_headers(column_headers)
@@ -514,12 +510,13 @@ impl GridController {
 mod test {
 
     use super::*;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
 
     #[test]
     fn test_finalize_data_table() {
-        let mut gc = GridController::default();
+        let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet_pos = SheetPos {
@@ -543,6 +540,8 @@ mod test {
 
         // test finalize_code_cell
         let new_code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "delete me".to_string(),
             std_err: None,
             std_out: None,
             error: None,
@@ -557,7 +556,8 @@ mod test {
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
@@ -578,6 +578,8 @@ mod test {
 
         // test finalize_code_cell
         let new_code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "replace me".to_string(),
             std_err: None,
             std_out: None,
             error: None,
@@ -586,15 +588,18 @@ mod test {
             output_type: None,
             cells_accessed: Default::default(),
         };
-        let new_data_table = DataTable::new(
+        let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table_2",
+            "Table_1",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
+        new_data_table.column_headers = None;
+
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
@@ -643,7 +648,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            output_value: Some(vec!["test".into(), "image".into()]),
+            output_value: Some(JsCellValueResult("test".into(), 8)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
@@ -668,7 +673,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((100.0, 100.0)),
                 ..Default::default()
             };
@@ -683,7 +688,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), 8)),
                 chart_pixel_output: Some((200.0, 200.0)),
                 ..Default::default()
             };

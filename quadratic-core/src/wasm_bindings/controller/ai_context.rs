@@ -1,4 +1,4 @@
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
 use crate::controller::GridController;
@@ -35,6 +35,7 @@ impl GridController {
                 include_errored_code_cells,
                 include_tables_summary,
                 include_charts_summary,
+                self.a1_context(),
             );
             selection_contexts.push(selection_context);
         }

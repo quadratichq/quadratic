@@ -1,15 +1,19 @@
 use super::Sheet;
 use crate::{
+    Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
-    grid::{data_table::DataTable, CodeCellValue, DataTableKind, SheetId},
-    Pos, Rect,
+    grid::{
+        CodeCellLanguage, CodeCellValue, DataTableKind,
+        data_table::DataTable,
+        formats::{FormatUpdate, SheetFormatUpdates},
+    },
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use indexmap::{
-    map::{Entry, OccupiedEntry},
     IndexMap,
+    map::{Entry, OccupiedEntry},
 };
 
 impl Sheet {
@@ -30,11 +34,26 @@ impl Sheet {
         self.data_tables.get(&pos)
     }
 
+    /// Gets the index of the data table
+    pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
+        self.data_tables.get_index_of(&pos)
+    }
+
+    /// Returns the index of the data table as a result.
+    pub fn data_table_index_result(&self, pos: Pos) -> Result<usize> {
+        self.data_table_index(pos).ok_or_else(|| {
+            anyhow!(
+                "Data table not found at {:?} in data_table_index_result()",
+                pos
+            )
+        })
+    }
+
     /// Returns a DataTable by name
     pub fn data_table_by_name(&self, name: String) -> Option<(&Pos, &DataTable)> {
         self.data_tables
             .iter()
-            .find(|(_, data_table)| data_table.name.to_display() == name)
+            .find(|(_, data_table)| *data_table.name() == name)
     }
 
     /// Returns a DataTable at a Pos as a result
@@ -67,6 +86,9 @@ impl Sheet {
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
 
+    /// Returns all data tables within a position
+    ///
+    /// TODO(ddimaria): make this more efficient
     pub fn data_tables_within(&self, pos: Pos) -> Result<Vec<Pos>> {
         let data_tables = self
             .data_tables
@@ -82,6 +104,46 @@ impl Sheet {
         Ok(data_tables)
     }
 
+    /// Returns all data tables within a rect.
+    /// Partial intersection is also considered a match.
+    /// Stops at the first data table if stop_at_first is true.
+    ///
+    /// TODO(ddimaria): make this more efficient
+    pub fn data_tables_within_rect(&self, rect: Rect, stop_at_first: bool) -> Result<Vec<Pos>> {
+        let mut found = false;
+        let data_tables = self
+            .data_tables
+            .iter()
+            .filter_map(|(data_table_pos, data_table)| {
+                if found && stop_at_first {
+                    return None;
+                }
+
+                let output = data_table
+                    .output_rect(*data_table_pos, false)
+                    .intersects(rect)
+                    .then_some(*data_table_pos);
+
+                found = found || output.is_some();
+
+                output
+            })
+            .collect();
+
+        Ok(data_tables)
+    }
+
+    /// Returns true if there is a data table within a rect
+    pub fn contains_data_table_within_rect(&self, rect: Rect) -> bool {
+        self.data_tables_within_rect(rect, true)
+            .map(|data_tables| !data_tables.is_empty())
+            .unwrap_or(false)
+    }
+
+    // todo: (DF) not sure how there could be multiple tables in one position if
+    // ignore_spills is false
+
+    /// Returns the first data table within a position
     pub fn first_data_table_within(&self, pos: Pos) -> Result<Pos> {
         let data_tables = self.data_tables_within(pos)?;
 
@@ -139,18 +201,15 @@ impl Sheet {
         })
     }
 
-    pub fn replace_in_code_cells(
-        &mut self,
-        context: &A1Context,
-        func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId),
-    ) {
+    /// Calls a function to mutate all code cells.
+    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
         let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
         let sheet_id = self.id;
 
         for pos in positions {
             if let Some(cell_value) = self.cell_value_mut(pos) {
                 if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, context, &sheet_id);
+                    func(code_cell_value, pos.to_sheet_pos(sheet_id));
                 }
             }
         }
@@ -161,11 +220,11 @@ impl Sheet {
         &mut self,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
-        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
+        self.update_code_cells(|code_cell_value, pos| {
             code_cell_value
-                .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
+                .replace_table_name_in_cell_references(a1_context, pos, old_name, new_name);
         });
     }
 
@@ -175,11 +234,11 @@ impl Sheet {
         table_name: &str,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
-        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
+        self.update_code_cells(|code_cell_value, pos| {
             code_cell_value.replace_column_name_in_cell_references(
-                table_name, old_name, new_name, id, a1_context,
+                a1_context, pos, table_name, old_name, new_name,
             );
         });
     }
@@ -189,7 +248,7 @@ impl Sheet {
         rect: &Rect,
         cells: &mut CellValues,
         values: &mut CellValues,
-        context: &A1Context,
+        a1_context: &A1Context,
         selection: &A1Selection,
         include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
@@ -203,10 +262,10 @@ impl Sheet {
                     y: output_rect.min.y,
                 };
 
-                // add the CellValue to cells if the code is not included in the clipboard
+                // add the CellValue to cells if the code is not included in the rect
                 let include_in_cells = !rect.contains(data_table_pos);
 
-                // if the source cell is included in the clipboard, add the data_table to the clipboard
+                // if the source cell is included in the rect, add the data_table to data_tables
                 if !include_in_cells {
                     if matches!(data_table.kind, DataTableKind::Import(_))
                         || include_code_table_values
@@ -226,7 +285,7 @@ impl Sheet {
                 let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
                 let y_end = std::cmp::min(output_rect.max.y, rect.max.y);
 
-                // add the code_run output to clipboard.values
+                // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
                         if let Some(value) = data_table.cell_value_at(
@@ -237,7 +296,8 @@ impl Sheet {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
                             };
-                            if selection.might_contain_pos(Pos { x, y }, context) {
+
+                            if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 if include_in_cells {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
@@ -251,77 +311,276 @@ impl Sheet {
 
         data_tables
     }
+
+    /// Converts a format update to a SheetFormatUpdates
+    pub fn to_sheet_format_updates(
+        &self,
+        sheet_pos: SheetPos,
+        data_table_pos: Pos,
+        format_update: FormatUpdate,
+    ) -> Result<SheetFormatUpdates> {
+        let data_table = self.data_table_result(data_table_pos)?;
+
+        Ok(SheetFormatUpdates::from_selection(
+            &A1Selection::from_xy(
+                sheet_pos.x - data_table_pos.x + 1,
+                sheet_pos.y - data_table_pos.y + 1 - data_table.y_adjustment(true),
+                sheet_pos.sheet_id,
+            ),
+            format_update,
+        ))
+    }
+
+    /// Returns columns and rows to data tables when the cells to add are touching the data table
+    #[allow(clippy::type_complexity)]
+    pub fn expand_columns_and_rows(
+        &self,
+        data_tables: &[Rect],
+        sheet_pos: SheetPos,
+        value: String,
+    ) -> (Option<(SheetPos, u32)>, Option<(SheetPos, u32)>) {
+        let mut columns = None;
+        let mut rows = None;
+
+        if !value.is_empty() {
+            columns = self.expand_columns(data_tables, sheet_pos);
+            rows = self.expand_rows(data_tables, sheet_pos);
+        }
+
+        (columns, rows)
+    }
+
+    /// Returns columns to data tables when the cells to add are touching the data table
+    pub fn expand_columns(
+        &self,
+        data_tables: &[Rect],
+        sheet_pos: SheetPos,
+    ) -> Option<(SheetPos, u32)> {
+        let pos = Pos::from(sheet_pos);
+
+        if pos.x > 1 {
+            let pos_to_check = Pos::new(pos.x - 1, pos.y);
+            let data_table_left = data_tables.iter().find(|rect| rect.contains(pos_to_check));
+
+            if let Some(data_table_left) = data_table_left {
+                // don't expand if we're not at the end of the data table
+                if data_table_left.max.x != pos_to_check.x {
+                    return None;
+                }
+
+                if self
+                    .data_table(data_table_left.min)
+                    .filter(|data_table| {
+                        // don't expand if the data table is readonly
+                        if data_table.is_code() {
+                            return false;
+                        }
+
+                        // don't expand if the position is at the data table's name
+                        if data_table.get_show_name() && data_table_left.min.y == pos.y {
+                            return false;
+                        }
+
+                        // don't expand if next column is not blank
+                        for y in 0..data_table_left.height() {
+                            let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
+
+                            if self.has_content(pos) {
+                                return false;
+                            }
+                        }
+
+                        true
+                    })
+                    .is_some()
+                {
+                    let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
+                    let mut column_index = data_table_left.width();
+
+                    // the column index is the display index, not the actual index, we need to convert it to the actual index
+                    if let Ok(data_table) = self.data_table_result(data_table_left.min) {
+                        column_index =
+                            data_table.get_column_index_from_display_index(column_index, true);
+                    }
+
+                    return Some((sheet_pos, column_index));
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Returns rows to data tables when the cells to add are touching the data table
+    pub fn expand_rows(
+        &self,
+        data_tables: &[Rect],
+        sheet_pos: SheetPos,
+    ) -> Option<(SheetPos, u32)> {
+        let pos = Pos::from(sheet_pos);
+
+        if pos.y > 1 {
+            let pos_to_check = Pos::new(pos.x, pos.y - 1);
+            let data_table_above = data_tables.iter().find(|rect| rect.contains(pos_to_check));
+
+            if let Some(data_table_above) = data_table_above {
+                // don't expand if we're not at the bottom of the data table
+                if data_table_above.max.y != pos_to_check.y {
+                    return None;
+                }
+
+                if self
+                    .data_table(data_table_above.min)
+                    .filter(|data_table| {
+                        // don't expand if the data table is readonly
+                        if data_table.is_code() {
+                            return false;
+                        }
+
+                        // don't expand if next row is not blank
+                        for x in 0..data_table_above.width() {
+                            let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
+                            if self.has_content(pos) {
+                                return false;
+                            }
+                        }
+
+                        true
+                    })
+                    .is_some()
+                {
+                    let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
+                    let row_index = data_table_above.height();
+
+                    return Some((sheet_pos, row_index));
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Returns the code language at a pos
+    pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
+        self.data_table(pos)
+            .map(|data_table| data_table.get_language())
+    }
+
+    /// Returns true if the cell at pos is a formula cell
+    pub fn is_formula_cell(&self, pos: Pos) -> bool {
+        self.code_language_at(pos)
+            .is_some_and(|lang| lang == CodeCellLanguage::Formula)
+    }
+
+    /// Returns true if the cell at pos is a source cell
+    pub fn is_source_cell(&self, pos: Pos) -> bool {
+        self.data_table(pos).is_some()
+    }
+
+    /// Returns true if the cell at pos is a data table cell
+    pub fn is_data_table_cell(&self, pos: Pos) -> bool {
+        self.data_table(pos)
+            .is_some_and(|dt| matches!(dt.kind, DataTableKind::Import(_)))
+    }
+
+    /// You shouldn't be able to create a data table that includes a data table.
+    /// Deny the action and give a popup explaining why it was blocked.
+    /// Returns true if the data table is not within the rect
+    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
+        let contains_data_table = self.contains_data_table_within_rect(rect);
+
+        #[cfg(any(target_family = "wasm", test))]
+        if contains_data_table {
+            let message = "Tables cannot be created over tables, code, or formulas.";
+            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+            crate::wasm_bindings::js::jsClientMessage(message.into(), severity.to_string());
+        }
+
+        !contains_data_table
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::{
+        CellValue, Value,
         a1::{A1Selection, RefRangeBounds},
         controller::{
+            GridController,
             operations::clipboard::{ClipboardOperation, PasteSpecial},
             user_actions::import::tests::simple_csv,
-            GridController,
         },
-        grid::{js_types::JsClipboard, CodeRun, DataTableKind},
-        CellValue, Value,
+        first_sheet_id,
+        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
+        test_create_code_table, test_create_data_table, test_create_html_chart,
+        test_create_js_chart,
     };
     use bigdecimal::BigDecimal;
 
-    #[test]
-    fn test_set_data_table() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
+    pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
-            std_out: None,
+            language: CodeCellLanguage::Formula,
+            code: "=1".to_string(),
             std_err: None,
+            std_out: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
         };
+
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
-            true,
+            None,
+            None,
             None,
         );
-        let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
+
+        let old = sheet.set_data_table(pos, Some(data_table.clone()));
+        sheet.set_cell_value(
+            pos,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "=1".to_string(),
+            }),
+        );
+
+        (data_table, old)
+    }
+
+    // setup the grid controller, sheet, and data table at pos
+    fn test_setup(pos: Pos) -> (GridController, SheetId, DataTable, Option<DataTable>) {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // insert the data table at pos
+        let (data_table, old) = code_data_table(sheet, pos);
+
+        (gc, sheet_id, data_table, old)
+    }
+
+    #[test]
+    fn test_set_data_table() {
+        let (mut gc, sheet_id, data_table, old) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
         assert_eq!(old, None);
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
-        assert_eq!(sheet.data_table(Pos { x: 1, y: 0 }), None);
+        assert_eq!(sheet.data_table(pos![A1]), Some(&data_table));
+        assert_eq!(sheet.data_table(pos![B2]), None);
     }
 
     #[test]
     fn test_get_data_table() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let (mut gc, sheet_id, data_table, _) = test_setup(pos![A1]);
         let sheet = gc.sheet_mut(sheet_id);
-        let code_run = CodeRun {
-            std_err: None,
-            std_out: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
-            "Table 1",
-            Value::Single(CellValue::Number(BigDecimal::from(2))),
-            false,
-            false,
-            false,
-            None,
-        );
-        sheet.set_data_table(pos![A1], Some(data_table.clone()));
+
         assert_eq!(
             sheet.get_code_cell_value(pos![A1]),
             Some(CellValue::Number(BigDecimal::from(2)))
@@ -333,9 +592,10 @@ mod test {
     #[test]
     fn test_copy_data_table_to_clipboard() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
-        // let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+
         data_table.chart_pixel_output = Some((100.0, 100.0));
+
         let selection =
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
@@ -364,41 +624,88 @@ mod test {
 
     #[test]
     fn test_data_table_at() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
         let sheet = gc.sheet_mut(sheet_id);
 
-        let code_run = CodeRun {
-            std_err: None,
-            std_out: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
-            "Table 1",
-            Value::Single(CellValue::Number(BigDecimal::from(2))),
-            false,
-            false,
-            false,
-            None,
-        );
-
         // Insert data table at A1
-        sheet.set_data_table(pos![A1], Some(data_table.clone()));
+        let _ = code_data_table(sheet, pos![A1]);
 
         // Test position within the data table
         let result = sheet.data_table_at(pos![A1]);
         assert!(result.is_some());
+
         let (pos, dt) = result.unwrap();
         assert_eq!(pos, pos![A1]);
         assert_eq!(dt.name.to_display(), "Table 1");
 
         // Test position outside the data table
         assert!(sheet.data_table_at(pos![D4]).is_none());
+    }
+
+    #[test]
+    fn test_is_language_at() {
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
+        assert_eq!(
+            sheet.code_language_at(pos![A1]),
+            Some(CodeCellLanguage::Formula)
+        );
+    }
+
+    #[test]
+    fn test_is_formula_cell() {
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
+        assert!(sheet.is_formula_cell(pos![A1]));
+    }
+
+    #[test]
+    fn test_is_source_cell() {
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
+        assert!(sheet.is_source_cell(pos![A1]));
+    }
+
+    #[test]
+    fn test_data_table_index() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        test_create_code_table(&mut gc, sheet_id, pos![E2], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Test that the data table index is 0 for the first data table
+        assert_eq!(sheet.data_table_index(pos![A1]), Some(0));
+
+        // Test that a non-existent data table returns None
+        assert_eq!(sheet.data_table_index(pos![B2]), None);
+
+        // The second data table should have index 1
+        assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
+    }
+
+    #[test]
+    fn test_is_data_table_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        test_create_code_table(&mut gc, sheet_id, pos![E5], 2, 2);
+        test_create_js_chart(&mut gc, sheet_id, pos![G7], 2, 2);
+        test_create_html_chart(&mut gc, sheet_id, pos![J9], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.is_data_table_cell(pos![E5]));
+        assert!(!sheet.is_data_table_cell(pos![G7]));
+        assert!(!sheet.is_data_table_cell(pos![J9]));
+        assert!(!sheet.is_data_table_cell(pos![B1]));
+        assert!(!sheet.is_data_table_cell(pos![A2]));
+
+        assert!(sheet.is_data_table_cell(pos![A1]));
     }
 }

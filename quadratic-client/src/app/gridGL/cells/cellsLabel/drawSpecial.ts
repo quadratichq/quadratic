@@ -4,7 +4,7 @@ import type {
   RenderCheckbox,
   RenderDropdown,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { MIPMAP_MODES, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Assets, MIPMAP_MODES, Rectangle, Sprite, Texture } from 'pixi.js';
 
 export const CHECKBOX_SIZE = 15;
 export const DROPDOWN_SIZE = [8, 6];
@@ -53,7 +53,8 @@ export const dropdownRectangle = (x: number, y: number): Rectangle => {
 };
 
 export const drawDropdown = (options: RenderDropdown) => {
-  const sprite = new Sprite(Texture.from('/images/dropdown.png')) as SpecialSprite;
+  const dropdownIconTexture = Assets.get('dropdown-icon');
+  const sprite = new Sprite(dropdownIconTexture) as SpecialSprite;
   sprite.column = options.column;
   sprite.row = options.row;
   sprite.type = 'dropdown';
@@ -61,7 +62,6 @@ export const drawDropdown = (options: RenderDropdown) => {
   sprite.height = DROPDOWN_SIZE[1];
   sprite.rectangle = dropdownRectangle(options.x, options.y);
   sprite.alpha = 0.5;
-  sprite.anchor.set(1, 0);
-  sprite.position.set(options.x - DROPDOWN_PADDING[0], options.y + DROPDOWN_PADDING[1]);
+  sprite.position.set(options.x, options.y + DROPDOWN_PADDING[1]);
   return sprite;
 };

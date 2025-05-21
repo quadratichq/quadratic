@@ -22,12 +22,6 @@ export const COMPONENTS = {
         shortcut: "y",
     },
     types: { color: "magenta", dark: "cyan", name: "Types", shortcut: "t" },
-    rustClient: {
-        name: "RustClient",
-        color: "gray",
-        dark: "gray",
-        shortcut: "e",
-    },
     db: {
         color: "gray",
         dark: "gray",
@@ -59,6 +53,12 @@ export const COMPONENTS = {
         dark: "gray",
         name: "Redis",
     },
+    shared: {
+        color: "gray",
+        dark: 'gray',
+        shortcut: 's',
+        name: 'Shared',
+    }
 };
 export const SPACE = "     ";
 export const DONE = "✓";

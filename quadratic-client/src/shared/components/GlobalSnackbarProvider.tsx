@@ -4,12 +4,18 @@ import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import type { AlertColor } from '@mui/material';
 import { Alert, Snackbar } from '@mui/material';
+import type { JSX } from 'react';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 const DURATION = 6000;
 export const snackbarMsgQueryParam = 'snackbar-msg';
 export const snackbarSeverityQueryParam = 'snackbar-severity';
+
+/// TODO: this should be centralized in a single place
+const DEFINED_MESSAGES: Record<string, string> = {
+  delete_rows_error: 'Cannot delete rows containing table names or columns',
+};
 
 /**
  * Context
@@ -23,11 +29,17 @@ export interface SnackbarOptions {
 
 export interface GlobalSnackbar {
   addGlobalSnackbar: (message: string | JSX.Element, options?: SnackbarOptions) => void;
+  closeCurrentSnackbar: () => void;
 }
 const defaultContext: GlobalSnackbar = {
   addGlobalSnackbar: () => {
     console.warn(
       '[GlobalSnackbarContext] `addGlobalSnackbar` was fired before it was initialized with a default value.'
+    );
+  },
+  closeCurrentSnackbar: () => {
+    console.warn(
+      '[GlobalSnackbarContext] `closeCurrentSnackbar` was fired before it was initialized with a default value.'
     );
   },
 };
@@ -97,18 +109,22 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     []
   );
 
-  const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
+  const closeCurrentSnackbar: GlobalSnackbar['closeCurrentSnackbar'] = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  const handleClose = useCallback((event: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
       return;
     }
     setOpen(false);
-  };
+  }, []);
 
-  const handleExited = () => {
+  const handleExited = useCallback(() => {
     setActiveMessage(undefined);
-  };
+  }, []);
 
-  const value: GlobalSnackbar = { addGlobalSnackbar };
+  const value: GlobalSnackbar = { addGlobalSnackbar, closeCurrentSnackbar };
 
   const customButton = activeMessage?.button ? (
     <Button
@@ -123,6 +139,11 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     </Button>
   ) : null;
 
+  const message =
+    typeof activeMessage?.message === 'string'
+      ? (DEFINED_MESSAGES[activeMessage.message] ?? activeMessage.message)
+      : activeMessage?.message;
+
   // If we have the `severity`, we'll make it look like an Alert. Otherwise,
   // we'll use the default Snackbar styling.
   const otherProps = activeMessage?.severity
@@ -130,14 +151,14 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
         children: (
           <Alert severity={activeMessage.severity} variant="filled" onClose={handleClose}>
             <div className="column center flex px-0.5">
-              {activeMessage.message}
+              {message}
               {customButton}
             </div>
           </Alert>
         ),
       }
     : {
-        message: activeMessage?.message,
+        message: message,
         action: (
           <>
             {customButton}
@@ -162,6 +183,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
       setSearchParams(searchParams);
     }
   }, [addGlobalSnackbar, searchParams, setSearchParams]);
+
   return (
     <GlobalSnackbarContext.Provider value={value}>
       {children}

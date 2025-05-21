@@ -1,4 +1,4 @@
-import * as muiColors from '@mui/material/colors';
+import tailwindColors from 'tailwindcss/colors';
 
 export const colors = {
   // Pulled from the CSS theme styles
@@ -32,8 +32,8 @@ export const colors = {
   headerSelectedRowColumnBackgroundColor: 0x2463eb,
   headerSelectedRowColumnBackgroundColorAlpha: 0.25,
   headerCornerBackgroundColor: 0xffffff,
-  boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
-  htmlPlaceholderThumbnailColor: 0xeeeeee,
+  boxCellsDeleteColor: Number(`0x${tailwindColors.red['400'].replace('#', '')}`),
+  htmlPlaceholderThumbnailColor: 0xfefefe,
   htmlPlaceholderThumbnailBorderColor: 0,
   boxCellsColor: 0x2463eb,
   boxCellsAlpha: 0.333,
@@ -63,14 +63,12 @@ export const colors = {
 
   error: '#f25f5c',
   cellHighlightColor: [
-    muiColors.orange['900'],
-    muiColors.purple['500'],
-    muiColors.cyan['800'],
-    muiColors.green['800'],
-    muiColors.indigo['500'],
-    muiColors.pink['600'],
-    muiColors.blueGrey['600'],
-    muiColors.lime['900'],
-    muiColors.brown['500'],
+    tailwindColors.orange['600'],
+    tailwindColors.fuchsia['700'],
+    tailwindColors.cyan['700'],
+    tailwindColors.green['700'],
+    tailwindColors.indigo['600'],
+    tailwindColors.pink['600'],
+    tailwindColors.lime['800'],
   ],
 };

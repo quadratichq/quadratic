@@ -7,7 +7,7 @@ import {
   newSingleSelection,
   stringToSelection,
   validateTableName,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+} from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -84,14 +84,20 @@ export function CodeEditorHeaderLabel() {
 
         let isValid = false;
         try {
-          isValid = validateTableName(value, sheets.a1Context);
+          isValid = validateTableName(
+            value,
+            codeCellState.sheetId,
+            codeCellState.pos.x,
+            codeCellState.pos.y,
+            sheets.a1Context
+          );
         } catch (error) {
           isValid = false;
         }
         input.setAttribute('aria-invalid', (!isValid).toString());
       }
     },
-    [tableName]
+    [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId, tableName]
   );
 
   const handleBlur = useCallback(

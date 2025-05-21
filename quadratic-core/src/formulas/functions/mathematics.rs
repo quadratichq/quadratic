@@ -1,3 +1,5 @@
+use bigdecimal::BigDecimal;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -249,9 +251,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// `ROUND(50, -2)` rounds to `100`.
             #[examples("ROUND(6.553, 2)")]
             #[zip_map]
-            fn ROUND([number]: f64, [digits]: (Option<i64>)) {
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
-                (number * q).round() / q // `f64::round()` ties away from zero
+            fn ROUND([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::HalfUp)
             }
         ),
         formula_fn!(
@@ -268,11 +269,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   a multiple of 100.
             #[examples("ROUNDUP(6.553, 2)")]
             #[zip_map]
-            fn ROUNDUP([number]: f64, [digits]: (Option<i64>)) {
-                // If `number` is negative, call `f64::floor()` on it.
-                // If `number` is positive, call `f64::floor()` on its negative.
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64) * -number.signum();
-                (number * q).floor() / q
+            fn ROUNDUP([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Up)
             }
         ),
         formula_fn!(
@@ -290,9 +288,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   to a multiple of 100.
             #[examples("ROUNDDOWN(6.553, 2)")]
             #[zip_map]
-            fn ROUNDDOWN([number]: f64, [digits]: (Option<i64>)) {
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
-                (number * q).trunc() / q
+            fn ROUNDDOWN([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Down)
             }
         ),
         formula_fn!(
@@ -310,9 +307,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   multiple of 100.
             #[examples("TRUNC(6.553, 2)")]
             #[zip_map]
-            fn TRUNC([number]: f64, [digits]: (Option<i64>)) {
-                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
-                (number * q).trunc() / q
+            fn TRUNC([number]: BigDecimal, [digits]: (Option<i64>)) {
+                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Down)
             }
         ),
         // Other operators
@@ -411,13 +407,13 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use proptest::proptest;
 
-    use crate::{a1::A1Context, formulas::tests::*, Pos};
+    use crate::{Pos, a1::A1Context, controller::GridController, formulas::tests::*};
 
     #[test]
     fn test_sum() {
-        let g = Grid::new();
+        let g = GridController::new();
         let parse_ctx = A1Context::test(&[], &[]);
-        let pos = g.origin_in_first_sheet();
+        let pos = g.grid().origin_in_first_sheet();
         let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
             RunErrorMsg::Expected {
@@ -450,8 +446,9 @@ mod tests {
             eval_to_string(&g, "SUM(({1,2;3,4}, {5}, {6}), {7; 8}, {9, 10})"),
         );
 
-        let mut g = Grid::new();
-        let sheet = &mut g.sheets_mut()[0];
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+        let sheet = g.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(pos![A6], "text");
         let _ = sheet.set_cell_value(pos![A7], "text");
         // One bad cell reference on its own doesn't cause an error because it's
@@ -470,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_sum_with_tuples() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("10", eval_to_string(&g, "SUM(({1, 2}, {3, 4}))"));
         assert_eq!("21", eval_to_string(&g, "SUM(({1, 2}, {3; 4}, {5, 6}))"));
 
@@ -481,7 +478,7 @@ mod tests {
 
     #[test]
     fn test_sumif() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
         assert_eq!("63", eval_to_string(&g, "SUMIF(0..10, \"<=5\", 2^0..10)"));
         // Test with an array of conditions.
@@ -493,7 +490,7 @@ mod tests {
 
     #[test]
     fn test_sumifs() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("15", eval_to_string(&g, "SUMIFS(0..10, 0..10, \"<=5\")"));
         assert_eq!("63", eval_to_string(&g, "SUMIFS(2^0..10, 0..10, \"<=5\")"));
         // Testing with multiple conditions.
@@ -533,8 +530,8 @@ mod tests {
 
     #[test]
     fn test_product() {
-        let g = Grid::new();
-        let pos = g.origin_in_first_sheet();
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
         let parse_ctx = A1Context::test(&[], &[]);
         let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
@@ -572,8 +569,8 @@ mod tests {
 
     #[test]
     fn test_abs() {
-        let g = Grid::new();
-        let pos = g.origin_in_first_sheet();
+        let g = GridController::new();
+        let pos = g.grid().origin_in_first_sheet();
         assert_eq!("10", eval_to_string(&g, "ABS(-10)"));
         assert_eq!("10", eval_to_string(&g, "ABS(10)"));
         let parse_ctx = A1Context::test(&[], &[]);
@@ -604,7 +601,7 @@ mod tests {
 
     #[test]
     fn test_sqrt() {
-        let g = Grid::new();
+        let g = GridController::new();
         crate::util::assert_f64_approx_eq(
             3.0_f64.sqrt(),
             eval_to_string(&g, "SQRT(3)").parse::<f64>().unwrap(),
@@ -630,7 +627,7 @@ mod tests {
 
     #[test]
     fn test_ceiling() {
-        let g = Grid::new();
+        let g = GridController::new();
         let test_cases = [
             ("3.5", "2", Ok("4")),
             ("2.5", "2", Ok("4")),
@@ -666,7 +663,7 @@ mod tests {
 
     #[test]
     fn test_floor() {
-        let g = Grid::new();
+        let g = GridController::new();
         let test_cases = [
             ("3.5", "2", Ok("2")),
             ("2.5", "2", Ok("2")),
@@ -702,7 +699,7 @@ mod tests {
 
     #[test]
     fn test_floor_math_and_ceiling_math() {
-        let g = Grid::new();
+        let g = GridController::new();
         let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
         #[allow(clippy::type_complexity)]
         let test_cases: &[([i64; 5], fn(f64) -> String)] = &[
@@ -731,7 +728,7 @@ mod tests {
 
     #[test]
     fn test_int() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!(
             "{-3, -2, -1, 0, 0, 1, 2}",
             eval_to_string(&g, "INT({-2.9, -1.1, -0.1, 0, 0.1, 1.1, 2.9})")
@@ -743,7 +740,7 @@ mod tests {
         let test_values = [
             -2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0,
         ];
-        let g = Grid::new();
+        let g = GridController::new();
 
         // Test `ROUND()`
         #[rustfmt::skip]
@@ -794,11 +791,17 @@ mod tests {
                 assert_f64_eval(&g, expected_output, &format!("TRUNC({input}, {digits})"));
             }
         }
+
+        // Test string printing
+        assert_eq!("44999.55", eval_to_string(&g, "ROUND(44999.553294, 2)"));
+        assert_eq!("44999.55", eval_to_string(&g, "TRUNC(44999.553294, 2)"));
+        assert_eq!("44999.55", eval_to_string(&g, "ROUNDDOWN(44999.553294, 2)"));
+        assert_eq!("44999.56", eval_to_string(&g, "ROUNDUP(44999.553294, 2)"));
     }
 
     #[test]
     fn test_mod() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("-0.5", eval_to_string(&g, "MOD(1.5, -1)"));
         assert_eq!("{0; 1; 0; 1; 0; 1}", eval_to_string(&g, "MOD(0..5, 2)"));
         // Test division by zero
@@ -808,7 +811,7 @@ mod tests {
     proptest! {
         #[test]
         fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
-            let g = Grid::new();
+            let g = GridController::new();
             crate::util::assert_f64_approx_eq(
                 n,
                 eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).parse::<f64>().unwrap(),
@@ -820,7 +823,7 @@ mod tests {
     proptest! {
         #[test]
         fn test_pow_log_invariant(n in -10.0..10.0_f64) {
-            let g = Grid::new();
+            let g = GridController::new();
 
             for s in [
                 format!("LN(EXP({n}))"),
@@ -841,14 +844,14 @@ mod tests {
         // See https://en.wikipedia.org/wiki/Zero_to_the_power_of_zero
 
         // This is compatible with Google Sheets, but not Excel
-        let g = Grid::new();
+        let g = GridController::new();
         assert_eq!("1", eval_to_string(&g, "POWER(0,0)"));
         assert_eq!("1", eval_to_string(&g, "0^0"));
     }
 
     #[test]
     fn test_log_errors() {
-        let g = Grid::new();
+        let g = GridController::new();
         let e = RunErrorMsg::NaN;
         for n in ["0", "-0.1", "-2"] {
             assert_eq!(e, eval_to_err(&g, &format!("LN({n})")).msg);
@@ -863,7 +866,7 @@ mod tests {
 
     #[test]
     fn test_negative_pow() {
-        let g = Grid::new();
+        let g = GridController::new();
         let e = RunErrorMsg::NaN;
 
         assert_eq!("1", eval_to_string(&g, "POWER(-2, 0)"));
@@ -881,9 +884,9 @@ mod tests {
 
     #[test]
     fn test_pi() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "PI".into(),
@@ -899,9 +902,9 @@ mod tests {
 
     #[test]
     fn test_tau() {
-        let g = Grid::new();
+        let g = GridController::new();
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "TAU".into(),

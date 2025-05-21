@@ -31,9 +31,9 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, Pos, SheetPos, SheetRect, Value,
         controller::GridController,
         grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
-        CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
     #[test]
@@ -61,6 +61,8 @@ mod test {
         };
         cells_accessed.add_sheet_rect(sheet_rect);
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: r#"test"#.to_string(),
             std_err: None,
             std_out: None,
             error: None,
@@ -77,7 +79,8 @@ mod test {
                 Value::Single(CellValue::Text("test".to_string())),
                 false,
                 false,
-                true,
+                Some(true),
+                Some(true),
                 None,
             )),
         );

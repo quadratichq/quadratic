@@ -42,11 +42,24 @@ export const connectionClient = {
   schemas: {
     get: async (
       connectionType: 'postgres' | 'mysql' | 'mssql' | 'snowflake',
-      connectionId: string
+      connectionId: string,
+      teamUuid: string
     ): Promise<SqlSchemaResponse | null> => {
+      // This might get called on a public file (where the user might not be
+      // logged in but can still access the file). If they're not logged in,
+      // we won't make the request (to prevent the redirect). It'll fail silently
+      const loggedIn = await authClient.isAuthenticated();
+      if (!loggedIn) {
+        console.log("User is not logged in, so we won't make a request to the connection service.");
+        return null;
+      }
+
+      const headers = new Headers(await jwtHeader());
+      headers.set('X-Team-Id', teamUuid);
+
       const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {
         method: 'GET',
-        headers: new Headers(await jwtHeader()),
+        headers,
       });
       if (!res.ok) {
         throw new Error('Failed to get the schema from the connection service');
@@ -56,12 +69,23 @@ export const connectionClient = {
     },
   },
   test: {
-    run: async ({ type, typeDetails }: { type: ConnectionType; typeDetails: ConnectionTypeDetails }) => {
+    run: async ({
+      type,
+      typeDetails,
+      teamUuid,
+    }: {
+      type: ConnectionType;
+      typeDetails: ConnectionTypeDetails;
+      teamUuid: string;
+    }) => {
       try {
         const typeLower = type.toLowerCase();
+        const headers = new Headers(await jwtHeader());
+        headers.set('X-Team-Id', teamUuid);
+
         const res = await fetch(`${API_URL}/${typeLower}/test`, {
           method: 'POST',
-          headers: new Headers(await jwtHeader()),
+          headers,
           body: JSON.stringify(typeDetails),
         });
         const data = await res.json();

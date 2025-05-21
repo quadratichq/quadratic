@@ -28,8 +28,9 @@ export class CellsTextHashValidations extends Container {
   private addWarning(x: number, y: number, color: number): Sprite {
     const sprite = this.addChild(new Sprite(generatedTextures.triangle));
     sprite.tint = color;
-    sprite.scale.set(TRIANGLE_SCALE);
-    sprite.position.set(x, y + sprite.height);
+    // flips the triangle so it properly aligns to the top-right corner
+    sprite.scale.set(-TRIANGLE_SCALE, TRIANGLE_SCALE);
+    sprite.position.set(x, y);
     sprite.anchor.set(1, 0);
     sprite.rotation = Math.PI / 2;
     this.bounds.addRectanglePoints(

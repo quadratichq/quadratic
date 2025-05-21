@@ -31,7 +31,6 @@ class RenderWebWorker {
     }
     const message: ClientRenderInit = {
       type: 'clientRenderInit',
-      bitmapFonts: prepareBitmapFontInformation(),
       tableColumnHeaderForeground: getCSSVariableTint('table-column-header-foreground'),
     };
     this.worker.postMessage(message, [coreMessagePort]);
@@ -142,6 +141,13 @@ class RenderWebWorker {
         sheetId,
         row,
       });
+    });
+  }
+
+  sendBitmapFonts() {
+    this.send({
+      type: 'clientRenderBitmapFonts',
+      bitmapFonts: prepareBitmapFontInformation(),
     });
   }
 }

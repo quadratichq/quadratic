@@ -15,9 +15,10 @@ const TIME_FOR_IDLE = 1000;
 class Thumbnail {
   private lastUpdate = 0;
   private thumbnailDirty = false;
-  private renderer?: Renderer;
+  private renderer: Renderer;
 
   constructor() {
+    this.renderer = new Renderer({ width: imageWidth, height: imageHeight, antialias: true, background: 0xffffff });
     events.on('generateThumbnail', this.setThumbnailDirty);
   }
 
@@ -27,9 +28,7 @@ class Thumbnail {
 
   destroy() {
     events.off('generateThumbnail', this.setThumbnailDirty);
-    if (this.renderer) {
-      this.renderer.destroy(false);
-    }
+    this.renderer.destroy(false);
   }
 
   rendererBusy() {
@@ -46,6 +45,11 @@ class Thumbnail {
           debugTimeReset();
           this.generate().then((blob) => {
             if (blob) {
+              // Open blob in new tab for preview
+              // const url = URL.createObjectURL(blob);
+              // window.open(url);
+              // URL.revokeObjectURL(url);
+
               debugTimeCheck('thumbnail', 20);
               apiClient.files.thumbnail.update(uuid, blob).then(() => {
                 if (debugShowFileIO) {
@@ -63,16 +67,6 @@ class Thumbnail {
 
   /** returns a dataURL to a copy of the selected cells */
   private async generate(): Promise<Blob | null> {
-    if (!this.renderer) {
-      this.renderer = new Renderer({
-        antialias: true,
-        backgroundColor: 0xffffff,
-      });
-    }
-
-    this.renderer.resize(imageWidth, imageHeight);
-    this.renderer.view.width = imageWidth;
-    this.renderer.view.height = imageHeight;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
     pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
     pixiApp.gridLines.update(rectangle, undefined, true);
@@ -80,7 +74,7 @@ class Thumbnail {
     pixiApp.cleanUpAfterCopying(true);
     pixiApp.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
-      this.renderer!.view.toBlob((blob) => resolve(blob));
+      this.renderer.view.toBlob?.((blob) => resolve(blob));
     });
   }
 }

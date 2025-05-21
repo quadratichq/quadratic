@@ -13,9 +13,10 @@ use rules::SyntaxRule;
 
 use super::*;
 use crate::{
-    a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
-    grid::{Grid, SheetId},
-    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
+    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
+    a1::{A1Context, CellRefRange, RefRangeBounds, SheetCellRefRange},
+    controller::GridController,
+    grid::{RefAdjust, SheetId},
 };
 
 /// Parses a formula.
@@ -28,9 +29,9 @@ pub fn parse_formula(source: &str, ctx: &A1Context, pos: SheetPos) -> CodeResult
 /// Calls `parse_formula()` with an empty context at position A1.
 #[cfg(test)]
 pub fn simple_parse_formula(source: &str) -> CodeResult<ast::Formula> {
-    let g = Grid::new();
-    let pos = g.origin_in_first_sheet();
-    parse_formula(source, &g.a1_context(), pos)
+    let grid_controller = GridController::new();
+    let pos = grid_controller.grid().origin_in_first_sheet();
+    parse_formula(source, grid_controller.a1_context(), pos)
 }
 
 fn parse_exactly_one<R: SyntaxRule>(
@@ -62,6 +63,12 @@ pub fn find_cell_references(
             ret.push(sheet_cell_ref_range);
         } else if let Some(Ok(sheet_cell_ref_range)) = p.try_parse(rules::SheetTableReference) {
             ret.push(sheet_cell_ref_range.map(Ok));
+        } else if rules::SheetRefPrefix.prefix_matches(p) {
+            // If we didn't recognize the sheet name,
+            // then skip the cell reference entirely.
+            _ = rules::SheetRefPrefix.consume_match(&mut p);
+            None.or_else(|| p.try_parse(rules::CellRangeReference).map(|_| ()))
+                .or_else(|| p.try_parse(rules::SheetTableReference).map(|_| ()));
         } else {
             p.next();
         }
@@ -78,8 +85,8 @@ pub fn parse_and_check_formula(formula_string: &str, ctx: &A1Context, pos: Sheet
     // do not have the actual Grid when running this formula in RustClient.)
     match parse_formula(formula_string, ctx, pos) {
         Ok(parsed) => {
-            let grid = Grid::new();
-            let mut ctx = Ctx::new_for_syntax_check(&grid);
+            let grid_controller = GridController::new();
+            let mut ctx = Ctx::new_for_syntax_check(&grid_controller);
             parsed.eval(&mut ctx).into_non_error_value().is_ok()
         }
         Err(_) => false,
@@ -97,15 +104,17 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, controller::GridController, grid::SheetId};
 ///
-/// let g = Grid::new();
-/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
+/// let g = GridController::new();
+/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
 /// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
 /// ```
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
-    let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(None, ctx, false));
+    let replace_fn =
+        |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(Some(pos.sheet_id), ctx));
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
@@ -115,45 +124,103 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, controller::GridController, grid::SheetId};
 ///
-/// let g = Grid::new();
-/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
-/// let replaced = convert_a1_to_rc("SUM(B$3)", &g.a1_context(), pos);
+/// let g = GridController::new();
+/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
+/// let replaced = convert_a1_to_rc("SUM(B$3)", g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
-        Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into()))
+        Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, pos.into()))
     };
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
-/// Replace all cell references with internal cell references (RC notation) by
-/// applying the function `replace_x_fn` to X coordinates and `replace_y_fn` to
-/// Y coordinates.
-pub fn replace_cell_references_with(
+/// Adjusts all cell references in a formula. If a references is out of bounds
+/// after the adjustment, it is replaced with an error.
+#[must_use = "this method returns a new value instead of modifying its input"]
+pub fn adjust_references(
+    source: &str,
+    new_default_sheet_id: SheetId,
+    ctx: &A1Context,
+    pos: SheetPos,
+    adjust: RefAdjust,
+) -> String {
+    let source = convert_rc_to_a1(source, ctx, pos); // remove this if we ever remove RC support completely
+    replace_cell_range_references(&source, ctx, pos, |range_ref| {
+        Ok(range_ref
+            .adjust(adjust)?
+            .to_a1_string(Some(new_default_sheet_id), ctx))
+    })
+}
+
+#[must_use = "this method returns a new value instead of modifying its input"]
+pub fn replace_table_name(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
-    replace_xy_fn: impl Fn(SheetId, CellRefRangeEnd) -> Result<CellRefRangeEnd, RefError>,
+    old_name: &str,
+    new_name: &str,
+) -> String {
+    replace_table_references(source, ctx, pos, |mut table_ref| {
+        if table_ref.table_name.eq_ignore_ascii_case(old_name) {
+            table_ref.table_name = new_name.to_string();
+        }
+        Ok(table_ref)
+    })
+}
+
+#[must_use = "this method returns a new value instead of modifying its input"]
+pub fn replace_column_name(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+    table_name: &str,
+    old_name: &str,
+    new_name: &str,
+) -> String {
+    replace_table_references(source, ctx, pos, |mut table_ref| {
+        if table_ref.table_name.eq_ignore_ascii_case(table_name) {
+            table_ref.col_range.replace_column_name(old_name, new_name);
+        }
+        Ok(table_ref)
+    })
+}
+
+#[must_use = "this method returns a new value instead of modifying its input"]
+fn replace_table_references(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+    replace_fn: impl Fn(TableRef) -> Result<TableRef, RefError>,
 ) -> String {
     replace_cell_range_references(source, ctx, pos, |range_ref| {
         Ok(match range_ref.cells {
-            CellRefRange::Sheet {
-                range: RefRangeBounds { start, end },
-            } => CellRefRange::Sheet {
-                range: RefRangeBounds {
-                    start: replace_xy_fn(range_ref.sheet_id, start)?,
-                    end: replace_xy_fn(range_ref.sheet_id, end)?,
-                },
+            CellRefRange::Table { range } => CellRefRange::Table {
+                range: replace_fn(range)?,
             },
-            other @ CellRefRange::Table { .. } => other, // leave table refs unchanged
+            other @ CellRefRange::Sheet { .. } => other,
         }
         .to_string())
     })
 }
 
+#[must_use = "this method returns a new value instead of modifying its input"]
+pub fn replace_sheet_name(
+    source: &str,
+    pos: SheetPos,
+    old_ctx: &A1Context,
+    new_ctx: &A1Context,
+) -> String {
+    replace_cell_range_references(source, old_ctx, pos, |sheet_cell_ref_range| {
+        Ok(sheet_cell_ref_range.to_a1_string(Some(pos.sheet_id), new_ctx))
+    })
+}
+
+#[must_use = "this method returns a new value instead of modifying its input"]
 fn replace_cell_range_references(
     source: &str,
     ctx: &A1Context,
@@ -360,9 +427,6 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-
-    use crate::a1::CellRefCoord;
-
     use super::*;
 
     #[test]
@@ -392,33 +456,75 @@ mod tests {
     }
 
     #[test]
+    fn test_replace_xy_no_shift() {
+        let ctx = A1Context::test(&[], &[]);
+        let pos = pos![A1].to_sheet_pos(SheetId::new());
+        let src: &str = "A1 + 1";
+        let adj_base = RefAdjust {
+            sheet_id: None,
+            relative_only: true,
+            dx: 0,
+            dy: 0,
+            x_start: 0,
+            y_start: 0,
+        };
+
+        let mut adj = adj_base;
+        adj.dy = 1;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "A2 + 1";
+        assert_eq!(replaced, expected);
+
+        let mut adj = adj_base;
+        adj.dy = 2;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "A3 + 1";
+        assert_eq!(replaced, expected);
+
+        let mut adj = adj_base;
+        adj.dx = 1;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "B1 + 1";
+        assert_eq!(replaced, expected);
+
+        let mut adj = adj_base;
+        adj.dx = 1;
+        adj.dy = 1;
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "B2 + 1";
+        assert_eq!(replaced, expected);
+    }
+
+    #[test]
     fn test_replace_xy_shift() {
         let ctx = A1Context::test(&[], &[]);
         let pos = pos![C6].to_sheet_pos(SheetId::new());
+
+        let adj = RefAdjust {
+            sheet_id: None,
+            relative_only: true,
+            dx: -1,
+            dy: 3,
+            x_start: 2,
+            y_start: 0,
+        };
         let src = "SUM(A4,B$6, C7)";
-        let expected = "SUM(A7,B$5, C10)";
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "SUM(A4,A$6, B10)";
+        assert_eq!(replaced, expected);
 
-        let replaced = replace_cell_references_with(src, &ctx, pos, |_sheet, range_end| {
-            Ok(CellRefRangeEnd {
-                col: range_end.col,
-                row: {
-                    let delta = if range_end.row.is_unbounded() {
-                        0
-                    } else if range_end.row.is_absolute {
-                        -1
-                    } else {
-                        3
-                    };
-                    CellRefCoord {
-                        coord: range_end.row.coord + delta,
-                        is_absolute: range_end.row.is_absolute,
-                    }
-                },
-            })
-        });
-
-        let replaced_a1 = convert_rc_to_a1(&replaced, &ctx, pos);
-        assert_eq!(replaced_a1, expected);
+        let adj = RefAdjust {
+            sheet_id: None,
+            relative_only: true,
+            dx: -1,
+            dy: 3,
+            x_start: 0,
+            y_start: 16,
+        };
+        let src = "SUM(A1, A15, A16, B16)";
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
+        let expected = "SUM(A1, A15, #REF!, A19)";
+        assert_eq!(replaced, expected);
     }
 
     #[test]

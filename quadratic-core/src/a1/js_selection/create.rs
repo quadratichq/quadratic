@@ -1,5 +1,5 @@
-//! Utility functions to creates selections for use in JS via
-//! quadratic-rust-client.
+//! Utility functions to creates selections for use in JS via quadratic-client's
+//! local core (without access to the grid).
 
 use wasm_bindgen::prelude::*;
 
@@ -79,7 +79,7 @@ pub fn to_selection(
 ) -> Result<JsSelection, String> {
     let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
-    let selection = A1Selection::parse_a1(a1, &default_sheet_id, &context)
+    let selection = A1Selection::parse_a1(a1, default_sheet_id, &context)
         .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
     Ok(JsSelection { selection, context })
 }
@@ -149,19 +149,22 @@ pub fn a1_selection_value_to_selection(
 #[wasm_bindgen(js_name = "cellRefRangeToRefRangeBounds")]
 pub fn cell_ref_range_to_ref_range_bounds(
     cell_ref_range: String,
+    show_table_headers_for_python: bool,
     context: &str,
-) -> Result<String, String> {
+) -> Result<JsValue, String> {
     let cell_ref_range =
         serde_json::from_str::<CellRefRange>(&cell_ref_range).map_err(|e| e.to_string())?;
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
     let ref_range_bounds = match cell_ref_range {
         CellRefRange::Sheet { range } => range,
         CellRefRange::Table { range } => {
-            match range.convert_to_ref_range_bounds(false, &context, false, false) {
+            match range
+                .convert_cells_accessed_to_ref_range_bounds(show_table_headers_for_python, &context)
+            {
                 Some(ref_range_bounds) => ref_range_bounds,
                 None => return Err("Unable to convert table range to ref range bounds".to_string()),
             }
         }
     };
-    serde_json::to_string(&ref_range_bounds).map_err(|e| e.to_string())
+    serde_wasm_bindgen::to_value(&ref_range_bounds).map_err(|e| e.to_string())
 }

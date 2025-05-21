@@ -1,12 +1,14 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { debugShowMultiplayer, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugShowMultiplayer, debugShowVersionCheck, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { isPatchVersionDifferent } from '@/app/schemas/compareVersions';
+import { RefreshType } from '@/app/shared/types/RefreshType';
+import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
@@ -20,10 +22,14 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
+import { VERSION } from '@/shared/constants/appConstants';
 import { displayName } from '@/shared/utils/userUtil';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
-import updateAlertVersion from '../../../../../updateAlertVersion.json';
+
+// time to recheck the version of the client after receiving a different version
+// from the server
+const RECHECK_VERSION_INTERVAL = 5000;
 
 export class Multiplayer {
   private worker?: Worker;
@@ -128,7 +134,7 @@ export class Multiplayer {
         break;
 
       case 'multiplayerClientReload':
-        events.emit('needRefresh', 'force');
+        events.emit('needRefresh', RefreshType.FORCE);
         break;
 
       case 'multiplayerClientRefreshJwt':
@@ -375,13 +381,46 @@ export class Multiplayer {
     }
   }
 
+  private async checkVersion(serverVersion: string) {
+    if (serverVersion === VERSION) {
+      return;
+    }
+
+    if (debugShowVersionCheck) {
+      console.log(`Multiplayer server version (${serverVersion}) is different than the client version (${VERSION})`);
+    }
+
+    try {
+      const versionClientJson = await fetch('/version.json').then((res) => res.json());
+      if (typeof versionClientJson !== 'object' || !('version' in versionClientJson)) {
+        throw new Error(`Invalid version.json: ${JSON.stringify(versionClientJson)}`);
+      }
+      const versionClient = versionClientJson.version;
+
+      // we may have to wait to show the update dialog if the client version
+      // on the server is different than the one served from the client
+      if (versionClient === serverVersion) {
+        events.emit(
+          'needRefresh',
+          isPatchVersionDifferent(versionClient, VERSION) ? RefreshType.RECOMMENDED : RefreshType.REQUIRED
+        );
+      } else {
+        if (debugShowVersionCheck) {
+          console.log(
+            `quadratic-client's version (${versionClient}) does not yet match the quadratic-multiplayer's version (${serverVersion}) (trying again in ${RECHECK_VERSION_INTERVAL}ms)`
+          );
+        }
+        setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
+      }
+    } catch (e) {
+      console.error('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
+      setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
+    }
+  }
+
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
-    if (room.min_version.requiredVersion > updateAlertVersion.requiredVersion) {
-      events.emit('needRefresh', 'required');
-    } else if (room.min_version.recommendedVersion > updateAlertVersion.recommendedVersion) {
-      events.emit('needRefresh', 'recommended');
-    }
+    this.checkVersion(room.version);
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {

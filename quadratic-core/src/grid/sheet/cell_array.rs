@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 use crate::{
-    controller::execution::run_code::get_cells::JsCellsA1Value, Array, CellValue, Pos, Rect,
+    Array, CellValue, Pos, Rect, controller::execution::run_code::get_cells::JsCellsA1Value,
 };
 
 use super::Sheet;
@@ -44,15 +44,15 @@ impl Sheet {
                     response.push(JsCellsA1Value {
                         x: x as i32,
                         y: y as i32,
-                        value: cell.to_get_cells(),
-                        type_name: cell.type_name().into(),
+                        v: cell.to_get_cells(),
+                        t: cell.type_u8(),
                     });
                 } else {
                     response.push(JsCellsA1Value {
                         x: x as i32,
                         y: y as i32,
-                        value: "".into(),
-                        type_name: "blank".into(),
+                        v: "".into(),
+                        t: CellValue::Blank.type_u8(),
                     });
                 }
             }
@@ -184,9 +184,9 @@ mod tests {
 
     use super::*;
     use crate::{
+        CellValue, Pos, Rect, SheetPos,
         controller::GridController,
         grid::{CodeCellLanguage, Sheet},
-        CellValue, Pos, Rect, SheetPos,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
@@ -226,56 +226,56 @@ mod tests {
         assert!(response.contains(&JsCellsA1Value {
             x: 0,
             y: 0,
-            value: "1".into(),
-            type_name: "number".into(),
+            v: "1".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 1,
             y: 0,
-            value: "2".into(),
-            type_name: "number".into(),
+            v: "2".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 0,
             y: 1,
-            value: "3".into(),
-            type_name: "number".into(),
+            v: "3".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 1,
             y: 1,
-            value: "4".into(),
-            type_name: "number".into(),
+            v: "4".into(),
+            t: 2,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 0,
-            value: "test".into(),
-            type_name: "text".into(),
+            v: "test".into(),
+            t: 1,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 3,
             y: 1,
-            value: "2024-08-15T01:20:00.000".into(),
-            type_name: "date time".into(),
+            v: "2024-08-15T01:20:00.000".into(),
+            t: 11,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 1,
-            value: "true".into(),
-            type_name: "logical".into(),
+            v: "true".into(),
+            t: 3,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 2,
-            value: "2024-08-15".into(),
-            type_name: "date".into(),
+            v: "2024-08-15".into(),
+            t: 9,
         }));
         assert!(response.contains(&JsCellsA1Value {
             x: 3,
             y: 0,
-            value: "01:20:00.000".into(),
-            type_name: "time".into(),
+            v: "01:20:00.000".into(),
+            t: 10,
         }));
     }
 
@@ -320,8 +320,8 @@ mod tests {
             Pos { x: 0, y: 0 },
         );
         assert_eq!(reasons.len(), 2);
-        assert!(reasons.iter().any(|p| *p == Pos { x: 1, y: 0 }));
-        assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 0 }));
+        assert!(reasons.contains(&Pos { x: 1, y: 0 }));
+        assert!(reasons.contains(&Pos { x: 2, y: 0 }));
     }
 
     #[test]

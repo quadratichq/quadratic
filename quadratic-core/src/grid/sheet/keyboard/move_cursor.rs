@@ -1,11 +1,11 @@
 //! Moves the cursor one cell in the given direction, accounting for charts.
 //! (Eventually also accounting for sheet bounds to the right and bottom.)
 
-use crate::{grid::Sheet, Pos};
+use crate::{Pos, grid::Sheet};
 
 use super::Direction;
 
-// todo: this should be moved to rust-client using A1Context
+// todo: this should use A1Context instead of quadraticCore
 
 impl Sheet {
     /// Returns a new Pos after pressing an arrow key.
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn test_table_header_navigation() {
         let mut sheet = Sheet::test();
-        sheet.test_set_data_table(pos![C3], 2, 2, false, true);
+        sheet.test_set_data_table(pos![C3], 2, 2, false, Some(true), Some(true));
 
         // move right into header
         assert_eq!(sheet.move_cursor(pos![B3], Direction::Right), pos![C3]);
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn test_table_header_navigation_no_name() {
         let mut sheet = Sheet::test();
-        sheet.test_set_data_table(pos![C3], 2, 2, false, false);
+        sheet.test_set_data_table(pos![C3], 2, 2, false, Some(false), Some(false));
 
         // move right with no name
         assert_eq!(sheet.move_cursor(pos![B3], Direction::Right), pos![C3]);

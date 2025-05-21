@@ -6,7 +6,7 @@ import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { colors } from '@/app/theme/colors';
+import { convertTintToHex, getCSSVariableTint } from '@/app/helpers/convertColor';
 import { DockToLeftIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -33,6 +33,7 @@ export const InlineEditor = () => {
   return (
     <div
       ref={ref}
+      className="dark-mode-hack"
       style={{
         position: 'absolute',
         display: 'flex',
@@ -58,7 +59,7 @@ export const InlineEditor = () => {
               padding: '0',
               height: `${height}px`,
               right: '-24px',
-              backgroundColor: colors.languageFormula,
+              backgroundColor: convertTintToHex(getCSSVariableTint('primary')),
             }}
             onClick={(e) => {
               e.stopPropagation();

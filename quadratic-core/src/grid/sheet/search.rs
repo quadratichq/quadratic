@@ -135,8 +135,12 @@ impl Sheet {
                     }
                 }
                 Value::Array(array) => {
-                    for y in 0..array.size().h.get() {
-                        for x in 0..array.size().w.get() {
+                    for x in 0..array.size().w.get() {
+                        let column_display = data_table.header_display(x as usize);
+                        if !column_display {
+                            continue;
+                        }
+                        for y in 0..array.size().h.get() {
                             let cell_value = array.get(x, y).unwrap();
                             if self.compare_cell_value(
                                 cell_value,
@@ -149,7 +153,9 @@ impl Sheet {
                                 whole_cell,
                                 false, // data_tables can never have code within them (although that would be cool if they did ;)
                             ) {
-                                let y = pos.y + data_table.y_adjustment(true) + y as i64;
+                                let y = pos.y
+                                    + data_table.y_adjustment(true)
+                                    + data_table.get_display_index_from_row_index(y as u64) as i64;
                                 if y >= pos.y {
                                     results.push(SheetPos {
                                         x: pos.x + x as i64,
@@ -267,9 +273,9 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         Array,
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     };
 
     #[test]
@@ -524,6 +530,8 @@ mod test {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "hello".into(),
             error: None,
             std_out: None,
             std_err: None,
@@ -538,7 +546,8 @@ mod test {
             Value::Single("world".into()),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
@@ -568,6 +577,8 @@ mod test {
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".into(),
             error: None,
             std_out: None,
             std_err: None,
@@ -585,7 +596,8 @@ mod test {
             ])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));

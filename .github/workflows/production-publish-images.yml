@@ -25,7 +25,21 @@ jobs:
           - service: multiplayer
             runner: blacksmith-4vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Pyodide
+        id: cache-pyodide
+        if: matrix.service == 'client'
+        uses: useblacksmith/cache@v5
+        with:
+          path: quadratic-client/public/pyodide
+          key: pyodide-${{ hashFiles('quadratic-client/download-pyodide.sh') }}
+
+      - name: Download & Verify Pyodide
+        if: matrix.service == 'client'
+        run: |
+          npm run client:download:pyodide
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -40,16 +54,10 @@ jobs:
         with:
           registry-type: public
 
-      - name: Define repository name
-        id: repo-name
+      - name: Get Public ECR URL
+        id: get-ecr-url
         run: |
-          echo "REPO_NAME=quadratic-${{ matrix.service }}" >> $GITHUB_OUTPUT
-
-      - name: Create Public ECR Repository if not exists
-        id: create-ecr
-        env:
-          REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
-        run: |
+          REPO_NAME=quadratic-${{ matrix.service }}
           aws ecr-public create-repository --repository-name $REPO_NAME || true
           REPO_INFO=$(aws ecr-public describe-repositories --repository-names $REPO_NAME)
           ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
@@ -59,11 +67,29 @@ jobs:
         id: version
         run: echo "VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Cache Docker layers
+        uses: useblacksmith/cache@v5
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-
+
       - name: Build, Tag, and Push Image to Amazon ECR Public
-        env:
-          ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
-          IMAGE_TAG: ${{ steps.version.outputs.VERSION }}
-        run: |
-          docker build -t $ECR_URL:$IMAGE_TAG -t $ECR_URL:latest -f quadratic-${{ matrix.service }}/Dockerfile .
-          docker push $ECR_URL:$IMAGE_TAG
-          docker push $ECR_URL:latest
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: quadratic-${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.get-ecr-url.outputs.ECR_URL }}:latest
+            ${{ steps.get-ecr-url.outputs.ECR_URL }}:${{ steps.version.outputs.VERSION }}
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
+          cache-from: type=local,src=/tmp/.buildx-cache

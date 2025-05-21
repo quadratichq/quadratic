@@ -7,8 +7,16 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import type { JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import init from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type {
+  JsOffset,
+  JsRenderCell,
+  JsRowHeight,
+  SheetBounds,
+  SheetInfo,
+  TransactionName,
+} from '@/app/quadratic-core-types';
+import initCoreRender from '@/app/quadratic-core/quadratic_core';
+import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
@@ -31,6 +39,9 @@ class RenderText {
   };
   private cellsLabels = new Map<string, CellsLabels>();
 
+  private transactions: TransactionInfo[] = [];
+  private abortController = new AbortController();
+
   bitmapFonts?: RenderBitmapFonts;
   viewport?: Rectangle;
   sheetId?: string;
@@ -48,7 +59,7 @@ class RenderText {
 
   constructor() {
     this.viewportBuffer = undefined;
-    init().then(() => {
+    initCoreRender().then(() => {
       this.status.rust = true;
       this.ready();
     });
@@ -66,7 +77,6 @@ class RenderText {
 
   ready() {
     if (this.status.rust && this.status.core && this.bitmapFonts) {
-      if (!this.bitmapFonts) throw new Error('Expected bitmapFonts to be defined in RenderText.ready');
       for (const sheetInfo of this.status.core) {
         const sheetId = sheetInfo.sheet_id;
         this.cellsLabels.set(sheetId, new CellsLabels(sheetInfo, this.bitmapFonts));
@@ -90,7 +100,9 @@ class RenderText {
     let render = false;
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
-      const result = await cellsLabel?.update();
+      const isTransactionRunning = this.transactions.length > 0;
+      this.abortController = new AbortController();
+      const result = await cellsLabel?.update(isTransactionRunning, this.abortController.signal);
       if (result) {
         // for first render, we render all the visible text before showing pixiApp
         if (result === 'visible') {
@@ -140,12 +152,12 @@ class RenderText {
       Atomics.load(int32Array, 0) === 0 // first slice is dirty
         ? 0
         : Atomics.load(int32Array, 14) === 0 // second slice is dirty
-        ? 14
-        : Atomics.compareExchange(int32Array, 0, 1, 0) === 1 // first slice is not locked, this is to avoid race condition
-        ? 0
-        : Atomics.compareExchange(int32Array, 14, 1, 0) === 1 // second slice is not locked, this is to avoid race condition
-        ? 14
-        : -1;
+          ? 14
+          : Atomics.compareExchange(int32Array, 0, 1, 0) === 1 // first slice is not locked, this is to avoid race condition
+            ? 0
+            : Atomics.compareExchange(int32Array, 14, 1, 0) === 1 // second slice is not locked, this is to avoid race condition
+              ? 14
+              : -1;
     if (writerStart === -1) {
       console.error('[RenderText] updateViewportBuffer: invalid flag state in viewport buffer');
       return;
@@ -249,6 +261,18 @@ class RenderText {
   receiveViewportBuffer = (buffer: SharedArrayBuffer) => {
     this.viewportBuffer = buffer;
     this.updateViewportBuffer();
+  };
+
+  transactionStart = (transactionId: string, transactionName: TransactionName) => {
+    this.abortController.abort();
+    this.transactions = [
+      ...this.transactions.filter((t) => t.transactionId !== transactionId),
+      { transactionId, transactionName },
+    ];
+  };
+
+  transactionEnd = (transactionId: string, _transactionName: TransactionName) => {
+    this.transactions = this.transactions.filter((t) => t.transactionId !== transactionId);
   };
 }
 

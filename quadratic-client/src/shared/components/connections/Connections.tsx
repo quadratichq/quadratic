@@ -1,3 +1,4 @@
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
@@ -7,7 +8,7 @@ import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUp
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetchers, useSearchParams } from 'react-router-dom';
+import { useFetchers, useSearchParams } from 'react-router';
 
 export type ConnectionsListConnection = {
   uuid: string;
@@ -18,14 +19,24 @@ export type ConnectionsListConnection = {
 };
 type Props = {
   teamUuid: string;
+  sshPublicKey: string;
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
+  // If this is present, we're in the app and we'll do stuff slightly differently
+  handleNavigateToDetailsViewOverride?: (language: CodeCellLanguage) => void;
 };
 export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
-export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps }: Props) => {
+export const Connections = ({
+  connections,
+  connectionsAreLoading,
+  teamUuid,
+  staticIps,
+  handleNavigateToDetailsViewOverride,
+  sshPublicKey,
+}: Props) => {
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
@@ -115,20 +126,27 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
     setActiveConnectionType(connectionType);
   };
-  const hangleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+  const handleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+    // If we're in the app, insert a query on the sheet.
+    if (handleNavigateToDetailsViewOverride) {
+      handleNavigateToDetailsViewOverride({ Connection: { kind: connectionType, id: connectionUuid } });
+      return;
+    }
+    // Otherwise we're on the dashboard, so navigate to the connection details
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
   };
 
   return (
-    <div className="flex flex-col gap-8 md:flex-row">
-      <div className="flex flex-col gap-2 md:w-2/3">
+    <div className={'grid-cols-12 gap-12 md:grid'}>
+      <div className="col-span-8">
         {activeConnectionState && activeConnectionType ? (
           activeConnectionState.view === 'edit' ? (
             <ConnectionFormEdit
               connectionUuid={activeConnectionState.uuid}
               connectionType={activeConnectionType}
               handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
             />
           ) : (
             <ConnectionDetails
@@ -150,15 +168,12 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
             connectionsAreLoading={connectionsAreLoading}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
-            hangleNavigateToDetailsView={hangleNavigateToDetailsView}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
           />
         )}
       </div>
-
-      <div className="h-[1px] w-full bg-border md:h-auto md:w-[1px]"></div>
-
-      <div className="md:w-1/3">
-        <ConnectionsSidebar staticIps={staticIps} />
+      <div className="col-span-4 mt-12 md:mt-0">
+        <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
       </div>
     </div>
   );

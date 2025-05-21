@@ -8,13 +8,14 @@
 use std::sync::Arc;
 
 use axum::body::Body;
-use axum::{http, Router};
+use axum::{Router, http};
 use http::{Request, Response};
 use jsonwebtoken::jwk::JwkSet;
 use serde_json::json;
 use tower::util::ServiceExt;
 
 use crate::config::config;
+use crate::server::app;
 use crate::state::State;
 
 pub(crate) fn new_jwks() -> JwkSet {
@@ -62,3 +63,20 @@ pub(crate) async fn response(app: Router, method: http::Method, uri: &str) -> Re
 
 //     Operation::SetCellValues { sheet_rect, values }
 // }
+
+/// Process a route and return the response.
+/// TODO(ddimaria): move to quadratic-rust-shared
+pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
+    let state = new_arc_state().await;
+    let app = app(state);
+
+    app.oneshot(
+        axum::http::Request::builder()
+            .method(method)
+            .uri(uri)
+            .body(body)
+            .unwrap(),
+    )
+    .await
+    .unwrap()
+}

@@ -3,32 +3,40 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPDFImportLoadingAtom,
+  aiAnalystPromptSuggestionsAtom,
+  aiAnalystPromptSuggestionsCountAtom,
+  aiAnalystWaitingOnMessageIndexAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
+import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { getLastAIPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
+  const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -118,6 +126,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     }
   }, [messages, scrollToBottom, loading, shouldAutoScroll]);
 
+  // Scroll to bottom when prompt suggestions are available
+  useEffect(() => {
+    if (promptSuggestionsCount > 0) {
+      scrollToBottom();
+    }
+  }, [promptSuggestionsCount, scrollToBottom]);
+
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
   }
@@ -144,7 +159,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
           return null;
         }
 
-        const isCurrentMessage = index === messages.length - 1;
+        const isCurrentMessage = index === messagesCount - 1;
 
         return (
           <div
@@ -159,42 +174,34 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
                 <AIAnalystUserMessageForm
-                  initialPrompt={message.content}
+                  initialContent={message.content}
                   initialContext={message.context}
-                  messageIndex={index}
                   textareaRef={textareaRef}
+                  messageIndex={index}
                 />
-              ) : Array.isArray(message.content) ? (
-                message.content.map(({ content }) => <Markdown key={content}>{content}</Markdown>)
               ) : (
-                <Markdown key={message.content}>{message.content}</Markdown>
+                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
               )
             ) : (
               <>
-                {message.content && Array.isArray(message.content) ? (
-                  <>
-                    {message.content.map((item, contentIndex) =>
-                      item.type === 'anthropic_thinking' ? (
-                        <ThinkingBlock
-                          key={item.text}
-                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
-                          isLoading={loading}
-                          thinkingContent={item}
-                          expandedDefault={true}
-                        />
-                      ) : item.type === 'text' ? (
-                        <Markdown key={item.text}>{item.text}</Markdown>
-                      ) : null
-                    )}
-                  </>
-                ) : (
-                  <Markdown key={message.content}>{message.content}</Markdown>
+                {message.content.map((item, contentIndex) =>
+                  item.type === 'anthropic_thinking' ? (
+                    <ThinkingBlock
+                      key={item.text}
+                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                      isLoading={loading}
+                      thinkingContent={item}
+                      expandedDefault={true}
+                    />
+                  ) : item.type === 'text' ? (
+                    <Markdown key={item.text}>{item.text}</Markdown>
+                  ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}
@@ -206,13 +213,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         );
       })}
 
-      {messages.length > 0 && !loading && <FeedbackButtons />}
+      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
 
-      <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
-        <span className="h-2 w-2 animate-bounce bg-primary" />
-        <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
-        <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
-      </div>
+      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
+
+      <PDFImportLoading />
+
+      <AILoading loading={loading} />
     </div>
   );
 });
@@ -220,7 +227,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 const FeedbackButtons = memo(() => {
   // true=positive, false=negative, null=neutral
   const [like, setLike] = useState<boolean | null>(null);
-  const settings = useRecoilValue(editorInteractionStateSettingsAtom);
 
   const logFeedback = useRecoilCallback(
     ({ snapshot }) =>
@@ -228,14 +234,9 @@ const FeedbackButtons = memo(() => {
         // Log it to mixpanel
         mixpanel.track('[AIAnalyst].feedback', { like: newLike });
 
-        // If they have AI analytics turned off, don't do anything else
-        if (!settings.analyticsAi) {
-          return;
-        }
-
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
-        const messageIndex = getLastUserPromptMessageIndex(messages);
+        const messageIndex = getLastAIPromptMessageIndex(messages);
         if (messageIndex < 0) return;
 
         const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
@@ -290,4 +291,58 @@ const FeedbackButtons = memo(() => {
       </TooltipPopover>
     </div>
   );
+});
+
+const PromptSuggestions = memo(() => {
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
+  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
+  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const lastContext = useMemo(
+    () =>
+      getUserPromptMessages(messages)
+        .filter((message) => message.contextType === 'userPrompt')
+        .at(-1)?.context,
+    [messages]
+  );
+
+  if (!messages.length || !promptSuggestions.suggestions.length) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2 px-2">
+      {promptSuggestions.suggestions.map((suggestion, index) => (
+        <div
+          key={`${index}-${suggestion.label}`}
+          className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+          onClick={() =>
+            submitPrompt({
+              content: [
+                {
+                  type: 'text',
+                  text: suggestion.prompt,
+                },
+              ],
+              context: {
+                ...(lastContext ?? defaultAIAnalystContext),
+              },
+              messageIndex: messages.length,
+            })
+          }
+        >
+          <span className="truncate">{suggestion.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+});
+
+const PDFImportLoading = memo(() => {
+  const pdfImportLoading = useRecoilValue(aiAnalystPDFImportLoadingAtom);
+
+  if (!pdfImportLoading) {
+    return null;
+  }
+
+  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
 });

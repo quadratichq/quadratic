@@ -27,14 +27,33 @@ async function handler(req: RequestWithUser, res: express.Response) {
     },
   });
 
+  // See if the user has paid team(s)
+  const userPaidTeams = await dbClient.userTeamRole.findMany({
+    where: {
+      userId: req.user.id,
+      team: {
+        stripeSubscriptionStatus: 'ACTIVE',
+      },
+    },
+    include: {
+      team: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  const payingUser = userPaidTeams.length > 0 ? '*💰 Paying user*' : '';
+
   // Post to Slack
   // SLACK_FEEDBACK_URL is the Quadratic product feedback slack app webhook URL
-  // We filter out spammy feedback by requiring at least 30 characters
-  if (SLACK_FEEDBACK_URL && feedback.length >= 30) {
+   // We filter out spammy feedback by requiring at least 15 characters
+  if (SLACK_FEEDBACK_URL && feedback.length >= 15) {
     const payload = {
       text: [
         `📣 ${NODE_ENV === 'production' ? '' : '[STAGING]'} New product feedback`,
-        `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0Id})`,
+        `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0Id}) ${payingUser}`,
         '*Message*:',
         feedback,
       ].join('\n\n'),

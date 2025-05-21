@@ -1,8 +1,8 @@
 [package]
 name = "quadratic-core"
-version = "0.6.4"
+version = "0.9.0"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
-edition = "2021"
+edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
@@ -36,33 +36,35 @@ path = "src/bin/upgrade_file.rs"
 default = ["console_error_panic_hook", "js", "dbgjs"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = [
-  "js-sys",
-  "serde-wasm-bindgen",
-  "ts-rs",
-  "wasm-bindgen",
-  "wasm-bindgen-futures",
+    "js-sys",
+    "serde-wasm-bindgen",
+    "ts-rs",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
 ]
 show-operations = []
+show-first-sheet-operations = []
 dbgjs = []
-function-timer = []
+function-timer = ["function-timer/enabled"]
 
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1.63"
 futures = "0.3.25"
-itertools = "0.10.5"
+itertools = "0.14.0"
 rand = "0.9.0"
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
 regex = "1.7"
+rstar = "0.12.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
 smallvec = { version = "1.11.0", features = ["serde", "union"] }
-strum = { version = "0.26.3", features = ["derive"] }
-strum_macros = "0.26.3"
+strum = { version = "0.27.1", features = ["derive"] }
+strum_macros = "0.27.1"
 tabled = { version = "0.14.0", features = ["color"] }
-pollster = "0.2.5"
-unicode-case-mapping = "0.5.0"
+pollster = "0.4.0"
+unicode-case-mapping = "1.0.0"
 uuid = { version = "1.13.1", features = ["serde", "v4", "rng-rand"] }
 chrono = { version = "0.4", features = ["serde", "wasmbind"] }
 
@@ -76,51 +78,71 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 js-sys = { version = "0.3.60", optional = true }
 serde-wasm-bindgen = { version = "0.6.0", optional = true }
 ts-rs = { git = "https://github.com/quadratichq/ts-rs/", rev = "812c1a8", optional = true, features = [
-  "uuid-impl",
-  "smallvec-impl",
+    "uuid-impl",
+    "smallvec-impl",
 ] }
 wasm-bindgen = { version = "0.2.100", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
-lexicon_fractional_index = "0.0.3"
+lexicon_fractional_index = "0.0.4-a1"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.7", features = ["serde"] }
 csv = "1.3.0"
-indexmap = { version = "2.0.2", features = ["serde"] }
-thiserror = "1.0.52"
+indexmap = { version = "2.8.0", features = ["serde"] }
+thiserror = "2.0.12"
 lazy_static = "1.4.0"
-parquet = { version = "51.0.0", default-features = false, features = [
-  "arrow",
-  "arrow-array",
-  "flate2",
-  "snap",
+parquet = { version = "54.2.1", default-features = false, features = [
+    "arrow",
+    "arrow-array",
+    "flate2",
+    "snap",
 ] }
 bytes = "1.5.0"
-arrow-array = "51.0.0"
-arrow-schema = "51.0.0"
-arrow-buffer = "51.0.0"
-arrow-data = "51.0.0"
+arrow-array = "54.2.1"
+arrow-schema = "54.2.1"
+arrow-buffer = "54.2.1"
+arrow-data = "54.2.1"
 half = "2.4.0"
-calamine = { version = "0.24.0", features = ["dates"] }
-bincode = "1.3.3"
+
+# temporary fix until https://github.com/tafia/calamine/pull/506 merges
+# calamine = { version = "0.27.0", features = ["dates"] }
+calamine = { git = "https://github.com/prophittcorey/calamine", branch = "fix/zip-3.0", features = [
+    "dates",
+] }
+
+bincode = { version = "2.0.0", features = ["serde"] }
 flate2 = "1.0.30"
 serde_with = "3.8.1"
 dateparser = "0.2.1"
 fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", default-features = false, features = [
+    "protobuf",
+] }
+prost = { version = "0.13.5", default-features = false }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
+    "benchmark",
+] }
 
 [dev-dependencies]
-criterion = { version = "0.4", default-features = false }
-tokio-test = "0.4.3"
+criterion = { version = "0.5", default-features = false }
 memory-stats = "1.2.0"
+tokio-test = "0.4.3"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
-proptest-derive = "0.3.0"
+proptest-derive = "0.5.0"
 
 [[bench]]
 name = "grid_benchmark"
 harness = false
+
+[[bench]]
+name = "import_excel"
+harness = false
+required-features = ["function-timer"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem

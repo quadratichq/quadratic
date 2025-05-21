@@ -5,17 +5,14 @@
 //! socket information is stored in the global state, we can broadcast
 //! to all users in a room.
 
-use axum::extract::ws::{Message, WebSocket};
-use base64::{engine::general_purpose::STANDARD, Engine};
-use futures_util::stream::SplitSink;
-use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
+use base64::{Engine, engine::general_purpose::STANDARD};
+use quadratic_rust_shared::quadratic_api::{FilePermRole, get_file_perms};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::error::{ErrorLevel, MpError, Result};
 use crate::get_mut_room;
-use crate::message::response::Transaction;
+use crate::message::response::{BinaryTransaction, Transaction};
 use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
 };
@@ -23,11 +20,12 @@ use crate::permissions::{
     validate_can_edit_or_view_file, validate_user_can_edit_file,
     validate_user_can_edit_or_view_file,
 };
+use crate::state::user::UserSocket;
 use crate::state::{
+    State,
     connection::PreConnection,
     pubsub::GROUP_NAME,
     user::{User, UserState},
-    State,
 };
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
@@ -35,10 +33,10 @@ use crate::state::{
 pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,
-    sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
+    sender: UserSocket,
     pre_connection: PreConnection,
 ) -> Result<Option<MessageResponse>> {
-    tracing::trace!("Handling message {:?}", request);
+    tracing::info!("Handling message {:?}", request);
 
     match request {
         // User enters a room.
@@ -137,14 +135,18 @@ pub(crate) async fn handle_message(
             .map_err(|e| MpError::SendingMessage(e.to_string()))?;
 
             // only broadcast if the user is new to the room
+            // response is the variant MessageResponse::UsersInRoom
             if is_new {
                 let room = state.get_room(&file_id).await?;
-                let response = MessageResponse::from((room.users, &state.settings.min_version));
+                let response = MessageResponse::from((room.users, &state.settings.version));
 
                 broadcast(vec![], file_id, Arc::clone(&state), response);
             }
 
-            Ok(None)
+            // send the current transaction to the user
+            let response = MessageResponse::CurrentTransaction { sequence_num };
+
+            Ok(Some(response))
         }
 
         // User leaves a room
@@ -158,7 +160,7 @@ pub(crate) async fn handle_message(
             let room = state.get_room(&file_id).await?;
 
             if is_not_empty {
-                let response = MessageResponse::from((room.users, &state.settings.min_version));
+                let response = MessageResponse::from((room.users, &state.settings.version));
                 broadcast(vec![session_id], file_id, Arc::clone(&state), response);
             }
 
@@ -166,6 +168,7 @@ pub(crate) async fn handle_message(
         }
 
         // User sends transactions
+        // TODO(ddimaria): remove this once all clients are updated
         MessageRequest::Transaction {
             id,
             session_id,
@@ -195,20 +198,75 @@ pub(crate) async fn handle_message(
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .push_pubsub(id, file_id, decoded_operations, room_sequence_num)
+                .push(id, file_id, decoded_operations, room_sequence_num)
                 .await?;
 
-            // broadcast the transaction to all users in the room
+            // broadcast the transaction to all users in the room (except the initiator)
             let response = MessageResponse::Transaction {
                 id,
                 file_id,
+                sequence_num,
                 operations,
+            };
+            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
+
+            // send an ack to the initiator
+            let response = MessageResponse::TransactionAck {
+                id,
+                file_id,
                 sequence_num,
             };
 
-            broadcast(vec![], file_id, Arc::clone(&state), response);
+            Ok(Some(response))
+        }
 
-            Ok(None)
+        // User sends binary transaction
+        MessageRequest::BinaryTransaction {
+            id,
+            session_id,
+            file_id,
+            operations,
+        } => {
+            validate_user_can_edit_file(Arc::clone(&state), file_id, session_id).await?;
+
+            // update the heartbeat
+            state.update_user_heartbeat(file_id, &session_id).await?;
+
+            tracing::trace!(
+                "Transaction received for room {} from user {}, operations: {:?}",
+                file_id,
+                session_id,
+                &operations
+            );
+
+            // get and increment the room's sequence_num
+            let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+
+            // add the transaction to the transaction queue
+            // we need to clone operations since we broadcast it later
+            let start_push_pubsub = std::time::Instant::now();
+            let sequence_num = state
+                .push(id, file_id, operations.to_owned(), room_sequence_num)
+                .await?;
+            tracing::trace!("Pushed to pubsub in {:?}", start_push_pubsub.elapsed());
+
+            // broadcast the transaction to all users in the room (except the initiator)
+            let response = MessageResponse::BinaryTransaction {
+                id,
+                file_id,
+                sequence_num,
+                operations,
+            };
+            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
+
+            // send an ack to the initiator
+            let response = MessageResponse::TransactionAck {
+                id,
+                file_id,
+                sequence_num,
+            };
+
+            Ok(Some(response))
         }
 
         // User sends transactions
@@ -261,6 +319,56 @@ pub(crate) async fn handle_message(
             Ok(Some(response))
         }
 
+        // User sends binary transactions
+        MessageRequest::GetBinaryTransactions {
+            file_id,
+            session_id,
+            min_sequence_num,
+        } => {
+            validate_user_can_edit_or_view_file(Arc::clone(&state), file_id, session_id).await?;
+
+            // update the heartbeat
+            state.update_user_heartbeat(file_id, &session_id).await?;
+
+            let sequence_num = state.get_sequence_num(&file_id).await?;
+
+            // calculate the expected number of transactions to get from redis
+            // add 1 to include the min_sequence_num (inclusive range)
+            let expected_num_transactions = sequence_num
+                .checked_sub(min_sequence_num)
+                .unwrap_or_default()
+                + 1;
+
+            tracing::trace!("min_sequence_num: {}", min_sequence_num);
+            tracing::trace!("sequence_num: {}", sequence_num);
+            tracing::trace!("expected_num_transactions: {}", expected_num_transactions);
+
+            let transactions = state
+                .get_messages_from_pubsub(&file_id, min_sequence_num)
+                .await?
+                .into_iter()
+                .map(|transaction| transaction.into())
+                .collect::<Vec<BinaryTransaction>>();
+
+            tracing::trace!("got: {}", transactions.len());
+
+            // we don't have the expected number of transactions
+            // send an error to the client so they can reload
+            if transactions.len() < expected_num_transactions as usize {
+                return Ok(Some(MessageResponse::Error {
+                    error: MpError::MissingTransactions(
+                        expected_num_transactions.to_string(),
+                        transactions.len().to_string(),
+                    ),
+                    error_level: ErrorLevel::Error,
+                }));
+            }
+
+            let response = MessageResponse::BinaryTransactions { transactions };
+
+            Ok(Some(response))
+        }
+
         MessageRequest::UserUpdate {
             session_id,
             file_id,
@@ -307,13 +415,15 @@ pub(crate) mod tests {
     use quadratic_core::controller::transaction::Transaction as CoreTransaction;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
+    use tokio::sync::Mutex;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
 
     use super::*;
-    use crate::state::settings::MinVersion;
+    use crate::message::response::MinVersion;
+    use crate::state::settings::version;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{integration_test_receive, new_user, setup};
+    use crate::test_util::{integration_test_receive, new_user, setup, setup_existing_room};
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
@@ -337,7 +447,7 @@ pub(crate) mod tests {
         assert_eq!(handled, response);
 
         if let Some(broadcast_response) = broadcast_response {
-            let received = integration_test_receive(&socket, 2).await.unwrap();
+            let received = integration_test_receive(&socket, 4).await.unwrap();
             assert_eq!(received, broadcast_response);
         }
     }
@@ -403,7 +513,9 @@ pub(crate) mod tests {
             follow: Some(Uuid::new_v4().to_string()),
         };
 
-        let response = MessageResponse::EnterRoom {
+        let response = MessageResponse::CurrentTransaction { sequence_num: 0 };
+
+        let broadcast_response = MessageResponse::EnterRoom {
             file_id,
             sequence_num: 0,
         };
@@ -417,8 +529,8 @@ pub(crate) mod tests {
             file_id,
             user_1,
             request,
-            None,
             Some(response),
+            Some(broadcast_response),
         )
         .await;
 
@@ -438,7 +550,12 @@ pub(crate) mod tests {
 
         let response = MessageResponse::UsersInRoom {
             users: vec![user_2.clone()],
-            min_version: MinVersion::new().unwrap(),
+            version: version(),
+            // TODO: to be deleted after next version
+            min_version: MinVersion {
+                required_version: 5,
+                recommended_version: 5,
+            },
         };
 
         let users_in_room = state.get_room(&file_id).await.unwrap().users;
@@ -468,48 +585,84 @@ pub(crate) mod tests {
             sheet_id: SheetId::new(),
             color: Some("red".to_string()),
         }];
-        let compressed_ops = CoreTransaction::serialize_and_compress(&operations).unwrap();
-        let encoded_ops = STANDARD.encode(&compressed_ops);
+
+        // old transaction version
+        let compressed_ops_1 =
+            CoreTransaction::serialize_and_compress_version(&operations, "1.0").unwrap();
+        let encoded_ops_1 = STANDARD.encode(&compressed_ops_1);
 
         let request = MessageRequest::Transaction {
             id,
             file_id,
             session_id,
-            operations: encoded_ops.clone(),
+            operations: encoded_ops_1.clone(),
         };
-
-        let response = MessageResponse::Transaction {
+        let response = MessageResponse::TransactionAck {
             id,
             file_id,
-            operations: encoded_ops.clone(),
             sequence_num: 1,
         };
 
+        // send a Transaction and expect a TransactionAck
         test_handle(
             socket.clone(),
             state.clone(),
             file_id,
             user_1.clone(),
             request,
-            None,
             Some(response.clone()),
+            None,
+        )
+        .await;
+
+        // new transaction version
+        let compressed_ops_2 = CoreTransaction::serialize_and_compress(&operations).unwrap();
+
+        let request = MessageRequest::BinaryTransaction {
+            id,
+            file_id,
+            session_id,
+            operations: compressed_ops_2.clone(),
+        };
+
+        let response = MessageResponse::TransactionAck {
+            id,
+            file_id,
+            sequence_num: 2,
+        };
+
+        // send a Transaction and expect a TransactionAck
+        test_handle(
+            socket.clone(),
+            state.clone(),
+            file_id,
+            user_1.clone(),
+            request,
+            Some(response.clone()),
+            None,
         )
         .await;
 
         // now test get_transactions
-        let request = MessageRequest::GetTransactions {
+        let request = MessageRequest::GetBinaryTransactions {
             file_id,
             session_id,
             min_sequence_num: 1,
         };
-        let transaction = Transaction {
+        let transaction_1 = BinaryTransaction {
             id,
             file_id,
-            operations: encoded_ops,
+            operations: compressed_ops_1.clone(),
             sequence_num: 1,
         };
-        let response = MessageResponse::Transactions {
-            transactions: vec![transaction],
+        let transaction_2 = BinaryTransaction {
+            id,
+            file_id,
+            operations: compressed_ops_2.clone(),
+            sequence_num: 2,
+        };
+        let response = MessageResponse::BinaryTransactions {
+            transactions: vec![transaction_1, transaction_2],
         };
 
         test_handle(

@@ -1,2 +1,2 @@
 src/quadratic-core
-src/quadratic-rust-client
+src/app/web-workers/multiplayerWebWorker/proto

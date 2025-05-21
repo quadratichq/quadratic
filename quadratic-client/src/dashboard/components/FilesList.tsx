@@ -1,11 +1,11 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
-import { Empty } from '@/dashboard/components/Empty';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { FilesListItemExampleFile, FilesListItems, FilesListItemUserFile } from '@/dashboard/components/FilesListItem';
 import { FilesListViewControls } from '@/dashboard/components/FilesListViewControls';
 import { Layout, Order, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import type { Action as FilesAction } from '@/routes/api.files.$uuid';
+import { EmptyState } from '@/shared/components/EmptyState';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
@@ -13,7 +13,7 @@ import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAnd
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { useFetchers, useLocation } from 'react-router-dom';
+import { useFetchers, useLocation } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
 export type FilesListUserFile = {
@@ -155,7 +155,6 @@ export function FilesList({
             lazyLoad={i > 12}
             filterValue={filterValue}
             setFilterValue={setFilterValue}
-            activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}
           />
@@ -242,6 +241,12 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListExampl
 
 function EmptyFilterState() {
   return (
-    <Empty title="No matches" description={<>No files found with that specified name.</>} Icon={MagnifyingGlassIcon} />
+    <div className="flex min-h-80 items-center justify-center">
+      <EmptyState
+        title="No matches"
+        description={'No files found with that specified name.'}
+        Icon={MagnifyingGlassIcon}
+      />
+    </div>
   );
 }

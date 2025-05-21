@@ -13,7 +13,7 @@ impl GridController {
             return Result::Err("Sheet not found".into());
         };
         sheet.send_validation_warnings_rect(rect);
-        let output = sheet.get_render_cells(rect);
+        let output = sheet.get_render_cells(rect, self.a1_context());
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
 

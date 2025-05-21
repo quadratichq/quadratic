@@ -1,3 +1,10 @@
+//! Checks for pointer hovering or pressed on the column and row headings.
+//! 1. Resizing columns and rows
+//! 2. Moving columns and rows (also triggered artificially from
+//!    PointerCellMoving when clicking on the side of column/row selection)
+//! 3. Selecting columns and rows
+//! 4. Triggering context menu
+
 import { hasPermissionToEditFile } from '@/app/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
@@ -14,13 +21,19 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import type { InteractivePointerEvent, Point } from 'pixi.js';
+import type { FederatedPointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
+
+export interface ColumnRowResize {
+  index: number;
+  size: number;
+}
 
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
 }
+
 export class PointerHeading {
   private downTimeout: number | undefined;
   cursor?: string;
@@ -36,6 +49,16 @@ export class PointerHeading {
     width?: number;
     height?: number;
     lastSize: number;
+    oldSize: number;
+  };
+
+  movingColRows?: {
+    isColumn: boolean;
+    indicies: number[];
+    start: number;
+    place: number;
+    offset: number;
+    lastMouse: Point;
   };
 
   // tracks changes to viewport caused by resizing negative column/row headings
@@ -46,20 +69,32 @@ export class PointerHeading {
   };
 
   handleEscape(): boolean {
-    if (this.active) {
-      this.active = false;
+    if (this.movingColRows) {
+      this.movingColRows = undefined;
+      pixiApp.cellMoving.dirty = true;
+      pixiApp.viewport.disableMouseEdges();
+    } else if (this.active) {
       sheets.sheet.offsets.cancelResize();
+      if (this.resizing) {
+        const delta = this.resizing.lastSize - this.resizing.oldSize;
+        renderWebWorker.updateSheetOffsetsTransient(sheets.current, this.resizing.column, this.resizing.row, delta);
+      }
       pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
-      pixiApp.setViewportDirty();
-      return true;
+      this.active = false;
+    } else {
+      return false;
     }
-    return false;
+    pixiApp.cursor.dirty = true;
+    pixiApp.setViewportDirty();
+    return true;
   }
 
-  pointerDown(world: Point, event: InteractivePointerEvent): boolean {
+  pointerDown(world: Point, e: FederatedPointerEvent): boolean {
     clearTimeout(this.fitToColumnTimeout);
+
+    const isRightClick = e.button === 2 || (isMac && e.button === 0 && e.ctrlKey);
+
     const { headings, viewport } = pixiApp;
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
@@ -73,11 +108,11 @@ export class PointerHeading {
     if (headingResize) {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== null) {
-        event.preventDefault();
+        e.preventDefault();
         this.autoResizeColumn(headingResize.column);
         return true;
       } else if (this.clicked && headingResize.row !== null) {
-        event.preventDefault();
+        e.preventDefault();
         this.autoResizeRow(headingResize.row);
         return true;
       }
@@ -88,6 +123,7 @@ export class PointerHeading {
       };
       this.resizing = {
         lastSize: this.viewportChanges.originalSize,
+        oldSize: this.viewportChanges.originalSize,
         start: headingResize.start,
         row: headingResize.row,
         column: headingResize.column,
@@ -95,13 +131,37 @@ export class PointerHeading {
         height: headingResize.height,
       };
       this.active = true;
+    } else if (
+      !isRightClick &&
+      !cursor.isMultiRange() &&
+      !cursor.isAllSelected() &&
+      (intersects.column == null || cursor.isEntireColumnSelected(intersects.column)) &&
+      (intersects.row == null || cursor.isEntireRowSelected(intersects.row))
+    ) {
+      const bounds = cursor.getInfiniteRefRangeBounds();
+      const indicies = [];
+      const isColumn = intersects.column !== null;
+      const start = Number(isColumn ? bounds[0].start.col.coord : bounds[0].start.row.coord);
+      const end = Number(isColumn ? bounds[0].end.col.coord : bounds[0].end.row.coord);
+      for (let i = start; i <= end; i++) indicies.push(i);
+      this.movingColRows = {
+        isColumn,
+        indicies,
+        start,
+        place: isColumn ? intersects.column! : intersects.row!,
+        offset: (isColumn ? intersects.column! : intersects.row!) - start,
+        lastMouse: e.global.clone(),
+      };
+      pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
+      pixiApp.cellMoving.dirty = true;
+      this.cursor = 'grabbing';
     } else {
       if (intersects.corner) {
         if (this.downTimeout) {
           this.downTimeout = undefined;
           zoomToFit();
         } else {
-          cursor.selectAll(event.shiftKey);
+          cursor.selectAll(e.shiftKey);
           this.downTimeout = window.setTimeout(() => {
             if (this.downTimeout) {
               this.downTimeout = undefined;
@@ -114,16 +174,14 @@ export class PointerHeading {
       // then it add or removes the clicked column or row. If shift is pressed,
       // then it selects all columns or rows between the last clicked column or
       // row and the current one.
-      const isRightClick =
-        (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
       const bounds = pixiApp.viewport.getVisibleBounds();
       const headingSize = pixiApp.headings.headingSize;
       if (intersects.column !== null) {
         const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
-        cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
+        cursor.selectColumn(intersects.column, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, top);
       } else if (intersects.row !== null) {
         const left = sheets.sheet.getColumnFromScreen(bounds.left);
-        cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
+        cursor.selectRow(intersects.row, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, left);
       }
       if (isRightClick) {
         events.emit('contextMenu', {
@@ -138,11 +196,35 @@ export class PointerHeading {
     return true;
   }
 
-  pointerMove(world: Point): boolean {
+  private pointerMoveColRows(world: Point, e?: FederatedPointerEvent): boolean {
+    if (!this.movingColRows) {
+      throw new Error('Expected movingColRows to be defined in pointerMoveColRows');
+    }
+    const { isColumn, place } = this.movingColRows;
+    const current = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+
+    // nothing to do if the pointer is still in the same column
+    if ((isColumn ? current.column : current.row) === place) return true;
+
+    // if the pointer is in a different column, we need to update the movingColRows
+    this.movingColRows.place = isColumn ? current.column : current.row;
+    pixiApp.cellMoving.dirty = true;
+    if (e) {
+      this.movingColRows.lastMouse = e.global.clone();
+    }
+    return true;
+  }
+
+  pointerMove(world: Point, e: FederatedPointerEvent): boolean {
     if (this.downTimeout) {
       window.clearTimeout(this.downTimeout);
       this.downTimeout = undefined;
     }
+
+    if (this.movingColRows) {
+      return this.pointerMoveColRows(world, e);
+    }
+
     const { headings, gridLines, cursor } = pixiApp;
     this.cursor = undefined;
     this.clicked = false;
@@ -153,7 +235,22 @@ export class PointerHeading {
       if (hasPermission && headingResize) {
         this.cursor = headingResize.column !== null ? 'col-resize' : 'row-resize';
       } else {
-        this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
+        const result = headings.intersectsHeadings(world);
+        if (result) {
+          const cursor = sheets.sheet.cursor;
+          if (
+            !cursor.isMultiRange() &&
+            !result.corner &&
+            (result.column == null || cursor.isEntireColumnSelected(result.column)) &&
+            (result.row == null || cursor.isEntireRowSelected(result.row))
+          ) {
+            this.cursor = 'grab';
+          } else {
+            this.cursor = 'pointer';
+          }
+        } else {
+          this.cursor = undefined;
+        }
       }
     }
 
@@ -232,7 +329,38 @@ export class PointerHeading {
     return true;
   }
 
+  private pointerUpMovingColRows(): boolean {
+    if (this.movingColRows) {
+      if (this.movingColRows.place !== this.movingColRows.start && this.movingColRows.indicies.length >= 1) {
+        if (this.movingColRows.isColumn) {
+          quadraticCore.moveColumns(
+            sheets.current,
+            this.movingColRows.indicies[0],
+            this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
+            this.movingColRows.place - this.movingColRows.offset,
+            sheets.getCursorPosition()
+          );
+        } else {
+          quadraticCore.moveRows(
+            sheets.current,
+            this.movingColRows.indicies[0],
+            this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
+            this.movingColRows.place - this.movingColRows.offset,
+            sheets.getCursorPosition()
+          );
+        }
+      }
+      this.movingColRows = undefined;
+      pixiApp.cellMoving.dirty = true;
+      pixiApp.viewport.disableMouseEdges();
+    }
+    return true;
+  }
+
   pointerUp(): boolean {
+    if (this.movingColRows) {
+      return this.pointerUpMovingColRows();
+    }
     this.clicked = true;
     this.fitToColumnTimeout = window.setTimeout(() => {
       this.clicked = false;
@@ -240,16 +368,48 @@ export class PointerHeading {
     if (this.active) {
       this.active = false;
       if (this.resizing) {
-        const transientResize = sheets.sheet.offsets.getResizeToApply();
-        if (transientResize) {
-          try {
-            const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
-            const delta = old_size - new_size;
-            if (delta !== 0) {
-              quadraticCore.commitTransientResize(sheets.current, transientResize);
+        // if multiple columns or rows are selected, we need to resize all of them
+        const columns = sheets.sheet.cursor.getSelectedColumns();
+        if (this.resizing.column !== null) {
+          if (!columns.includes(this.resizing.column)) {
+            columns.push(this.resizing.column);
+          }
+        }
+        const rows = sheets.sheet.cursor.getSelectedRows();
+        if (this.resizing.row !== null) {
+          if (!rows.includes(this.resizing.row)) {
+            rows.push(this.resizing.row);
+          }
+        }
+        if (sheets.sheet.cursor.isAllSelected()) {
+          if (this.resizing.column && this.resizing.width !== undefined) {
+            quadraticCore.resizeAllColumns(sheets.current, this.resizing.width);
+          } else if (this.resizing.row && this.resizing.height !== undefined) {
+            quadraticCore.resizeAllRows(sheets.current, this.resizing.height);
+          }
+        } else if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
+          const size = this.resizing.width;
+          const columnSizes = columns.map((column) => ({ index: column, size }));
+          quadraticCore.resizeColumns(sheets.current, columnSizes, sheets.getCursorPosition());
+        } else if (this.resizing.row && rows.length !== 1 && this.resizing.height !== undefined) {
+          const size = this.resizing.height;
+          const rowSizes = rows.map((row) => ({ index: row, size }));
+          quadraticCore.resizeRows(sheets.current, rowSizes, sheets.getCursorPosition());
+        }
+
+        // otherwise work with the transient resize (if available)
+        else {
+          const transientResize = sheets.sheet.offsets.getResizeToApply();
+          if (transientResize) {
+            try {
+              const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
+              const delta = old_size - new_size;
+              if (delta !== 0) {
+                quadraticCore.commitTransientResize(sheets.current, transientResize);
+              }
+            } catch (error) {
+              console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
             }
-          } catch (error) {
-            console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
           }
         }
         this.resizing = undefined;
@@ -263,28 +423,57 @@ export class PointerHeading {
   }
 
   async autoResizeColumn(column: number) {
-    const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
-    let size: number;
-    if (maxWidth === 0) {
-      size = CELL_WIDTH;
-    } else {
-      const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-      size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+    const columns = sheets.sheet.cursor.getSelectedColumns();
+    if (!columns.includes(column)) {
+      columns.push(column);
     }
-    const sheetId = sheets.current;
-    const originalSize = sheets.sheet.getCellOffsets(column, 0);
-    if (originalSize.width !== size) {
-      quadraticCore.commitSingleResize(sheetId, column, undefined, size);
+    const resizing: ColumnRowResize[] = [];
+    for (const column of columns) {
+      const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+      let size: number;
+      if (maxWidth === 0) {
+        size = CELL_WIDTH;
+      } else {
+        const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+        size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+      }
+      const originalSize = sheets.sheet.getCellOffsets(column, 0);
+      if (originalSize.width !== size) {
+        resizing.push({ index: column, size });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
     }
   }
 
   async autoResizeRow(row: number) {
-    const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-    const size = Math.max(maxHeight, CELL_HEIGHT);
-    const sheetId = sheets.current;
-    const originalSize = sheets.sheet.getCellOffsets(0, row);
-    if (originalSize.height !== size) {
-      quadraticCore.commitSingleResize(sheetId, undefined, row, size);
+    const rows = sheets.sheet.cursor.getSelectedRows();
+    if (!rows.includes(row)) {
+      rows.push(row);
     }
+    const resizing: ColumnRowResize[] = [];
+    for (const row of rows) {
+      const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+      const size = Math.max(maxHeight, CELL_HEIGHT);
+      const originalSize = sheets.sheet.getCellOffsets(0, row);
+      if (originalSize.height !== size) {
+        resizing.push({ index: row, size });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
+    }
+  }
+
+  // Handles mouse edges if we're moving columns or rows. Returns true if moving
+  // col/rows is active.
+  handleMouseEdges(): boolean {
+    if (!this.movingColRows) return false;
+    const world = pixiApp.viewport.toWorld(this.movingColRows.lastMouse.x, this.movingColRows.lastMouse.y);
+    this.pointerMoveColRows(world);
+    return true;
   }
 }

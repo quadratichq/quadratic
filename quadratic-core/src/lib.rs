@@ -2,6 +2,11 @@
 #![allow(clippy::diverging_sub_expression, clippy::match_like_matches_macro)]
 #![allow(non_local_definitions)] // TODO: blocked on https://github.com/proptest-rs/proptest/issues/447
 
+#[cfg(feature = "function-timer")]
+use std::sync::{LazyLock, Mutex};
+#[cfg(feature = "function-timer")]
+pub static FUNCTIONS: LazyLock<Mutex<Vec<(String, i64)>>> = LazyLock::new(|| Mutex::new(vec![]));
+
 #[macro_use]
 pub mod util;
 #[macro_use]
@@ -10,6 +15,7 @@ pub mod a1;
 mod clear_option;
 pub mod color;
 pub mod compression;
+pub mod constants;
 pub mod controller;
 mod copy_formats;
 pub mod date_time;
@@ -26,6 +32,7 @@ pub mod sheet_offsets;
 mod sheet_rect;
 pub mod small_timestamp;
 mod span;
+#[macro_use]
 pub mod test_util;
 mod values;
 pub mod viewport;
@@ -38,12 +45,14 @@ pub use clear_option::*;
 pub use copy_formats::CopyFormats;
 pub use error_run::*;
 pub use ext::*;
+pub use grid::RefAdjust;
 pub use pos::*;
 pub use rect::*;
 pub use rle::RunLengthEncoding;
 pub use selection::OldSelection;
 pub use sheet_rect::*;
 pub use span::*;
+pub use test_util::*;
 pub use values::*;
 
 pub const QUADRANT_SIZE: u64 = 16;

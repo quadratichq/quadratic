@@ -1,3 +1,4 @@
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { Matrix, Renderer } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
@@ -49,7 +50,12 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   transform.scale(scale, scale);
   renderer.render(pixiApp.viewportContents, { transform });
   pixiApp.cleanUpAfterCopying();
+
+  // force a pixiApp rerender to clean up interactions (I think)
+  pixiApp.setViewportDirty();
+
+  focusGrid();
   return new Promise((resolve) => {
-    renderer!.view.toBlob((blob) => resolve(blob));
+    renderer!.view.toBlob?.((blob) => resolve(blob));
   });
 };

@@ -49,8 +49,8 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
-    sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
+    sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
     sendA1Context: (tableMap: string) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
@@ -63,16 +63,9 @@ declare var self: WorkerGlobalScope &
     sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
-    sendTransactionStart: (
-      transactionId: string,
-      transactionType: TransactionName,
-      sheetId?: string,
-      x?: number,
-      y?: number,
-      w?: number,
-      h?: number
-    ) => void;
+    sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
+    sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
     sendUpdateCodeCell: (
       sheetId: string,
       x: number,
@@ -115,7 +108,7 @@ class CoreClient {
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
-    self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
+    self.sendSheetInfoUpdateClient = coreClient.sendSheetInfoUpdate;
     self.sendA1Context = coreClient.sendA1Context;
     self.sendSetCursor = coreClient.sendSetCursor;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
@@ -126,8 +119,9 @@ class CoreClient {
     self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
-    self.sendTransactionStart = coreClient.sendTransactionStart;
+    self.sendTransactionStartClient = coreClient.sendTransactionStart;
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
+    self.sendTransactionEndClient = coreClient.sendTransactionEnd;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
@@ -153,12 +147,10 @@ class CoreClient {
       case 'clientCoreLoad':
         await offline.init(e.data.fileId);
 
-        const addToken = this.env.VITE_STORAGE_TYPE === 'file-system';
-
         this.send({
           type: 'coreClientLoad',
           id: e.data.id,
-          ...(await core.loadFile(e.data, e.ports[0], addToken)),
+          ...(await core.loadFile(e.data, e.ports[0])),
         });
         return;
 
@@ -294,7 +286,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCodeCellValue':
-        await core.setCodeCellValue(
+        const transactionId = await core.setCodeCellValue(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -302,6 +294,11 @@ class CoreClient {
           e.data.codeString,
           e.data.cursor
         );
+        this.send({
+          type: 'coreClientSetCodeCellValue',
+          id: e.data.id,
+          transactionId,
+        });
         return;
 
       case 'clientCoreAddSheet':
@@ -664,7 +661,6 @@ class CoreClient {
           e.data.name,
           e.data.alternatingColors,
           e.data.columns,
-          e.data.showUI,
           e.data.showName,
           e.data.showColumns,
           e.data.cursor
@@ -713,6 +709,30 @@ class CoreClient {
           id: e.data.id,
           rect: core.finiteRectFromSelection(e.data.selection),
         });
+        return;
+
+      case 'clientCoreMoveColumns':
+        core.moveColumns(e.data.sheetId, e.data.colStart, e.data.colEnd, e.data.to, e.data.cursor);
+        return;
+
+      case 'clientCoreMoveRows':
+        core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeColumns':
+        core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeRows':
+        core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeAllColumns':
+        core.resizeAllColumns(e.data.sheetId, e.data.size, e.data.cursor);
+        return;
+
+      case 'clientCoreResizeAllRows':
+        core.resizeAllRows(e.data.sheetId, e.data.size, e.data.cursor);
         return;
 
       default:
@@ -806,16 +826,20 @@ class CoreClient {
     this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
   };
 
-  sendTransactionStart = (transactionId: string, transactionType: TransactionName) => {
+  sendTransactionStart = (transactionId: string, transactionName: TransactionName) => {
     this.send({
       type: 'coreClientTransactionStart',
       transactionId,
-      transactionType,
+      transactionName,
     });
   };
 
   sendTransactionProgress = (transactionId: string, remainingOperations: number) => {
     this.send({ type: 'coreClientTransactionProgress', transactionId, remainingOperations });
+  };
+
+  sendTransactionEnd = (transactionId: string, transactionName: TransactionName) => {
+    this.send({ type: 'coreClientTransactionEnd', transactionId, transactionName });
   };
 
   sendUpdateCodeCell = (
@@ -894,6 +918,10 @@ class CoreClient {
 
   sendA1Context = (context: string) => {
     this.send({ type: 'coreClientA1Context', context });
+  };
+
+  sendCoreError = (from: string, error: Error | unknown) => {
+    this.send({ type: 'coreClientCoreError', from, error });
   };
 }
 

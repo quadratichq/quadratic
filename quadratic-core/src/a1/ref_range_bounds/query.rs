@@ -185,6 +185,12 @@ impl RefRangeBounds {
         let y = self.start.row();
         Pos { x, y }
     }
+
+    /// Returns true if the range overlaps with the given rectangle.
+    pub fn contains_rect(&self, other: Rect) -> bool {
+        let rect = self.to_rect_unbounded();
+        rect.contains_rect(&other)
+    }
 }
 
 #[cfg(test)]
@@ -433,12 +439,16 @@ mod tests {
             RefRangeBounds::test_a1("A:B").selected_columns_finite(),
             vec![1, 2]
         );
-        assert!(RefRangeBounds::test_a1("A1:")
-            .selected_columns_finite()
-            .is_empty());
-        assert!(RefRangeBounds::test_a1("*")
-            .selected_columns_finite()
-            .is_empty());
+        assert!(
+            RefRangeBounds::test_a1("A1:")
+                .selected_columns_finite()
+                .is_empty()
+        );
+        assert!(
+            RefRangeBounds::test_a1("*")
+                .selected_columns_finite()
+                .is_empty()
+        );
         assert_eq!(
             RefRangeBounds::test_a1(":B").selected_columns_finite(),
             vec![1, 2]
@@ -456,12 +466,16 @@ mod tests {
             RefRangeBounds::test_a1("1:3").selected_rows_finite(),
             vec![1, 2, 3]
         );
-        assert!(RefRangeBounds::test_a1("A1:")
-            .selected_rows_finite()
-            .is_empty());
-        assert!(RefRangeBounds::test_a1("*")
-            .selected_rows_finite()
-            .is_empty());
+        assert!(
+            RefRangeBounds::test_a1("A1:")
+                .selected_rows_finite()
+                .is_empty()
+        );
+        assert!(
+            RefRangeBounds::test_a1("*")
+                .selected_rows_finite()
+                .is_empty()
+        );
         assert_eq!(
             RefRangeBounds::test_a1(":3").selected_rows_finite(),
             vec![1, 2, 3]
@@ -548,5 +562,41 @@ mod tests {
             RefRangeBounds::test_a1("A1:B2").cursor_pos_from_last_range(),
             pos![A1]
         );
+    }
+
+    #[test]
+    fn test_contains_rect() {
+        // Single cell range
+        assert!(RefRangeBounds::test_a1("A1").contains_rect(Rect::new(1, 1, 1, 1)));
+        assert!(!RefRangeBounds::test_a1("A1").contains_rect(Rect::new(2, 1, 2, 1)));
+        assert!(!RefRangeBounds::test_a1("A1").contains_rect(Rect::new(1, 2, 1, 2)));
+
+        // Rectangle range
+        assert!(RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 1, 2, 2)));
+        assert!(RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 1, 1, 1)));
+        assert!(RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(2, 2, 2, 2)));
+        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(3, 1, 3, 1)));
+        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 3, 1, 3)));
+
+        // Column range
+        assert!(RefRangeBounds::test_a1("A").contains_rect(Rect::new(1, 1, 1, 5)));
+        assert!(RefRangeBounds::test_a1("A").contains_rect(Rect::new(1, 10, 1, 15)));
+        assert!(!RefRangeBounds::test_a1("A").contains_rect(Rect::new(2, 1, 2, 5)));
+
+        // Row range
+        assert!(RefRangeBounds::test_a1("1").contains_rect(Rect::new(1, 1, 5, 1)));
+        assert!(RefRangeBounds::test_a1("1").contains_rect(Rect::new(10, 1, 15, 1)));
+        assert!(!RefRangeBounds::test_a1("1").contains_rect(Rect::new(1, 2, 5, 2)));
+
+        // Unbounded ranges
+        assert!(RefRangeBounds::test_a1("*").contains_rect(Rect::new(1, 1, 5, 5)));
+        assert!(RefRangeBounds::test_a1("*").contains_rect(Rect::new(10, 10, 15, 15)));
+        assert!(RefRangeBounds::test_a1("A1:").contains_rect(Rect::new(1, 1, 5, 5)));
+        assert!(RefRangeBounds::test_a1("A1:").contains_rect(Rect::new(10, 10, 15, 15)));
+
+        // Partial overlap cases
+        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(2, 2, 3, 3)));
+        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 2, 2, 3)));
+        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(3, 3, 4, 4)));
     }
 }

@@ -5,16 +5,16 @@ use itertools::Itertools;
 
 pub(crate) use super::*;
 use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
+use crate::controller::GridController;
 pub(crate) use crate::grid::Grid;
-use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
-pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
+pub(crate) use crate::{CodeResult, RunError, RunErrorMsg, Spanned, array};
 use crate::{CoerceInto, Pos, SheetPos};
 
 #[track_caller]
-pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
+pub(crate) fn try_check_syntax(grid_controller: &GridController, s: &str) -> CodeResult<()> {
     println!("Checking syntax of formula {s:?}");
-    let mut ctx = Ctx::new_for_syntax_check(grid);
+    let mut ctx = Ctx::new_for_syntax_check(grid_controller);
     simple_parse_formula(s)?
         .eval(&mut ctx)
         .into_non_error_value()
@@ -22,52 +22,64 @@ pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
 }
 
 #[track_caller]
-pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
+pub(crate) fn eval_at(grid_controller: &GridController, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
-    let mut ctx = Ctx::new(grid, pos);
-    match parse_formula(s, &grid.a1_context(), grid.origin_in_first_sheet()) {
+    let mut ctx = Ctx::new(grid_controller, pos);
+    match parse_formula(
+        s,
+        grid_controller.a1_context(),
+        grid_controller.grid().origin_in_first_sheet(),
+    ) {
         Ok(formula) => dbg!(formula).eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
 }
 #[track_caller]
-pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
-    eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
+pub(crate) fn eval(grid_controller: &GridController, s: &str) -> Value {
+    eval_at(
+        grid_controller,
+        Pos::ORIGIN.to_sheet_pos(grid_controller.grid().sheets()[0].id),
+        s,
+    )
 }
 #[track_caller]
-pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> String {
-    eval_at(grid, sheet_pos, s).to_string()
+pub(crate) fn eval_to_string_at(
+    grid_controller: &GridController,
+    sheet_pos: SheetPos,
+    s: &str,
+) -> String {
+    eval_at(grid_controller, sheet_pos, s).to_string()
 }
 #[track_caller]
-pub(crate) fn eval_to_string(grid: &Grid, s: &str) -> String {
-    eval(grid, s).to_string()
+pub(crate) fn eval_to_string(grid_controller: &GridController, s: &str) -> String {
+    eval(grid_controller, s).to_string()
 }
 
 #[track_caller]
-pub(crate) fn eval_to_err(grid: &Grid, s: &str) -> RunError {
-    eval(grid, s).unwrap_err()
+pub(crate) fn eval_to_err(grid_controller: &GridController, s: &str) -> RunError {
+    eval(grid_controller, s).unwrap_err()
 }
 
 #[track_caller]
-pub(crate) fn expect_val(value: impl Into<Value>, ctx: &Grid, s: &str) {
+pub(crate) fn expect_val(value: impl Into<Value>, ctx: &GridController, s: &str) {
     assert_eq!(value.into(), eval(ctx, s));
 }
 #[track_caller]
-pub(crate) fn expect_err(error_msg: &RunErrorMsg, ctx: &Grid, s: &str) {
+pub(crate) fn expect_err(error_msg: &RunErrorMsg, ctx: &GridController, s: &str) {
     assert_eq!(*error_msg, eval_to_err(ctx, s).msg);
 }
 
 #[track_caller]
-pub(crate) fn assert_check_syntax_succeeds(grid: &Grid, s: &str) {
+pub(crate) fn assert_check_syntax_succeeds(grid: &GridController, s: &str) {
     try_check_syntax(grid, s).expect("error with formula syntax");
 }
 #[track_caller]
-pub(crate) fn check_syntax_to_err(grid: &Grid, s: &str) -> RunError {
+pub(crate) fn check_syntax_to_err(grid: &GridController, s: &str) -> RunError {
     try_check_syntax(grid, s).expect_err("expected error")
 }
 
 #[track_caller]
-pub(crate) fn assert_f64_eval(grid: &Grid, expected: f64, s: &str) {
+pub(crate) fn assert_f64_eval(grid: &GridController, expected: f64, s: &str) {
     let output = eval(grid, s).into_cell_value().unwrap();
     let CellValue::Number(n) = output else {
         panic!("expected number; got {output}");
@@ -97,8 +109,9 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 
 #[test]
 fn test_formula_cell_ref() {
-    let mut g = Grid::new();
-    let sheet = &mut g.sheets_mut()[0];
+    let mut g = GridController::new();
+    let sheet_id = g.sheet_ids()[0];
+    let sheet = g.sheet_mut(sheet_id);
     sheet.set_cell_value(pos![B1], 1);
     sheet.set_cell_value(pos![B2], 10);
     sheet.set_cell_value(pos![B3], 100);
@@ -115,10 +128,10 @@ fn test_formula_cell_ref() {
 
 #[test]
 fn test_formula_circular_array_ref() {
-    let g = Grid::new();
-    let sheet_id = g.sheets()[0].id;
+    let g = GridController::new();
+    let sheet_id = g.sheet_ids()[0];
     let pos = pos![B3].to_sheet_pos(sheet_id);
-    let form = parse_formula("$B$1:$C$4", &g.a1_context(), pos).unwrap();
+    let form = parse_formula("$B$1:$C$4", g.a1_context(), pos).unwrap();
     let mut ctx = Ctx::new(&g, pos);
     assert_eq!(
         RunErrorMsg::CircularReference,
@@ -136,7 +149,7 @@ fn test_formula_range_operator() {
     let all_ops = ["..", " ..", " .. ", ".. "];
     let all_b = ["5", "5.0", "5."];
     for (a, op, b) in itertools::iproduct!(all_a, all_ops, all_b) {
-        let actual = eval_to_string(&Grid::new(), &format!("{a}{op}{b}"));
+        let actual = eval_to_string(&GridController::new(), &format!("{a}{op}{b}"));
         assert_eq!(expected, actual);
     }
 
@@ -148,7 +161,7 @@ fn test_formula_range_operator() {
 
 #[test]
 fn test_formula_blank_array_parsing() {
-    let g = Grid::new();
+    let g = GridController::new();
     const B: CellValue = CellValue::Blank;
     assert_eq!(Value::from(array![B]), eval(&g, "{}"));
     assert_eq!(Value::from(array![B; B]), eval(&g, "{;}"));
@@ -162,8 +175,9 @@ fn test_formula_blank_array_parsing() {
 
 #[test]
 fn test_formula_array_op() {
-    let mut g = Grid::new();
-    let sheet = &mut g.sheets_mut()[0];
+    let mut g = GridController::new();
+    let sheet_id = g.sheet_ids()[0];
+    let sheet = g.sheet_mut(sheet_id);
     for x in 1..=4 {
         for y in 1..=4 {
             let _ = sheet.set_cell_value(Pos { x, y }, x * 10 + y);
@@ -214,7 +228,7 @@ fn test_formula_array_op() {
 
 #[test]
 fn test_array_parsing() {
-    let g = Grid::new();
+    let g = GridController::new();
 
     assert_eq!(
         Value::from(array![
@@ -253,7 +267,7 @@ fn test_array_parsing() {
 
 #[test]
 fn test_bool_parsing() {
-    let g = Grid::new();
+    let g = GridController::new();
 
     assert_eq!("1", eval_to_string(&g, "IF(TRUE, 1, 2)"));
     assert_eq!("1", eval_to_string(&g, "IF(true(), 1, 2)"));
@@ -263,7 +277,7 @@ fn test_bool_parsing() {
 
 #[test]
 fn test_leading_equals() {
-    let g = Grid::new();
+    let g = GridController::new();
     assert_eq!("7", eval_to_string(&g, "=3+4"));
     assert_eq!("7", eval_to_string(&g, "= 3+4"));
 }
@@ -271,15 +285,17 @@ fn test_leading_equals() {
 /// Regression test for quadratic#253
 #[test]
 fn test_hyphen_after_cell_ref() {
-    let mut g = Grid::new();
-    let _ = g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
+    let mut g = GridController::new();
+    let sheet_id = g.sheet_ids()[0];
+    let sheet = g.sheet_mut(sheet_id);
+    sheet.set_cell_value(pos![Z1], 30);
     assert_eq!("25", eval_to_string(&g, "Z1 - 5"));
     assert_eq!("25", eval_to_string(&g, "Z1-5"));
 }
 
 #[test]
 fn test_formula_omit_required_argument() {
-    let g = Grid::new();
+    let g = GridController::new();
     assert!(eval_to_string(&g, "ATAN2(,1)").starts_with("1.57"));
     assert_eq!("0", eval_to_string(&g, "ATAN2(1,)"));
     assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "ATAN2(,)").msg,);
@@ -301,55 +317,67 @@ fn test_formula_omit_required_argument() {
 
 #[test]
 fn test_formula_blank_to_string() {
-    let g = Grid::new();
+    let g = GridController::new();
     assert_eq!("", eval_to_string(&g, "IF(1=1,,)"));
 }
 
 #[test]
 fn test_find_cell_references() {
-    let mut g = Grid::new();
-    let sheet1 = g.sheets()[0].id;
-    let apple = SheetId::new();
-    g.add_sheet(Some(Sheet::new(apple, "apple".into(), String::new())));
-    let orange = SheetId::new();
-    g.add_sheet(Some(Sheet::new(orange, "orange".into(), String::new())));
-    let banana = SheetId::new();
-    g.add_sheet(Some(Sheet::new(banana, "banana".into(), String::new())));
-    let plum = SheetId::new();
-    g.add_sheet(Some(Sheet::new(plum, "plum".into(), String::new())));
+    let mut g = GridController::new();
+    let sheet1 = g.sheet_ids()[0];
+
+    g.add_sheet(None);
+    g.add_sheet(None);
+    g.add_sheet(None);
+    g.add_sheet(None);
+    let apple = g.sheet_ids()[1];
+    g.set_sheet_name(apple, "apple".into(), None);
+    let orange = g.sheet_ids()[2];
+    g.set_sheet_name(orange, "orange".into(), None);
+    let banana = g.sheet_ids()[3];
+    g.set_sheet_name(banana, "banana".into(), None);
+    let plum = g.sheet_ids()[4];
+    g.set_sheet_name(plum, "plum".into(), None);
 
     let a = CellRefCoord::new_abs;
     let r = CellRefCoord::new_rel;
-    let new_ref = |sheet_id, x1, y1, x2, y2| {
+    let new_ref = |sheet_id, x1, y1, x2, y2, explicit_sheet_name| {
         Ok(SheetCellRefRange {
             sheet_id,
             cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+            explicit_sheet_name,
         })
     };
 
     // Another test checks that `parse_a1()` is correct.
     let test_cases = [
         // Basic cell reference
-        ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1))),
+        ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1), false)),
         // Range
-        ("A1:A3", new_ref(sheet1, r(1), r(1), r(1), r(3))),
+        ("A1:A3", new_ref(sheet1, r(1), r(1), r(1), r(3), false)),
         // Range with spaces
-        ("A$2 : B2", new_ref(sheet1, r(1), a(2), r(2), r(2))),
+        ("A$2 : B2", new_ref(sheet1, r(1), a(2), r(2), r(2), false)),
         // Unquoted sheet reference
-        ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1))),
+        ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1), true)),
         // Unquoted sheet reference range with spaces
-        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(17), r(9))),
+        (
+            "orange ! A2: $Q9",
+            new_ref(orange, r(1), r(2), a(17), r(9), true),
+        ),
         // Quoted sheet reference range
         (
             "'banana'!$A1:QQ$222",
-            new_ref(banana, a(1), r(1), r(459), a(222)),
+            new_ref(banana, a(1), r(1), r(459), a(222), true),
         ),
         // Quoted sheet reference with spaces
-        ("\"plum\" ! $A1", new_ref(plum, a(1), r(1), a(1), r(1))),
+        (
+            "\"plum\" ! $A1",
+            new_ref(plum, a(1), r(1), a(1), r(1), true),
+        ),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
     let pos = Pos::ORIGIN.to_sheet_pos(sheet1);
-    let cell_references_found = find_cell_references(&formula_string, &g.a1_context(), pos)
+    let cell_references_found = find_cell_references(&formula_string, g.a1_context(), pos)
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();
@@ -362,15 +390,16 @@ fn test_find_cell_references() {
 
 #[test]
 fn test_sheet_references() {
-    let mut g = Grid::new();
+    let mut g = GridController::new();
 
-    let id1 = g.sheets()[0].id;
+    let id1 = g.sheet_ids()[0];
     let name1 = "MySheet".to_string();
-    g.sheets_mut()[0].name.clone_from(&name1);
+    g.set_sheet_name(id1, name1.clone(), None);
 
-    let id2 = g.add_sheet(None);
+    g.add_sheet(None);
+    let id2 = g.sheet_ids()[1];
     let name2 = "My Other Sheet".to_string();
-    g.sheets_mut()[1].name.clone_from(&name2);
+    g.set_sheet_name(id2, name2.clone(), None);
 
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A1], 42);
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A3], 6);
@@ -415,8 +444,14 @@ fn test_table_references() {
             "simple.csv[[#HEADERS]]",
             "{city, region, country, population}",
         ),
-        ("simple.csv[region]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
-        ("simple.csv[[region]]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
+        (
+            "simple.csv[region]",
+            "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}",
+        ),
+        (
+            "simple.csv[[region]]",
+            "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}",
+        ),
         (
             "simple.csv[[city]:[country]]",
             "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
@@ -442,13 +477,13 @@ fn test_table_references() {
             "{country, population; United States, 9686; United States, 14061; United States, 29313; United States, 38334; United States, 152227; United States, 150443; United States, 14976; United States, 64325; United States, 56032; United States, 42605}",
         ),
     ] {
-        assert_eq!(expected, eval_to_string(gc.grid(), formula));
+        assert_eq!(expected, eval_to_string(&gc, formula));
     }
 }
 
 #[test]
 fn test_cell_range_op_errors() {
-    let g = Grid::new();
+    let g = GridController::new();
 
     eval_to_string(&g, "A1:B5"); // assert ok
     assert_check_syntax_succeeds(&g, "A1:B5"); // assert ok
@@ -474,7 +509,7 @@ fn test_cell_range_op_errors() {
 
 #[test]
 fn test_formula_error_literals() {
-    let g = Grid::new();
+    let g = GridController::new();
 
     assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "#DIV/0!").msg);
     assert_eq!(RunErrorMsg::NotAvailable, eval_to_err(&g, "#N/A").msg);
@@ -494,13 +529,13 @@ fn test_formula_error_literals() {
 /// Regression test for quadratic#410
 #[test]
 fn test_currency_string() {
-    let g = Grid::new();
+    let g = GridController::new();
     assert_eq!("30", eval_to_string(&g, "\"$10\" + 20"));
 }
 
 #[test]
 fn test_syntax_check_ok() {
-    let g = Grid::new();
+    let g = GridController::new();
     assert_check_syntax_succeeds(&g, "1+1");
     assert_check_syntax_succeeds(&g, "1/0");
     assert_check_syntax_succeeds(&g, "SUM(1, 2, 3)");

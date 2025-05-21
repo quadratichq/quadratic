@@ -157,6 +157,7 @@ export const ApiSchemas = {
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).extend({
+      sshPublicKey: z.string(),
       settings: TeamSettingsSchema,
     }),
     userMakingRequest: z.object({
@@ -220,6 +221,29 @@ export const ApiSchemas = {
     publicLinkAccess: PublicLinkAccessSchema,
   }),
   '/v0/files/:uuid/sharing.PATCH.response': z.object({ publicLinkAccess: PublicLinkAccessSchema }),
+
+  /**
+   * File checkpoints
+   */
+  '/v0/files/:uuid/checkpoints.GET.response': z.object({
+    file: FileSchema.pick({ name: true }),
+    team: TeamSchema.pick({ uuid: true }),
+    checkpoints: z.array(
+      z.object({
+        dataUrl: z.string().url(),
+        id: z.number(),
+        timestamp: z.string().datetime(),
+        version: z.string(),
+      })
+    ),
+  }),
+  '/v0/files/:uuid/checkpoints/:checkpointId.GET.response': z.object({
+    dataUrl: z.string().url(),
+    id: z.number(),
+    sequenceNumber: z.number(),
+    timestamp: z.string().datetime(),
+    version: z.string(),
+  }),
 
   /**
    * File users
@@ -315,7 +339,9 @@ export const ApiSchemas = {
   }),
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
-    team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(z.object({ settings: TeamSettingsSchema })),
+    team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(
+      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string() })
+    ),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
       teamPermissions: z.array(TeamPermissionSchema),
@@ -324,6 +350,12 @@ export const ApiSchemas = {
     billing: z.object({
       status: TeamSubscriptionStatusSchema.optional(),
       currentPeriodEnd: z.string().optional(),
+      usage: z.array(
+        z.object({
+          month: z.string(),
+          ai_messages: z.number(),
+        })
+      ),
     }),
     files: z.array(
       z.object({
@@ -392,18 +424,16 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
 
   /**
+   * Connections (which are all under `/v0/teams/:uuid/connections/*`)
+   */
+  ...ApiSchemasConnections,
+
+  /**
    * ===========================================================================
    * Users
    * ===========================================================================
    */
   '/v0/users/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
-
-  /**
-   * ===========================================================================
-   * Connections
-   * ===========================================================================
-   */
-  ...ApiSchemasConnections,
 
   /**
    *
@@ -430,6 +460,21 @@ export const ApiSchemas = {
   }),
   '/v0/ai/feedback.PATCH.response': z.object({
     message: z.string(),
+  }),
+
+  '/v0/ai/codeRunError.PATCH.request': z.object({
+    chatId: z.string().uuid(),
+    messageIndex: z.number(),
+    codeRunError: z.string(),
+  }),
+  '/v0/ai/codeRunError.PATCH.response': z.object({
+    message: z.string(),
+  }),
+
+  '/v0/teams/:uuid/billing/ai/usage.GET.response': z.object({
+    exceededBillingLimit: z.boolean(),
+    billingLimit: z.number().optional(),
+    currentPeriodUsage: z.number().optional(),
   }),
 };
 

@@ -1,6 +1,6 @@
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { DEFAULT_CSV_DELIMITER, DEFAULT_HAS_HEADING } from '@/app/ui/components/CSVImportSettings';
+import { DEFAULT_CSV_DELIMITER } from '@/app/ui/components/CSVImportSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { FileImportProgress } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
@@ -13,7 +13,7 @@ import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
 export function useFileImport() {
@@ -105,7 +105,7 @@ export function useFileImport() {
       const totalFiles = files.length;
 
       let csvDelimiter: number | undefined = DEFAULT_CSV_DELIMITER.charCodeAt(0);
-      let hasHeading: boolean | undefined = DEFAULT_HAS_HEADING;
+      // let hasHeading: boolean | undefined = DEFAULT_HAS_HEADING;
       // const firstCSVFile = files.find((file) => getFileType(file) === 'csv');
       // if (firstCSVFile) {
       //   try {
@@ -187,7 +187,7 @@ export function useFileImport() {
               sheetId,
               location: insertAt,
               csvDelimiter,
-              hasHeading,
+              // hasHeading,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);

@@ -11,11 +11,11 @@ import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEd
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import type { SheetPosTS } from '@/app/shared/types/size';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -169,7 +169,6 @@ class InlineEditorHandler {
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         this.updateMonacoCursorPosition();
       }
-      inlineEditorFormula.cursorMoved();
     } else {
       this.close(0, 0, false, true);
     }
@@ -190,7 +189,6 @@ class InlineEditorHandler {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
     }
     if (input) {
-      this.open = true;
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.position;
       this.location = {
@@ -253,6 +251,10 @@ class InlineEditorHandler {
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
       inlineEditorEvents.emit('status', true, value);
+
+      // this needs to be at the end to avoid a race condition where the cursor
+      // draws at 0,0 when editing in a data table
+      this.open = true;
     } else {
       this.close(0, 0, false);
     }
@@ -423,9 +425,9 @@ class InlineEditorHandler {
     this.updateFont();
   };
 
-  closeIfOpen = () => {
+  closeIfOpen = async () => {
     if (this.open) {
-      this.close(0, 0, false);
+      await this.close(0, 0, false);
     }
   };
 
@@ -542,6 +544,8 @@ class InlineEditorHandler {
         loading: false,
         id: '',
         messages: [],
+        waitingOnMessageIndex: undefined,
+        delaySeconds: 0,
       },
       diffEditorContent: undefined,
       waitingForEditorClose: {

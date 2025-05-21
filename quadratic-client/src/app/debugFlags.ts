@@ -56,6 +56,8 @@ export const debugShowLoadingHashes = debug && false;
 // Misc.
 // --------
 
+export const debugStartupTime = debug && false;
+
 export const debugShowFileIO = debug && false;
 
 // shows messages related to offline transaction
@@ -65,6 +67,8 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
 
+export const debugShowVersionCheck = debug && true;
+
 export const debugSaveURLState = debug && false;
 
 // --------
@@ -72,6 +76,8 @@ export const debugSaveURLState = debug && false;
 // --------
 
 export const debugShowUILogs = debug && false;
+
+export const debugShowFocus = debug && false;
 
 //-----------
 // WebWorkers

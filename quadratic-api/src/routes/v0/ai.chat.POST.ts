@@ -1,25 +1,28 @@
 import type { Response } from 'express';
-import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getLastPromptMessageType } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   getModelFromModelKey,
   isAnthropicModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
+  isVertexAIAnthropicModel,
+  isVertexAIModel,
   isXAIModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import { type AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import type { ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
+import { handleVertexAIRequest } from '../../ai/handler/vertexai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
-import { anthropic, bedrock, bedrock_anthropic, openai, xai } from '../../ai/providers';
+import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
-import { STORAGE_TYPE } from '../../env-vars';
+import { DEBUG, STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -39,6 +42,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
+  // const usage = await BillingAIUsageMonthlyForUser(userId);
+  // const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+
+  // if (exceededBillingLimit) {
+  //   //@ts-expect-error
+  //   return res.status(402).json({ error: 'Billing limit exceeded' });
+  // }
+
   const { body } = parseRequest(req, schema);
   const { chatId, fileUuid, modelKey, ...args } = body;
   const source = args.source;
@@ -53,76 +64,104 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.unshift(...quadraticContext);
   }
 
-  let responseMessage: AIMessagePrompt | undefined;
-  if (isBedrockModel(modelKey)) {
-    responseMessage = await handleBedrockRequest(modelKey, args, res, bedrock);
+  let parsedResponse: ParsedAIResponse | undefined;
+  if (isVertexAIAnthropicModel(modelKey)) {
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, vertex_anthropic);
   } else if (isBedrockAnthropicModel(modelKey)) {
-    responseMessage = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
   } else if (isAnthropicModel(modelKey)) {
-    responseMessage = await handleAnthropicRequest(modelKey, args, res, anthropic);
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, anthropic);
   } else if (isOpenAIModel(modelKey)) {
-    responseMessage = await handleOpenAIRequest(modelKey, args, res, openai);
+    parsedResponse = await handleOpenAIRequest(modelKey, args, res, openai);
   } else if (isXAIModel(modelKey)) {
-    responseMessage = await handleOpenAIRequest(modelKey, args, res, xai);
+    parsedResponse = await handleOpenAIRequest(modelKey, args, res, xai);
+  } else if (isVertexAIModel(modelKey)) {
+    parsedResponse = await handleVertexAIRequest(modelKey, args, res, vertexai);
+  } else if (isBedrockModel(modelKey)) {
+    parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
   } else {
     throw new Error(`Model not supported: ${modelKey}`);
   }
+  if (parsedResponse) {
+    args.messages.push(parsedResponse.responseMessage);
+  }
 
-  if (responseMessage) {
-    args.messages.push(responseMessage);
+  if (DEBUG) {
+    console.log('[AI.TokenUsage]', parsedResponse?.usage);
   }
 
   const {
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  if (!ownerTeam.settingAnalyticsAi || STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
-    return;
-  }
+  const model = getModelFromModelKey(modelKey);
+  const messageIndex = getLastAIPromptMessageIndex(args.messages);
+  const messageType = getLastPromptMessageType(args.messages);
 
-  const jwt = req.header('Authorization');
-  if (!jwt) {
-    return;
-  }
+  const chat = await dbClient.analyticsAIChat.upsert({
+    where: {
+      chatId,
+    },
+    create: {
+      userId,
+      fileId,
+      chatId,
+      source,
+      messages: {
+        create: {
+          model,
+          messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage.inputTokens,
+          outputTokens: parsedResponse?.usage.outputTokens,
+          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+        },
+      },
+    },
+    update: {
+      messages: {
+        create: {
+          model,
+          messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage.inputTokens,
+          outputTokens: parsedResponse?.usage.outputTokens,
+          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+        },
+      },
+      updatedDate: new Date(),
+    },
+  });
 
+  // Save the data to s3
   try {
-    // key: <fileUuid>-<source>_<chatUuid>_<messageIndex>.json
-    const messageIndex = getLastUserPromptMessageIndex(args.messages);
-    const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
+    if (ownerTeam.settingAnalyticsAi) {
+      const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
 
-    const contents = Buffer.from(JSON.stringify(args)).toString('base64');
-    const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+      // If we aren't using s3 or the analytics bucket name is not set, don't save the data
+      // This path is also used for self-hosted users, so we don't want to save the data in that case
+      if (STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
+        return;
+      }
 
-    const model = getModelFromModelKey(modelKey);
+      const jwt = req.header('Authorization');
+      if (!jwt) {
+        return;
+      }
 
-    await dbClient.analyticsAIChat.upsert({
-      where: {
-        chatId,
-      },
-      create: {
-        userId,
-        fileId,
-        chatId,
-        source,
-        messages: {
-          create: {
-            model,
-            messageIndex,
-            s3Key: response.key,
-          },
+      const contents = Buffer.from(JSON.stringify(args)).toString('base64');
+      const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+      const s3Key = response.key;
+
+      await dbClient.analyticsAIChatMessage.update({
+        where: {
+          chatId_messageIndex: { chatId: chat.id, messageIndex },
         },
-      },
-      update: {
-        messages: {
-          create: {
-            model,
-            messageIndex,
-            s3Key: response.key,
-          },
-        },
-        updatedDate: new Date(),
-      },
-    });
+        data: { s3Key },
+      });
+    }
   } catch (e) {
     console.error(e);
   }

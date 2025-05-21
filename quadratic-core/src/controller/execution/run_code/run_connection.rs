@@ -2,10 +2,10 @@ use anyhow::Result;
 use regex::Regex;
 
 use crate::{
-    a1::{A1Error, A1Selection},
-    controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeCellLanguage, ConnectionKind, SheetId},
     RunError, RunErrorMsg, SheetPos,
+    a1::{A1Error, A1Selection},
+    controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
+    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind, SheetId},
 };
 
 use lazy_static::lazy_static;
@@ -39,7 +39,7 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-            let selection = A1Selection::parse_a1(content, &default_sheet_id, context)?;
+            let selection = A1Selection::parse_a1(content, default_sheet_id, context)?;
 
             let Some(pos) = selection.try_to_pos(context) else {
                 return Err(A1Error::WrongCellCount(
@@ -109,7 +109,11 @@ impl GridController {
 
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        transaction.waiting_for_async = Some(CodeCellLanguage::Connection { kind, id });
+        let code_cell = CodeCellValue {
+            language: CodeCellLanguage::Connection { kind, id },
+            code,
+        };
+        transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
     }
 }
@@ -118,11 +122,12 @@ impl GridController {
 mod tests {
 
     use crate::{
+        Pos, RunError, RunErrorMsg, SheetPos,
+        constants::SHEET_NAME,
         controller::{
-            active_transactions::pending_transaction::PendingTransaction, GridController,
+            GridController, active_transactions::pending_transaction::PendingTransaction,
         },
         grid::{CodeCellLanguage, ConnectionKind, SheetId},
-        Pos, RunError, RunErrorMsg, SheetPos,
     };
 
     #[test]
@@ -147,9 +152,11 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context())
+        );
 
         gc.add_sheet(None);
         let sheet_2_id = gc.sheet_ids()[1];
@@ -162,9 +169,11 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test2".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context())
+        );
     }
 
     #[test]
@@ -190,19 +199,23 @@ mod tests {
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         let context = gc.a1_context();
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), context));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), context)
+        );
 
-        let code = r#"{{'Sheet1'!A2}}"#;
+        let code = format!(r#"{{{{'{}1'!A2}}}}"#, SHEET_NAME);
         let result = gc
-            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .replace_handlebars(&mut transaction, sheet_pos, &code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), context));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), context)
+        );
     }
 
     #[test]

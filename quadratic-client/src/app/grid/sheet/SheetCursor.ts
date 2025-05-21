@@ -7,7 +7,7 @@ import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import type { IViewportTransformState } from 'pixi-viewport';
@@ -57,8 +57,8 @@ export class SheetCursor {
     this.jsSelection.updateContext(context);
     if (this.sheet.sheets.current === this.sheet.id) {
       pixiApp.cursor.dirty = true;
+      events.emit('a1ContextUpdated');
     }
-    events.emit('a1ContextUpdated');
   };
 
   set viewport(save: IViewportTransformState) {
@@ -166,13 +166,25 @@ export class SheetCursor {
   };
 
   // Returns the columns that are selected.
+  getColumnsWithSelectedCells = (): number[] => {
+    return Array.from(this.jsSelection.getColumnsWithSelectedCells());
+  };
+
   getSelectedColumns = (): number[] => {
     return Array.from(this.jsSelection.getSelectedColumns());
   };
 
-  // Returns the rows that are selected.
   getSelectedRows = (): number[] => {
     return Array.from(this.jsSelection.getSelectedRows());
+  };
+
+  getSelectedTableColumns = (tableName: string): number[] => {
+    return Array.from(this.jsSelection.getTableColumnSelection(tableName));
+  };
+
+  // Returns the rows that are selected.
+  getRowsWithSelectedCells = (): number[] => {
+    return Array.from(this.jsSelection.getRowsWithSelectedCells());
   };
 
   // Returns true if the cursor is only selecting a single cell
@@ -417,7 +429,41 @@ export class SheetCursor {
     this.selectRect(x, y, x, y);
   };
 
+  isEntireColumnSelected = (column: number): boolean => {
+    return this.jsSelection.isEntireColumnSelected(column);
+  };
+
+  isEntireRowSelected = (row: number): boolean => {
+    return this.jsSelection.isEntireRowSelected(row);
+  };
+
   checkForTableRef = () => {
     this.jsSelection.checkForTableRef(this.sheet.id);
+  };
+
+  getContiguousColumns = (): number[] | undefined => {
+    const response = this.jsSelection.getContiguousColumns();
+    if (response) {
+      return Array.from(response);
+    }
+  };
+
+  getContiguousRows = (): number[] | undefined => {
+    const response = this.jsSelection.getContiguousRows();
+    if (response) {
+      return Array.from(response);
+    }
+  };
+
+  isTableColumnSelected = (tableName: string, column: number): boolean => {
+    return this.jsSelection.isTableColumnSelected(tableName, column);
+  };
+
+  getSelectedTableColumnsCount = (): number => {
+    return this.jsSelection.getSelectedTableColumnsCount();
+  };
+
+  isAllSelected = (): boolean => {
+    return this.jsSelection.isAllSelected();
   };
 }

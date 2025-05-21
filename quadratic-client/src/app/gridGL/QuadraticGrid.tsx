@@ -1,5 +1,6 @@
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
 import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
+import { ScrollBars } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBars';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
@@ -37,7 +38,6 @@ export default function QuadraticGrid() {
   return (
     <div
       ref={containerRef}
-      className="dark-mode-hack"
       style={{
         position: 'relative',
         width: '100%',
@@ -55,8 +55,9 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
-      <ImportProgress />
+      <ScrollBars />
       <Search />
+      <ImportProgress />
     </div>
   );
 }

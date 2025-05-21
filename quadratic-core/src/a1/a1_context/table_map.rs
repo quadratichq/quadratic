@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CodeCellLanguage, DataTable, SheetId},
-    util::case_fold,
     Pos, SheetPos,
+    grid::{DataTable, SheetId},
+    util::case_fold_ascii,
 };
 
 use super::TableMapEntry;
@@ -17,48 +17,48 @@ pub struct TableMap {
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
-        let table_name_folded = case_fold(&table_map_entry.table_name);
+        let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
+    /// Inserts a table into the table map with a key that is already case folded.
+    pub fn insert_with_key(&mut self, table_name: String, table_map_entry: TableMapEntry) {
+        self.tables.insert(table_name, table_map_entry);
+    }
+
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
-        let table_name_folded = case_fold(table_name);
+        let table_name_folded = case_fold_ascii(table_name);
         self.tables.remove(&table_name_folded)
     }
 
-    pub fn insert_table(
-        &mut self,
-        sheet_id: SheetId,
-        pos: Pos,
-        table: &DataTable,
-        language: CodeCellLanguage,
-    ) {
-        let table_name_folded = case_fold(&table.name.to_display());
-        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
+    pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
+        let table_name_folded = case_fold_ascii(table.name());
+        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
     /// Finds a table by name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
-        let table_name = case_fold(table_name);
+        let table_name = case_fold_ascii(table_name);
         self.tables.get(&table_name)
     }
 
     /// Finds a table by name.
     pub fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_name = case_fold(table_name);
+        let table_name = case_fold_ascii(table_name);
         self.tables.get_mut(&table_name)
     }
 
     /// Returns true if the table has a column with the given name.
-    pub fn table_has_column(&self, table_name: &str, column_name: &str) -> bool {
-        let column_name_folded = case_fold(column_name);
+    pub fn table_has_column(&self, table_name: &str, column_name: &str, index: usize) -> bool {
+        let column_name_folded = case_fold_ascii(column_name);
         self.try_table(table_name)
             .map(|table| {
                 table
                     .all_columns
                     .iter()
-                    .any(|col| case_fold(col) == column_name_folded)
+                    .enumerate()
+                    .any(|(i, col)| case_fold_ascii(col) == column_name_folded && i != index)
             })
             .unwrap_or(false)
     }
@@ -87,7 +87,6 @@ impl TableMap {
                     x: x as i64,
                     y: y as i64,
                 })
-                && table.show_ui
                 && y < (table.bounds.min.y as u32)
                     + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
                         as u32
@@ -134,9 +133,9 @@ impl TableMap {
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: crate::Rect,
-        language: CodeCellLanguage,
+        language: crate::grid::CodeCellLanguage,
     ) {
-        let table_name_folded = case_fold(table_name);
+        let table_name_folded = case_fold_ascii(table_name);
         self.tables.insert(
             table_name_folded,
             TableMapEntry::test(table_name, visible_columns, all_columns, bounds, language),
@@ -145,7 +144,7 @@ impl TableMap {
 
     #[cfg(test)]
     pub fn get_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_name_folded = case_fold(table_name);
+        let table_name_folded = case_fold_ascii(table_name);
         self.tables.get_mut(&table_name_folded)
     }
 }
@@ -154,7 +153,7 @@ impl TableMap {
 mod tests {
     use super::*;
 
-    use crate::Rect;
+    use crate::{Rect, grid::CodeCellLanguage};
 
     #[test]
     fn test_try_col_index() {
@@ -354,7 +353,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(0, 0, 2, 3),
-            show_ui: true,
             show_name: true,
             show_columns: true,
             is_html_image: false,
@@ -390,7 +388,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(5, 5, 7, 8),
-            show_ui: true,
             show_name: false,
             show_columns: true,
             is_html_image: false,
@@ -422,25 +419,25 @@ mod tests {
         );
 
         // Test existing visible column (exact match)
-        assert!(map.table_has_column("test_table", "Visible1"));
-        assert!(map.table_has_column("test_table", "Visible2"));
+        assert!(map.table_has_column("test_table", "Visible1", 10));
+        assert!(map.table_has_column("test_table", "Visible2", 10));
 
         // Test existing hidden column
-        assert!(map.table_has_column("test_table", "Hidden1"));
+        assert!(map.table_has_column("test_table", "Hidden1", 10));
 
         // Test case insensitivity
-        assert!(map.table_has_column("TEST_TABLE", "visible1"));
-        assert!(map.table_has_column("test_table", "VISIBLE2"));
-        assert!(map.table_has_column("TEST_TABLE", "HIDDEN1"));
+        assert!(map.table_has_column("TEST_TABLE", "visible1", 10));
+        assert!(map.table_has_column("test_table", "VISIBLE2", 10));
+        assert!(map.table_has_column("TEST_TABLE", "HIDDEN1", 10));
 
         // Test non-existent column
-        assert!(!map.table_has_column("test_table", "NonExistent"));
+        assert!(!map.table_has_column("test_table", "NonExistent", 10));
 
         // Test non-existent table
-        assert!(!map.table_has_column("non_existent_table", "Visible1"));
+        assert!(!map.table_has_column("non_existent_table", "Visible1", 10));
 
         // Test empty column name
-        assert!(!map.table_has_column("test_table", ""));
+        assert!(!map.table_has_column("test_table", "", 10));
 
         // Create a table with empty column list
         map.test_insert(
@@ -450,6 +447,10 @@ mod tests {
             Rect::new(1, 1, 3, 5),
             CodeCellLanguage::Import,
         );
-        assert!(!map.table_has_column("empty_table", "AnyColumn"));
+        assert!(!map.table_has_column("empty_table", "AnyColumn", 10));
+
+        assert!(map.table_has_column("test_table", "VISIBLE1", 1));
+        // table_has_column is false when the index is the same as the existing column index
+        assert!(!map.table_has_column("test_table", "VISIBLE1", 0));
     }
 }

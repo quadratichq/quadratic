@@ -1,3 +1,7 @@
+//! Microsoft SQL Server
+//!
+//! Functions to interact with Microsoft SQL Server
+
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
@@ -9,8 +13,8 @@ use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use tiberius::xml::XmlData;
 use tiberius::ColumnData;
+use tiberius::xml::XmlData;
 use tiberius::{AuthMethod, Client, Column, Config, FromSql, FromSqlOwned, Row};
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
@@ -18,26 +22,87 @@ use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError};
+use crate::net::ssh::SshConfig;
+use crate::quadratic_api::Connection as ApiConnection;
+use crate::sql::Connection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
-use crate::sql::Connection;
 
-#[derive(Debug, Serialize, Deserialize)]
+use super::UsesSsh;
+
+/// Microsoft SQL Server connection
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MsSqlConnection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
     pub database: String,
+    pub use_ssh: Option<bool>,
+    pub ssh_host: Option<String>,
+    pub ssh_port: Option<String>,
+    pub ssh_username: Option<String>,
+    pub ssh_key: Option<String>,
+}
+
+impl From<&ApiConnection<MsSqlConnection>> for MsSqlConnection {
+    fn from(connection: &ApiConnection<MsSqlConnection>) -> Self {
+        let details = connection.type_details.to_owned();
+        MsSqlConnection::new(
+            details.username,
+            details.password,
+            details.host,
+            details.port,
+            details.database,
+            details.use_ssh,
+            details.ssh_host,
+            details.ssh_port,
+            details.ssh_username,
+            details.ssh_key,
+        )
+    }
+}
+
+impl TryFrom<MsSqlConnection> for SshConfig {
+    type Error = SharedError;
+
+    fn try_from(connection: MsSqlConnection) -> Result<Self> {
+        let required = |value: Option<String>| {
+            value.ok_or(SharedError::Sql(SqlError::Connect(
+                "Required field is missing".into(),
+            )))
+        };
+
+        let ssh_port = <MsSqlConnection as UsesSsh>::parse_port(&connection.ssh_port).ok_or(
+            SharedError::Sql(SqlError::Connect("SSH port is required".into())),
+        )??;
+
+        Ok(SshConfig::new(
+            required(connection.ssh_host)?,
+            ssh_port,
+            required(connection.ssh_username)?,
+            connection.password,
+            required(connection.ssh_key)?,
+            None,
+        ))
+    }
 }
 
 impl MsSqlConnection {
+    /// Create a new Microsoft SQL Server connection
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         username: Option<String>,
         password: Option<String>,
         host: String,
         port: Option<String>,
         database: String,
+        use_ssh: Option<bool>,
+        ssh_host: Option<String>,
+        ssh_port: Option<String>,
+        ssh_username: Option<String>,
+        ssh_key: Option<String>,
     ) -> MsSqlConnection {
         MsSqlConnection {
             username,
@@ -45,9 +110,15 @@ impl MsSqlConnection {
             host,
             port,
             database,
+            use_ssh,
+            ssh_host,
+            ssh_port,
+            ssh_username,
+            ssh_key,
         }
     }
 
+    /// Query all rows from a SQL Server
     async fn query_all(client: &mut Client<Compat<TcpStream>>, sql: &str) -> Result<Vec<Row>> {
         let mut rows = vec![];
         let mut row_stream = client
@@ -73,29 +144,29 @@ impl Connection for MsSqlConnection {
     type Row = Row;
     type Column = Column;
 
+    /// Get the length of a row
     fn row_len(row: &Self::Row) -> usize {
         row.len()
     }
 
+    /// Get the columns of a row
     fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
         Box::new(row.columns().iter())
     }
 
+    /// Get the name of a column
     fn column_name(col: &Self::Column) -> &str {
         col.name()
     }
 
+    /// Connect to a SQL Server
     async fn connect(&self) -> Result<Client<Compat<TcpStream>>> {
         let mut config = Config::new();
         config.host(&self.host);
         config.database(&self.database);
 
-        if let Some(port) = &self.port {
-            config.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(SqlError::Connect(
-                    "Could not parse port into a number".into(),
-                ))
-            })?);
+        if let Some(port) = self.port() {
+            config.port(port?);
         }
 
         if let Some(username) = &self.username {
@@ -125,6 +196,7 @@ impl Connection for MsSqlConnection {
         Ok(client)
     }
 
+    /// Query rows from a SQL Server
     async fn query(
         &self,
         client: &mut Self::Conn,
@@ -167,6 +239,7 @@ impl Connection for MsSqlConnection {
         Ok((bytes, over_the_limit, num_records))
     }
 
+    /// Get the schema of a SQL Server
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.to_owned();
         let sql = format!(
@@ -230,6 +303,7 @@ ORDER BY
         Ok(schema)
     }
 
+    /// Convert a row to an Arrow type
     fn to_arrow(row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
         if let Some((_, column_data)) = row.cells().nth(index) {
             match column_data {
@@ -288,6 +362,7 @@ ORDER BY
     }
 }
 
+/// Convert a column data to an Arrow type using a function to map the data to an Arrow type
 fn convert_mssql_type<'a, T, F>(
     column_data: &'a ColumnData<'static>,
     map_to_arrow_type: F,
@@ -303,6 +378,7 @@ where
         .unwrap_or(ArrowType::Void)
 }
 
+/// Convert a column data to an Arrow type using a function to map the data to an Arrow type
 fn convert_mssql_type_owned<T, F>(
     column_data: ColumnData<'static>,
     map_to_arrow_type: F,
@@ -316,6 +392,28 @@ where
         .flatten()
         .map(map_to_arrow_type)
         .unwrap_or(ArrowType::Void)
+}
+
+impl UsesSsh for MsSqlConnection {
+    fn use_ssh(&self) -> bool {
+        self.use_ssh.unwrap_or(false)
+    }
+
+    fn port(&self) -> Option<Result<u16>> {
+        Self::parse_port(&self.port)
+    }
+
+    fn set_port(&mut self, port: u16) {
+        self.port = Some(port.to_string());
+    }
+
+    fn ssh_host(&self) -> Option<String> {
+        self.ssh_host.to_owned()
+    }
+
+    fn set_ssh_key(&mut self, ssh_key: Option<String>) {
+        self.ssh_key = ssh_key;
+    }
 }
 
 #[cfg(test)]
@@ -334,6 +432,11 @@ mod tests {
             "0.0.0.0".into(),
             Some("1433".into()),
             "AllTypes".into(),
+            None,
+            None,
+            None,
+            None,
+            None,
         )
     }
 

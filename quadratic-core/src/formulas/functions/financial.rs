@@ -4,7 +4,9 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
     include_in_completions: true,
     name: "Financial functions",
-    docs: Some("Financial functions for calculating loan payments, interest rates, and other financial calculations."),
+    docs: Some(
+        "Financial functions for calculating loan payments, interest rates, and other financial calculations.",
+    ),
     get_functions,
 };
 
@@ -51,12 +53,13 @@ fn get_functions() -> Vec<FormulaFunction> {
 }
 #[cfg(test)]
 mod tests {
+    use crate::controller::GridController;
     use crate::formulas::tests::*;
     use crate::util::assert_f64_approx_eq;
 
     #[test]
     fn test_pmt() {
-        let g = Grid::new();
+        let g = GridController::new();
 
         // Test basic loan payment calculation
         assert_f64_approx_eq(

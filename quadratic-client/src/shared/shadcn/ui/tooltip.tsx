@@ -1,6 +1,7 @@
 import { cn } from '@/shared/shadcn/utils';
 import type { PopoverContentProps } from '@radix-ui/react-popover';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import type { JSX } from 'react';
 import * as React from 'react';
 
 const TooltipProvider = TooltipPrimitive.Provider;
@@ -39,14 +40,16 @@ const TooltipPopover = ({
   children,
   shortcut,
   side,
+  tooltipProps,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: JSX.Element;
   shortcut?: string;
   side?: PopoverContentProps['side'];
+  tooltipProps?: TooltipPrimitive.TooltipProps;
 }) => {
   return (
-    <Tooltip>
+    <Tooltip {...(tooltipProps ? tooltipProps : {})}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipPortal>
         <TooltipContent side={side}>
