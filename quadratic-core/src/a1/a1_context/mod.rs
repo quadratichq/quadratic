@@ -69,7 +69,7 @@ impl A1Context {
     }
 
     /// Returns an iterator over all the tables in the context.
-    pub fn iter_tables_in_sheet(&self, sheet_id: &SheetId) -> impl Iterator<Item = &TableMapEntry> {
+    pub fn iter_tables_in_sheet(&self, sheet_id: SheetId) -> impl Iterator<Item = &TableMapEntry> {
         self.table_map.iter_table_values_in_sheet(sheet_id)
     }
 

@@ -1206,7 +1206,7 @@ export interface CoreClientFiniteRectFromSelection {
 
 export interface CoreClientA1Context {
   type: 'coreClientA1Context';
-  context: string;
+  context: Uint8Array;
 }
 
 export interface ClientCoreAddDataTable {

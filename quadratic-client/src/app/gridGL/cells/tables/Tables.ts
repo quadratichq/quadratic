@@ -149,7 +149,7 @@ export class Tables extends Container<Table> {
   // listen for the bitmapFontsLoaded event and then render the code cells.
   private renderCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
     if (sheetId === this.cellsSheet.sheetId) {
-      const codeCells = fromUint8Array(renderCodeCells) as JsRenderCodeCell[];
+      const codeCells = fromUint8Array<JsRenderCodeCell[]>(renderCodeCells);
       this.removeChildren();
       if (!isBitmapFontLoaded()) {
         console.log('bitmapFontsLoaded event not received');

@@ -583,7 +583,7 @@ impl GridController {
         }
 
         let context = self.a1_context();
-        if let Ok(context) = serde_json::to_string(context) {
+        if let Ok(context) = serde_json::to_vec(context) {
             crate::wasm_bindings::js::jsA1Context(context);
         }
     }

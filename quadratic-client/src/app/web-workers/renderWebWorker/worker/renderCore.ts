@@ -164,7 +164,7 @@ class RenderCore {
     }
     let cells = [] as JsRenderCell[];
     if (data) {
-      cells = fromUint8Array(data) as JsRenderCell[];
+      cells = fromUint8Array<JsRenderCell[]>(data);
     }
     response(cells);
     this.waitingForResponse.delete(id);

@@ -114,7 +114,7 @@ extern "C" {
 
     pub fn jsClientMessage(message: String, error: String);
 
-    pub fn jsA1Context(context: String);
+    pub fn jsA1Context(context: Vec<u8> /* A1Context */);
 }
 
 #[cfg(test)]
@@ -548,6 +548,6 @@ pub fn jsClientMessage(message: String, severity: String) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsA1Context(context: String) {
-    js_call("jsA1Context", context);
+pub fn jsA1Context(context: Vec<u8> /* A1Context */) {
+    js_call("jsA1Context", format!("{:?}", context));
 }

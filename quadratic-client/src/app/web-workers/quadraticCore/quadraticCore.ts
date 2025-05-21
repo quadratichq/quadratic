@@ -153,7 +153,7 @@ class QuadraticCore {
       events.emit('transactionEnd', e.data);
       return;
     } else if (e.data.type === 'coreClientUpdateCodeCells') {
-      const updateCodeCells = fromUint8Array(e.data.updateCodeCells) as JsUpdateCodeCell[];
+      const updateCodeCells = fromUint8Array<JsUpdateCodeCell[]>(e.data.updateCodeCells);
       events.emit('updateCodeCells', updateCodeCells);
       return;
     } else if (e.data.type === 'coreClientMultiplayerState') {
@@ -183,11 +183,11 @@ class QuadraticCore {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
-      const sheetValidations = fromUint8Array(e.data.sheetValidations) as Validation[];
+      const sheetValidations = fromUint8Array<Validation[]>(e.data.sheetValidations);
       events.emit('sheetValidations', e.data.sheetId, sheetValidations);
       return;
     } else if (e.data.type === 'coreClientValidationWarnings') {
-      const warnings = fromUint8Array(e.data.warnings) as JsHashValidationWarnings[];
+      const warnings = fromUint8Array<JsHashValidationWarnings[]>(e.data.warnings);
       events.emit('validationWarnings', warnings);
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
@@ -865,7 +865,7 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: CoreClientCopyToClipboard) => {
         let jsClipboard = {} as JsClipboard;
         if (message.data) {
-          jsClipboard = fromUint8Array(message.data) as JsClipboard;
+          jsClipboard = fromUint8Array<JsClipboard>(message.data);
         }
         resolve(jsClipboard);
       };
@@ -883,7 +883,7 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: CoreClientCutToClipboard) => {
         let jsClipboard = {} as JsClipboard;
         if (message.data) {
-          jsClipboard = fromUint8Array(message.data) as JsClipboard;
+          jsClipboard = fromUint8Array<JsClipboard>(message.data);
         }
         resolve(jsClipboard);
       };

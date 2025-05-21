@@ -74,8 +74,8 @@ impl JsSelection {
 
     // may be useful if we decide to show a selection on a chart
     // #[wasm_bindgen(js_name = "getChartSelections")]
-    // pub fn chart_selections(&self, context: &str) -> Result<String, String> {
-    //     let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+    // pub fn chart_selections(&self, context: &[u8]) -> Result<String, String> {
+    //     let Ok(context) = serde_json::from_slice::<A1Context>(context) else {
     //         return Err("Unable to parse context".to_string());
     //     };
     //     let chart_names = self

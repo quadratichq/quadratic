@@ -82,7 +82,7 @@ export class PythonCore {
       int32View = undefined;
       uint8View = undefined;
 
-      const response = fromUint8Array(nonSharedView) as JsCellsA1Response;
+      const response = fromUint8Array<JsCellsA1Response>(nonSharedView);
       return response;
     } catch (e) {
       console.warn('[pythonCore] getCellsA1 error', e);

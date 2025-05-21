@@ -496,7 +496,7 @@ impl A1Selection {
             }
             CellRefRange::Sheet { range } => {
                 context
-                    .iter_tables_in_sheet(&self.sheet_id)
+                    .iter_tables_in_sheet(self.sheet_id)
                     .for_each(|table| {
                         if let Some(rect) = range.to_rect() {
                             // if the selection intersects the name ui row of the table

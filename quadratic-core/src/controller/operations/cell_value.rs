@@ -32,7 +32,7 @@ impl GridController {
         let mut data_table_ops = vec![];
         let existing_data_tables = self
             .a1_context()
-            .iter_tables_in_sheet(&sheet_pos.sheet_id)
+            .iter_tables_in_sheet(sheet_pos.sheet_id)
             .filter(|table| table.language == CodeCellLanguage::Import)
             .map(|table| table.bounds)
             .collect::<Vec<_>>();

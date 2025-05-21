@@ -4,8 +4,8 @@ export const toUint8Array = (data: any): Uint8Array => {
   return encoded;
 };
 
-export const fromUint8Array = (data: Uint8Array): any => {
+export const fromUint8Array = <T>(data: Uint8Array): T => {
   const decoder = new TextDecoder();
   const decoded = decoder.decode(data);
-  return JSON.parse(decoded);
+  return JSON.parse(decoded) as T;
 };

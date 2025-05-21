@@ -190,7 +190,7 @@ class RenderText {
   };
 
   hashRenderCells(hashRenderCellsUint8Array: Uint8Array) {
-    const hashRenderCells = fromUint8Array(hashRenderCellsUint8Array) as JsHashRenderCells[];
+    const hashRenderCells = fromUint8Array<JsHashRenderCells[]>(hashRenderCellsUint8Array);
     for (const renderCells of hashRenderCells) {
       const cellsLabels = this.cellsLabels.get(renderCells.sheet_id.id);
       if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
@@ -257,7 +257,7 @@ class RenderText {
   }
 
   setHashesDirty(dirtyHashesUint8Array: Uint8Array) {
-    const dirtyHashes = fromUint8Array(dirtyHashesUint8Array) as JsHashesDirty[];
+    const dirtyHashes = fromUint8Array<JsHashesDirty[]>(dirtyHashesUint8Array);
     for (const dirtyHash of dirtyHashes) {
       const cellsLabels = this.cellsLabels.get(dirtyHash.sheet_id.id);
       if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
