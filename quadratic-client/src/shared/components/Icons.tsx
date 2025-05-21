@@ -119,6 +119,10 @@ export const BackspaceIcon: IconComponent = (props) => {
   return <Icon {...props}>backspace</Icon>;
 };
 
+export const BlockIcon: IconComponent = (props) => {
+  return <Icon {...props}>block</Icon>;
+};
+
 export const BorderAllIcon: IconComponent = (props) => {
   return <Icon {...props}>border_all</Icon>;
 };
@@ -709,4 +713,12 @@ export const WorkIcon: IconComponent = (props) => {
 
 export const PersonalIcon: IconComponent = (props) => {
   return <Icon {...props}>cottage</Icon>;
+};
+
+export const RadioButtonUncheckedIcon: IconComponent = (props) => {
+  return <Icon {...props}>radio_button_unchecked</Icon>;
+};
+
+export const RadioButtonCheckedIcon: IconComponent = (props) => {
+  return <Icon {...props}>radio_button_checked</Icon>;
 };
