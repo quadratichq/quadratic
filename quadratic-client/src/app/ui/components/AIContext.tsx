@@ -6,7 +6,7 @@ import {
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { uploadFile } from '@/app/helpers/files';
-import { A1SelectionStringToSelection, getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
+import { getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
@@ -55,25 +55,6 @@ export const AIContext = memo(
     const [, setCurrentSheet] = useState(sheets.sheet.name);
 
     useEffect(() => {
-      if (loading || !editing) return;
-
-      const updateSelection = () => {
-        setContext?.((prev) => ({
-          ...prev,
-          selection: sheets.sheet.cursor.save(),
-        }));
-      };
-      updateSelection();
-
-      events.on('cursorPosition', updateSelection);
-      events.on('changeSheet', updateSelection);
-      return () => {
-        events.off('cursorPosition', updateSelection);
-        events.off('changeSheet', updateSelection);
-      };
-    }, [editing, loading, setContext]);
-
-    useEffect(() => {
       const updateCurrentSheet = () => {
         if (!loading && editing) {
           setContext?.((prev) => ({
@@ -117,9 +98,9 @@ export const AIContext = memo(
       [setFiles]
     );
 
-    const handleOnClickSelection = useCallback(() => {
-      setContext?.((prev) => ({ ...prev, selection: undefined }));
-    }, [setContext]);
+    // const handleOnClickSelection = useCallback(() => {
+    //   setContext?.((prev) => ({ ...prev, selection: undefined }));
+    // }, [setContext]);
 
     const handleOnClickCurrentSheet = useCallback(() => {
       setContext?.((prev) => ({
@@ -158,20 +139,6 @@ export const AIContext = memo(
         ))}
 
         <CodeCellContextPill codeCell={context.codeCell} />
-
-        {setContext && context && (
-          <ContextPill
-            key="cursor"
-            primary={
-              context.selection
-                ? A1SelectionStringToSelection(context.selection, sheets.a1Context).toA1String(sheets.current)
-                : sheets.sheet.cursor.toCursorA1()
-            }
-            secondary="Cursor"
-            onClick={handleOnClickSelection}
-            noClose
-          />
-        )}
 
         {!!context.currentSheet && (
           <ContextPill
