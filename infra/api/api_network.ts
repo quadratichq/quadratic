@@ -18,11 +18,11 @@ const internetGateway = new aws.ec2.InternetGateway("api-igw", {
 
 // Create Elastic IPs
 export const apiEip1 = new aws.ec2.Eip("api-nat-eip-1", {
-  vpc: true,
+  domain: "vpc",
 });
 
 export const apiEip2 = new aws.ec2.Eip("api-nat-eip-2", {
-  vpc: true,
+  domain: "vpc",
 });
 
 // Create public subnets
