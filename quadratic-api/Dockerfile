@@ -34,4 +34,4 @@ COPY --from=builder /quadratic .
 RUN npm run postinstall --workspace=quadratic-api
 RUN npm run build --workspace=quadratic-api
 
-CMD ["npm", "run", "start:prod"]
+CMD ["npm", "run", "start:prod", "--workspace=quadratic-api"]
