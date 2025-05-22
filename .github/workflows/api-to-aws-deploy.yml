@@ -59,7 +59,7 @@ jobs:
           echo "env-hash=$ENV_HASH" >> $GITHUB_OUTPUT
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-          PULUMI_ESC_ENVIRONMENT_NAME: quadratic-client-development
+          PULUMI_ESC_ENVIRONMENT_NAME: quadratic-client-development-api-to-aws
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -279,7 +279,7 @@ jobs:
           pulumi config set files-subdomain files-pr-api-to-aws
           pulumi config set multiplayer-subdomain multiplayer-pr-api-to-aws
           pulumi config set docker-image-tag pr-api-to-aws
-          pulumi config set quadratic-api-uri https://api-pr-api-to-aws.quadratic-preview.com/health
+          pulumi config set quadratic-api-uri https://api-pr-api-to-aws.quadratic-preview.com
           pulumi config set is-preview true
 
           pulumi up -y
