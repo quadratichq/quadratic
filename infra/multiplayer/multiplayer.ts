@@ -12,11 +12,11 @@ const config = new pulumi.Config();
 
 // Configuration from command line
 const multiplayerSubdomain = config.require("multiplayer-subdomain");
-const quadraticApiUri = config.require("quadratic-api-uri");
 const dockerImageTag = config.require("docker-image-tag");
+const quadraticApiUri = config.require("quadratic-api-uri");
 const multiplayerECRName = config.require("multiplayer-ecr-repo-name");
 const multiplayerPulumiEscEnvironmentName = config.require(
-  "multiplayer-pulumi-esc-environment-name"
+  "multiplayer-pulumi-esc-environment-name",
 );
 
 // Configuration from Pulumi ESC
@@ -48,8 +48,8 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
       },
-      true
-    )
+      true,
+    ),
   ),
 });
 
@@ -76,7 +76,7 @@ const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
   {
     targetId: instance.id,
     targetGroupArn: targetGroup.arn,
-  }
+  },
 );
 
 // Create NLB Listener for TLS on port 443
@@ -103,8 +103,8 @@ const hostedZone = pulumi.output(
     {
       name: domain,
     },
-    { async: true }
-  )
+    { async: true },
+  ),
 );
 
 // Create a Route 53 record pointing to the NLB

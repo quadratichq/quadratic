@@ -25,7 +25,7 @@ const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
 const connectionECRName = config.require("connection-ecr-repo-name");
 const connectionPulumiEscEnvironmentName = config.require(
-  "connection-pulumi-esc-environment-name"
+  "connection-pulumi-esc-environment-name",
 );
 
 // Configuration from Pulumi ESC
@@ -49,9 +49,9 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
           QUADRATIC_API_URI: quadraticApiUri,
           STATIC_IPS: `${publicIp1},${publicIp2}`,
         },
-        true
-      )
-    )
+        true,
+      ),
+    ),
   ),
 });
 
@@ -129,8 +129,8 @@ const hostedZone = pulumi.output(
     {
       name: domain,
     },
-    { async: true }
-  )
+    { async: true },
+  ),
 );
 
 // Create a Route 53 record pointing to the NLB

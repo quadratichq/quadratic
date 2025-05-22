@@ -17,7 +17,7 @@ jobs:
       issues: write
       deployments: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    if: github.head_ref != 'qa' || github.base_ref != 'main' || github.head_ref != 'api-to-aws'
     timeout-minutes: 5
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
@@ -104,7 +104,7 @@ jobs:
       issues: write
       deployments: write
     runs-on: ${{ matrix.runner }}
-    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    if: github.head_ref != 'qa' || github.base_ref != 'main' || github.head_ref != 'api-to-aws'
     timeout-minutes: 30
     outputs:
       version: ${{ steps.read-version.outputs.version }}
@@ -240,7 +240,7 @@ jobs:
       issues: write
       deployments: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    if: github.head_ref != 'qa' || github.base_ref != 'main'  || github.head_ref != 'api-to-aws'
     timeout-minutes: 30
     outputs:
       website_url: ${{ steps.deploy-metadata.outputs.website_url }}
@@ -482,7 +482,7 @@ jobs:
     name: Verify Version
     needs: [build_images, deploy_images]
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    if: github.head_ref != 'qa' || github.base_ref != 'main' || github.head_ref != 'api-to-aws'
     timeout-minutes: 30
     strategy:
       matrix:

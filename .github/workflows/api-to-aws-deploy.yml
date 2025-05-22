@@ -1,18 +1,18 @@
-name: QA
+name: api-to-aws
 
 on:
   pull_request:
     branches:
-      - main
+      - qa
     types: [opened, synchronize, reopened]
 
 jobs:
   build_client:
     name: Build Client
     runs-on: blacksmith-4vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'api-to-aws' && github.base_ref == 'qa'
     concurrency:
-      group: qa-build-client
+      group: api-to-aws-build-client
       cancel-in-progress: true
     timeout-minutes: 60
     outputs:
@@ -79,9 +79,9 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-api-to-aws-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-api-to-aws-
 
       - name: Build using Docker
         uses: docker/build-push-action@v6
@@ -125,9 +125,9 @@ jobs:
   build_images:
     name: Build Images
     runs-on: ${{ matrix.runner }}
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'api-to-aws' && github.base_ref == 'qa'
     concurrency:
-      group: qa-build-images-${{ matrix.service }}
+      group: api-to-aws-build-images-${{ matrix.service }}
       cancel-in-progress: true
     timeout-minutes: 60
     strategy:
@@ -175,9 +175,9 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-api-to-aws-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-api-to-aws-
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -185,7 +185,7 @@ jobs:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ steps.get-ecr-url.outputs.ECR_URL }}:pr-qa
+          tags: ${{ steps.get-ecr-url.outputs.ECR_URL }}:pr-api-to-aws
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
 
@@ -193,9 +193,9 @@ jobs:
     needs: [build_client, build_images]
     name: Deploy Client to S3 + Cloudflare
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'api-to-aws' && github.base_ref == 'qa'
     concurrency:
-      group: qa-deploy-client
+      group: api-to-aws-deploy-client
     timeout-minutes: 60
     steps:
       - name: Configure AWS Credentials
@@ -216,7 +216,7 @@ jobs:
           # Upload entire build directory to S3
           aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete --force
         env:
-          S3_DIR: s3://qa.quadratic-preview.com/
+          S3_DIR: s3://api-to-aws.quadratic-preview.com/
 
       - name: Purge Cloudflare Cache
         run: |
@@ -237,9 +237,9 @@ jobs:
     needs: [build_client, build_images]
     name: Update Infrastructure with Pulumi
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'api-to-aws' && github.base_ref == 'qa'
     concurrency:
-      group: qa-deploy-infra
+      group: api-to-aws-deploy-infra
     timeout-minutes: 60
     steps:
       - name: Checkout code
@@ -274,11 +274,11 @@ jobs:
             - aws-infra-development
           EOF
 
-          pulumi config set api-subdomain api-pr-qa
-          pulumi config set multiplayer-subdomain multiplayer-pr-qa
-          pulumi config set files-subdomain files-pr-qa
-          pulumi config set connection-subdomain connection-pr-qa
-          pulumi config set docker-image-tag pr-qa
+          pulumi config set api-subdomain api-pr-api-to-aws
+          pulumi config set connection-subdomain connection-pr-api-to-aws
+          pulumi config set files-subdomain files-pr-api-to-aws
+          pulumi config set multiplayer-subdomain multiplayer-pr-api-to-aws
+          pulumi config set docker-image-tag pr-api-to-aws
           pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
           pulumi config set is-preview true
 
@@ -287,30 +287,30 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-          STACK_NAME: quadratic-qa
+          STACK_NAME: quadratic-api-to-aws
 
   verify_deployed_version:
     name: Verify Version
     needs: [build_client, build_images, deploy_client, deploy_infra]
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'api-to-aws' && github.base_ref == 'qa'
     concurrency:
-      group: qa-verify-version-${{ matrix.service.name }}
+      group: api-to-aws-verify-version-${{ matrix.service.name }}
       cancel-in-progress: true
     timeout-minutes: 30
     strategy:
       matrix:
         service:
           - name: client
-            url: "https://qa.quadratic-preview.com/version.json"
+            url: "https://api-pr-api.quadratic-preview.com/version.json"
           - name: api
-            url: "https://quadratic-staging.herokuapp.com/health"
+            url: "https://api-pr-api-to-aws.quadratic-preview.com/health"
           - name: multiplayer
-            url: "https://multiplayer-pr-qa.quadratic-preview.com/health"
+            url: "https://multiplayer-pr-api-pr-api.quadratic-preview.com/health"
           - name: connection
-            url: "https://connection-pr-qa.quadratic-preview.com/health"
+            url: "https://connection-pr-api-pr-api.quadratic-preview.com/health"
           - name: files
-            url: "http://files-pr-qa.quadratic-preview.com/health"
+            url: "http://files-pr-api-pr-api.quadratic-preview.com/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_client.outputs.version }}
@@ -373,27 +373,3 @@ jobs:
 
           echo "::error::${{ matrix.service.name }} version check failed after ${{ env.MAX_ATTEMPTS }} attempts"
           exit 1
-
-  qa-wolf-notify:
-    needs: [deploy_client, deploy_infra, verify_deployed_version]
-    name: Notify QA Wolf
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
-    concurrency:
-      group: qa-wolf-notify
-      cancel-in-progress: true
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Wait for 5 minutes
-        run: sleep 300
-
-      - name: Notify deploy_success
-        id: run_tests
-        run: |
-          curl -H "Authorization: ${{ secrets.QAW_API_KEY }}" \
-          -H 'Content-Type: application/json' \
-          -d '{"branch": "qa", "deployment_type": "new_qa", "commit_url": "https://github.com/quadratichq/quadratic/commit/${{ github.sha }}", "sha": "${{ github.sha }}"}' \
-          https://app.qawolf.com/api/webhooks/deploy_success
