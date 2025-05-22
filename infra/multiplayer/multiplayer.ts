@@ -32,10 +32,10 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
   },
   instanceType: instanceSize,
+  ami: latestAmazonLinuxAmi.id,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [multiplayerEc2SecurityGroup.id],
   subnetId: subNet1, // Assign a subnet, otherwise a random one will be chosen which could be disconnected from the NLB
-  ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>

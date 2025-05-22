@@ -36,23 +36,23 @@ const instanceSize = config.require("connection-instance-size");
 // Create an Auto Scaling Group
 const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
   instanceType: instanceSize,
-  iamInstanceProfile: instanceProfileIAMContainerRegistry,
   imageId: latestAmazonLinuxAmi.id,
+  iamInstanceProfile: instanceProfileIAMContainerRegistry,
   securityGroups: [connectionEc2SecurityGroup.id],
-  userData: connectionEip1.publicIp.apply((publicIp1) =>
-    connectionEip2.publicIp.apply((publicIp2) =>
+  userData: pulumi
+    .all([connectionEip1.publicIp, connectionEip2.publicIp])
+    .apply(([eip1, eip2]) =>
       runDockerImageBashScript(
         connectionECRName,
         dockerImageTag,
         connectionPulumiEscEnvironmentName,
         {
           QUADRATIC_API_URI: quadraticApiUri,
-          STATIC_IPS: `${publicIp1},${publicIp2}`,
+          STATIC_IPS: `${eip1},${eip2}`,
         },
         true,
       ),
     ),
-  ),
 });
 
 // Create a new Target Group
