@@ -57,6 +57,21 @@ const targetGroup = new aws.lb.TargetGroup("api-nlb-tg", {
   protocol: "TCP",
   targetType: "instance",
   vpcId: apiVPC.id,
+
+  healthCheck: {
+    enabled: true,
+    protocol: "HTTP",
+    path: "/health",
+    healthyThreshold: 2,
+    unhealthyThreshold: 2,
+    interval: 30,
+  },
+
+  // Enable connection termination on deregistration
+  deregistrationDelay: 30,
+
+  // Enable proxy protocol v2 if your application supports it
+  proxyProtocolV2: true,
 });
 
 // Calculate the number of instances to launch
@@ -86,6 +101,15 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
       instanceWarmup: "60",
     },
   },
+
+  // Add auto-scaling metrics collection
+  enabledMetrics: [
+    "GroupMinSize",
+    "GroupMaxSize",
+    "GroupDesiredCapacity",
+    "GroupInServiceInstances",
+    "GroupTotalInstances",
+  ],
 });
 
 // Create a new Network Load Balancer
@@ -107,7 +131,7 @@ const nlbListener = new aws.lb.Listener("api-nlb-listener", {
   port: 443,
   protocol: "TLS",
   certificateArn: certificateArn, // Attach the SSL certificate
-  sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
+  sslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06", // Choose an appropriate SSL policy
   defaultActions: [
     {
       type: "forward",
@@ -115,6 +139,62 @@ const nlbListener = new aws.lb.Listener("api-nlb-listener", {
     },
   ],
 });
+
+// Create Global Accelerator
+const apiGlobalAccelerator = new aws.globalaccelerator.Accelerator(
+  "api-global-accelerator",
+  {
+    name: "api-global-accelerator",
+    ipAddressType: "IPV4",
+    enabled: true,
+    tags: {
+      Name: "api-global-accelerator",
+      Environment: pulumi.getStack(),
+    },
+  },
+);
+
+// Create listener for HTTPS traffic
+const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
+  "api-global-accelerator-listener",
+  {
+    acceleratorArn: apiGlobalAccelerator.id,
+    protocol: "TCP",
+    portRanges: [
+      {
+        fromPort: 443,
+        toPort: 443,
+      },
+    ],
+    clientAffinity: "SOURCE_IP", // Maintains session persistence
+  },
+);
+
+// Create endpoint group pointing to the NLB
+const apiEndpointGroup = new aws.globalaccelerator.EndpointGroup(
+  "api-endpoint-group",
+  {
+    listenerArn: apiGlobalAcceleratorListener.id,
+    endpointGroupRegion: aws.getRegionOutput().name,
+
+    // Configure health checks
+    healthCheckProtocol: "TCP",
+    healthCheckPort: 443,
+    healthCheckIntervalSeconds: 30,
+    thresholdCount: 3,
+
+    // Configure traffic dial percentage (useful for blue-green deployments)
+    trafficDialPercentage: 100,
+
+    endpointConfigurations: [
+      {
+        endpointId: nlb.arn,
+        weight: 100,
+        clientIpPreservationEnabled: true, // Preserve client IPs
+      },
+    ],
+  },
+);
 
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
@@ -126,18 +206,33 @@ const hostedZone = pulumi.output(
   ),
 );
 
-// Create a Route 53 record pointing to the NLB
+// Create a Route 53 record pointing to Global Accelerator
 const dnsRecord = new aws.route53.Record("api-r53-record", {
   zoneId: hostedZone.id,
   name: `${apiSubdomain}.${domain}`, // subdomain you want to use
   type: "A",
   aliases: [
     {
-      name: nlb.dnsName,
-      zoneId: nlb.zoneId,
+      name: apiGlobalAccelerator.dnsName,
+      zoneId: "Z2BJ6XQ5FK7U4H",
       evaluateTargetHealth: true,
     },
   ],
 });
+
+// Add target-tracking auto-scaling policy
+const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
+  "api-target-tracking-scaling",
+  {
+    autoscalingGroupName: autoScalingGroup.name,
+    policyType: "TargetTrackingScaling",
+    targetTrackingConfiguration: {
+      predefinedMetricSpecification: {
+        predefinedMetricType: "ASGAverageCPUUtilization",
+      },
+      targetValue: 70.0,
+    },
+  },
+);
 
 export const apiPublicDns = dnsRecord.name;
