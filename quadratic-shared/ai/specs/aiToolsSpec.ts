@@ -449,9 +449,9 @@ Always refer to the cells on sheet by its position in a1 notation, using q.cells
 The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
-- If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
-- If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n
-- Leave a blank row / column between the code cell and the data it references. Example if placing to the right: if nearest content is in D1 and you're inserting to the right, you would use F1; example placement underneath: if nearest content is in C17 and you're inserting below, you would use C19.\n
+- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table.\n
+- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table.\n
+- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space.\n
 - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
 - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
