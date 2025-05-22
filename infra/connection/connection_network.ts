@@ -177,7 +177,7 @@ export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
   },
 );
 
-// Create a Security Group for the Multiplayer EC2 instance
+// Create a Security Group for the Connection EC2 instance
 export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
   "connection-sg-1",
   {

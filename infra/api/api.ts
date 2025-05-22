@@ -24,7 +24,7 @@ const apiSubdomain = config.require("api-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const apiECRName = config.require("api-ecr-repo-name");
 const apiPulumiEscEnvironmentName = config.require(
-  "api-pulumi-esc-environment-name"
+  "api-pulumi-esc-environment-name",
 );
 
 // Configuration from Pulumi ESC
@@ -38,19 +38,17 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("api-lc", {
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   imageId: latestAmazonLinuxAmi.id,
   securityGroups: [apiEc2SecurityGroup.id],
-  userData: apiEip1.publicIp.apply((publicIp1) =>
-    apiEip2.publicIp.apply((publicIp2) =>
+  userData: pulumi
+    .all([apiEip1.publicIp, apiEip2.publicIp])
+    .apply(([eip1, eip2]) =>
       runDockerImageBashScript(
         apiECRName,
         dockerImageTag,
         apiPulumiEscEnvironmentName,
-        {
-          STATIC_IPS: `${publicIp1},${publicIp2}`,
-        },
-        true
-      )
-    )
-  ),
+        {},
+        true,
+      ),
+    ),
 });
 
 // Create a new Target Group
@@ -60,6 +58,15 @@ const targetGroup = new aws.lb.TargetGroup("api-nlb-tg", {
   targetType: "instance",
   vpcId: apiVPC.id,
 });
+
+// Attach the instance to the new Target Group
+const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
+  "api-attach-instance-tg",
+  {
+    targetId: launchConfiguration.id,
+    targetGroupArn: targetGroup.arn,
+  },
+);
 
 // Calculate the number of instances to launch
 let minSize = 2;
@@ -124,8 +131,8 @@ const hostedZone = pulumi.output(
     {
       name: domain,
     },
-    { async: true }
-  )
+    { async: true },
+  ),
 );
 
 // Create a Route 53 record pointing to the NLB

@@ -125,7 +125,7 @@ new aws.ec2.RouteTableAssociation("api-private-route-table-association-2", {
   routeTableId: privateRouteTable2.id,
 });
 
-// Create a Security Group for the Connection NLB
+// Create a Security Group for the Api NLB
 export const apiNlbSecurityGroup = new aws.ec2.SecurityGroup(
   "api-nlb-security-group-1",
   {
@@ -144,7 +144,7 @@ export const apiNlbSecurityGroup = new aws.ec2.SecurityGroup(
   },
 );
 
-// Create a Security Group for the Multiplayer EC2 instance
+// Create a Security Group for the Api EC2 instance
 export const apiEc2SecurityGroup = new aws.ec2.SecurityGroup("api-sg-1", {
   vpcId: apiVPC.id,
   ingress: [

@@ -53,15 +53,6 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   ),
 });
 
-// Create a new Network Load Balancer
-const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
-  internal: false,
-  loadBalancerType: "network",
-  subnets: [subNet1, subNet2],
-  enableCrossZoneLoadBalancing: true,
-  securityGroups: [multiplayerNlbSecurityGroup.id],
-});
-
 // Create a new Target Group
 const targetGroup = new aws.lb.TargetGroup("multiplayer-nlb-tg", {
   port: 80,
@@ -78,6 +69,16 @@ const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
     targetGroupArn: targetGroup.arn,
   },
 );
+
+// Create a new Network Load Balancer
+const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
+  name: `nlb-${multiplayerSubdomain}`,
+  internal: false,
+  loadBalancerType: "network",
+  subnets: [subNet1, subNet2],
+  enableCrossZoneLoadBalancing: true,
+  securityGroups: [multiplayerNlbSecurityGroup.id],
+});
 
 // Create NLB Listener for TLS on port 443
 const nlbListener = new aws.lb.Listener("multiplayer-nlb-listener", {
