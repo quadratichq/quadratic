@@ -17,11 +17,11 @@ const internetGateway = new aws.ec2.InternetGateway("api-igw", {
 });
 
 // Create Elastic IPs
-export const apiEip1 = new aws.ec2.Eip("nat-eip-1", {
+export const apiEip1 = new aws.ec2.Eip("api-nat-eip-1", {
   vpc: true,
 });
 
-export const apiEip2 = new aws.ec2.Eip("nat-eip-2", {
+export const apiEip2 = new aws.ec2.Eip("api-nat-eip-2", {
   vpc: true,
 });
 
@@ -43,16 +43,16 @@ export const apiPublicSubnet2 = new aws.ec2.Subnet("api-public-subnet-2", {
 });
 
 // Create a NAT Gateway in each public subnet
-const natGateway1 = new aws.ec2.NatGateway("nat-gateway-1", {
+const natGateway1 = new aws.ec2.NatGateway("api-nat-gateway-1", {
   allocationId: apiEip1.id,
   subnetId: apiPublicSubnet1.id,
-  tags: { Name: "nat-gateway-1" },
+  tags: { Name: "api-nat-gateway-1" },
 });
 
-const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
+const natGateway2 = new aws.ec2.NatGateway("api-nat-gateway-2", {
   allocationId: apiEip2.id,
   subnetId: apiPublicSubnet2.id,
-  tags: { Name: "nat-gateway-2" },
+  tags: { Name: "api-nat-gateway-2" },
 });
 
 // Create private subnets
@@ -71,7 +71,7 @@ export const apiPrivateSubnet2 = new aws.ec2.Subnet("api-private-subnet-2", {
 });
 
 // Create route tables
-const publicRouteTable = new aws.ec2.RouteTable("public-route-table", {
+const publicRouteTable = new aws.ec2.RouteTable("api-public-route-table", {
   vpcId: apiVPC.id,
   routes: [
     {
@@ -79,10 +79,10 @@ const publicRouteTable = new aws.ec2.RouteTable("public-route-table", {
       gatewayId: internetGateway.id,
     },
   ],
-  tags: { Name: "public-route-table" },
+  tags: { Name: "api-public-route-table" },
 });
 
-const privateRouteTable1 = new aws.ec2.RouteTable("private-route-table-1", {
+const privateRouteTable1 = new aws.ec2.RouteTable("api-private-route-table-1", {
   vpcId: apiVPC.id,
   routes: [
     {
@@ -90,10 +90,10 @@ const privateRouteTable1 = new aws.ec2.RouteTable("private-route-table-1", {
       natGatewayId: natGateway1.id,
     },
   ],
-  tags: { Name: "private-route-table-1" },
+  tags: { Name: "api-private-route-table-1" },
 });
 
-const privateRouteTable2 = new aws.ec2.RouteTable("private-route-table-2", {
+const privateRouteTable2 = new aws.ec2.RouteTable("api-private-route-table-2", {
   vpcId: apiVPC.id,
   routes: [
     {
@@ -101,26 +101,26 @@ const privateRouteTable2 = new aws.ec2.RouteTable("private-route-table-2", {
       natGatewayId: natGateway2.id,
     },
   ],
-  tags: { Name: "private-route-table-2" },
+  tags: { Name: "api-private-route-table-2" },
 });
 
 // Associate subnets with route tables
-new aws.ec2.RouteTableAssociation("public-route-table-association-1", {
+new aws.ec2.RouteTableAssociation("api-public-route-table-association-1", {
   subnetId: apiPublicSubnet1.id,
   routeTableId: publicRouteTable.id,
 });
 
-new aws.ec2.RouteTableAssociation("public-route-table-association-2", {
+new aws.ec2.RouteTableAssociation("api-public-route-table-association-2", {
   subnetId: apiPublicSubnet2.id,
   routeTableId: publicRouteTable.id,
 });
 
-new aws.ec2.RouteTableAssociation("private-route-table-association-1", {
+new aws.ec2.RouteTableAssociation("api-private-route-table-association-1", {
   subnetId: apiPrivateSubnet1.id,
   routeTableId: privateRouteTable1.id,
 });
 
-new aws.ec2.RouteTableAssociation("private-route-table-association-2", {
+new aws.ec2.RouteTableAssociation("api-private-route-table-association-2", {
   subnetId: apiPrivateSubnet2.id,
   routeTableId: privateRouteTable2.id,
 });
@@ -141,7 +141,7 @@ export const apiNlbSecurityGroup = new aws.ec2.SecurityGroup(
     egress: [
       { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
     ],
-  }
+  },
 );
 
 // Create a Security Group for the Multiplayer EC2 instance
