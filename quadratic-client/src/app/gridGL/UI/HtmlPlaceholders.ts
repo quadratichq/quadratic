@@ -31,13 +31,22 @@ export class HtmlPlaceholders extends Graphics {
 
     const dataUrl = await htmlCell.getImageDataUrl();
     if (dataUrl) {
-      const sprite = this.addChild(new Sprite(Texture.EMPTY));
-      sprite.texture = Texture.from(dataUrl);
-      // need to adjust the width to account for the border
-      sprite.width = htmlCell.width - 2;
-      sprite.height = htmlCell.height - offsets.height;
-      sprite.x = offsets.x + 1;
-      sprite.y = offsets.y + offsets.height;
+      return new Promise((resolve) => {
+        const sprite = this.addChild(new Sprite(Texture.EMPTY));
+        sprite.texture = Texture.from(dataUrl);
+        // need to adjust the width to account for the border
+        sprite.width = htmlCell.width - 2;
+        sprite.height = htmlCell.height - offsets.height;
+        sprite.x = offsets.x + 1;
+        sprite.y = offsets.y + offsets.height;
+        if (sprite.texture.valid) {
+          resolve(undefined);
+        } else {
+          sprite.texture.once('update', () => {
+            resolve(undefined);
+          });
+        }
+      });
     } else {
       const sprite = this.addChild(new Sprite(Texture.from('chart-placeholder')));
       sprite.width = SPRITE_WIDTH;
