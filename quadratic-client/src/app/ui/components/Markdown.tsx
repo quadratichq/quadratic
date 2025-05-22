@@ -14,7 +14,7 @@ export const Markdown = memo(({ children }: Props) => {
         remarkPlugins={[remarkGfm]}
         components={{
           a: ({ node, children, ...props }) => (
-            <a target="_blank" rel="noreferrer" {...props} className="test-link">
+            <a target="_blank" rel="noreferrer" {...props} className="underline hover:text-primary">
               {children}
             </a>
           ),
