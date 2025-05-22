@@ -36,7 +36,7 @@ class Thumbnail {
   }
 
   async check() {
-    if (this.thumbnailDirty) {
+    if (this.thumbnailDirty && !pixiApp.copying) {
       const now = performance.now();
       // don't do anything while the app is paused (since it may already be generating thumbnails)
       if (this.lastUpdate + TIME_FOR_IDLE > now) {

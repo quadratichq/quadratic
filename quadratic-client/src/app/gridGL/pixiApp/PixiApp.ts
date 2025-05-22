@@ -91,6 +91,9 @@ export class PixiApp {
 
   initialized = false;
 
+  // only prepare one copy at a time
+  copying = false;
+
   constructor() {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
@@ -300,13 +303,14 @@ export class PixiApp {
 
   // called before and after a render
   prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+    this.copying = true;
     this.gridLines.visible = options?.gridLines ?? false;
     this.cursor.visible = options?.ai ?? false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
     this.headings.visible = options?.ai ?? false;
     this.boxCells.visible = false;
-    await this.htmlPlaceholders.prepare();
+    await this.htmlPlaceholders.prepare(options?.cull);
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
     if (options?.cull) {
@@ -328,9 +332,9 @@ export class PixiApp {
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());
     }
+    this.copying = false;
   }
 
-  // helper for playwright
   render(): void {
     this.renderer.render(this.stage);
   }

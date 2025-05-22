@@ -27,6 +27,9 @@ export class HtmlCell {
   private hoverSide: 'right' | 'bottom' | 'corner' | undefined;
   private offset: Rectangle;
 
+  // cache for the thumbnail image
+  private thumbnailImage: string | undefined;
+
   // whether the cell is active
   active = false;
 
@@ -171,6 +174,7 @@ export class HtmlCell {
     this.border.style.width = `${this.width}px`;
     this.border.style.height = `${this.height}px`;
     this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
+    this.thumbnailImage = undefined;
     this.recalculateBounds();
   }
 
@@ -382,6 +386,10 @@ export class HtmlCell {
 
   private getImageDataUrlAfterLoaded = (): Promise<string | undefined> => {
     return new Promise((resolve) => {
+      if (this.thumbnailImage) {
+        resolve(this.thumbnailImage);
+        return;
+      }
       const plotly = (this.iframe.contentWindow as any)?.Plotly;
       const plotElement = this.iframe.contentWindow?.document.querySelector('.js-plotly-plot');
       if (!plotly || !plotElement) {
@@ -394,6 +402,7 @@ export class HtmlCell {
             height: this.height,
           })
           .then((dataUrl: string) => {
+            this.thumbnailImage = dataUrl;
             resolve(dataUrl);
           })
           .catch((error: any) => {

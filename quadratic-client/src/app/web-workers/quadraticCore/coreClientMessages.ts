@@ -1123,18 +1123,20 @@ export interface ClientCoreDeleteRows {
   cursor: string;
 }
 
-export interface ClientCoreInsertColumn {
-  type: 'clientCoreInsertColumn';
+export interface ClientCoreInsertColumns {
+  type: 'clientCoreInsertColumns';
   sheetId: string;
   column: number;
+  count: number;
   right: boolean;
   cursor: string;
 }
 
-export interface ClientCoreInsertRow {
-  type: 'clientCoreInsertRow';
+export interface ClientCoreInsertRows {
+  type: 'clientCoreInsertRows';
   sheetId: string;
   row: number;
+  count: number;
   below: boolean;
   cursor: string;
 }
@@ -1430,8 +1432,8 @@ export type ClientCoreMessage =
   | ClientCoreNeighborText
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
-  | ClientCoreInsertColumn
-  | ClientCoreInsertRow
+  | ClientCoreInsertColumns
+  | ClientCoreInsertRows
   | ClientCoreFlattenDataTable
   | ClientCoreCodeDataTableToDataTable
   | ClientCoreGridToDataTable

@@ -59,6 +59,12 @@ export class Update {
   private update = () => {
     if (pixiApp.destroyed) return;
 
+    if (pixiApp.copying) {
+      this.raf = requestAnimationFrame(this.update);
+      this.fps?.update();
+      return;
+    }
+
     if (!pixiApp.cellsSheets.isReady()) {
       this.raf = requestAnimationFrame(this.update);
       return;
