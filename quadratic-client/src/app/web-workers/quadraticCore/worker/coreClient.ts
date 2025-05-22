@@ -633,12 +633,12 @@ class CoreClient {
         core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
         return;
 
-      case 'clientCoreInsertColumn':
-        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
+      case 'clientCoreInsertColumns':
+        core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor);
         return;
 
-      case 'clientCoreInsertRow':
-        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+      case 'clientCoreInsertRows':
+        core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor);
         return;
 
       case 'clientCoreFlattenDataTable':
