@@ -165,7 +165,7 @@ services:
     restart: "always"
     ports:
       - "8000:8000"
-    command: bash -c "npx prisma migrate deploy --schema quadratic-api/prisma/schema.prisma && npm run start:prod --workspace=quadratic-api"
+    command: bash -c "npm run prisma:migrate:deploy --workspace=quadratic-api && npm run start:prod --workspace=quadratic-api"
     depends_on:
       postgres:
         condition: service_healthy
@@ -561,7 +561,7 @@ services:
       PGUSER: user
       POSTGRES_PASSWORD: password
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d ssh-postgres-connection" ]
+      test: ["CMD-SHELL", "pg_isready -U user -d ssh-postgres-connection"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -639,8 +639,8 @@ services:
     profiles:
       - quadratic-connection
       - quadratic-connection-db
-      - quadratic-connection-db-mssql  
-      - quadratic-connection-db-mssql-ssh  
+      - quadratic-connection-db-mssql
+      - quadratic-connection-db-mssql-ssh
 
 volumes:
   postgres-connection-data:
