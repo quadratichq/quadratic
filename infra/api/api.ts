@@ -59,15 +59,6 @@ const targetGroup = new aws.lb.TargetGroup("api-nlb-tg", {
   vpcId: apiVPC.id,
 });
 
-// Attach the instance to the new Target Group
-const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
-  "api-attach-instance-tg",
-  {
-    targetId: launchConfiguration.id,
-    targetGroupArn: targetGroup.arn,
-  },
-);
-
 // Calculate the number of instances to launch
 let minSize = 2;
 let maxSize = 5;
