@@ -169,7 +169,7 @@ function getPrompt(data: OnboardingResponseV1) {
   } else if (data.use === 'personal' && data['personal-uses[]'] && data['personal-uses[]'].length > 0) {
     const optionValue = data['personal-uses[]'][0];
     const label = allQuestions
-      .find((q) => q.id === 'personal-uses')
+      .find((q) => q.id === 'personal-uses[]')
       ?.options.find((o) => o.value === optionValue)?.label;
     if (label)
       prompt = `One of the things I'm planning on using Quadratic for is ${label}; create me a sample dataset for that field. Once finished with the dataset, create a chart that helps explain the data.`;
