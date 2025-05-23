@@ -65,6 +65,7 @@ const targetGroup = new aws.lb.TargetGroup("api-nlb-tg", {
     healthyThreshold: 2,
     unhealthyThreshold: 2,
     interval: 30,
+    matcher: "200", // Added: Specify HTTP 200 as healthy
   },
 
   // Enable connection termination on deregistration
@@ -171,9 +172,8 @@ const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
 );
 
 // Create endpoint group pointing to the NLB
-const apiEndpointGroup = new aws.globalaccelerator.EndpointGroup(
-  "api-endpoint-group",
-  {
+const apiGlobalAcceleratorEndpointGroup =
+  new aws.globalaccelerator.EndpointGroup("api-endpoint-group", {
     listenerArn: apiGlobalAcceleratorListener.id,
     endpointGroupRegion: aws.getRegionOutput().name,
 
@@ -190,11 +190,10 @@ const apiEndpointGroup = new aws.globalaccelerator.EndpointGroup(
       {
         endpointId: nlb.arn,
         weight: 100,
-        clientIpPreservationEnabled: true, // Preserve client IPs
+        clientIpPreservationEnabled: false,
       },
     ],
-  },
-);
+  });
 
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
@@ -214,7 +213,7 @@ const dnsRecord = new aws.route53.Record("api-r53-record", {
   aliases: [
     {
       name: apiGlobalAccelerator.dnsName,
-      zoneId: "Z2BJ6XQ5FK7U4H",
+      zoneId: "Z2BJ6XQ5FK7U4H", // This is the generic AWS Global Accelerator zone ID
       evaluateTargetHealth: true,
     },
   ],
