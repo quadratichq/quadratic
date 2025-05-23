@@ -69,7 +69,7 @@ export const getModelOptions = (
 
   const thinking = config.thinking;
 
-  const temperature = thinking ? (config.thinkingTemperature ?? config.temperature) : config.temperature;
+  const temperature = config.temperature;
 
   const promptCaching = config.promptCaching;
 
