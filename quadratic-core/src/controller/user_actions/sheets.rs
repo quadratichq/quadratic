@@ -238,6 +238,7 @@ mod test {
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,
+            None,
         );
         gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
             .unwrap();
@@ -389,6 +390,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "A1 + A2".to_string(),
+            None,
             None,
         );
         assert_eq!(
