@@ -158,6 +158,7 @@ const httpListener = new aws.lb.Listener("api-alb-http-listener", {
         port: "443",
         protocol: "HTTPS",
         statusCode: "HTTP_301",
+        path: "#{path}",
       },
     },
   ],
