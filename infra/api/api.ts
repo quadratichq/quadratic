@@ -278,20 +278,20 @@ const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
   },
 );
 
-// Additional scaling policy for ALB request count
-const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
-  "api-alb-request-count-scaling",
-  {
-    autoscalingGroupName: autoScalingGroup.name,
-    policyType: "TargetTrackingScaling",
-    targetTrackingConfiguration: {
-      predefinedMetricSpecification: {
-        predefinedMetricType: "ALBRequestCountPerTarget",
-        resourceLabel: pulumi.interpolate`${alb.arnSuffix}/${targetGroup.arnSuffix}`,
-      },
-      targetValue: 1000.0,
-    },
-  },
-);
+// // Additional scaling policy for ALB request count
+// const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
+//   "api-alb-request-count-scaling",
+//   {
+//     autoscalingGroupName: autoScalingGroup.name,
+//     policyType: "TargetTrackingScaling",
+//     targetTrackingConfiguration: {
+//       predefinedMetricSpecification: {
+//         predefinedMetricType: "ALBRequestCountPerTarget",
+//         resourceLabel: pulumi.interpolate`${alb.arnSuffix}/${targetGroup.arnSuffix}`,
+//       },
+//       targetValue: 1000.0,
+//     },
+//   },
+// );
 
 export const apiPublicDns = dnsRecord.name;
