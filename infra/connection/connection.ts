@@ -32,7 +32,7 @@ const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const instanceSize = config.require("connection-instance-size");
 const minSize = config.getNumber("connection-lb-min-size") ?? 2;
-const maxSize = config.getNumber("connection-lb-min-size") ?? 5;
+const maxSize = config.getNumber("connection-lb-max-size") ?? 5;
 const desiredCapacity = config.getNumber("connection-lb-desired-capacity") ?? 2;
 
 // Create an Auto Scaling Group

@@ -30,9 +30,25 @@ const apiPulumiEscEnvironmentName = config.require(
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const instanceSize = config.require("api-instance-size");
-const minSize = config.getNumber("api-lb-min-size") ?? 2;
-const maxSize = config.getNumber("api-lb-min-size") ?? 5;
-const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
+
+// Read values and log them
+const configuredMinSize = config.getNumber("api-lb-min-size");
+const configuredMaxSize = config.getNumber("api-lb-max-size");
+const configuredDesiredCapacity = config.getNumber("api-lb-desired-capacity");
+
+pulumi.log.info(`Configured api-lb-min-size: ${configuredMinSize}`);
+pulumi.log.info(`Configured api-lb-max-size: ${configuredMaxSize}`);
+pulumi.log.info(
+  `Configured api-lb-desired-capacity: ${configuredDesiredCapacity}`,
+);
+
+const minSize = configuredMinSize ?? 2;
+const maxSize = configuredMaxSize ?? 5;
+const desiredCapacity = configuredDesiredCapacity ?? 2;
+
+pulumi.log.info(`Effective minSize: ${minSize}`);
+pulumi.log.info(`Effective maxSize: ${maxSize}`);
+pulumi.log.info(`Effective desiredCapacity: ${desiredCapacity}`);
 
 // Create an Auto Scaling Group
 const launchConfiguration = new aws.ec2.LaunchConfiguration("api-lc", {
