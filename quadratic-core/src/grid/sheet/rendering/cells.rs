@@ -508,6 +508,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id)
@@ -589,6 +590,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,
+            None,
         );
         let expected = vec![
             JsRenderCell {
@@ -651,10 +653,6 @@ mod tests {
             },
             None,
         );
-
-        let sheet = gc.sheet(sheet_id);
-        let code_cell = sheet.get_render_cells(Rect::test_a1("b2:b7"), gc.a1_context());
-        dbg!(&code_cell);
     }
 
     #[test]

@@ -170,6 +170,7 @@ export class Sheets {
           offsets: '',
           bounds: { type: 'empty' },
           bounds_without_formatting: { type: 'empty' },
+          format_bounds: { type: 'empty' },
         },
         true
       );
@@ -196,6 +197,10 @@ export class Sheets {
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();
     }
+  }
+
+  getSheetIdFromName(name: string): string {
+    return this.sheets.find((sheet) => sheet.name === name)?.id || '';
   }
 
   getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {

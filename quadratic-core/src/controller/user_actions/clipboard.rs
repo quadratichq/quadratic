@@ -219,7 +219,13 @@ mod test {
         x: i64,
         y: i64,
     ) {
-        gc.set_code_cell(SheetPos { x, y, sheet_id }, language, code.into(), None);
+        gc.set_code_cell(
+            SheetPos { x, y, sheet_id },
+            language,
+            code.into(),
+            None,
+            None,
+        );
     }
 
     #[track_caller]
@@ -1274,12 +1280,14 @@ mod test {
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
+            None,
         );
 
         gc.set_code_cell(
             pos![D1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
+            None,
             None,
         );
 
@@ -1318,12 +1326,14 @@ mod test {
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
+            None,
         );
 
         gc.set_code_cell(
             pos![D1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
+            None,
             None,
         );
 
