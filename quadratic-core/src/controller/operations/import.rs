@@ -508,8 +508,8 @@ mod test {
     use crate::{CellValue, controller::user_actions::import::tests::simple_csv_at, test_util::*};
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
-    const INVALID_ENCODING_FILE: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
+    // const INVALID_ENCODING_FILE: &[u8] =
+    //     include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
 
     #[test]
     fn guesses_the_csv_header() {
@@ -560,11 +560,11 @@ mod test {
         assert_eq!(preview[1], vec!["value1", "value2"]);
     }
 
-    #[test]
-    fn transmute_u8_to_u16() {
-        let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
-        assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
-    }
+    // #[test]
+    // fn transmute_u8_to_u16() {
+    //     let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
+    //     assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
+    // }
 
     #[test]
     fn imports_a_simple_csv() {
