@@ -114,7 +114,6 @@ flate2 = "1.0.30"
 serde_with = "3.8.1"
 dateparser = "0.2.1"
 fancy-regex = "0.14.0"
-csv-sniffer = { git = "https://github.com/jqnatividad/csv-sniffer", branch = "non-utf8-support" }
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", default-features = false, features = [
     "protobuf",

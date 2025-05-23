@@ -2,7 +2,6 @@ use std::io::Cursor;
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
-use csv_sniffer::Sniffer;
 
 use crate::{
     Array, ArraySize, CellValue, Pos, SheetPos,
@@ -19,7 +18,10 @@ use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
 use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
-use super::operation::Operation;
+use super::{
+    csv::{byte_record_to_string, find_csv_delimiter},
+    operation::Operation,
+};
 
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
@@ -50,33 +52,6 @@ impl GridController {
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
 
-    fn byte_record_to_string(record: &[u8]) -> String {
-        String::from_utf8(record.to_vec())
-            .or_else(|_| {
-                if record.is_empty() || record.len() % 2 != 0 {
-                    return Err(());
-                }
-
-                // convert u8 to u16
-                let mut utf16vec: Vec<u16> = Vec::with_capacity(record.len() / 2);
-                for chunk in record.to_owned().chunks_exact(2) {
-                    let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
-                        return Err(());
-                    };
-                    utf16vec.push(u16::from_ne_bytes(vec2));
-                }
-
-                // convert to string
-                let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
-                    return Err(());
-                };
-
-                // strip invalid characters
-                Ok(str.chars().filter(|&c| c.len_utf8() <= 2).collect())
-            })
-            .unwrap_or_else(|_| record.iter().map(|&b| b as char).collect())
-    }
-
     pub fn get_csv_preview(
         file: Vec<u8>,
         max_rows: u32,
@@ -84,16 +59,7 @@ impl GridController {
     ) -> Result<Vec<Vec<String>>> {
         let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
 
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
+        let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
 
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
@@ -111,7 +77,7 @@ impl GridController {
                 Ok(record) => {
                     let mut preview_row = vec![];
                     for value in record.iter() {
-                        preview_row.push(Self::byte_record_to_string(value));
+                        preview_row.push(byte_record_to_string(value));
                     }
                     preview.push(preview_row);
                 }
@@ -134,16 +100,7 @@ impl GridController {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
+        let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
 
         let reader = |flexible| {
             csv::ReaderBuilder::new()
@@ -180,7 +137,7 @@ impl GridController {
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
                         let (cell_value, format_update) =
-                            self.string_to_cell_value(&Self::byte_record_to_string(value), false);
+                            self.string_to_cell_value(&byte_record_to_string(value), false);
                         cell_values
                             .set(u32::try_from(x)?, y, cell_value)
                             .map_err(|e| error(e.to_string()))?;
@@ -876,47 +833,6 @@ mod test {
                 NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
             ))
         );
-    }
-
-    #[test]
-    fn test_byte_record_to_string() {
-        // Test UTF-8 string
-        let utf8_bytes = b"Hello, World!";
-        assert_eq!(
-            GridController::byte_record_to_string(utf8_bytes),
-            "Hello, World!"
-        );
-
-        // Test UTF-16 string (little endian)
-        let utf16_bytes = vec![
-            0xFF, 0xFE, // BOM
-            0x48, 0x00, // H
-            0x65, 0x00, // e
-            0x6C, 0x00, // l
-            0x6C, 0x00, // l
-            0x6F, 0x00, // o
-        ];
-        assert_eq!(GridController::byte_record_to_string(&utf16_bytes), "Hello");
-
-        // Test invalid UTF-8 that falls back to character conversion
-        let invalid_utf8 = vec![0xFF, 0xFE, 0x48, 0x65, 0x6C, 0x6C, 0x6F];
-        let result = GridController::byte_record_to_string(&invalid_utf8);
-        assert!(!result.is_empty());
-        assert!(result.chars().all(|c| c.len_utf8() <= 2));
-
-        // Test preview
-        let utf16_data: Vec<u8> = vec![
-            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
-            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
-            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x32, 0x00,
-        ];
-        let result = GridController::byte_record_to_string(&utf16_data);
-        assert_eq!(result, "header1,header2\nvalue1,value2");
-
-        // Test empty input
-        assert_eq!(GridController::byte_record_to_string(b""), "");
     }
 
     #[test]
