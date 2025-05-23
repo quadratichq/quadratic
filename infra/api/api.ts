@@ -105,7 +105,7 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   warmPool: {
     minSize: 1,
     maxGroupPreparedCapacity: 2,
-    poolState: "Warmed:Running",
+    poolState: "Running",
   },
 
   instanceRefresh: {
