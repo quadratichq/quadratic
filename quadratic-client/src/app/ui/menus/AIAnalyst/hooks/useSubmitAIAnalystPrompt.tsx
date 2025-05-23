@@ -32,7 +32,6 @@ import {
   removeOldFilesInToolResult,
   replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRef } from 'react';
@@ -202,7 +201,7 @@ export function useSubmitAIAnalystPrompt() {
                 content: [{ type: 'text', text: 'Request aborted by the user.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model: getModelFromModelKey(modelKey),
+                modelKey,
               };
               return [...prevMessages, newLastMessage];
             }
@@ -437,7 +436,7 @@ export function useSubmitAIAnalystPrompt() {
                 content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model: getModelFromModelKey(modelKey),
+                modelKey,
               };
               return [...prevMessages, newLastMessage];
             }

@@ -7,11 +7,16 @@ import type {
   BedrockAnthropicModelKey,
   BedrockModelKey,
   OpenAIModelKey,
+  QuadraticModelKey,
   VertexAIAnthropicModelKey,
   VertexAIModelKey,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { aiToolsSpec } from '../specs/aiToolsSpec';
+
+export function isQuadraticModel(modelKey: AIModelKey): modelKey is QuadraticModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'quadratic';
+}
 
 export function isVertexAIAnthropicModel(modelKey: AIModelKey): modelKey is VertexAIAnthropicModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'vertexai-anthropic';

@@ -1,5 +1,6 @@
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import 'fake-indexeddb/auto';
+import { DEFAULT_BACKUP_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -55,7 +56,7 @@ describe('aiAnalystOfflineChats', () => {
             content: [{ type: 'text', text: 'response2' }],
             contextType: 'userPrompt',
             toolCalls: [],
-            model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+            modelKey: DEFAULT_BACKUP_MODEL,
           },
         ],
       },

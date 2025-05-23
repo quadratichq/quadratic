@@ -86,3 +86,6 @@ docker/mssql-connection/data
 jmeter.log
 
 ~$*
+
+# ai
+/finetuning
