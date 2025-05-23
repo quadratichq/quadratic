@@ -30,25 +30,9 @@ const apiPulumiEscEnvironmentName = config.require(
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const instanceSize = config.require("api-instance-size");
-
-// Read values and log them
-const configuredMinSize = config.getNumber("api-lb-min-size");
-const configuredMaxSize = config.getNumber("api-lb-max-size");
-const configuredDesiredCapacity = config.getNumber("api-lb-desired-capacity");
-
-pulumi.log.info(`Configured api-lb-min-size: ${configuredMinSize}`);
-pulumi.log.info(`Configured api-lb-max-size: ${configuredMaxSize}`);
-pulumi.log.info(
-  `Configured api-lb-desired-capacity: ${configuredDesiredCapacity}`,
-);
-
-const minSize = configuredMinSize ?? 2;
-const maxSize = configuredMaxSize ?? 5;
-const desiredCapacity = configuredDesiredCapacity ?? 2;
-
-pulumi.log.info(`Effective minSize: ${minSize}`);
-pulumi.log.info(`Effective maxSize: ${maxSize}`);
-pulumi.log.info(`Effective desiredCapacity: ${desiredCapacity}`);
+const minSize = config.getNumber("api-lb-min-size") ?? 2;
+const maxSize = config.getNumber("api-lb-max-size") ?? 5;
+const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
 
 // Create an Auto Scaling Group
 const launchConfiguration = new aws.ec2.LaunchConfiguration("api-lc", {
@@ -128,7 +112,7 @@ const nlbListener = new aws.lb.Listener("api-nlb-listener", {
   port: 443,
   protocol: "TLS",
   certificateArn: certificateArn, // Attach the SSL certificate
-  sslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06", // Choose an appropriate SSL policy
+  sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
   defaultActions: [
     {
       type: "forward",
