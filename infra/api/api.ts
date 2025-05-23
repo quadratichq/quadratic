@@ -1,7 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
@@ -31,6 +30,9 @@ const apiPulumiEscEnvironmentName = config.require(
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const instanceSize = config.require("api-instance-size");
+const minSize = config.getNumber("api-lb-min-size") ?? 2;
+const maxSize = config.getNumber("api-lb-min-size") ?? 5;
+const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
 
 // Create an Auto Scaling Group
 const launchConfiguration = new aws.ec2.LaunchConfiguration("api-lc", {
@@ -57,29 +59,7 @@ const targetGroup = new aws.lb.TargetGroup("api-nlb-tg", {
   protocol: "TCP",
   targetType: "instance",
   vpcId: apiVPC.id,
-
-  healthCheck: {
-    enabled: true,
-    protocol: "HTTP",
-    path: "/health",
-    healthyThreshold: 2,
-    unhealthyThreshold: 2,
-    interval: 30,
-    matcher: "200", // Added: Specify HTTP 200 as healthy
-  },
-
-  // Enable connection termination on deregistration
-  deregistrationDelay: 30,
-
-  // Enable proxy protocol v2 if your application supports it
-  proxyProtocolV2: true,
 });
-
-// Calculate the number of instances to launch
-let minSize = 2;
-let maxSize = 5;
-let desiredCapacity = 2;
-if (isPreviewEnvironment) minSize = maxSize = desiredCapacity = 1;
 
 const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   tags: [

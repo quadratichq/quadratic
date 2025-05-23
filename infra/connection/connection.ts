@@ -1,7 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
@@ -32,6 +31,9 @@ const connectionPulumiEscEnvironmentName = config.require(
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const instanceSize = config.require("connection-instance-size");
+const minSize = config.getNumber("connection-lb-min-size") ?? 2;
+const maxSize = config.getNumber("connection-lb-min-size") ?? 5;
+const desiredCapacity = config.getNumber("connection-lb-desired-capacity") ?? 2;
 
 // Create an Auto Scaling Group
 const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
@@ -62,12 +64,6 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   targetType: "instance",
   vpcId: connectionVPC.id,
 });
-
-// Calculate the number of instances to launch
-let minSize = 2;
-let maxSize = 5;
-let desiredCapacity = 2;
-if (isPreviewEnvironment) minSize = maxSize = desiredCapacity = 1;
 
 const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
   tags: [
