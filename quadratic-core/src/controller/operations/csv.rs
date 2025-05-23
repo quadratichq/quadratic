@@ -9,77 +9,39 @@ const CSV_SAMPLE_LINES: usize = 10;
 
 use std::{
     collections::HashMap,
-    io::{BufRead, BufReader, Cursor},
+    io::{BufRead, BufReader, Read},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) enum UtfBom {
-    LittleEndian,
-    BigEndian,
-    Utf8,
-}
+use anyhow::{Result, anyhow};
+use encoding_rs_io::DecodeReaderBytes;
 
-pub(crate) fn check_utf_16_bom(file: &[u8]) -> (UtfBom, &[u8]) {
-    let utf_bom = if file.len() < 2 || file.len() % 2 != 0 {
-        if file[0] == 0xFF && file[1] == 0xFE {
-            UtfBom::LittleEndian
-        } else if file[0] == 0xFE && file[1] == 0xFF {
-            UtfBom::BigEndian
-        } else {
-            UtfBom::Utf8
-        }
-    } else {
-        UtfBom::Utf8
-    };
-
-    let file = if utf_bom == UtfBom::Utf8 {
-        file
-    } else {
-        &file[2..]
-    };
-
-    (utf_bom, file)
-}
-
-/// Convert a byte record to a string, handling UTF-16 encoding if necessary.
-pub(crate) fn byte_record_to_string(record: &[u8], utf_bom: UtfBom) -> String {
-    if utf_bom == UtfBom::Utf8 {
-        return String::from_utf8_lossy(record).into_owned();
+/// Converts a CSV file to utf8 using encoding_rs_io.
+pub(crate) fn clean_csv_file(file: &[u8]) -> Result<Vec<u8>> {
+    let mut decoder = DecodeReaderBytes::new(file);
+    let mut converted_file = vec![];
+    if decoder.read_to_end(&mut converted_file).is_err() {
+        return Err(anyhow!("error converting file to utf8"));
     }
-
-    let mut utf16vec = Vec::with_capacity(record.len() / 2);
-    let mut i = 0;
-
-    while i < record.len() {
-        let byte1 = record[i];
-        let byte2 = record[i + 1];
-        let value = if utf_bom == UtfBom::LittleEndian {
-            // Little endian
-            u16::from_le_bytes([byte1, byte2])
-        } else {
-            // Big endian
-            u16::from_be_bytes([byte1, byte2])
-        };
-        utf16vec.push(value);
-        i += 2;
-    }
-    // Convert and filter out invalid characters
-    if let Ok(s) = String::from_utf16(&utf16vec) {
-        return s;
-    }
-    String::from_utf8_lossy(record).into_owned()
+    // Only keep valid UTF-8 sequences
+    let filtered: Vec<u8> = String::from_utf8_lossy(&converted_file)
+        .into_owned()
+        .into_bytes();
+    Ok(filtered)
 }
 
 struct DelimiterStats {
     delimiter: char,
+    width: u32,
     column_counts: HashMap<usize, usize>,
 }
 
-/// Finds the likely delimiter of a CSV file by reading the first lines and
-/// counting potential delimiters, along with how many columns they split
-/// the line into.
-pub(crate) fn find_csv_delimiter(file: &[u8]) -> u8 {
-    let mut reader = BufReader::new(Cursor::new(file));
+/// Finds the likely delimiter of a CSV file and the likely width and height.
+/// The delimiter and width is determined by reading the first lines and counting
+/// potential delimiters, along with how many columns they split the line into.
+///
+/// Returns (delimiter, width, height)
+pub(crate) fn find_csv_info(text: &[u8]) -> (u8, u32, u32) {
+    let mut reader = BufReader::new(text);
     let mut line = String::new();
 
     // For each delimiter, track column counts
@@ -87,6 +49,7 @@ pub(crate) fn find_csv_delimiter(file: &[u8]) -> u8 {
         .iter()
         .map(|&delim| DelimiterStats {
             delimiter: delim as char,
+            width: 0,
             column_counts: HashMap::new(),
         })
         .collect();
@@ -94,7 +57,7 @@ pub(crate) fn find_csv_delimiter(file: &[u8]) -> u8 {
 
     // Sample the lines to count the frequency of delimiters, and the number
     // of columns they create
-    while line_count < CSV_SAMPLE_LINES {
+    while line_count <= CSV_SAMPLE_LINES {
         line.clear();
         if reader.read_line(&mut line).unwrap_or(0) == 0 {
             break;
@@ -107,10 +70,33 @@ pub(crate) fn find_csv_delimiter(file: &[u8]) -> u8 {
 
         // For each delimiter, count the number of columns in this line
         for stats in delimiter_stats.iter_mut() {
-            let columns = line.split(stats.delimiter).count();
+            let mut columns = 0;
+
+            // allow for parsing of quoted fields
+            let mut in_quotes = None;
+            let mut last_char = ' ';
+
+            for c in line.chars() {
+                if c == '"' || c == '\'' {
+                    if in_quotes.is_none() {
+                        in_quotes = Some(c);
+                    } else if in_quotes.is_some_and(|q| q == c) {
+                        in_quotes = None;
+                    }
+                } else if c == stats.delimiter && in_quotes.is_none() {
+                    columns += 1;
+                }
+                last_char = c;
+            }
+            // Add one for the last column
+            if last_char != stats.delimiter {
+                columns += 1;
+            }
+
             if columns > 1 {
                 // Only consider if it actually splits the line
                 *stats.column_counts.entry(columns).or_insert(0) += 1;
+                stats.width = columns as u32;
             }
         }
         line_count += 1;
@@ -119,6 +105,7 @@ pub(crate) fn find_csv_delimiter(file: &[u8]) -> u8 {
     // Find the delimiter with the most consistent column count
     let mut best_delimiter = b',';
     let mut best_consistency = 0.0;
+    let mut best_width = 1;
 
     for stats in delimiter_stats.iter() {
         if stats.column_counts.is_empty() {
@@ -142,10 +129,18 @@ pub(crate) fn find_csv_delimiter(file: &[u8]) -> u8 {
         if consistency > best_consistency {
             best_consistency = consistency;
             best_delimiter = stats.delimiter as u8;
+            best_width = stats.width;
         }
     }
 
-    best_delimiter
+    // read the file to get the height
+    let mut height = 0;
+    let reader = BufReader::new(text);
+    for _ in reader.lines() {
+        height += 1;
+    }
+
+    (best_delimiter, best_width, height)
 }
 
 #[cfg(test)]
@@ -154,64 +149,32 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_byte_record_to_string() {
-        // Test UTF-8 string
-        let utf8_bytes = b"Hello, World!";
-        assert_eq!(
-            byte_record_to_string(utf8_bytes, UtfBom::Utf8),
-            "Hello, World!"
-        );
-
-        // Test UTF-16 string (little endian)
-        let utf16_bytes = vec![
-            0xFF, 0xFE, // BOM
-            0x48, 0x00, // H
-            0x65, 0x00, // e
-            0x6C, 0x00, // l
-            0x6C, 0x00, // l
-            0x6F, 0x00, // o
-        ];
-        assert_eq!(
-            byte_record_to_string(&utf16_bytes, UtfBom::LittleEndian),
-            "Hello"
-        );
-
-        // Test invalid UTF-8 that falls back to character conversion
-        let invalid_utf8 = vec![0xFF, 0xFE, 0x48, 0x65, 0x6C, 0x6C, 0x6F];
-        let result = byte_record_to_string(&invalid_utf8, UtfBom::LittleEndian);
-        assert!(!result.is_empty());
-        assert!(result.chars().all(|c| c.len_utf8() <= 2));
-
-        // Test preview
-        let utf16_data: Vec<u8> = vec![
-            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
-            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
-            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x32, 0x00,
-        ];
-        let result = byte_record_to_string(&utf16_data, UtfBom::LittleEndian);
-        assert_eq!(result, "header1,header2\nvalue1,value2");
-
-        // Test empty input
-        assert_eq!(byte_record_to_string(b"", UtfBom::Utf8), "");
+    fn read_test_csv_file(file_name: &str) -> Vec<u8> {
+        let dir = "../quadratic-rust-shared/data/csv/";
+        let file = std::fs::read(Path::new(dir).join(file_name)).unwrap();
+        file
     }
 
     #[test]
     fn test_find_delimiter() {
-        let delimiter = |filename: &str| -> u8 {
-            let dir = "../quadratic-rust-shared/data/csv/";
-            dbg!(Path::new(dir).join(filename));
-            let file = std::fs::read(Path::new(dir).join(filename)).unwrap();
-            find_csv_delimiter(&file)
+        let info = |filename: &str| -> (u8, u32, u32) {
+            let file = read_test_csv_file(filename);
+            let converted_file = clean_csv_file(&file).unwrap();
+            find_csv_info(&converted_file)
         };
 
-        assert_eq!(delimiter("simple_space_separator.csv"), b' ');
-        assert_eq!(delimiter("encoding_issue.csv"), b',');
-        assert_eq!(delimiter("kaggle_top_100_dataset.csv"), b';');
-        assert_eq!(delimiter("simple.csv"), b',');
-        assert_eq!(delimiter("title_row_empty_first.csv"), b',');
-        assert_eq!(delimiter("title_row.csv"), b',');
+        assert_eq!(info("encoding_issue.csv"), (b',', 3, 3));
+        assert_eq!(info("kaggle_top_100_dataset.csv"), (b';', 9, 100));
+        assert_eq!(info("simple_space_separator.csv"), (b' ', 4, 3));
+        assert_eq!(info("simple.csv"), (b',', 4, 11));
+        assert_eq!(info("title_row_empty_first.csv"), (b',', 3, 7));
+        assert_eq!(info("title_row.csv"), (b',', 3, 6));
+    }
+
+    #[test]
+    fn test_bad_line() {
+        let csv = "980E92207901934";
+        let info = find_csv_info(csv.as_bytes());
+        assert_eq!(info, (b',', 1, 1));
     }
 }

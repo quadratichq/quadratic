@@ -19,7 +19,7 @@ use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::{
-    csv::{byte_record_to_string, check_utf_16_bom, find_csv_delimiter},
+    csv::{clean_csv_file, find_csv_info},
     operation::Operation,
 };
 
@@ -59,17 +59,18 @@ impl GridController {
     ) -> Result<Vec<Vec<String>>> {
         let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
 
-        let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
-        let (utf_bom, file) = check_utf_16_bom(&file);
+        let converted_file = clean_csv_file(&file)?;
+        let (d, _, _) = find_csv_info(&converted_file);
+        let delimiter = delimiter.unwrap_or(d);
 
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
             .has_headers(false)
             .flexible(true)
-            .from_reader(file);
+            .from_reader(converted_file.as_slice());
 
         let mut preview = vec![];
-        for (i, entry) in reader.byte_records().enumerate() {
+        for (i, entry) in reader.records().enumerate() {
             if i >= max_rows as usize {
                 break;
             }
@@ -78,7 +79,7 @@ impl GridController {
                 Ok(record) => {
                     let mut preview_row = vec![];
                     for value in record.iter() {
-                        preview_row.push(byte_record_to_string(value, utf_bom));
+                        preview_row.push(value.to_string());
                     }
                     preview.push(preview_row);
                 }
@@ -101,45 +102,29 @@ impl GridController {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
-        let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
-        let (utf_bom, file) = check_utf_16_bom(&file);
+        let converted_file = clean_csv_file(&file)?;
+        let (d, width, height) = find_csv_info(&converted_file);
+        let delimiter = delimiter.unwrap_or(d);
 
         let reader = |flexible| {
             csv::ReaderBuilder::new()
                 .delimiter(delimiter)
                 .has_headers(false)
                 .flexible(flexible)
-                .from_reader(file)
+                .from_reader(converted_file.as_slice())
         };
-
-        let height = reader(false).records().count() as u32;
-
-        // since the first row or more can be headers, look at the width of the last row
-        let width = reader(true)
-            .records()
-            .last()
-            .iter()
-            .flatten()
-            .next()
-            .map(|s| s.len())
-            .unwrap_or(0) as u32;
-
-        if width == 0 {
-            bail!("empty files cannot be processed");
-        }
 
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
         let mut cell_values = Array::new_empty(array_size);
         let mut sheet_format_updates = SheetFormatUpdates::default();
         let mut y: u32 = 0;
 
-        for entry in reader(true).byte_records() {
+        for entry in reader(true).records() {
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self
-                            .string_to_cell_value(&byte_record_to_string(value, utf_bom), false);
+                        let (cell_value, format_update) = self.string_to_cell_value(&value, false);
                         cell_values
                             .set(u32::try_from(x)?, y, cell_value)
                             .map_err(|e| error(e.to_string()))?;
@@ -467,9 +452,6 @@ mod test {
     use crate::{CellValue, controller::user_actions::import::tests::simple_csv_at, test_util::*};
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
-    // const INVALID_ENCODING_FILE: &[u8] =
-    //     include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
-
     #[test]
     fn guesses_the_csv_header() {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
@@ -543,12 +525,6 @@ mod test {
         assert_eq!(preview[0], vec!["header1", "header2"]);
         assert_eq!(preview[1], vec!["value1", "value2"]);
     }
-
-    // #[test]
-    // fn transmute_u8_to_u16() {
-    //     let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
-    //     assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
-    // }
 
     #[test]
     fn imports_a_simple_csv() {
