@@ -76,13 +76,12 @@ const targetGroup = new aws.lb.TargetGroup("api-alb-tg", {
   },
 
   // Connection draining
-  deregistrationDelay: 30,
+  deregistrationDelay: 15,
 
-  // Stickiness for session persistence
+  // Stickiness disabled
   stickiness: {
+    enabled: false,
     type: "lb_cookie",
-    cookieDuration: 86400,
-    enabled: true,
   },
 });
 
@@ -161,9 +160,6 @@ const albHttpListener = new aws.lb.Listener("api-alb-http-listener", {
         port: "443",
         protocol: "HTTPS",
         statusCode: "HTTP_301",
-        host: "#{host}",
-        path: "/#{path}",
-        query: "#{query}",
       },
     },
   ],
@@ -191,7 +187,7 @@ const albHttpsListener = new aws.lb.Listener("api-alb-https-listener", {
 
 // Add target-tracking auto-scaling policy
 const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
-  `api-target-tracking-scaling-${apiSubdomain}`,
+  "api-target-tracking-scaling",
   {
     autoscalingGroupName: autoScalingGroup.name,
     policyType: "TargetTrackingScaling",
@@ -206,7 +202,7 @@ const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
 
 // Additional scaling policy for ALB request count
 const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
-  `api-alb-request-count-scaling-${apiSubdomain}`,
+  "api-alb-request-count-scaling",
   {
     autoscalingGroupName: autoScalingGroup.name,
     policyType: "TargetTrackingScaling",
@@ -238,7 +234,7 @@ const apiGlobalAccelerator = new aws.globalaccelerator.Accelerator(
 );
 
 const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
-  `api-global-accelerator-listener-${apiSubdomain}`,
+  "api-global-accelerator-listener",
   {
     acceleratorArn: apiGlobalAccelerator.id,
     protocol: "TCP",
@@ -258,25 +254,30 @@ const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
 
 const apiGlobalAcceleratorEndpointGroup =
   new aws.globalaccelerator.EndpointGroup(
-    `api-endpoint-group-${apiSubdomain}`,
+    "api-globalaccelerator-endpoint-group",
     {
       listenerArn: apiGlobalAcceleratorListener.id,
-      endpointGroupRegion: aws.getRegionOutput().name,
-
-      // Configure health checks
-      healthCheckProtocol: "TCP",
-      healthCheckPort: 443,
-      healthCheckIntervalSeconds: 30,
-      thresholdCount: 3,
-
-      // Configure traffic dial percentage (useful for blue-green deployments)
-      trafficDialPercentage: 100,
-
       endpointConfigurations: [
         {
           endpointId: alb.arn,
           weight: 100,
           clientIpPreservationEnabled: true,
+        },
+      ],
+      endpointGroupRegion: aws.getRegionOutput().name,
+      healthCheckProtocol: "TCP",
+      healthCheckPort: 443,
+      healthCheckIntervalSeconds: 30,
+      thresholdCount: 3,
+      trafficDialPercentage: 100,
+      portOverrides: [
+        {
+          listenerPort: 443,
+          endpointPort: 443,
+        },
+        {
+          listenerPort: 80,
+          endpointPort: 80,
         },
       ],
     },
@@ -306,18 +307,18 @@ const dnsRecord = new aws.route53.Record("api-r53-record", {
   ],
 });
 
-// // Create a Route 53 record pointing to ALB
-// const dnsRecord = new aws.route53.Record("api-r53-record", {
-//   zoneId: hostedZone.id,
-//   name: `${apiSubdomain}.${domain}`,
-//   type: "A",
-//   aliases: [
-//     {
-//       name: alb.dnsName,
-//       zoneId: alb.zoneId,
-//       evaluateTargetHealth: true,
-//     },
-//   ],
-// });
+// Create a Route 53 record pointing to ALB
+const dnsAlbRecord = new aws.route53.Record("api-r53-record", {
+  zoneId: hostedZone.id,
+  name: `${apiSubdomain}-alb.${domain}`,
+  type: "A",
+  aliases: [
+    {
+      name: alb.dnsName,
+      zoneId: alb.zoneId,
+      evaluateTargetHealth: true,
+    },
+  ],
+});
 
 export const apiPublicDns = dnsRecord.name;
