@@ -71,7 +71,7 @@ const targetGroup = new aws.lb.TargetGroup("api-alb-tg", {
     healthyThreshold: 2,
     unhealthyThreshold: 2,
     timeout: 5,
-    interval: 15,
+    interval: 5,
     matcher: "200",
   },
 
