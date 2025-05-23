@@ -280,7 +280,6 @@ jobs:
           pulumi config set multiplayer-subdomain multiplayer-pr-api-to-aws
           pulumi config set docker-image-tag pr-api-to-aws
           pulumi config set quadratic-api-uri https://api-pr-api-to-aws.quadratic-preview.com
-          pulumi config set is-preview true
 
           pulumi up -y
         env:

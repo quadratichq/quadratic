@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
@@ -102,11 +103,13 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   desiredCapacity,
   targetGroupArns: [targetGroup.arn],
 
-  warmPool: {
-    minSize: 1,
-    maxGroupPreparedCapacity: 2,
-    poolState: "Running",
-  },
+  warmPool: isPreviewEnvironment
+    ? undefined
+    : {
+        minSize: 1,
+        maxGroupPreparedCapacity: 2,
+        poolState: "Running",
+      },
 
   instanceRefresh: {
     strategy: "Rolling",
@@ -190,7 +193,7 @@ const httpsListener = new aws.lb.Listener("api-alb-https-listener", {
 const apiGlobalAccelerator = new aws.globalaccelerator.Accelerator(
   "api-global-accelerator",
   {
-    name: "api-global-accelerator",
+    name: `api-global-accelerator-${apiSubdomain}`,
     ipAddressType: "IPV4",
     enabled: true,
     tags: {
@@ -201,7 +204,7 @@ const apiGlobalAccelerator = new aws.globalaccelerator.Accelerator(
 );
 
 const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
-  "api-global-accelerator-listener",
+  `api-global-accelerator-listener-${apiSubdomain}`,
   {
     acceleratorArn: apiGlobalAccelerator.id,
     protocol: "TCP",
@@ -220,27 +223,30 @@ const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
 );
 
 const apiGlobalAcceleratorEndpointGroup =
-  new aws.globalaccelerator.EndpointGroup("api-endpoint-group", {
-    listenerArn: apiGlobalAcceleratorListener.id,
-    endpointGroupRegion: aws.getRegionOutput().name,
+  new aws.globalaccelerator.EndpointGroup(
+    `api-endpoint-group-${apiSubdomain}`,
+    {
+      listenerArn: apiGlobalAcceleratorListener.id,
+      endpointGroupRegion: aws.getRegionOutput().name,
 
-    // Configure health checks
-    healthCheckProtocol: "TCP",
-    healthCheckPort: 443,
-    healthCheckIntervalSeconds: 30,
-    thresholdCount: 3,
+      // Configure health checks
+      healthCheckProtocol: "TCP",
+      healthCheckPort: 443,
+      healthCheckIntervalSeconds: 30,
+      thresholdCount: 3,
 
-    // Configure traffic dial percentage (useful for blue-green deployments)
-    trafficDialPercentage: 100,
+      // Configure traffic dial percentage (useful for blue-green deployments)
+      trafficDialPercentage: 100,
 
-    endpointConfigurations: [
-      {
-        endpointId: alb.arn,
-        weight: 100,
-        clientIpPreservationEnabled: true,
-      },
-    ],
-  });
+      endpointConfigurations: [
+        {
+          endpointId: alb.arn,
+          weight: 100,
+          clientIpPreservationEnabled: true,
+        },
+      ],
+    },
+  );
 
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
@@ -268,7 +274,7 @@ const dnsRecord = new aws.route53.Record("api-r53-record", {
 
 // Add target-tracking auto-scaling policy
 const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
-  "api-target-tracking-scaling",
+  `api-target-tracking-scaling-${apiSubdomain}`,
   {
     autoscalingGroupName: autoScalingGroup.name,
     policyType: "TargetTrackingScaling",
@@ -281,20 +287,20 @@ const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
   },
 );
 
-// // Additional scaling policy for ALB request count
-// const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
-//   "api-alb-request-count-scaling",
-//   {
-//     autoscalingGroupName: autoScalingGroup.name,
-//     policyType: "TargetTrackingScaling",
-//     targetTrackingConfiguration: {
-//       predefinedMetricSpecification: {
-//         predefinedMetricType: "ALBRequestCountPerTarget",
-//         resourceLabel: pulumi.interpolate`${alb.arnSuffix}/${targetGroup.arnSuffix}`,
-//       },
-//       targetValue: 1000.0,
-//     },
-//   },
-// );
+// Additional scaling policy for ALB request count
+const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
+  `api-alb-request-count-scaling-${apiSubdomain}`,
+  {
+    autoscalingGroupName: autoScalingGroup.name,
+    policyType: "TargetTrackingScaling",
+    targetTrackingConfiguration: {
+      predefinedMetricSpecification: {
+        predefinedMetricType: "ALBRequestCountPerTarget",
+        resourceLabel: pulumi.interpolate`${alb.arnSuffix}/${targetGroup.arnSuffix}`,
+      },
+      targetValue: 1000.0,
+    },
+  },
+);
 
 export const apiPublicDns = dnsRecord.name;
