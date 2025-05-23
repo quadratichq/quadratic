@@ -15,8 +15,10 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
+import { z } from 'zod';
+const FETCHER_KEY = 'onboarding-form-submission';
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',
@@ -94,6 +96,27 @@ function ControlCheckboxStacked(
   );
 }
 
+// Zod schema TODO: ensure these are right
+// Anything with `[]` is an array, and we strip those chars out of the keys
+// when sending to the db
+export const OnboardingResponseV1Schema = z
+  .object({
+    use: z.enum(['work', 'personal', 'education']),
+    'work-role': z.string().optional(),
+    'work-role-other': z.string().optional(),
+    'personal-uses[]': z.array(z.string()).optional(),
+    'personal-uses-other': z.string().optional(),
+    'education-identity': z.string().optional(),
+    'education-identity-other': z.string().optional(),
+    'education-subjects[]': z.array(z.string()).optional(),
+    'languages[]': z.array(z.string()).optional(),
+    'goals[]': z.array(z.string()),
+  })
+  .transform((data) => {
+    // Strip out the `[]` in any keys that have it for storage
+    const storageData = Object.fromEntries(Object.entries(data).map(([key, value]) => [key.replace('[]', ''), value]));
+    return storageData;
+  });
 type QuestionFormProps = {
   id: string;
   use?: string;
@@ -103,22 +126,10 @@ type QuestionFormProps = {
 };
 type Questions = Array<QuestionFormProps & { Form: (props: QuestionFormProps) => React.ReactNode }>;
 
-// TODO: turn this into a zod schema so we validate the payload before sending it...?
-export type QuestionVersion1Payload = {
-  use: 'work' | 'personal' | 'education';
-  'work-role': string;
-  'work-role-other'?: string;
-  'personal-uses': string;
-  'personal-uses-other'?: string;
-  'education-identity': string;
-  'education-identity-other'?: string;
-  'education-subjects': string;
-};
-
 // Note: these are in a specific order for a reason. They represent the order
 // of the questions in the onboarding flow. Any with `use` will be filtered out
 // based on the value of `use` in the search params.
-const allQuestions: Questions = [
+export const allQuestions: Questions = [
   {
     id: 'use',
     title: 'How will you use Quadratic?',
@@ -208,7 +219,7 @@ const allQuestions: Questions = [
 
   // Personal
   {
-    id: 'personal-uses',
+    id: 'personal-uses[]',
     use: 'personal',
     title: 'What are you planning to use Quadratic for?',
     subtitle: 'Select all that apply',
@@ -307,7 +318,7 @@ const allQuestions: Questions = [
     },
   },
   {
-    id: 'education-subjects',
+    id: 'education-subjects[]',
     use: 'education',
     title: 'What subject areas are you working in?',
     subtitle: 'Select all that apply',
@@ -361,7 +372,7 @@ const allQuestions: Questions = [
 
   // Shared
   {
-    id: 'languages',
+    id: 'languages[]',
     title: 'Which languages are you proficient in?',
     subtitle: 'Select all that apply',
     options: [
@@ -403,7 +414,7 @@ const allQuestions: Questions = [
     },
   },
   {
-    id: 'goals',
+    id: 'goals[]',
     title: 'What are you looking to accomplish in Quadratic?',
     subtitle: 'Select all that apply',
     options: [
@@ -477,26 +488,23 @@ const useFormNavigation = () => {
   const uniqueKeys = new Set(Array.from(searchParams.keys()).filter((key) => !key.endsWith('-other')));
   const currentQuestionStack = currentUse ? allQuestions.filter((q) => (q.use ? q.use === currentUse : true)) : [];
   const currentIndex = uniqueKeys.size;
-
-  const currentId = currentUse ? currentQuestionStack[currentIndex].id : 'use';
+  const currentId = currentUse
+    ? currentQuestionStack[currentIndex]
+      ? currentQuestionStack[currentIndex].id
+      : currentQuestionStack[currentIndex - 1].id
+    : 'use';
 
   return {
-    currentUse: currentUse ? currentUse : null,
-    currentIndex: currentIndex,
-    totalQuestions: currentQuestionStack.length - 1,
+    currentQuestionStack,
     currentId,
-    isFirstQuestion: currentIndex === 0,
+    currentIndex: currentIndex,
     isLastQuestion: currentId === allQuestions[allQuestions.length - 1].id,
-    currentQuestion: currentUse ? currentQuestionStack[currentIndex] : allQuestions[0],
   };
 };
 
 export function Onboarding() {
-  const formNavigation = useFormNavigation();
-  const { currentIndex, currentId } = formNavigation;
+  const { currentIndex, currentId } = useFormNavigation();
   const setOther = useSetRecoilState(otherCheckboxAtom);
-  // console.log('formNavigation', formNavigation);
-
   const [searchParams] = useSearchParams();
 
   // Whenever the search params change, that means a new form is being rendered
@@ -506,37 +514,39 @@ export function Onboarding() {
   }, [searchParams, setOther]);
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
-      <Logo index={currentIndex} />
+    <div className="h-full overflow-auto">
+      <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
+        <Logo index={currentIndex} />
 
-      <div className="relative w-full max-w-xl transition-all">
-        <div className="relative min-h-[4rem]">
-          {allQuestions.map(({ Form, ...props }, i) => {
-            const id = props.id;
-            // console.log('currentId:%s id:%s currentIndex:%s i:%s', currentId, id, currentIndex, i);
-            // see if the id is before or after the currentId in allQuestions
-            const isBeforeCurrentId = allQuestions.findIndex((q) => q.id === currentId) > i;
-            return (
-              <div
-                key={id}
-                id={id}
-                className={cn(
-                  'absolute inset-0 transition-all duration-500 ease-in-out',
-                  'transform',
-                  // Current question
-                  id === currentId
-                    ? 'z-10 translate-x-0 opacity-100'
-                    : // Previous question(s)
-                      isBeforeCurrentId
-                      ? 'invisible z-0 -translate-x-1/3 opacity-0'
-                      : // Next question(s)
-                        'invisible z-0 translate-x-1/3 opacity-0'
-                )}
-              >
-                <Form {...props} />
-              </div>
-            );
-          })}
+        <div className="relative w-full max-w-xl transition-all">
+          <div className="relative min-h-[4rem]">
+            {allQuestions.map(({ Form, ...props }, i) => {
+              const id = props.id;
+              // console.log('currentId:%s id:%s currentIndex:%s i:%s', currentId, id, currentIndex, i);
+              // see if the id is before or after the currentId in allQuestions
+              const isBeforeCurrentId = allQuestions.findIndex((q) => q.id === currentId) > i;
+              return (
+                <div
+                  key={id}
+                  id={id}
+                  className={cn(
+                    'absolute inset-0 transition-all duration-500 ease-in-out',
+                    'transform',
+                    // Current question
+                    id === currentId
+                      ? 'z-10 translate-x-0 opacity-100'
+                      : // Previous question(s)
+                        isBeforeCurrentId
+                        ? 'invisible z-0 -translate-x-1/3 opacity-0'
+                        : // Next question(s)
+                          'invisible z-0 translate-x-1/3 opacity-0'
+                  )}
+                >
+                  <Form {...props} />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -589,13 +599,15 @@ function CheckboxInputOther(props: {
 
 function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const currentUse = searchParams.get('use');
+  const fetcher = useFetcher({ key: FETCHER_KEY });
+  const { currentQuestionStack } = useFormNavigation();
   const btnClassName = 'select-none';
-
-  const currentQuestionStack = allQuestions.filter((q) => (q.use ? q.use === currentUse : true));
   const countCurrent = currentQuestionStack.findIndex((q) => q.id === id);
   const countTotal = currentQuestionStack.length - 1;
+  let _disabled = disabled === undefined ? false : disabled;
+  if (fetcher.state !== 'idle') {
+    _disabled = true;
+  }
 
   return (
     <div
@@ -619,12 +631,7 @@ function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }
         >
           Back
         </Button>
-        <Button
-          type="submit"
-          className={cn(btnClassName)}
-          size="lg"
-          disabled={disabled === undefined ? false : disabled}
-        >
+        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={_disabled}>
           {countCurrent === countTotal ? 'Submit' : 'Next'}
         </Button>
       </div>
@@ -685,52 +692,32 @@ function QuestionForm({
   children,
   className,
   onChange,
-  onSubmit,
 }: {
   children: React.ReactNode;
   className?: string;
   onChange?: (e: React.FormEvent<HTMLFormElement>) => void;
-  onSubmit?: () => void;
 }) {
+  const fetcher = useFetcher({ key: FETCHER_KEY });
   const formRef = useRef<HTMLFormElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLastQuestion } = useFormNavigation();
-  const setOther = useSetRecoilState(otherCheckboxAtom);
-  const setIsValid = useSetRecoilState(isValidFormAtom);
 
   return (
-    <form
+    <fetcher.Form
       ref={formRef}
-      // The form is reset whenever the user navigates to back/forward,
-      // so we hook into that to reset recoil state used for each form
-      onReset={() => {
-        setOther(false);
-        setIsValid(false);
-      }}
       onChange={(e) => {
         if (onChange) onChange(e);
       }}
       onSubmit={(e) => {
         e.preventDefault();
 
-        // Handle form-specific side effects (if provided)
-        if (onSubmit) {
-          onSubmit();
-        }
-
         // Get the current form's data
         const form = e.currentTarget as HTMLFormElement;
         const formData = new FormData(form);
         const values = Array.from(formData.entries());
 
-        // No values? No dice!
-        if (values.length === 0) {
-          console.warn('No values submitted. Gotta submit something!', formData.entries());
-          return;
-        }
-
-        // Create a new version of the search params
-        const newSearchParams = new URLSearchParams(searchParams);
+        // Create a new version of the search params appending the old to the new
+        const newSearchParams = new URLSearchParams(searchParams.toString());
         values.forEach(([key, value]) => {
           if (newSearchParams.has(key)) {
             newSearchParams.append(key, value as string);
@@ -739,25 +726,12 @@ function QuestionForm({
           }
         });
 
-        // If it's the last question, convert the search params to a payload
-        // and submit it to the server
+        // If it's the last question, submit to our action
         if (isLastQuestion) {
-          const payload: Record<string, string | string[]> = {};
-          for (const [key, value] of newSearchParams.entries()) {
-            if (payload[key]) {
-              // Convert existing string to array if not already
-              payload[key] = Array.isArray(payload[key]) ? payload[key] : [payload[key]];
-              if (value !== '') {
-                payload[key].push(value);
-              }
-            } else if (value !== '') {
-              payload[key] = value;
-            }
-          }
-          // TODO: send to server
-          // JSON stringify url search params of prev
-          window.alert(JSON.stringify(payload));
-          form.reset();
+          fetcher.submit(null, {
+            method: 'POST',
+            action: `./?${newSearchParams.toString()}`,
+          });
           return;
         }
 
@@ -768,6 +742,6 @@ function QuestionForm({
       className={className}
     >
       {children}
-    </form>
+    </fetcher.Form>
   );
 }
