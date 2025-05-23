@@ -2,8 +2,8 @@
 //!
 //! Functions to interact with BigQuery
 
-use std::any::Any;
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
@@ -12,9 +12,11 @@ use chrono::{DateTime, NaiveDateTime, NaiveTime, Utc};
 use google_cloud_bigquery::client::google_cloud_auth::credentials::CredentialsFile;
 use google_cloud_bigquery::client::{Client, ClientConfig};
 use google_cloud_bigquery::http::job::query::QueryRequest;
-use google_cloud_bigquery::http::table::{TableFieldMode, TableFieldType};
+use google_cloud_bigquery::http::table::{TableFieldSchema, TableFieldType};
+use google_cloud_bigquery::http::tabledata::list::{Cell, Tuple, Value};
 use google_cloud_bigquery::query::row::Row;
 use serde::{self, Deserialize, Serialize};
+use serde_json::json;
 
 use crate::error::Result;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
@@ -57,11 +59,12 @@ impl BigqueryConnection {
 
 #[derive(Debug)]
 pub struct BigqueryColumn<'a> {
-    pub field_type: (TableFieldType, &'a str),
-    pub repeats: bool,
+    pub field_type: TableFieldType,
+    pub field_name: &'a str,
+    pub field_struct: Option<Vec<String>>,
 }
 
-pub type BigqueryRow<'a> = (Row, Vec<BigqueryColumn<'a>>);
+pub type BigqueryRow<'a> = (Tuple, Vec<BigqueryColumn<'a>>);
 
 /// Implement the Connection trait for Bigquery
 ///
@@ -85,17 +88,14 @@ impl<'a> Connection<'a> for BigqueryConnection {
 
     /// Get the name of a column
     fn column_name(col: &Self::Column) -> &str {
-        &col.field_type.1
+        &col.field_name
     }
 
     /// Convert a row to an Arrow type
+    /// TODO(ddimaria): Make to_arrow() take ownership of the row
     fn to_arrow(row: &Self::Row, column: &BigqueryColumn, index: usize) -> ArrowType {
-        let repeats = column.repeats;
-
-        match column.field_type.0 {
-            TableFieldType::String => {
-                bigquery_type!(ArrowType::Utf8, String, row, index, repeats)
-            }
+        match column.field_type {
+            TableFieldType::String => ArrowType::Utf8(string_column_value(row, index)),
             TableFieldType::Int64 | TableFieldType::Integer => {
                 bigquery_type!(ArrowType::Int64, i64, row, index, repeats)
             }
@@ -114,8 +114,8 @@ impl<'a> Connection<'a> for BigqueryConnection {
             TableFieldType::Datetime => sql_unwrap_or_null!(bigquery_datetime(row, index)),
             TableFieldType::Timestamp => sql_unwrap_or_null!(bigquery_timestamp(row, index)),
             TableFieldType::Json => sql_unwrap_or_null!(bigquery_json(row, index)),
-            TableFieldType::Record => ArrowType::Unsupported,
-            _ => ArrowType::Utf8(bigquery_column::<String>(row, index).unwrap_or("".to_string())),
+            TableFieldType::Record => bigquery_type!(ArrowType::Utf8, String, row, index, repeats),
+            _ => ArrowType::Utf8(string_column_value(row, index)),
         }
     }
 
@@ -131,30 +131,36 @@ impl<'a> Connection<'a> for BigqueryConnection {
         _max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
         let over_the_limit = false;
-        let fields = fields(&self.client, &self.project_id, sql).await?;
         let request = QueryRequest {
             query: sql.to_string(),
             ..Default::default()
         };
 
-        let mut rows = Vec::new();
-        let mut iter = self
+        let response = self
             .client
-            .query::<Row>(&self.project_id, request)
+            .job()
+            .query(&self.project_id, &request)
             .await
             .map_err(query_error)?;
 
-        while let Some(row) = iter.next().await.map_err(query_error)? {
+        let schema = response
+            .schema
+            .ok_or_else(|| query_error("No schema returned from query"))?;
+        let fields = map_schema(schema.fields);
+
+        let response_rows = response
+            .rows
+            .ok_or_else(|| query_error("No rows returned from query"))?;
+
+        let mut rows = Vec::new();
+
+        for row in response_rows.into_iter() {
             let mut iter_row = (row, vec![]);
             for column in 0..fields.len() {
-                let repeats = &fields[column]
-                    .2
-                    .as_ref()
-                    .map_or(false, |mode| mode == &TableFieldMode::Repeated);
-
                 let column = BigqueryColumn {
-                    field_type: (fields[column].0.to_owned(), &fields[column].1),
-                    repeats: *repeats,
+                    field_type: fields[column].0.to_owned(),
+                    field_name: &fields[column].1,
+                    field_struct: fields[column].2.to_owned(),
                 };
 
                 iter_row.1.push(column);
@@ -249,60 +255,65 @@ impl<'a> Connection<'a> for BigqueryConnection {
     }
 }
 
-/// Get the fields of a query, which is necessary to get column information
-/// as it's not returned in the main query response.
-async fn fields(
-    client: &Client,
-    project_id: &str,
-    sql: &str,
-) -> Result<Vec<(TableFieldType, String, Option<TableFieldMode>)>> {
-    // limit the query to 1 row to get the fields
-    let request = QueryRequest {
-        query: sql.to_string(),
-        max_results: Some(1),
-        ..Default::default()
-    };
-
-    let response = client
-        .job()
-        .query(&project_id, &request)
-        .await
-        .map_err(query_error)?;
-
-    // for row in response.rows.unwrap() {
-    //     for cell in row.f {
-    //         println!("{:?}", cell.v);
-    //     }
-    // }
-
-    let fields = response
-        .schema
-        .ok_or_else(|| query_error("No schema returned from query"))?
-        .fields
+fn map_schema(schema: Vec<TableFieldSchema>) -> Vec<(TableFieldType, String, Option<Vec<String>>)> {
+    schema
         .into_iter()
-        .map(|f| (f.data_type, f.name, f.mode))
-        .collect::<Vec<_>>();
-
-    Ok(fields)
+        .map(|f| {
+            (
+                f.data_type,
+                f.name,
+                f.fields
+                    .map(|f| f.into_iter().map(|f| f.name).collect::<Vec<_>>()),
+            )
+        })
+        .collect::<Vec<_>>()
 }
 
-fn bigquery_column<T>(row: &BigqueryRow, index: usize) -> Result<T>
+fn column_value(row: &BigqueryRow, index: usize) -> Cell {
+    match row.0.f.get(index) {
+        Some(cell) => cell.to_owned(),
+        None => Cell { v: Value::Null },
+    }
+}
+
+fn string_value(cell: Cell) -> String {
+    match cell.v {
+        Value::String(s) => s,
+        _ => "".to_string(),
+    }
+}
+
+fn column_struct<'a>(row: &BigqueryRow<'a>, index: usize) -> Result<Option<Vec<String>>> {
+    let meta = row
+        .1
+        .get(index)
+        .ok_or_else(|| query_error(format!("Column not found at {}", index)))?;
+
+    Ok(meta.field_struct.clone())
+}
+
+fn string_column_value(row: &BigqueryRow, index: usize) -> String {
+    let value = column_value(row, index);
+    string_value(value)
+}
+
+fn parse_value<T>(value: String) -> Result<T>
 where
-    T: google_cloud_bigquery::http::query::value::Decodable
-        + google_cloud_bigquery::storage::value::Decodable,
+    T: FromStr,
+    T::Err: std::fmt::Display,
 {
-    row.0.column::<T>(index).map_err(query_error)
+    T::from_str(&value).map_err(|e| query_error(e.to_string()))
 }
 
 fn bigquery_number(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
-    let number_string = bigquery_column::<String>(row, index)?;
+    let number_string = string_column_value(row, index);
     let parsed = number_string.parse::<BigDecimal>().map_err(query_error)?;
 
     Ok(ArrowType::BigDecimal(parsed))
 }
 
 fn bigquery_date(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
-    let date_string = bigquery_column::<String>(row, index)?;
+    let date_string = string_column_value(row, index);
     let date =
         NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_string), "%Y-%m-%d %H:%M:%S")
             .map_err(query_error)?;
@@ -314,14 +325,14 @@ fn bigquery_date(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
 }
 
 fn bigquery_time(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
-    let time_string = bigquery_column::<String>(row, index)?;
+    let time_string = string_column_value(row, index);
     let time = NaiveTime::parse_from_str(&time_string, "%H:%M:%S%.f").map_err(query_error)?;
 
     Ok(ArrowType::Time32(time))
 }
 
 fn bigquery_datetime(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
-    let dt_string = bigquery_column::<String>(row, index)?;
+    let dt_string = string_column_value(row, index);
     let datetime =
         NaiveDateTime::parse_from_str(&dt_string, "%Y-%m-%dT%H:%M:%S").map_err(query_error)?;
 
@@ -329,7 +340,7 @@ fn bigquery_datetime(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
 }
 
 fn bigquery_timestamp(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
-    let ts_string = bigquery_column::<String>(row, index)?;
+    let ts_string = string_column_value(row, index);
     let seconds = ts_string.parse::<f64>().map_err(query_error)? as i64;
     let timestamp = DateTime::<Utc>::from_timestamp(seconds, 0)
         .ok_or_else(|| query_error("Unable to create timestamp"))?;
@@ -338,7 +349,7 @@ fn bigquery_timestamp(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
 }
 
 fn bigquery_json(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
-    let json_string = bigquery_column::<String>(row, index)?;
+    let json_string = string_column_value(row, index);
     let json = serde_json::from_str(&json_string).map_err(query_error)?;
 
     Ok(ArrowType::Json(json))
@@ -347,15 +358,41 @@ fn bigquery_json(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
 #[macro_export]
 macro_rules! bigquery_type {
     ( $arrow_type:expr, $typecast:ty, $row:ident, $index:ident, $repeats:expr ) => {{
-        if $repeats {
-            match $row.0.column::<Vec<String>>($index) {
-                Ok(value) => ArrowType::Utf8(value.join(",")),
-                Err(_) => ArrowType::Null,
-            }
-        } else {
-            match $row.0.column::<$typecast>($index) {
+        let value = column_value($row, $index);
+
+
+        match value.v {
+            Value::Null => ArrowType::Null,
+            Value::String(s) => match parse_value::<$typecast>(s) {
                 Ok(value) => $arrow_type(value),
                 Err(_) => ArrowType::Null,
+            },
+            Value::Array(array) => {
+                let values = array
+                    .into_iter()
+                    .map(|cell| string_value(cell))
+                    .collect::<Vec<_>>()
+                    .join(",");
+
+                ArrowType::Utf8(values)
+            }
+            Value::Struct(tuple) => {
+                let value = match column_struct($row, $index) {
+                    Ok(Some(struct_names)) => {
+                        let values = tuple
+                            .f
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, cell)| json!({
+                                struct_names[i].clone(): string_value(cell)
+                            }))
+                            .collect::<Vec<_>>();
+                        serde_json::to_string(&values).unwrap_or("".to_string())
+                    }
+                    _ => serde_json::to_string(&tuple).unwrap_or("".to_string()),
+                };
+
+                ArrowType::Utf8(value)
             }
         }
     }};
@@ -380,7 +417,6 @@ mod tests {
 
         let credentials = r#"
             {
-                
             }
         "#;
         let connection =
@@ -391,8 +427,8 @@ mod tests {
         let sql = format!(
             "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10"
         );
-        let results = connection.query(&mut None, &sql, None).await.unwrap();
-        println!("{:?}", results);
+        let _results = connection.query(&mut None, &sql, None).await.unwrap();
+        // println!("{:?}", results);
 
         // let query = format!(
         //     "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` LIMIT 10"
