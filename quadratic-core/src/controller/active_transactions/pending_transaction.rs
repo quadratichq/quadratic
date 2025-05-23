@@ -110,6 +110,8 @@ pub struct PendingTransaction {
 
     // update selection after transaction completes
     pub update_selection: Option<String>,
+
+    pub ai_updates: Vec<String>,
 }
 
 impl Default for PendingTransaction {
@@ -142,6 +144,7 @@ impl Default for PendingTransaction {
             offsets_modified: HashMap::new(),
             offsets_reloaded: HashSet::new(),
             update_selection: None,
+            ai_updates: Vec::new(),
         }
     }
 }
@@ -504,6 +507,22 @@ impl PendingTransaction {
         }
 
         self.sheet_borders.insert(sheet_id);
+    }
+
+    pub fn add_ai_update(&mut self, source: TransactionSource, update: String) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        let source = match source {
+            TransactionSource::User | TransactionSource::Redo | TransactionSource::Undo => "User",
+            TransactionSource::Multiplayer => "Another user",
+            _ => "Unknown",
+        };
+        self.ai_updates.push(format!(
+            "The {} performed the following update: {}",
+            source, update
+        ));
     }
 }
 

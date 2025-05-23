@@ -74,6 +74,7 @@ impl GridController {
                             }
                         }
                     }
+                    // transaction.ai_updates.push(format!("The {}"))
                 }
             }
         }
