@@ -101,6 +101,7 @@ pub fn test_create_formula(
         CodeCellLanguage::Formula,
         formula.to_string(),
         None,
+        None,
     );
     gc.data_table(sheet_pos).unwrap().clone()
 }

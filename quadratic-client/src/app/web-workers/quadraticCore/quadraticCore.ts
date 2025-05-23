@@ -20,6 +20,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -53,6 +54,7 @@ import type {
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
   CoreClientFiniteRectFromSelection,
+  CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
@@ -407,6 +409,16 @@ class QuadraticCore {
     });
   }
 
+  getAICells(selection: string, sheetId: string, page: number): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { aiCells: string }) => {
+        resolve(message.aiCells);
+      };
+      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId, page });
+    });
+  }
+
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
@@ -495,6 +507,7 @@ class QuadraticCore {
     y: number;
     language: CodeCellLanguage;
     codeString: string;
+    codeCellName?: string;
     cursor?: string;
   }): Promise<string | undefined> {
     const id = this.id++;
@@ -510,6 +523,7 @@ class QuadraticCore {
         language: options.language,
         codeString: options.codeString,
         cursor: options.cursor,
+        codeCellName: options.codeCellName,
         id,
       });
     });
@@ -779,6 +793,38 @@ class QuadraticCore {
       selection,
       format,
       cursor,
+    });
+  }
+
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreSetFormats',
+        id,
+        sheetId,
+        selection,
+        formats,
+      });
+    });
+  }
+
+  getAICellFormats(sheetId: string, selection: string, page: number) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
+        resolve(message.formats);
+      };
+      this.send({
+        type: 'clientCoreGetAIFormats',
+        id,
+        sheetId,
+        selection,
+        page,
+      });
     });
   }
 
@@ -1427,11 +1473,20 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, cursor: string) {
-    this.send({
-      type: 'clientCoreGridToDataTable',
-      sheetRect,
-      cursor,
+  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreGridToDataTable',
+        id,
+        sheetRect,
+        firstRowIsHeader,
+        tableName,
+        cursor,
+      });
     });
   }
 

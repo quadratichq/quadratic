@@ -167,6 +167,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -223,6 +224,7 @@ mod tests {
             CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
+            None,
         );
         expect_js_call_count("jsRunJavascript", 1, true);
 
@@ -230,6 +232,7 @@ mod tests {
             (0, 0, sheet_id).into(),
             CodeCellLanguage::Python,
             "code".to_string(),
+            None,
             None,
         );
         expect_js_call_count("jsRunPython", 1, true);

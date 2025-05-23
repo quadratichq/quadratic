@@ -21,6 +21,7 @@ use crate::CellValue;
 use crate::{Array, Pos};
 
 mod a1_context;
+pub mod ai;
 mod block;
 mod bounds;
 mod cells_accessed;
