@@ -100,6 +100,8 @@ export const router = createBrowserRouter(
             </Route>
           </Route>
         </Route>
+
+        <Route path="/onboarding" lazy={() => import('./routes/onboarding')} />
         <Route path="*" Component={Page404.Component} />
       </Route>
       <Route path={ROUTES.LOGIN} loader={Login.loader} Component={EmptyComponent} HydrateFallback={EmptyComponent} />

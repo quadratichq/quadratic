@@ -12,7 +12,7 @@ export const loader = async () => {
     if (isAuthenticated) {
       // Acknowledge the user has just logged in. The backend may need
       // to run some logic before making any other API calls in parallel
-      const { userCreated } = await apiClient.users.acknowledge();
+      const { userCreated } = await apiClient.user.acknowledge();
 
       // Special case for first-time users
       if (userCreated) {
@@ -43,10 +43,10 @@ export const loader = async () => {
       }
 
       let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
-      // For new users coming directly to `/`, we'll send them to a new file
+      // For new users coming directly to `/`, we'll send them to the onboarding flow
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
-        return redirect('/files/create?private=false');
+        return redirect('/onboarding');
       }
       return redirect(redirectTo);
     }

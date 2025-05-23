@@ -342,9 +342,16 @@ export const apiClient = {
     },
   },
 
-  users: {
+  user: {
     acknowledge() {
-      return fetchFromApi(`/v0/users/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/users/acknowledge.GET.response']);
+      return fetchFromApi(`/v0/user/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/user/acknowledge.GET.response']);
+    },
+    update(body: ApiTypes['/v0/user.POST.request']) {
+      return fetchFromApi(
+        `/v0/user`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/user.POST.response']
+      );
     },
   },
 

@@ -430,10 +430,18 @@ export const ApiSchemas = {
 
   /**
    * ===========================================================================
-   * Users
+   * User
    * ===========================================================================
    */
-  '/v0/users/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
+  '/v0/user/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
+  '/v0/user.POST.request': z.object({
+    onboardingResponses: z
+      .object({
+        __version: z.number(),
+      })
+      .catchall(z.any()),
+  }),
+  '/v0/user.POST.response': z.object({ message: z.string() }),
 
   /**
    *

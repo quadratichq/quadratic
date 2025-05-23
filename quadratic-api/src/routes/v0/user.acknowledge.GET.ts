@@ -1,8 +1,8 @@
-import { Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -18,6 +18,6 @@ export default [validateAccessToken, userMiddleware, handler];
  * because multiple API calls are made in parallel on the client when the user hasn't
  * been created yet or associated with teams and/or files.
  */
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/users/acknowledge.GET.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user/acknowledge.GET.response']>) {
   return res.status(200).json({ message: 'acknowledged', userCreated: req.userCreated });
 }
