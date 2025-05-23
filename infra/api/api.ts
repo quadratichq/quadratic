@@ -62,27 +62,27 @@ const targetGroup = new aws.lb.TargetGroup("api-alb-tg", {
   targetType: "instance",
   vpcId: apiVPC.id,
 
-  // // Health check configuration
-  // healthCheck: {
-  //   enabled: true,
-  //   path: "/health",
-  //   protocol: "HTTP",
-  //   healthyThreshold: 2,
-  //   unhealthyThreshold: 2,
-  //   timeout: 5,
-  //   interval: 15,
-  //   matcher: "200",
-  // },
+  // Health check configuration
+  healthCheck: {
+    enabled: true,
+    path: "/health",
+    protocol: "HTTP",
+    healthyThreshold: 2,
+    unhealthyThreshold: 2,
+    timeout: 5,
+    interval: 15,
+    matcher: "200",
+  },
 
-  // // Connection draining
-  // deregistrationDelay: 30,
+  // Connection draining
+  deregistrationDelay: 30,
 
-  // // Stickiness for session persistence
-  // stickiness: {
-  //   type: "lb_cookie",
-  //   cookieDuration: 86400,
-  //   enabled: true,
-  // },
+  // Stickiness for session persistence
+  stickiness: {
+    type: "lb_cookie",
+    cookieDuration: 86400,
+    enabled: true,
+  },
 });
 
 // Create Auto Scaling Group with warm pool
