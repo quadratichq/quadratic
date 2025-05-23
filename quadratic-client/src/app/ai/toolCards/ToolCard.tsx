@@ -34,13 +34,13 @@ export const ToolCard = ({
           <div className="truncate font-bold">
             {label ? label : isLoading ? <Skeleton className="h-3 w-64 bg-accent" /> : null}
           </div>
-          <div className="truncate text-xs text-muted-foreground">
+          <div className="h-4 truncate text-xs text-muted-foreground">
             {hasError ? (
               <span className="text-destructive">Something went wrong (try again)</span>
             ) : description ? (
               description
             ) : isLoading ? (
-              <Skeleton className="h-2 w-24 bg-accent" />
+              <Skeleton className="h-3 w-24 bg-accent" />
             ) : null}
           </div>
         </div>
