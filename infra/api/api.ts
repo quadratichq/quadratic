@@ -270,16 +270,6 @@ const apiGlobalAcceleratorEndpointGroup =
       healthCheckIntervalSeconds: 30,
       thresholdCount: 3,
       trafficDialPercentage: 100,
-      portOverrides: [
-        {
-          listenerPort: 443,
-          endpointPort: 443,
-        },
-        {
-          listenerPort: 80,
-          endpointPort: 80,
-        },
-      ],
     },
   );
 
