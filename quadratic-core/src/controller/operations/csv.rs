@@ -12,7 +12,7 @@ use std::{
     io::{BufRead, BufReader, Cursor},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum UtfBom {
     LittleEndian,
     BigEndian,
@@ -35,20 +35,7 @@ pub(crate) fn check_utf_16_bom(file: &[u8]) -> (UtfBom, &[u8]) {
     let file = if utf_bom == UtfBom::Utf8 {
         file
     } else {
-        let mut utf16vec = Vec::with_capacity(file.len() / 2);
-        let mut i = 2; // Skip BOM
-        while i < file.len() {
-            let byte1 = file[i];
-            let byte2 = file[i + 1];
-            let value = if utf_bom == UtfBom::LittleEndian {
-                u16::from_le_bytes([byte1, byte2])
-            } else {
-                u16::from_be_bytes([byte1, byte2])
-            };
-            utf16vec.push(value);
-            i += 2;
-        }
-        utf16vec.into_iter().map(|v| v as u8).collect()
+        &file[2..]
     };
 
     (utf_bom, file)

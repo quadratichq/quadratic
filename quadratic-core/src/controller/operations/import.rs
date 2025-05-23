@@ -19,7 +19,7 @@ use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::{
-    csv::{UtfBom, byte_record_to_string, check_utf_16_bom, find_csv_delimiter},
+    csv::{byte_record_to_string, check_utf_16_bom, find_csv_delimiter},
     operation::Operation,
 };
 
@@ -60,14 +60,13 @@ impl GridController {
         let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
 
         let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
-
         let (utf_bom, file) = check_utf_16_bom(&file);
 
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
             .has_headers(false)
             .flexible(true)
-            .from_reader(file.as_slice());
+            .from_reader(file);
 
         let mut preview = vec![];
         for (i, entry) in reader.byte_records().enumerate() {
@@ -103,14 +102,14 @@ impl GridController {
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
         let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
-        let utf_bom = check_utf_16_bom(&file);
+        let (utf_bom, file) = check_utf_16_bom(&file);
 
         let reader = |flexible| {
             csv::ReaderBuilder::new()
                 .delimiter(delimiter)
                 .has_headers(false)
                 .flexible(flexible)
-                .from_reader(file.as_slice())
+                .from_reader(file)
         };
 
         let height = reader(false).records().count() as u32;
@@ -139,8 +138,8 @@ impl GridController {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) =
-                            self.string_to_cell_value(&byte_record_to_string(value), false);
+                        let (cell_value, format_update) = self
+                            .string_to_cell_value(&byte_record_to_string(value, utf_bom), false);
                         cell_values
                             .set(u32::try_from(x)?, y, cell_value)
                             .map_err(|e| error(e.to_string()))?;
