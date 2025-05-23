@@ -158,9 +158,6 @@ const httpListener = new aws.lb.Listener("api-alb-http-listener", {
         port: "443",
         protocol: "HTTPS",
         statusCode: "HTTP_301",
-        // Preserve the original path and query string
-        path: "#{path}",
-        query: "#{query}",
       },
     },
   ],
@@ -176,7 +173,7 @@ const httpsListener = new aws.lb.Listener("api-alb-https-listener", {
   port: 443,
   protocol: "HTTPS",
   certificateArn: certificateArn,
-  sslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06",
+  sslPolicy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06",
 
   defaultActions: [
     {
