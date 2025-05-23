@@ -1,5 +1,5 @@
 import { requireAuth } from '@/auth/auth';
-import { Onboarding, OnboardingResponseV1Schema } from '@/dashboard/onboarding/Onboarding';
+import { allQuestions, OnboardingResponseV1Schema, Questions } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import * as Sentry from '@sentry/react';
@@ -7,9 +7,42 @@ import mixpanel from 'mixpanel-browser';
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { RecoilRoot } from 'recoil';
 
+/**
+ * Each question is a form. We track progress in the URL search params.
+ * Each key corresponds to a question (one question per form).
+ * In cases where multiple answers are possible, that's because the
+ * user is able to specify 'other' and we track that via the `-other` suffix.
+ * So, for example, a question might be `role` and if the user selects 'other'
+ * then we'll track that as `role-other`, so the URL is:
+ *
+ *   ?use=work&role=other&role-other=some+user+input
+ *
+ * That is derived as a count of 2 questions: [use, role]
+ */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireAuth();
-  return null;
+
+  const url = new URL(request.url);
+  const searchParams = new URLSearchParams(url.search);
+
+  const currentUse = searchParams.get('use');
+  const uniqueKeys = new Set(Array.from(searchParams.keys()).filter((key) => !key.endsWith('-other')));
+  const currentQuestionStack = currentUse
+    ? allQuestions.filter((q) => (q.appliesToUse ? q.appliesToUse === currentUse : true))
+    : [];
+  const currentIndex = uniqueKeys.size;
+  const currentId = currentUse
+    ? currentQuestionStack[currentIndex]
+      ? currentQuestionStack[currentIndex].id
+      : currentQuestionStack[currentIndex - 1].id
+    : 'use';
+
+  return {
+    currentId,
+    currentIndex: currentIndex,
+    currentQuestionStack,
+    isLastQuestion: currentId === allQuestions[allQuestions.length - 1].id,
+  };
 };
 
 export const useOnboardingLoaderData = () => {
@@ -20,13 +53,18 @@ export const Component = () => {
   useRemoveInitialLoadingUI();
   return (
     <RecoilRoot>
-      <Onboarding />
+      <Questions />
     </RecoilRoot>
   );
 };
 
+/**
+ * All question answers are stored in the URL search params.
+ * When submitted, we parse them into JSON and save them to the server.
+ */
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // TODO: remove
+
   // Pull the form data from the URL
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
@@ -109,7 +147,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises);
   }
 
-  // Redirect user to a new file
+  // Hard-redirect user to a new file
   window.location.href = '/files/create?private=false';
   return null;
 };
