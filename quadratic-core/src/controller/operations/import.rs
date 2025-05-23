@@ -19,7 +19,7 @@ use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::{
-    csv::{byte_record_to_string, find_csv_delimiter},
+    csv::{UtfBom, byte_record_to_string, check_utf_16_bom, find_csv_delimiter},
     operation::Operation,
 };
 
@@ -61,6 +61,8 @@ impl GridController {
 
         let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
 
+        let (utf_bom, file) = check_utf_16_bom(&file);
+
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
             .has_headers(false)
@@ -77,7 +79,7 @@ impl GridController {
                 Ok(record) => {
                     let mut preview_row = vec![];
                     for value in record.iter() {
-                        preview_row.push(byte_record_to_string(value));
+                        preview_row.push(byte_record_to_string(value, utf_bom));
                     }
                     preview.push(preview_row);
                 }
@@ -101,6 +103,7 @@ impl GridController {
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
         let delimiter = delimiter.unwrap_or(find_csv_delimiter(&file));
+        let utf_bom = check_utf_16_bom(&file);
 
         let reader = |flexible| {
             csv::ReaderBuilder::new()
@@ -503,11 +506,36 @@ mod test {
     #[test]
     fn test_get_csv_preview_with_utf16() {
         let utf16_data: Vec<u8> = vec![
-            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
-            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
-            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x32, 0x00,
+            0xFF, 0xFE, // BOM
+            0x68, 0x00, // h
+            0x65, 0x00, // e
+            0x61, 0x00, // a
+            0x64, 0x00, // d
+            0x65, 0x00, // e
+            0x72, 0x00, // r
+            0x31, 0x00, // 1
+            0x2C, 0x00, // ,
+            0x68, 0x00, // h
+            0x65, 0x00, // e
+            0x61, 0x00, // a
+            0x64, 0x00, // d
+            0x65, 0x00, // e
+            0x72, 0x00, // r
+            0x32, 0x00, // 2
+            0x0A, 0x00, // \n
+            0x76, 0x00, // v
+            0x61, 0x00, // a
+            0x6C, 0x00, // l
+            0x75, 0x00, // u
+            0x65, 0x00, // e
+            0x31, 0x00, // 1
+            0x2C, 0x00, // ,
+            0x76, 0x00, // v
+            0x61, 0x00, // a
+            0x6C, 0x00, // l
+            0x75, 0x00, // u
+            0x65, 0x00, // e
+            0x32, 0x00, // 2
         ];
         let result = GridController::get_csv_preview(utf16_data, 6, Some(b','));
         assert!(result.is_ok());
@@ -838,11 +866,36 @@ mod test {
     #[test]
     fn test_import_utf16() {
         let utf16_data: Vec<u8> = vec![
-            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
-            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
-            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x32, 0x00,
+            0xFF, 0xFE, // BOM
+            0x68, 0x00, // h
+            0x65, 0x00, // e
+            0x61, 0x00, // a
+            0x64, 0x00, // d
+            0x65, 0x00, // e
+            0x72, 0x00, // r
+            0x31, 0x00, // 1
+            0x2C, 0x00, // ,
+            0x68, 0x00, // h
+            0x65, 0x00, // e
+            0x61, 0x00, // a
+            0x64, 0x00, // d
+            0x65, 0x00, // e
+            0x72, 0x00, // r
+            0x32, 0x00, // 2
+            0x0A, 0x00, // \n
+            0x76, 0x00, // v
+            0x61, 0x00, // a
+            0x6C, 0x00, // l
+            0x75, 0x00, // u
+            0x65, 0x00, // e
+            0x31, 0x00, // 1
+            0x2C, 0x00, // ,
+            0x76, 0x00, // v
+            0x61, 0x00, // a
+            0x6C, 0x00, // l
+            0x75, 0x00, // u
+            0x65, 0x00, // e
+            0x32, 0x00, // 2
         ];
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
@@ -860,20 +913,21 @@ mod test {
         print_first_sheet(&gc);
 
         let sheet = gc.sheet(sheet_id);
-        dbg!(&sheet.display_value((1, 2).into()));
         assert_eq!(
             sheet.display_value((1, 2).into()),
-            Some(CellValue::Text(
-                String::from_utf16(&[0x0068, 0x0065, 0x0061, 0x0064, 0x0065, 0x0072, 0x0031])
-                    .unwrap()
-            ))
+            Some(CellValue::Text("header1".to_string()))
         );
         assert_eq!(
             sheet.display_value((2, 2).into()),
-            Some(CellValue::Text(
-                String::from_utf16(&[0x0068, 0x0065, 0x0061, 0x0064, 0x0065, 0x0072, 0x0032])
-                    .unwrap()
-            ))
+            Some(CellValue::Text("header2".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value((1, 3).into()),
+            Some(CellValue::Text("value1".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value((2, 3).into()),
+            Some(CellValue::Text("value2".to_string()))
         );
     }
 }

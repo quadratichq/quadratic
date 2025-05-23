@@ -12,32 +12,75 @@ use std::{
     io::{BufRead, BufReader, Cursor},
 };
 
-/// Convert a byte record to a string, handling UTF-16 encoding if necessary.
-pub(crate) fn byte_record_to_string(record: &[u8]) -> String {
-    String::from_utf8(record.to_vec())
-        .or_else(|_| {
-            if record.is_empty() || record.len() % 2 != 0 {
-                return Err(());
-            }
+#[derive(Debug, PartialEq)]
+pub(crate) enum UtfBom {
+    LittleEndian,
+    BigEndian,
+    Utf8,
+}
 
-            // convert u8 to u16
-            let mut utf16vec: Vec<u16> = Vec::with_capacity(record.len() / 2);
-            for chunk in record.to_owned().chunks_exact(2) {
-                let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
-                    return Err(());
-                };
-                utf16vec.push(u16::from_ne_bytes(vec2));
-            }
+pub(crate) fn check_utf_16_bom(file: &[u8]) -> (UtfBom, &[u8]) {
+    let utf_bom = if file.len() < 2 || file.len() % 2 != 0 {
+        if file[0] == 0xFF && file[1] == 0xFE {
+            UtfBom::LittleEndian
+        } else if file[0] == 0xFE && file[1] == 0xFF {
+            UtfBom::BigEndian
+        } else {
+            UtfBom::Utf8
+        }
+    } else {
+        UtfBom::Utf8
+    };
 
-            // convert to string
-            let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
-                return Err(());
+    let file = if utf_bom == UtfBom::Utf8 {
+        file
+    } else {
+        let mut utf16vec = Vec::with_capacity(file.len() / 2);
+        let mut i = 2; // Skip BOM
+        while i < file.len() {
+            let byte1 = file[i];
+            let byte2 = file[i + 1];
+            let value = if utf_bom == UtfBom::LittleEndian {
+                u16::from_le_bytes([byte1, byte2])
+            } else {
+                u16::from_be_bytes([byte1, byte2])
             };
+            utf16vec.push(value);
+            i += 2;
+        }
+        utf16vec.into_iter().map(|v| v as u8).collect()
+    };
 
-            // strip invalid characters
-            Ok(str.chars().filter(|&c| c.len_utf8() <= 2).collect())
-        })
-        .unwrap_or_else(|_| record.iter().map(|&b| b as char).collect())
+    (utf_bom, file)
+}
+
+/// Convert a byte record to a string, handling UTF-16 encoding if necessary.
+pub(crate) fn byte_record_to_string(record: &[u8], utf_bom: UtfBom) -> String {
+    if utf_bom == UtfBom::Utf8 {
+        return String::from_utf8_lossy(record).into_owned();
+    }
+
+    let mut utf16vec = Vec::with_capacity(record.len() / 2);
+    let mut i = 0;
+
+    while i < record.len() {
+        let byte1 = record[i];
+        let byte2 = record[i + 1];
+        let value = if utf_bom == UtfBom::LittleEndian {
+            // Little endian
+            u16::from_le_bytes([byte1, byte2])
+        } else {
+            // Big endian
+            u16::from_be_bytes([byte1, byte2])
+        };
+        utf16vec.push(value);
+        i += 2;
+    }
+    // Convert and filter out invalid characters
+    if let Ok(s) = String::from_utf16(&utf16vec) {
+        return s;
+    }
+    String::from_utf8_lossy(record).into_owned()
 }
 
 struct DelimiterStats {
@@ -128,7 +171,10 @@ mod tests {
     fn test_byte_record_to_string() {
         // Test UTF-8 string
         let utf8_bytes = b"Hello, World!";
-        assert_eq!(byte_record_to_string(utf8_bytes), "Hello, World!");
+        assert_eq!(
+            byte_record_to_string(utf8_bytes, UtfBom::Utf8),
+            "Hello, World!"
+        );
 
         // Test UTF-16 string (little endian)
         let utf16_bytes = vec![
@@ -139,11 +185,14 @@ mod tests {
             0x6C, 0x00, // l
             0x6F, 0x00, // o
         ];
-        assert_eq!(byte_record_to_string(&utf16_bytes), "Hello");
+        assert_eq!(
+            byte_record_to_string(&utf16_bytes, UtfBom::LittleEndian),
+            "Hello"
+        );
 
         // Test invalid UTF-8 that falls back to character conversion
         let invalid_utf8 = vec![0xFF, 0xFE, 0x48, 0x65, 0x6C, 0x6C, 0x6F];
-        let result = byte_record_to_string(&invalid_utf8);
+        let result = byte_record_to_string(&invalid_utf8, UtfBom::LittleEndian);
         assert!(!result.is_empty());
         assert!(result.chars().all(|c| c.len_utf8() <= 2));
 
@@ -155,11 +204,11 @@ mod tests {
             0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
             0x65, 0x00, 0x32, 0x00,
         ];
-        let result = byte_record_to_string(&utf16_data);
+        let result = byte_record_to_string(&utf16_data, UtfBom::LittleEndian);
         assert_eq!(result, "header1,header2\nvalue1,value2");
 
         // Test empty input
-        assert_eq!(byte_record_to_string(b""), "");
+        assert_eq!(byte_record_to_string(b"", UtfBom::Utf8), "");
     }
 
     #[test]
