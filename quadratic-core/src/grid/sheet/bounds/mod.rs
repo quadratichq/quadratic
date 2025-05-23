@@ -74,11 +74,8 @@ impl Sheet {
         }
     }
 
-    pub fn format_bounds(&self) -> Option<Rect> {
-        match self.format_bounds {
-            GridBounds::Empty => None,
-            GridBounds::NonEmpty(rect) => Some(rect),
-        }
+    pub fn format_bounds(&self) -> GridBounds {
+        self.format_bounds
     }
 
     /// Returns the lower and upper bounds of a column, or `None` if the column
@@ -461,8 +458,8 @@ mod test {
             sheet::{
                 borders::{BorderSelection, BorderStyle},
                 validations::{
-                    validation::Validation,
                     rules::{ValidationRule, validation_logical::ValidationLogical},
+                    validation::Validation,
                 },
             },
         },
@@ -710,6 +707,7 @@ mod test {
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.columns_bounds(1, 2, true), Some((2, 3)));
@@ -728,6 +726,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -748,6 +747,7 @@ mod test {
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.column_bounds(1, true), Some((2, 3)));
@@ -766,6 +766,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -800,6 +801,7 @@ mod test {
             (2, 1, sheet_id).into(),
             CodeCellLanguage::Formula,
             "[['c','d']]".into(),
+            None,
             None,
         );
         gc.set_cell_value((3, 1, sheet_id).into(), "d".into(), None);

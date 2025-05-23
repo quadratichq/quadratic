@@ -36,8 +36,9 @@ class Thumbnail {
   }
 
   async check() {
-    if (this.thumbnailDirty) {
+    if (this.thumbnailDirty && !pixiApp.copying) {
       const now = performance.now();
+      // don't do anything while the app is paused (since it may already be generating thumbnails)
       if (this.lastUpdate + TIME_FOR_IDLE > now) {
         const url = window.location.pathname.split('/');
         const uuid = url[2];
@@ -68,7 +69,7 @@ class Thumbnail {
   /** returns a dataURL to a copy of the selected cells */
   private async generate(): Promise<Blob | null> {
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
-    pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
+    await pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
     pixiApp.gridLines.update(rectangle, undefined, true);
     this.renderer.render(pixiApp.viewportContents);
     pixiApp.cleanUpAfterCopying(true);
