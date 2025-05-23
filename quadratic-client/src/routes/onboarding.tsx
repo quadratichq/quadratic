@@ -63,8 +63,6 @@ export const Component = () => {
  * When submitted, we parse them into JSON and save them to the server.
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await new Promise((resolve) => setTimeout(resolve, 2000)); // TODO: remove
-
   // Pull the form data from the URL
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
