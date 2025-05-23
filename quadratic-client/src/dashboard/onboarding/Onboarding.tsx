@@ -7,6 +7,7 @@ import {
   DatabaseIcon,
   EducationIcon,
   PersonalIcon,
+  SpinnerIcon,
   StarShineIcon,
   WorkIcon,
 } from '@/shared/components/Icons';
@@ -99,24 +100,21 @@ function ControlCheckboxStacked(
 // Zod schema TODO: ensure these are right
 // Anything with `[]` is an array, and we strip those chars out of the keys
 // when sending to the db
-export const OnboardingResponseV1Schema = z
-  .object({
-    use: z.enum(['work', 'personal', 'education']),
-    'work-role': z.string().optional(),
-    'work-role-other': z.string().optional(),
-    'personal-uses[]': z.array(z.string()).optional(),
-    'personal-uses-other': z.string().optional(),
-    'education-identity': z.string().optional(),
-    'education-identity-other': z.string().optional(),
-    'education-subjects[]': z.array(z.string()).optional(),
-    'languages[]': z.array(z.string()).optional(),
-    'goals[]': z.array(z.string()),
-  })
-  .transform((data) => {
-    // Strip out the `[]` in any keys that have it for storage
-    const storageData = Object.fromEntries(Object.entries(data).map(([key, value]) => [key.replace('[]', ''), value]));
-    return storageData;
-  });
+export const OnboardingResponseV1Schema = z.object({
+  __version: z.literal(1),
+  use: z.enum(['work', 'personal', 'education']),
+  'work-role': z.string().optional(),
+  'work-role-other': z.string().optional(),
+  'personal-uses[]': z.array(z.string()).optional(),
+  'personal-uses-other': z.string().optional(),
+  'education-identity': z.string().optional(),
+  'education-identity-other': z.string().optional(),
+  'education-subjects[]': z.array(z.string()).optional(),
+  'languages[]': z.array(z.string()).optional(),
+  'goals[]': z.array(z.string()),
+});
+
+export type OnboardingResponseV1 = z.infer<typeof OnboardingResponseV1Schema>;
 type QuestionFormProps = {
   id: string;
   use?: string;
@@ -605,9 +603,7 @@ function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }
   const countCurrent = currentQuestionStack.findIndex((q) => q.id === id);
   const countTotal = currentQuestionStack.length - 1;
   let _disabled = disabled === undefined ? false : disabled;
-  if (fetcher.state !== 'idle') {
-    _disabled = true;
-  }
+  const isSubmitting = fetcher.state !== 'idle';
 
   return (
     <div
@@ -620,18 +616,22 @@ function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }
         {countTotal}
       </div>
       <div className="flex items-center justify-end gap-2">
-        <Button
-          type="reset"
-          onClick={(e) => {
-            navigate(-1);
-          }}
-          size="lg"
-          variant="ghost"
-          className={cn(btnClassName, 'text-muted-foreground')}
-        >
-          Back
-        </Button>
-        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={_disabled}>
+        {isSubmitting ? (
+          <SpinnerIcon className="mr-4 text-primary" />
+        ) : (
+          <Button
+            type="reset"
+            onClick={(e) => {
+              navigate(-1);
+            }}
+            size="lg"
+            variant="ghost"
+            className={cn(btnClassName, 'text-muted-foreground')}
+          >
+            Back
+          </Button>
+        )}
+        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={_disabled || isSubmitting}>
           {countCurrent === countTotal ? 'Submit' : 'Next'}
         </Button>
       </div>

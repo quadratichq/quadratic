@@ -34,38 +34,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // Convert the search params to JSON
   //   key=value -> { key: value }
   //   key[]=value&key[]=value2 -> { key: [value, value2] }
-  const payload: Record<string, string | string[]> = {};
+  const formJson: Record<string, string | string[]> = {};
   for (const [key, value] of searchParams.entries()) {
     const isArrayKey = key.endsWith('[]');
     if (isArrayKey) {
-      if (!payload[key]) payload[key] = [];
+      if (!formJson[key]) formJson[key] = [];
       if (value !== '') {
-        (payload[key] as string[]).push(value);
+        (formJson[key] as string[]).push(value);
       }
     } else if (value !== '') {
-      payload[key] = value;
+      formJson[key] = value;
     }
   }
 
   // Parse and validate the payload against the v1 schema
-  const result = OnboardingResponseV1Schema.safeParse(payload);
+  const result = OnboardingResponseV1Schema.safeParse({ __version: 1, ...formJson });
 
   // Save the responses to the server and mixpanel and log any errors
   const sentryPromises: Promise<unknown>[] = [];
   if (result.success) {
     try {
-      const onboardingResponses = { version: 1, data: result.data };
-      const uploadToServerPromise = apiClient.user.update({ onboardingResponses });
+      const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
       const uploadToMixpanelPromise = new Promise((resolve, reject) => {
-        mixpanel.track(
-          '[Onboarding].submit',
-          {
-            onboardingResponses,
-          },
-          () => {
-            resolve(true);
-          }
-        );
+        mixpanel.track('[Onboarding].submit', result.data, () => {
+          resolve(true);
+        });
       });
       const [serverResult, mixpanelResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
 

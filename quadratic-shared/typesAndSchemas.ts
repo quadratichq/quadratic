@@ -437,10 +437,9 @@ export const ApiSchemas = {
   '/v0/user.POST.request': z.object({
     onboardingResponses: z
       .object({
-        version: z.number(),
-        data: z.any(),
+        __version: z.number(),
       })
-      .optional(),
+      .catchall(z.any()),
   }),
   '/v0/user.POST.response': z.object({ message: z.string() }),
 

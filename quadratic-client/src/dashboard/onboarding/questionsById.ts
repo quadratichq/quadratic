@@ -9,7 +9,7 @@ export const questionsById: Record<string, Question> = {
   'use-case': {
     type: 'radio',
     label: 'How will you use Quadratic?',
-    subLabel: 'You answers help personalize your experience.',
+    subLabel: 'Your answers help personalize your experience.',
     options: [
       { label: 'Work', value: 'work' },
       { label: 'Personal', value: 'personal' },
