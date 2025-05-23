@@ -125,22 +125,31 @@ new aws.ec2.RouteTableAssociation("api-private-route-table-association-2", {
   routeTableId: privateRouteTable2.id,
 });
 
-// Create a Security Group for the Api NLB
-export const apiNlbSecurityGroup = new aws.ec2.SecurityGroup(
-  "api-nlb-security-group-1",
+// Create a Security Group for the Api ALB
+export const apiAlbSecurityGroup = new aws.ec2.SecurityGroup(
+  "api-alb-security-group",
   {
     vpcId: apiVPC.id,
     ingress: [
       {
+        description: "HTTPS from anywhere",
         protocol: "tcp",
         fromPort: 443,
         toPort: 443,
+        cidrBlocks: ["0.0.0.0/0"],
+      },
+      {
+        description: "HTTP from anywhere (for redirect)",
+        protocol: "tcp",
+        fromPort: 80,
+        toPort: 80,
         cidrBlocks: ["0.0.0.0/0"],
       },
     ],
     egress: [
       { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
     ],
+    tags: { Name: "api-alb-security-group" },
   },
 );
 
@@ -149,15 +158,17 @@ export const apiEc2SecurityGroup = new aws.ec2.SecurityGroup("api-sg-1", {
   vpcId: apiVPC.id,
   ingress: [
     {
+      description: "HTTP from ALB",
       protocol: "tcp",
       fromPort: 80,
       toPort: 80,
-      securityGroups: [apiNlbSecurityGroup.id],
+      securityGroups: [apiAlbSecurityGroup.id],
     },
   ],
   egress: [
     { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
   ],
+  tags: { Name: "api-ec2-security-group" },
 });
 
 if (isPreviewEnvironment)

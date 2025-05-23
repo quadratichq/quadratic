@@ -5,10 +5,10 @@ import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import {
+  apiAlbSecurityGroup,
   apiEc2SecurityGroup,
   apiEip1,
   apiEip2,
-  apiNlbSecurityGroup,
   apiPrivateSubnet1,
   apiPrivateSubnet2,
   apiPublicSubnet1,
@@ -54,13 +54,38 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("api-lc", {
 });
 
 // Create a new Target Group
-const targetGroup = new aws.lb.TargetGroup("api-nlb-tg", {
+const targetGroup = new aws.lb.TargetGroup("api-alb-tg", {
+  tags: { Name: `api-tg-${apiSubdomain}` },
+
   port: 80,
-  protocol: "TCP",
+  protocol: "HTTP",
   targetType: "instance",
   vpcId: apiVPC.id,
+
+  // // Health check configuration
+  // healthCheck: {
+  //   enabled: true,
+  //   path: "/health",
+  //   protocol: "HTTP",
+  //   healthyThreshold: 2,
+  //   unhealthyThreshold: 2,
+  //   timeout: 5,
+  //   interval: 15,
+  //   matcher: "200",
+  // },
+
+  // // Connection draining
+  // deregistrationDelay: 30,
+
+  // // Stickiness for session persistence
+  // stickiness: {
+  //   type: "lb_cookie",
+  //   cookieDuration: 86400,
+  //   enabled: true,
+  // },
 });
 
+// Create Auto Scaling Group with warm pool
 const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   tags: [
     {
@@ -69,12 +94,20 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
       propagateAtLaunch: true,
     },
   ],
+
   vpcZoneIdentifiers: [apiPrivateSubnet1.id, apiPrivateSubnet2.id],
   launchConfiguration: launchConfiguration.id,
   minSize,
   maxSize,
   desiredCapacity,
   targetGroupArns: [targetGroup.arn],
+
+  warmPool: {
+    minSize: 1,
+    maxGroupPreparedCapacity: 2,
+    poolState: "Warmed:Running",
+  },
+
   instanceRefresh: {
     strategy: "Rolling",
     preferences: {
@@ -93,26 +126,58 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   ],
 });
 
-// Create a new Network Load Balancer
-const nlb = new aws.lb.LoadBalancer("api-nlb", {
-  name: `nlb-${apiSubdomain}`,
+// Create Application Load Balancer
+const alb = new aws.lb.LoadBalancer("api-alb", {
+  tags: {
+    Name: `api-alb-${apiSubdomain}`,
+  },
+
+  name: `alb-${apiSubdomain}`,
   internal: false,
-  loadBalancerType: "network",
+  loadBalancerType: "application",
   subnets: [apiPublicSubnet1.id, apiPublicSubnet2.id],
+  securityGroups: [apiAlbSecurityGroup.id],
+  enableHttp2: true,
   enableCrossZoneLoadBalancing: true,
-  securityGroups: [apiNlbSecurityGroup.id],
+  idleTimeout: 600,
 });
 
-// Create NLB Listener for TLS on port 443
-const nlbListener = new aws.lb.Listener("api-nlb-listener", {
+// Create HTTP listener with redirect to HTTPS
+const httpListener = new aws.lb.Listener("api-alb-http-listener", {
   tags: {
-    Name: `api-nlb-${apiSubdomain}`,
+    Name: `api-alb-http-${apiSubdomain}`,
   },
-  loadBalancerArn: nlb.arn,
+
+  loadBalancerArn: alb.arn,
+  port: 80,
+  protocol: "HTTP",
+  defaultActions: [
+    {
+      type: "redirect",
+      redirect: {
+        port: "443",
+        protocol: "HTTPS",
+        statusCode: "HTTP_301",
+        // Preserve the original path and query string
+        path: "#{path}",
+        query: "#{query}",
+      },
+    },
+  ],
+});
+
+// Create HTTPS listener
+const httpsListener = new aws.lb.Listener("api-alb-https-listener", {
+  tags: {
+    Name: `api-alb-https-${apiSubdomain}`,
+  },
+
+  loadBalancerArn: alb.arn,
   port: 443,
-  protocol: "TLS",
-  certificateArn: certificateArn, // Attach the SSL certificate
-  sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
+  protocol: "HTTPS",
+  certificateArn: certificateArn,
+  sslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06",
+
   defaultActions: [
     {
       type: "forward",
@@ -135,7 +200,6 @@ const apiGlobalAccelerator = new aws.globalaccelerator.Accelerator(
   },
 );
 
-// Create listener for HTTPS traffic
 const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
   "api-global-accelerator-listener",
   {
@@ -146,12 +210,15 @@ const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
         fromPort: 443,
         toPort: 443,
       },
+      {
+        fromPort: 80,
+        toPort: 80,
+      },
     ],
-    clientAffinity: "SOURCE_IP", // Maintains session persistence
+    clientAffinity: "SOURCE_IP",
   },
 );
 
-// Create endpoint group pointing to the NLB
 const apiGlobalAcceleratorEndpointGroup =
   new aws.globalaccelerator.EndpointGroup("api-endpoint-group", {
     listenerArn: apiGlobalAcceleratorListener.id,
@@ -168,9 +235,9 @@ const apiGlobalAcceleratorEndpointGroup =
 
     endpointConfigurations: [
       {
-        endpointId: nlb.arn,
+        endpointId: alb.arn,
         weight: 100,
-        clientIpPreservationEnabled: false,
+        clientIpPreservationEnabled: true,
       },
     ],
   });
@@ -188,12 +255,12 @@ const hostedZone = pulumi.output(
 // Create a Route 53 record pointing to Global Accelerator
 const dnsRecord = new aws.route53.Record("api-r53-record", {
   zoneId: hostedZone.id,
-  name: `${apiSubdomain}.${domain}`, // subdomain you want to use
+  name: `${apiSubdomain}.${domain}`,
   type: "A",
   aliases: [
     {
       name: apiGlobalAccelerator.dnsName,
-      zoneId: "Z2BJ6XQ5FK7U4H", // This is the generic AWS Global Accelerator zone ID
+      zoneId: "Z2BJ6XQ5FK7U4H", // AWS Global Accelerator zone ID
       evaluateTargetHealth: true,
     },
   ],
@@ -210,6 +277,22 @@ const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
         predefinedMetricType: "ASGAverageCPUUtilization",
       },
       targetValue: 70.0,
+    },
+  },
+);
+
+// Additional scaling policy for ALB request count
+const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
+  "api-alb-request-count-scaling",
+  {
+    autoscalingGroupName: autoScalingGroup.name,
+    policyType: "TargetTrackingScaling",
+    targetTrackingConfiguration: {
+      predefinedMetricSpecification: {
+        predefinedMetricType: "ALBRequestCountPerTarget",
+        resourceLabel: pulumi.interpolate`${alb.arnSuffix}/${targetGroup.arnSuffix}`,
+      },
+      targetValue: 1000.0,
     },
   },
 );
