@@ -146,7 +146,7 @@ const alb = new aws.lb.LoadBalancer("api-alb", {
 });
 
 // Create HTTP listener with redirect to HTTPS
-const httpListener = new aws.lb.Listener("api-alb-http-listener", {
+const albHttpListener = new aws.lb.Listener("api-alb-http-listener", {
   tags: {
     Name: `api-alb-http-${apiSubdomain}`,
   },
@@ -170,7 +170,7 @@ const httpListener = new aws.lb.Listener("api-alb-http-listener", {
 });
 
 // Create HTTPS listener
-const httpsListener = new aws.lb.Listener("api-alb-https-listener", {
+const albHttpsListener = new aws.lb.Listener("api-alb-https-listener", {
   tags: {
     Name: `api-alb-https-${apiSubdomain}`,
   },
@@ -300,6 +300,9 @@ const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
       },
       targetValue: 1000.0,
     },
+  },
+  {
+    dependsOn: [albHttpListener, albHttpsListener],
   },
 );
 
