@@ -86,6 +86,10 @@ const privateRouteTable1 = new aws.ec2.RouteTable("api-private-route-table-1", {
   vpcId: apiVPC.id,
   routes: [
     {
+      cidrBlock: "10.0.0.0/16",
+      gatewayId: "local",
+    },
+    {
       cidrBlock: "0.0.0.0/0",
       natGatewayId: natGateway1.id,
     },
@@ -96,6 +100,10 @@ const privateRouteTable1 = new aws.ec2.RouteTable("api-private-route-table-1", {
 const privateRouteTable2 = new aws.ec2.RouteTable("api-private-route-table-2", {
   vpcId: apiVPC.id,
   routes: [
+    {
+      cidrBlock: "10.0.0.0/16",
+      gatewayId: "local",
+    },
     {
       cidrBlock: "0.0.0.0/0",
       natGatewayId: natGateway2.id,
