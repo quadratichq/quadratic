@@ -24,10 +24,11 @@ describe('POST /v0/user', () => {
         .expect(400);
       await request(app)
         .post(`/v0/user`)
-        .send({ onboardingResponses: { verzion: 1 } })
+        .send({ onboardingResponses: { version: 1 } })
         .set('Authorization', `Bearer ValidToken teamOwner`)
         .expect(400);
     });
+
     it('responds with 400 if the payload is empty', async () => {
       await request(app).post(`/v0/user`).set('Authorization', `Bearer ValidToken teamOwner`).expect(400);
     });
@@ -37,7 +38,7 @@ describe('POST /v0/user', () => {
     it('responds with 200 if the request is valid', async () => {
       await request(app)
         .post(`/v0/user`)
-        .send({ onboardingResponses: { version: 1, data: { foo: 'bar' } } })
+        .send({ onboardingResponses: { __version: 1, foo: 'bar' } })
         .set('Authorization', `Bearer ValidToken teamOwner`)
         .expect(200);
     });
