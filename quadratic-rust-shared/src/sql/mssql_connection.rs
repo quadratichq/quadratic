@@ -139,7 +139,7 @@ impl MsSqlConnection {
 }
 
 #[async_trait]
-impl Connection for MsSqlConnection {
+impl<'a> Connection<'a> for MsSqlConnection {
     type Conn = Client<Compat<TcpStream>>;
     type Row = Row;
     type Column = Column;

@@ -52,7 +52,12 @@ export const Connections = ({
     initialConnectionType === 'MYSQL' ||
       initialConnectionType === 'POSTGRES' ||
       initialConnectionType === 'MSSQL' ||
-      initialConnectionType === 'SNOWFLAKE'
+      initialConnectionType === 'SNOWFLAKE' ||
+      initialConnectionType === 'COCKROACHDB' ||
+      initialConnectionType === 'BIGQUERY' ||
+      initialConnectionType === 'MARIADB' ||
+      initialConnectionType === 'SUPABASE' ||
+      initialConnectionType === 'NEON'
       ? initialConnectionType
       : undefined
   );

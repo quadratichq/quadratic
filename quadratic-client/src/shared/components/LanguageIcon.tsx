@@ -25,6 +25,16 @@ export function LanguageIcon({ language }: { language: CodeCellIds | string | nu
     <MsSql />
   ) : language && 'snowflake'.startsWith(language) ? (
     <Snowflake />
+  ) : language && 'cockroachdb'.startsWith(language) ? (
+    <Cockroachdb />
+  ) : language && 'bigquery'.startsWith(language) ? (
+    <Bigquery />
+  ) : language && 'mariadb'.startsWith(language) ? (
+    <Mariadb />
+  ) : language && 'supabase'.startsWith(language) ? (
+    <Supabase />
+  ) : language && 'neon'.startsWith(language) ? (
+    <Neon />
   ) : (
     <GenericLanguageIcon />
   );
@@ -167,6 +177,46 @@ function MsSql() {
         d="M19.6854 8.40018C19.6854 8.40018 19.383 8.44317 19.298 8.45316C14.9192 8.93803 10.4004 10.1977 7.81615 11.2324C6.8814 11.6073 5.91167 12.0622 5.02691 12.572C5.02192 12.577 5.01692 12.577 5.00692 12.582C4.48706 12.8819 3.22241 13.5018 2.19769 14.0466C3.69728 12.4521 6.50651 11.2224 7.6262 10.7725C10.1605 9.75781 14.5143 8.53314 18.7981 8.00829C18.2933 7.41845 17.0586 6.16879 14.6293 5.23905C13.2097 4.6892 11.0503 4.37929 9.14578 4.10436C6.11661 3.66948 4.39209 3.37956 4.22713 2.55479C4.19214 2.38983 4.21714 2.22488 4.29212 2.06492C4.45707 2.33485 4.69201 2.5248 4.84696 2.63477C4.92194 2.68475 4.97693 2.71474 4.99692 2.72474L5.00192 2.72974C5.71173 3.10464 7.6262 3.37956 9.22076 3.6095C11.1502 3.88942 13.3346 4.20433 14.8092 4.76918C18.2433 6.09381 19.428 7.98829 19.4779 8.06827C19.5229 8.14325 19.6854 8.40018 19.6854 8.40018Z"
         fill="#B71C1C"
       />
+    </svg>
+  );
+}
+
+function Cockroachdb() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 20L0 0H20L10 20Z" fill="#336791" />
+    </svg>
+  );
+}
+
+function Bigquery() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 20L0 0H20L10 20Z" fill="#4285f4" />
+    </svg>
+  );
+}
+
+function Mariadb() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 20L0 0H20L10 20Z" fill="#00758f" />
+    </svg>
+  );
+}
+
+function Supabase() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 20L0 0H20L10 20Z" fill="#249edc" />
+    </svg>
+  );
+}
+
+function Neon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 20L0 0H20L10 20Z" fill="#336791" />
     </svg>
   );
 }

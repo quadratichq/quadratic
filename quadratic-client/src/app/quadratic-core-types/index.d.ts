@@ -25,7 +25,7 @@ export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
 export interface ColumnRow { column: number, row: number, }
-export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE";
+export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE" | "COCKROACHDB" | "BIGQUERY" | "MARIADB" | "SUPABASE" | "NEON";
 export interface DataTableSort { column_index: number, direction: SortDirection, }
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
 export type Direction = "Up" | "Down" | "Left" | "Right";

@@ -126,7 +126,7 @@ impl PostgresConnection {
 }
 
 #[async_trait]
-impl Connection for PostgresConnection {
+impl<'a> Connection<'a> for PostgresConnection {
     type Conn = PgConnection;
     type Row = PgRow;
     type Column = PgColumn;

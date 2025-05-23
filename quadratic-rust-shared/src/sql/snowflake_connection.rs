@@ -61,7 +61,7 @@ impl SnowflakeConnection {
 /// Since the snowflake api returns arrow data, we don't need some of the
 /// trait functions implemented.
 #[async_trait]
-impl Connection for SnowflakeConnection {
+impl<'a> Connection<'a> for SnowflakeConnection {
     type Conn = SnowflakeApi;
     type Row = Arc<dyn Array>;
     type Column = ArrayRef;
@@ -129,13 +129,6 @@ impl Connection for SnowflakeConnection {
             not(clippy)
         ))]
         record_stop(scenario, _recording).await;
-
-        #[cfg(all(
-            any(test, feature = "test"),
-            feature = "record-request-mock",
-            not(clippy)
-        ))]
-        println!("query_result: {:?}", query_result);
 
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
             let mut chunks = vec![];

@@ -148,6 +148,11 @@ enum ConnectionType {
     MYSQL
     MSSQL
     SNOWFLAKE
+    BIGQUERY
+    COCKROACHDB
+    MARIADB
+    NEON
+    SUPABASE
 }
 
 model Connection {

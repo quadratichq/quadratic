@@ -28,6 +28,18 @@ pub mod postgres_connection;
 pub mod schema;
 pub mod snowflake_connection;
 
+pub fn query_error(e: impl ToString) -> SharedError {
+    SharedError::Sql(SqlError::Query(e.to_string()))
+}
+
+pub fn schema_error(e: impl ToString) -> SharedError {
+    SharedError::Sql(SqlError::Schema(e.to_string()))
+}
+
+pub fn connect_error(e: impl ToString) -> SharedError {
+    SharedError::Sql(SqlError::Connect(e.to_string()))
+}
+
 pub enum SqlConnection {
     BigqueryConnection(BigqueryConnection),
     Mssql(MsSqlConnection),
@@ -37,7 +49,7 @@ pub enum SqlConnection {
 }
 
 #[async_trait]
-pub trait Connection {
+pub trait Connection<'a> {
     type Conn;
     type Row;
     type Column;
@@ -199,6 +211,17 @@ pub trait UsesSsh {
 
     // Set the SSH key
     fn set_ssh_key(&mut self, ssh_key: Option<String>);
+}
+
+/// Unwrap a result or return a null value
+#[macro_export]
+macro_rules! sql_unwrap_or_null {
+    ( $value:expr ) => {{
+        match $value {
+            Ok(value) => value,
+            Err(_) => ArrowType::Null,
+        }
+    }};
 }
 
 /// Convert a column data to an ArrowType into an Arrow type

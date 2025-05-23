@@ -34,6 +34,7 @@ use crate::{
     health::{full_healthcheck, healthcheck},
     proxy::proxy,
     sql::{
+        bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
@@ -120,6 +121,10 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/snowflake/test", post(test_snowflake))
         .route("/snowflake/query", post(query_snowflake))
         .route("/snowflake/schema/:id", get(schema_snowflake))
+        // bigquery
+        .route("/bigquery/test", post(test_bigquery))
+        .route("/bigquery/query", post(query_bigquery))
+        .route("/bigquery/schema/:id", get(schema_bigquery))
         //
         // proxy
         .route("/proxy", any(proxy))
@@ -235,7 +240,7 @@ pub(crate) async fn static_ips() -> Result<Json<StaticIpsResponse>> {
     Ok(response.into())
 }
 
-pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestResponse> {
+pub(crate) async fn test_connection<'a, T: Connection<'a>>(connection: T) -> Json<TestResponse> {
     let message = match connection.connect().await {
         Ok(_) => None,
         Err(e) => Some(e.to_string()),

@@ -123,7 +123,17 @@ export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
   z.object({
     Connection: z.object({
-      kind: z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']),
+      kind: z.enum([
+        'POSTGRES',
+        'MYSQL',
+        'MSSQL',
+        'SNOWFLAKE',
+        'BIGQUERY',
+        'COCKROACHDB',
+        'MARIADB',
+        'NEON',
+        'SUPABASE',
+      ]),
       id: z.string(),
     }),
   })

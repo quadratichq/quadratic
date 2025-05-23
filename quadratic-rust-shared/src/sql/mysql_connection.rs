@@ -126,7 +126,7 @@ impl MySqlConnection {
 }
 
 #[async_trait]
-impl Connection for MySqlConnection {
+impl<'a> Connection<'a> for MySqlConnection {
     type Conn = SqlxMySqlConnection;
     type Row = MySqlRow;
     type Column = MySqlColumn;

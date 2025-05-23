@@ -213,6 +213,8 @@ impl GridController {
                 msg: RunErrorMsg::CodeRunError(msg.into()),
             });
 
+            dbgjs!(format!("array: {:?}", array));
+
             let value = if std_err.is_some() {
                 Value::default() // TODO(ddimaria): this will be an empty vec
             } else {
