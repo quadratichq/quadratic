@@ -124,7 +124,7 @@ impl GridController {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self.string_to_cell_value(&value, false);
+                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
                         cell_values
                             .set(u32::try_from(x)?, y, cell_value)
                             .map_err(|e| error(e.to_string()))?;
