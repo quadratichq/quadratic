@@ -213,11 +213,13 @@ mod tests {
             CodeCellLanguage::Formula,
             "{A1, B1}".to_string(),
             None,
+            None,
         );
         gc.set_code_cell(
             pos![sheet_id!D5],
             CodeCellLanguage::Formula,
             "{A1, B1}".to_string(),
+            None,
             None,
         );
 

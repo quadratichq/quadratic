@@ -476,6 +476,11 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
+
+    pub(crate) fn set_formats(&mut self, selection: &A1Selection, format_update: FormatUpdate) {
+        let ops = self.format_ops(selection, format_update);
+        self.start_user_transaction(ops, None, TransactionName::SetFormats);
+    }
 }
 
 #[cfg(test)]
@@ -487,6 +492,7 @@ mod test {
     use crate::grid::CellWrap;
     use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
     use crate::{Pos, a1::A1Selection};
+    use crate::test_util::*;
 
     #[test]
     fn test_set_align_selection() {
@@ -948,5 +954,42 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let format = sheet.cell_format(pos![F7]);
         assert_eq!(format.bold, Some(true));
+    }
+
+    #[test]
+    fn test_set_formats() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let selection = A1Selection::test_a1("A1:B2");
+
+        // Create a format update with multiple changes
+        let format_update = FormatUpdate {
+            bold: Some(Some(true)),
+            italic: Some(Some(true)),
+            text_color: Some(Some("red".to_string())),
+            fill_color: Some(Some("blue".to_string())),
+            align: Some(Some(crate::grid::CellAlign::Center)),
+            ..Default::default()
+        };
+
+        // Apply the formats
+        gc.set_formats(&selection, format_update);
+
+        // Verify the changes were applied
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![A1]);
+        assert_eq!(format.bold, Some(true));
+        assert_eq!(format.italic, Some(true));
+        assert_eq!(format.text_color, Some("red".to_string()));
+        assert_eq!(format.fill_color, Some("blue".to_string()));
+        assert_eq!(format.align, Some(crate::grid::CellAlign::Center));
+
+        // Verify the changes were applied to all cells in the selection
+        let format = sheet.cell_format(pos![B2]);
+        assert_eq!(format.bold, Some(true));
+        assert_eq!(format.italic, Some(true));
+        assert_eq!(format.text_color, Some("red".to_string()));
+        assert_eq!(format.fill_color, Some("blue".to_string()));
+        assert_eq!(format.align, Some(crate::grid::CellAlign::Center));
     }
 }

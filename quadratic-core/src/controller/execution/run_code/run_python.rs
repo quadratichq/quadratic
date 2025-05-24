@@ -51,7 +51,13 @@ mod tests {
 
         let sheet_pos = pos![A1].to_sheet_pos(sheet_id);
         let code = "print('test')".to_string();
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Python,
+            code.clone(),
+            None,
+            None,
+        );
 
         let transaction = gc.async_transactions().first().unwrap();
         let transaction_id = transaction.id;
@@ -103,6 +109,7 @@ mod tests {
             CodeCellLanguage::Python,
             "print('hello world')".into(),
             None,
+            None,
         );
 
         // transaction for its id
@@ -139,6 +146,7 @@ mod tests {
             pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
+            None,
             None,
         );
 
@@ -205,6 +213,7 @@ mod tests {
             pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
+            None,
             None,
         );
 
@@ -290,6 +299,7 @@ mod tests {
             CodeCellLanguage::Python,
             "create an array output".into(),
             None,
+            None,
         );
 
         // get the transaction id for the awaiting python async calculation
@@ -339,6 +349,7 @@ mod tests {
             CodeCellLanguage::Python,
             "dummy calculation".into(),
             None,
+            None,
         );
         let transaction_id = gc.async_transactions()[0].id;
         // mock the python result
@@ -375,6 +386,7 @@ mod tests {
             CodeCellLanguage::Python,
             "print('original output')".into(),
             None,
+            None,
         );
 
         // get the transaction id for the awaiting python async calculation
@@ -401,6 +413,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output')".into(),
+            None,
             None,
         );
 
@@ -434,6 +447,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output second time')".into(),
+            None,
             None,
         );
 
@@ -480,6 +494,7 @@ mod tests {
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -509,6 +524,7 @@ mod tests {
             pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('B2') + 1".into(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;

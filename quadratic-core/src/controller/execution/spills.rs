@@ -77,6 +77,7 @@ mod tests {
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
+            None,
         );
 
         // manually set a cell value and see if spill is changed
@@ -113,6 +114,7 @@ mod tests {
             },
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
+            None,
             None,
         );
 
@@ -177,6 +179,7 @@ mod tests {
             },
             CodeCellLanguage::Formula,
             "B1:B4".into(),
+            None,
             None,
         );
 
@@ -252,6 +255,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
+            None,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -273,6 +277,7 @@ mod tests {
             },
             CodeCellLanguage::Formula,
             "1 + 2".into(),
+            None,
             None,
         );
 
@@ -313,6 +318,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "A1:C3".into(),
             None,
+            None,
         );
 
         // output that is spilled column: 11, row: 9 creates a spill (since it's inside the other code_cell)
@@ -324,6 +330,7 @@ mod tests {
             },
             CodeCellLanguage::Formula,
             "A1:A3".into(),
+            None,
             None,
         );
 
@@ -402,6 +409,7 @@ mod tests {
             },
             CodeCellLanguage::Javascript,
             "".into(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;

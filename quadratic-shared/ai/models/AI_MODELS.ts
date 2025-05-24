@@ -1,20 +1,20 @@
-import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 
-export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
 
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
 
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
 
-export const DEFAULT_PDF_IMPORT_MODEL: ModelKey = 'vertexai:gemini-2.5-pro-preview-03-25';
+export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 13;
 
 export const MODELS_CONFIGURATION: {
-  [key in ModelKey]: ModelConfig;
+  [key in AIModelKey]: AIModelConfig;
 } = {
   'vertexai-anthropic:claude:thinking-toggle-off': {
     model: 'claude-3-5-sonnet-v2@20241022',
@@ -27,6 +27,10 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinkingToggle: false,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'vertexai-anthropic:claude:thinking-toggle-on': {
     model: 'claude-3-7-sonnet@20250219',
@@ -41,6 +45,10 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingTemperature: 1,
     thinkingToggle: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'vertexai-anthropic:claude-3-7-sonnet@20250219': {
     model: 'claude-3-7-sonnet@20250219',
@@ -52,6 +60,10 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'vertexai-anthropic:claude-3-7-sonnet@20250219:thinking': {
     model: 'claude-3-7-sonnet@20250219',
@@ -65,6 +77,10 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingTemperature: 1,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'vertexai-anthropic:claude-3-5-sonnet-v2@20241022': {
     model: 'claude-3-5-sonnet-v2@20241022',
@@ -76,9 +92,13 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
-  'vertexai:gemini-2.5-pro-preview-03-25': {
-    model: 'gemini-2.5-pro-preview-03-25',
+  'vertexai:gemini-2.5-pro-preview-05-06': {
+    model: 'gemini-2.5-pro-preview-05-06',
     displayName: 'gemini 2.5 pro preview',
     temperature: 0,
     max_tokens: 65535,
@@ -87,6 +107,10 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai',
     promptCaching: false,
+    rate_per_million_input_tokens: 1.25,
+    rate_per_million_output_tokens: 10,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
   },
   'vertexai:gemini-2.0-flash-001': {
     model: 'gemini-2.0-flash-001',
@@ -98,6 +122,10 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai',
     promptCaching: false,
+    rate_per_million_input_tokens: 0.15,
+    rate_per_million_output_tokens: 1,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
   },
   'bedrock-anthropic:claude:thinking-toggle-off': {
     model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
@@ -110,6 +138,10 @@ export const MODELS_CONFIGURATION: {
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'bedrock-anthropic:claude:thinking-toggle-on': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -124,6 +156,10 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingTemperature: 1,
     thinkingToggle: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -135,6 +171,10 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -148,6 +188,10 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingTemperature: 1,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
     model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
@@ -159,6 +203,25 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: false,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
+  },
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0': {
+    model: 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+    displayName: `claude 3.5 haiku`,
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'bedrock-anthropic',
+    promptCaching: true,
+    rate_per_million_input_tokens: 0.8,
+    rate_per_million_output_tokens: 4,
+    rate_per_million_cache_read_tokens: 0.08,
+    rate_per_million_cache_write_tokens: 1,
   },
   'bedrock:us.deepseek.r1-v1:0': {
     model: 'us.deepseek.r1-v1:0',
@@ -170,6 +233,10 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'bedrock',
     promptCaching: false,
+    rate_per_million_input_tokens: 1.35,
+    rate_per_million_output_tokens: 5.4,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
   },
   'anthropic:claude:thinking-toggle-off': {
     model: 'claude-3-5-sonnet-20241022',
@@ -182,6 +249,10 @@ export const MODELS_CONFIGURATION: {
     provider: 'anthropic',
     promptCaching: true,
     thinkingToggle: false,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'anthropic:claude:thinking-toggle-on': {
     model: 'claude-3-7-sonnet-20250219',
@@ -196,6 +267,10 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingTemperature: 1,
     thinkingToggle: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'anthropic:claude-3-7-sonnet-20250219': {
     model: 'claude-3-7-sonnet-20250219',
@@ -207,6 +282,10 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'anthropic',
     promptCaching: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'anthropic:claude-3-7-sonnet-20250219:thinking': {
     model: 'claude-3-7-sonnet-20250219',
@@ -220,6 +299,10 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingTemperature: 1,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'anthropic:claude-3-5-sonnet-20241022': {
     model: 'claude-3-5-sonnet-20241022',
@@ -231,6 +314,10 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     enabled: false,
     provider: 'anthropic',
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0.3,
+    rate_per_million_cache_write_tokens: 3.75,
   },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
@@ -242,7 +329,11 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
+    strictParams: false,
+    rate_per_million_input_tokens: 2,
+    rate_per_million_output_tokens: 8,
+    rate_per_million_cache_read_tokens: 0.5,
+    rate_per_million_cache_write_tokens: 0,
   },
   'openai:o4-mini-2025-04-16': {
     model: 'o4-mini-2025-04-16',
@@ -254,7 +345,11 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
+    strictParams: false,
+    rate_per_million_input_tokens: 1.1,
+    rate_per_million_output_tokens: 4.4,
+    rate_per_million_cache_read_tokens: 0.275,
+    rate_per_million_cache_write_tokens: 0,
   },
   'openai:o3-2025-04-16': {
     model: 'o3-2025-04-16',
@@ -266,7 +361,11 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
+    strictParams: false,
+    rate_per_million_input_tokens: 10,
+    rate_per_million_output_tokens: 40,
+    rate_per_million_cache_read_tokens: 2.5,
+    rate_per_million_cache_write_tokens: 0,
   },
   'xai:grok-3-beta': {
     model: 'grok-3-beta',
@@ -279,5 +378,9 @@ export const MODELS_CONFIGURATION: {
     provider: 'xai',
     promptCaching: true, // not used for xai
     strictParams: false,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 15,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
   },
 } as const;
