@@ -108,7 +108,7 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
   ],
   launchTemplate: {
     id: launchTemplate.id,
-    version: "$Latest",
+    version: launchTemplate.latestVersion.apply((v) => v.toString()),
   },
   minSize,
   maxSize,
@@ -120,7 +120,6 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
       minHealthyPercentage: 50,
       instanceWarmup: "60",
     },
-    triggers: ["launch_template"],
   },
 });
 

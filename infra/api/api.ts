@@ -110,7 +110,7 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   vpcZoneIdentifiers: [apiPrivateSubnet1.id, apiPrivateSubnet2.id],
   launchTemplate: {
     id: launchTemplate.id,
-    version: "$Latest",
+    version: launchTemplate.latestVersion.apply((v) => v.toString()),
   },
   minSize,
   maxSize,
@@ -131,7 +131,6 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
       minHealthyPercentage: 50,
       instanceWarmup: "60",
     },
-    triggers: ["launch_template"],
   },
 
   // Add auto-scaling metrics collection
