@@ -141,7 +141,7 @@ export class TableName extends Container {
       this.modified.text = timeAgo;
       // don't show the modified text if it overlaps the left text
       if (
-        this.modified.width + SYMBOL_PADDING + this.dropdown.x + this.dropdown.width + TABLE_NAME_PADDING[0] >
+        this.dropdown.x + this.dropdown.width + TABLE_NAME_PADDING[0] + this.modified.width + SYMBOL_PADDING >
         this.table.tableBounds.width
       ) {
         this.modified.visible = false;
@@ -158,24 +158,24 @@ export class TableName extends Container {
 
   update() {
     this.h = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
-    this.drawSymbol();
-    this.drawText();
-    if (this.modified) {
-      this.drawModified();
-    }
-    if (this.table.active) {
-      this.dropdown.visible = true;
-      this.drawDropdown();
-    } else {
-      this.dropdown.visible = false;
-    }
-    this.drawBackground();
     this.tableNameBounds = new Rectangle(
       this.table.tableBounds.x,
       this.table.tableBounds.y,
       this.backgroundWidth,
       this.h
     );
+    this.drawSymbol();
+    this.drawText();
+    this.drawDropdown();
+    if (this.modified) {
+      this.drawModified();
+    }
+    if (this.table.active) {
+      this.dropdown.visible = true;
+    } else {
+      this.dropdown.visible = false;
+    }
+    this.drawBackground();
   }
 
   intersects(world: Point): TablePointerDownResult | undefined {

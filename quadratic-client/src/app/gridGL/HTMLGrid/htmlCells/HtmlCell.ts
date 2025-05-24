@@ -82,8 +82,6 @@ export class HtmlCell {
     this.iframe.height = `${this.height}px`;
     this.iframe.setAttribute('border', '0');
     this.iframe.setAttribute('scrolling', 'no');
-    this.iframe.style.minWidth = `${CELL_WIDTH}px`;
-    this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
     // Hard-coded for now, since we invert this color
     this.iframe.style.backgroundColor = '#fff';
 
