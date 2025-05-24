@@ -7,6 +7,7 @@ pub mod borders;
 pub mod cell_value;
 pub mod clipboard;
 pub mod code_cell;
+mod csv;
 pub mod data_table;
 pub mod formats;
 pub mod import;

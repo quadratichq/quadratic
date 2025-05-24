@@ -1,0 +1,100 @@
+Dataset_Name;Author;Last_Update;Usability;File_Count;Data_Type;Size;Upvote;Rank
+Bitcoin Historical Data;Zielak;2025;100;1;CSV;98 MB;3693;Gold
+International football results from 1872 to 2025;Mart Jürisoo;2025;100;4;CSV;1 MB;2315;Gold
+Fruits-360 dataset;Mihai Oltean;2025;88;240356;other;4 GB;3133;Gold
+Formula 1 World Championship (1950 - 2024);Vopani;2025;100;14;CSV;7 MB;1937;Gold
+arXiv Dataset;Cornell University;2025;88;1;JSON;2 GB;1480;Bronze
+FitBit Fitness Tracker Data;Möbius;2024;94;29;CSV;45 MB;2506;Gold
+Data Science Salaries 2023 ??;randomarnab;2023;100;1;CSV;26 KB;1506;Bronze
+Most Streamed Spotify Songs 2023;Nidula Elgiriyewithana ?;2023;100;1;CSV;48 KB;1891;Gold
+US Accidents (2016 - 2023);Sobhan Moosavi;2023;100;1;CSV;685 MB;2454;Gold
+Durum Wheat Dataset;Murat KOKLU;2022;94;333;other;1 GB;1473;Gold
+Rice MSC Dataset;Murat KOKLU;2022;94;3;other;107 MB;1458;Gold
+Grapevine Leaves Image Dataset;Murat KOKLU;2022;88;501;other;114 MB;1534;Gold
+Raisin Dataset;Murat KOKLU;2022;94;3;other;115 KB;1495;Bronze
+COVID-19 World Vaccination Progress;Gabriel Preda;2022;100;2;CSV;2 MB;2206;Gold
+Pistachio Dataset;Murat KOKLU;2022;94;8;other;2 MB;1501;Silver
+COVID-19 Open Research Dataset Challenge (CORD-19);Allen Institute For AI;2022;88;717120;other;20 GB;11131;Gold
+Rice Image Dataset;Murat KOKLU;2022;88;75001;other;230 MB;1912;Gold
+Reddit Vaccine Myths;Gabriel Preda;2022;100;1;CSV;243 KB;1515;Gold
+Pistachio Image Dataset;Murat KOKLU;2022;94;2158;other;28 MB;1656;Silver
+Yelp Dataset;Yelp Inc.;2022;75;6;JSON;4 GB;1713;Gold
+Pumpkin Seeds Dataset;Murat KOKLU;2022;94;3;other;403 KB;1518;Gold
+Date Fruit Datasets;Murat KOKLU;2022;94;3;other;418 KB;2121;Gold
+Dry Bean Dataset;Murat KOKLU;2022;94;3;other;5 MB;1495;Gold
+Rice Dataset Commeo and Osmancik;Murat KOKLU;2022;94;4;other;536 KB;1431;Gold
+Acoustic Extinguisher Fire Dataset;Murat KOKLU;2022;94;3;other;636 KB;1700;Silver
+Data Science Job Salaries;Ruchi Bhatia;2022;100;1;CSV;8 KB;1592;Gold
+Diabetes Dataset;Akshay Dattatray Khare;2022;100;1;CSV;9 KB;1480;Gold
+Netflix Movies and TV Shows;Shivam Bansal;2021;100;1;CSV;1 MB;9015;Gold
+Flowers Recognition;Alexander Mamaev;2021;63;4317;other;236 MB;1962;Gold
+Water Quality;Aditya Kadiwal;2021;100;1;CSV;257 KB;1587;Gold
+Used Cars Dataset;Austin Reese;2021;100;1;CSV;275 MB;1523;Silver
+Credit Card customers;Sakshi Goyal;2021;100;1;CSV;388 KB;2348;Gold
+Rain in Australia;Joe Young;2021;100;1;CSV;4 MB;1811;Gold
+Brazilian E-Commerce Public Dataset by Olist;Olist;2021;100;9;CSV;45 MB;3517;Gold
+Animal Crossing New Horizons Catalog;Jessica Li;2021;88;30;CSV;591 KB;52058;Gold
+Customer Personality Analysis;Akash Patel;2021;97;1;CSV;63 KB;2700;Gold
+Stroke Prediction Dataset;fedesoriano;2021;100;1;CSV;69 KB;3276;Gold
+COVID-19 in India;SRK;2021;91;2;CSV;776 KB;2059;Gold
+Heart Failure Prediction Dataset;fedesoriano;2021;100;1;CSV;9 KB;2860;Gold
+Novel Corona Virus 2019 Dataset;SRK;2021;97;6;CSV;9 MB;6251;Gold
+Hotel booking demand;Jesse Mostipak;2020;100;1;CSV;1 MB;2539;Gold
+COVID-19 Dataset;Devakumar K.P.;2020;100;6;CSV;20 MB;2577;Gold
+World Happiness Report;Sustainable Development Solutions Network;2020;85;5;CSV;38 KB;4331;Gold
+Heart Failure Prediction;Larxel;2020;100;1;CSV;4 KB;2386;Gold
+Face Mask Detection;Larxel;2020;88;1706;other;417 MB;1845;Gold
+Data Science Cheat Sheets;Timo Bozsolik;2020;88;251;other;625 MB;5419;Gold
+FER-2013;Manas Sambare;2020;75;35887;other;63 MB;1459;Bronze
+[NeurIPS 2020] Data Science for COVID-19 (DS4C);datartist;2020;100;11;CSV;7 MB;1622;Gold
+Graduate Admission 2;Mohan S Acharya;2019;71;2;CSV;10 KB;1891;Gold
+Brain MRI Images for Brain Tumor Detection;Navoneel Chakrabarty;2019;50;253;other;16 MB;1436;Bronze
+Google Play Store Apps;Lavanya;2019;82;3;CSV,  other;2 MB;4981;Gold
+Trending YouTube Video Statistics;Mitchell J;2019;79;20;CSV, JSON;211 MB;5657;Gold
+New York City Airbnb Open Data;Dgomonov;2019;100;2;SV, other;3 MB;3023;Gold
+Intel Image Classification;Puneet Bansal;2019;75;24335;other;363 MB;1554;Silver
+Suicide Rates Overview 1985 to 2016;Rusty;2019;82;1;CSV;407 KB;3063;Gold
+mlcourse.ai;Yury Kashnitsky;2019;88;30;CSV, other;54 MB;1714;Gold
+Daily News for Stock Market Prediction;Aaron7sun;2019;71;3;CSV;6 MB;1633;Gold
+FiveThirtyEight Comic Characters Dataset;FiveThirtyEight;2019;82;3;CSV,  other;611 KB;4770;Gold
+Netflix Prize data;Netflix;2019;76;8;other, CSV;716 MB;1401;Gold
+CelebFaces Attributes (CelebA) Dataset;Jessica Li;2018;76;202603;CSV, other;1 GB;1719;Gold
+Medical Cost Personal Datasets;Miri Choi;2018;88;1;CSV;16 KB;2863;Gold
+Telco Customer Churn;BlastChar;2018;88;1;CSV;176 KB;3041;Gold
+Chest X-Ray Images (Pneumonia);Paul Mooney;2018;75;5856;other;2 GB;6922;Gold
+Mall Customer Segmentation Data;Vijay Choudhary;2018;88;1;CSV;2 KB;1792;Gold
+Red Wine Quality;UCI Machine Learning;2018;88;1;CSV;26 KB;3058;Gold
+Global Terrorism Database;START Consortium;2018;85;1;CSV;30 MB;2591;Gold
+Kickstarter Projects;Mickaël Mouillé;2018;79;2;CSV;39 MB;1615;Gold
+California Housing Prices;Cam Nugent;2018;85;1;CSV;409 KB;1407;Gold
+Melbourne Housing Snapshot;DanB;2018;71;1;CSV;461 KB;1616;Gold
+Huge Stock Market Dataset;Boris Marjanovic;2018;75;8539;other;516 MB;4481;Gold
+Wine Reviews;zackthoutt;2018;79;3;CSV;53 MB;3732;Gold
+Skin Cancer MNIST: HAM10000;K Scott Mader;2018;71;10020;CSV, other;6 GB;2025;Gold
+120 years of Olympic history: athletes and results;rgriffin;2018;82;2;CSV;6 MB;2306;Gold
+Avocado Prices;Justin Kiggins;2018;97;1;CSV;644 KB;3783;Gold
+Credit Card Fraud Detection;Machine Learning Group - ULB;2018;85;1;CSV;69 MB;12168;Gold
+Mobile Price Classification;Abhishek Sharma;2018;71;2;CSV;72 KB;2288;Gold
+Fashion MNIST;Zalando Research;2018;85;6;SV, other;72 MB;2957;Gold
+Students Performance in Exams;Jakki Seshapanpu;2018;71;1;CSV;9 KB;4601;Gold
+Titanic;Khashayar Baghizadeh;2017;71;1;CSV;11 KB;1590;Gold
+Synthetic Financial Datasets For Fraud Detection;Edgar Lopez-Rojas;2017;88;1;CSV;186 MB;1468;Gold
+SMS Spam Collection Dataset;UCI Machine Learning;2017;74;1;CSV;216 KB;1637;Gold
+The Movies Dataset;Rounak Banik;2017;82;7;CSV;239 MB;3745;Gold
+Amazon Fine Food Reviews;Stanford Network Analysis Project;2017;79;3;SQLITE, CSV;254 MB;2330;Gold
+Mushroom Classification;UCI Machine Learning;2017;85;1;CSV;35 KB;2494;Gold
+World Development Indicators;Kaggle;2017;76;8;CSV, other;387 MB;1654;Gold
+IBM HR Analytics Employee Attrition & Performance;pavansubhash;2017;88;1;CSV;51 KB;2667;Gold
+Sign Language MNIST;tecperson;2017;76;5;CSV, other;66 MB;1614;Gold
+E-Commerce Data;Carrie;2017;71;1;CSV;8 MB;1841;Gold
+Sentiment140 dataset with 1.6 million tweets;KazAnova;2017;88;1;CSV;85 MB;2132;Gold
+Climate Change: Earth Surface Temperature Data;Berkeley Earth;2017;76;5;CSV;89 MB;2379;Gold
+TMDB 5000 Movie Dataset;The Movie Database (TMDb);2017;82;2;CSV;9 MB;4008;Gold
+Pokemon with stats;Alberto Barradas;2016;88;1;CSV;15 KB;2633;Gold
+Student Alcohol Consumption;UCI Machine Learning;2016;85;3;CSV, other;19 KB;2023;Gold
+European Soccer Database;Hugo Mathien;2016;71;1;SQLITE;34 MB;4739;Gold
+Video Game Sales;GregorySmith;2016;59;1;CSV;390 KB;6407;Gold
+Iris Species;UCI Machine Learning;2016;79;2;SQLITE, CSV;4 KB;4214;Gold
+Breast Cancer Wisconsin (Diagnostic) Data Set;UCI Machine Learning;2016;85;1;CSV;50 KB;3790;Gold
+House Sales in King County; USA, harlfoxem;2016;60;71;CSV;798 KB;2229;Gold
+Pima Indians Diabetes Database;UCI Machine Learning;2016;88;1;CSV;9 KB;4600;Gold
