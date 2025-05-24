@@ -1,0 +1,83 @@
+name: Verify Version
+description: "Verify version of a deployed service"
+inputs:
+  service_name:
+    description: "Name of the service to verify version"
+    required: true
+  service_url:
+    description: "URL of the service to verify version"
+    required: true
+  expected_version:
+    description: "Expected version of the service"
+    required: true
+  max_attempts:
+    description: "Maximum number of attempts to verify version"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Verify version
+      run: |
+        ATTEMPTS=0
+        echo "Checking ${{ inputs.service_name }} version..."
+        echo "Expected version: ${{ inputs.expected_version }}"
+        echo "Service URL: ${{ inputs.service_url }}"
+
+        while [ $ATTEMPTS -lt ${{ inputs.max_attempts }} ]; do
+          ATTEMPTS=$((ATTEMPTS + 1))
+
+          set +e  # Don't exit on error
+
+          curl -s -k \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -w "\n%{http_code}" \
+            "${{ inputs.service_url }}" > response.txt 2>error.txt
+          CURL_EXIT_CODE=$?
+
+          set -e  # Resume normal error handling
+
+          # If curl failed, retry
+          if [ $CURL_EXIT_CODE -ne 0 ]; then
+            echo "$ATTEMPTS/${{ inputs.max_attempts }} - Curl failed with exit code $CURL_EXIT_CODE"
+            [ $ATTEMPTS -lt ${{ inputs.max_attempts }} ] && sleep 30
+            continue
+          fi
+
+          # Process the response if curl succeeded
+          RESPONSE=$(cat response.txt)
+
+          # Extract HTTP code and body
+          HTTP_BODY=$(echo "$RESPONSE" | head -n 1)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+
+          # Check for valid HTTP response
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "$ATTEMPTS/${{ inputs.max_attempts }} - Endpoint not ready (HTTP $HTTP_CODE)"
+            [ $ATTEMPTS -lt ${{ inputs.max_attempts }} ] && sleep 30
+            continue
+          fi
+
+          # Try to parse version
+          DEPLOYED_VERSION=$(echo "$HTTP_BODY" | jq -r .version 2>/dev/null || echo "")
+
+          # Check if version was successfully extracted
+          if [ -z "$DEPLOYED_VERSION" ]; then
+            echo "$ATTEMPTS/${{ inputs.max_attempts }} - Invalid version format in response"
+            [ $ATTEMPTS -lt ${{ inputs.max_attempts }} ] && sleep 30
+            continue
+          fi
+
+          # Compare versions
+          if [ "$DEPLOYED_VERSION" = "${{ inputs.expected_version }}" ]; then
+            echo "::notice::${{ inputs.service_name }} version verified successfully"
+            exit 0
+          fi
+
+          echo "$ATTEMPTS/${{ inputs.max_attempts }} - Version mismatch, found $DEPLOYED_VERSION"
+          [ $ATTEMPTS -lt ${{ inputs.max_attempts }} ] && sleep 30
+        done
+
+        echo "::error::${{ inputs.service_name }} version check failed after ${{ inputs.max_attempts }} attempts"
+        exit 1
+      shell: bash
