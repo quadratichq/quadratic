@@ -131,6 +131,7 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
       minHealthyPercentage: 50,
       instanceWarmup: "60",
     },
+    triggers: ["launch_template"],
   },
 
   // Add auto-scaling metrics collection

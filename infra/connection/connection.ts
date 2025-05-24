@@ -120,6 +120,7 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
       minHealthyPercentage: 50,
       instanceWarmup: "60",
     },
+    triggers: ["launch_template"],
   },
 });
 
