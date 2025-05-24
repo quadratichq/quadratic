@@ -64,8 +64,6 @@ impl DataTable {
 
     /// Toggles whether the first row of the data table is used as the column headings.
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
-        self.header_is_first_row = first_row_as_header;
-
         match first_row_as_header {
             true => self.apply_first_row_as_header(),
             false => self.apply_default_header(),
@@ -103,6 +101,7 @@ impl DataTable {
     /// Apply default column headings to the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
     pub fn apply_default_header(&mut self) {
+        self.header_is_first_row = false;
         self.column_headers = Some(self.default_header(None));
     }
 
@@ -150,7 +149,8 @@ impl DataTable {
                 .collect::<Vec<_>>();
 
             let check_name = |name: &str| !all_names.contains(&name.to_string());
-            unique_name(name, false, check_name)
+            let iter_names = all_names.iter().rev();
+            unique_name(name, false, check_name, iter_names)
         } else {
             name.to_string()
         }
@@ -163,7 +163,8 @@ impl DataTable {
         if let Some(columns) = self.column_headers.as_mut() {
             columns.iter_mut().for_each(|column| {
                 let check_name = |name: &str| !all_names.contains(&name.to_string());
-                let name = unique_name(&column.name.to_string(), false, check_name);
+                let iter_names = all_names.iter().rev();
+                let name = unique_name(&column.name.to_string(), false, check_name, iter_names);
                 column.name = CellValue::Text(name.to_owned());
                 all_names.push(name);
             });
@@ -227,9 +228,16 @@ pub mod test {
 
         // test column headings taken from first row
         let value = Value::Array(values.clone());
-        let mut data_table =
-            DataTable::new(kind.clone(), "Table 1", value, false, true, true, None)
-                .with_last_modified(data_table.last_modified);
+        let mut data_table = DataTable::new(
+            kind.clone(),
+            "Table 1",
+            value,
+            true,
+            Some(true),
+            Some(true),
+            None,
+        )
+        .with_last_modified(data_table.last_modified);
 
         data_table.apply_first_row_as_header();
         let expected_columns = vec![
@@ -291,18 +299,17 @@ pub mod test {
             sort_dirty: false,
             display_buffer: None,
             value: Value::Array(array),
-            readonly: false,
-            spill_error: false,
             last_modified: Utc::now(),
-            show_ui: true,
-            show_name: true,
-            show_columns: true,
+            show_name: Some(true),
+            show_columns: Some(true),
             header_is_first_row: true,
             alternating_colors: true,
             formats: Default::default(),
             borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
+            spill_value: false,
+            spill_data_table: false,
         };
         sheet.set_cell_value(
             pos,
@@ -314,8 +321,13 @@ pub mod test {
             Some(CellValue::Text("first".into()))
         );
 
-        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
-        data_table.toggle_first_row_as_header(false);
+        sheet
+            .modify_data_table_at(&(1, 1).into(), |dt| {
+                dt.toggle_first_row_as_header(false);
+                Ok(())
+            })
+            .unwrap();
+
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("Column 1".into()))
@@ -345,18 +357,17 @@ pub mod test {
             sort_dirty: false,
             display_buffer: None,
             value: Value::Array(array),
-            readonly: false,
-            spill_error: false,
             last_modified: Utc::now(),
-            show_ui: true,
-            show_name: true,
-            show_columns: true,
+            show_name: Some(true),
+            show_columns: Some(true),
             header_is_first_row: false,
             alternating_colors: true,
             formats: Default::default(),
             borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
+            spill_value: false,
+            spill_data_table: false,
         };
         t.apply_default_header();
         sheet.set_cell_value(
@@ -370,17 +381,25 @@ pub mod test {
         );
 
         // make first row a header
-        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
-        data_table.toggle_first_row_as_header(true);
+        sheet
+            .modify_data_table_at(&(1, 1).into(), |dt| {
+                dt.toggle_first_row_as_header(true);
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("first".into()))
         );
 
         // hide first column
-        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
-        column_headers[0].display = false;
+        sheet
+            .modify_data_table_at(&(1, 1).into(), |dt| {
+                let column_headers = dt.column_headers.as_mut().unwrap();
+                column_headers[0].display = false;
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("second".into()))

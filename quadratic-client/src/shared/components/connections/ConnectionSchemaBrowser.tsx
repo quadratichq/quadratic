@@ -1,5 +1,5 @@
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -26,7 +26,7 @@ export const ConnectionSchemaBrowser = ({
   type?: ConnectionType;
   uuid?: string;
 }) => {
-  const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid });
+  const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
 
   if (type === undefined || uuid === undefined) return null;
@@ -40,7 +40,7 @@ export const ConnectionSchemaBrowser = ({
         <div className="flex items-center gap-1 truncate">
           {data && data.type ? (
             <div className="flex h-6 w-6 flex-shrink-0 items-center">
-              <LanguageIcon language={data.type} sx={{ width: 15, height: 15 }} />
+              <LanguageIcon language={data.type} />
             </div>
           ) : null}
           <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>

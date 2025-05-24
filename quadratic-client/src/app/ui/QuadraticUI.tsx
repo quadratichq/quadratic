@@ -31,10 +31,11 @@ import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
-import { Empty } from '@/shared/components/Empty';
+import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
@@ -63,6 +64,8 @@ export default function QuadraticUI() {
     };
   }, []);
 
+  useRemoveInitialLoadingUI();
+
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)
   useEffect(() => {
@@ -84,13 +87,11 @@ export default function QuadraticUI() {
 
   if (error) {
     return (
-      <Empty
-        className="z-50 h-full w-full"
+      <EmptyPage
         title="Quadratic crashed"
         description="Something went wrong. Our team has been notified of this issue. Please reload the application to continue."
         Icon={CrossCircledIcon}
         actions={<Button onClick={() => window.location.reload()}>Reload</Button>}
-        severity="error"
         error={error.error}
         source={error.from}
       />

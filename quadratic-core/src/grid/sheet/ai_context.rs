@@ -74,7 +74,7 @@ impl Sheet {
                         if let Some(CellValue::Code(_)) = column.values.get(&y) {
                             // if there is a code cell, then check if it has an error
                             if self
-                                .data_table((x, y).into())
+                                .data_table_at(&(x, y).into())
                                 .map(|code_run| code_run.has_error())
                                 .unwrap_or(false)
                             {
@@ -104,8 +104,8 @@ impl Sheet {
         for rect in selection_rects {
             let tables_summary_in_rect = self
                 .data_tables
-                .iter()
-                .filter_map(|(pos, table)| {
+                .get_in_rect(rect, false)
+                .filter_map(|(_, pos, table)| {
                     if !seen_tables.insert(pos) {
                         return None;
                     }
@@ -114,22 +114,16 @@ impl Sheet {
                         return None;
                     }
 
-                    let table_type = match self.cell_value_ref(pos.to_owned()) {
-                        Some(CellValue::Code(_)) => JsTableType::CodeTable,
-                        Some(CellValue::Import(_)) => JsTableType::DataTable,
-                        _ => return None,
-                    };
-
-                    if table.output_rect(*pos, false).intersects(rect) {
-                        Some(JsTableSummaryContext {
-                            sheet_name: self.name.clone(),
-                            table_name: table.name.to_string(),
-                            table_type,
-                            bounds: table.output_rect(*pos, false).a1_string(),
-                        })
-                    } else {
-                        None
-                    }
+                    Some(JsTableSummaryContext {
+                        sheet_name: self.name.clone(),
+                        table_name: table.name().to_string(),
+                        table_type: match self.cell_value_ref(pos.to_owned()) {
+                            Some(CellValue::Code(_)) => JsTableType::CodeTable,
+                            Some(CellValue::Import(_)) => JsTableType::DataTable,
+                            _ => return None,
+                        },
+                        bounds: table.output_rect(pos, false).a1_string(),
+                    })
                 })
                 .collect::<Vec<JsTableSummaryContext>>();
             tables_summary.extend(tables_summary_in_rect);
@@ -148,25 +142,21 @@ impl Sheet {
         for rect in selection_rects {
             let charts_summary_in_rect = self
                 .data_tables
-                .iter()
-                .filter_map(|(pos, table)| {
+                .get_in_rect(rect, false)
+                .filter_map(|(_, pos, table)| {
                     if !seen_tables.insert(pos) {
                         return None;
                     }
 
-                    if !table.is_html_or_image() || table.spill_error {
+                    if !table.is_html_or_image() || table.has_spill() {
                         return None;
                     }
 
-                    if table.output_rect(*pos, false).intersects(rect) {
-                        Some(JsChartSummaryContext {
-                            sheet_name: self.name.clone(),
-                            chart_name: table.name.to_string(),
-                            bounds: table.output_rect(*pos, false).a1_string(),
-                        })
-                    } else {
-                        None
-                    }
+                    Some(JsChartSummaryContext {
+                        sheet_name: self.name.clone(),
+                        chart_name: table.name().to_string(),
+                        bounds: table.output_rect(pos, false).a1_string(),
+                    })
                 })
                 .collect::<Vec<JsChartSummaryContext>>();
             charts_summary.extend(charts_summary_in_rect);
@@ -183,7 +173,7 @@ impl Sheet {
             charts: Vec::new(),
         };
 
-        for (pos, table) in self.data_tables.iter() {
+        for (pos, table) in self.data_tables.expensive_iter() {
             if table.is_single_value() {
                 continue;
             }
@@ -196,11 +186,11 @@ impl Sheet {
                 if let CellValue::Code(code_cell_value) = cell_value {
                     tables_context.charts.push(JsChartContext {
                         sheet_name: self.name.clone(),
-                        chart_name: table.name.to_string(),
+                        chart_name: table.name().to_string(),
                         bounds: table.output_rect(pos.to_owned(), false).a1_string(),
                         language: code_cell_value.language.to_owned(),
                         code_string: code_cell_value.code.to_owned(),
-                        spill: table.spill_error,
+                        spill: table.has_spill(),
                     });
                 }
                 continue;
@@ -235,31 +225,31 @@ impl Sheet {
 
                 tables_context.code_tables.push(JsCodeTableContext {
                     sheet_name: self.name.clone(),
-                    code_table_name: table.name.to_string(),
+                    code_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
-                    show_name: table.show_name,
-                    show_columns: table.show_columns,
+                    show_name: table.get_show_name(),
+                    show_columns: table.get_show_columns(),
                     language: code_cell_value.language.to_owned(),
                     code_string: code_cell_value.code.to_owned(),
                     std_err: code_run.std_err.to_owned(),
                     error: code_run.error.is_some(),
-                    spill: table.spill_error,
+                    spill: table.has_spill(),
                 });
             } else if cell_value.is_import() {
                 tables_context.data_tables.push(JsDataTableContext {
                     sheet_name: self.name.clone(),
-                    data_table_name: table.name.to_string(),
+                    data_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
-                    show_name: table.show_name,
-                    show_columns: table.show_columns,
+                    show_name: table.get_show_name(),
+                    show_columns: table.get_show_columns(),
                 });
             }
         }
@@ -297,7 +287,7 @@ mod tests {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 100 },
             },
-            &Array::from(
+            Array::from(
                 (1..=100)
                     .map(|row| {
                         (1..=10)
@@ -319,7 +309,7 @@ mod tests {
                 min: Pos { x: 31, y: 101 },
                 max: Pos { x: 40, y: 200 },
             },
-            &Array::from(
+            Array::from(
                 (1..=100)
                     .map(|row| {
                         (1..=10)
@@ -337,7 +327,7 @@ mod tests {
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 300, sheet.id));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let data_rects_in_selection =
             sheet.get_data_rects_in_selection(&selection, None, &a1_context);
 
@@ -380,6 +370,8 @@ mod tests {
         let mut sheet = Sheet::test();
 
         let code_run_1 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "abcd".to_string(),
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -404,14 +396,16 @@ mod tests {
                 DataTableKind::CodeRun(code_run_1),
                 "test",
                 Default::default(),
-                false,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let code_run_2 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "abcd".to_string(),
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -436,14 +430,16 @@ mod tests {
                 DataTableKind::CodeRun(code_run_2),
                 "test",
                 Default::default(),
-                false,
                 true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let code_run_3 = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "[[1, 2], [3, 4]]".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -473,14 +469,14 @@ mod tests {
                     vec!["3".to_string(), "4".to_string()],
                 ])),
                 true,
-                true,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1000, 1000, sheet.id));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let js_errored_code_cells =
             sheet.get_errored_code_cells_in_selection(&selection, &a1_context);
 

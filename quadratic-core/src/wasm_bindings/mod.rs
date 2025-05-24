@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+pub mod a1;
 pub mod controller;
+pub mod error;
 pub mod js;
 
 use crate::controller::GridController;

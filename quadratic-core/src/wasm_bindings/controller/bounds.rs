@@ -1,4 +1,4 @@
-use a1::A1Selection;
+use crate::a1::A1Selection;
 use sheet::keyboard::Direction;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;

@@ -1,5 +1,7 @@
+use std::collections::HashSet;
+
 use crate::{
-    Pos,
+    Pos, Rect,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -16,29 +18,36 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         columns: &[i64],
     ) {
-        let mut dt_to_delete = Vec::new();
-        for (pos, table) in self.data_tables.iter() {
-            // delete code tables where the code cell is in the deleted columns
-            let code_cell_anchor_deleted = ((table.readonly && !table.is_html_or_image())
-                || table.spill_error)
-                && columns.contains(&pos.x);
+        let mut dt_to_delete = HashSet::new();
 
-            // delete any table where all columns in the table are included in the deletion range
-            let all_table_columns_deleted = table
-                .output_rect(*pos, false)
-                .x_range()
-                .all(|col| columns.contains(&col));
+        for &column in columns {
+            let column_rect = Rect::new(column, 1, column, i64::MAX);
+            for (_, pos, dt) in self.data_tables.get_in_rect(column_rect, false) {
+                if dt_to_delete.contains(&pos) {
+                    continue;
+                }
 
-            if code_cell_anchor_deleted || all_table_columns_deleted {
-                dt_to_delete.push(*pos);
+                // delete code tables where the code cell is in the deleted columns
+                let code_cell_anchor_deleted =
+                    ((dt.is_code() && !dt.is_html_or_image()) || dt.has_spill()) && column == pos.x;
+
+                // delete any table where all columns in the table are included in the deletion range
+                let all_table_columns_deleted = dt
+                    .output_rect(pos, false)
+                    .x_range()
+                    .all(|col| columns.contains(&col));
+
+                if code_cell_anchor_deleted || all_table_columns_deleted {
+                    dt_to_delete.insert(pos);
+                }
             }
         }
+
         for pos in dt_to_delete.into_iter() {
-            if let Some((index, pos, old_dt)) = self.data_tables.shift_remove_full(&pos) {
+            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
+            {
                 transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
-                transaction.add_dirty_hashes_from_sheet_rect(
-                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-                );
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction
                     .reverse_operations
                     .push(Operation::SetDataTable {
@@ -57,45 +66,46 @@ impl Sheet {
     pub(crate) fn delete_tables_columns(
         &mut self,
         transaction: &mut PendingTransaction,
-        columns: &Vec<i64>,
+        columns: &[i64],
     ) {
         // we need to shift the anchor if the first column is deleted
         let mut dt_to_shift_anchor = Vec::new();
 
         let mut dt_to_update = Vec::new();
 
-        for (index, (pos, dt)) in self.data_tables.iter_mut().enumerate() {
-            if (dt.readonly && !dt.is_html_or_image()) || dt.spill_error {
-                continue;
-            }
-            let output_rect = dt.output_rect(*pos, false);
-            let mut old_dt: Option<DataTable> = None;
-            let mut new_anchor_x = None;
-            for col in columns {
-                if *col >= output_rect.min.x && *col <= output_rect.max.x {
+        let all_pos_intersecting_columns =
+            self.data_tables.get_pos_in_columns_sorted(columns, false);
+        for (index, pos) in all_pos_intersecting_columns.into_iter().rev() {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+                if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
+                    return Ok(());
+                }
+
+                let output_rect = dt.output_rect(pos, false);
+                let mut old_dt: Option<DataTable> = None;
+                let mut new_anchor_x = None;
+                for col in columns {
                     if *col == output_rect.min.x {
-                        if let Some(first_surviving_col) =
-                            output_rect.x_range().find(|col| !columns.contains(col))
+                        if let Some(first_surviving_col) = output_rect.x_range().find(|col| !columns.contains(col))
                         {
                             new_anchor_x = Some(first_surviving_col);
                         } else {
                             // this should never happen
-                            dbgjs!(
-                                "Unexpected error in check_delete_tables_columns: no surviving column found"
-                            );
+                            dbgjs!("Unexpected error in check_delete_tables_columns: no surviving column found");
                         }
                     };
+
                     // delete the column
                     if old_dt.is_none() {
                         old_dt = Some(dt.clone());
                     }
+
                     // we use the entire table as the reverse operation (which
                     // is not super efficient, but easiest given the current
                     // design. if we remove the anchors, we can use the
                     // DataTableInsertColumn op instead)
                     if let Ok(col_to_delete) = u32::try_from(*col - output_rect.min.x) {
-                        let column_index =
-                            dt.get_column_index_from_display_index(col_to_delete, true);
+                        let column_index = dt.get_column_index_from_display_index(col_to_delete, true);
 
                         // mark sort dirty if the column is sorted
                         if dt.is_column_sorted(column_index as usize) {
@@ -105,11 +115,16 @@ impl Sheet {
                         let _ = dt.delete_column_sorted(column_index as usize);
                     }
                 }
-            }
-            if let Some(new_anchor_x) = new_anchor_x {
-                dt_to_shift_anchor.push((index, *pos, old_dt, new_anchor_x));
-            } else if let Some(old_dt) = old_dt {
-                dt_to_update.push((index, *pos, old_dt));
+
+                if let Some(new_anchor_x) = new_anchor_x {
+                    dt_to_shift_anchor.push((index, pos, old_dt, new_anchor_x));
+                } else if let Some(old_dt) = old_dt {
+                    dt_to_update.push((index, pos, old_dt));
+                }
+
+                Ok(())
+            }){
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
 
@@ -136,7 +151,7 @@ impl Sheet {
                     old_dt.output_rect(pos, false).to_sheet_rect(self.id),
                 );
                 let new_pos = Pos::new(new_anchor_x, pos.y);
-                self.move_cell_value(pos, new_pos);
+                self.columns.move_cell_value(&pos, &new_pos);
                 transaction
                     .reverse_operations
                     .push(Operation::AddDataTable {
@@ -160,27 +175,37 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         columns: &[i64],
     ) {
-        for (pos, dt) in self.data_tables.iter_mut() {
-            if !dt.spill_error && dt.is_html_or_image() {
-                let output_rect = dt.output_rect(*pos, false);
-                let count = columns
-                    .iter()
-                    .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
-                    .count();
-                if count > 0 {
-                    if let Some((width, height)) = dt.chart_output {
-                        let min = (width - count as u32).max(1);
-                        if min != width {
-                            dt.chart_output = Some((min, height));
-                            transaction.add_from_code_run(
-                                self.id,
-                                *pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
+        let sheet_id = self.id;
+
+        let all_pos_intersecting_columns =
+            self.data_tables.get_pos_in_columns_sorted(columns, false);
+        for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+                if !dt.has_spill() && dt.is_html_or_image() {
+                    let output_rect = dt.output_rect(pos, false);
+                    let count = columns
+                        .iter()
+                        .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
+                        .count();
+                    if count > 0 {
+                        if let Some((width, height)) = dt.chart_output {
+                            let min = (width - count as u32).max(1);
+                            if min != width {
+                                dt.chart_output = Some((min, height));
+                                transaction.add_from_code_run(
+                                    sheet_id,
+                                    pos,
+                                    dt.is_image(),
+                                    dt.is_html(),
+                                );
+                            }
                         }
                     }
                 }
+
+                Ok(())
+            }) {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
     }
@@ -192,42 +217,58 @@ impl Sheet {
         columns: &[i64],
     ) {
         let mut dt_to_shift_left = Vec::new();
-        for (pos, table) in self.data_tables.iter() {
-            let mut output_rect = table.output_rect(*pos, false);
 
-            // check how many deleted columns are before the table
-            let mut shift_table = 0;
-            for col in columns.iter() {
-                if *col < output_rect.min.x {
-                    shift_table += 1;
+        let min_column = columns.iter().min().unwrap_or(&1);
+        for (_, pos) in self
+            .data_tables
+            .get_pos_after_column_sorted(*min_column, false)
+        {
+            if let Some(dt) = self.data_table_at(&pos) {
+                let mut output_rect = dt.output_rect(pos, false);
+
+                // check how many deleted columns are before the table
+                let mut shift_table = 0;
+                for col in columns.iter() {
+                    if *col < output_rect.min.x {
+                        shift_table += 1;
+                    }
+                }
+
+                if shift_table > 0 {
+                    transaction
+                        .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
+                    transaction.add_from_code_run(self.id, pos, dt.is_image(), dt.is_html());
+
+                    output_rect.translate_in_place(-shift_table, 0);
+                    transaction
+                        .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
+                    transaction.add_from_code_run(
+                        self.id,
+                        pos.translate(-shift_table, 0, 1, 1),
+                        dt.is_image(),
+                        dt.is_html(),
+                    );
+
+                    dt_to_shift_left.push((pos, shift_table));
                 }
             }
-            if shift_table > 0 {
-                transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
-                transaction.add_from_code_run(self.id, *pos, table.is_image(), table.is_html());
-
-                output_rect.translate(-shift_table, 0);
-                transaction.add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
-                transaction.add_from_code_run(
-                    self.id,
-                    pos.translate(-shift_table, 0, 1, 1),
-                    table.is_image(),
-                    table.is_html(),
-                );
-
-                dt_to_shift_left.push((*pos, shift_table));
-            }
         }
+
+        dt_to_shift_left.sort_by(|(a, _), (b, _)| a.x.cmp(&b.x));
         for (pos, shift_table) in dt_to_shift_left {
-            let Some((index, _, old_dt)) = self.data_tables.shift_remove_full(&pos) else {
+            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
+            else {
                 dbgjs!(format!(
                     "Error in check_delete_tables_columns: cannot shift left data table\n{:?}",
                     pos
                 ));
                 continue;
             };
+            transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+
             let new_pos = pos.translate(-shift_table, 0, 1, 1);
-            self.data_tables.shift_insert(index, new_pos, old_dt);
+            let dirty_rects = self.data_table_insert_before(index, &new_pos, old_dt).2;
+            transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
         }
     }
 }
@@ -324,7 +365,7 @@ mod tests {
         gc.undo(None);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
-        expect_js_call_count("jsUpdateCodeCell", 1, true);
+        expect_js_call_count("jsUpdateCodeCells", 1, true);
 
         gc.redo(None);
         assert_table_count(&gc, sheet_id, 0);

@@ -18,8 +18,8 @@ import type {
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
-import type { SheetOffsets } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { SheetOffsets } from '@/app/quadratic-core/quadratic_core';
+import { SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsTextHash } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHash';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
@@ -423,7 +423,7 @@ export class CellsLabels {
     }
   }
 
-  completeRenderCells(hashX: number, hashY: number, renderCells: JsRenderCell[]): void {
+  hashRenderCells(hashX: number, hashY: number, renderCells: JsRenderCell[]): void {
     const key = this.getHashKey(hashX, hashY);
     let cellsHash = this.cellsTextHash.get(key);
     if (!cellsHash) {
@@ -434,23 +434,18 @@ export class CellsLabels {
     cellsHash.dirty = renderCells;
   }
 
-  setHashesDirty(hashesString: string): void {
-    try {
-      const hashes = JSON.parse(hashesString) as Pos[];
-      hashes.forEach(({ x, y }) => {
-        const hashX = Number(x);
-        const hashY = Number(y);
-        const key = this.getHashKey(hashX, hashY);
-        let cellsHash = this.cellsTextHash.get(key);
-        if (!cellsHash) {
-          cellsHash = new CellsTextHash(this, hashX, hashY);
-          this.cellsTextHash.set(key, cellsHash);
-        }
-        cellsHash.dirty = true;
-      });
-    } catch (e) {
-      console.error('[CellsLabels] setHashesDirty: Error parsing hashes: ', e);
-    }
+  setHashesDirty(hashes: Pos[]): void {
+    hashes.forEach(({ x, y }) => {
+      const hashX = Number(x);
+      const hashY = Number(y);
+      const key = this.getHashKey(hashX, hashY);
+      let cellsHash = this.cellsTextHash.get(key);
+      if (!cellsHash) {
+        cellsHash = new CellsTextHash(this, hashX, hashY);
+        this.cellsTextHash.set(key, cellsHash);
+      }
+      cellsHash.dirty = true;
+    });
   }
 
   setOffsetsDelta = (column: number | null, row: number | null, delta: number) => {

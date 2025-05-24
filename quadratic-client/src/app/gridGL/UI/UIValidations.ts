@@ -12,8 +12,8 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { RefRangeBounds } from '@/app/quadratic-core-types';
-import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { JsHashValidationWarnings, RefRangeBounds } from '@/app/quadratic-core-types';
+import { A1SelectionToJsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { ValidationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -32,17 +32,23 @@ export class UIValidations extends Container<SpecialSprite> {
     super();
     this.occupied = new Set();
     events.on('sheetValidations', this.setDirty);
-    events.on('renderValidationWarnings', this.setDirty);
+    events.on('validationWarnings', this.setDirtyValidationsWarnings);
   }
 
   destroy() {
     events.off('sheetValidations', this.setDirty);
-    events.off('renderValidationWarnings', this.setDirty);
+    events.off('validationWarnings', this.setDirtyValidationsWarnings);
     super.destroy();
   }
 
   setDirty = (sheetId: string) => {
     if (sheetId === sheets.current) {
+      this.dirty = true;
+    }
+  };
+
+  setDirtyValidationsWarnings = (warnings: JsHashValidationWarnings[]) => {
+    if (warnings.some((w) => w.sheet_id.id === sheets.current)) {
       this.dirty = true;
     }
   };

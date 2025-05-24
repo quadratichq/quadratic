@@ -7,7 +7,7 @@ import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import type { IViewportTransformState } from 'pixi-viewport';
@@ -53,7 +53,7 @@ export class SheetCursor {
     events.on('a1Context', this.updateA1Context);
   }
 
-  private updateA1Context = (context: string) => {
+  private updateA1Context = (context: Uint8Array) => {
     this.jsSelection.updateContext(context);
     if (this.sheet.sheets.current === this.sheet.id) {
       pixiApp.cursor.dirty = true;
@@ -152,6 +152,19 @@ export class SheetCursor {
     return this.jsSelection.overlapsA1Selection(a1Selection);
   };
 
+  /// Returns true if we can insert columns or rows at the selection
+  canInsertColumnRow = (): boolean => {
+    return this.jsSelection.canInsertColumnRow();
+  };
+
+  canInsertColumn = (): boolean => {
+    return this.canInsertColumnRow() && this.isSelectedColumnsFinite();
+  };
+
+  canInsertRow = (): boolean => {
+    return this.canInsertColumnRow() && this.isSelectedRowsFinite();
+  };
+
   // Returns true if the selection is a single cell or a single column or single row.
   hasOneColumnRowSelection = (oneCell?: boolean): boolean => {
     return this.jsSelection.hasOneColumnRowSelection(oneCell ?? false);
@@ -166,8 +179,16 @@ export class SheetCursor {
   };
 
   // Returns the columns that are selected.
-  getSelectedColumnsFinite = (): number[] => {
-    return Array.from(this.jsSelection.getSelectedColumnsFinite());
+  getColumnsWithSelectedCells = (): number[] => {
+    return Array.from(this.jsSelection.getColumnsWithSelectedCells());
+  };
+
+  getSelectedColumns = (): number[] => {
+    return Array.from(this.jsSelection.getSelectedColumns());
+  };
+
+  getSelectedRows = (): number[] => {
+    return Array.from(this.jsSelection.getSelectedRows());
   };
 
   getSelectedTableColumns = (tableName: string): number[] => {
@@ -175,8 +196,8 @@ export class SheetCursor {
   };
 
   // Returns the rows that are selected.
-  getSelectedRowsFinite = (): number[] => {
-    return Array.from(this.jsSelection.getSelectedRowsFinite());
+  getRowsWithSelectedCells = (): number[] => {
+    return Array.from(this.jsSelection.getRowsWithSelectedCells());
   };
 
   // Returns true if the cursor is only selecting a single cell
@@ -330,7 +351,7 @@ export class SheetCursor {
     return ranges;
   };
 
-  // Returns true if there is one multiselect of > 1 size
+  // Checks whether the selection can be converted to a data table
   canConvertToDataTable = (): boolean => {
     return !!this.sheet.cursor.getSingleRectangle();
   };
@@ -453,5 +474,9 @@ export class SheetCursor {
 
   getSelectedTableColumnsCount = (): number => {
     return this.jsSelection.getSelectedTableColumnsCount();
+  };
+
+  isAllSelected = (): boolean => {
+    return this.jsSelection.isAllSelected();
   };
 }

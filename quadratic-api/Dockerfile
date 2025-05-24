@@ -1,24 +1,37 @@
-FROM node:23-alpine AS builder
+###########################################################################################
+# Builder - Install dependencies
+###########################################################################################
+FROM node:24 AS builder
 WORKDIR /quadratic
 
-# copy package.json and package-lock.json for npm install
+# copy package.json for npm install
 COPY package.json .
-COPY package-lock.json .
-COPY ./quadratic-api/package*.json ./quadratic-api/
-COPY ./quadratic-shared/package*.json ./quadratic-shared/
+COPY ./quadratic-api/package.json ./quadratic-api/
+COPY ./quadratic-shared/package.json ./quadratic-shared/
 
 # copy prisma schema and migrations for postinstall step
 COPY ./quadratic-api/prisma/. ./quadratic-api/prisma
 
-RUN npm install
+RUN npm install --no-audit --no-fund
 
 COPY quadratic-api ./quadratic-api
 COPY quadratic-shared ./quadratic-shared
 
-FROM node:23-slim AS runtime
+
+###########################################################################################
+# Runner
+###########################################################################################
+FROM node:24-slim AS runtime
 WORKDIR /quadratic
+
+# Install required packages with correct verification
+RUN apt update && \
+  apt install -y openssl && \
+  apt install -y openssh-client
+
 COPY --from=builder /quadratic .
-RUN apt-get update && apt install -y openssl
+
 RUN npm run postinstall --workspace=quadratic-api
-RUN npm run build:prod --workspace=quadratic-api
-CMD ["npm", "start:prod"]
+RUN npm run build --workspace=quadratic-api
+
+CMD ["npm", "run", "start:prod"]

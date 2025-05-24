@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
+import type { JsOffset, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
 import type {
   CoreRenderMessage,
   RenderCoreMessage,
@@ -16,7 +16,8 @@ import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: JsRenderCell[]) => void;
+    sendHashRenderCellsRender: (hashRenderCells: Uint8Array) => void;
+    sendHashesDirtyRender: (dirtyHashes: Uint8Array) => void;
     sendSheetInfoRender: (sheetInfo: SheetInfo[]) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
@@ -25,7 +26,6 @@ declare var self: WorkerGlobalScope &
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
-    sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
@@ -57,21 +57,29 @@ class CoreRender {
     }
   };
 
-  private send(message: CoreRenderMessage) {
+  private send(message: CoreRenderMessage, transfer?: Transferable) {
     if (!this.coreRenderPort) {
       console.warn('Expected coreRenderPort to be defined in CoreRender.send');
       return;
     }
-    this.coreRenderPort.postMessage(message);
+    if (transfer) {
+      this.coreRenderPort.postMessage(message, [transfer]);
+    } else {
+      this.coreRenderPort.postMessage(message);
+    }
   }
 
-  private async getRenderCells(data: RenderCoreRequestRenderCells) {
-    const cells = await core.getRenderCells(data);
-    this.send({ type: 'coreRenderRenderCells', cells, id: data.id });
+  private async getRenderCells(request: RenderCoreRequestRenderCells) {
+    const data = await core.getRenderCells(request);
+    this.send({ type: 'coreRenderRenderCells', id: request.id, data }, data?.buffer);
   }
 
-  sendCompleteRenderCells = (sheetId: string, hashX: number, hashY: number, renderCells: JsRenderCell[]) => {
-    this.send({ type: 'coreRenderCompleteRenderCells', sheetId, hashX, hashY, renderCells });
+  sendHashRenderCellsRender = (hashRenderCells: Uint8Array) => {
+    this.send({ type: 'coreRenderHashRenderCells', hashRenderCells }, hashRenderCells.buffer);
+  };
+
+  sendHashesDirtyRender = (dirtyHashes: Uint8Array) => {
+    this.send({ type: 'coreRenderHashesDirty', dirtyHashes }, dirtyHashes.buffer);
   };
 
   sendSheetInfoRender = (sheetInfo: SheetInfo[]) => {
@@ -110,10 +118,6 @@ class CoreRender {
     core.receiveRowHeights(transactionId, sheetId, rowHeights);
   };
 
-  sendHashesDirty = (sheetId: string, hashes: string) => {
-    this.send({ type: 'coreRenderHashesDirty', sheetId, hashes });
-  };
-
   sendViewportBuffer = (buffer: SharedArrayBuffer) => {
     this.send({
       type: 'coreRenderViewportBuffer',
@@ -132,7 +136,8 @@ class CoreRender {
 
 export const coreRender = new CoreRender();
 
-self.sendCompleteRenderCells = coreRender.sendCompleteRenderCells;
+self.sendHashRenderCellsRender = coreRender.sendHashRenderCellsRender;
+self.sendHashesDirtyRender = coreRender.sendHashesDirtyRender;
 self.sendSheetInfoRender = coreRender.sendSheetInfoRender;
 self.sendAddSheetRender = coreRender.sendAddSheet;
 self.sendDeleteSheetRender = coreRender.sendDeleteSheet;
@@ -141,7 +146,6 @@ self.sendSheetInfoUpdateRender = coreRender.sendSheetInfoUpdate;
 self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;
 self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
 self.handleResponseRowHeights = coreRender.handleResponseRowHeights;
-self.sendHashesDirty = coreRender.sendHashesDirty;
 self.sendViewportBuffer = coreRender.sendViewportBuffer;
 self.sendTransactionStartRender = coreRender.sendTransactionStart;
 self.sendTransactionEndRender = coreRender.sendTransactionEnd;

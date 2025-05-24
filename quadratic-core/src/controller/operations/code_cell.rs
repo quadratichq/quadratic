@@ -1,10 +1,12 @@
+use std::collections::HashSet;
+
 use super::operation::Operation;
 use crate::{
     CellValue, SheetPos,
     cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
+    grid::{CodeCellLanguage, CodeCellValue, SheetId},
 };
 
 impl GridController {
@@ -30,106 +32,6 @@ impl GridController {
         ]
     }
 
-    // Returns whether a code_cell is dependent on another code_cell.
-    fn is_dependent_on(&self, current: &DataTable, other_pos: SheetPos) -> bool {
-        let context = self.a1_context();
-        current
-            .code_run()
-            .map(|code_run| code_run.cells_accessed.contains(other_pos, context))
-            .unwrap_or(false)
-    }
-
-    /// Orders code cells to ensure earlier computes do not depend on later computes.
-    fn order_code_cells(&self, code_cell_positions: &mut Vec<(SheetPos, &DataTable)>) {
-        // Change the ordering of code_cell_positions to ensure earlier operations do not depend on later operations.
-        //
-        // Algorithm: iterate through all code cells and check if they are dependent on later code cells. If they are,
-        // move them to the position after the later code cell and restart the iteration. Note: this is different from
-        // sorting as we need to compare all code cells against every other code cell to find the ordering.
-        let mut protect_infinite = 0;
-        let mut i = 0;
-
-        if code_cell_positions.len() <= 1 {
-            return;
-        }
-
-        loop {
-            let current = code_cell_positions[i];
-            let mut changed = false;
-            for j in (i + 1)..code_cell_positions.len() {
-                let other = code_cell_positions[j];
-                if self.is_dependent_on(current.1, other.0) {
-                    // move the current code cell to the position after the other code cell
-                    code_cell_positions.remove(i);
-
-                    // we want to place it after j, but since we removed i, we can use index = j instead of index = j + 1
-                    code_cell_positions.insert(j, current);
-                    changed = true;
-                    break;
-                }
-            }
-            if !changed {
-                i += 1;
-
-                // only iterate to the second to last element as the last element will always be in the correct position
-                if i == code_cell_positions.len() - 1 {
-                    break;
-                }
-            } else {
-                protect_infinite += 1;
-                if protect_infinite > 100000 {
-                    println!("Infinite loop in order_code_cells");
-                    break;
-                }
-            }
-        }
-    }
-
-    /// Reruns all code cells in a Sheet.
-    pub fn rerun_sheet_code_cells_operations(&self, sheet_id: SheetId) -> Vec<Operation> {
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            return vec![];
-        };
-        let mut code_cell_positions = sheet
-            .data_tables
-            .iter()
-            .map(|(pos, code_run)| (pos.to_sheet_pos(sheet_id), code_run))
-            .collect::<Vec<_>>();
-
-        self.order_code_cells(&mut code_cell_positions);
-
-        code_cell_positions
-            .iter()
-            .map(|(sheet_pos, _)| Operation::ComputeCode {
-                sheet_pos: *sheet_pos,
-            })
-            .collect()
-    }
-
-    /// Reruns all code cells in all Sheets.
-    pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
-        let mut code_cell_positions = self
-            .grid()
-            .sheets()
-            .values()
-            .flat_map(|sheet| {
-                sheet
-                    .data_tables
-                    .iter()
-                    .map(|(pos, code_run)| (pos.to_sheet_pos(sheet.id), code_run))
-            })
-            .collect::<Vec<_>>();
-
-        self.order_code_cells(&mut code_cell_positions);
-
-        code_cell_positions
-            .iter()
-            .map(|(sheet_pos, _)| Operation::ComputeCode {
-                sheet_pos: *sheet_pos,
-            })
-            .collect()
-    }
-
     /// Reruns a code cell
     pub fn rerun_code_cell_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
         vec![Operation::ComputeCode { sheet_pos }]
@@ -137,6 +39,95 @@ impl GridController {
 
     pub fn set_chart_size_operations(&self, sheet_pos: SheetPos, w: u32, h: u32) -> Vec<Operation> {
         vec![Operation::SetChartCellSize { sheet_pos, w, h }]
+    }
+
+    /// Reruns all code cells in all Sheets.
+    pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
+        let mut code_cell_positions = Vec::new();
+        for (sheet_id, sheet) in self.grid().sheets() {
+            for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
+                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
+            }
+        }
+
+        self.get_code_run_ops_from_positions(code_cell_positions)
+    }
+
+    /// Reruns all code cells in a Sheet.
+    pub fn rerun_sheet_code_cells_operations(&self, sheet_id: SheetId) -> Vec<Operation> {
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return vec![];
+        };
+        let mut code_cell_positions = Vec::new();
+        for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
+            code_cell_positions.push(pos.to_sheet_pos(sheet_id));
+        }
+
+        self.get_code_run_ops_from_positions(code_cell_positions)
+    }
+
+    fn get_code_run_ops_from_positions(
+        &self,
+        code_cell_positions: Vec<SheetPos>,
+    ) -> Vec<Operation> {
+        let code_cell_positions = self.order_code_cells(code_cell_positions);
+        code_cell_positions
+            .into_iter()
+            .map(|sheet_pos| Operation::ComputeCode { sheet_pos })
+            .collect()
+    }
+
+    /// Orders code cells to ensure earlier computes do not depend on later computes.
+    fn order_code_cells(&self, code_cell_positions: Vec<SheetPos>) -> Vec<SheetPos> {
+        let mut ordered_positions = vec![];
+
+        let nodes = code_cell_positions.iter().collect::<HashSet<_>>();
+        let mut seen = HashSet::new();
+        for node in code_cell_positions.iter() {
+            for upstream_node in self.get_upstream_dependents(node, &mut seen).into_iter() {
+                if nodes.contains(&upstream_node) {
+                    ordered_positions.push(upstream_node);
+                }
+            }
+        }
+
+        ordered_positions
+    }
+
+    fn get_upstream_dependents(
+        &self,
+        sheet_pos: &SheetPos,
+        seen: &mut HashSet<SheetPos>,
+    ) -> Vec<SheetPos> {
+        if !seen.insert(*sheet_pos) {
+            return vec![];
+        }
+
+        let Some(code_run) = self.code_run_at(sheet_pos) else {
+            return vec![];
+        };
+
+        let mut parent_nodes = Vec::new();
+        for (sheet_id, rect) in code_run
+            .cells_accessed
+            .iter_rects_unbounded(&self.a1_context)
+        {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
+                    let sheet_pos = pos.to_sheet_pos(sheet_id);
+                    if !seen.contains(&sheet_pos) {
+                        parent_nodes.push(sheet_pos);
+                    }
+                }
+            }
+        }
+
+        let mut upstream = vec![];
+        for node in parent_nodes.into_iter() {
+            upstream.extend(self.get_upstream_dependents(&node, seen));
+        }
+        upstream.push(*sheet_pos);
+        upstream
     }
 }
 

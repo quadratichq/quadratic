@@ -14,7 +14,9 @@ use crate::{
 pub struct SheetMap {
     /// Map from case-folded name to sheet ID.
     folded_name_to_id: HashMap<String, SheetId>,
+
     /// Map from sheet ID to name (not case-folded).
+    #[serde(with = "crate::util::hashmap_serde")]
     id_to_name: HashMap<SheetId, String>,
 }
 

@@ -16,12 +16,15 @@ use crate::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
+        sheet::data_tables::SheetDataTables,
     },
 };
 
 use super::{
     borders::{export_borders, import_borders},
-    cell_value::{export_cell_value, import_cell_value},
+    cell_value::{
+        export_cell_value, export_code_cell_language, import_cell_value, import_code_cell_language,
+    },
     current,
     formats::{export_formats, import_formats},
 };
@@ -42,7 +45,7 @@ fn import_col_range(range: current::ColRangeSchema) -> ColRange {
     }
 }
 
-pub(crate) fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
+fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
     TableRef {
         table_name: table_ref.table_name,
         data: table_ref.data,
@@ -88,9 +91,7 @@ fn import_cells_accessed(
     Ok(imported_cells)
 }
 
-pub(crate) fn import_run_error_msg_builder(
-    run_error_msg: current::RunErrorMsgSchema,
-) -> Result<RunErrorMsg> {
+fn import_run_error_msg_builder(run_error_msg: current::RunErrorMsgSchema) -> Result<RunErrorMsg> {
     let run_error_msg = match run_error_msg {
         current::RunErrorMsgSchema::CodeRunError(msg) => RunErrorMsg::CodeRunError(msg),
         current::RunErrorMsgSchema::Unexpected(msg) => RunErrorMsg::Unexpected(msg),
@@ -235,7 +236,7 @@ fn export_cells_accessed(
         .collect()
 }
 
-pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
+fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
     let cells_accessed = code_run.cells_accessed;
 
     let error = if let Some(error) = code_run.error {
@@ -250,6 +251,8 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
         None
     };
     let code_run = CodeRun {
+        language: import_code_cell_language(code_run.language),
+        code: code_run.code,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -264,7 +267,7 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
 
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
-) -> Result<IndexMap<Pos, DataTable>> {
+) -> Result<SheetDataTables> {
     let mut new_data_tables = IndexMap::new();
 
     for (pos, data_table) in data_tables.into_iter() {
@@ -294,14 +297,11 @@ pub(crate) fn import_data_table_builder(
                 }
             },
             name: CellValue::Text(data_table.name),
+            value,
+            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             header_is_first_row: data_table.header_is_first_row,
-            show_ui: data_table.show_ui,
             show_name: data_table.show_name,
             show_columns: data_table.show_columns,
-            readonly: data_table.readonly,
-            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
-            spill_error: data_table.spill_error,
-            value,
             column_headers: data_table.columns.map(|columns| {
                 columns
                     .into_iter()
@@ -330,9 +330,11 @@ pub(crate) fn import_data_table_builder(
             }),
             sort_dirty: data_table.sort_dirty,
             display_buffer: data_table.display_buffer,
+            spill_value: data_table.spill_value,
+            spill_data_table: data_table.spill_data_table,
             alternating_colors: data_table.alternating_colors,
-            formats: import_formats(data_table.formats),
-            borders: import_borders(data_table.borders),
+            formats: data_table.formats.map(import_formats),
+            borders: data_table.borders.map(import_borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
         };
@@ -340,10 +342,10 @@ pub(crate) fn import_data_table_builder(
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
     }
 
-    Ok(new_data_tables)
+    Ok(SheetDataTables::from_data_tables(new_data_tables))
 }
 
-pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
+fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
     match run_error_msg {
         RunErrorMsg::CodeRunError(msg) => current::RunErrorMsgSchema::CodeRunError(msg),
         RunErrorMsg::Unexpected(msg) => current::RunErrorMsgSchema::Unexpected(msg),
@@ -435,7 +437,7 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
     }
 }
 
-pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
+fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     let error = if let Some(error) = code_run.error {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {
@@ -449,6 +451,8 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     };
 
     current::CodeRunSchema {
+        language: export_code_cell_language(code_run.language),
+        code: code_run.code,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -460,9 +464,9 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
 }
 
 pub(crate) fn export_data_tables(
-    data_tables: IndexMap<Pos, DataTable>,
+    sheet_data_tables: SheetDataTables,
 ) -> Vec<(current::PosSchema, current::DataTableSchema)> {
-    data_tables
+    sheet_data_tables
         .into_iter()
         .map(|(pos, data_table)| {
             let name = data_table.name().to_string();
@@ -526,24 +530,39 @@ pub(crate) fn export_data_tables(
                 }
             };
 
+            let formats = data_table.formats.and_then(|formats| {
+                if formats.is_all_default() {
+                    None
+                } else {
+                    Some(export_formats(formats))
+                }
+            });
+
+            let borders = data_table.borders.and_then(|borders| {
+                if borders.is_default() {
+                    None
+                } else {
+                    Some(export_borders(borders))
+                }
+            });
+
             let data_table = current::DataTableSchema {
                 kind,
                 name,
+                value,
+                last_modified: Some(data_table.last_modified),
                 header_is_first_row: data_table.header_is_first_row,
-                show_ui: data_table.show_ui,
                 show_name: data_table.show_name,
                 show_columns: data_table.show_columns,
                 columns,
                 sort,
                 sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
-                readonly: data_table.readonly,
-                last_modified: Some(data_table.last_modified),
-                spill_error: data_table.spill_error,
-                value,
+                spill_value: data_table.spill_value,
+                spill_data_table: data_table.spill_data_table,
                 alternating_colors: data_table.alternating_colors,
-                formats: export_formats(data_table.formats),
-                borders: export_borders(data_table.borders),
+                formats,
+                borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };

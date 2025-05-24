@@ -6,6 +6,8 @@ Below are in-depth details for Python in Quadratic.
 You can reference cells in the spreadsheet to use in code, and you can return results from your Python code back to the spreadsheet. The last line of code is returned to the spreadsheet.
 Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one type of return from a code cell, data or chart.
 
+When the data that code references is updated, the code cell is automatically re-run. 
+
 Single cell references are placed in a variable of corresponding type. Multi-line references are placed in a DataFrame.
 
 Essential Python basics in Quadratic: 

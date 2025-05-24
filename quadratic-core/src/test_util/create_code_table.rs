@@ -6,7 +6,7 @@ use bigdecimal::BigDecimal;
 
 #[cfg(test)]
 use crate::{
-    Array, ArraySize, CellValue, Pos, Value,
+    Array, ArraySize, CellValue, Pos, SheetPos, Value,
     controller::{
         GridController, active_transactions::transaction_name::TransactionName,
         operations::operation::Operation,
@@ -22,10 +22,10 @@ pub fn test_create_code_table(
     pos: Pos,
     w: u32,
     h: u32,
-) {
+) -> DataTable {
     let values: Vec<String> = (0..w * h).map(|i| i.to_string()).collect();
     let values: Vec<&str> = values.iter().map(|s| s.as_str()).collect();
-    test_create_code_table_with_values(gc, sheet_id, pos, w, h, values);
+    test_create_code_table_with_values(gc, sheet_id, pos, w, h, &values)
 }
 
 /// Creates a Python code table with output of w x h cells with values.
@@ -36,8 +36,8 @@ pub fn test_create_code_table_with_values(
     pos: Pos,
     w: u32,
     h: u32,
-    values: Vec<&str>,
-) {
+    values: &[&str],
+) -> DataTable {
     let cell_value = CellValue::Code(CodeCellValue {
         language: CodeCellLanguage::Python,
         code: "code".to_string(),
@@ -57,6 +57,8 @@ pub fn test_create_code_table_with_values(
     }
 
     let code_run = CodeRun {
+        language: CodeCellLanguage::Python,
+        code: "code".to_string(),
         std_out: None,
         std_err: None,
         cells_accessed: Default::default(),
@@ -71,8 +73,8 @@ pub fn test_create_code_table_with_values(
         "Table1",
         Value::Array(array),
         false,
-        false,
-        false,
+        Some(false),
+        Some(false),
         None,
     );
 
@@ -83,11 +85,30 @@ pub fn test_create_code_table_with_values(
         index: None,
     };
     gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
+
+    gc.data_table_at(pos.to_sheet_pos(sheet_id))
+        .unwrap()
+        .clone()
+}
+
+#[cfg(test)]
+pub fn test_create_formula(
+    gc: &mut GridController,
+    sheet_pos: SheetPos,
+    formula: &str,
+) -> DataTable {
+    gc.set_code_cell(
+        sheet_pos,
+        CodeCellLanguage::Formula,
+        formula.to_string(),
+        None,
+    );
+    gc.data_table_at(sheet_pos).unwrap().clone()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::sheet;
+    use crate::test_util::*;
 
     use super::*;
 
@@ -98,11 +119,11 @@ mod tests {
         let sheet_id = SheetId::TEST;
 
         // Test 2x2 table with numbers
-        test_create_code_table_with_values(&mut gc, sheet_id, pos, 2, 2, vec!["1", "2", "3", "4"]);
+        test_create_code_table_with_values(&mut gc, sheet_id, pos, 2, 2, &["1", "2", "3", "4"]);
 
         let sheet = sheet(&gc, sheet_id);
 
-        let table = sheet.data_table(pos).unwrap();
+        let table = sheet.data_table_at(&pos).unwrap();
         if let Value::Array(array) = &table.value {
             assert_eq!(array.width(), 2);
             assert_eq!(array.height(), 2);
@@ -128,11 +149,11 @@ mod tests {
             pos,
             2,
             2,
-            vec!["1", "text", "3.14", ""],
+            &["1", "text", "3.14", ""],
         );
 
         let sheet = sheet(&gc, sheet_id);
-        let table = sheet.data_table(pos).unwrap();
+        let table = sheet.data_table_at(&pos).unwrap();
 
         if let Value::Array(array) = &table.value {
             assert_eq!(

@@ -1,8 +1,8 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { A1Selection } from '@/app/quadratic-core-types';
-import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { A1SelectionToJsSelection, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { A1SelectionToJsSelection, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { InsertCellRefIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -10,7 +10,7 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { FocusEvent } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Props {
   label?: string;
@@ -45,6 +45,7 @@ export const SheetRange = (props: Props) => {
   } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const [input, setInput] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const a1SheetId = useMemo((): string => {
     if (onlyCurrentSheet) {
@@ -65,9 +66,15 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const jsSelection = stringToSelection(value, a1SheetId, sheets.a1Context);
-        onChangeRange(jsSelection);
+        const selection = stringToSelection(value, a1SheetId, sheets.a1Context);
+        onChangeRange(selection);
         setRangeError(undefined);
+        if (selection && selection.save() !== sheets.sheet.cursor.save()) {
+          sheets.changeSelection(selection, true);
+
+          // need to call focus again since changeSelection will change focus
+          inputRef.current?.focus();
+        }
       } catch (e: any) {
         try {
           const parsed = JSON.parse(e);
@@ -98,14 +105,16 @@ export const SheetRange = (props: Props) => {
     if (!changeCursor) return;
     try {
       const selection = stringToSelection(input, a1SheetId, sheets.a1Context);
-      if (selection) {
+      if (selection && selection.save() !== sheets.sheet.cursor.save()) {
         sheets.changeSelection(selection, true);
+
+        // need to call focus again since changeSelection will change focus
+        inputRef.current?.focus();
       }
     } catch (_) {
       // there was an error parsing the range, so nothing more to do
     }
   }, [a1SheetId, changeCursor, input]);
-
   const isError = useMemo(() => triggerError && input === '', [input, triggerError]);
 
   const [sheetId, setSheetId] = useState(sheets.current);
@@ -125,6 +134,7 @@ export const SheetRange = (props: Props) => {
       <div className="flex w-full items-center space-x-2">
         <div className={cn('w-full', rangeError || isError ? 'border border-red-500' : '')}>
           <Input
+            ref={inputRef}
             id={props.label}
             value={input}
             onChange={(e) => {

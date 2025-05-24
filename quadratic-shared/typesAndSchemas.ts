@@ -157,6 +157,7 @@ export const ApiSchemas = {
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).extend({
+      sshPublicKey: z.string(),
       settings: TeamSettingsSchema,
     }),
     userMakingRequest: z.object({
@@ -225,7 +226,8 @@ export const ApiSchemas = {
    * File checkpoints
    */
   '/v0/files/:uuid/checkpoints.GET.response': z.object({
-    name: FileSchema.shape.name,
+    file: FileSchema.pick({ name: true }),
+    team: TeamSchema.pick({ uuid: true }),
     checkpoints: z.array(
       z.object({
         dataUrl: z.string().url(),
@@ -337,7 +339,9 @@ export const ApiSchemas = {
   }),
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
-    team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(z.object({ settings: TeamSettingsSchema })),
+    team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(
+      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string() })
+    ),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
       teamPermissions: z.array(TeamPermissionSchema),
@@ -420,18 +424,16 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
 
   /**
+   * Connections (which are all under `/v0/teams/:uuid/connections/*`)
+   */
+  ...ApiSchemasConnections,
+
+  /**
    * ===========================================================================
    * Users
    * ===========================================================================
    */
   '/v0/users/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
-
-  /**
-   * ===========================================================================
-   * Connections
-   * ===========================================================================
-   */
-  ...ApiSchemasConnections,
 
   /**
    *

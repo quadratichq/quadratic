@@ -6,7 +6,7 @@ import {
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { uploadFile } from '@/app/helpers/files';
-import { A1SelectionStringToSelection, getTableNameFromPos } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionStringToSelection, getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
@@ -15,7 +15,11 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getFileTypeLabel, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import {
+  getDataBase64String,
+  getFileTypeLabel,
+  isSupportedImageMimeType,
+} from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -248,7 +252,7 @@ const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps)
         />
       </HoverCardTrigger>
       <HoverCardContent className="w-48 overflow-hidden p-0" side="top">
-        <img src={`data:${file.mimeType};base64,${file.data}`} alt={file.fileName} />
+        <img src={getDataBase64String(file)} alt={file.fileName} />
         <span className="block border-t border-border px-1 py-0.5 text-xs">{file.fileName}</span>
       </HoverCardContent>
     </HoverCard>
@@ -291,7 +295,7 @@ type CodeCellContextPillProps = {
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {
-    const updateTableName = (a1Context: string) => {
+    const updateTableName = (a1Context: Uint8Array) => {
       if (!codeCell?.sheetId) return;
       const tableName = getTableNameFromPos(a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
       setTableName(tableName);

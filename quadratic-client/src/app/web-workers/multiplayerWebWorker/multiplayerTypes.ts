@@ -1,5 +1,7 @@
-import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { SheetPosTS } from '@/app/shared/types/size';
+
+// todo: this should be replaced with automatic types created by export_types.rs
 
 export interface CellEdit {
   active: boolean;
@@ -41,15 +43,10 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   parsedSelection?: JsSelection;
 }
 
-export interface Version {
-  recommendedVersion: number;
-  requiredVersion: number;
-}
-
 export interface ReceiveRoom {
   type: 'UsersInRoom';
   users: MultiplayerUser[];
-  min_version: Version;
+  version: string;
 }
 
 export interface UserUpdate {
@@ -89,10 +86,17 @@ export interface Transaction {
 }
 
 export interface ReceiveTransaction {
-  type: 'Transaction';
+  type: 'Transaction' | 'BinaryTransaction';
   id: string;
   file_id: string;
   operations: string | Buffer;
+  sequence_num: number;
+}
+
+export interface ReceiveTransactionAck {
+  type: 'TransactionAck';
+  id: string;
+  file_id: string;
   sequence_num: number;
 }
 
@@ -101,8 +105,10 @@ export interface SendTransaction {
   id: string;
   session_id: string;
   file_id: string;
-  operations: string;
+  operations: Uint8Array<ArrayBufferLike>;
 }
+
+export type SendBinaryTransaction = Uint8Array<ArrayBufferLike>;
 
 export interface SendGetTransactions {
   type: 'GetTransactions';
@@ -111,8 +117,15 @@ export interface SendGetTransactions {
   min_sequence_num: number;
 }
 
+export interface SendGetBinaryTransactions {
+  type: 'GetBinaryTransactions';
+  session_id: string;
+  file_id: string;
+  min_sequence_num: number;
+}
+
 export interface ReceiveTransactions {
-  type: 'Transactions';
+  type: 'Transactions' | 'BinaryTransactions';
   transactions: ReceiveTransaction[];
 }
 
@@ -141,10 +154,17 @@ export type ReceiveMessages =
   | ReceiveRoom
   | MessageUserUpdate
   | ReceiveTransaction
+  | ReceiveTransactionAck
   | ReceiveEmpty
   | ReceiveTransactions
   | ReceiveEnterRoom
   | ReceiveError
   | ReceiveCurrentTransaction;
 
-export type MultiplayerServerMessage = SendTransaction | SendEnterRoom | SendGetTransactions;
+export type MultiplayerServerMessage =
+  | SendTransaction
+  | SendEnterRoom
+  | SendGetTransactions
+  | SendGetBinaryTransactions;
+
+export type MultiplayerServerBinaryMessage = SendBinaryTransaction;

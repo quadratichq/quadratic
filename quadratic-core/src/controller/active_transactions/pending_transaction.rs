@@ -9,13 +9,13 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    Pos, SheetPos, SheetRect,
+    Instant, Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellLanguage, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -62,7 +62,7 @@ pub struct PendingTransaction {
     pub current_sheet_pos: Option<SheetPos>,
 
     /// whether we are awaiting an async call
-    pub waiting_for_async: Option<CodeCellLanguage>,
+    pub waiting_for_async: Option<CodeCellValue>,
 
     /// whether transaction is complete
     pub complete: bool,
@@ -72,6 +72,9 @@ pub struct PendingTransaction {
 
     /// cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
+
+    /// track last time when updates were sent to client
+    pub last_client_update: Option<Instant>,
 
     /// sheets w/updated validations
     pub validations: HashSet<SheetId>,
@@ -88,6 +91,9 @@ pub struct PendingTransaction {
     /// sheets with updated borders
     pub sheet_borders: HashSet<SheetId>,
 
+    /// code cells to update in a1_context
+    pub code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
+
     /// code cells to update
     pub code_cells: HashMap<SheetId, HashSet<Pos>>,
 
@@ -100,11 +106,13 @@ pub struct PendingTransaction {
     /// sheets w/updated fill cells
     pub fill_cells: HashSet<SheetId>,
 
-    /// sheets w/updated offsets
+    /// sheets w/updated info
     pub sheet_info: HashSet<SheetId>,
 
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
+
+    pub offsets_reloaded: HashSet<SheetId>,
 
     // update selection after transaction completes
     pub update_selection: Option<String>,
@@ -127,17 +135,20 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            last_client_update: None,
             validations: HashSet::new(),
             validations_warnings: HashMap::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             sheet_borders: HashSet::new(),
+            code_cells_a1_context: HashMap::new(),
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
+            offsets_reloaded: HashSet::new(),
             update_selection: None,
         }
     }
@@ -272,6 +283,26 @@ impl PendingTransaction {
         dirty_hashes.extend(hashes);
     }
 
+    pub fn add_dirty_hashes_from_dirty_code_rects(
+        &mut self,
+        sheet: &Sheet,
+        dirty_rects: HashSet<Rect>,
+    ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        for dirty_rect in dirty_rects {
+            self.add_dirty_hashes_from_sheet_rect(dirty_rect.to_sheet_rect(sheet.id));
+            if let Some(dt) = sheet.data_table_at(&dirty_rect.min) {
+                dt.add_dirty_fills_and_borders(self, sheet.id);
+                self.add_from_code_run(sheet.id, dirty_rect.min, dt.is_image(), dt.is_html());
+            } else {
+                self.add_code_cell(sheet.id, dirty_rect.min);
+            }
+        }
+    }
+
     // Adds dirty hashes for all hashes from col_start to col_end (goes to sheet bounds if not provided)
     pub fn add_dirty_hashes_from_sheet_columns(
         &mut self,
@@ -371,6 +402,11 @@ impl PendingTransaction {
 
     /// Adds a code cell to the transaction
     pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.code_cells_a1_context
+            .entry(sheet_id)
+            .or_default()
+            .insert(pos);
+
         self.code_cells.entry(sheet_id).or_default().insert(pos);
     }
 
@@ -425,13 +461,7 @@ impl PendingTransaction {
         self.validations_warnings
             .entry(sheet_id)
             .or_default()
-            .insert(
-                Pos {
-                    x: warning.x,
-                    y: warning.y,
-                },
-                warning,
-            );
+            .insert(warning.pos, warning);
     }
 
     pub fn validation_warning_deleted(&mut self, sheet_id: SheetId, pos: Pos) {
@@ -445,8 +475,7 @@ impl PendingTransaction {
             .insert(
                 pos,
                 JsValidationWarning {
-                    x: pos.x,
-                    y: pos.y,
+                    pos,
                     style: None,
                     validation: None,
                 },
@@ -509,7 +538,7 @@ mod tests {
     use crate::{
         CellValue, Value,
         controller::operations::operation::Operation,
-        grid::{CodeRun, DataTable, DataTableKind, Sheet, SheetId},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, Sheet, SheetId},
     };
 
     use super::*;
@@ -637,6 +666,8 @@ mod tests {
         assert_eq!(transaction.image_cells.len(), 0);
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -651,8 +682,8 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Html("html".to_string())),
             false,
-            false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
@@ -661,6 +692,8 @@ mod tests {
         assert_eq!(transaction.image_cells.len(), 0);
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -675,8 +708,8 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Image("image".to_string())),
             false,
-            false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
@@ -740,7 +773,7 @@ mod tests {
     fn test_add_dirty_hashes_from_sheet_columns() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();
@@ -755,7 +788,7 @@ mod tests {
     fn test_add_dirty_hashes_from_sheet_rows() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         let mut transaction = PendingTransaction::default();

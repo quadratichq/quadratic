@@ -10,12 +10,12 @@ export class CLI {
             .option("-r, --react", "Do NOT watch quadratic-client (React)")
             .option("-c, --core", "Watch the quadratic-core directory")
             .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
-            .option("-e, --rustClient", "Watch the quadratic-rust-client directory")
             .option("-f, --files", "Watch the quadratic-files directory")
             .option("-n, --connection", "Watch the quadratic-connection directory")
+            .option("-s, --shared", "Watch the quadratic-shared directory")
             .option("-y, --python", "Watch the quadratic-kernels/python-wasm directory")
             .option("-l, --all", "Watch all directories")
-            .option("-s, --skipTypes", "Skip WASM types compilation")
+            .option("-t, --skipTypes", "Skip WASM types compilation")
             .option("-p, --perf", "Run quadratic-core in perf mode (slower to link but faster runtime)")
             .option("-R, --hideReact", "Hide React output")
             .option("-A, --hideAPI", "Hide React output")
@@ -25,8 +25,8 @@ export class CLI {
             .option("-F, --hideFiles", "Hide Files output")
             .option("-N, --hideConnection", "Hide Connection output")
             .option("-Y, --hidePython", "Hide Python output")
-            .option("-O, --rustClient", "Hide RustClient")
             .option("-E, --hideRustClient", "Hide RustClient")
+            .option("-S, --hideShared", "Hide Shared output")
             .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
             .option("-D, --dockerDev", "Run dev in docker")
             .option("-d, --dark", "Use dark theme")
@@ -40,8 +40,8 @@ export class CLI {
             this.options.multiplayer = true;
             this.options.files = true;
             this.options.connection = true;
-            this.options.rustClient = true;
             this.options.python = true;
+            this.options.shared = true;
         }
     }
 }

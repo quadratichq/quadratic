@@ -640,15 +640,17 @@ impl GridController {
             negative,
         });
 
+        // we don't need to apply any operations to the cells set in
+        // data_tables_and_cell_values_in_rect() for no_op_cells
+        let mut no_op_cells = CellValues::default();
         let mut values = CellValues::new(final_range.width(), final_range.height());
-        let mut cells = CellValues::default();
         let context = self.a1_context();
         let selection =
             A1Selection::from_rect(SheetRect::new_from_rect(final_range.to_owned(), sheet_id));
 
         let data_tables_in_rect = sheet.data_tables_and_cell_values_in_rect(
             initial_range,
-            &mut cells,
+            &mut no_op_cells,
             &mut values,
             context,
             &selection,
@@ -681,7 +683,7 @@ impl GridController {
                         original_pos.x = x;
                         original_pos.y = y;
 
-                        // collecte SetDataTable operations for any data tables in the source_pos
+                        // collect SetDataTable operations for any data tables in the source_pos
                         if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
                             let mut data_table = data_table.to_owned();
                             let old_name = data_table.name().to_string();
@@ -691,7 +693,7 @@ impl GridController {
                             data_table_ops.push(Operation::SetDataTable {
                                 sheet_pos: original_pos.to_sheet_pos(sheet_id),
                                 data_table: Some(data_table),
-                                index: 0,
+                                index: usize::MAX,
                             });
                         }
                     }
@@ -713,7 +715,23 @@ impl GridController {
             series.iter().map(|(v, _)| v.to_owned()).collect(),
         );
         let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
-        let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];
+
+        let mut cells = CellValues::default();
+        let mut ops = self.cell_values_operations(
+            Some(&selection),
+            sheet_pos,
+            Pos::new(0, 0),
+            &mut cells,
+            values,
+            false,
+        )?;
+
+        if !cells.is_empty() {
+            ops.extend(vec![Operation::SetCellValues {
+                sheet_pos,
+                values: cells,
+            }]);
+        }
 
         // the compute code operations need to be applied after the cell values
         ops.extend(compute_code_ops);

@@ -1,9 +1,13 @@
+use axum::body::Body;
+use axum::http::{self, Request, Response};
 use fake::Fake;
 use fake::faker::filesystem::en::FilePath;
 use fake::faker::internet::en::FreeEmail;
 use fake::faker::name::en::{FirstName, LastName};
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
+use prost::Message;
+use prost_reflect::{DescriptorPool, DynamicMessage};
 use quadratic_core::cell_values::CellValues;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::operations::operation::Operation;
@@ -17,11 +21,13 @@ use std::{
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, tungstenite};
+use tower::ServiceExt;
 use uuid::Uuid;
 
 use crate::config::config;
 use crate::message::request::MessageRequest;
 use crate::message::response::MessageResponse;
+use crate::server::app;
 use crate::state::State;
 use crate::state::connection::PreConnection;
 use crate::state::user::{CellEdit, User, UserState};
@@ -44,10 +50,35 @@ pub(crate) async fn setup() -> (
     User,
     User,
 ) {
+    let file_id = Uuid::new_v4();
+    let user_1 = new_user();
+    let user_2 = new_user();
+
+    setup_existing_room(file_id, user_1, user_2).await
+}
+
+/// General setup to be used for tests.  It creates:
+/// - Global State
+/// - A WebSocket for connecting to the server
+/// - A Room (file_id)
+/// - 2 Users (user_1, user_2) in the Room
+/// - A Connection (connection_id) for the User
+/// - A Subscription to the Room in PubSub
+pub(crate) async fn setup_existing_room(
+    file_id: Uuid,
+    user_1: User,
+    user_2: User,
+) -> (
+    Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    Arc<State>,
+    Uuid,
+    Uuid,
+    User,
+    User,
+) {
     let state = new_arc_state().await;
     let socket = integration_test_setup(state.clone()).await;
     let socket = Arc::new(Mutex::new(socket));
-    let file_id = Uuid::new_v4();
 
     let filter = "quadratic_multiplayer=debug";
     let subscriber = tracing_subscriber::fmt().with_env_filter(filter).finish();
@@ -58,22 +89,13 @@ pub(crate) async fn setup() -> (
         .await
         .unwrap();
 
-    let user_1 = new_user();
     let connection_id =
         new_connection(socket.clone(), state.clone(), file_id, user_1.clone()).await;
 
     // add another user so that we can test broadcasting
-    let user_2 = new_user();
     new_connection(socket.clone(), state.clone(), file_id, user_2.clone()).await;
 
-    (
-        socket.clone(),
-        state,
-        connection_id,
-        file_id,
-        user_1,
-        user_2,
-    )
+    (socket, state, connection_id, file_id, user_1, user_2)
 }
 
 /// Create new global state
@@ -115,6 +137,23 @@ pub(crate) fn new_user() -> User {
     }
 }
 
+pub(crate) fn enter_room_request(file_id: Uuid, user: User) -> MessageRequest {
+    MessageRequest::EnterRoom {
+        session_id: user.session_id,
+        user_id: user.user_id,
+        file_id,
+        sheet_id: user.state.sheet_id,
+        selection: String::new(),
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        image: user.image,
+        cell_edit: CellEdit::default(),
+        viewport: "initial viewport".to_string(),
+        follow: None,
+    }
+}
+
 /// Add an existing to a room via the WebSocket.
 /// Returns a reference to the user's `receiver` WebSocket.
 pub(crate) async fn add_user_via_ws(
@@ -122,21 +161,7 @@ pub(crate) async fn add_user_via_ws(
     socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     user: User,
 ) -> User {
-    let session_id = user.session_id;
-    let request = MessageRequest::EnterRoom {
-        session_id,
-        user_id: user.user_id.clone(),
-        file_id,
-        sheet_id: user.state.sheet_id,
-        selection: String::new(),
-        first_name: user.first_name.clone(),
-        last_name: user.last_name.clone(),
-        email: user.email.clone(),
-        image: user.image.clone(),
-        cell_edit: CellEdit::default(),
-        viewport: "initial viewport".to_string(),
-        follow: None,
-    };
+    let request = enter_room_request(file_id, user.clone());
 
     // UsersInRoom and EnterRoom are sent to the client when they enter a room
     integration_test_send_and_receive(&socket, request, true, 1).await;
@@ -256,6 +281,7 @@ pub(crate) async fn integration_test_send(
         println!("Error sending message: {:?}", e);
     };
 }
+
 /// Using the WebSocket created in integration_test_setup(), receive a response.
 /// Returns the optional response.
 /// `response_num` is the number of responses to receive before returning the last one.
@@ -272,6 +298,38 @@ pub(crate) async fn integration_test_receive(
             tungstenite::Message::Text(msg) => {
                 Some(serde_json::from_str::<MessageResponse>(&msg).unwrap())
             }
+            tungstenite::Message::Binary(msg) => {
+                let pool_bytes = quadratic_rust_shared::protobuf::FILE_DESCRIPTOR_SET;
+                let pool = DescriptorPool::decode(pool_bytes).unwrap();
+
+                // Try each message type in the pool
+                for descriptor in pool.all_messages() {
+                    if let Ok(_message) = DynamicMessage::decode(descriptor.clone(), &msg[..]) {
+                        println!("Message name: {}", descriptor.full_name());
+                        // println!("transaction: {:?}", message);
+
+                        match descriptor.full_name() {
+                            "quadratic.SendTransactions" => {
+                                let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::SendTransactions::decode(&msg[..]).unwrap();
+                                println!("SendTransaction: {:?}", decoded);
+                                // });
+                            }
+                            "quadratic.SendGetTransactions" => {
+                                let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::SendGetTransactions::decode(&msg[..]).unwrap();
+                                println!("SendGetTransactions: {:?}", decoded);
+                            }
+                            "quadratic.ReceiveTransaction" => {
+                                let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::ReceiveTransaction::decode(&msg[..]).unwrap();
+                                println!("ReceiveTransaction: {:?}", decoded);
+                            }
+                            _ => println!("Unknown message type: {}", descriptor.full_name()),
+                        }
+
+                        break;
+                    }
+                }
+                None
+            }
             other => panic!("expected a text message but got {other:?}"),
         };
 
@@ -281,4 +339,21 @@ pub(crate) async fn integration_test_receive(
     }
 
     last_response
+}
+
+/// Process a route and return the response.
+/// TODO(ddimaria): move to quadratic-rust-shared
+pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
+    let state = new_arc_state().await;
+    let app = app(state);
+
+    app.oneshot(
+        Request::builder()
+            .method(method)
+            .uri(uri)
+            .body(body)
+            .unwrap(),
+    )
+    .await
+    .unwrap()
 }

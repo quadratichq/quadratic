@@ -1,8 +1,10 @@
 #[cfg(test)]
 use crate::{
     CellValue, Pos,
-    controller::{GridController, transaction_types::JsCodeResult},
-    grid::{CodeCellLanguage, CodeCellValue, SheetId},
+    controller::{
+        GridController, transaction_types::JsCellValueResult, transaction_types::JsCodeResult,
+    },
+    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
 };
 
 #[cfg(test)]
@@ -50,17 +52,15 @@ pub fn test_create_html_chart(
     pos: Pos,
     w: u32,
     h: u32,
-) {
-    use crate::controller::transaction_types::JsCellValueResult;
-
+) -> DataTable {
     gc.set_code_cell(
         pos.to_sheet_pos(sheet_id),
         CodeCellLanguage::Python,
         "<html></html>".to_string(),
         None,
     );
-    let sheet = sheet(gc, sheet_id);
-    let (cell_width, cell_height) = sheet.offsets.defaults();
+    let s = sheet(gc, sheet_id);
+    let (cell_width, cell_height) = s.offsets.defaults();
 
     let transaction = gc.last_transaction().unwrap();
     gc.calculation_complete(JsCodeResult {
@@ -80,6 +80,9 @@ pub fn test_create_html_chart(
         has_headers: false,
     })
     .unwrap();
+
+    let s = sheet(gc, sheet_id);
+    s.data_table_at(&pos).unwrap().clone()
 }
 
 #[cfg(test)]
@@ -109,7 +112,7 @@ mod tests {
                 code: ref c,
             }) if c == "code"
         ));
-        assert!(sheet.data_table(pos).unwrap().is_image());
+        assert!(sheet.data_table_at(&pos).unwrap().is_image());
         assert_data_table_size(&gc, sheet_id, pos, width as usize, height as usize, false);
     }
 
@@ -134,7 +137,7 @@ mod tests {
                 code: ref c,
             }) if c == "<html></html>"
         ));
-        assert!(sheet.data_table(pos).unwrap().is_html());
+        assert!(sheet.data_table_at(&pos).unwrap().is_html());
         assert_data_table_size(&gc, sheet_id, pos, width as usize, height as usize, false);
     }
 }

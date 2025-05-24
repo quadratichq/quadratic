@@ -41,7 +41,7 @@ impl Sheet {
                 }
             }
         }
-        let a1_context = self.make_a1_context();
+        let a1_context = self.expensive_make_a1_context();
         self.recalculate_bounds(&a1_context);
     }
 
@@ -56,6 +56,8 @@ impl Sheet {
         );
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -72,8 +74,8 @@ impl Sheet {
                 "Table1",
                 Value::Single(value),
                 false,
-                false,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
@@ -115,6 +117,8 @@ impl Sheet {
         );
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -131,12 +135,12 @@ impl Sheet {
                 "Table1",
                 Value::Array(array),
                 false,
-                false,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
-        let a1_context = self.make_a1_context();
+        let a1_context = self.expensive_make_a1_context();
         self.recalculate_bounds(&a1_context);
     }
 
@@ -163,6 +167,8 @@ impl Sheet {
         }
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "code".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -179,8 +185,8 @@ impl Sheet {
                 "Table1",
                 Value::Array(array),
                 false,
-                false,
-                false,
+                Some(false),
+                Some(false),
                 None,
             )),
         );
@@ -196,6 +202,8 @@ impl Sheet {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: "code".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -211,12 +219,11 @@ impl Sheet {
                 &format!("Chart {}", self.data_tables.len() + 1),
                 Value::Single(CellValue::Image("chart".to_string())),
                 false,
-                false,
-                true,
-                Some((1.0, 1.0)),
+                Some(true),
+                Some(true),
+                Some((w, h)),
             )),
         );
-        self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
     }
 
     /// Sets a JS chart at the given position with the given width and height (in cells).
@@ -229,6 +236,8 @@ impl Sheet {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "code".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -244,12 +253,11 @@ impl Sheet {
                 &format!("Chart {}", self.data_tables.len() + 1),
                 Value::Single(CellValue::Html("chart".to_string())),
                 false,
-                false,
-                true,
-                Some((1.0, 1.0)),
+                Some(true),
+                Some(true),
+                Some((w, h)),
             )),
         );
-        self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
     }
 
     /// Sets an empty data table on the sheet.
@@ -259,7 +267,8 @@ impl Sheet {
         w: u32,
         h: u32,
         header_is_first_row: bool,
-        show_ui: bool,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
     ) {
         self.set_cell_value(
             pos,
@@ -276,9 +285,9 @@ impl Sheet {
                 }),
                 "Table1",
                 value,
-                false,
                 header_is_first_row,
-                show_ui,
+                show_name,
+                show_columns,
                 None,
             )),
         );
@@ -365,17 +374,17 @@ mod tests {
     #[test]
     fn test_set_code_run_array_horizontal() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], false);
+        sheet.test_set_code_run_array(1, 1, vec!["1", "2", "3"], false);
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: -1 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: -1 }),
+            sheet.display_value(Pos { x: 3, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -383,17 +392,17 @@ mod tests {
     #[test]
     fn test_set_code_run_array_vertical() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], true);
+        sheet.test_set_code_run_array(1, 1, vec!["1", "2", "3"], true);
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 3 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -418,21 +427,21 @@ mod tests {
     #[test]
     fn test_set_code_run_array_2d() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array_2d(-1, -1, 2, 2, vec!["1", "2", "3", "4"]);
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: -1 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
     }

@@ -10,9 +10,9 @@ use crate::{
     state::State,
 };
 
+const BACKGROUND_WORKER_INTERVAL_MS: u64 = 1000;
+
 /// In a separate thread:
-///   * Process transaction queue for the room
-///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
 #[tracing::instrument(level = "trace")]
 pub(crate) fn start(
@@ -23,7 +23,7 @@ pub(crate) fn start(
     let state = Arc::clone(&state);
 
     tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
+        let mut interval = time::interval(Duration::from_millis(BACKGROUND_WORKER_INTERVAL_MS));
 
         loop {
             // reconnect if pubsub connection is unhealthy
@@ -44,13 +44,6 @@ pub(crate) fn start(
                 // parallelize the work for each room
                 for (file_id, _) in rooms.iter() {
                     tracing::trace!("Processing room {}", file_id);
-
-                    // broadcast sequence number to all users in the room
-                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), file_id).await;
-
-                    if let Err(error) = broadcasted {
-                        tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                    }
 
                     // remove stale users in the room
                     let removed = remove_stale_users_in_room(
@@ -73,18 +66,6 @@ pub(crate) fn start(
             interval.tick().await;
         }
     })
-}
-
-// broadcast sequence number to all users in the room
-async fn broadcast_sequence_num(state: Arc<State>, file_id: &Uuid) -> Result<JoinHandle<()>> {
-    let sequence_num = state.get_sequence_num(file_id).await?;
-
-    Ok(broadcast(
-        vec![],
-        file_id.to_owned(),
-        Arc::clone(&state),
-        MessageResponse::CurrentTransaction { sequence_num },
-    ))
 }
 
 // remove stale users in the room
@@ -110,7 +91,7 @@ async fn remove_stale_users_in_room(
     }
 
     let users = get_room!(state, file_id)?.users.to_owned();
-    let message = MessageResponse::from((users, &state.settings.min_version));
+    let message = MessageResponse::from((users, &state.settings.version));
 
     Ok(Some(broadcast(
         vec![],
@@ -122,36 +103,10 @@ async fn remove_stale_users_in_room(
 
 #[cfg(test)]
 mod tests {
-    use quadratic_core::controller::{GridController, transaction::Transaction};
 
-    use crate::test_util::{add_new_user_to_room, new_arc_state, operation};
+    use crate::test_util::{add_new_user_to_room, new_arc_state};
 
     use super::*;
-
-    #[tokio::test]
-    async fn test_broadcast_sequence_num() {
-        let state = new_arc_state().await;
-        let file_id = Uuid::new_v4();
-        let _user = add_new_user_to_room(file_id, state.clone()).await;
-        let mut grid = GridController::test();
-        let transaction_id_1 = Uuid::new_v4();
-        let operations_1 = operation(&mut grid, 0, 0, "1");
-        let operations = Transaction::serialize_and_compress(vec![operations_1]).unwrap();
-
-        state
-            .pubsub
-            .lock()
-            .await
-            .push(transaction_id_1, file_id, operations, 1)
-            .await
-            .unwrap();
-
-        super::broadcast_sequence_num(state, &file_id)
-            .await
-            .unwrap()
-            .await
-            .unwrap();
-    }
 
     #[tokio::test]
     async fn remove_stale_users_in_room() {

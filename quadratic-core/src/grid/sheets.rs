@@ -190,6 +190,13 @@ impl Grid {
         self.sheets.get_mut(&sheet_id)
     }
 
+    /// Returns a mutable reference to the sheet with the given ID,
+    /// or a user-friendly error if it does not exist.
+    pub fn try_sheet_mut_result(&mut self, sheet_id: SheetId) -> Result<&mut Sheet> {
+        self.try_sheet_mut(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet not found: {:?}", sheet_id))
+    }
+
     /// Updates a sheet's name and returns the old name.
     pub fn update_sheet_name(&mut self, sheet_id: SheetId, new_name: &str) -> Result<String> {
         let sheet = self.try_sheet_mut(sheet_id).context("missing sheet")?;

@@ -36,13 +36,16 @@ impl DataTable {
     /// Insert a new row at the given index.
     pub fn insert_row(&mut self, row_index: usize, values: Option<Vec<CellValue>>) -> Result<()> {
         let row_index = row_index as i64 - self.y_adjustment(true);
-
         let array = self.mut_value_as_array()?;
         array.insert_row(usize::try_from(row_index)?, values)?;
 
         // formats and borders are 1 indexed
-        self.formats.insert_row(row_index + 1, CopyFormats::None);
-        self.borders.insert_row(row_index + 1, CopyFormats::None);
+        if let Some(formats) = self.formats.as_mut() {
+            formats.insert_row(row_index + 1, CopyFormats::None);
+        }
+        if let Some(borders) = self.borders.as_mut() {
+            borders.insert_row(row_index + 1, CopyFormats::None);
+        }
 
         let row_index = u64::try_from(row_index)?;
 
@@ -51,7 +54,7 @@ impl DataTable {
             let len = display_buffer.len();
             let index = usize::try_from(row_index)?;
 
-            if index >= len {
+            if index > len {
                 bail!("Row index {index} is out of bounds. Display buffer length: {len}");
             }
 
@@ -78,8 +81,16 @@ impl DataTable {
         let values = array.delete_row(usize::try_from(row_index)?)?;
 
         // formats and borders are 1 indexed
-        let formats = self.formats.remove_row(row_index + 1);
-        let borders = self.borders.remove_row(row_index + 1);
+        let formats = self
+            .formats
+            .as_mut()
+            .map(|formats| formats.remove_row(row_index + 1))
+            .unwrap_or_default();
+        let borders = self
+            .borders
+            .as_mut()
+            .map(|borders| borders.remove_row(row_index + 1))
+            .unwrap_or_default();
 
         Ok((values, formats, borders))
     }
@@ -135,16 +146,24 @@ pub mod test {
 
         pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
-        data_table.insert_row(4, None).unwrap();
+        data_table.insert_row(5, None).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table with New Row"), None);
 
-        // this should be a 5x4 array
+        // this should be a 4x6 array
         let expected_size = ArraySize::new(4, 6).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        // expect index out of bounds error
         // first sort the table to create the display buffer
         data_table.sort_column(0, SortDirection::Ascending).unwrap();
+
+        data_table.insert_row(6, None).unwrap();
+        pretty_print_data_table(&data_table, Some("Data Table with second New Row"), None);
+
+        // this should be a 4x7 array
+        let expected_size = ArraySize::new(4, 7).unwrap();
+        assert_eq!(data_table.output_size(), expected_size);
+
+        // expect index out of bounds error
         let expected_error = data_table.insert_row(10, None);
         assert!(expected_error.is_err());
     }

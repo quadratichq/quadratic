@@ -31,10 +31,6 @@ impl GridController {
         gc
     }
 
-    pub fn new_blank() -> Self {
-        Self::from_grid(Grid::new_blank(), 0)
-    }
-
     pub fn test_set_code_run_array_2d(
         &mut self,
         sheet_id: SheetId,
@@ -63,6 +59,8 @@ impl GridController {
         }
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "code".to_string(),
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -77,8 +75,8 @@ impl GridController {
             "Table1",
             Value::Array(array),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
 
@@ -97,7 +95,8 @@ impl GridController {
         w: u32,
         h: u32,
         header_is_first_row: bool,
-        show_ui: bool,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
     ) {
         let cell_value = CellValue::Import(Import {
             file_name: "test".to_string(),
@@ -109,9 +108,9 @@ impl GridController {
             }),
             "Table1",
             value,
-            false,
             header_is_first_row,
-            show_ui,
+            show_name,
+            show_columns,
             None,
         );
 
@@ -140,19 +139,16 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
         show_name: Option<bool>,
         show_columns: Option<bool>,
     ) {
-        let op = Operation::DataTableMeta {
+        let op = Operation::DataTableOptionMeta {
             sheet_pos,
             name: None,
             alternating_colors: None,
             columns,
-            show_ui,
-            show_name,
-            show_columns,
-            readonly: None,
+            show_name: show_name.map(|show_name| Some(show_name).into()),
+            show_columns: show_columns.map(|show_columns| Some(show_columns).into()),
         };
         self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }

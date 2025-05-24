@@ -9,6 +9,11 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
 
+    pub fn server_set_sheet_name(&mut self, sheet_id: SheetId, name: String) {
+        let ops = self.set_sheet_name_operations(sheet_id, name);
+        self.server_apply_transaction(ops, None);
+    }
+
     pub fn set_sheet_color(
         &mut self,
         sheet_id: SheetId,
@@ -27,6 +32,11 @@ impl GridController {
     pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>) {
         let ops = self.add_sheet_operations(Some(name));
         self.start_user_transaction(ops, cursor, TransactionName::SheetAdd);
+    }
+
+    pub fn server_add_sheet_with_name(&mut self, name: String) {
+        let ops = self.add_sheet_operations(Some(name));
+        self.server_apply_transaction(ops, None);
     }
 
     pub fn delete_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
@@ -57,6 +67,7 @@ mod test {
         controller::GridController,
         grid::{
             CodeCellLanguage, SheetId,
+            js_types::JsUpdateCodeCell,
             sheet::borders::{BorderSelection, BorderStyle},
         },
         wasm_bindings::{
@@ -285,24 +296,18 @@ mod test {
             x: 1,
             y: 1,
         };
-        let code_cell = gc
-            .sheet(duplicated_sheet_id)
-            .edit_code_value(sheet_pos.into(), gc.a1_context())
-            .unwrap();
-        let render_code_cell = gc
-            .sheet(duplicated_sheet_id)
-            .get_render_code_cell(sheet_pos.into())
-            .unwrap();
+
+        let sheet = gc.sheet(duplicated_sheet_id);
+
+        let update_code_cell = JsUpdateCodeCell {
+            sheet_id: duplicated_sheet_id,
+            pos: sheet_pos.into(),
+            render_code_cell: sheet.get_render_code_cell(sheet_pos.into()),
+        };
+
         expect_js_call(
-            "jsUpdateCodeCell",
-            format!(
-                "{},{},{},{:?},{:?}",
-                duplicated_sheet_id,
-                sheet_pos.x,
-                sheet_pos.y,
-                Some(serde_json::to_string(&code_cell).unwrap()),
-                Some(serde_json::to_string(&render_code_cell).unwrap())
-            ),
+            "jsUpdateCodeCells",
+            format!("{:?}", serde_json::to_vec(&vec![update_code_cell]).unwrap()),
             true,
         );
 

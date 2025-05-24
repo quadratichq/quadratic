@@ -5,19 +5,20 @@ import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditor
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import type {
   JsBordersSheet,
-  JsCodeCell,
+  JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
-  JsValidationWarning,
+  JsUpdateCodeCell,
   SheetBounds,
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
+import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
@@ -34,7 +35,7 @@ import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
+  needRefresh: (state: RefreshType) => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
@@ -65,8 +66,8 @@ interface EventTypes {
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
-  renderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
-  renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+  hashRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
+  renderCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
 
   pythonInit: (version: string) => void;
   pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
@@ -74,13 +75,7 @@ interface EventTypes {
   javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
   connectionState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
 
-  updateCodeCell: (options: {
-    sheetId: string;
-    x: number;
-    y: number;
-    codeCell?: JsCodeCell;
-    renderCodeCell?: JsRenderCodeCell;
-  }) => void;
+  updateCodeCells: (updateCodeCells: JsUpdateCodeCell[]) => void;
   updateImage: (message: CoreClientImage) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
@@ -113,12 +108,7 @@ interface EventTypes {
   insertCodeEditorText: (text: string) => void;
 
   sheetValidations: (sheetId: string, validations: Validation[]) => void;
-  renderValidationWarnings: (
-    sheetId: string,
-    hashX: number | undefined,
-    hashY: number | undefined,
-    warnings: JsValidationWarning[]
-  ) => void;
+  validationWarnings: (warnings: JsHashValidationWarnings[]) => void;
 
   // pointer down on the grid
   clickedToCell: (column: number, row: number, world: Point | true) => void;
@@ -145,7 +135,7 @@ interface EventTypes {
   recentFiles: (url: string, name: string, loaded: boolean) => void;
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
-  a1Context: (context: string) => void;
+  a1Context: (context: Uint8Array) => void;
   a1ContextUpdated: () => void;
 
   aiAnalystInitialized: () => void;

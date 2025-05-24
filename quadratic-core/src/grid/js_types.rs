@@ -9,7 +9,7 @@ use super::data_table::{column_header::DataTableColumnHeader, sort::DataTableSor
 use super::formats::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
-use super::{CodeCellLanguage, NumericFormat};
+use super::{CodeCellLanguage, NumericFormat, SheetId};
 use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -66,7 +66,7 @@ pub struct JsCellValuePos {
     pub pos: String,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsSelectionContext {
     pub sheet_name: String,
     pub data_rects: Vec<JsCellValuePosContext>,
@@ -224,6 +224,19 @@ impl From<Pos> for JsRenderCell {
     }
 }
 
+#[derive(Serialize, Debug, PartialEq, TS)]
+pub struct JsHashRenderCells {
+    pub sheet_id: SheetId,
+    pub hash: Pos,
+    pub cells: Vec<JsRenderCell>,
+}
+
+#[derive(Serialize, Debug, PartialEq, TS)]
+pub struct JsHashesDirty {
+    pub sheet_id: SheetId,
+    pub hashes: Vec<Pos>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsRenderFill {
     pub x: i64,
@@ -276,7 +289,7 @@ pub struct JsReturnInfo {
     pub output_type: Option<String>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,
@@ -290,7 +303,7 @@ pub struct JsCodeCell {
     pub cells_accessed: Option<Vec<JsCellsAccessed>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsRenderCodeCell {
     pub x: i32,
     pub y: i32,
@@ -305,10 +318,9 @@ pub struct JsRenderCodeCell {
     pub sort: Option<Vec<DataTableSort>>,
     pub sort_dirty: bool,
     pub alternating_colors: bool,
-    pub readonly: bool,
+    pub is_code: bool,
     pub is_html: bool,
     pub is_html_image: bool,
-    pub show_ui: bool,
     pub show_name: bool,
     pub show_columns: bool,
 }
@@ -381,6 +393,12 @@ impl From<JsDataTableColumnHeader> for DataTableColumnHeader {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
+pub struct JsColumnWidth {
+    pub column: i64,
+    pub width: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsRowHeight {
     pub row: i64,
     pub height: f64,
@@ -412,10 +430,16 @@ impl fmt::Display for JsOffset {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsValidationWarning {
-    pub x: i64,
-    pub y: i64,
+    pub pos: Pos,
     pub validation: Option<Uuid>,
     pub style: Option<ValidationStyle>,
+}
+
+#[derive(Serialize, Debug, PartialEq, TS)]
+pub struct JsHashValidationWarnings {
+    pub sheet_id: SheetId,
+    pub hash: Option<Pos>,
+    pub warnings: Vec<JsValidationWarning>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
@@ -478,4 +502,11 @@ mod test {
 pub struct JsResponse {
     pub result: bool,
     pub error: Option<String>,
+}
+
+#[derive(Serialize, Debug, PartialEq, TS)]
+pub struct JsUpdateCodeCell {
+    pub sheet_id: SheetId,
+    pub pos: Pos,
+    pub render_code_cell: Option<JsRenderCodeCell>,
 }

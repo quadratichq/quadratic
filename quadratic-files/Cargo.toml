@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.6.10"
+version = "0.9.0"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -23,7 +23,14 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
     "console_error_panic_hook",
     "js",
 ] }
-quadratic-rust-shared = { path = "../quadratic-rust-shared" }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
+    "auth",
+    "environment",
+    "protobuf",
+    "pubsub",
+    "quadratic-api",
+    "storage" 
+] }
 rayon = "1.8.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
@@ -51,11 +58,3 @@ fake = { version = "4.0.0", features = ["derive"] }
 default = ["files"]
 multiplayer = []
 files = []
-
-# patch for breaking changes in zip-rs/zip2 v2.6.0
-# https://github.com/quadratichq/quadratic/pull/2652#issue-2970668055
-[patch.crates-io]
-zip = { git = "https://github.com/zip-rs/zip2", rev = "77cde6a" }
-
-[patch.'https://github.com/zip-rs/zip2']
-zip = { git = "https://github.com//zip-rs/zip2", rev = "77cde6a" }

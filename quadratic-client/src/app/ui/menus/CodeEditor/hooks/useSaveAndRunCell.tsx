@@ -42,44 +42,32 @@ export const useSaveAndRunCell = () => {
         const tables = pixiApp.cellsSheets.getById(sheetId)?.tables;
         if (tables) {
           if (!tables.isTable(pos.x, pos.y)) {
-            events.emit('updateCodeCell', {
-              sheetId,
-              x: pos.x,
-              y: pos.y,
-              codeCell: {
-                x: BigInt(pos.x),
-                y: BigInt(pos.y),
-                code_string: codeString,
-                language,
-                std_out: null,
-                std_err: null,
-                evaluation_result: null,
-                spill_error: null,
-                return_info: null,
-                cells_accessed: null,
+            events.emit('updateCodeCells', [
+              {
+                sheet_id: { id: sheetId },
+                pos: { x: BigInt(pos.x), y: BigInt(pos.y) },
+                render_code_cell: {
+                  x: pos.x,
+                  y: pos.y,
+                  w: 1,
+                  h: 1,
+                  language,
+                  state: 'NotYetRun',
+                  spill_error: null,
+                  name: '',
+                  columns: [],
+                  first_row_header: false,
+                  sort: null,
+                  sort_dirty: false,
+                  alternating_colors: false,
+                  is_code: true,
+                  is_html: false,
+                  is_html_image: false,
+                  show_name: false,
+                  show_columns: false,
+                },
               },
-              renderCodeCell: {
-                x: pos.x,
-                y: pos.y,
-                w: 1,
-                h: 1,
-                language,
-                state: 'NotYetRun',
-                spill_error: null,
-                name: '',
-                columns: [],
-                first_row_header: false,
-                sort: null,
-                sort_dirty: false,
-                alternating_colors: false,
-                readonly: true,
-                is_html: false,
-                is_html_image: false,
-                show_ui: false,
-                show_name: false,
-                show_columns: false,
-              },
-            });
+            ]);
           }
         }
         mixpanel.track('[CodeEditor].cellRun', {

@@ -2,21 +2,22 @@ use std::{borrow::Cow, io::Cursor};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
-use csv_sniffer::Sniffer;
 
 use crate::{
     Array, ArraySize, CellValue, Pos, SheetPos,
     arrow::arrow_col_to_cell_value_vec,
     cellvalue::Import,
-    controller::GridController,
+    controller::{
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        execution::TransactionSource,
+    },
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTable, Sheet, SheetId,
-        file::sheet_schema::export_sheet, formats::SheetFormatUpdates,
+        CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
+        unique_data_table_name,
     },
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
-use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
@@ -66,19 +67,8 @@ impl GridController {
             }
         };
 
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
-
         let mut reader = csv::ReaderBuilder::new()
-            .delimiter(delimiter)
+            .delimiter(delimiter.unwrap_or(b','))
             .has_headers(false)
             .flexible(true)
             .from_reader(file);
@@ -127,20 +117,9 @@ impl GridController {
             }
         };
 
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
-
         let reader = |flexible| {
             csv::ReaderBuilder::new()
-                .delimiter(delimiter)
+                .delimiter(delimiter.unwrap_or(b','))
                 .has_headers(false)
                 .flexible(flexible)
                 .from_reader(file)
@@ -219,7 +198,12 @@ impl GridController {
         };
 
         data_table.value = cell_values.into();
-        data_table.formats.apply_updates(&sheet_format_updates);
+        if !sheet_format_updates.is_default() {
+            data_table
+                .formats
+                .get_or_insert_default()
+                .apply_updates(&sheet_format_updates);
+        }
 
         if apply_first_row_as_header {
             data_table.apply_first_row_as_header();
@@ -243,7 +227,7 @@ impl GridController {
         file: &[u8],
         file_name: &str,
     ) -> Result<Vec<Operation>> {
-        let mut ops = vec![] as Vec<Operation>;
+        let mut ops: Vec<Operation> = vec![];
         let error = |e: XlsxError| anyhow!("Error parsing Excel file {file_name}: {e}");
 
         let cursor = Cursor::new(file);
@@ -273,11 +257,21 @@ impl GridController {
         let mut current_y_values = 0;
         let mut current_y_formula = 0;
 
-        let mut order = key_between(None, None).unwrap_or("A0".to_string());
+        let mut gc = GridController::new_blank();
+
+        // add all sheets to the grid, this is required for sheet name parsing in cell ref
+        for sheet_name in sheets.iter() {
+            gc.server_add_sheet_with_name(sheet_name.to_owned());
+        }
+
+        let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
+
+        // add data from excel file to grid
         for sheet_name in sheets {
-            // add the sheet
-            let mut sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), order.clone());
-            order = key_between(Some(&order), None).unwrap_or("A0".to_string());
+            let sheet = gc
+                .try_sheet_from_name(&sheet_name)
+                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+            let sheet_id = sheet.id;
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
@@ -326,13 +320,14 @@ impl GridController {
                         ExcelData::Bool(value) => CellValue::Logical(*value),
                     };
 
-                    sheet.set_cell_value(
-                        Pos {
-                            x: insert_at.x + x as i64,
-                            y: insert_at.y + y as i64,
-                        },
-                        cell_value,
-                    );
+                    let pos = Pos {
+                        x: insert_at.x + x as i64,
+                        y: insert_at.y + y as i64,
+                    };
+                    let sheet = gc
+                        .try_sheet_mut(sheet_id)
+                        .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                    sheet.columns.set_value(&pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
@@ -356,7 +351,6 @@ impl GridController {
             // formulas
             let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
             let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
-            let mut formula_compute_ops = vec![];
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
@@ -364,15 +358,26 @@ impl GridController {
                             x: insert_at.x + x as i64,
                             y: insert_at.y + y as i64,
                         };
+                        let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let cell_value = CellValue::Code(CodeCellValue {
                             language: CodeCellLanguage::Formula,
                             code: cell.to_string(),
                         });
-                        sheet.set_cell_value(pos, cell_value);
-                        // add code compute operation, to generate code runs
-                        formula_compute_ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet.id),
-                        });
+                        let sheet = gc
+                            .try_sheet_mut(sheet_id)
+                            .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                        sheet.columns.set_value(&pos, cell_value);
+                        let mut transaction = PendingTransaction {
+                            source: TransactionSource::Server,
+                            ..Default::default()
+                        };
+                        gc.add_formula_without_eval(
+                            &mut transaction,
+                            sheet_pos,
+                            cell,
+                            formula_start_name.as_str(),
+                        );
+                        gc.send_client_updates_during_transaction(&mut transaction, false);
                     }
                 }
 
@@ -393,12 +398,16 @@ impl GridController {
                 }
                 current_y_formula += 1;
             }
+        }
 
-            // add new sheets
-            ops.push(Operation::AddSheetSchema {
-                schema: Box::new(export_sheet(sheet)),
+        // rerun all formulas in-order
+        let compute_ops = gc.rerun_all_code_cells_operations();
+        gc.server_apply_transaction(compute_ops, None);
+
+        for sheet in gc.grid.sheets.into_values() {
+            ops.push(Operation::AddSheet {
+                sheet: Box::new(sheet),
             });
-            ops.extend(formula_compute_ops);
         }
 
         Ok(ops)
@@ -535,7 +544,7 @@ mod test {
     fn guesses_the_csv_header() {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
         let sheet = gc.sheet(sheet_id);
-        let values = sheet.data_table(pos).unwrap().value_as_array().unwrap();
+        let values = sheet.data_table_at(&pos).unwrap().value_as_array().unwrap();
         assert!(gc.guess_csv_first_row_is_header(values));
     }
 
@@ -552,9 +561,9 @@ mod test {
     }
 
     #[test]
-    fn test_get_csv_preview_with_auto_delimiter() {
+    fn test_get_csv_preview_with_custom_delimiter() {
         let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, None);
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, Some(b'\t'));
         assert!(result.is_ok());
         let preview = result.unwrap();
         assert_eq!(preview.len(), 3);
@@ -756,7 +765,7 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         // date
         assert_eq!(
@@ -894,6 +903,70 @@ mod test {
             sheet.cell_value((3, 4).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn import_excel_dependent_formulas() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/income_statement.xlsx");
+        gc.import_excel(file.as_ref(), "excel", None).unwrap();
+
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.cell_value((4, 3).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E3,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 3).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 12).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "D5-D10".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 12).into()),
+            Some(CellValue::Number(3831163.into()))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 29).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E29,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 29).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 67).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E67,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 67).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
             ))
         );
     }

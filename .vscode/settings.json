@@ -1,6 +1,8 @@
 {
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "AABB",
+    "acked",
     "actix",
     "autoclean",
     "autoincrement",
@@ -13,10 +15,12 @@
     "bincode",
     "bindgen",
     "bmfont",
+    "btreemap",
     "buildkit",
     "Buildx",
     "cellref",
     "cellvalue",
+    "chrono",
     "Cinstrument",
     "clippy",
     "cmdk",
@@ -38,6 +42,7 @@
     "dearmor",
     "deepseek",
     "demangle",
+    "Deque",
     "dgraph",
     "docgen",
     "dotenv",
@@ -45,6 +50,7 @@
     "elif",
     "Embedder",
     "endregion",
+    "EXISTINGSHEET",
     "expressjwt",
     "fholzer",
     "finitize",
@@ -74,6 +80,7 @@
     "itertools",
     "jamba",
     "jetli",
+    "jsonwebtoken",
     "jwks",
     "keepalive",
     "keyrings",
@@ -108,10 +115,13 @@
     "prec",
     "profraw",
     "proptest",
+    "prost",
+    "protoc",
     "pulumi",
     "pyimport",
     "Pyodide",
     "Pyright",
+    "qawolf",
     "quadratichq",
     "rects",
     "Referer",
@@ -119,8 +129,10 @@
     "relcells",
     "repr",
     "reqwest",
+    "revalidator",
     "rfind",
     "ROUNDDOWN",
+    "rstar",
     "RUSTC",
     "RUSTFLAGS",
     "rustup",
@@ -189,6 +201,10 @@
   "jest.rootPath": "quadratic-client",
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "typescript.preferences.preferTypeOnlyAutoImports": true,
+  "typescript.preferences.autoImportFileExcludePatterns": [
+    "**/node_modules/@mui/**",
+    "**/node_modules/@radix-ui/**"
+  ],
   "editor.defaultFormatter": null,
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
@@ -222,5 +238,8 @@
   "[markdown]": {
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
   },
-  "C_Cpp.errorSquiggles": "enabled"
+  "C_Cpp.errorSquiggles": "enabled",
+  "[proto3]": {
+    "editor.defaultFormatter": "zxh404.vscode-proto3"
+  }
 }

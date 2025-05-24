@@ -15,12 +15,14 @@ impl Sheet {
         }
 
         // get table borders and translate them to sheet coordinates
-        self.data_tables.iter().for_each(|(pos, table)| {
-            if let Some(h) = table.borders.horizontal_borders(Some((*pos, table))) {
-                horizontal.extend(h);
-            }
-            if let Some(v) = table.borders.vertical_borders(Some((*pos, table))) {
-                vertical.extend(v);
+        self.data_tables.expensive_iter().for_each(|(pos, table)| {
+            if let Some(borders) = table.borders.as_ref() {
+                if let Some(h) = borders.horizontal_borders(Some((*pos, table))) {
+                    horizontal.extend(h);
+                }
+                if let Some(v) = borders.vertical_borders(Some((*pos, table))) {
+                    vertical.extend(v);
+                }
             }
         });
 
@@ -69,7 +71,14 @@ mod tests {
     fn test_render_borders_table_1x1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 1, 1, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            1,
+            1,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(
@@ -90,7 +99,14 @@ mod tests {
     fn test_render_borders_table_3x3() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(
@@ -111,7 +127,14 @@ mod tests {
     fn test_render_borders_table_3x3_two_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(
@@ -132,7 +155,14 @@ mod tests {
     fn test_render_borders_table_3x3_outer() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
+        gc.test_set_data_table(
+            pos![A1].to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(false),
+            Some(false),
+        );
 
         let context = gc.a1_context();
         gc.set_borders(

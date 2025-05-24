@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, SheetPos,
-    grid::{CodeCellLanguage, DataTable, SheetId},
+    grid::{DataTable, SheetId},
     util::case_fold_ascii,
 };
 
@@ -12,35 +13,60 @@ use super::TableMapEntry;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
-    pub tables: HashMap<String, TableMapEntry>,
+    tables: IndexMap<String, TableMapEntry>,
+
+    #[serde(with = "crate::util::hashmap_serde")]
+    sheet_pos_to_table: HashMap<SheetPos, String>,
 }
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
         let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
+        let sheet_pos = table_map_entry
+            .bounds
+            .min
+            .to_sheet_pos(table_map_entry.sheet_id);
+        self.sheet_pos_to_table
+            .insert(sheet_pos, table_name_folded.clone());
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
-    /// Inserts a table into the table map with a key that is already case folded.
-    pub fn insert_with_key(&mut self, table_name: String, table_map_entry: TableMapEntry) {
-        self.tables.insert(table_name, table_map_entry);
+    pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
+        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
+        self.insert(table_map_entry);
     }
 
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
-        self.tables.remove(&table_name_folded)
+        if let Some(table) = self.tables.shift_remove(&table_name_folded) {
+            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
+            self.sheet_pos_to_table.remove(&sheet_pos);
+            Some(table)
+        } else {
+            None
+        }
     }
 
-    pub fn insert_table(
-        &mut self,
-        sheet_id: SheetId,
-        pos: Pos,
-        table: &DataTable,
-        language: CodeCellLanguage,
-    ) {
-        let table_name_folded = case_fold_ascii(table.name());
-        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
-        self.tables.insert(table_name_folded, table_map_entry);
+    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.sheet_pos_to_table
+            .remove(&pos.to_sheet_pos(sheet_id))
+            .and_then(|table_name| self.tables.shift_remove(&table_name));
+    }
+
+    pub fn remove_sheet(&mut self, sheet_id: SheetId) {
+        self.sheet_pos_to_table.retain(|sheet_pos, table| {
+            if sheet_pos.sheet_id == sheet_id {
+                self.tables.shift_remove(table);
+                false
+            } else {
+                true
+            }
+        });
+    }
+
+    pub fn sort(&mut self) {
+        self.tables
+            .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
     }
 
     /// Finds a table by name.
@@ -69,8 +95,30 @@ impl TableMap {
             .unwrap_or(false)
     }
 
+    /// Returns an iterator over the table names in the table map.
     pub fn iter_table_names(&self) -> impl Iterator<Item = &String> {
         self.tables.keys()
+    }
+
+    /// Returns an iterator over the table names in the table map in reverse order.
+    pub fn iter_rev_table_names(&self) -> impl Iterator<Item = &String> {
+        self.tables.keys().rev()
+    }
+
+    /// Returns an iterator over the TableMapEntry in the table map.
+    pub fn iter_table_values(&self) -> impl Iterator<Item = &TableMapEntry> {
+        self.tables.values()
+    }
+
+    /// Returns an iterator over the TableMapEntry in a sheet.
+    pub fn iter_table_values_in_sheet(
+        &self,
+        sheet_id: SheetId,
+    ) -> impl Iterator<Item = &TableMapEntry> {
+        self.sheet_pos_to_table
+            .iter()
+            .filter(move |(sheet_pos, _)| sheet_pos.sheet_id == sheet_id)
+            .flat_map(|(_, table_name)| self.tables.get(table_name))
     }
 
     /// Returns a list of all table names in the table map.
@@ -93,7 +141,6 @@ impl TableMap {
                     x: x as i64,
                     y: y as i64,
                 })
-                && table.show_ui
                 && y < (table.bounds.min.y as u32)
                     + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
                         as u32
@@ -117,10 +164,10 @@ impl TableMap {
         }
     }
 
-    pub fn contains_name(&self, table_name: &str, sheet_pos: Option<SheetPos>) -> bool {
+    pub fn contains_name(&self, table_name: &str, skip_sheet_pos: Option<SheetPos>) -> bool {
         let table = self.try_table(table_name);
         if let Some(table) = table {
-            if let Some(sheet_pos) = sheet_pos {
+            if let Some(sheet_pos) = skip_sheet_pos {
                 table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()
             } else {
                 true
@@ -140,19 +187,15 @@ impl TableMap {
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: crate::Rect,
-        language: CodeCellLanguage,
+        language: crate::grid::CodeCellLanguage,
     ) {
-        let table_name_folded = case_fold_ascii(table_name);
-        self.tables.insert(
-            table_name_folded,
-            TableMapEntry::test(table_name, visible_columns, all_columns, bounds, language),
-        );
-    }
-
-    #[cfg(test)]
-    pub fn get_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        let table_name_folded = case_fold_ascii(table_name);
-        self.tables.get_mut(&table_name_folded)
+        self.insert(TableMapEntry::test(
+            table_name,
+            visible_columns,
+            all_columns,
+            bounds,
+            language,
+        ));
     }
 }
 
@@ -160,7 +203,7 @@ impl TableMap {
 mod tests {
     use super::*;
 
-    use crate::Rect;
+    use crate::{Rect, grid::CodeCellLanguage};
 
     #[test]
     fn test_try_col_index() {
@@ -360,7 +403,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(0, 0, 2, 3),
-            show_ui: true,
             show_name: true,
             show_columns: true,
             is_html_image: false,
@@ -396,7 +438,6 @@ mod tests {
             visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
             all_columns: vec!["Col1".to_string(), "Col2".to_string()],
             bounds: Rect::new(5, 5, 7, 8),
-            show_ui: true,
             show_name: false,
             show_columns: true,
             is_html_image: false,

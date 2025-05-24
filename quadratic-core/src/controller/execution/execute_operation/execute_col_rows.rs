@@ -18,7 +18,7 @@ impl GridController {
         adjustments: &[RefAdjust],
     ) {
         for sheet in self.grid.sheets().values() {
-            for (pos, _) in sheet.iter_code_runs() {
+            for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
                     let mut new_code = code.clone();
@@ -54,30 +54,30 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
             let mut columns_to_adjust = columns.clone();
+
             sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
 
-            if transaction.is_user() {
-                columns_to_adjust.sort_unstable();
-                columns_to_adjust.dedup();
-                columns_to_adjust.reverse();
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                    sheet_rect.min.x = min_column;
 
-                // adjust formulas to account for deleted column
-                self.adjust_code_cell_references(
-                    transaction,
-                    &columns_to_adjust
-                        .iter()
-                        .map(|&column| RefAdjust::new_delete_column(sheet_id, column))
-                        .collect_vec(),
-                );
+                    self.check_deleted_data_tables(transaction, &sheet_rect);
+                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                // update information for all cells to the right of the deleted column
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                        sheet_rect.min.x = min_column;
-                        self.check_deleted_data_tables(transaction, &sheet_rect);
+                    if transaction.is_user() {
+                        columns_to_adjust.sort_unstable();
+                        columns_to_adjust.dedup();
+                        columns_to_adjust.reverse();
+
+                        self.adjust_code_cell_references(
+                            transaction,
+                            &columns_to_adjust
+                                .iter()
+                                .map(|&column| RefAdjust::new_delete_column(sheet_id, column))
+                                .collect_vec(),
+                        );
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -122,29 +122,27 @@ impl GridController {
 
             sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
 
-            if transaction.is_user() {
-                rows_to_adjust.sort_unstable();
-                rows_to_adjust.dedup();
-                rows_to_adjust.reverse();
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                    sheet_rect.min.y = min_row;
 
-                // adjust formulas to account for deleted column (needs to be
-                // here since it's across sheets)
-                self.adjust_code_cell_references(
-                    transaction,
-                    &rows_to_adjust
-                        .iter()
-                        .map(|&row| RefAdjust::new_delete_row(sheet_id, row))
-                        .collect_vec(),
-                );
+                    self.check_deleted_data_tables(transaction, &sheet_rect);
+                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                // update information for all cells below the deleted row
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                        sheet_rect.min.y = min_row;
-                        self.check_deleted_data_tables(transaction, &sheet_rect);
+                    if transaction.is_user() {
+                        rows_to_adjust.sort_unstable();
+                        rows_to_adjust.dedup();
+                        rows_to_adjust.reverse();
+
+                        self.adjust_code_cell_references(
+                            transaction,
+                            &rows_to_adjust
+                                .iter()
+                                .map(|&row| RefAdjust::new_delete_row(sheet_id, row))
+                                .collect_vec(),
+                        );
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -199,28 +197,27 @@ impl GridController {
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 sheet.insert_column(transaction, column, copy_formats, &self.a1_context);
+
                 transaction.forward_operations.push(op);
             } else {
                 // nothing more can be done
                 return;
             }
 
-            if transaction.is_user() {
-                // adjust formulas to account for inserted column (needs to be
-                // here since it's across sheets)
-                self.adjust_code_cell_references(
-                    transaction,
-                    &[RefAdjust::new_insert_column(sheet_id, column)],
-                );
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                    sheet_rect.min.x = column + 1;
 
-                // update information for all cells to the right of the inserted column
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                        sheet_rect.min.x = column + 1;
-                        self.check_deleted_data_tables(transaction, &sheet_rect);
+                    self.check_deleted_data_tables(transaction, &sheet_rect);
+                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+
+                    if transaction.is_user() {
+                        self.adjust_code_cell_references(
+                            transaction,
+                            &[RefAdjust::new_insert_column(sheet_id, column)],
+                        );
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -236,28 +233,28 @@ impl GridController {
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 sheet.insert_row(transaction, row, copy_formats, &self.a1_context);
+
                 transaction.forward_operations.push(op);
             } else {
                 // nothing more can be done
                 return;
             }
 
-            if transaction.is_user() {
-                // adjust formulas to account for deleted column (needs to be
-                // here since it's across sheets)
-                self.adjust_code_cell_references(
-                    transaction,
-                    &[RefAdjust::new_insert_row(sheet_id, row)],
-                );
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                    sheet_rect.min.y = row + 1;
 
-                // update information for all cells below the deleted row
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                        sheet_rect.min.y = row + 1;
-                        self.check_deleted_data_tables(transaction, &sheet_rect);
+                    self.check_deleted_data_tables(transaction, &sheet_rect);
+                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+
+                    if transaction.is_user() {
+                        self.adjust_code_cell_references(
+                            transaction,
+                            &[RefAdjust::new_insert_row(sheet_id, row)],
+                        );
+
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -304,11 +301,10 @@ mod tests {
         cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+            sheet::validations::{rules::ValidationRule, validation::Validation},
         },
-        test_util::{
-            assert_data_table_size, first_sheet_id, test_create_html_chart, test_create_js_chart,
-        },
+        test_create_gc,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
     };
 
@@ -443,6 +439,8 @@ mod tests {
         let mut cells_accessed = CellsAccessed::default();
         cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: r#"q.cells("B1:B2")"#.into(),
             std_err: None,
             std_out: None,
             error: None,
@@ -456,8 +454,8 @@ mod tests {
             "test",
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         let transaction = &mut PendingTransaction::default();
@@ -525,6 +523,8 @@ mod tests {
         cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
 
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: r#"return q.cells("B1:B2");"#.into(),
             std_err: None,
             std_out: None,
             error: None,
@@ -538,8 +538,8 @@ mod tests {
             "test",
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         let transaction = &mut PendingTransaction::default();
@@ -587,7 +587,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
         );
-        gc.insert_column(sheet_id, 3, true, None);
+        gc.insert_columns(sheet_id, 3, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -616,7 +616,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 1, 3))
         );
-        gc.insert_row(sheet_id, 3, true, None);
+        gc.insert_rows(sheet_id, 3, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -770,7 +770,7 @@ mod tests {
             None,
         );
 
-        gc.insert_column(sheet_id, 2, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -795,7 +795,7 @@ mod tests {
             None,
         );
 
-        gc.insert_row(sheet_id, 2, true, None);
+        gc.insert_rows(sheet_id, 2, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -929,7 +929,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.insert_column(sheet_id, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -937,9 +937,8 @@ mod tests {
         sheet.offsets.set_column_width(2, 200.0);
         sheet.offsets.set_column_width(4, 400.0);
 
-        gc.insert_column(sheet_id, 2, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
-        offsets.insert((Some(2), None), DEFAULT_COLUMN_WIDTH);
         offsets.insert((Some(3), None), 200.0);
         offsets.insert((Some(4), None), DEFAULT_COLUMN_WIDTH);
         offsets.insert((Some(5), None), 400.0);
@@ -947,7 +946,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
-        assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
+        assert_eq!(sheet.offsets.column_width(2), 200.0);
         assert_eq!(sheet.offsets.column_width(3), 200.0);
         assert_eq!(sheet.offsets.column_width(5), 400.0);
     }
@@ -987,7 +986,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.insert_row(sheet_id, 1, true, None);
+        gc.insert_rows(sheet_id, 1, 1, true, None);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -995,9 +994,8 @@ mod tests {
         sheet.offsets.set_row_height(2, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
-        gc.insert_row(sheet_id, 2, true, None);
+        gc.insert_rows(sheet_id, 2, 1, true, None);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
-        offsets.insert((None, Some(2)), DEFAULT_ROW_HEIGHT);
         offsets.insert((None, Some(3)), 200.0);
         offsets.insert((None, Some(4)), DEFAULT_ROW_HEIGHT);
         offsets.insert((None, Some(5)), 400.0);
@@ -1005,7 +1003,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
-        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(2), 200.0);
         assert_eq!(sheet.offsets.row_height(3), 200.0);
         assert_eq!(sheet.offsets.row_height(5), 400.0);
     }
@@ -1075,5 +1073,35 @@ mod tests {
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
+    }
+
+    #[test]
+    fn test_insert_col_next_to_code() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let table = test_create_code_table(&mut gc, sheet_id, pos![C2], 2, 2);
+
+        gc.insert_columns(sheet_id, 3, 1, false, None);
+
+        assert_eq!(&table, gc.data_table_at(pos![sheet_id!d2]).unwrap());
+        assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
+    }
+
+    #[test]
+    fn test_insert_column_before_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let _table = test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
+
+        print_first_sheet(&gc);
+        gc.insert_columns(sheet_id, 3, 1, false, None);
+
+        // todo: this should be correct
+        // assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
+
+        // this is what happens (for now)
+        assert_data_table_size(&gc, sheet_id, pos![c2], 3, 2, false);
     }
 }

@@ -18,15 +18,15 @@ impl Sheet {
     pub fn code_columns_bounds(&self, column_start: i64, column_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
-        for (pos, data_table) in &self.data_tables {
-            let output_rect = data_table.output_rect(*pos, false);
-            if output_rect.min.x <= column_end && output_rect.max.x >= column_start {
+        for col in column_start..=column_end {
+            let (bound_start, bound_end) = self.data_tables.column_bounds(col);
+            if bound_start > 0 && bound_end > 0 {
                 min = min
-                    .map(|min| Some(min.min(output_rect.min.y)))
-                    .unwrap_or(Some(output_rect.min.y));
+                    .map(|min| Some(min.min(bound_start)))
+                    .unwrap_or(Some(bound_start));
                 max = max
-                    .map(|max| Some(max.max(output_rect.max.y)))
-                    .unwrap_or(Some(output_rect.max.y));
+                    .map(|max| Some(max.max(bound_end)))
+                    .unwrap_or(Some(bound_end));
             }
         }
         if let (Some(min), Some(max)) = (min, max) {
@@ -40,15 +40,15 @@ impl Sheet {
     pub fn code_rows_bounds(&self, row_start: i64, row_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
-        for (pos, data_table) in &self.data_tables {
-            let output_rect = data_table.output_rect(*pos, false);
-            if output_rect.min.y <= row_end && output_rect.max.y >= row_start {
+        for row in row_start..=row_end {
+            let (bound_start, bound_end) = self.data_tables.row_bounds(row);
+            if bound_start > 0 && bound_end > 0 {
                 min = min
-                    .map(|min| Some(min.min(output_rect.min.x)))
-                    .unwrap_or(Some(output_rect.min.x));
+                    .map(|min| Some(min.min(bound_start)))
+                    .unwrap_or(Some(bound_start));
                 max = max
-                    .map(|max| Some(max.max(output_rect.max.x)))
-                    .unwrap_or(Some(output_rect.max.x));
+                    .map(|max| Some(max.max(bound_end)))
+                    .unwrap_or(Some(bound_end));
             }
         }
         if let (Some(min), Some(max)) = (min, max) {
@@ -60,27 +60,24 @@ impl Sheet {
 
     // TODO(ddimaria): move to DataTable code
     /// Returns the DataTable that overlaps the Pos if it is an HTML or image chart.
-    pub fn chart_at(&self, pos: Pos) -> Option<(&Pos, &DataTable)> {
-        self.data_tables.iter().find(|(code_cell_pos, data_table)| {
-            data_table.is_html_or_image()
-                && data_table.output_rect(**code_cell_pos, false).contains(pos)
-        })
+    pub fn chart_at(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
+        let (data_table_pos, data_table) = self.data_table_that_contains(&pos)?;
+        if data_table.is_html_or_image() {
+            Some((data_table_pos, data_table))
+        } else {
+            None
+        }
     }
 
     /// Returns the DataTable if the pos intersects with the table header.
     pub fn table_header_at(&self, pos: Pos) -> Option<(Pos, Rect)> {
-        for (code_cell_pos, data_table) in &self.data_tables {
-            let output_rect = data_table.output_rect(*code_cell_pos, false);
-            if data_table.show_ui
-                && data_table.show_name
-                && pos.y == output_rect.min.y
-                && pos.x >= output_rect.min.x
-                && pos.x <= output_rect.max.x
-            {
-                return Some((*code_cell_pos, output_rect));
-            }
+        let (data_table_pos, data_table) = self.data_table_that_contains(&pos)?;
+        let output_rect = data_table.output_rect(data_table_pos, false);
+        if data_table.get_show_name() && pos.y == output_rect.min.y {
+            Some((data_table_pos, output_rect))
+        } else {
+            None
         }
-        None
     }
 
     /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
@@ -88,33 +85,28 @@ impl Sheet {
     /// included.
     /// If ignore_readonly is true, it will ignore readonly tables.
     pub fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
-        self.data_tables.iter().any(|(code_cell_pos, data_table)| {
-            if ignore_readonly && data_table.readonly {
-                return false;
-            }
-
-            data_table.output_rect(*code_cell_pos, false).contains(pos)
-        })
+        self.data_table_that_contains(&pos)
+            .is_some_and(|(_, data_table)| !ignore_readonly || !data_table.is_code())
     }
 
     /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
     /// the DataTable's output_rect for the check to ensure that charts are
     /// included. Ignores Blanks.
     pub fn has_table_content_ignore_blanks(&self, pos: Pos) -> bool {
-        self.data_tables.iter().any(|(code_cell_pos, data_table)| {
-            data_table.output_rect(*code_cell_pos, false).contains(pos)
-                && (data_table
-                    .cell_value_ref_at(
-                        (pos.x - code_cell_pos.x) as u32,
-                        (pos.y - code_cell_pos.y) as u32,
-                    )
-                    .is_some_and(|cell_value| {
-                        !cell_value.is_blank_or_empty_string() && cell_value != &CellValue::Blank
-                    })
-                    || data_table.is_html_or_image()
-                    // also check if its the table name (the entire width of the table is valid for content)
-                    || (data_table.show_ui && data_table.show_name && pos.y == code_cell_pos.y))
-        })
+        self.data_table_that_contains(&pos)
+            .is_some_and(|(code_cell_pos, data_table)| {
+                data_table
+                        .cell_value_ref_at(
+                            (pos.x - code_cell_pos.x) as u32,
+                            (pos.y - code_cell_pos.y) as u32,
+                        )
+                        .is_some_and(|cell_value| {
+                            !cell_value.is_blank_or_empty_string()
+                        })
+                        || data_table.is_html_or_image()
+                        // also check if its the table name (the entire width of the table is valid for content)
+                        || (data_table.get_show_name() && pos.y == code_cell_pos.y)
+            })
     }
 
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
@@ -122,18 +114,11 @@ impl Sheet {
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        self.data_tables
-            .iter()
-            .find_map(|(code_cell_pos, data_table)| {
-                if data_table.output_rect(*code_cell_pos, false).contains(pos) {
-                    data_table.cell_value_at(
-                        (pos.x - code_cell_pos.x) as u32,
-                        (pos.y - code_cell_pos.y) as u32,
-                    )
-                } else {
-                    None
-                }
-            })
+        let (data_table_pos, data_table) = self.data_table_that_contains(&pos)?;
+        data_table.cell_value_at(
+            (pos.x - data_table_pos.x) as u32,
+            (pos.y - data_table_pos.y) as u32,
+        )
     }
 
     /// TODO(ddimaria): move to DataTable code
@@ -166,11 +151,7 @@ impl Sheet {
     /// Returns true if the value was set.
     /// TODO(ddimaria): move to DataTable code
     pub fn set_code_cell_value(&mut self, pos: Pos, value: CellValue) -> bool {
-        self.data_tables
-            .iter_mut()
-            .find(|(code_cell_pos, data_table)| {
-                data_table.output_rect(**code_cell_pos, false).contains(pos)
-            })
+        self.data_table_mut_that_contains(&pos)
             .map(|(code_cell_pos, data_table)| {
                 let x = (pos.x - code_cell_pos.x) as u32;
                 let y = (pos.y - code_cell_pos.y) as u32;
@@ -181,15 +162,8 @@ impl Sheet {
 
     /// TODO(ddimaria): move to DataTable code
     pub fn set_code_cell_values(&mut self, pos: Pos, mut values: CellValues) {
-        if let Some((code_cell_pos, data_table)) =
-            self.data_tables
-                .iter_mut()
-                .find(|(code_cell_pos, data_table)| {
-                    data_table.output_rect(**code_cell_pos, false).contains(pos)
-                })
-        {
+        if let Some((code_cell_pos, data_table)) = self.data_table_mut_that_contains(&pos) {
             let rect = Rect::from(&values);
-
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);
@@ -203,13 +177,10 @@ impl Sheet {
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
-        self.data_tables
-            .iter()
-            .filter_map(move |(pos, data_table)| {
-                let output_rect = data_table.output_rect(*pos, false);
-                output_rect
-                    .intersects(rect)
-                    .then_some((output_rect, data_table))
+        self.data_tables_intersect_rect(rect)
+            .map(|(_, pos, data_table)| {
+                let output_rect = data_table.output_rect(pos, false);
+                (output_rect, data_table)
             })
     }
 
@@ -217,29 +188,13 @@ impl Sheet {
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
-        self.data_tables
-            .iter()
-            .filter_map(move |(pos, data_table)| {
-                let output_rect = data_table.output_rect(*pos, false);
+        self.data_tables_intersect_rect(rect)
+            .filter_map(move |(_, pos, data_table)| {
+                let output_rect = data_table.output_rect(pos, false);
                 output_rect
                     .intersection(&rect)
                     .map(|intersection_rect| (output_rect, intersection_rect, data_table))
             })
-    }
-
-    /// Returns whether a rect overlaps the output of a code cell.
-    /// It will only check code_cells until it finds the data_table at code_pos (since later data_tables do not cause spills in earlier ones)
-    pub fn has_code_cell_in_rect(&self, rect: &Rect, code_pos: Pos) -> bool {
-        for (pos, data_table) in &self.data_tables {
-            if pos == &code_pos {
-                // once we reach the code_cell, we can stop checking
-                return false;
-            }
-            if data_table.output_rect(*pos, false).intersects(*rect) {
-                return true;
-            }
-        }
-        false
     }
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
@@ -249,20 +204,17 @@ impl Sheet {
         let cell_value = if let Some(cell_value) = self.cell_value(pos) {
             Some(cell_value)
         } else {
-            self.data_tables
-                .iter()
-                .find_map(|(data_table_pos, data_table)| {
-                    if data_table.output_rect(*data_table_pos, false).contains(pos) {
-                        if let Some(code_value) = self.cell_value(*data_table_pos) {
-                            code_pos = *data_table_pos;
-                            Some(code_value)
-                        } else {
-                            None
-                        }
+            match self.data_table_pos_that_contains(&pos) {
+                Ok(data_table_pos) => {
+                    if let Some(code_value) = self.cell_value(data_table_pos) {
+                        code_pos = data_table_pos;
+                        Some(code_value)
                     } else {
                         None
                     }
-                })
+                }
+                Err(_) => None,
+            }
         };
 
         match cell_value?.code_cell_value() {
@@ -277,10 +229,10 @@ impl Sheet {
                     code_cell_value.code = replaced;
                 }
 
-                if let Some(data_table) = self.data_table(code_pos) {
+                if let Some(data_table) = self.data_table_at(&code_pos) {
                     let evaluation_result =
                         serde_json::to_string(&data_table.value).unwrap_or("".into());
-                    let spill_error = if data_table.spill_error {
+                    let spill_error = if data_table.has_spill() {
                         Some(self.find_spill_error_reasons(
                             &data_table.output_rect(code_pos, true),
                             code_pos,
@@ -369,6 +321,8 @@ mod test {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "=".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -382,8 +336,8 @@ mod test {
             "Table 1",
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
@@ -430,8 +384,8 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "should cause spill".into(),
@@ -439,8 +393,8 @@ mod test {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -449,15 +403,15 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.cell_value(Pos { x: 1, y: 0 }),
+            sheet.cell_value(Pos { x: 2, y: 1 }),
             Some("should cause spill".into())
         );
-        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1), gc.a1_context());
+        let render = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
         let code = sheet
-            .edit_code_value(Pos { x: 0, y: 0 }, gc.a1_context())
+            .edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context())
             .unwrap();
-        assert_eq!(code.spill_error, Some(vec![Pos { x: 1, y: 0 }]));
+        assert_eq!(code.spill_error, Some(vec![Pos { x: 2, y: 1 }]));
     }
 
     #[test]
@@ -466,6 +420,8 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -479,21 +435,21 @@ mod test {
             "Table 1",
             Value::Array(Array::from(vec![vec!["1"], vec!["2"], vec!["3"]])),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
-        sheet.set_data_table(Pos { x: 2, y: 3 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 2, y: 2 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 3, y: 4 }, Some(data_table.clone()));
 
-        assert_eq!(sheet.code_columns_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_columns_bounds(1, 1), Some(1..4));
-        assert_eq!(sheet.code_columns_bounds(1, 2), Some(1..6));
-        assert_eq!(sheet.code_columns_bounds(0, 2), Some(0..6));
-        assert_eq!(sheet.code_columns_bounds(-10, 0), Some(0..3));
-        assert_eq!(sheet.code_columns_bounds(2, 5), Some(3..6));
-        assert_eq!(sheet.code_columns_bounds(10, 10), None);
+        assert_eq!(sheet.code_columns_bounds(2, 2), Some(2..5));
+        assert_eq!(sheet.code_columns_bounds(2, 3), Some(2..7));
+        assert_eq!(sheet.code_columns_bounds(1, 3), Some(1..7));
+        assert_eq!(sheet.code_columns_bounds(-9, 1), Some(1..4));
+        assert_eq!(sheet.code_columns_bounds(3, 6), Some(4..7));
+        assert_eq!(sheet.code_columns_bounds(11, 11), None);
     }
 
     #[test]
@@ -502,6 +458,8 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".to_string(),
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -515,21 +473,21 @@ mod test {
             "Table 1",
             Value::Array(Array::from(vec![vec!["1", "2", "3'"]])),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
-        sheet.set_data_table(Pos { x: 3, y: 2 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 2, y: 2 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 4, y: 3 }, Some(data_table.clone()));
 
-        assert_eq!(sheet.code_rows_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_rows_bounds(1, 1), Some(1..4));
-        assert_eq!(sheet.code_rows_bounds(1, 2), Some(1..6));
-        assert_eq!(sheet.code_rows_bounds(0, 2), Some(0..6));
-        assert_eq!(sheet.code_rows_bounds(-10, 0), Some(0..3));
-        assert_eq!(sheet.code_rows_bounds(2, 5), Some(3..6));
-        assert_eq!(sheet.code_rows_bounds(10, 10), None);
+        assert_eq!(sheet.code_rows_bounds(2, 2), Some(2..5));
+        assert_eq!(sheet.code_rows_bounds(2, 3), Some(2..7));
+        assert_eq!(sheet.code_rows_bounds(1, 3), Some(1..7));
+        assert_eq!(sheet.code_rows_bounds(-9, 1), Some(1..4));
+        assert_eq!(sheet.code_rows_bounds(3, 6), Some(4..7));
+        assert_eq!(sheet.code_rows_bounds(11, 11), None);
     }
 
     #[test]
@@ -542,8 +500,8 @@ mod test {
             "Table 1",
             CellValue::Html("<html></html>".to_string()).into(),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         dt.chart_output = Some((2, 2));
@@ -558,7 +516,7 @@ mod test {
         );
         sheet.set_data_table(pos, Some(dt.clone()));
 
-        assert_eq!(sheet.chart_at(pos), Some((&pos, &dt)));
-        assert_eq!(sheet.chart_at(Pos { x: 2, y: 2 }), Some((&pos, &dt)));
+        assert_eq!(sheet.chart_at(pos), Some((pos, &dt)));
+        assert_eq!(sheet.chart_at(Pos { x: 2, y: 2 }), Some((pos, &dt)));
     }
 }

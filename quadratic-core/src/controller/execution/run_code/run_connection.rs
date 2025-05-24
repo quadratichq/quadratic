@@ -5,7 +5,7 @@ use crate::{
     RunError, RunErrorMsg, SheetPos,
     a1::{A1Error, A1Selection},
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{CodeCellLanguage, ConnectionKind, SheetId},
+    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind, SheetId},
 };
 
 use lazy_static::lazy_static;
@@ -109,7 +109,11 @@ impl GridController {
 
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        transaction.waiting_for_async = Some(CodeCellLanguage::Connection { kind, id });
+        let code_cell = CodeCellValue {
+            language: CodeCellLanguage::Connection { kind, id },
+            code,
+        };
+        transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
     }
 }
@@ -257,7 +261,7 @@ mod tests {
             );
 
             let sheet = gc.sheet(sheet_id);
-            let code_cell = sheet.data_table(Pos { x: 10, y: 10 });
+            let code_cell = sheet.data_table_at(&Pos { x: 10, y: 10 });
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {

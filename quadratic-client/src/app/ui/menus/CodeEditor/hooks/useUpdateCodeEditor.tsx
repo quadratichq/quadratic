@@ -9,7 +9,7 @@ export const useUpdateCodeEditor = () => {
         sheetId: string,
         x: number,
         y: number,
-        codeCell?: JsCodeCell,
+        codeCell: JsCodeCell | null | undefined,
         initialCode?: string,
         usePrevEditorContent?: boolean
       ) => {

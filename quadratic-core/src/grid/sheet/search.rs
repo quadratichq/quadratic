@@ -119,8 +119,8 @@ impl Sheet {
     ) -> Vec<SheetPos> {
         let mut results = vec![];
         self.data_tables
-            .iter()
-            .filter(|(_, data_table)| !data_table.spill_error && !data_table.has_error())
+            .expensive_iter()
+            .filter(|(_, data_table)| !data_table.has_spill() && !data_table.has_error())
             .for_each(|(pos, data_table)| match &data_table.value {
                 Value::Single(v) => {
                     if self.compare_cell_value(
@@ -206,11 +206,7 @@ impl Sheet {
     /// current input value.
     pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
         let mut text = vec![];
-        if let Ok(data_table_pos) = self.first_data_table_within(pos) {
-            let Some(data_table) = self.data_tables.get(&data_table_pos) else {
-                return text;
-            };
-
+        if let Some((data_table_pos, data_table)) = self.data_table_that_contains(&pos) {
             let Ok(display_column_index) = u32::try_from(pos.x - data_table_pos.x) else {
                 return text;
             };
@@ -238,7 +234,7 @@ impl Sheet {
                     text.push(cell.to_string());
                 }
             }
-        } else if let Some(column) = self.columns.get(&pos.x) {
+        } else if let Some(column) = self.columns.get_column(pos.x) {
             // walk forwards
             let mut y = pos.y + 1;
             while let Some(CellValue::Text(t)) = column.values.get(&y) {
@@ -530,6 +526,8 @@ mod test {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "hello".into(),
             error: None,
             std_out: None,
             std_err: None,
@@ -543,8 +541,8 @@ mod test {
             "Table 1",
             Value::Single("world".into()),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
@@ -574,6 +572,8 @@ mod test {
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".into(),
             error: None,
             std_out: None,
             std_err: None,
@@ -590,8 +590,8 @@ mod test {
                 vec!["jkl", "mno", "pqr"],
             ])),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
@@ -726,9 +726,13 @@ mod test {
         assert!(!neighbors.contains(&"hello".to_string()));
 
         // hide first column
-        let data_table = sheet.data_table_mut(pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
-        column_headers[0].display = false;
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                let column_headers = dt.column_headers.as_mut().unwrap();
+                column_headers[0].display = false;
+                Ok(())
+            })
+            .unwrap();
 
         let neighbors = sheet.neighbor_text(pos![E12]);
         assert_eq!(neighbors, vec!["MA", "MO", "NH", "NJ", "OH", "region"]);

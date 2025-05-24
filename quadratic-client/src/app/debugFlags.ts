@@ -67,6 +67,8 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
 
+export const debugShowVersionCheck = debug && true;
+
 export const debugSaveURLState = debug && false;
 
 // --------
@@ -74,6 +76,8 @@ export const debugSaveURLState = debug && false;
 // --------
 
 export const debugShowUILogs = debug && false;
+
+export const debugShowFocus = debug && false;
 
 //-----------
 // WebWorkers

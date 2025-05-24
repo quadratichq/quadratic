@@ -20,10 +20,10 @@ export class Control {
   files?: ChildProcessWithoutNullStreams;
   connection?: ChildProcessWithoutNullStreams;
   python?: ChildProcessWithoutNullStreams;
-  rustClient?: ChildProcessWithoutNullStreams;
   db?: ChildProcessWithoutNullStreams;
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
+  shared?: ChildProcessWithoutNullStreams;
 
   signals: Record<string, AbortController> = {};
 
@@ -35,12 +35,12 @@ export class Control {
     files: false,
     connection: false,
     python: false,
-    rustClient: false,
     types: false,
     db: false,
     npm: false,
     postgres: false,
     redis: false,
+    shared: false,
   };
 
   constructor(cli: CLI) {
@@ -60,7 +60,7 @@ export class Control {
       this.kill("files"),
       this.kill("connection"),
       this.kill("python"),
-      this.kill("rustClient"),
+      this.kill("shared"),
     ]);
     process.exit(0);
   }
@@ -73,7 +73,7 @@ export class Control {
       error: string | string[];
       start: string | string[];
     },
-    successCallback?: () => void
+    successCallback?: () => void,
   ) {
     const response = data.toString();
     if (
@@ -136,7 +136,7 @@ export class Control {
     try {
       this.ui.print(
         "api",
-        "killing port 8000 to ensure it's really good and dead..."
+        "killing port 8000 to ensure it's really good and dead...",
       );
       await killPort(8000);
       // need to ignore the error if there is no process running on port 8000
@@ -155,7 +155,7 @@ export class Control {
         this.cli.options.api ? "start" : "start-no-watch",
         "--workspace=quadratic-api",
       ],
-      { signal: this.signals.api.signal }
+      { signal: this.signals.api.signal },
     );
     this.ui.printOutput("api", (data) =>
       this.handleResponse(
@@ -179,8 +179,8 @@ export class Control {
               this.runConnection();
             }
           }
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -194,7 +194,7 @@ export class Control {
     this.status.types = false;
     await this.kill("types");
     if (!this.cli.options.skipTypes || restart) {
-      this.types = spawn("npm run compile --workspace=quadratic-shared && npm run build:wasm:types", { shell: true });
+      this.types = spawn("npm run build:wasm:types", { shell: true });
       this.ui.printOutput("types", (data) => {
         this.handleResponse("types", data, {
           success: "Running ",
@@ -231,7 +231,7 @@ export class Control {
         ],
         {
           signal: this.signals.client.signal,
-        }
+        },
       );
       this.ui.printOutput("client", (data) => {
         this.handleResponse("client", data, {
@@ -243,7 +243,7 @@ export class Control {
           this.ui.print(
             "client",
             "React failed to run. Trying again...",
-            "red"
+            "red",
           );
           this.runClient();
         }
@@ -259,7 +259,6 @@ export class Control {
   togglePerf() {
     this.cli.options.perf = !this.cli.options.perf;
     this.restartCore();
-    this.restartRustClient();
   }
 
   async runCore(restart?: boolean) {
@@ -281,7 +280,7 @@ export class Control {
           ? `${this.cli.options.core ? "watch" : "build"}:wasm:perf:javascript`
           : `${this.cli.options.core ? "watch" : "build"}:wasm:javascript`,
       ],
-      { signal: this.signals.core.signal }
+      { signal: this.signals.core.signal },
     );
     this.ui.printOutput("core", (data) =>
       this.handleResponse(
@@ -297,8 +296,8 @@ export class Control {
             this.runNpmInstall();
             firstRun = false;
           }
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -346,7 +345,7 @@ export class Control {
     try {
       this.ui.print(
         "multiplayer",
-        "killing port 3001 to ensure it's really good and dead..."
+        "killing port 3001 to ensure it's really good and dead...",
       );
       await killPort(3001);
       // need to ignore the error if there is no process running on port 3001
@@ -357,24 +356,20 @@ export class Control {
     this.multiplayer = spawn(
       "cargo",
       this.cli.options.multiplayer
-        ? [
-            "watch",
-            "-x",
-            "run -p quadratic-multiplayer --target-dir=target",
-          ]
+        ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
         : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"],
       {
         signal: this.signals.multiplayer.signal,
         cwd: "quadratic-multiplayer",
         env: { ...process.env, RUST_LOG: "info" },
-      }
+      },
     );
     this.ui.printOutput("multiplayer", (data) =>
       this.handleResponse("multiplayer", data, {
         success: "listening on",
         error: "error[",
         start: "    Compiling",
-      })
+      }),
     );
   }
 
@@ -394,7 +389,7 @@ export class Control {
     try {
       this.ui.print(
         "files",
-        "killing port 3002 to ensure it's really good and dead..."
+        "killing port 3002 to ensure it's really good and dead...",
       );
       await killPort(3002);
       // need to ignore the error if there is no process running on port 3001
@@ -404,17 +399,13 @@ export class Control {
     this.files = spawn(
       "cargo",
       this.cli.options.files
-        ? [
-            "watch",
-            "-x",
-            "run -p quadratic-files --target-dir=target",
-          ]
+        ? ["watch", "-x", "run -p quadratic-files --target-dir=target"]
         : ["run", "-p", "quadratic-files", "--target-dir=target"],
       {
         signal: this.signals.files.signal,
         cwd: "quadratic-files",
         env: { ...process.env, RUST_LOG: "info" },
-      }
+      },
     );
     this.ui.printOutput("files", (data) => {
       this.handleResponse("files", data, {
@@ -446,6 +437,64 @@ export class Control {
     }
   }
 
+  async runShared(restart?: boolean) {
+    if (this.quitting) return;
+    if (this.status.shared === "killed") return;
+    this.status.shared = false;
+    this.ui.print("shared");
+    await this.kill("shared");
+
+    let firstRun = true;
+
+    this.signals.shared = new AbortController();
+    this.shared = spawn(
+      `npm run ${this.cli.options.shared ? "watch" : "compile"} --workspace=quadratic-shared`,
+      {
+        signal: this.signals.shared.signal,
+        shell: true,
+      },
+    );
+    this.ui.printOutput("shared", (data) => {
+      this.handleResponse(
+        "shared",
+        data,
+        {
+          success: [" 0 errors.", "successfully"],
+          error: ["error"],
+          start: "Starting",
+        },
+        () => {
+          if (firstRun && !restart) {
+            firstRun = false;
+            if (this.status.db !== "killed" && !this.db) {
+              this.runDb();
+            }
+          }
+        },
+      );
+    });
+  }
+
+  async restartShared() {
+    this.cli.options.shared = !this.cli.options.shared;
+    if (this.shared) {
+      this.runShared(true);
+    }
+  }
+
+  async killShared() {
+    if (this.status.shared === "killed") {
+      this.status.shared = false;
+      this.ui.print("shared", "restarting...");
+      this.runShared();
+    } else {
+      if (this.shared) {
+        await this.kill("shared");
+        this.ui.print("shared", "killed", "red");
+      }
+      this.status.shared = "killed";
+    }
+  }
   async runConnection() {
     if (this.quitting) return;
     if (this.status.connection === "killed") return;
@@ -455,7 +504,7 @@ export class Control {
     try {
       this.ui.print(
         "connection",
-        "killing port 3003 to ensure it's really good and dead..."
+        "killing port 3003 to ensure it's really good and dead...",
       );
       await killPort(3003);
       // need to ignore the error if there is no process running on port 3001
@@ -465,17 +514,13 @@ export class Control {
     this.connection = spawn(
       "cargo",
       this.cli.options.connection
-        ? [
-            "watch",
-            "-x",
-            "run -p quadratic-connection --target-dir=target",
-          ]
+        ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
         : ["run", "-p", "quadratic-connection", "--target-dir=target"],
       {
         signal: this.signals.connection.signal,
         cwd: "quadratic-connection",
         env: { ...process.env, RUST_LOG: "info" },
-      }
+      },
     );
     this.ui.printOutput("connection", (data) => {
       this.handleResponse("connection", data, {
@@ -506,6 +551,7 @@ export class Control {
       this.status.connection = "killed";
     }
   }
+
   async runPython() {
     if (this.quitting) return;
     this.status.python = false;
@@ -515,48 +561,20 @@ export class Control {
     this.python = spawn(
       "npm",
       ["run", this.cli.options.python ? "watch:python" : "build:python"],
-      { signal: this.signals.python.signal }
+      { signal: this.signals.python.signal },
     );
     this.ui.printOutput("python", (data) =>
       this.handleResponse("python", data, {
         success: "Python complete",
         error: "Python error!",
         start: "quadratic-kernels/python-wasm/",
-      })
+      }),
     );
   }
 
   async restartPython() {
     this.cli.options.python = !this.cli.options.python;
     this.runPython();
-  }
-
-  async runRustClient() {
-    if (this.quitting) return;
-    this.status.rustClient = false;
-    await this.kill("rustClient");
-    this.ui.print("rustClient");
-    this.signals.rustClient = new AbortController();
-    this.rustClient = spawn(
-      "npm",
-      [
-        "run",
-          `${this.cli.options.rustClient ? "watch" : "build"}:rust-client${this.cli.options.perf ? ":perf" : ""}`
-      ],
-      { signal: this.signals.rustClient.signal }
-    );
-    this.ui.printOutput("rustClient", (data) =>
-      this.handleResponse("rustClient", data, {
-        success: "Your wasm pkg is ready to publish",
-        error: "error[",
-        start: "[Running ",
-      })
-    );
-  }
-
-  async restartRustClient() {
-    this.cli.options.rustClient = !this.cli.options.rustClient;
-    this.runRustClient();
   }
 
   async runDb() {
@@ -612,7 +630,6 @@ export class Control {
       }
       this.runTypes();
       this.runCore();
-      this.runRustClient();
     });
   }
 
@@ -665,7 +682,7 @@ export class Control {
     this.ui = ui;
     this.checkServices();
     this.runRust();
-    this.runDb();
     this.runPython();
+    this.runShared();
   }
 }

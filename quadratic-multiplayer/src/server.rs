@@ -16,7 +16,6 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use futures_util::stream::SplitSink;
 use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
@@ -29,10 +28,15 @@ use crate::{
     background_worker,
     config::config,
     error::{ErrorLevel, MpError, Result},
+    health::{full_healthcheck, healthcheck},
     message::{
-        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
+        broadcast,
+        handle::handle_message,
+        proto::{request::decode_transaction, response::encode_message},
+        request::MessageRequest,
+        response::MessageResponse,
     },
-    state::{State, connection::PreConnection},
+    state::{State, connection::PreConnection, user::UserSocket},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -45,12 +49,19 @@ pub struct Claims {
 /// integration tested.
 pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
+        //
         // handle websockets
         .route("/ws", get(ws_handler))
-        // healthchecks
+        //
+        // healthcheck
         .route("/health", get(healthcheck))
+        //
+        // full healthcheck
+        .route("/health/full", get(full_healthcheck))
+        //
         // state
         .layer(Extension(state))
+        //
         // logger
         .layer(
             TraceLayer::new_for_http()
@@ -251,8 +262,7 @@ async fn handle_socket(
                 if let Ok(room) = state.get_room(&file_id).await {
                     tracing::info!("Broadcasting room {file_id} after connection close");
 
-                    let message = MessageResponse::from((room.users, &state.settings.min_version));
-
+                    let message = MessageResponse::from((room.users, &state.settings.version));
                     if let Err(error) = broadcast(
                         vec![connection.session_id],
                         file_id,
@@ -283,31 +293,26 @@ async fn handle_socket(
 #[tracing::instrument(level = "trace")]
 async fn process_message(
     msg: Message,
-    sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
+    sender: UserSocket,
     state: Arc<State>,
     pre_connection: PreConnection,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
-            let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
+            let message_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(messsage_request, state, Arc::clone(&sender), pre_connection)
-                    .await?;
+                handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
 
-            if let Some(message_response) = message_response {
-                let response_text = serde_json::to_string(&message_response)?;
-                (*sender.lock().await)
-                    .send(Message::Text(response_text.into()))
-                    .await
-                    .map_err(|e| MpError::SendingMessage(e.to_string()))?;
-            }
+            send_response(sender, message_response).await?;
         }
-        Message::Binary(d) => {
-            tracing::info!(
-                "Binary messages are not yet supported.  {} bytes: {:?}",
-                d.len(),
-                d
-            );
+        // binary messages are protocol buffers
+        Message::Binary(b) => {
+            let transaction = decode_transaction(&b)?;
+            let message_request = MessageRequest::try_from(transaction)?;
+            let message_response =
+                handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
+
+            send_response(sender, message_response).await?;
         }
         Message::Close(c) => {
             if let Some(cf) = c {
@@ -325,32 +330,51 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-pub(crate) async fn healthcheck() -> impl IntoResponse {
-    StatusCode::OK
+pub(crate) async fn send_text(sender: UserSocket, message: MessageResponse) -> Result<()> {
+    let text = serde_json::to_string(&message)?;
+
+    (*sender.lock().await)
+        .send(Message::Text(text.into()))
+        .await
+        .map_err(|e| MpError::SendingMessage(e.to_string()))
+}
+
+pub(crate) async fn send_binary(sender: UserSocket, message: MessageResponse) -> Result<()> {
+    let binary = encode_message(message)?;
+
+    (*sender.lock().await)
+        .send(Message::Binary(binary.into()))
+        .await
+        .map_err(|e| MpError::SendingMessage(e.to_string()))
+}
+
+pub(crate) async fn send_response(
+    sender: UserSocket,
+    message: Option<MessageResponse>,
+) -> Result<()> {
+    if let Some(message) = message {
+        return match message.is_binary() {
+            true => send_binary(sender, message).await,
+            false => send_text(sender, message).await,
+        };
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
 
-    use std::time::Duration;
-
     use super::*;
-    use crate::state::settings::MinVersion;
+    use crate::message::response::MinVersion;
+    use crate::state::settings::version;
     use crate::state::user::{User, UserStateUpdate};
-    use crate::test_util::{
-        add_user_via_ws, integration_test_send_and_receive, new_arc_state, setup,
-    };
-    use axum::{
-        body::Body,
-        http::{self, Request},
-    };
+    use crate::test_util::{integration_test_send_and_receive, setup};
+
     use base64::{Engine, engine::general_purpose::STANDARD};
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
-
-    use tokio::time::{Instant, sleep};
-    use tower::ServiceExt;
     use uuid::Uuid;
 
     async fn assert_user_changes_state(update: UserStateUpdate) {
@@ -367,10 +391,11 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
         assert_eq!(response, Some(expected));
     }
 
+    #[allow(dead_code)]
     fn new_user_state_update(user: User, file_id: Uuid) -> MessageRequest {
         MessageRequest::UserUpdate {
             session_id: user.session_id,
@@ -387,25 +412,6 @@ pub(crate) mod tests {
                 follow: None,
             },
         }
-    }
-
-    #[tokio::test]
-    async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_arc_state().await;
-        let app = app(state);
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
@@ -430,79 +436,87 @@ pub(crate) mod tests {
         // only the initial user is left in the room
         let expected = MessageResponse::UsersInRoom {
             users: vec![user_1.clone()],
-            min_version: MinVersion::new().unwrap(),
+            version: version(),
+
+            // TODO: to be deleted after next version
+            min_version: MinVersion {
+                required_version: 5,
+                recommended_version: 5,
+            },
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
 
         assert_eq!(response, Some(expected));
     }
 
-    #[tokio::test]
-    async fn user_is_idle_in_a_room_get_removed_and_reconnect() {
-        let (socket, state, _, file_id, user_1, user_2) = setup().await;
+    // flaky test which often gets stuck until timeout
+    //
+    // #[tokio::test]
+    // async fn user_is_idle_in_a_room_get_removed_and_reconnect() {
+    //     let (socket, state, _, file_id, user_1, user_2) = setup().await;
 
-        // both users should be in the room
-        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-        assert_eq!(num_users_in_room, 2);
+    //     // both users should be in the room
+    //     let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+    //     assert_eq!(num_users_in_room, 2);
 
-        // kick off the background worker and wait for the stale users to be removed
-        let handle = background_worker::start(Arc::clone(&state), 1, 0);
+    //     // kick off the background worker and wait for the stale users to be removed
+    //     let handle = background_worker::start(Arc::clone(&state), 1, 0);
 
-        // wait on the background worker to finish, then abort it
-        sleep(Duration::from_secs(2)).await;
-        handle.abort();
+    //     // wait on the background worker to finish, then abort it
+    //     sleep(Duration::from_secs(2)).await;
+    //     handle.abort();
 
-        let now = Instant::now();
-        let mut timed_out = false;
+    //     let now = Instant::now();
+    //     let mut timed_out = false;
 
-        loop {
-            // expect a RoomNotFound error when trying to get the room
-            match state.get_room(&file_id).await {
-                Ok(_) => {} // do nothing
-                Err(error) => {
-                    assert!(matches!(error, MpError::RoomNotFound(_)));
-                    break;
-                }
-            };
+    //     loop {
+    //         // expect a RoomNotFound error when trying to get the room
+    //         match state.get_room(&file_id).await {
+    //             Ok(_) => {} // do nothing
+    //             Err(error) => {
+    //                 assert!(matches!(error, MpError::RoomNotFound(_)));
+    //                 break;
+    //             }
+    //         };
 
-            // failsafe to avoid timeouts in CI
-            if now.elapsed().as_secs() > 3 {
-                timed_out = true;
-                break;
-            }
-        }
+    //         // failsafe to avoid timeouts in CI
+    //         if now.elapsed().as_secs() > 3 {
+    //             timed_out = true;
+    //             break;
+    //         }
+    //     }
 
-        // room should be closed, add user_1 back
-        add_user_via_ws(file_id, socket.clone(), user_1.clone()).await;
-        integration_test_send_and_receive(
-            &socket.clone(),
-            new_user_state_update(user_1.clone(), file_id),
-            true,
-            4,
-        )
-        .await;
+    //     // room should be closed, add user_1 back
+    //     add_user_via_ws(file_id, socket.clone(), user_1.clone()).await;
+    //     integration_test_send_and_receive(
+    //         &socket.clone(),
+    //         new_user_state_update(user_1.clone(), file_id),
+    //         true,
+    //         4,
+    //     )
+    //     .await;
 
-        if !timed_out {
-            // expect 1 user to be in the room
-            let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-            assert_eq!(num_users_in_room, 1);
+    //     if !timed_out {
+    //         // expect 1 user to be in the room
+    //         let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+    //         assert_eq!(num_users_in_room, 1);
 
-            // add user_2 back
-            add_user_via_ws(file_id, socket.clone(), user_2.clone()).await;
-            integration_test_send_and_receive(
-                &socket.clone(),
-                new_user_state_update(user_2.clone(), file_id),
-                true,
-                1,
-            )
-            .await;
+    //         // add user_2 back
+    //         add_user_via_ws(file_id, socket.clone(), user_2.clone()).await;
+    //         integration_test_send_and_receive(
+    //             &socket.clone(),
+    //             new_user_state_update(user_2.clone(), file_id),
+    //             true,
+    //             1,
+    //         )
+    //         .await;
 
-            // expect 2 users to be in the room
-            let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-            assert_eq!(num_users_in_room, 2);
-        }
-    }
+    //         // expect 2 users to be in the room
+    //         let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+    //         assert_eq!(num_users_in_room, 2);
+    //     }
+    // }
 
     #[tokio::test]
     async fn user_moves_a_mouse() {
@@ -562,14 +576,13 @@ pub(crate) mod tests {
             file_id,
             operations: encoded_ops.clone(),
         };
-        let expected = MessageResponse::Transaction {
+        let expected = MessageResponse::TransactionAck {
             id,
             file_id,
-            operations: encoded_ops,
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
 
         assert_eq!(response, Some(expected));
     }

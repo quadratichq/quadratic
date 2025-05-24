@@ -4,7 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
-import { formatDateTime, formatTime, parseTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { formatDateTime, formatTime, parseTime } from '@/app/quadratic-core/quadratic_core';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';

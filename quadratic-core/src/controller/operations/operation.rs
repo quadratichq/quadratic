@@ -3,16 +3,16 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, CopyFormats, SheetPos, SheetRect,
+    CellValue, ClearOption, CopyFormats, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
-        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
+        DataTable, DataTableKind, Sheet, SheetId,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
         formatting::CellFmtArray,
-        js_types::JsRowHeight,
+        js_types::{JsColumnWidth, JsRowHeight},
         sheet::{
             borders::{
                 BordersUpdates,
@@ -85,6 +85,7 @@ pub enum Operation {
     GridToDataTable {
         sheet_rect: SheetRect,
     },
+    // **Deprecated** and replaced with DataTableOptionMeta
     DataTableMeta {
         sheet_pos: SheetPos,
         name: Option<String>,
@@ -94,6 +95,14 @@ pub enum Operation {
         show_name: Option<bool>,
         show_columns: Option<bool>,
         readonly: Option<bool>,
+    },
+    DataTableOptionMeta {
+        sheet_pos: SheetPos,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumnHeader>>,
+        show_name: Option<ClearOption<bool>>,
+        show_columns: Option<ClearOption<bool>>,
     },
     DataTableFormats {
         sheet_pos: SheetPos,
@@ -175,20 +184,6 @@ pub enum Operation {
 
         // select the table after the operation
         select_table: bool,
-    },
-    SetCodeRun {
-        sheet_pos: SheetPos,
-        code_run: Option<CodeRunOld>,
-        index: usize,
-    },
-    /// Sets a code run.
-    SetCodeRunVersion {
-        sheet_pos: SheetPos,
-        code_run: Option<CodeRunOld>,
-        index: usize,
-
-        /// Simple version for tracking breaking changes to [`CodeRun`].
-        version: u16,
     },
     /// Runs the code cell at a specific position.
     ComputeCode {
@@ -283,10 +278,28 @@ pub enum Operation {
         client_resized: bool,
     },
 
+    /// Resizes multiple columns.
+    ResizeColumns {
+        sheet_id: SheetId,
+        column_widths: Vec<JsColumnWidth>,
+    },
+
     /// Resizes several rows.
     ResizeRows {
         sheet_id: SheetId,
         row_heights: Vec<JsRowHeight>,
+    },
+
+    /// Changes the default row size
+    DefaultRowSize {
+        sheet_id: SheetId,
+        size: f64,
+    },
+
+    /// Changes the default column size
+    DefaultColumnSize {
+        sheet_id: SheetId,
+        size: f64,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.

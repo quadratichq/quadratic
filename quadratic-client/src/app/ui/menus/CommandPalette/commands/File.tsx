@@ -9,7 +9,7 @@ import {
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
 import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
@@ -36,10 +36,9 @@ const commands: CommandGroup = {
       label: duplicateFileAction.label,
       isAvailable: duplicateFileAction.isAvailable,
       Component: (props) => {
-        const submit = useSubmit();
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         const action = () => {
-          duplicateFileAction.run({ fileUuid, submit });
+          duplicateFileAction.run({ fileUuid });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileCopyIcon />} />;
       },
@@ -91,12 +90,13 @@ const commands: CommandGroup = {
       label: deleteFile.label,
       isAvailable: deleteFile.isAvailable,
       Component: (props: any) => {
+        const { name } = useFileContext();
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
         const user = useRecoilValue(editorInteractionStateUserAtom);
         const submit = useSubmit();
-        const { addGlobalSnackbar } = useGlobalSnackbar();
+        const confirmFn = useConfirmDialog('deleteFile', { name });
         const action = () =>
-          deleteFile.run({ fileUuid, userEmail: user?.email ?? '', redirect: true, submit, addGlobalSnackbar });
+          deleteFile.run({ fileUuid, userEmail: user?.email ?? '', redirect: true, submit, confirmFn });
         return <CommandPaletteListItem {...props} action={action} icon={<DeleteIcon />} />;
       },
     },

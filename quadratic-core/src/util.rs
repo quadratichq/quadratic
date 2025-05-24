@@ -13,6 +13,10 @@ lazy_static! {
     pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
 }
 
+pub(crate) fn is_false(value: &bool) -> bool {
+    !(*value)
+}
+
 pub(crate) mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
 
@@ -85,6 +89,47 @@ pub(crate) mod indexmap_serde {
     }
 }
 
+pub(crate) mod hashmap_serde {
+    use std::collections::HashMap;
+    use std::hash::Hash;
+
+    use serde::ser::SerializeMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
+        map: &HashMap<K, V>,
+        s: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut m = s.serialize_map(Some(map.len()))?;
+        for (k, v) in map {
+            if let Ok(key) = serde_json::to_string(k) {
+                m.serialize_entry(&key, v)?;
+            }
+        }
+        m.end()
+    }
+
+    pub fn deserialize<
+        'de,
+        D: Deserializer<'de>,
+        K: for<'k> Deserialize<'k> + Eq + Hash,
+        V: Deserialize<'de>,
+    >(
+        d: D,
+    ) -> Result<HashMap<K, V>, D::Error> {
+        Ok(HashMap::<String, V>::deserialize(d)?
+            .into_iter()
+            .filter_map(|(k, v)| {
+                if let Ok(key) = serde_json::from_str(&k) {
+                    Some((key, v))
+                } else {
+                    None
+                }
+            })
+            .collect())
+    }
+}
+
 /// Converts a column name to a number.
 #[allow(unused)]
 macro_rules! col {
@@ -132,6 +177,45 @@ macro_rules! pos {
             .resolve_from($crate::Pos::ORIGIN);
         pos
     }};
+}
+
+/// Parses a cell rectangle in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{rect, Rect};
+/// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
+/// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
+/// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
+/// ```
+#[macro_export]
+macro_rules! rect {
+    ($corner1:ident : $corner2:ident) => {
+        $crate::Rect::new_span($crate::pos![$corner1], $crate::pos![$corner2])
+    };
+}
+
+/// Parses a cell reference range in A1 notation.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{ref_range_bounds, a1::{RefRangeBounds, CellRefRangeEnd, CellRefCoord}};
+/// assert_eq!(ref_range_bounds![:$C], RefRangeBounds {
+///     start: CellRefRangeEnd::new_relative_xy(1, 1),
+///     end: CellRefRangeEnd {
+///         col: CellRefCoord::new_abs(3),
+///         row: CellRefCoord::UNBOUNDED,
+///     },
+/// });
+/// ```
+#[macro_export]
+macro_rules! ref_range_bounds {
+    ($($tok:tt)*) => {
+        $crate::a1::RefRangeBounds::from_str(stringify!($($tok)*), None)
+            .expect("invalid range")
+    };
 }
 
 /// Returns a human-friendly list of things, joined at the end by the given
@@ -202,7 +286,12 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
 /// Returns a unique name by appending numbers to the base name if the name is not unique.
 /// Starts at 1, and checks if the name is unique, then 2, etc.
 /// If `require_number` is true, the name will always have an appended number.
-pub fn unique_name(name: &str, require_number: bool, check_name: impl Fn(&str) -> bool) -> String {
+pub fn unique_name<'a>(
+    name: &str,
+    require_number: bool,
+    check_name: impl Fn(&str) -> bool,
+    mut iter_names: impl Iterator<Item = &'a String>,
+) -> String {
     let base = MATCH_NUMBERS.replace(name, "");
     let contains_number = base != name;
     let should_short_circuit = !require_number || contains_number;
@@ -213,7 +302,24 @@ pub fn unique_name(name: &str, require_number: bool, check_name: impl Fn(&str) -
     }
 
     // if not unique, try appending numbers until we find a unique name
-    let mut num = 1;
+
+    // Find the highest existing number
+    let base_folded = case_fold_ascii(&base);
+    let mut num = iter_names
+        .find_map(|name| {
+            if name.len() > base_folded.len() && name.starts_with(&base_folded) {
+                MATCH_NUMBERS
+                    .find(name)?
+                    .as_str()
+                    .trim()
+                    .parse::<usize>()
+                    .ok()
+            } else {
+                None
+            }
+        })
+        .map_or(1, |n| n + 1);
+
     let mut name = String::from("");
 
     while name.is_empty() {

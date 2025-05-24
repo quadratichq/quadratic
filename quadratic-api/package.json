@@ -1,17 +1,16 @@
 {
   "name": "quadratic-api",
-  "version": "0.6.10",
+  "version": "0.9.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
-    "start-no-watch": "dotenv -e .env -- ts-node --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
-    "start:prod": "dotenv -e .env -- node dist/src/server.js --max-old-space-size=8192",
+    "start": "export VERSION=$npm_package_version && dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
+    "start-no-watch": "export VERSION=$npm_package_version && dotenv -e .env -- ts-node --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
+    "start:prod": "export VERSION=$npm_package_version && dotenv -e .env -- node dist/src/server.js --max-old-space-size=8192",
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
     "build": "tsc --project tsconfig.production.json && tsc --project ../quadratic-shared/tsconfig.json",
     "postbuild": "npm run copy:grid-files",
-    "build:prod": "npm run prebuild && NODE_ENV=production npm run build",
     "copy:grid-files": "cp ./src/data/*.grid ./dist/src/data/",
     "update-university-domains": "node scripts/updateUniversityDomains.js",
     "lint": "npm run lint:eslint && npm run lint:prettier",
@@ -35,7 +34,7 @@
     "@anthropic-ai/bedrock-sdk": "^0.12.4",
     "@anthropic-ai/sdk": "^0.39.0",
     "@anthropic-ai/vertex-sdk": "^0.7.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.758.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.787.0",
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/client-secrets-manager": "^3.441.0",
     "@aws-sdk/s3-request-presigner": "^3.427.0",
@@ -56,14 +55,15 @@
     "helmet": "^6.0.1",
     "jsonwebtoken": "^9.0.1",
     "jwks-rsa": "^3.0.0",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.0",
     "multer-s3": "^3.0.1",
     "newrelic": "^11.17.0",
-    "openai": "^4.86.2",
+    "openai": "^4.95.0",
     "pg": "^8.11.3",
+    "ssh-keygen": "^0.5.0",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",
-    "zod": "^3.24.2"
+    "zod": "^3.25.3"
   },
   "devDependencies": {
     "@aws-sdk/types": "^3.449.0",
@@ -76,7 +76,7 @@
     "@types/express": "^4.17.14",
     "@types/multer": "^1.4.8",
     "@types/multer-s3": "^3.0.1",
-    "@types/node": "^22.13.10",
+    "@types/node": "^22.15.18",
     "@types/pg": "^8.10.7",
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^8.27.0",
@@ -88,6 +88,6 @@
     "typescript": "^5.8.2"
   },
   "engines": {
-    "node": "23.x"
+    "node": "24.x"
   }
 }

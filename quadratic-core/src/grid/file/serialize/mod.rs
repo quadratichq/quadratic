@@ -29,7 +29,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
             .map_ok(|sheet| (sheet.id, sheet))
             .collect::<Result<_>>()?,
     };
-    let a1_context = grid.make_a1_context();
+    let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.values_mut() {
         sheet.recalculate_bounds(&a1_context);
     }

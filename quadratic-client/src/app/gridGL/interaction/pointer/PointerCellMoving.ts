@@ -84,10 +84,10 @@ export class PointerCellMoving {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
       pixiApp.viewport.disableMouseEdges();
+      htmlCellsHandler.enable();
     }
     this.state = undefined;
     this.startCell = undefined;
-    htmlCellsHandler.enable();
   };
 
   private pointerMoveMoving = (world: Point) => {
@@ -211,9 +211,8 @@ export class PointerCellMoving {
     }
     if (!rectangle) return false;
 
-    const origin = sheets.sheet.cursor.position;
-    const column = origin.x;
-    const row = origin.y;
+    const column = rectangle.left;
+    const row = rectangle.top;
 
     const overlap = this.moveOverlaps(world, !!colsHover, !!rowsHover);
     if (overlap) {

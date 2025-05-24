@@ -22,10 +22,11 @@ import {
   RefreshIcon,
   SettingsIcon,
 } from '@/shared/components/Icons';
+import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -157,6 +158,10 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           <SidebarNavLink to={DOCUMENTATION_URL} target="_blank">
             <ExternalLinkIcon className={classNameIcons} />
             Docs
+          </SidebarNavLink>
+          <SidebarNavLink to={COMMUNITY_FORUMS} target="_blank">
+            <ExternalLinkIcon className={classNameIcons} />
+            Forum
           </SidebarNavLink>
           <SidebarNavLink to={CONTACT_URL} target="_blank">
             <ExternalLinkIcon className={classNameIcons} />
@@ -392,8 +397,8 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}>
-        <div className="mx-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-foreground capitalize text-background">
-          {activeTeamName.slice(0, 1)}
+        <div className="mx-0.5">
+          <TeamAvatar name={optimisticActiveTeamName} />
         </div>
         <div className="select-none truncate">{optimisticActiveTeamName}</div>
         <div className="relative ml-auto mr-0.5 flex items-center">

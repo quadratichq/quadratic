@@ -7,7 +7,7 @@ import {
   newSingleSelection,
   stringToSelection,
   validateTableName,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+} from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -31,7 +31,7 @@ export function CodeEditorHeaderLabel() {
       setCellRef(cellRef);
     };
 
-    const updateTableName = (a1Context: string) => {
+    const updateTableName = (a1Context: Uint8Array) => {
       if (!codeCellState.sheetId) return;
       const tableName = getTableNameFromPos(a1Context, codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
       setTableName(tableName);
@@ -179,19 +179,15 @@ export function CodeEditorHeaderLabel() {
 
       {!isRenaming && (
         <div className="flex min-w-0 flex-initial text-xs leading-4 text-muted-foreground">
+          {currentConnectionName && (
+            <span className="pl-1 after:ml-1 after:content-['·']">{currentConnectionName}</span>
+          )}
           <button
             className="max-w-full truncate rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
             onClick={focusCellRef}
           >
             {cellRef}
           </button>
-
-          {currentConnectionName && (
-            <>
-              {' · '}
-              {currentConnectionName}
-            </>
-          )}
         </div>
       )}
     </div>

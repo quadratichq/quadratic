@@ -146,10 +146,10 @@ export const AIUserMessageForm = memo(
       (e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement> | DragEvent<HTMLDivElement>) => {
         const filesToHandle =
           'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : null;
-        e.preventDefault();
-        e.stopPropagation();
         setDragOver(false);
         if (editing && filesToHandle && filesToHandle.length > 0) {
+          e.preventDefault();
+          e.stopPropagation();
           handleFiles(filesToHandle);
         }
       },
@@ -183,7 +183,10 @@ export const AIUserMessageForm = memo(
 
     return (
       <form
-        className={cn('group relative h-min rounded-lg bg-accent pt-1.5', editing ? '' : 'select-none')}
+        className={cn(
+          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[:focus]:border-primary',
+          editing ? '' : 'select-none'
+        )}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) {

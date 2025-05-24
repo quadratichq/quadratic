@@ -1,26 +1,24 @@
-use std::collections::{BTreeMap, HashSet, btree_map};
-use std::str::FromStr;
+use std::collections::HashSet;
 
 use anyhow::{Result, anyhow};
-use bigdecimal::{BigDecimal, RoundingMode};
+use bigdecimal::RoundingMode;
 use borders::Borders;
-use indexmap::IndexMap;
+use columns::SheetColumns;
+use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
-use rand::Rng;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
-use super::data_table::DataTable;
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
-use super::{CellWrap, CodeRun, Format, NumericFormatKind, SheetFormatting};
+use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
-use crate::{Array, CellValue, Pos, Rect};
+use crate::{CellValue, Pos, Rect};
 
 pub mod a1_context;
 pub mod a1_selection;
@@ -29,11 +27,13 @@ pub mod borders;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
-mod chart;
+pub mod cells_accessed_cache;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
+pub mod columns;
 pub mod data_table;
+pub mod data_tables;
 pub mod formats;
 pub mod keyboard;
 pub mod rendering;
@@ -61,12 +61,9 @@ pub struct Sheet {
 
     pub offsets: SheetOffsets,
 
-    /// Cell values, stored by column.
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub columns: BTreeMap<i64, Column>,
+    pub columns: SheetColumns,
 
-    #[serde(with = "crate::util::indexmap_serde")]
-    pub data_tables: IndexMap<Pos, DataTable>,
+    pub data_tables: SheetDataTables,
 
     /// Formatting for the entire sheet.
     pub formats: SheetFormatting,
@@ -92,8 +89,8 @@ impl Sheet {
             color: None,
             order,
             offsets: SheetOffsets::default(),
-            columns: BTreeMap::new(),
-            data_tables: IndexMap::new(),
+            columns: SheetColumns::new(),
+            data_tables: SheetDataTables::new(),
             formats: SheetFormatting::default(),
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
@@ -158,99 +155,6 @@ impl Sheet {
         });
     }
 
-    /// Populates the current sheet with random values
-    /// Should only be used for testing (as it will not propagate in multiplayer)
-    pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
-        self.columns.clear();
-        let mut rng = rand::rng();
-        for x in rect.x_range() {
-            for y in rect.y_range() {
-                let column = self.get_or_create_column(x);
-                let value = rng.random_range(-10000..=10000).to_string();
-                column
-                    .values
-                    .insert(y, CellValue::Number(BigDecimal::from_str(&value).unwrap()));
-            }
-        }
-        self.recalculate_bounds(a1_context);
-    }
-
-    /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
-    /// and did not previously exist (so no change is needed).
-    pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
-        let value = value.into();
-        let is_empty = value.is_blank_or_empty_string();
-        let value: Option<CellValue> = if is_empty { None } else { Some(value) };
-
-        // if there's no value and the column doesn't exist, then nothing more needs to be done
-        if value.is_none() && !self.columns.contains_key(&pos.x) {
-            return None;
-        }
-        let column = self.get_or_create_column(pos.x);
-        if let Some(value) = value {
-            column.values.insert(pos.y, value)
-        } else {
-            column.values.remove(&pos.y)
-        }
-    }
-
-    /// Deletes all cell values in a region. This does not affect:
-    ///
-    /// - Formatting
-    /// - Spilled cells (unless the source is within `region`)
-    pub fn delete_cell_values(&mut self, rect: Rect) -> Array {
-        let mut old_cell_values_array = Array::new_empty(rect.size());
-
-        for x in rect.x_range() {
-            let Some(column) = self.columns.get_mut(&x) else {
-                continue;
-            };
-            let filtered = column
-                .values
-                .range(rect.y_range())
-                .map(|(y, _)| *y)
-                .collect::<Vec<_>>();
-            let removed = filtered
-                .iter()
-                .map(|y| (*y, column.values.remove(y)))
-                .collect::<Vec<_>>();
-            for cell in removed {
-                let array_x = (x - rect.min.x) as u32;
-                let array_y = (cell.0 - rect.min.y) as u32;
-                if let Some(cell_value) = cell.1 {
-                    old_cell_values_array
-                        .set(array_x, array_y, cell_value)
-                        .expect("error inserting value into array of old cell values");
-                }
-            }
-        }
-
-        // remove code_cells where the rect overlaps the anchor cell
-        self.data_tables.retain(|pos, _| !rect.contains(*pos));
-
-        old_cell_values_array
-    }
-
-    pub fn iter_columns(&self) -> impl Iterator<Item = (&i64, &Column)> {
-        self.columns.iter()
-    }
-
-    pub fn iter_data_tables(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
-        self.data_tables.iter()
-    }
-
-    pub fn iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
-        self.data_tables
-            .iter()
-            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (*pos, code_run)))
-    }
-
-    pub fn iter_code_runs_mut(&mut self) -> impl Iterator<Item = (Pos, &mut CodeRun)> {
-        self.data_tables.iter_mut().flat_map(|(pos, data_table)| {
-            data_table.code_run_mut().map(|code_run| (*pos, code_run))
-        })
-    }
-
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
     /// tables. Ignores Blanks except in tables.
     pub fn has_content(&self, pos: Pos) -> bool {
@@ -278,8 +182,8 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a vertical edge of a table.
-    pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
-        if let Some((dt_pos, dt)) = self.data_table_at(pos) {
+    pub fn is_at_table_edge_col(&self, pos: &Pos) -> bool {
+        if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
             if dt.is_html_or_image() || dt.is_single_value() {
@@ -294,8 +198,8 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
-    pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
-        if let Some((dt_pos, dt)) = self.data_table_at(pos) {
+    pub fn is_at_table_edge_row(&self, pos: &Pos) -> bool {
+        if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
             if dt.is_html_or_image() || dt.is_single_value() {
@@ -305,9 +209,12 @@ impl Sheet {
             if bounds.min.y == pos.y {
                 // table name, or column header if no table name, or top of data if no column header or table name
                 return true;
-            } else if bounds.min.y
-                + (if dt.show_ui && dt.show_name { 1 } else { 0 })
-                + (if dt.show_ui && dt.show_columns { 1 } else { 0 })
+            }
+
+            let show_name = dt.get_show_name();
+            let show_columns = dt.get_show_columns();
+
+            if bounds.min.y + (if show_name { 1 } else { 0 }) + (if show_columns { 1 } else { 0 })
                 == pos.y
             {
                 // ignore column header--just go to first line of data or table name
@@ -404,8 +311,7 @@ impl Sheet {
 
     /// Returns a mutable reference to the cell value at the Pos in column.values.
     pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
-        let column = self.get_column_mut(pos.x)?;
-        column.values.get_mut(&pos.y)
+        self.columns.get_value_mut(&pos)
     }
 
     /// Returns the cell value at a position using both `column.values` and
@@ -418,7 +324,7 @@ impl Sheet {
         if let Some(cell_value) = cell_value {
             match cell_value {
                 CellValue::Blank | CellValue::Code(_) | CellValue::Import(_) => {
-                    match self.data_tables.get(&pos) {
+                    match self.data_tables.get_at(&pos) {
                         Some(data_table) => data_table.get_cell_for_formula(
                             0,
                             if data_table.header_is_first_row { 1 } else { 0 },
@@ -451,9 +357,9 @@ impl Sheet {
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
-        if let Ok(data_table_pos) = self.first_data_table_within(pos) {
-            if let Some(data_table) = self.data_table(data_table_pos) {
-                if !data_table.spill_error && !data_table.has_error() {
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains(&pos) {
+            if let Some(data_table) = self.data_table_at(&data_table_pos) {
+                if !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
                     let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
                     let table_format = data_table.get_format(format_pos);
@@ -494,27 +400,7 @@ impl Sheet {
 
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
-        self.columns.get(&index)
-    }
-
-    /// Returns a mutable column of a sheet from the column index.
-    pub(crate) fn get_column_mut(&mut self, index: i64) -> Option<&mut Column> {
-        self.columns.get_mut(&index)
-    }
-
-    /// Returns a column of a sheet from its index, or creates a new column at
-    /// that index.
-    pub(crate) fn get_or_create_column(&mut self, x: i64) -> &mut Column {
-        match self.columns.entry(x) {
-            btree_map::Entry::Vacant(e) => {
-                let column = e.insert(Column::new(x));
-                column
-            }
-            btree_map::Entry::Occupied(e) => {
-                let column = e.into_mut();
-                column
-            }
-        }
+        self.columns.get_column(index)
     }
 
     pub fn id_to_string(&self) -> String {
@@ -635,14 +521,34 @@ impl Sheet {
         rows_set.into_iter().collect()
     }
 
-    /// Moves a cell value from one position to another.
-    pub fn move_cell_value(&mut self, old_pos: Pos, new_pos: Pos) {
-        let column = self.get_or_create_column(old_pos.x);
-        let cell_value = column.values.remove(&old_pos.y);
-        let column = self.get_or_create_column(new_pos.x);
-        if let Some(cell_value) = cell_value {
-            column.values.insert(new_pos.y, cell_value);
+    /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
+    /// and did not previously exist (so no change is needed).
+    #[cfg(test)]
+    pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
+        self.columns.set_value(&pos, value)
+    }
+
+    /// Populates the current sheet with random values
+    /// Should only be used for testing (as it will not propagate in multiplayer)
+    #[cfg(test)]
+    pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
+        use std::str::FromStr;
+
+        use bigdecimal::BigDecimal;
+        use rand::Rng;
+
+        self.columns.clear();
+        let mut rng = rand::rng();
+        for x in rect.x_range() {
+            for y in rect.y_range() {
+                let value = rng.random_range(-10000..=10000).to_string();
+                self.set_cell_value(
+                    (x, y).into(),
+                    CellValue::Number(BigDecimal::from_str(&value).unwrap()),
+                );
+            }
         }
+        self.recalculate_bounds(a1_context);
     }
 }
 
@@ -656,9 +562,11 @@ mod test {
     use super::*;
     use crate::a1::A1Selection;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
+    use crate::grid::{
+        CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
+    };
     use crate::test_util::print_table_in_rect;
-    use crate::{SheetPos, SheetRect, Value};
+    use crate::{Array, SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -901,29 +809,6 @@ mod test {
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
     }
 
-    // TODO(ddimaria): use the code below as a template once cell borders are in place
-    // TODO(jrice): Uncomment and test
-    // #[ignore]
-    // #[tokio::test]
-    // async fn test_set_border() {
-    //     let (grid, sheet_id, selected) = test_setup_basic().await;
-    //     let cell_border = CellBorder {
-    //         color: Some("red".into()),
-    //         style: Some(CellBorderStyle::Line1),
-    //     };
-    //     let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-    //     sheet.set_horizontal_border(selected, cell_border.clone());
-    //     sheet.set_vertical_border(selected, cell_border);
-    //     let _borders = sheet.borders();
-    //
-    //     print_table(&grid, sheet_id, selected);
-    //
-    //     // let formats = grid.get_all_cell_formats(sheet_id, selected);
-    //     // formats
-    //     //     .into_iter()
-    //     //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
-    // }
-
     #[test]
     fn test_get_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
@@ -932,19 +817,6 @@ mod test {
 
         assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
     }
-
-    // #[test]
-    // fn test_get_set_formatting_value() {
-    //     let (grid, sheet_id, _) = test_setup_basic();
-    //     let mut sheet = grid.sheet(sheet_id).clone();
-    //     let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-    //     let bold: Option<bool> = sheet.get_formatting_value::<Bold>((2, 1).into());
-    //     assert_eq!(bold, Some(true));
-
-    //     let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
-    //     let italic = sheet.get_formatting_value::<Italic>((2, 1).into());
-    //     assert_eq!(italic, Some(true));
-    // }
 
     #[test]
     fn cell_format_summary() {
@@ -1077,7 +949,7 @@ mod test {
         sheet.set_cell_value(pos![A1], "test");
         sheet.set_cell_value(pos![A3], "test");
         let selection = A1Selection::test_a1("A1:A4");
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         assert_eq!(
             sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context),
             Vec::<i64>::new()
@@ -1137,11 +1009,11 @@ mod test {
             "test",
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
-            false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
-        sheet.data_tables.insert(pos, dt.clone());
+        sheet.data_table_insert_full(&pos, dt.clone());
         assert!(sheet.has_content(pos));
         assert!(sheet.has_content(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content(Pos { x: 3, y: 2 }));
@@ -1149,7 +1021,7 @@ mod test {
         let mut dt = dt.clone();
         dt.chart_output = Some((5, 5));
         let pos2 = Pos { x: 10, y: 10 };
-        sheet.data_tables.insert(pos2, dt);
+        sheet.data_table_insert_full(&pos2, dt);
         assert!(sheet.has_content(pos2));
         assert!(sheet.has_content(Pos { x: 14, y: 10 }));
         assert!(!sheet.has_content(Pos { x: 15, y: 10 }));
@@ -1203,7 +1075,7 @@ mod test {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 1000 },
             },
-            &Array::from(
+            Array::from(
                 (1..=1000)
                     .map(|row| {
                         (1..=10)
@@ -1384,27 +1256,27 @@ mod test {
                 vec!["j", "k", "l"],
             ])),
             false,
-            false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
-        sheet.data_tables.insert(anchor_pos, dt);
+        sheet.data_table_insert_full(&anchor_pos, dt);
 
         // Test row edges
-        assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
-        assert!(!sheet.is_at_table_edge_row(pos![B3])); // Column header
-        assert!(sheet.is_at_table_edge_row(pos![B4])); // first line of data
-        assert!(sheet.is_at_table_edge_row(pos![C7])); // Bottom edge
-        assert!(!sheet.is_at_table_edge_row(pos![C5])); // Middle row
+        assert!(sheet.is_at_table_edge_row(&pos![B2])); // Table name
+        assert!(!sheet.is_at_table_edge_row(&pos![B3])); // Column header
+        assert!(sheet.is_at_table_edge_row(&pos![B4])); // first line of data
+        assert!(sheet.is_at_table_edge_row(&pos![C7])); // Bottom edge
+        assert!(!sheet.is_at_table_edge_row(&pos![C5])); // Middle row
 
         // Test column edges
-        assert!(sheet.is_at_table_edge_col(pos![B5])); // Left edge
-        assert!(sheet.is_at_table_edge_col(pos![D5])); // Right edge
-        assert!(!sheet.is_at_table_edge_col(pos![C5])); // Middle column
+        assert!(sheet.is_at_table_edge_col(&pos![B5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(&pos![D5])); // Right edge
+        assert!(!sheet.is_at_table_edge_col(&pos![C5])); // Middle column
 
         // Test position outside table
-        assert!(!sheet.is_at_table_edge_row(pos![E5]));
-        assert!(!sheet.is_at_table_edge_col(pos![E5]));
+        assert!(!sheet.is_at_table_edge_row(&pos![E5]));
+        assert!(!sheet.is_at_table_edge_col(&pos![E5]));
 
         // Test with show_ui = false
         let mut dt_no_ui = DataTable::new(
@@ -1412,18 +1284,18 @@ mod test {
             "test",
             Value::Array(Array::from(vec![vec!["a", "b"], vec!["c", "d"]])),
             false,
-            false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
-        dt_no_ui.show_name = false;
-        sheet.data_tables.insert(pos![E5], dt_no_ui);
+        dt_no_ui.show_name = Some(false);
+        sheet.data_table_insert_full(&pos![E5], dt_no_ui);
 
         // Test edges without UI
-        assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge
-        assert!(sheet.is_at_table_edge_row(pos![E6])); // Bottom edge
-        assert!(sheet.is_at_table_edge_col(pos![E5])); // Left edge
-        assert!(sheet.is_at_table_edge_col(pos![F5])); // Right edge
+        assert!(sheet.is_at_table_edge_row(&pos![E5])); // Top edge
+        assert!(sheet.is_at_table_edge_row(&pos![E6])); // Bottom edge
+        assert!(sheet.is_at_table_edge_col(&pos![E5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(&pos![F5])); // Right edge
     }
 
     #[test]
@@ -1454,11 +1326,11 @@ mod test {
             "test",
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
-            false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
-        sheet.data_tables.insert(pos, dt.clone());
+        sheet.data_table_insert_full(&pos, dt.clone());
         assert!(sheet.has_content_ignore_blank_table(pos));
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content_ignore_blank_table(Pos { x: 3, y: 2 }));
@@ -1479,7 +1351,7 @@ mod test {
         dt_chart.chart_output = Some((5, 5));
         let pos3 = Pos { x: 20, y: 20 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_tables.insert(pos3, dt_chart);
+        sheet.data_table_insert_full(&pos3, dt_chart);
 
         let a1_context = gc.a1_context().clone();
         gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);

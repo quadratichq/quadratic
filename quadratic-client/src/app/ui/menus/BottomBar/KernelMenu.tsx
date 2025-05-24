@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -93,7 +93,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
             {transactionsInfo.length > 0 && (
               <div
                 className={cn(
-                  'pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background',
+                  'pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-background',
                   running ? 'right-0 top-0 h-4 w-4' : 'right-1 top-1 h-2 w-2'
                 )}
               >

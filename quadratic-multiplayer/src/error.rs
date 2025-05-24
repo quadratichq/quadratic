@@ -60,14 +60,14 @@ pub(crate) enum MpError {
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
-    #[error("Error reading MinVersion file: {0}")]
-    MinVersion(String),
-
     #[error("Requested {0} transactions but only found {1}")]
     MissingTransactions(String, String),
 
     #[error("PubSub error: {0}")]
     PubSub(String),
+
+    #[error("Error receiving message: {0}")]
+    ReceivingMessage(String),
 
     #[error("Error requesting data: {0}")]
     Request(String),
@@ -137,6 +137,12 @@ impl From<reqwest::Error> for MpError {
 impl From<jsonwebtoken::errors::Error> for MpError {
     fn from(error: jsonwebtoken::errors::Error) -> Self {
         MpError::Authentication(error.to_string())
+    }
+}
+
+impl From<prost::DecodeError> for MpError {
+    fn from(error: prost::DecodeError) -> Self {
+        MpError::Serialization(error.to_string())
     }
 }
 

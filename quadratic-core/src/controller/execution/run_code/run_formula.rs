@@ -3,8 +3,8 @@ use itertools::Itertools;
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    formulas::{Ctx, parse_formula},
-    grid::{CodeRun, DataTable, DataTableKind},
+    formulas::{Ctx, find_cell_references, parse_formula},
+    grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
 };
 
 impl GridController {
@@ -23,6 +23,8 @@ impl GridController {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
                 let new_code_run = CodeRun {
+                    language: CodeCellLanguage::Formula,
+                    code,
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
@@ -37,8 +39,8 @@ impl GridController {
                     "Formula1",
                     output.inner,
                     false,
-                    false,
-                    false,
+                    None,
+                    None,
                     None,
                 );
                 self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
@@ -47,6 +49,42 @@ impl GridController {
                 let _ = self.code_cell_sheet_error(transaction, &error);
             }
         }
+    }
+
+    pub(crate) fn add_formula_without_eval(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
+        code: &str,
+        name: &str,
+    ) {
+        let parse_ctx = self.a1_context();
+        transaction.current_sheet_pos = Some(sheet_pos);
+
+        let mut cells_accessed = CellsAccessed::default();
+        let cell_references = find_cell_references(code, parse_ctx, sheet_pos);
+        for cell_ref in cell_references {
+            if let Ok(cell_ref) = cell_ref.inner {
+                cells_accessed.add(cell_ref.sheet_id, cell_ref.cells);
+            }
+        }
+
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: code.to_string(),
+            cells_accessed,
+            ..CodeRun::default()
+        };
+        let new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            name,
+            "".into(),
+            false,
+            None,
+            None,
+            None,
+        );
+        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
     }
 }
 
@@ -248,8 +286,11 @@ mod test {
             result,
             sheet_pos,
             CodeCellLanguage::Javascript,
+            r#"return "12";"#.to_string(),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: r#"return "12";"#.to_string(),
             return_type: Some("number".into()),
             output_type: Some("number".into()),
             ..Default::default()
@@ -261,13 +302,11 @@ mod test {
                 "JavaScript1",
                 Value::Single(CellValue::Number(12.into())),
                 false,
-                false,
-                true,
+                None,
+                None,
                 None,
             )
             .with_last_modified(result.last_modified)
-            .with_show_columns(false)
-            .with_show_name(false),
         );
     }
 
@@ -325,8 +364,11 @@ mod test {
             result,
             sheet_pos,
             CodeCellLanguage::Javascript,
+            r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Javascript,
+            code: r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
             return_type: Some("array".into()),
             output_type: Some("array".into()),
             ..Default::default()
@@ -337,11 +379,10 @@ mod test {
             "JavaScript1",
             Value::Array(array),
             false,
-            false,
-            true,
             None,
-        )
-        .with_show_columns(false);
+            None,
+            None,
+        );
         let column_headers =
             expected_result.default_header_with_name(|i| format!("{}", i - 1), None);
         expected_result = expected_result
@@ -396,9 +437,9 @@ mod test {
         );
         assert!(
             gc.sheet(sheet_id)
-                .data_table(Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
         assert!(
             gc.sheet(sheet_id)
@@ -418,9 +459,9 @@ mod test {
         gc.redo(None);
         assert!(
             gc.sheet(sheet_id)
-                .data_table(Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
 
         // undo the spill error
@@ -451,8 +492,8 @@ mod test {
                 code: "☺".into(),
             }))
         );
-        let result = sheet.data_table(pos).unwrap();
-        assert!(!result.spill_error);
+        let result = sheet.data_table_at(&pos).unwrap();
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
 
         gc.set_code_cell(
@@ -469,8 +510,8 @@ mod test {
                 code: "{0,1/0;2/0,0}".into(),
             }))
         );
-        let result = sheet.data_table(pos).unwrap();
-        assert!(!result.spill_error);
+        let result = sheet.data_table_at(&pos).unwrap();
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
     }
 }

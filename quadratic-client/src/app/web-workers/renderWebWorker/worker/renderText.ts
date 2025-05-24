@@ -8,15 +8,17 @@
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
 import type {
+  JsHashesDirty,
+  JsHashRenderCells,
   JsOffset,
-  JsRenderCell,
   JsRowHeight,
   SheetBounds,
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
-import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
+import initCoreRender from '@/app/quadratic-core/quadratic_core';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
@@ -59,7 +61,7 @@ class RenderText {
 
   constructor() {
     this.viewportBuffer = undefined;
-    initRustClient().then(() => {
+    initCoreRender().then(() => {
       this.status.rust = true;
       this.ready();
     });
@@ -187,11 +189,13 @@ class RenderText {
     Atomics.compareExchange(int32Array, otherSliceStart, 1, 0);
   };
 
-  // Called before first render when all text visible in the viewport has been rendered and sent to the client
-  completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; renderCells: JsRenderCell[] }) {
-    const cellsLabels = this.cellsLabels.get(message.sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
-    cellsLabels.completeRenderCells(message.hashX, message.hashY, message.renderCells);
+  hashRenderCells(hashRenderCellsUint8Array: Uint8Array) {
+    const hashRenderCells = fromUint8Array<JsHashRenderCells[]>(hashRenderCellsUint8Array);
+    for (const renderCells of hashRenderCells) {
+      const cellsLabels = this.cellsLabels.get(renderCells.sheet_id.id);
+      if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
+      cellsLabels.hashRenderCells(Number(renderCells.hash.x), Number(renderCells.hash.y), renderCells.cells);
+    }
   }
 
   addSheet(sheetInfo: SheetInfo) {
@@ -252,10 +256,13 @@ class RenderText {
     return cellsLabels.getRowHeights(rows);
   }
 
-  setHashesDirty(sheetId: string, hashes: string) {
-    const cellsLabels = this.cellsLabels.get(sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
-    cellsLabels.setHashesDirty(hashes);
+  setHashesDirty(dirtyHashesUint8Array: Uint8Array) {
+    const dirtyHashes = fromUint8Array<JsHashesDirty[]>(dirtyHashesUint8Array);
+    for (const dirtyHash of dirtyHashes) {
+      const cellsLabels = this.cellsLabels.get(dirtyHash.sheet_id.id);
+      if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
+      cellsLabels.setHashesDirty(dirtyHash.hashes);
+    }
   }
 
   receiveViewportBuffer = (buffer: SharedArrayBuffer) => {

@@ -12,7 +12,11 @@ impl DataTable {
     /// 0,0 is the top left.
     pub fn get_format(&self, pos: Pos) -> Format {
         let pos = self.get_format_pos_from_display_buffer(pos);
-        let mut format = self.formats.try_format(pos).unwrap_or_default();
+        let mut format = self
+            .formats
+            .as_ref()
+            .and_then(|format| format.try_format(pos))
+            .unwrap_or_default();
         format.wrap = format.wrap.or(Some(CellWrap::Clip));
         format
     }
@@ -52,19 +56,33 @@ impl DataTable {
         sheet_format_updates: &mut SheetFormatUpdates,
     ) -> Result<()> {
         for x in formats_rect.x_range() {
-            let format_display_x = u32::try_from(x - data_table_pos.x)?;
+            let relative_x = x - data_table_pos.x;
+
+            // ignore non-overlapping areas
+            if relative_x < 0 {
+                continue;
+            }
+
+            let format_display_x = u32::try_from(relative_x)?;
             let format_actual_x = self.get_column_index_from_display_index(format_display_x, true);
 
             for y in formats_rect.y_range() {
-                let format_display_y =
-                    u64::try_from(y - data_table_pos.y - self.y_adjustment(true))?;
-                let format_actual_y = self.get_row_index_from_display_index(format_display_y);
+                let relative_y = y - data_table_pos.y - self.y_adjustment(true);
 
-                let format = self
-                    .formats
-                    .format((format_actual_x as i64 + 1, format_actual_y as i64 + 1).into());
-                if !format.is_default() {
-                    sheet_format_updates.set_format_cell((x, y).into(), format.into());
+                // ignore non-overlapping areas
+                if relative_y < 0 {
+                    continue;
+                }
+
+                let format_display_y = u64::try_from(relative_y)?;
+                let format_actual_y = self.get_row_index_from_display_index(format_display_y);
+                if let Some(formats) = self.formats.as_ref() {
+                    let format = formats
+                        .format((format_actual_x as i64 + 1, format_actual_y as i64 + 1).into());
+
+                    if !format.is_default() {
+                        sheet_format_updates.set_format_cell((x, y).into(), format.into());
+                    }
                 }
             }
         }
@@ -127,7 +145,7 @@ pub mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
@@ -160,7 +178,7 @@ pub mod test {
         // first row is header
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), true);
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
@@ -188,10 +206,10 @@ pub mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // show name
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false), None);
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, Some(false), None);
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![G4]).bold, None);
         assert!(sheet.formats.try_format(pos![G4]).is_none());
@@ -207,10 +225,10 @@ pub mod test {
         assert_eq!(data_table_format.bold, Some(true));
 
         // show column headers
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, None, Some(false));
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false));
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![G3]).bold, None);
         assert!(sheet.formats.try_format(pos![G3]).is_none());
@@ -229,7 +247,7 @@ pub mod test {
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![G2]).bold, None);
         assert!(sheet.formats.try_format(pos![G2]).is_none());
@@ -264,7 +282,7 @@ pub mod test {
         .unwrap();
 
         // hide first column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
         gc.test_data_table_update_meta(
@@ -272,12 +290,11 @@ pub mod test {
             Some(column_headers),
             None,
             None,
-            None,
         );
 
         // check formats after hiding first column
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
@@ -310,7 +327,7 @@ pub mod test {
 
         // check formats after adding new bold formats
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![F10]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![F10]).is_none());
@@ -327,7 +344,7 @@ pub mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // show first column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = true;
         gc.test_data_table_update_meta(
@@ -335,12 +352,11 @@ pub mod test {
             Some(column_headers),
             None,
             None,
-            None,
         );
 
         // check formats after showing first column
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
@@ -379,7 +395,7 @@ pub mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
@@ -393,13 +409,15 @@ pub mod test {
 
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
-        data_table
-            .sort_column(3, SortDirection::Descending)
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.sort_column(3, SortDirection::Descending).unwrap();
+                Ok(())
+            })
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
@@ -436,7 +454,7 @@ pub mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
@@ -460,11 +478,15 @@ pub mod test {
 
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
-        data_table.sort_column(3, SortDirection::None).unwrap();
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.sort_column(3, SortDirection::None).unwrap();
+                Ok(())
+            })
+            .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());

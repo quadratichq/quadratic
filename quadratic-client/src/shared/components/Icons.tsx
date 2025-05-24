@@ -307,8 +307,16 @@ export const ExpandIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_less</Icon>;
 };
 
+export const ExploreSchemaIcon: IconComponent = (props) => {
+  return <Icon {...props}>database_search</Icon>;
+};
+
 export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
+};
+
+export const ErrorIcon: IconComponent = (props) => {
+  return <Icon {...props}>error</Icon>;
 };
 
 export const ExpandCircleDownIcon: IconComponent = (props) => {
@@ -681,4 +689,16 @@ export const ArrowDownIcon: IconComponent = (props) => {
 
 export const ArrowDoubleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_down</Icon>;
+};
+
+export const SheetComeFromIcon: IconComponent = (props) => {
+  return <Icon {...props}>step_out</Icon>;
+};
+
+export const SheetGoToIcon: IconComponent = (props) => {
+  return <Icon {...props}>step_into</Icon>;
+};
+
+export const GenericLanguageIcon: IconComponent = (props) => {
+  return <Icon {...props}>subject</Icon>;
 };

@@ -33,6 +33,17 @@
   "languages": {
     "TypeScript": {
       "formatter": "prettier",
+      "prettier": {
+        "allowed": true,
+        "semi": true,
+        "trailingComma": "es5",
+        "singleQuote": true,
+        "tabWidth": 2,
+        "printWidth": 120,
+        "bracketSpacing": true,
+        "endOfLine": "auto",
+        "plugins": ["prettier-plugin-tailwindcss"]
+      },
       "code_actions_on_format": {
         "source.removeUnusedImports": true,
         "source.fixAll.eslint": true,
@@ -41,6 +52,17 @@
     },
     "TSX": {
       "formatter": "prettier",
+      "prettier": {
+        "allowed": true,
+        "semi": true,
+        "trailingComma": "es5",
+        "singleQuote": true,
+        "tabWidth": 2,
+        "printWidth": 120,
+        "bracketSpacing": true,
+        "endOfLine": "auto",
+        "plugins": ["prettier-plugin-tailwindcss"]
+      },
       "code_actions_on_format": {
         "source.removeUnusedImports": true,
         "source.fixAll.eslint": true,
@@ -49,6 +71,17 @@
     },
     "JavaScript": {
       "formatter": "prettier",
+      "prettier": {
+        "allowed": true,
+        "semi": true,
+        "trailingComma": "es5",
+        "singleQuote": true,
+        "tabWidth": 2,
+        "printWidth": 120,
+        "bracketSpacing": true,
+        "endOfLine": "auto",
+        "plugins": ["prettier-plugin-tailwindcss"]
+      },
       "code_actions_on_format": {
         "source.removeUnusedImports": true,
         "source.fixAll.eslint": true,
@@ -56,15 +89,5 @@
       }
     }
   },
-  "prettier": {
-    "allowed": true,
-    "semi": true,
-    "trailingComma": "es5",
-    "singleQuote": true,
-    "tabWidth": 2,
-    "printWidth": 120,
-    "bracketSpacing": true,
-    "endOfLine": "auto",
-    "plugins": ["prettier-plugin-tailwindcss"]
-  }
+  "tab_size": 2
 }
