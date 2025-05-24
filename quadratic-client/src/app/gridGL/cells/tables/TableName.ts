@@ -3,14 +3,17 @@ import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { sharedEvents } from '@/shared/sharedEvents';
+import { timeAgo } from '@/shared/utils/timeAgo';
 import type { Point } from 'pixi.js';
 import { Assets, BitmapText, Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
 export const TABLE_NAME_FONT_SIZE = 14;
+const TABLE_MODIFIED_FONT_SIZE = 10;
 export const TABLE_NAME_PADDING = [4, 2];
 
 const DROPDOWN_PADDING = 10;
@@ -25,6 +28,7 @@ export class TableName extends Container {
   private background: Graphics;
   private symbol: Sprite | undefined;
   private text: BitmapText;
+  private modified?: BitmapText;
   private dropdown: Sprite;
   private backgroundWidth = 0;
 
@@ -36,6 +40,9 @@ export class TableName extends Container {
     this.background = this.addChild(new Graphics());
     this.text = this.addChild(new BitmapText('', { fontSize: TABLE_NAME_FONT_SIZE, fontName: 'OpenSans-Bold' }));
     this.symbol = this.addChild(new Sprite());
+    if (table.codeCell.is_code) {
+      this.modified = this.addChild(new BitmapText('', { fontSize: TABLE_MODIFIED_FONT_SIZE, fontName: 'OpenSans' }));
+    }
     const dropdownWhiteIconTexture = Assets.get('dropdown-white-icon');
     this.dropdown = this.addChild(new Sprite(dropdownWhiteIconTexture));
     this.dropdown.anchor.set(0.5, 0);
@@ -115,10 +122,34 @@ export class TableName extends Container {
     );
   }
 
+  private drawModified() {
+    if (!this.modified) return;
+    const modified = timeAgo(Number(this.table.codeCell.last_modified));
+    if (modified) {
+      this.modified.text = modified;
+      // don't show the modified text if it overlaps the left text
+      if (
+        this.modified.width + SYMBOL_PADDING + this.dropdown.x + this.dropdown.width + TABLE_NAME_PADDING[0] >
+        this.table.tableBounds.width
+      ) {
+        this.modified.visible = false;
+      } else {
+        this.modified.visible = true;
+        this.modified.anchor.set(0, 0.5);
+        this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, this.text.y);
+      }
+    } else {
+      this.modified.visible = false;
+    }
+  }
+
   update() {
     this.h = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
     this.drawSymbol();
     this.drawText();
+    if (this.modified) {
+      this.drawModified();
+    }
     if (this.table.active) {
       this.dropdown.visible = true;
       this.drawDropdown();
@@ -168,5 +199,17 @@ export class TableName extends Container {
 
   toGrid() {
     this.tableNameBounds.y = this.table.tableBounds.y;
+  }
+
+  updateModifiedTime() {
+    if (this.modified) {
+      const modified = timeAgo(Number(this.table.codeCell.last_modified));
+      if (modified !== this.modified.text) {
+        this.drawModified();
+        if (!pixiApp.viewport.dirty && pixiApp.viewport.getVisibleBounds().intersects(this.tableNameBounds)) {
+          pixiApp.setViewportDirty();
+        }
+      }
+    }
   }
 }

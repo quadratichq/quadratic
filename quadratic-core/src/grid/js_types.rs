@@ -310,6 +310,7 @@ pub struct JsRenderCodeCell {
     pub is_html_image: bool,
     pub show_name: bool,
     pub show_columns: bool,
+    pub last_modified: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

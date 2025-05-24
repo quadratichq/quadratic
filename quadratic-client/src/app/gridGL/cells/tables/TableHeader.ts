@@ -190,4 +190,8 @@ export class TableHeader extends Container {
   toggleTableColumnSelection(hide: boolean) {
     this.columnHeaders.toggleTableColumnSelection(hide);
   }
+
+  updateModifiedTime() {
+    this.tableName.updateModifiedTime();
+  }
 }

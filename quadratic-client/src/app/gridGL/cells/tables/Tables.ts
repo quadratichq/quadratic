@@ -472,4 +472,10 @@ export class Tables extends Container<Table> {
       }
     }
   }
+
+  updateModifiedTime() {
+    this.children.forEach((table) => {
+      table.header.updateModifiedTime();
+    });
+  }
 }

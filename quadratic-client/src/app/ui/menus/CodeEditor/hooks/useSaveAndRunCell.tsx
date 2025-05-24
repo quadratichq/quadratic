@@ -77,6 +77,7 @@ export const useSaveAndRunCell = () => {
                 is_html_image: false,
                 show_name: false,
                 show_columns: false,
+                last_modified: BigInt(0),
               },
             });
           }

@@ -113,6 +113,7 @@ impl Sheet {
             is_code: data_table.is_code(),
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
+            last_modified: data_table.last_modified.timestamp_millis(),
         })
     }
 
@@ -472,6 +473,7 @@ mod tests {
                 is_code: true,
                 is_html: false,
                 is_html_image: false,
+                last_modified: 0,
             })
         );
     }

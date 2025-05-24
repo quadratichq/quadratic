@@ -12,11 +12,16 @@ import {
 import { pixiApp } from './PixiApp';
 import { thumbnail } from './thumbnail';
 
+// update the modified time
+const MODIFIED_TIME_UPDATE = 60000; // 1 minute
+
 export class Update {
   private raf?: number;
   private fps?: FPS;
 
   private scrollBarsHandler?: ScrollBarsHandler;
+
+  private slowUpdate = 0;
 
   firstRenderComplete = false;
 
@@ -55,6 +60,15 @@ export class Update {
     }
   };
 
+  // handles slow updates (every second)
+  private updateSlowUpdate = () => {
+    const now = Date.now();
+    if (now > this.slowUpdate) {
+      pixiApp.tableUpdateModifiedTime();
+      this.slowUpdate = now + MODIFIED_TIME_UPDATE;
+    }
+  };
+
   // update loop w/debug checks
   private update = () => {
     if (pixiApp.destroyed) return;
@@ -73,6 +87,8 @@ export class Update {
     if (debugShowFocus) {
       this.showFocus();
     }
+
+    this.updateSlowUpdate();
 
     pixiApp.viewport.updateViewport();
 
