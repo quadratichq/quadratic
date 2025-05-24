@@ -35,16 +35,19 @@ const minSize = config.getNumber("connection-lb-min-size") ?? 2;
 const maxSize = config.getNumber("connection-lb-max-size") ?? 5;
 const desiredCapacity = config.getNumber("connection-lb-desired-capacity") ?? 2;
 
-// Create an Auto Scaling Group
-const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
-  instanceType: instanceSize,
+// Create an Launch Template
+const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
+  name: `connection-lt-${connectionSubdomain}`,
   imageId: latestAmazonLinuxAmi.id,
-  iamInstanceProfile: instanceProfileIAMContainerRegistry,
-  securityGroups: [connectionEc2SecurityGroup.id],
+  instanceType: instanceSize,
+  iamInstanceProfile: {
+    name: instanceProfileIAMContainerRegistry.name,
+  },
+  vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
   userData: pulumi
     .all([connectionEip1.publicIp, connectionEip2.publicIp])
-    .apply(([eip1, eip2]) =>
-      runDockerImageBashScript(
+    .apply(([eip1, eip2]) => {
+      const script = runDockerImageBashScript(
         connectionECRName,
         dockerImageTag,
         connectionPulumiEscEnvironmentName,
@@ -53,8 +56,17 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
           STATIC_IPS: `${eip1},${eip2}`,
         },
         true,
-      ),
-    ),
+      );
+      return Buffer.from(script).toString("base64");
+    }),
+  tagSpecifications: [
+    {
+      resourceType: "instance",
+      tags: {
+        Name: `connection-instance-${connectionSubdomain}`,
+      },
+    },
+  ],
 });
 
 // Create a new Target Group
@@ -77,7 +89,10 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
     connectionPrivateSubnet1.id,
     connectionPrivateSubnet2.id,
   ],
-  launchConfiguration: launchConfiguration.id,
+  launchTemplate: {
+    id: launchTemplate.id,
+    version: "$Latest",
+  },
   minSize,
   maxSize,
   desiredCapacity,

@@ -35,8 +35,8 @@ const minSize = config.getNumber("api-lb-min-size") ?? 2;
 const maxSize = config.getNumber("api-lb-max-size") ?? 5;
 const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
 
-// Create an Auto Scaling Group
-const launchTemplate = new aws.ec2.LaunchTemplate("api-lc", {
+// Create an Launch Template
+const launchTemplate = new aws.ec2.LaunchTemplate("api-lt", {
   name: `api-lt-${apiSubdomain}`,
   imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
