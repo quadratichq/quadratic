@@ -16,7 +16,7 @@ const DIVISIONS: { amount: number; name: Intl.RelativeTimeFormatUnit }[] = [
   { amount: Number.POSITIVE_INFINITY, name: 'years' },
 ];
 
-export function timeAgo(dateString: string | number, force = false) {
+export function timeAgo(dateString: string | number, force = false, showSeconds = true) {
   const date = new Date(dateString);
   const now = new Date();
 
@@ -37,6 +37,9 @@ export function timeAgo(dateString: string | number, force = false) {
   for (let i = 0; i < DIVISIONS.length; i++) {
     const division = DIVISIONS[i];
     if (Math.abs(duration) < division.amount) {
+      if (division.name === 'seconds' && !showSeconds) {
+        return `< ${formatter.format(Math.round(-1), 'minute')}`;
+      }
       return formatter.format(Math.round(duration), division.name);
     }
     duration /= division.amount;

@@ -124,7 +124,7 @@ export class TableName extends Container {
 
   private drawModified() {
     if (!this.modified) return;
-    const modified = timeAgo(Number(this.table.codeCell.last_modified));
+    const modified = timeAgo(Number(this.table.codeCell.last_modified), false, false);
     if (modified) {
       this.modified.text = modified;
       // don't show the modified text if it overlaps the left text
