@@ -122,7 +122,6 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
   echo "VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL" >> ./quadratic-client/.env && \
   echo "VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL" >> ./quadratic-client/.env && \
   echo "VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL" >> ./quadratic-client/.env && \
-  echo "VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL" >> ./quadratic-client/.env && \
   echo "VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL" >> ./quadratic-client/.env && \
   echo "VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL" >> ./quadratic-client/.env && \
   echo "VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL" >> ./quadratic-client/.env && \
