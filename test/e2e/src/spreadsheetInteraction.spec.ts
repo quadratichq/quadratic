@@ -201,7 +201,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Assert that programming language menu opens with "Connections" selection section
   await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Manage connections"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Add or manage…"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Grid is Refocused after closing Top bar Menu
@@ -223,19 +223,19 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(5 * 1000);
 
-  // Press "Enter" on keyboard focus on cell (0,0)
+  // Press "Enter" on keyboard focus on cell (1,1)
   await page.keyboard.press('Enter');
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
-  // Assert that focus is on grid at cell (0,0)
+  // Assert that focus is on grid at cell (1,1)
   await expect(page.locator(`div[style*="left: 2px; top: 2px;"] div[id="cell-edit"]`)).toBeVisible({
     timeout: 30 * 1000,
   });
 
-  // Press "Esc" on keyboard to lose focus on cell (0,0)
+  // Press "Esc" on keyboard to lose focus on cell (1,1)
   await page.keyboard.press('Escape');
   await page.waitForTimeout(5 * 1000);
 
@@ -253,7 +253,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Assert that programming language menu opens with "Connections" selection section
   await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Manage connections"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Add or manage…"]`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Clean up
   // Press "Esc" on keyboard to close the programming language menu

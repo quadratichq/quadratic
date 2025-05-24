@@ -14,7 +14,7 @@
   },
   "keywords": [],
   "engines": {
-    "node": "23.x"
+    "node": "24.x"
   },
   "type": "module",
   "devDependencies": {
