@@ -23,7 +23,12 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getPromptMessagesWithoutPDF } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getPromptMessagesWithoutPDF,
+  isContentText,
+  removeOldFilesInToolResult,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -250,24 +255,41 @@ export function useSubmitAIAssistantPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any, {
+                const toolResultContent = await aiToolsActions[aiTool](args as any, {
                   source: 'AIAssistant',
                   chatId,
                   messageIndex: lastMessageIndex + 1,
                 });
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  text: result,
+                  content: toolResultContent,
                 });
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  text: 'Unknown tool',
+                  content: [
+                    {
+                      type: 'text',
+                      text: 'Unknown tool',
+                    },
+                  ],
                 });
               }
             }
 
-            set(aiAssistantMessagesAtom, (prev) => [...prev, toolResultMessage]);
+            const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
+              result.content.forEach((content) => {
+                if (!isContentText(content)) {
+                  acc.add(content.fileName);
+                }
+              });
+              return acc;
+            }, new Set<string>());
+
+            set(aiAssistantMessagesAtom, (prev) => [
+              ...removeOldFilesInToolResult(prev, filesInToolResult),
+              toolResultMessage,
+            ]);
           }
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {

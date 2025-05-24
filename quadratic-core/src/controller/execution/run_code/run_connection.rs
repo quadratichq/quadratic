@@ -258,6 +258,7 @@ mod tests {
                 },
                 code.to_string(),
                 None,
+                None,
             );
 
             let sheet = gc.sheet(sheet_id);

@@ -338,11 +338,13 @@ mod tests {
             CodeCellLanguage::Formula,
             "B$16 + $B17".into(),
             None,
+            None,
         );
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "'Sheet 1'!F1+Other!F1 - Nonexistent!F1".into(),
+            None,
             None,
         );
 
@@ -434,6 +436,7 @@ mod tests {
             CodeCellLanguage::Python,
             r#"q.cells("B1:B2")"#.into(),
             None,
+            None,
         );
 
         let mut cells_accessed = CellsAccessed::default();
@@ -516,6 +519,7 @@ mod tests {
             sheet_pos,
             CodeCellLanguage::Javascript,
             r#"return q.cells("B1:B2");"#.into(),
+            None,
             None,
         );
 
@@ -649,6 +653,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "C1".into(),
             None,
+            None,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -702,6 +707,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "A3".into(),
             None,
+            None,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -740,6 +746,7 @@ mod tests {
             pos![sheet_id!J10], // 10,10
             CodeCellLanguage::Formula,
             "$F6".into(),
+            None,
             None,
         );
 

@@ -228,6 +228,7 @@ mod tests {
             CodeCellLanguage::Python,
             "<html></html>".to_string(),
             None,
+            None,
         );
         let transaction_id = gc.async_transactions()[0].id;
         gc.calculation_complete(JsCodeResult {

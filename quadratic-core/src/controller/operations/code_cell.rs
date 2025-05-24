@@ -16,6 +16,7 @@ impl GridController {
         sheet_pos: SheetPos,
         language: CodeCellLanguage,
         code: String,
+        code_cell_name: Option<String>,
     ) -> Vec<Operation> {
         let parse_ctx = self.a1_context();
         let code = match language {
@@ -23,13 +24,31 @@ impl GridController {
             _ => code,
         };
 
-        vec![
+        let mut ops = vec![
             Operation::SetCellValues {
                 sheet_pos,
                 values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
             },
             Operation::ComputeCode { sheet_pos },
-        ]
+        ];
+
+        // change the code cell name if it is provided and the code cell doesn't already have a name
+        if let Some(code_cell_name) = code_cell_name {
+            if self.data_table_at(sheet_pos).is_none() {
+                ops.push(Operation::DataTableMeta {
+                    sheet_pos,
+                    name: Some(code_cell_name),
+                    alternating_colors: None,
+                    columns: None,
+                    show_ui: None,
+                    show_name: None,
+                    show_columns: None,
+                    readonly: None,
+                });
+            }
+        }
+
+        ops
     }
 
     /// Reruns a code cell
@@ -150,6 +169,7 @@ mod test {
             pos.to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('hello world')".to_string(),
+            None,
         );
         assert_eq!(operations.len(), 2);
         assert_eq!(
@@ -187,6 +207,7 @@ mod test {
                 CodeCellLanguage::Formula,
                 "1 + 1".to_string(),
                 None,
+                None,
             );
         };
 
@@ -202,6 +223,7 @@ mod test {
                 CodeCellLanguage::Formula,
                 "A1".to_string(),
                 None,
+                None,
             );
         };
 
@@ -216,6 +238,7 @@ mod test {
                 },
                 CodeCellLanguage::Formula,
                 format!("'{}1'!A1", SHEET_NAME.to_owned()),
+                None,
                 None,
             );
         };
@@ -367,6 +390,7 @@ mod test {
             sheet_pos,
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
+            None,
             None,
         );
         gc.rerun_all_code_cells(None);

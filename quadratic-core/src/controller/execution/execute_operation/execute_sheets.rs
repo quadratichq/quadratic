@@ -446,6 +446,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "A1 + A2".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
@@ -602,6 +603,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,
+            None,
         );
 
         let op = vec![Operation::DuplicateSheet {
@@ -687,6 +689,7 @@ mod tests {
             CodeCellLanguage::Python,
             format!("q.cells('{}')", file_name),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos![J10]).unwrap().name(),
@@ -699,6 +702,7 @@ mod tests {
             pos![sheet_id!T20],
             CodeCellLanguage::Python,
             format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
+            None,
             None,
         );
         assert_eq!(

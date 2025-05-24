@@ -10,6 +10,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
@@ -473,6 +474,7 @@ export interface ClientCoreSetCodeCellValue {
   codeString: string;
   cursor?: string;
   id: number;
+  codeCellName?: string;
 }
 
 export interface CoreClientSetCodeCellValue {
@@ -1132,8 +1134,16 @@ export interface ClientCoreCodeDataTableToDataTable {
 
 export interface ClientCoreGridToDataTable {
   type: 'clientCoreGridToDataTable';
+  id: number;
   sheetRect: string;
+  tableName?: string;
+  firstRowIsHeader: boolean;
   cursor: string;
+}
+
+export interface CoreClientGridToDataTable {
+  type: 'coreClientGridToDataTable';
+  id: number;
 }
 
 export interface ClientCoreDataTableMeta {
@@ -1250,6 +1260,47 @@ export interface CoreClientCoreError {
   type: 'coreClientCoreError';
   from: string;
   error: Error | unknown;
+}
+
+export interface ClientCoreGetAICells {
+  type: 'clientCoreGetAICells';
+  id: number;
+  selection: string;
+  sheetId: string;
+  page: number;
+}
+
+export interface CoreClientGetAICells {
+  type: 'coreClientGetAICells';
+  id: number;
+  aiCells: string;
+}
+
+export interface ClientCoreSetFormats {
+  type: 'clientCoreSetFormats';
+  sheetId: string;
+  selection: string;
+  formats: FormatUpdate;
+  id: number;
+}
+
+export interface CoreClientSetFormats {
+  type: 'coreClientSetFormats';
+  id: number;
+}
+
+export interface ClientCoreGetAIFormats {
+  type: 'clientCoreGetAIFormats';
+  id: number;
+  sheetId: string;
+  selection: string;
+  page: number;
+}
+
+export interface CoreClientGetAIFormats {
+  type: 'coreClientGetAIFormats';
+  id: number;
+  formats: string;
 }
 
 export interface ClientCoreResizeColumns {
@@ -1376,6 +1427,9 @@ export type ClientCoreMessage =
   | ClientCoreAddDataTable
   | ClientCoreMoveColumns
   | ClientCoreMoveRows
+  | ClientCoreGetAICells
+  | ClientCoreSetFormats
+  | ClientCoreGetAIFormats
   | ClientCoreResizeColumns
   | ClientCoreResizeRows
   | ClientCoreResizeAllColumns
@@ -1454,4 +1508,8 @@ export type CoreClientMessage =
   | CoreClientDeleteCellValues
   | CoreClientDataTableMutations
   | CoreClientSetCodeCellValue
-  | CoreClientCoreError;
+  | CoreClientCoreError
+  | CoreClientGetAICells
+  | CoreClientSetFormats
+  | CoreClientGetAIFormats
+  | CoreClientGridToDataTable;

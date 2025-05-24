@@ -1,11 +1,12 @@
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import { memo } from 'react';
 
 type UserPromptSuggestionsProps = {
   args: string;
   loading: boolean;
 };
 
-export const UserPromptSuggestionsSkeleton = ({ loading }: UserPromptSuggestionsProps) => {
+export const UserPromptSuggestionsSkeleton = memo(({ loading }: UserPromptSuggestionsProps) => {
   if (loading) {
     return (
       <div>
@@ -23,4 +24,4 @@ export const UserPromptSuggestionsSkeleton = ({ loading }: UserPromptSuggestions
   }
 
   return null;
-};
+});

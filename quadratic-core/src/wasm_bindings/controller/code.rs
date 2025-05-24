@@ -65,6 +65,7 @@ impl GridController {
         pos: String,
         language: JsValue,
         code_string: String,
+        code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> Option<String> {
         if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
@@ -74,6 +75,7 @@ impl GridController {
                         pos.to_sheet_pos(sheet_id),
                         language,
                         code_string,
+                        code_cell_name,
                         cursor,
                     ));
                 }

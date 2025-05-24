@@ -6,6 +6,8 @@ use crate::Pos;
 use crate::SheetPos;
 use crate::a1::A1Selection;
 use crate::controller::GridController;
+use crate::grid::Format;
+use crate::grid::formats::FormatUpdate;
 
 use super::CellFormatSummary;
 use super::NumericFormatKind;
@@ -286,5 +288,40 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
         serde_wasm_bindgen::to_value(&sheet.cell_format((x, y).into()))
             .map_err(|_| JsValue::UNDEFINED)
+    }
+
+    #[wasm_bindgen(js_name = "setFormats")]
+    pub fn js_set_formats(
+        &mut self,
+        sheet_id: String,
+        selection: String,
+        formats: String,
+    ) -> Result<(), JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
+        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            .map_err(|_| "Unable to parse A1Selection")?;
+        let format = serde_json::from_str::<Format>(&formats).map_err(|e| {
+            dbgjs!(&e);
+            "Invalid formats"
+        })?;
+        let mut format_update = FormatUpdate::from(format);
+
+        // handle clear text and fill color properly
+        if format_update
+            .text_color
+            .as_ref()
+            .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+        {
+            format_update.text_color = Some(None);
+        }
+        if format_update
+            .fill_color
+            .as_ref()
+            .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+        {
+            format_update.fill_color = Some(None);
+        }
+        self.set_formats(&selection, format_update);
+        Ok(())
     }
 }
