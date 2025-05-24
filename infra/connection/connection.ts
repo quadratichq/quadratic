@@ -71,10 +71,27 @@ const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
 
 // Create a new Target Group
 const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
+  tags: { Name: `connection-tg-${connectionSubdomain}` },
+
   port: 80,
   protocol: "TCP",
   targetType: "instance",
   vpcId: connectionVPC.id,
+
+  // Health check configuration
+  healthCheck: {
+    enabled: true,
+    path: "/health",
+    protocol: "HTTP",
+    healthyThreshold: 2,
+    unhealthyThreshold: 2,
+    timeout: 5,
+    interval: 10,
+    matcher: "200",
+  },
+
+  // Connection draining
+  deregistrationDelay: 30,
 });
 
 const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
@@ -134,6 +151,56 @@ const nlbListener = new aws.lb.Listener("connection-nlb-listener", {
   ],
 });
 
+// Create Global Accelerator
+const connectionGlobalAccelerator = new aws.globalaccelerator.Accelerator(
+  "connection-global-accelerator",
+  {
+    name: `connection-global-accelerator-${connectionSubdomain}`,
+    ipAddressType: "IPV4",
+    enabled: true,
+    tags: {
+      Name: "connection-global-accelerator",
+      Environment: pulumi.getStack(),
+    },
+  },
+);
+
+const connectionGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
+  "connection-global-accelerator-listener",
+  {
+    acceleratorArn: connectionGlobalAccelerator.id,
+    protocol: "TCP",
+    portRanges: [
+      {
+        fromPort: 443,
+        toPort: 443,
+      },
+    ],
+    clientAffinity: "SOURCE_IP",
+  },
+);
+
+const connectionGlobalAcceleratorEndpointGroup =
+  new aws.globalaccelerator.EndpointGroup(
+    "connection-globalaccelerator-endpoint-group",
+    {
+      listenerArn: connectionGlobalAcceleratorListener.id,
+      endpointConfigurations: [
+        {
+          endpointId: nlb.arn,
+          weight: 100,
+          clientIpPreservationEnabled: true,
+        },
+      ],
+      endpointGroupRegion: aws.getRegionOutput().name,
+      healthCheckProtocol: "TCP",
+      healthCheckPort: 443,
+      healthCheckIntervalSeconds: 30,
+      thresholdCount: 3,
+      trafficDialPercentage: 100,
+    },
+  );
+
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
   aws.route53.getZone(
@@ -144,15 +211,15 @@ const hostedZone = pulumi.output(
   ),
 );
 
-// Create a Route 53 record pointing to the NLB
+// Create a Route 53 record pointing to Global Accelerator
 const dnsRecord = new aws.route53.Record("connection-r53-record", {
   zoneId: hostedZone.id,
-  name: `${connectionSubdomain}.${domain}`, // subdomain you want to use
+  name: `${connectionSubdomain}.${domain}`,
   type: "A",
   aliases: [
     {
-      name: nlb.dnsName,
-      zoneId: nlb.zoneId,
+      name: connectionGlobalAccelerator.dnsName,
+      zoneId: "Z2BJ6XQ5FK7U4H", // AWS Global Accelerator zone ID
       evaluateTargetHealth: true,
     },
   ],

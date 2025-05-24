@@ -312,18 +312,4 @@ const dnsRecord = new aws.route53.Record("api-r53-record", {
   ],
 });
 
-// Create a Route 53 record pointing to ALB
-const dnsAlbRecord = new aws.route53.Record("api-r53-record-alb", {
-  zoneId: hostedZone.id,
-  name: `${apiSubdomain}-alb.${domain}`,
-  type: "A",
-  aliases: [
-    {
-      name: alb.dnsName,
-      zoneId: alb.zoneId,
-      evaluateTargetHealth: true,
-    },
-  ],
-});
-
 export const apiPublicDns = dnsRecord.name;
