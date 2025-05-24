@@ -124,11 +124,11 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
     return <ToolCard isLoading />;
   }
 
-  const { code_cell_language, code_cell_position } = toolArgs.data;
+  const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
   return (
     <ToolCard
       icon={<LanguageIcon language={code_cell_language} />}
-      label={code_cell_language}
+      label={code_cell_name || code_cell_language}
       description={
         `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
       }
