@@ -71,11 +71,11 @@ pub fn toggle_reference_types(reference: &str) -> Result<String, String> {
 pub fn selection_to_sheet_rect(
     sheet_id: &str,
     selection: &str,
-    context: &str,
+    context: &[u8],
 ) -> Result<String, String> {
     // we don't need a real context since we're creating a table, so there should be no need for table info
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
-    let context = serde_json::from_str::<A1Context>(context)
+    let context = serde_json::from_slice::<A1Context>(context)
         .map_err(|e| format!("Error parsing context: {e}"))?;
     let selection = A1Selection::parse_a1(selection, sheet_id, &context)
         .map_err(|e| format!("Invalid selection: {e}"))?;
