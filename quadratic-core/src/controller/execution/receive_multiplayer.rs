@@ -727,6 +727,7 @@ mod tests {
             crate::grid::CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
+            None,
         );
 
         // ensure code_cell exists
@@ -804,6 +805,7 @@ mod tests {
             CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
+            None,
         );
 
         // ensure code_cell exists
@@ -871,6 +873,7 @@ mod tests {
             CodeCellLanguage::Python,
             "q.cells(\"A1\") + 1".into(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
@@ -895,6 +898,7 @@ mod tests {
             pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells(\"B1\") + 1".into(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -1065,6 +1069,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1".to_string(),
             None,
+            None,
         );
         gc.set_code_cell(
             SheetPos {
@@ -1075,6 +1080,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "2".to_string(),
             None,
+            None,
         );
         gc.set_code_cell(
             SheetPos {
@@ -1084,6 +1090,7 @@ mod tests {
             },
             CodeCellLanguage::Formula,
             "3".to_string(),
+            None,
             None,
         );
         let find_index =

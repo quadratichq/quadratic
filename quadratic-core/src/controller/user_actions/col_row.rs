@@ -1,5 +1,6 @@
 use crate::{
     CopyFormats,
+    a1::A1Selection,
     controller::{
         GridController, active_transactions::transaction_name::TransactionName,
         operations::operation::Operation,
@@ -21,22 +22,32 @@ impl GridController {
     /// insertion. DF: While confusing, it was created originally to support
     /// copying formats, but later turned into a differentiator for inserting
     /// columns, since the behavior was different for insert to left vs right.
-    pub fn insert_column(
+    pub fn insert_columns(
         &mut self,
         sheet_id: SheetId,
         column: i64,
+        count: u32,
         after: bool,
         cursor: Option<String>,
     ) {
-        let ops = vec![Operation::InsertColumn {
-            sheet_id,
-            column,
-            copy_formats: if after {
-                CopyFormats::After
-            } else {
-                CopyFormats::Before
-            },
-        }];
+        let mut ops = vec![];
+        for i in 0..count as i64 {
+            ops.push(Operation::InsertColumn {
+                sheet_id,
+                column: column + i,
+                copy_formats: if after {
+                    CopyFormats::After
+                } else {
+                    CopyFormats::Before
+                },
+            });
+        }
+        if !after && count > 1 {
+            ops.push(Operation::SetCursorA1 {
+                selection: A1Selection::cols(sheet_id, column, column - 1 + count as i64),
+            });
+        }
+
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -49,16 +60,35 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
-    pub fn insert_row(&mut self, sheet_id: SheetId, row: i64, after: bool, cursor: Option<String>) {
-        let ops = vec![Operation::InsertRow {
-            sheet_id,
-            row,
-            copy_formats: if after {
-                CopyFormats::After
-            } else {
-                CopyFormats::Before
-            },
-        }];
+    /// Note the after is providing the source row, not the direction of the
+    /// insertion. DF: While confusing, it was created originally to support
+    /// copying formats, but later turned into a differentiator for inserting
+    /// rows, since the behavior was different for insert to above vs below.
+    pub fn insert_rows(
+        &mut self,
+        sheet_id: SheetId,
+        row: i64,
+        count: u32,
+        after: bool,
+        cursor: Option<String>,
+    ) {
+        let mut ops = vec![];
+        for i in 0..count as i64 {
+            ops.push(Operation::InsertRow {
+                sheet_id,
+                row: row + i,
+                copy_formats: if after {
+                    CopyFormats::After
+                } else {
+                    CopyFormats::Before
+                },
+            });
+        }
+        if !after && count > 1 {
+            ops.push(Operation::SetCursorA1 {
+                selection: A1Selection::rows(sheet_id, row, row - 1 + count as i64),
+            });
+        }
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -102,7 +132,9 @@ mod tests {
 
     use crate::{
         CellValue, Pos, SheetPos,
+        a1::A1Selection,
         grid::{CodeCellLanguage, CodeCellValue, formats::Format},
+        test_util::*,
     };
 
     use super::*;
@@ -116,6 +148,7 @@ mod tests {
             SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "1".to_string(),
+            None,
             None,
         );
 
@@ -160,6 +193,7 @@ mod tests {
             SheetPos::new(sheet_id, 2, 2),
             CodeCellLanguage::Formula,
             "5".to_string(),
+            None,
             None,
         );
 
@@ -220,7 +254,7 @@ mod tests {
             Some("red".to_string())
         );
 
-        gc.insert_column(sheet_id, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -285,7 +319,7 @@ mod tests {
             }
         );
 
-        gc.insert_column(sheet_id, 2, false, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -351,7 +385,7 @@ mod tests {
             }
         );
 
-        gc.insert_row(sheet_id, 1, true, None);
+        gc.insert_rows(sheet_id, 1, 1, true, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -417,7 +451,7 @@ mod tests {
             }
         );
 
-        gc.insert_row(sheet_id, 2, false, None);
+        gc.insert_rows(sheet_id, 2, 1, false, None);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -453,5 +487,36 @@ mod tests {
         );
         assert!(sheet.formats.format(pos![A2]).is_default());
         assert!(sheet.formats.format(pos![B2]).is_default());
+    }
+
+    #[test]
+    fn test_insert_multiple_columns_formatting() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set up formatting in column A5 and A10
+        gc.set_cell_value(pos![sheet_id!C1], "hello".to_string(), None);
+        gc.set_bold(&A1Selection::test_a1("C5"), Some(true), None)
+            .unwrap();
+
+        // Insert 3 columns after C
+        gc.insert_columns(sheet_id, 4, 3, false, None);
+        assert_display_cell_value_first_sheet(&gc, 3, 1, "hello");
+        assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 5, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 6, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 7, 5, false);
+
+        gc.undo(None);
+
+        // insert 3 columns before C
+        gc.insert_columns(sheet_id, 3, 3, true, None);
+        assert_display_cell_value_first_sheet(&gc, 7, 1, "hello");
+        assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 5, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 6, 5, true);
+        assert_cell_format_bold(&gc, sheet_id, 7, 5, false);
     }
 }

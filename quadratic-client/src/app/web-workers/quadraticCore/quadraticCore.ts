@@ -20,6 +20,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -56,6 +57,7 @@ import type {
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
   CoreClientFiniteRectFromSelection,
+  CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
@@ -153,7 +155,7 @@ class QuadraticCore {
       events.emit('transactionEnd', e.data);
       return;
     } else if (e.data.type === 'coreClientUpdateCodeCells') {
-      const updateCodeCells = fromUint8Array(e.data.updateCodeCells) as JsUpdateCodeCell[];
+      const updateCodeCells = fromUint8Array<JsUpdateCodeCell[]>(e.data.updateCodeCells);
       events.emit('updateCodeCells', updateCodeCells);
       return;
     } else if (e.data.type === 'coreClientMultiplayerState') {
@@ -183,11 +185,11 @@ class QuadraticCore {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
-      const sheetValidations = fromUint8Array(e.data.sheetValidations) as Validation[];
+      const sheetValidations = fromUint8Array<Validation[]>(e.data.sheetValidations);
       events.emit('sheetValidations', e.data.sheetId, sheetValidations);
       return;
     } else if (e.data.type === 'coreClientValidationWarnings') {
-      const warnings = fromUint8Array(e.data.warnings) as JsHashValidationWarnings[];
+      const warnings = fromUint8Array<JsHashValidationWarnings[]>(e.data.warnings);
       events.emit('validationWarnings', warnings);
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
@@ -386,6 +388,16 @@ class QuadraticCore {
     });
   }
 
+  getAICells(selection: string, sheetId: string, page: number): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { aiCells: string }) => {
+        resolve(message.aiCells);
+      };
+      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId, page });
+    });
+  }
+
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
@@ -474,6 +486,7 @@ class QuadraticCore {
     y: number;
     language: CodeCellLanguage;
     codeString: string;
+    codeCellName?: string;
     cursor?: string;
   }): Promise<string | undefined> {
     const id = this.id++;
@@ -489,6 +502,7 @@ class QuadraticCore {
         language: options.language,
         codeString: options.codeString,
         cursor: options.cursor,
+        codeCellName: options.codeCellName,
         id,
       });
     });
@@ -761,6 +775,38 @@ class QuadraticCore {
     });
   }
 
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreSetFormats',
+        id,
+        sheetId,
+        selection,
+        formats,
+      });
+    });
+  }
+
+  getAICellFormats(sheetId: string, selection: string, page: number) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
+        resolve(message.formats);
+      };
+      this.send({
+        type: 'clientCoreGetAIFormats',
+        id,
+        sheetId,
+        selection,
+        page,
+      });
+    });
+  }
+
   deleteCellValues(selection: string, cursor?: string) {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -865,7 +911,7 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: CoreClientCopyToClipboard) => {
         let jsClipboard = {} as JsClipboard;
         if (message.data) {
-          jsClipboard = fromUint8Array(message.data) as JsClipboard;
+          jsClipboard = fromUint8Array<JsClipboard>(message.data);
         }
         resolve(jsClipboard);
       };
@@ -883,7 +929,7 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: CoreClientCutToClipboard) => {
         let jsClipboard = {} as JsClipboard;
         if (message.data) {
-          jsClipboard = fromUint8Array(message.data) as JsClipboard;
+          jsClipboard = fromUint8Array<JsClipboard>(message.data);
         }
         resolve(jsClipboard);
       };
@@ -1338,11 +1384,12 @@ class QuadraticCore {
     });
   }
 
-  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertColumn',
+      type: 'clientCoreInsertColumns',
       sheetId,
       column,
+      count,
       right,
       cursor,
     });
@@ -1357,11 +1404,12 @@ class QuadraticCore {
     });
   }
 
-  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertRow',
+      type: 'clientCoreInsertRows',
       sheetId,
       row,
+      count,
       below,
       cursor,
     });
@@ -1412,11 +1460,20 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, cursor: string) {
-    this.send({
-      type: 'clientCoreGridToDataTable',
-      sheetRect,
-      cursor,
+  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreGridToDataTable',
+        id,
+        sheetRect,
+        firstRowIsHeader,
+        tableName,
+        cursor,
+      });
     });
   }
 

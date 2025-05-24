@@ -1,7 +1,6 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -9,7 +8,7 @@ import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage, Context, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -22,7 +21,6 @@ export const useAnalystPDFImport = () => {
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
-  const { getSelectionContext } = useSelectionContextMessages();
 
   const importPDF = useRecoilCallback(
     ({ set }) =>
@@ -34,23 +32,21 @@ export const useAnalystPDFImport = () => {
         pdfImportArgs: PDFImportResponse;
         context: Context;
         chatMessages: ChatMessage[];
-      }): Promise<string> => {
+      }): Promise<ToolResultContent> => {
         let importPDFResult = '';
         try {
           const { file_name, prompt } = pdfImportArgs;
           const file = getPdfFileFromChatMessages(file_name, chatMessages);
           if (!file) {
-            return `File with name ${file_name} not found`;
+            return [{ type: 'text', text: `File with name ${file_name} not found` }];
           }
 
-          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, selectionContext] =
-            await Promise.all([
-              getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-              getTablesContext(),
-              getCurrentSheetContext({ currentSheetName: context.currentSheet }),
-              getVisibleContext(),
-              getSelectionContext({ selection: context.selection }),
-            ]);
+          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext] = await Promise.all([
+            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+            getTablesContext(),
+            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+            getVisibleContext(),
+          ]);
 
           const messagesWithContext: ChatMessage[] = [
             {
@@ -91,7 +87,6 @@ How can I help you?`,
             ...tablesContext,
             ...currentSheetContext,
             ...visibleContext,
-            ...selectionContext,
             {
               role: 'user',
               content: [
@@ -123,7 +118,7 @@ How can I help you?`,
           });
 
           if (abortController.signal.aborted) {
-            return 'Request aborted by the user.';
+            return [{ type: 'text', text: 'Request aborted by the user.' }];
           }
 
           set(aiAnalystPDFImportAtom, { abortController: undefined, loading: false });
@@ -151,16 +146,9 @@ How can I help you?`,
           set(aiAnalystPDFImportAtom, { abortController: undefined, loading: false });
           importPDFResult = 'Unable to add any data table from the PDF';
         }
-        return importPDFResult;
+        return [{ type: 'text', text: importPDFResult }];
       },
-    [
-      handleAIRequestToAPI,
-      getOtherSheetsContext,
-      getTablesContext,
-      getCurrentSheetContext,
-      getVisibleContext,
-      getSelectionContext,
-    ]
+    [handleAIRequestToAPI, getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext]
   );
 
   return { importPDF };

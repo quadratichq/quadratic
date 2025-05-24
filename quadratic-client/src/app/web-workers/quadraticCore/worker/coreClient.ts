@@ -46,7 +46,7 @@ declare var self: WorkerGlobalScope &
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
-    sendA1Context: (tableMap: string) => void;
+    sendA1Context: (context: Uint8Array) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
     sendSetCursor: (cursor: string) => void;
@@ -266,6 +266,7 @@ class CoreClient {
           e.data.y,
           e.data.language,
           e.data.codeString,
+          e.data.codeCellName,
           e.data.cursor
         );
         this.send({
@@ -613,12 +614,12 @@ class CoreClient {
         core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
         return;
 
-      case 'clientCoreInsertColumn':
-        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
+      case 'clientCoreInsertColumns':
+        core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor);
         return;
 
-      case 'clientCoreInsertRow':
-        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+      case 'clientCoreInsertRows':
+        core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor);
         return;
 
       case 'clientCoreFlattenDataTable':
@@ -630,7 +631,11 @@ class CoreClient {
         return;
 
       case 'clientCoreGridToDataTable':
-        core.gridToDataTable(e.data.sheetRect, e.data.cursor);
+        core.gridToDataTable(e.data.sheetRect, e.data.tableName, e.data.firstRowIsHeader, e.data.cursor);
+        this.send({
+          type: 'coreClientGridToDataTable',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreDataTableMeta':
@@ -697,6 +702,30 @@ class CoreClient {
 
       case 'clientCoreMoveRows':
         core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
+        return;
+
+      case 'clientCoreGetAICells':
+        this.send({
+          type: 'coreClientGetAICells',
+          id: e.data.id,
+          aiCells: core.getAICells(e.data.selection, e.data.sheetId, e.data.page),
+        });
+        return;
+
+      case 'clientCoreGetAIFormats':
+        this.send({
+          type: 'coreClientGetAIFormats',
+          id: e.data.id,
+          formats: core.getAICellFormats(e.data.sheetId, e.data.selection, e.data.page),
+        });
+        return;
+
+      case 'clientCoreSetFormats':
+        core.setFormats(e.data.sheetId, e.data.selection, e.data.formats);
+        this.send({
+          type: 'coreClientSetFormats',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreResizeColumns':
@@ -881,8 +910,8 @@ class CoreClient {
     this.send({ type: 'coreClientClientMessage', message, severity });
   };
 
-  sendA1Context = (context: string) => {
-    this.send({ type: 'coreClientA1Context', context });
+  sendA1Context = (context: Uint8Array) => {
+    this.send({ type: 'coreClientA1Context', context }, context.buffer);
   };
 
   sendCoreError = (from: string, error: Error | unknown) => {

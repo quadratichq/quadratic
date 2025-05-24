@@ -583,7 +583,7 @@ impl GridController {
         }
 
         let context = self.a1_context();
-        if let Ok(context) = serde_json::to_string(context) {
+        if let Ok(context) = serde_json::to_vec(context) {
             crate::wasm_bindings::js::jsA1Context(context);
         }
     }
@@ -698,6 +698,7 @@ mod test {
             (1, 1, sheet_id).into(),
             crate::grid::CodeCellLanguage::Python,
             "test".to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id.to_string();

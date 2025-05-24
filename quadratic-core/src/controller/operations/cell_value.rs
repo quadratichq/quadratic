@@ -32,7 +32,7 @@ impl GridController {
         let mut data_table_ops = vec![];
         let existing_data_tables = self
             .a1_context()
-            .iter_tables_in_sheet(&sheet_pos.sheet_id)
+            .iter_tables_in_sheet(sheet_pos.sheet_id)
             .filter(|table| table.language == CodeCellLanguage::Import)
             .map(|table| table.bounds)
             .collect::<Vec<_>>();
@@ -865,6 +865,7 @@ mod test {
             CodeCellLanguage::Formula,
             "5 + 5".to_string(),
             None,
+            None,
         );
 
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
@@ -905,6 +906,7 @@ mod test {
             sheet_pos_2,
             CodeCellLanguage::Formula,
             "5 + 5".to_string(),
+            None,
             None,
         );
         let selection = A1Selection::test_a1("A2:,B");

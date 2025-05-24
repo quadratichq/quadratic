@@ -57,7 +57,8 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
 
-      - uses: useblacksmith/rust-cache@v3
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -107,7 +108,7 @@ jobs:
 
   perf_core:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -120,14 +121,15 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           components: clippy, llvm-tools-preview
           override: true
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
 
-      - uses: useblacksmith/rust-cache@v3
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
 
       - name: Install llvm-tools-preview
         run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
@@ -179,7 +181,8 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
 
-      - uses: useblacksmith/rust-cache@v3
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
 
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
@@ -212,7 +215,8 @@ jobs:
         with:
           node-version: 24
 
-      - uses: useblacksmith/setup-python@v6
+      - name: Set up Python
+        uses: useblacksmith/setup-python@v6
         with:
           python-version: "3.11.3"
           cache: "pip"
@@ -257,7 +261,8 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
 
-      - uses: useblacksmith/rust-cache@v3
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
 
       - name: Run cargo clippy in quadratic-core
         run: |
@@ -292,9 +297,11 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
 
-      - uses: useblacksmith/rust-cache@v3
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
 
-      - uses: jetli/wasm-pack-action@v0.4.0
+      - name: Set up wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
 

@@ -135,7 +135,7 @@ interface EventTypes {
   recentFiles: (url: string, name: string, loaded: boolean) => void;
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
-  a1Context: (context: string) => void;
+  a1Context: (context: Uint8Array) => void;
   a1ContextUpdated: () => void;
 
   aiAnalystInitialized: () => void;

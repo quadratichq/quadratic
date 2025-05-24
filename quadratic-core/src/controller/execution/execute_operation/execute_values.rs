@@ -165,6 +165,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
@@ -213,6 +214,7 @@ mod tests {
             },
             CodeCellLanguage::Formula,
             "A0 + 5".to_string(),
+            None,
             None,
         );
         gc.set_cell_value(

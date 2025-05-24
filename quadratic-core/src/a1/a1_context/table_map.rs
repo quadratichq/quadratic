@@ -14,16 +14,20 @@ use super::TableMapEntry;
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
     tables: IndexMap<String, TableMapEntry>,
-    sheet_pos_to_table: HashMap<SheetId, HashMap<Pos, String>>,
+
+    #[serde(with = "crate::util::hashmap_serde")]
+    sheet_pos_to_table: HashMap<SheetPos, String>,
 }
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
         let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
+        let sheet_pos = table_map_entry
+            .bounds
+            .min
+            .to_sheet_pos(table_map_entry.sheet_id);
         self.sheet_pos_to_table
-            .entry(table_map_entry.sheet_id)
-            .or_default()
-            .insert(table_map_entry.bounds.min, table_name_folded.clone());
+            .insert(sheet_pos, table_name_folded.clone());
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
@@ -35,9 +39,8 @@ impl TableMap {
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
         if let Some(table) = self.tables.shift_remove(&table_name_folded) {
-            self.sheet_pos_to_table
-                .get_mut(&table.sheet_id)
-                .map(|pos_table| pos_table.remove(&table.bounds.min));
+            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
+            self.sheet_pos_to_table.remove(&sheet_pos);
             Some(table)
         } else {
             None
@@ -45,22 +48,20 @@ impl TableMap {
     }
 
     pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
-        let table_name = self
-            .sheet_pos_to_table
-            .get_mut(&sheet_id)
-            .and_then(|pos_table| pos_table.remove(&pos));
-        if let Some(table_name) = table_name {
-            self.tables.shift_remove(&table_name);
-        }
+        self.sheet_pos_to_table
+            .remove(&pos.to_sheet_pos(sheet_id))
+            .and_then(|table_name| self.tables.shift_remove(&table_name));
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
-        let table_names = self.sheet_pos_to_table.remove(&sheet_id);
-        if let Some(table_names) = table_names {
-            for (_, table_name) in table_names {
-                self.tables.shift_remove(&table_name);
+        self.sheet_pos_to_table.retain(|sheet_pos, table| {
+            if sheet_pos.sheet_id == sheet_id {
+                self.tables.shift_remove(table);
+                false
+            } else {
+                true
             }
-        }
+        });
     }
 
     pub fn sort(&mut self) {
@@ -112,17 +113,12 @@ impl TableMap {
     /// Returns an iterator over the TableMapEntry in a sheet.
     pub fn iter_table_values_in_sheet(
         &self,
-        sheet_id: &SheetId,
+        sheet_id: SheetId,
     ) -> impl Iterator<Item = &TableMapEntry> {
         self.sheet_pos_to_table
-            .get(sheet_id)
-            .map(|pos_table| {
-                pos_table
-                    .values()
-                    .filter_map(|table_name| self.tables.get(table_name))
-            })
-            .into_iter()
-            .flatten()
+            .iter()
+            .filter(move |(sheet_pos, _)| sheet_pos.sheet_id == sheet_id)
+            .flat_map(|(_, table_name)| self.tables.get(table_name))
     }
 
     /// Returns a list of all table names in the table map.

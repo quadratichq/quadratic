@@ -422,6 +422,7 @@ mod tests {
             crate::grid::CodeCellLanguage::Python,
             "1 + 1".into(),
             None,
+            None,
         );
 
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -450,6 +451,7 @@ mod tests {
                 id: Uuid::new_v4().to_string(),
             },
             "select * from table".into(),
+            None,
             None,
         );
 

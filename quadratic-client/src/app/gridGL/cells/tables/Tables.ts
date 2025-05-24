@@ -149,7 +149,7 @@ export class Tables extends Container<Table> {
   // listen for the bitmapFontsLoaded event and then render the code cells.
   private renderCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
     if (sheetId === this.cellsSheet.sheetId) {
-      const codeCells = fromUint8Array(renderCodeCells) as JsRenderCodeCell[];
+      const codeCells = fromUint8Array<JsRenderCodeCell[]>(renderCodeCells);
       this.removeChildren();
       if (!isBitmapFontLoaded()) {
         console.log('bitmapFontsLoaded event not received');
@@ -361,14 +361,15 @@ export class Tables extends Container<Table> {
     }
   }
 
-  isHtmlOrImage(cell: JsCoordinate): boolean {
+  isHtmlOrImage = (sheetId: string, cell: JsCoordinate): boolean => {
     if (this.htmlOrImage.has(`${cell.x},${cell.y}`)) {
       return true;
     }
     return (
-      !!htmlCellsHandler.findCodeCell(cell.x, cell.y) || pixiApp.cellsSheet().cellsImages.isImageCell(cell.x, cell.y)
+      !!htmlCellsHandler.findCodeCell(sheetId, cell.x, cell.y) ||
+      !!pixiApp.cellsSheets.getById(sheetId)?.cellsImages.isImageCell(cell.x, cell.y)
     );
-  }
+  };
 
   /// Returns true if the cell is inside a table's UI (column, table name, or html/image).
   getTableFromCell(cell: JsCoordinate): Table | undefined {

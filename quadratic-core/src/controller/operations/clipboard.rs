@@ -1027,6 +1027,7 @@ mod test {
             CodeCellLanguage::Formula,
             "SUM(B1:B3)".to_string(),
             None,
+            None,
         );
 
         assert_eq!(
@@ -1080,6 +1081,7 @@ mod test {
             pos![sheet1!A4],
             CodeCellLanguage::Formula,
             format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            None,
             None,
         );
 
@@ -1387,6 +1389,7 @@ mod test {
             CodeCellLanguage::Python,
             r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
             None,
+            None,
         );
 
         let selection = A1Selection::test_a1("A1:E5");
@@ -1490,6 +1493,7 @@ mod test {
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
             None,
+            None,
         );
 
         let selection = A1Selection::test_a1("A1:E5");
@@ -1525,6 +1529,7 @@ mod test {
             pos![J1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return "test";"#.to_string(),
+            None,
             None,
         );
 

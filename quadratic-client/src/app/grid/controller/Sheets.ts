@@ -16,7 +16,7 @@ export class Sheets {
   private _current: string;
 
   // Stores stringified TableMap for use by A1 functions
-  a1Context: string;
+  a1Context: Uint8Array;
 
   // set up sheet information
   // ------------------------
@@ -24,7 +24,7 @@ export class Sheets {
   constructor() {
     this.sheets = [];
     this._current = '';
-    this.a1Context = '';
+    this.a1Context = new Uint8Array();
     events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
@@ -35,7 +35,7 @@ export class Sheets {
     this.initialized = false;
   }
 
-  private updateA1Context = (context: string) => {
+  private updateA1Context = (context: Uint8Array) => {
     this.a1Context = context;
   };
 
@@ -170,6 +170,7 @@ export class Sheets {
           offsets: '',
           bounds: { type: 'empty' },
           bounds_without_formatting: { type: 'empty' },
+          format_bounds: { type: 'empty' },
         },
         true
       );
@@ -196,6 +197,10 @@ export class Sheets {
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();
     }
+  }
+
+  getSheetIdFromName(name: string): string {
+    return this.sheets.find((sheet) => sheet.name === name)?.id || '';
   }
 
   getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {

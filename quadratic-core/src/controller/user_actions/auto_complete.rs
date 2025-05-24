@@ -109,6 +109,7 @@ mod tests {
                         code_cell.language.clone(),
                         code_cell.code.clone(),
                         None,
+                        None,
                     );
                 }
 
@@ -724,6 +725,7 @@ mod tests {
             CodeCellLanguage::Python,
             r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
             None,
+            None,
         );
 
         gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
@@ -747,6 +749,7 @@ mod tests {
             pos![C4].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
+            None,
             None,
         );
 
@@ -772,7 +775,14 @@ mod tests {
 
         print_table_from_grid(&grid, sheet_id, range);
 
-        let expected = vec!["Southborough", "Southborough", "Southborough", "Southborough", "Southborough", "Southborough"];
+        let expected = vec![
+            "Southborough",
+            "Southborough",
+            "Southborough",
+            "Southborough",
+            "Southborough",
+            "Southborough",
+        ];
 
         // validate rows 4-14
         // data table is in rows 1 - 12, 4 columns wide
