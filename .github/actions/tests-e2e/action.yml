@@ -19,7 +19,7 @@ runs:
     - name: Setup Node
       uses: useblacksmith/setup-node@v5
       with:
-        node-version: 23
+        node-version: 24
 
     - name: Install Dependencies
       run: cd test/e2e && npm install

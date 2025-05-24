@@ -530,7 +530,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 128
+      matrix_runner: 150
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
@@ -623,7 +623,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: useblacksmith/setup-node@v5
         with:
-          node-version: 23
+          node-version: 24
 
       - name: Install Dependencies
         if: ${{ !cancelled() }}
@@ -686,6 +686,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images - [Preview](https://${{ env.e2e_url }}) successfully deployed at ${{ env.deploy_time }}
+
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [View](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)  [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
           edit-mode: replace
 
@@ -699,5 +700,6 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images - [Preview](https://${{ env.e2e_url }}) successfully deployed at ${{ env.deploy_time }}
+
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
