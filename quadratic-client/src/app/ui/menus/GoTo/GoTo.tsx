@@ -1,22 +1,47 @@
+import '@/app/ui/styles/floating-dialog.css';
+
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
-import { convertTableToRange, stringToSelection } from '@/app/quadratic-core/quadratic_core';
-import '@/app/ui/styles/floating-dialog.css';
+import { convertTableToRange, getTableInfo, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { GoToIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { CommandSeparator } from 'cmdk';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
-export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
-  const [, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
+export const GoTo = memo(() => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [showGotoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const [value, setValue] = useState<string>();
   const [currentSheet, setCurrentSheet] = useState<string>(sheets.current);
+  const [tableInfo, setTablesInfo] = useState<JsTableInfo[]>([]);
+
+  useEffect(() => {
+    const sync = () => {
+      let tableInfo: JsTableInfo[] = [];
+      try {
+        tableInfo = getTableInfo(sheets.a1Context);
+      } catch (e) {
+        console.error('Error getting table info in CursorPosition.tsx', e);
+      }
+      tableInfo.sort((a, b) => a.name.localeCompare(b.name));
+      setTablesInfo(tableInfo);
+    };
+
+    if (showGotoToMenu) {
+      sync();
+      events.on('a1ContextUpdated', sync);
+    }
+
+    return () => {
+      events.off('a1ContextUpdated', sync);
+    };
+  }, [showGotoToMenu]);
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
@@ -212,32 +237,35 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
       </CommandList>
     </Command>
   );
-};
+});
 
-function CommandItemGoto({
-  value,
-  onSelect,
-  icon,
-  name,
-  nameSecondary,
-}: {
-  value: string;
-  onSelect: () => void;
-  icon?: React.ReactNode;
-  name: string;
-  nameSecondary?: string;
-}) {
-  return (
-    <CommandItem value={value} onSelect={onSelect} className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2 overflow-hidden">
-        {icon}
-        <p className="truncate">{name}</p>
-      </div>
-      {nameSecondary && (
-        <div className="max-w-[30%] flex-shrink-0 truncate text-right text-xs text-muted-foreground">
-          {nameSecondary}
+const CommandItemGoto = memo(
+  ({
+    value,
+    onSelect,
+    icon,
+    name,
+    nameSecondary,
+  }: {
+    value: string;
+    onSelect: () => void;
+    icon?: React.ReactNode;
+    name: string;
+    nameSecondary?: string;
+  }) => {
+    return (
+      <CommandItem value={value} onSelect={onSelect} className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 overflow-hidden">
+          {icon}
+          <p className="truncate">{name}</p>
         </div>
-      )}
-    </CommandItem>
-  );
-}
+
+        {nameSecondary && (
+          <div className="max-w-[30%] flex-shrink-0 truncate text-right text-xs text-muted-foreground">
+            {nameSecondary}
+          </div>
+        )}
+      </CommandItem>
+    );
+  }
+);

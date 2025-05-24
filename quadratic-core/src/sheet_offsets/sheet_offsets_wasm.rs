@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 pub struct Placement {
     pub index: i32,
     pub position: f64,
-    pub size: i32,
+    pub size: f32,
 }
 
 #[derive(Serialize, Deserialize, ts_rs::TS)]
@@ -69,7 +69,7 @@ impl SheetOffsets {
         Placement {
             index: column,
             position,
-            size: size as i32,
+            size: size as f32,
         }
     }
     /// gets the screen coordinate and size for a pixel y-coordinate. Returns a [`Placement`]
@@ -79,7 +79,7 @@ impl SheetOffsets {
         Placement {
             index: row,
             position,
-            size: size as i32,
+            size: size as f32,
         }
     }
 
@@ -90,7 +90,7 @@ impl SheetOffsets {
         Placement {
             index: index.0 as i32,
             position: index.1,
-            size: self.column_width(index.0) as i32,
+            size: self.column_width(index.0) as f32,
         }
     }
     /// gets the screen coordinate and size for a pixel y-coordinate. Returns a [`Placement`]
@@ -100,7 +100,7 @@ impl SheetOffsets {
         Placement {
             index: index.0 as i32,
             position: index.1,
-            size: self.row_height(index.0) as i32,
+            size: self.row_height(index.0) as f32,
         }
     }
 

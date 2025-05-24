@@ -133,9 +133,9 @@ impl A1Selection {
                             a1_context,
                         )
                     }
-                    CellRefRange::Table { range } => {
+                    CellRefRange::Table { range: other_range } => {
                         let rect = range.to_largest_rect(a1_context);
-                        let other = range.to_largest_rect(a1_context);
+                        let other = other_range.to_largest_rect(a1_context);
                         if let (Some(rect), Some(other)) = (rect, other) {
                             rect.intersects(other)
                         } else {
