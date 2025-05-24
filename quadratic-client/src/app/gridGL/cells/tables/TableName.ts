@@ -8,7 +8,7 @@ import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { timeAgo } from '@/shared/utils/timeAgo';
+import { timeAgoAndNextTimeout } from '@/shared/utils/timeAgo';
 import type { Point } from 'pixi.js';
 import { Assets, BitmapText, Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
@@ -28,7 +28,10 @@ export class TableName extends Container {
   private background: Graphics;
   private symbol: Sprite | undefined;
   private text: BitmapText;
+
   private modified?: BitmapText;
+  private modifiedTimeout?: number;
+
   private dropdown: Sprite;
   private backgroundWidth = 0;
 
@@ -55,6 +58,10 @@ export class TableName extends Container {
   destroy() {
     sharedEvents.off('changeThemeAccentColor', this.drawBackground);
     super.destroy();
+    if (this.modifiedTimeout) {
+      clearTimeout(this.modifiedTimeout);
+      this.modifiedTimeout = undefined;
+    }
   }
 
   private drawBackground = () => {
@@ -124,9 +131,14 @@ export class TableName extends Container {
 
   private drawModified() {
     if (!this.modified) return;
-    const modified = timeAgo(Number(this.table.codeCell.last_modified), false, false);
-    if (modified) {
-      this.modified.text = modified;
+    if (this.modifiedTimeout) {
+      clearTimeout(this.modifiedTimeout);
+      this.modifiedTimeout = undefined;
+    }
+
+    const { timeAgo, nextInterval } = timeAgoAndNextTimeout(Number(this.table.codeCell.last_modified));
+    if (timeAgo) {
+      this.modified.text = timeAgo;
       // don't show the modified text if it overlaps the left text
       if (
         this.modified.width + SYMBOL_PADDING + this.dropdown.x + this.dropdown.width + TABLE_NAME_PADDING[0] >
@@ -137,6 +149,7 @@ export class TableName extends Container {
         this.modified.visible = true;
         this.modified.anchor.set(0, 0.5);
         this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, this.text.y);
+        this.modifiedTimeout = window.setTimeout(this.updateModifiedTime, nextInterval);
       }
     } else {
       this.modified.visible = false;
@@ -201,15 +214,20 @@ export class TableName extends Container {
     this.tableNameBounds.y = this.table.tableBounds.y;
   }
 
-  updateModifiedTime() {
+  updateModifiedTime = () => {
+    if (this.modifiedTimeout) {
+      clearTimeout(this.modifiedTimeout);
+      this.modifiedTimeout = undefined;
+    }
     if (this.modified) {
-      const modified = timeAgo(Number(this.table.codeCell.last_modified));
-      if (modified !== this.modified.text) {
+      const { timeAgo, nextInterval } = timeAgoAndNextTimeout(Number(this.table.codeCell.last_modified));
+      if (timeAgo !== this.modified.text) {
         this.drawModified();
         if (!pixiApp.viewport.dirty && pixiApp.viewport.getVisibleBounds().intersects(this.tableNameBounds)) {
           pixiApp.setViewportDirty();
         }
       }
+      this.modifiedTimeout = window.setTimeout(this.updateModifiedTime, nextInterval);
     }
-  }
+  };
 }
