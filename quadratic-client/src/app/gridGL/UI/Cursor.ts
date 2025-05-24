@@ -77,7 +77,7 @@ export class Cursor extends Container {
     const { codeEditorState } = pixiAppSettings;
     const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
-    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
+    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(sheets.current, cell)) {
       return;
     }
     const tables = pixiApp.cellsSheet().tables;
@@ -318,11 +318,13 @@ export class Cursor extends Container {
       this.cursorRectangle = undefined;
     } else if (finiteRanges.length) {
       this.cursorRectangle = new Rectangle();
-      const start = sheet.getCellOffsets(finiteRanges[0].start.col.coord, finiteRanges[0].start.row.coord);
-      const end = sheet.getCellOffsets(
-        Number(finiteRanges[0].end.col.coord) + 1,
-        Number(finiteRanges[0].end.row.coord) + 1
-      );
+      // normalize the coordinates so pointerHeading calculations work correctly
+      const xStart = Math.min(Number(finiteRanges[0].start.col.coord), Number(finiteRanges[0].end.col.coord));
+      const yStart = Math.min(Number(finiteRanges[0].start.row.coord), Number(finiteRanges[0].end.row.coord));
+      const xEnd = Math.max(Number(finiteRanges[0].start.col.coord), Number(finiteRanges[0].end.col.coord));
+      const yEnd = Math.max(Number(finiteRanges[0].start.row.coord), Number(finiteRanges[0].end.row.coord));
+      const start = sheet.getCellOffsets(xStart, yStart);
+      const end = sheet.getCellOffsets(xEnd + 1, yEnd + 1);
       this.cursorRectangle = new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y);
     } else if (infiniteRanges.length) {
       this.cursorRectangle = infiniteRectangle;

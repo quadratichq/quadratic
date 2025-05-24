@@ -40,8 +40,14 @@ impl GridController {
         Ok(())
     }
 
-    pub fn grid_to_data_table(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.grid_to_data_table_operations(sheet_rect);
+    pub fn grid_to_data_table(
+        &mut self,
+        sheet_rect: SheetRect,
+        table_name: Option<String>,
+        first_row_is_header: bool,
+        cursor: Option<String>,
+    ) {
+        let ops = self.grid_to_data_table_operations(sheet_rect, table_name, first_row_is_header);
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 
@@ -263,6 +269,7 @@ mod tests {
             CodeCellLanguage::Python,
             old_code.to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -321,6 +328,7 @@ mod tests {
             sheet_pos_code_cell,
             CodeCellLanguage::Python,
             old_code.to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;

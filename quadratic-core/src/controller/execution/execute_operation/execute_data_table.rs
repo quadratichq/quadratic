@@ -857,7 +857,7 @@ impl GridController {
             }
 
             let old_columns = columns.to_owned().and_then(|columns| {
-                let old_columns = std::mem::replace(&mut data_table.column_headers, Some(columns));
+                let old_columns = data_table.column_headers.replace(columns);
                 data_table.normalize_column_header_names();
                 // mark code cells as dirty to updata meta data
                 transaction.add_code_cell(sheet_id, data_table_pos);
@@ -2161,7 +2161,13 @@ mod tests {
 
         // create a formula cell in the grid data table
         let formula_pos = SheetPos::new(sheet_id, 1, 3);
-        gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
+        gc.set_code_cell(
+            formula_pos,
+            CodeCellLanguage::Formula,
+            "=1+1".into(),
+            None,
+            None,
+        );
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
 
         // there should only be 1 data table, the formula data table
@@ -2471,11 +2477,13 @@ mod tests {
             CodeCellLanguage::Formula,
             "1+1".to_string(),
             None,
+            None,
         );
         gc.set_code_cell(
             pos!(I5).to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "2+2".to_string(),
+            None,
             None,
         );
 

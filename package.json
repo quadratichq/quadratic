@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -31,9 +31,9 @@
     "clean": "npm i -g rimraf && npm exec --workspaces -- npm run clean && npx rimraf node_modules dist build target && npm cache clean --force",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
     "client:download:pyodide": "npm run download:pyodide --workspace=quadratic-client",
-    "build:wasm:types": "cd quadratic-core && CC=clang AR=llvm-ar cargo run --bin export_types --features js --target-dir=target/quadratic-core-types",
+    "build:wasm:types": "npm run export_types --workspace=quadratic-core",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
-    "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
+    "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build:wasm:perf:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
@@ -56,11 +56,12 @@
     "lint:ts:write": "npm run lint:ts:write --workspace=quadratic-client",
     "lint:prettier": "npm run lint:prettier --workspace=quadratic-client",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
-    "lint:clippy:fix": "cd quadratic-core && cargo clippy --all-targets --all-features --fix -- -D warnings",
+    "lint:clippy:fix": "cd quadratic-core && cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings",
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
     "kill": "kill-port 3000 && kill-port 8000 && kill-port 3001 && kill-port 3002 && kill-port 3003 && kill-port 6379 && kill-port 8001 && kill-port 5432 && kill-port 4566 && kill-port 80 && kill-port 443",
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",
+    "gen:proto": "npm run gen:proto --workspace=quadratic-client",
     "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "docker:base": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile base --env-file .env.docker up",
@@ -86,6 +87,6 @@
     "typescript": "^5.8.2"
   },
   "engines": {
-    "node": "23.x"
+    "node": "24.x"
   }
 }

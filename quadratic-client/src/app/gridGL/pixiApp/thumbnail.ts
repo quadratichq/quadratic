@@ -15,9 +15,10 @@ const TIME_FOR_IDLE = 1000;
 class Thumbnail {
   private lastUpdate = 0;
   private thumbnailDirty = false;
-  private renderer?: Renderer;
+  private renderer: Renderer;
 
   constructor() {
+    this.renderer = new Renderer({ width: imageWidth, height: imageHeight, antialias: true, background: 0xffffff });
     events.on('generateThumbnail', this.setThumbnailDirty);
   }
 
@@ -27,9 +28,7 @@ class Thumbnail {
 
   destroy() {
     events.off('generateThumbnail', this.setThumbnailDirty);
-    if (this.renderer) {
-      this.renderer.destroy(false);
-    }
+    this.renderer.destroy(false);
   }
 
   rendererBusy() {
@@ -37,8 +36,9 @@ class Thumbnail {
   }
 
   async check() {
-    if (this.thumbnailDirty) {
+    if (this.thumbnailDirty && !pixiApp.copying) {
       const now = performance.now();
+      // don't do anything while the app is paused (since it may already be generating thumbnails)
       if (this.lastUpdate + TIME_FOR_IDLE > now) {
         const url = window.location.pathname.split('/');
         const uuid = url[2];
@@ -68,24 +68,14 @@ class Thumbnail {
 
   /** returns a dataURL to a copy of the selected cells */
   private async generate(): Promise<Blob | null> {
-    if (!this.renderer) {
-      this.renderer = new Renderer({
-        antialias: true,
-        backgroundColor: 0xffffff,
-      });
-    }
-
-    this.renderer.resize(imageWidth, imageHeight);
-    this.renderer.view.width = imageWidth;
-    this.renderer.view.height = imageHeight;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
-    pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
+    await pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
     pixiApp.gridLines.update(rectangle, undefined, true);
     this.renderer.render(pixiApp.viewportContents);
     pixiApp.cleanUpAfterCopying(true);
     pixiApp.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
-      this.renderer!.view.toBlob?.((blob) => resolve(blob));
+      this.renderer.view.toBlob?.((blob) => resolve(blob));
     });
   }
 }
