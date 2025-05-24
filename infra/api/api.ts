@@ -234,60 +234,6 @@ const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
   },
 );
 
-// Create Global Accelerator
-const apiGlobalAccelerator = new aws.globalaccelerator.Accelerator(
-  "api-global-accelerator",
-  {
-    name: `api-global-accelerator-${apiSubdomain}`,
-    ipAddressType: "IPV4",
-    enabled: true,
-    tags: {
-      Name: "api-global-accelerator",
-      Environment: pulumi.getStack(),
-    },
-  },
-);
-
-const apiGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
-  "api-global-accelerator-listener",
-  {
-    acceleratorArn: apiGlobalAccelerator.id,
-    protocol: "TCP",
-    portRanges: [
-      {
-        fromPort: 443,
-        toPort: 443,
-      },
-      {
-        fromPort: 80,
-        toPort: 80,
-      },
-    ],
-    clientAffinity: "SOURCE_IP",
-  },
-);
-
-const apiGlobalAcceleratorEndpointGroup =
-  new aws.globalaccelerator.EndpointGroup(
-    "api-globalaccelerator-endpoint-group",
-    {
-      listenerArn: apiGlobalAcceleratorListener.id,
-      endpointConfigurations: [
-        {
-          endpointId: alb.arn,
-          weight: 100,
-          clientIpPreservationEnabled: true,
-        },
-      ],
-      endpointGroupRegion: aws.getRegionOutput().name,
-      healthCheckProtocol: "TCP",
-      healthCheckPort: 443,
-      healthCheckIntervalSeconds: 30,
-      thresholdCount: 3,
-      trafficDialPercentage: 100,
-    },
-  );
-
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
   aws.route53.getZone(
@@ -298,24 +244,10 @@ const hostedZone = pulumi.output(
   ),
 );
 
-// Create a Route 53 record pointing to Global Accelerator
+// Create a Route 53 record pointing to ALB
 const dnsRecord = new aws.route53.Record("api-r53-record", {
   zoneId: hostedZone.id,
   name: `${apiSubdomain}.${domain}`,
-  type: "A",
-  aliases: [
-    {
-      name: apiGlobalAccelerator.dnsName,
-      zoneId: "Z2BJ6XQ5FK7U4H", // AWS Global Accelerator zone ID
-      evaluateTargetHealth: true,
-    },
-  ],
-});
-
-// Create a Route 53 record pointing to ALB
-const dnsAlbRecord = new aws.route53.Record("api-r53-record-alb", {
-  zoneId: hostedZone.id,
-  name: `${apiSubdomain}-alb.${domain}`,
   type: "A",
   aliases: [
     {
