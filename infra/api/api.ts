@@ -44,18 +44,18 @@ const launchTemplate = new aws.ec2.LaunchTemplate("api-lc", {
     name: instanceProfileIAMContainerRegistry.name,
   },
   vpcSecurityGroupIds: [apiEc2SecurityGroup.id],
-  ebsOptimized: "true",
   userData: pulumi
     .all([apiEip1.publicIp, apiEip2.publicIp])
-    .apply(([eip1, eip2]) =>
-      runDockerImageBashScript(
+    .apply(([eip1, eip2]) => {
+      const script = runDockerImageBashScript(
         apiECRName,
         dockerImageTag,
         apiPulumiEscEnvironmentName,
         {},
         true,
-      ),
-    ),
+      );
+      return Buffer.from(script).toString("base64");
+    }),
   tagSpecifications: [
     {
       resourceType: "instance",
