@@ -132,7 +132,7 @@ impl A1Context {
     pub fn test(sheets: &[(&str, SheetId)], tables: &[(&str, &[&str], crate::Rect)]) -> Self {
         let mut sheet_map = SheetMap::default();
         for (name, id) in sheets {
-            sheet_map.insert_test(name, *id);
+            sheet_map.insert_parts(name, *id);
         }
 
         let mut table_map = TableMap::default();

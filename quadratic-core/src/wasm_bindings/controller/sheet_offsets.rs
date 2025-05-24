@@ -11,13 +11,13 @@ impl GridController {
     #[wasm_bindgen(js_name = "getOffsets")]
     pub fn js_get_offsets(&self, sheet_id: String) -> SheetOffsets {
         // todo: should return a result
-        let sheet = self.try_sheet_from_string_id(sheet_id).unwrap();
+        let sheet = self.try_sheet_from_string_id(&sheet_id).unwrap();
         sheet.offsets.clone()
     }
 
     #[wasm_bindgen(js_name = "exportOffsets")]
     pub fn js_export_offsets(&self, sheet_id: String) -> Result<String, JsValue> {
-        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
+        if let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) {
             if let Ok(offsets) = serde_json::to_string(&sheet.offsets) {
                 Ok(offsets)
             } else {

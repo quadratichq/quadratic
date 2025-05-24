@@ -63,9 +63,9 @@ impl GridController {
     /// Reruns all code cells in all Sheets.
     pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
         let mut code_cell_positions = Vec::new();
-        for sheet in self.grid().sheets() {
+        for (sheet_id, sheet) in self.grid().sheets() {
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                code_cell_positions.push(pos.to_sheet_pos(sheet.id));
+                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
             }
         }
 

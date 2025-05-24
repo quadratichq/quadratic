@@ -234,10 +234,9 @@ impl GridController {
         let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
         let sheets = workbook.sheet_names().to_owned();
 
-        let existing_sheet_names = self.sheet_names();
-        for sheet_name in sheets.iter() {
-            if existing_sheet_names.contains(&sheet_name.as_str()) {
-                bail!("Sheet with name {} already exists", sheet_name);
+        for new_sheet_name in sheets.iter() {
+            if self.try_sheet_from_name(new_sheet_name).is_some() {
+                bail!("Sheet with name \"{new_sheet_name}\" already exists");
             }
         }
 
@@ -270,7 +269,7 @@ impl GridController {
         // add data from excel file to grid
         for sheet_name in sheets {
             let sheet = gc
-                .try_sheet_from_name(sheet_name.to_owned())
+                .try_sheet_from_name(&sheet_name)
                 .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
             let sheet_id = sheet.id;
 
@@ -405,7 +404,7 @@ impl GridController {
         let compute_ops = gc.rerun_all_code_cells_operations();
         gc.server_apply_transaction(compute_ops, None);
 
-        for sheet in gc.grid.sheets.into_iter() {
+        for sheet in gc.grid.sheets.into_values() {
             ops.push(Operation::AddSheet {
                 sheet: Box::new(sheet),
             });
