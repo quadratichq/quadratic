@@ -36,4 +36,4 @@ RUN npm i -g prisma
 
 COPY --from=builder /quadratic .
 
-CMD ["bash", "-c", "source ~/.bashrc && npm run prisma:migrate:deploy --workspace=quadratic-api && npm run start:prod --workspace=quadratic-api"]
+CMD ["bash", "-c", "npm run prisma:migrate:deploy --workspace=quadratic-api && npm run start:prod --workspace=quadratic-api"]
