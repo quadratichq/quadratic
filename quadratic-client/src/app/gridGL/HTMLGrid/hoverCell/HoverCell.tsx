@@ -231,6 +231,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
       sheetId: sheets.current,
       pos: { x, y },
       language: codeCellCore.language,
+      lastModified: 0,
     }),
     [codeCellCore.language, x, y]
   );
@@ -279,6 +280,7 @@ function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: Js
       sheetId: sheets.current,
       pos: { x, y },
       language: codeCellCore.language,
+      lastModified: 0,
     }),
     [codeCellCore.language, x, y]
   );

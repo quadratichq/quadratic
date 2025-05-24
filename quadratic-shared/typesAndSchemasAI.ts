@@ -150,6 +150,7 @@ const ContextSchema = z.object({
         y: z.number(),
       }),
       language: CodeCellLanguageSchema,
+      lastModified: z.number(),
     })
     .optional(),
 });
