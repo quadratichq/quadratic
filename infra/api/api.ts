@@ -40,7 +40,9 @@ const launchTemplate = new aws.ec2.LaunchTemplate("api-lc", {
   name: `api-lt-${apiSubdomain}`,
   imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
-  iamInstanceProfile: instanceProfileIAMContainerRegistry,
+  iamInstanceProfile: {
+    name: instanceProfileIAMContainerRegistry.name,
+  },
   vpcSecurityGroupIds: [apiEc2SecurityGroup.id],
   ebsOptimized: "true",
   userData: pulumi
