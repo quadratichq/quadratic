@@ -67,6 +67,9 @@ const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
       },
     },
   ],
+  monitoring: {
+    enabled: true,
+  },
 });
 
 // Create a new Target Group
@@ -121,6 +124,13 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
       instanceWarmup: "60",
     },
   },
+  enabledMetrics: [
+    "GroupMinSize",
+    "GroupMaxSize",
+    "GroupDesiredCapacity",
+    "GroupInServiceInstances",
+    "GroupTotalInstances",
+  ],
 });
 
 // Create a new Network Load Balancer
@@ -150,6 +160,36 @@ const nlbListener = new aws.lb.Listener("connection-nlb-listener", {
     },
   ],
 });
+
+// Add target-tracking auto-scaling policy for CPU
+const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
+  "connection-target-tracking-scaling",
+  {
+    autoscalingGroupName: autoScalingGroup.name,
+    policyType: "TargetTrackingScaling",
+    targetTrackingConfiguration: {
+      predefinedMetricSpecification: {
+        predefinedMetricType: "ASGAverageCPUUtilization",
+      },
+      targetValue: 70.0,
+    },
+  },
+);
+
+// Additional scaling policy for Network Out
+const networkOutScalingPolicy = new aws.autoscaling.Policy(
+  "connection-network-out-scaling",
+  {
+    autoscalingGroupName: autoScalingGroup.name,
+    policyType: "TargetTrackingScaling",
+    targetTrackingConfiguration: {
+      predefinedMetricSpecification: {
+        predefinedMetricType: "ASGAverageNetworkOut",
+      },
+      targetValue: 500000000, // 500 MB/s per instance
+    },
+  },
+);
 
 // Create Global Accelerator
 const connectionGlobalAccelerator = new aws.globalaccelerator.Accelerator(

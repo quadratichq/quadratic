@@ -64,6 +64,9 @@ const launchTemplate = new aws.ec2.LaunchTemplate("api-lt", {
       },
     },
   ],
+  monitoring: {
+    enabled: true,
+  },
 });
 
 // Create a new Target Group
