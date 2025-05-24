@@ -189,7 +189,7 @@ const connectionGlobalAcceleratorEndpointGroup =
         {
           endpointId: nlb.arn,
           weight: 100,
-          clientIpPreservationEnabled: true,
+          clientIpPreservationEnabled: false,
         },
       ],
       endpointGroupRegion: aws.getRegionOutput().name,
