@@ -3,19 +3,14 @@
 import type {
   ConnectionKind,
   JsBordersSheet,
-  JsCodeCell,
   JsHtmlOutput,
   JsOffset,
-  JsRenderCell,
-  JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
   JsSnackbarSeverity,
-  JsValidationWarning,
   SheetBounds,
   SheetInfo,
   TransactionName,
-  Validation,
 } from '@/app/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
@@ -31,11 +26,11 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: JsRenderCell[]) => void;
+    sendHashRenderCellsRender: (hashRenderCells: Uint8Array) => void;
     sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
-    sendA1Context: (tableMap: string) => void;
+    sendA1Context: (context: Uint8Array) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
@@ -51,8 +46,7 @@ declare var self: WorkerGlobalScope &
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
-    sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
@@ -62,13 +56,7 @@ declare var self: WorkerGlobalScope &
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
-    sendUpdateCodeCell: (
-      sheetId: string,
-      x: number,
-      y: number,
-      codeCell?: JsCodeCell,
-      renderCodeCell?: JsRenderCodeCell
-    ) => void;
+    sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
     sendConnection: (
       transactionId: string,
@@ -80,16 +68,11 @@ declare var self: WorkerGlobalScope &
       connection_id: String
     ) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
-    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
+    sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
+    sendValidationWarnings: (warnings: Uint8Array) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
-    sendRenderValidationWarnings: (
-      sheetId: string,
-      hashX: number | undefined,
-      hashY: number | undefined,
-      validationWarnings: JsValidationWarning[]
-    ) => void;
     sendMultiplayerSynced: () => void;
-    sendHashesDirty: (sheetId: string, hashes: string) => void;
+    sendHashesDirtyRender: (dirtyHashes: Uint8Array) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
   };
@@ -117,10 +100,8 @@ export const jsImportProgress = (
   return self.sendImportProgress(filename, current, total, x, y, width, height);
 };
 
-export const jsRenderCellSheets = (sheetId: string, hashX: bigint, hashY: bigint, cells: string /*JsRenderCell[]*/) => {
-  const renderCells = JSON.parse(cells) as JsRenderCell[];
-  self.sendSheetRenderCells(sheetId, renderCells);
-  self.sendCompleteRenderCells(sheetId, Number(hashX), Number(hashY), renderCells);
+export const jsHashesRenderCells = (render_cells: Uint8Array) => {
+  self.sendHashRenderCellsRender(render_cells);
 };
 
 export const jsAddSheet = (sheetInfoStringified: string, user: boolean) => {
@@ -193,9 +174,8 @@ export const jsBordersSheet = (sheetId: string, bordersStringified: string) => {
   }
 };
 
-export const jsSheetCodeCell = (sheetId: string, codeCellsStringified: string) => {
-  const codeCells = JSON.parse(codeCellsStringified) as JsRenderCodeCell[];
-  self.sendSheetCodeCell(sheetId, codeCells);
+export const jsSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
+  self.sendSheetCodeCells(sheetId, renderCodeCells);
 };
 
 export const jsSheetBoundsUpdate = (bounds: string) => {
@@ -228,20 +208,8 @@ export const jsRunJavascript = (transactionId: string, x: number, y: number, she
   self.sendRunJavascript(transactionId, x, y, sheetId, code);
 };
 
-export const jsUpdateCodeCell = (
-  sheetId: string,
-  x: bigint,
-  y: bigint,
-  codeCellStringified?: string,
-  renderCodeCellStringified?: string
-) => {
-  if (codeCellStringified && renderCodeCellStringified) {
-    const codeCell = JSON.parse(codeCellStringified) as JsCodeCell;
-    const renderCodeCell = JSON.parse(renderCodeCellStringified) as JsRenderCodeCell;
-    self.sendUpdateCodeCell(sheetId, Number(x), Number(y), codeCell, renderCodeCell);
-  } else {
-    self.sendUpdateCodeCell(sheetId, Number(x), Number(y));
-  }
+export const jsUpdateCodeCells = (updateCodeCells: Uint8Array) => {
+  self.sendUpdateCodeCells(updateCodeCells);
 };
 
 export const jsUndoRedo = (undo: string, redo: string) => {
@@ -264,31 +232,24 @@ export const jsSendImage = (sheetId: string, x: number, y: number, image?: strin
   self.sendImage(sheetId, x, y, image, w, h);
 };
 
-export const jsSheetValidations = (sheetId: string, validations: string) => {
-  const validationsParsed = JSON.parse(validations) as Validation[];
-  self.sendSheetValidations(sheetId, validationsParsed);
+export const jsSheetValidations = (sheetId: string, sheetValidations: Uint8Array) => {
+  self.sendSheetValidations(sheetId, sheetValidations);
+};
+
+export const jsValidationWarnings = (warnings: Uint8Array) => {
+  self.sendValidationWarnings(warnings);
 };
 
 export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
   self.sendRequestRowHeights(transactionId, sheetId, rows);
 };
 
-export const jsValidationWarning = (sheetId: string, warningsStringified: string) => {
-  const warnings = JSON.parse(warningsStringified);
-  self.sendRenderValidationWarnings(sheetId, undefined, undefined, warnings);
-};
-
-export const jsRenderValidationWarnings = (sheetId: string, hashX: BigInt, hashY: BigInt, warnings: string) => {
-  const validationWarnings = JSON.parse(warnings) as JsValidationWarning[];
-  self.sendRenderValidationWarnings(sheetId, Number(hashX), Number(hashY), validationWarnings);
-};
-
 export const jsMultiplayerSynced = () => {
   self.sendMultiplayerSynced();
 };
 
-export const jsHashesDirty = (sheetId: string, hashes: string) => {
-  self.sendHashesDirty(sheetId, hashes);
+export const jsHashesDirty = (dirtyHashes: Uint8Array) => {
+  self.sendHashesDirtyRender(dirtyHashes);
 };
 
 export const jsClientMessage = (message: string, severity: JsSnackbarSeverity) => {
@@ -299,6 +260,6 @@ export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
   self.sendViewportBuffer(buffer);
 };
 
-export const jsA1Context = (context: string) => {
+export const jsA1Context = (context: Uint8Array) => {
   self.sendA1Context(context);
 };

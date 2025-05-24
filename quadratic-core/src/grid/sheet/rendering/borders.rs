@@ -15,12 +15,14 @@ impl Sheet {
         }
 
         // get table borders and translate them to sheet coordinates
-        self.data_tables.iter().for_each(|(pos, table)| {
-            if let Some(h) = table.borders.horizontal_borders(Some((*pos, table))) {
-                horizontal.extend(h);
-            }
-            if let Some(v) = table.borders.vertical_borders(Some((*pos, table))) {
-                vertical.extend(v);
+        self.data_tables.expensive_iter().for_each(|(pos, table)| {
+            if let Some(borders) = table.borders.as_ref() {
+                if let Some(h) = borders.horizontal_borders(Some((*pos, table))) {
+                    horizontal.extend(h);
+                }
+                if let Some(v) = borders.vertical_borders(Some((*pos, table))) {
+                    vertical.extend(v);
+                }
             }
         });
 

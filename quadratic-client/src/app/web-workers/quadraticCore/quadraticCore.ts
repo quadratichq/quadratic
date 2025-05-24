@@ -26,10 +26,11 @@ import type {
   JsCodeCell,
   JsCoordinate,
   JsDataTableColumnHeader,
-  JsRenderCell,
+  JsHashValidationWarnings,
   JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
+  JsUpdateCodeCell,
   MinMax,
   PasteSpecial,
   Pos,
@@ -38,19 +39,21 @@ import type {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
   ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
-  ClientCoreGetRenderCell,
   ClientCoreHasRenderCells,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
+  CoreClientCopyToClipboard,
+  CoreClientCutToClipboard,
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
   CoreClientFiniteRectFromSelection,
@@ -62,7 +65,6 @@ import type {
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
-  CoreClientGetRenderCell,
   CoreClientGetRowsBounds,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
@@ -134,11 +136,8 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientGenerateThumbnail') {
       events.emit('generateThumbnail');
       return;
-    } else if (e.data.type === 'coreClientSheetRenderCells') {
-      events.emit('renderCells', e.data.sheetId, e.data.renderCells);
-      return;
-    } else if (e.data.type === 'coreClientSheetCodeCellRender') {
-      events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
+    } else if (e.data.type === 'coreClientSheetCodeCells') {
+      events.emit('renderCodeCells', e.data.sheetId, e.data.renderCodeCells);
       return;
     } else if (e.data.type === 'coreClientSheetBoundsUpdate') {
       events.emit('sheetBounds', e.data.sheetBounds);
@@ -155,14 +154,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientTransactionEnd') {
       events.emit('transactionEnd', e.data);
       return;
-    } else if (e.data.type === 'coreClientUpdateCodeCell') {
-      events.emit('updateCodeCell', {
-        sheetId: e.data.sheetId,
-        x: e.data.x,
-        y: e.data.y,
-        codeCell: e.data.codeCell,
-        renderCodeCell: e.data.renderCodeCell,
-      });
+    } else if (e.data.type === 'coreClientUpdateCodeCells') {
+      const updateCodeCells = fromUint8Array<JsUpdateCodeCell[]>(e.data.updateCodeCells);
+      events.emit('updateCodeCells', updateCodeCells);
       return;
     } else if (e.data.type === 'coreClientMultiplayerState') {
       events.emit('multiplayerState', e.data.state);
@@ -191,10 +185,12 @@ class QuadraticCore {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
-      events.emit('sheetValidations', e.data.sheetId, e.data.validations);
+      const sheetValidations = fromUint8Array<Validation[]>(e.data.sheetValidations);
+      events.emit('sheetValidations', e.data.sheetId, sheetValidations);
       return;
-    } else if (e.data.type === 'coreClientRenderValidationWarnings') {
-      events.emit('renderValidationWarnings', e.data.sheetId, e.data.hashX, e.data.hashY, e.data.validationWarnings);
+    } else if (e.data.type === 'coreClientValidationWarnings') {
+      const warnings = fromUint8Array<JsHashValidationWarnings[]>(e.data.warnings);
+      events.emit('validationWarnings', warnings);
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
@@ -319,23 +315,6 @@ class QuadraticCore {
         id,
       };
       this.waitingForResponse[id] = (message: CoreClientGetCodeCell) => {
-        resolve(message.cell);
-      };
-      this.send(message);
-    });
-  }
-
-  getRenderCell(sheetId: string, x: number, y: number): Promise<JsRenderCell | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      const message: ClientCoreGetRenderCell = {
-        type: 'clientCoreGetRenderCell',
-        sheetId,
-        x,
-        y,
-        id,
-      };
-      this.waitingForResponse[id] = (message: CoreClientGetRenderCell) => {
         resolve(message.cell);
       };
       this.send(message);
@@ -929,8 +908,12 @@ class QuadraticCore {
   copyToClipboard(selection: string): Promise<JsClipboard> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: JsClipboard) => {
-        resolve(message);
+      this.waitingForResponse[id] = (message: CoreClientCopyToClipboard) => {
+        let jsClipboard = {} as JsClipboard;
+        if (message.data) {
+          jsClipboard = fromUint8Array<JsClipboard>(message.data);
+        }
+        resolve(jsClipboard);
       };
       this.send({
         type: 'clientCoreCopyToClipboard',
@@ -943,8 +926,12 @@ class QuadraticCore {
   cutToClipboard(selection: string, cursor: string): Promise<JsClipboard> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: JsClipboard) => {
-        resolve(message);
+      this.waitingForResponse[id] = (message: CoreClientCutToClipboard) => {
+        let jsClipboard = {} as JsClipboard;
+        if (message.data) {
+          jsClipboard = fromUint8Array<JsClipboard>(message.data);
+        }
+        resolve(jsClipboard);
       };
       this.send({
         type: 'clientCoreCutToClipboard',

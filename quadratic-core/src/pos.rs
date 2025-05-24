@@ -5,6 +5,7 @@ use crate::{
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
 use anyhow::Result;
+use rstar::Point;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 use ts_rs::TS;
@@ -190,6 +191,24 @@ impl From<&str> for Pos {
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl Point for Pos {
+    type Scalar = i64;
+
+    const DIMENSIONS: usize = 2;
+
+    fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
+        Pos::new(generator(0), generator(1))
+    }
+
+    fn nth(&self, index: usize) -> Self::Scalar {
+        [self.x, self.y][index]
+    }
+
+    fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
+        [&mut self.x, &mut self.y][index]
     }
 }
 

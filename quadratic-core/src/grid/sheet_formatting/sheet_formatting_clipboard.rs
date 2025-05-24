@@ -26,12 +26,9 @@ impl SheetFormatting {
         // get the largest rect that is finite of the selection
         let rect = selection.largest_rect_finite(a1_context);
 
-        // determine if the selection overlaps with data tables
-        let data_tables_within = sheet.data_tables_within_rect(rect, false)?;
-
         // get the formats from the data table and merge them with the sheet formats
-        for data_table_pos in data_tables_within {
-            let data_table = sheet.data_table_result(data_table_pos)?;
+        for data_table_pos in sheet.data_tables_pos_intersect_rect(rect) {
+            let data_table = sheet.data_table_result(&data_table_pos)?;
 
             // update the sheet format updates with the formats from the data
             // table we send in the full rect, and the function just looks at

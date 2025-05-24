@@ -1,5 +1,6 @@
 use std::{collections::HashSet, ops::RangeInclusive};
 
+use rstar::{AABB, RTreeObject};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
 use wasm_bindgen::prelude::*;
@@ -84,6 +85,7 @@ impl Rect {
     pub fn single_pos(pos: Pos) -> Rect {
         Rect { min: pos, max: pos }
     }
+
     /// Extends the rectangle enough to include a cell.
     pub fn extend_to(&mut self, pos: Pos) {
         self.min.x = std::cmp::min(self.min.x, pos.x);
@@ -91,6 +93,7 @@ impl Rect {
         self.max.x = std::cmp::max(self.max.x, pos.x);
         self.max.y = std::cmp::max(self.max.y, pos.y);
     }
+
     /// Constructs a rectangle from an X range and a Y range.
     pub fn from_ranges(xs: RangeInclusive<i64>, ys: RangeInclusive<i64>) -> Rect {
         Rect {
@@ -370,6 +373,14 @@ impl From<SheetRect> for Rect {
 impl From<&CellValues> for Rect {
     fn from(values: &CellValues) -> Self {
         Rect::from_numbers(0, 0, values.w as i64, values.h as i64)
+    }
+}
+
+impl RTreeObject for Rect {
+    type Envelope = AABB<Pos>;
+
+    fn envelope(&self) -> Self::Envelope {
+        AABB::from_corners(self.min, self.max)
     }
 }
 

@@ -693,7 +693,7 @@ impl GridController {
                             data_table_ops.push(Operation::SetDataTable {
                                 sheet_pos: original_pos.to_sheet_pos(sheet_id),
                                 data_table: Some(data_table),
-                                index: 0,
+                                index: usize::MAX,
                             });
                         }
                     }

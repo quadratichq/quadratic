@@ -9,19 +9,14 @@ import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type {
   JsBordersSheet,
-  JsCodeCell,
   JsHtmlOutput,
   JsOffset,
-  JsRenderCell,
-  JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
   JsSnackbarSeverity,
-  JsValidationWarning,
   SheetBounds,
   SheetInfo,
   TransactionName,
-  Validation,
 } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type {
@@ -51,7 +46,7 @@ declare var self: WorkerGlobalScope &
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
-    sendA1Context: (tableMap: string) => void;
+    sendA1Context: (context: Uint8Array) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
     sendSetCursor: (cursor: string) => void;
@@ -60,19 +55,12 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
     sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
-    sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
-    sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
-    sendUpdateCodeCell: (
-      sheetId: string,
-      x: number,
-      y: number,
-      codeCell?: JsCodeCell,
-      renderCodeCell?: JsRenderCodeCell
-    ) => void;
+    sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (
       sheetId: string,
@@ -84,13 +72,8 @@ declare var self: WorkerGlobalScope &
       pixel_width?: number,
       pixel_height?: number
     ) => void;
-    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
-    sendRenderValidationWarnings: (
-      sheetId: string,
-      hashX: number,
-      hashY: number,
-      validationWarnings: JsValidationWarning[]
-    ) => void;
+    sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
+    sendValidationWarnings: (warnings: Uint8Array) => void;
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
   };
@@ -116,17 +99,16 @@ class CoreClient {
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     self.sendBordersSheet = coreClient.sendBordersSheet;
-    self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
-    self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
+    self.sendSheetCodeCells = coreClient.sendSheetCodeCells;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     self.sendTransactionStartClient = coreClient.sendTransactionStart;
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendTransactionEndClient = coreClient.sendTransactionEnd;
-    self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
+    self.sendUpdateCodeCells = coreClient.sendUpdateCodeCells;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendSheetValidations = coreClient.sendSheetValidations;
-    self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
+    self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
@@ -159,14 +141,6 @@ class CoreClient {
           type: 'coreClientGetCodeCell',
           id: e.data.id,
           cell: await core.getCodeCell(e.data.sheetId, e.data.x, e.data.y),
-        });
-        return;
-
-      case 'clientCoreGetRenderCell':
-        this.send({
-          type: 'coreClientGetRenderCell',
-          id: e.data.id,
-          cell: await core.getRenderCell(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
@@ -377,20 +351,26 @@ class CoreClient {
 
       case 'clientCoreCopyToClipboard':
         const copyResult = await core.copyToClipboard(e.data.selection);
-        this.send({
-          type: 'coreClientCopyToClipboard',
-          id: e.data.id,
-          ...copyResult,
-        });
+        this.send(
+          {
+            type: 'coreClientCopyToClipboard',
+            id: e.data.id,
+            data: copyResult,
+          },
+          copyResult?.buffer
+        );
         return;
 
       case 'clientCoreCutToClipboard':
         const cutResult = await core.cutToClipboard(e.data.selection, e.data.cursor);
-        this.send({
-          type: 'coreClientCutToClipboard',
-          id: e.data.id,
-          ...cutResult,
-        });
+        this.send(
+          {
+            type: 'coreClientCutToClipboard',
+            id: e.data.id,
+            data: cutResult,
+          },
+          cutResult?.buffer
+        );
         return;
 
       case 'clientCorePasteFromClipboard':
@@ -843,12 +823,8 @@ class CoreClient {
     this.send({ type: 'coreClientBordersSheet', sheetId, borders });
   };
 
-  sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {
-    this.send({ type: 'coreClientSheetRenderCells', sheetId, renderCells });
-  };
-
-  sendSheetCodeCell = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
-    this.send({ type: 'coreClientSheetCodeCellRender', sheetId, codeCells });
+  sendSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
+    this.send({ type: 'coreClientSheetCodeCells', sheetId, renderCodeCells }, renderCodeCells.buffer);
   };
 
   sendSheetBoundsUpdate = (bounds: SheetBounds) => {
@@ -871,14 +847,8 @@ class CoreClient {
     this.send({ type: 'coreClientTransactionEnd', transactionId, transactionName });
   };
 
-  sendUpdateCodeCell = (
-    sheetId: string,
-    x: number,
-    y: number,
-    codeCell?: JsCodeCell,
-    renderCodeCell?: JsRenderCodeCell
-  ) => {
-    this.send({ type: 'coreClientUpdateCodeCell', sheetId, x, y, codeCell, renderCodeCell });
+  sendUpdateCodeCells = (updateCodeCells: Uint8Array) => {
+    this.send({ type: 'coreClientUpdateCodeCells', updateCodeCells }, updateCodeCells.buffer);
   };
 
   sendMultiplayerState(state: MultiplayerState) {
@@ -924,17 +894,12 @@ class CoreClient {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h, pixel_width, pixel_height });
   };
 
-  sendSheetValidations = (sheetId: string, validations: Validation[]) => {
-    this.send({ type: 'coreClientSheetValidations', sheetId, validations });
+  sendSheetValidations = (sheetId: string, sheetValidations: Uint8Array) => {
+    this.send({ type: 'coreClientSheetValidations', sheetId, sheetValidations }, sheetValidations.buffer);
   };
 
-  sendRenderValidationWarnings = (
-    sheetId: string,
-    hashX: number | undefined,
-    hashY: number | undefined,
-    validationWarnings: JsValidationWarning[]
-  ) => {
-    this.send({ type: 'coreClientRenderValidationWarnings', sheetId, hashX, hashY, validationWarnings });
+  sendValidationWarnings = (warnings: Uint8Array) => {
+    this.send({ type: 'coreClientValidationWarnings', warnings }, warnings.buffer);
   };
 
   sendMultiplayerSynced = () => {
@@ -945,8 +910,8 @@ class CoreClient {
     this.send({ type: 'coreClientClientMessage', message, severity });
   };
 
-  sendA1Context = (context: string) => {
-    this.send({ type: 'coreClientA1Context', context });
+  sendA1Context = (context: Uint8Array) => {
+    this.send({ type: 'coreClientA1Context', context }, context.buffer);
   };
 
   sendCoreError = (from: string, error: Error | unknown) => {

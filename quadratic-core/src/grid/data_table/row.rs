@@ -40,8 +40,12 @@ impl DataTable {
         array.insert_row(usize::try_from(row_index)?, values)?;
 
         // formats and borders are 1 indexed
-        self.formats.insert_row(row_index + 1, CopyFormats::None);
-        self.borders.insert_row(row_index + 1, CopyFormats::None);
+        if let Some(formats) = self.formats.as_mut() {
+            formats.insert_row(row_index + 1, CopyFormats::None);
+        }
+        if let Some(borders) = self.borders.as_mut() {
+            borders.insert_row(row_index + 1, CopyFormats::None);
+        }
 
         let row_index = u64::try_from(row_index)?;
 
@@ -77,8 +81,16 @@ impl DataTable {
         let values = array.delete_row(usize::try_from(row_index)?)?;
 
         // formats and borders are 1 indexed
-        let formats = self.formats.remove_row(row_index + 1);
-        let borders = self.borders.remove_row(row_index + 1);
+        let formats = self
+            .formats
+            .as_mut()
+            .map(|formats| formats.remove_row(row_index + 1))
+            .unwrap_or_default();
+        let borders = self
+            .borders
+            .as_mut()
+            .map(|borders| borders.remove_row(row_index + 1))
+            .unwrap_or_default();
 
         Ok((values, formats, borders))
     }
