@@ -104,15 +104,15 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
                 connectionUuid: uuid,
               });
               return (
-                <DropdownMenuItem key={uuid} asChild>
+                <DropdownMenuItem key={uuid} asChild className="max-w-xs">
                   <Link to={to} reloadDocument>
                     <div className="mr-3">
                       <LanguageIcon language={type} />
                     </div>
-                    <span className="flex flex-col">
-                      {name}
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate">{name}</span>
                       <span className="text-xs text-muted-foreground">{label}</span>
-                    </span>
+                    </div>
                   </Link>
                 </DropdownMenuItem>
               );
