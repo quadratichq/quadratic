@@ -36,11 +36,13 @@ const maxSize = config.getNumber("api-lb-max-size") ?? 5;
 const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
 
 // Create an Auto Scaling Group
-const launchConfiguration = new aws.ec2.LaunchConfiguration("api-lc", {
+const launchTemplate = new aws.ec2.LaunchTemplate("api-lc", {
+  name: `api-lt-${apiSubdomain}`,
+  imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
-  imageId: latestAmazonLinuxAmi.id,
-  securityGroups: [apiEc2SecurityGroup.id],
+  vpcSecurityGroupIds: [apiEc2SecurityGroup.id],
+  ebsOptimized: "true",
   userData: pulumi
     .all([apiEip1.publicIp, apiEip2.publicIp])
     .apply(([eip1, eip2]) =>
@@ -52,6 +54,14 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("api-lc", {
         true,
       ),
     ),
+  tagSpecifications: [
+    {
+      resourceType: "instance",
+      tags: {
+        Name: `api-instance-${apiSubdomain}`,
+      },
+    },
+  ],
 });
 
 // Create a new Target Group
@@ -96,7 +106,10 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   ],
 
   vpcZoneIdentifiers: [apiPrivateSubnet1.id, apiPrivateSubnet2.id],
-  launchConfiguration: launchConfiguration.id,
+  launchTemplate: {
+    id: launchTemplate.id,
+    version: "$Latest",
+  },
   minSize,
   maxSize,
   desiredCapacity,
