@@ -1085,7 +1085,7 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   // Act:
   //--------------------------------
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
-  await page.locator(`div:has(h2:text-is("Team connections")) + div >> button >> nth=0`).click();
+  await page.locator(`div:has(h2:text-is("Manage team connections")) + div >> button >> nth=0`).click();
 
   // Fill in database details:
   await page.getByLabel(`Connection name`).fill(POSTGRES_DB.connectionName);
@@ -1319,7 +1319,7 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
 
   // Setup database connection
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
-  await page.locator(`div:has(h2:text-is("Team connections")) + div >> button >> nth=0`).click();
+  await page.locator(`div:has(h2:text-is("Manage team connections")) + div >> button >> nth=0`).click();
 
   await page.getByLabel(`Connection name`).fill(POSTGRES_DB.connectionName);
   await page.getByLabel(`Hostname (IP or domain)`).fill(POSTGRES_DB.hostname);
@@ -1569,7 +1569,7 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
 
   // Setup database connection
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
-  await page.locator(`div:has(h2:text-is("Team connections")) + div >> button >> nth=0`).click();
+  await page.locator(`div:has(h2:text-is("Manage team connections")) + div >> button >> nth=0`).click();
 
   // Fill in database details:
   await page.getByLabel(`Connection name`).fill(POSTGRES_DB.connectionName);

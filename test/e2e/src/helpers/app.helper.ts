@@ -173,7 +173,7 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
 
   // Press "/"
   await page.keyboard.press('/');
-  await page.locator(`span:text-is("Manage connections")`).click();
+  await page.locator(`span:text-is("Add or manage…")`).click();
 
   if (await page.getByRole(`heading`, { name: `No connections` }).isVisible()) {
     return;

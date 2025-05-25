@@ -636,6 +636,7 @@ jobs:
           path: all-blob-reports
           pattern: blob-report-${{ github.run_id }}-*
           merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge into HTML Report
         if: ${{ !cancelled() }}
