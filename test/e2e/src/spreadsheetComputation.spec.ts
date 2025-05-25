@@ -1101,12 +1101,6 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   //--------------------------------
   // Assert:
   //--------------------------------
-  // Assert connected
-  await expect(page.getByRole(`button`, { name: `Connected` })).toBeVisible({ timeout: 30 * 1000 });
-
-  // Click Create
-  await page.getByRole(`button`, { name: `Create` }).click();
-
   // Assert connection established
   await expect(page.getByRole(`button`, { name: `${POSTGRES_DB.connectionName} Created` })).toBeVisible({
     timeout: 30 * 1000,
@@ -1276,6 +1270,7 @@ hire_date DATE);`);
   await cleanUpServerConnections(page, {
     connectionName: POSTGRES_DB.connectionName,
   });
+  await page.getByRole(`button`, { name: `Close` }).click();
 
   //--------------------------------
   // Clean up:
@@ -1330,12 +1325,6 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
 
   // Click Test
   await page.getByRole(`button`, { name: `Test` }).click();
-
-  // Assert connected
-  await expect(page.getByRole(`button`, { name: `Connected` })).toBeVisible({ timeout: 30 * 1000 });
-
-  // Click Create
-  await page.getByRole(`button`, { name: `Create` }).click();
 
   // Assert connection established
   await expect(page.getByRole(`button`, { name: `${POSTGRES_DB.connectionName} Created` })).toBeVisible({
@@ -1525,6 +1514,7 @@ hire_date DATE);`);
   await cleanUpServerConnections(page, {
     connectionName: POSTGRES_DB.connectionName,
   });
+  await page.getByRole(`button`, { name: `Close` }).click();
 
   //--------------------------------
   // Clean up:
@@ -1581,12 +1571,6 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
 
   // Click Test
   await page.getByRole(`button`, { name: `Test` }).click();
-
-  // Assert connected
-  await expect(page.getByRole(`button`, { name: `Connected` })).toBeVisible({ timeout: 30 * 1000 });
-
-  // Click Create
-  await page.getByRole(`button`, { name: `Create` }).click();
 
   // Assert connection established
   await expect(page.getByRole(`button`, { name: `${POSTGRES_DB.connectionName} Created` })).toBeVisible({
@@ -1804,6 +1788,7 @@ hire_date DATE);`);
   await cleanUpServerConnections(page, {
     connectionName: POSTGRES_DB.connectionName,
   });
+  await page.getByRole(`button`, { name: `Close` }).click();
 
   //--------------------------------
   // Clean up:

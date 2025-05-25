@@ -1304,7 +1304,7 @@ test('Rename Table', async ({ page }) => {
   await page.mouse.click(94, 113, { delay: 1000 });
 
   // Expect the textbox above spreadsheet to have text of table name 2
-  await expect(page.locator(`input`).first()).toContainText(tableName2);
+  await expect(page.locator(`input`).first()).toHaveValue(tableName2);
 
   //--------------------------------
   // Clean up:
