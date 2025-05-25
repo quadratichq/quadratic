@@ -18,7 +18,7 @@ export const createFile = async (page: Page, { fileName }: CreateFileOptions) =>
   await page.getByRole('button', { name: 'Untitled' }).click({ timeout: 60000 });
   await page.keyboard.type(fileName);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(5 * 1000);
 
   // Close AI chat box as needed
   try {

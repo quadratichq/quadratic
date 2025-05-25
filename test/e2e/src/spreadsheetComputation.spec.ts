@@ -1873,7 +1873,7 @@ test('Switch between Python and Formula', async ({ page }) => {
 
     await page.waitForTimeout(10 * 1000);
 
-    // toop tip hover, assert python tooltip
+    // tool tip hover, assert python tooltip
     await page.locator(`#QuadraticCodeEditorID svg`).first().hover();
     await expect(page.locator(`[role="tooltip"]:has-text("Python")`)).toBeVisible({ timeout: 30 * 1000 });
   }
@@ -1919,7 +1919,7 @@ test('Switch between Python and Formula', async ({ page }) => {
 
   await page.waitForTimeout(10 * 1000);
 
-  // toop tip hover, assert python tooltip
+  // tool tip hover, assert python tooltip
   await page.locator(`#QuadraticCodeEditorID svg`).first().hover();
   await expect(page.locator(`[role="tooltip"]:has-text("Python")`)).toBeVisible({ timeout: 30 * 1000 });
 

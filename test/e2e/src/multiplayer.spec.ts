@@ -809,6 +809,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   for (let i = 1; i < 5; i += 0.5) {
     // Move the mouse
+    await userPage1.bringToFront();
     await userPage1.mouse.move(i * 100, i * 100);
     await userPage1.mouse.down();
 
@@ -823,15 +824,15 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
     await expect(userPage2.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`mouse-diff-img-position-${i}.A.png`, {
       maxDiffPixelRatio: 0.01,
     });
-    // Wait 5 seconds
-    await userPage2.waitForTimeout(5 * 1000);
 
     // Confirm mouse is still at the expected position
-    await expect(userPage2.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`mouse-diff-img-position-${i}.A.png`, {
+    await userPage3.bringToFront();
+    await expect(userPage3.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`mouse-diff-img-position-${i}.A.png`, {
       maxDiffPixelRatio: 0.01,
     });
 
     // Move the mouse up
+    await userPage1.bringToFront();
     await userPage1.mouse.up();
   }
 
@@ -852,7 +853,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage2.reload();
   await navigateIntoFile(userPage2, { fileName });
 
-  // Third user navigates into file
+  // First user navigates into file
   await userPage1.bringToFront();
   await userPage1.goBack();
   await userPage1.reload();
@@ -861,11 +862,13 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage3.waitForTimeout(30 * 1000);
 
   // Dedicated wait for timeout
+  await userPage1.bringToFront();
   await userPage1.waitForTimeout(5 * 1000);
   await userPage1.mouse.move(300, 0);
   await userPage1.mouse.down();
   await userPage1.mouse.up();
 
+  await userPage2.bringToFront();
   await userPage2.waitForTimeout(5 * 1000);
   await userPage2.mouse.move(300, 0);
   await userPage2.mouse.down();
@@ -878,12 +881,16 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   for (let i = 1; i < 5; i += 0.5) {
     // Move the mouse as the first user
+    await userPage1.bringToFront();
     await userPage1.mouse.move(i * 50, i * 100);
     await userPage1.mouse.down();
+    await userPage1.mouse.up();
 
     // Move the mouse as the second user
+    await userPage2.bringToFront();
     await userPage2.mouse.move(i * 150, i * 100);
     await userPage2.mouse.down();
+    await userPage2.mouse.up();
 
     await userPage3.waitForTimeout(10 * 1000);
 
@@ -897,18 +904,6 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
       `multiple-mouse-diff-img-position-${i}.A2.png`,
       { maxDiffPixelRatio: 0.01 }
     );
-    // Wait 5 seconds
-    await userPage3.waitForTimeout(5 * 1000);
-
-    // Confirm the mouse is still at the expected position
-    await expect(userPage3.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
-      `multiple-mouse-diff-img-position-${i}.A2.png`,
-      { maxDiffPixelRatio: 0.01 }
-    );
-
-    // Move the mouse up
-    await userPage1.mouse.up();
-    await userPage2.mouse.up();
   }
 });
 

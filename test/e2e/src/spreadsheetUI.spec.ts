@@ -1452,8 +1452,8 @@ test('Sheet Actions', async ({ page }) => {
   await page.getByRole('menuitem', { name: 'Delete' }).click();
 
   // assert that sheet is gone
-  await expect(page.locator('[data-actual-order="2"]')).toHaveText(`${sheetName}arrow_drop_down.png`);
-  await expect(page.locator('[data-actual-order="4"]')).toHaveText(`${sheetName} Copyarrow_drop_down.png`);
+  await expect(page.locator('[data-actual-order="2"]')).toHaveText(`${sheetName}arrow_drop_down`);
+  await expect(page.locator('[data-actual-order="4"]')).toHaveText(`${sheetName} Copyarrow_drop_down`);
   await expect(page.locator(':text-is("Sheet 1")')).not.toBeVisible();
 
   //--------------------------------
