@@ -73,8 +73,22 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('TextLength' in r) {
             return (
               <div key={i}>
-                Text {verb} be between {r.TextLength.min !== null ? r.TextLength.min : '0'} and{' '}
-                {r.TextLength.max !== null ? r.TextLength.max : '∞'} characters long.
+                {r.TextLength.min !== null && r.TextLength.max !== null && (
+                  <>
+                    Text {verb} be between <span className={listClassName}>{r.TextLength.min}</span> and{' '}
+                    <span className={listClassName}>{r.TextLength.max}</span> characters long.
+                  </>
+                )}
+                {r.TextLength.min !== null && r.TextLength.max === null && (
+                  <>
+                    Text {verb} be at least <span className={listClassName}>{r.TextLength.min}</span> characters long.
+                  </>
+                )}
+                {r.TextLength.min === null && r.TextLength.max !== null && (
+                  <>
+                    Text {verb} be at most <span className={listClassName}>{r.TextLength.max}</span> characters long.
+                  </>
+                )}
               </div>
             );
           }
