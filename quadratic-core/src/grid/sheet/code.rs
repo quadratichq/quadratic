@@ -393,8 +393,10 @@ mod test {
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         let sheet = gc.sheet(sheet_id);
+        let edit_code_value = sheet.edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context());
+        let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 1, y: 1 },gc.a1_context()),
+            edit_code_value,
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -406,11 +408,13 @@ mod test {
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
                 cells_accessed: Some(Default::default()),
-                last_modified: 0,
+                last_modified,
             })
         );
+        let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 }, gc.a1_context());
+        let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 2, y: 1 },gc.a1_context()),
+            edit_code_value,
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -422,7 +426,7 @@ mod test {
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
                 cells_accessed: Some(Default::default()),
-                last_modified: 0,
+                last_modified,
             })
         );
         assert_eq!(

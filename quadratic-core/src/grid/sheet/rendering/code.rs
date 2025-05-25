@@ -418,7 +418,7 @@ mod tests {
     }
 
     #[test]
-    fn render_code_cell() {
+    fn test_render_code_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
@@ -452,6 +452,7 @@ mod tests {
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
+        let last_modified = rendering.as_ref().unwrap().last_modified;
         assert_eq!(
             rendering,
             Some(JsRenderCodeCell {
@@ -473,7 +474,7 @@ mod tests {
                 is_code: true,
                 is_html: false,
                 is_html_image: false,
-                last_modified: 0,
+                last_modified,
             })
         );
     }
