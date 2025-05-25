@@ -171,7 +171,7 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('DateRange' in r) {
             return (
               <div key={i}>
-                {r.DateRange[0] !== null && r.DateRange[1] !== null && (
+                {r.DateRange[0] && r.DateRange[1] && (
                   <>
                     Date {verb} be between{' '}
                     <span className={listClassName}>
@@ -180,13 +180,13 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
                     .
                   </>
                 )}
-                {r.DateRange[0] !== null && r.DateRange[1] === null && (
+                {r.DateRange[0] && !r.DateRange[1] && (
                   <>
                     Date {verb} be on or after{' '}
                     <span className={listClassName}>{numberToDate(BigInt(r.DateRange[0]))}</span>.
                   </>
                 )}
-                {r.DateRange[0] === null && r.DateRange[1] !== null && (
+                {!r.DateRange[0] && r.DateRange[1] && (
                   <>
                     Date {verb} be on or before{' '}
                     <span className={listClassName}>{numberToDate(BigInt(r.DateRange[1]))}</span>.
