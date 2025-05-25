@@ -293,6 +293,7 @@ export class HtmlCell {
   }
 
   private recalculateBounds() {
+    console.log('recalculating bounds', this.htmlCell.w, this.htmlCell.h);
     this.offset = this.sheet.getScreenRectangle(
       this.x,
       this.adjustedY,
@@ -303,6 +304,8 @@ export class HtmlCell {
     this.div.style.top = `${this.offset.y}px`;
     this.iframe.width = this.width.toString();
     this.iframe.height = this.height.toString();
+    this.border.style.width = `${this.width}px`;
+    this.border.style.height = `${this.height}px`;
 
     const topHeight = this.sheet.offsets.getRowHeight(this.y);
     this.right.style.top = `-${topHeight}px`;
@@ -357,7 +360,7 @@ export class HtmlCell {
         });
       }
     } else {
-      setTimeout(() => this.autoResize(), 100);
+      setTimeout(this.autoResize, 100);
     }
   };
 
