@@ -1420,7 +1420,7 @@ test('Sheet Actions', async ({ page }) => {
   await expect(page.locator('[data-actual-order="4"]')).toHaveText('Sheet 1arrow_drop_down');
   await expect(page.locator('[data-actual-order="6"]')).toHaveText(`${sheetName} Copyarrow_drop_down`);
 
-  // Screnshot assertion
+  // Screenshot assertion
   await expect(page.locator('[data-actual-order="4"]')).toHaveScreenshot('MoveSheetRight.png');
   await expect(page.locator('[data-actual-order="2"]')).toHaveScreenshot('FirstNewSheet.png');
 
