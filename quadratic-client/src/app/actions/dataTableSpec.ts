@@ -57,7 +57,6 @@ type DataTableSpec = Pick<
   | Action.HideTableColumn
   | Action.ShowAllColumns
   | Action.EditTableCode
-  | Action.ToggleTableUI
 >;
 
 export const getTable = (): JsRenderCodeCell | undefined => {
@@ -79,7 +78,7 @@ const getSelectedRows = (): number[] | undefined => {
   if (!table) return undefined;
 
   return sheets.sheet.cursor
-    .getSelectedRowsFinite()
+    .getRowsWithSelectedCells()
     .map((r) => r - table.y)
     .sort((a, b) => b - a);
 };
@@ -118,7 +117,7 @@ const getSelectedColumns = (): number[] | undefined => {
   if (!table || !displayColumns) return undefined;
 
   const displayIndexes = sheets.sheet.cursor
-    .getSelectedColumnsFinite()
+    .getColumnsWithSelectedCells()
     .map((c) => c - table.x)
     .sort((a, b) => b - a);
 
@@ -147,17 +146,12 @@ const isAlternatingColorsShowing = (): boolean => {
 
 const isReadOnly = (): boolean => {
   const table = getTable();
-  return !!table?.readonly;
+  return !!table?.is_code;
 };
 
 const isWithinTable = (): boolean => {
   // getRow() returns zero if outside of the table
   return !!getRow() || getColumn() !== undefined;
-};
-
-const isTableUIShowing = (): boolean => {
-  const table = getTable();
-  return !!table?.show_ui;
 };
 
 const isTableNameShowing = (): boolean => {
@@ -193,7 +187,12 @@ export const gridToDataTable = () => {
       min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
-    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
+    quadraticCore.gridToDataTable(
+      JSON.stringify(sheetRect, bigIntReplacer),
+      undefined,
+      false,
+      sheets.getCursorPosition()
+    );
   }
 };
 
@@ -438,21 +437,6 @@ const editTableCode = () => {
   }
 };
 
-export const toggleTableUI = () => {
-  pixiAppSettings.setContextMenu?.({});
-
-  const table = getTable();
-  if (table) {
-    quadraticCore.dataTableMeta(
-      sheets.current,
-      table.x,
-      table.y,
-      { showUI: !table.show_ui },
-      sheets.getCursorPosition()
-    );
-  }
-};
-
 export const toggleTableColumns = () => {
   pixiAppSettings.setContextMenu?.({});
 
@@ -505,7 +489,7 @@ export const dataTableSpec: DataTableSpec = {
     Icon: FileRenameIcon,
     isAvailable: () => {
       const table = getTable();
-      return !!table?.show_ui && !!table?.show_name;
+      return !!table?.show_name;
     },
     run: renameTable,
   },
@@ -628,7 +612,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.RemoveTableRow]: {
     label: () => {
-      const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
+      const length = sheets.sheet.cursor.getRowsWithSelectedCells().length;
       const plural = length > 1 ? 's' : '';
       return `Delete ${length} row${plural}`;
     },
@@ -641,11 +625,6 @@ export const dataTableSpec: DataTableSpec = {
     label: () => 'Open code editor',
     Icon: EditIcon,
     run: editTableCode,
-  },
-  [Action.ToggleTableUI]: {
-    label: () => 'Show table UI',
-    checkbox: isTableUIShowing,
-    run: toggleTableUI,
   },
   [Action.ToggleTableColumns]: {
     label: () => 'Show column names',

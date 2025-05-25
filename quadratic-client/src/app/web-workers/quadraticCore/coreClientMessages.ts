@@ -1,3 +1,4 @@
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
   BorderStyle,
@@ -9,6 +10,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
@@ -482,6 +484,7 @@ export interface ClientCoreSetCodeCellValue {
   codeString: string;
   cursor?: string;
   id: number;
+  codeCellName?: string;
 }
 
 export interface CoreClientSetCodeCellValue {
@@ -1120,18 +1123,20 @@ export interface ClientCoreDeleteRows {
   cursor: string;
 }
 
-export interface ClientCoreInsertColumn {
-  type: 'clientCoreInsertColumn';
+export interface ClientCoreInsertColumns {
+  type: 'clientCoreInsertColumns';
   sheetId: string;
   column: number;
+  count: number;
   right: boolean;
   cursor: string;
 }
 
-export interface ClientCoreInsertRow {
-  type: 'clientCoreInsertRow';
+export interface ClientCoreInsertRows {
+  type: 'clientCoreInsertRows';
   sheetId: string;
   row: number;
+  count: number;
   below: boolean;
   cursor: string;
 }
@@ -1154,8 +1159,16 @@ export interface ClientCoreCodeDataTableToDataTable {
 
 export interface ClientCoreGridToDataTable {
   type: 'clientCoreGridToDataTable';
+  id: number;
   sheetRect: string;
+  tableName?: string;
+  firstRowIsHeader: boolean;
   cursor: string;
+}
+
+export interface CoreClientGridToDataTable {
+  type: 'coreClientGridToDataTable';
+  id: number;
 }
 
 export interface ClientCoreDataTableMeta {
@@ -1168,7 +1181,6 @@ export interface ClientCoreDataTableMeta {
   columns?: JsDataTableColumnHeader[];
   showName?: boolean;
   showColumns?: boolean;
-  showUI?: boolean;
   cursor: string;
 }
 
@@ -1275,6 +1287,75 @@ export interface CoreClientCoreError {
   error: Error | unknown;
 }
 
+export interface ClientCoreGetAICells {
+  type: 'clientCoreGetAICells';
+  id: number;
+  selection: string;
+  sheetId: string;
+  page: number;
+}
+
+export interface CoreClientGetAICells {
+  type: 'coreClientGetAICells';
+  id: number;
+  aiCells: string;
+}
+
+export interface ClientCoreSetFormats {
+  type: 'clientCoreSetFormats';
+  sheetId: string;
+  selection: string;
+  formats: FormatUpdate;
+  id: number;
+}
+
+export interface CoreClientSetFormats {
+  type: 'coreClientSetFormats';
+  id: number;
+}
+
+export interface ClientCoreGetAIFormats {
+  type: 'clientCoreGetAIFormats';
+  id: number;
+  sheetId: string;
+  selection: string;
+  page: number;
+}
+
+export interface CoreClientGetAIFormats {
+  type: 'coreClientGetAIFormats';
+  id: number;
+  formats: string;
+}
+
+export interface ClientCoreResizeColumns {
+  type: 'clientCoreResizeColumns';
+  sheetId: string;
+  columns: ColumnRowResize[];
+  cursor: string;
+}
+
+export interface ClientCoreResizeRows {
+  type: 'clientCoreResizeRows';
+  sheetId: string;
+  rows: ColumnRowResize[];
+  cursor: string;
+}
+
+export interface ClientCoreResizeAllColumns {
+  type: 'clientCoreResizeAllColumns';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
+export interface ClientCoreResizeAllRows {
+  type: 'clientCoreResizeAllRows';
+  sheetId: string;
+  size: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1351,8 +1432,8 @@ export type ClientCoreMessage =
   | ClientCoreNeighborText
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
-  | ClientCoreInsertColumn
-  | ClientCoreInsertRow
+  | ClientCoreInsertColumns
+  | ClientCoreInsertRows
   | ClientCoreFlattenDataTable
   | ClientCoreCodeDataTableToDataTable
   | ClientCoreGridToDataTable
@@ -1371,7 +1452,14 @@ export type ClientCoreMessage =
   | ClientCoreGetCsvPreview
   | ClientCoreAddDataTable
   | ClientCoreMoveColumns
-  | ClientCoreMoveRows;
+  | ClientCoreMoveRows
+  | ClientCoreGetAICells
+  | ClientCoreSetFormats
+  | ClientCoreGetAIFormats
+  | ClientCoreResizeColumns
+  | ClientCoreResizeRows
+  | ClientCoreResizeAllColumns
+  | ClientCoreResizeAllRows;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1447,4 +1535,8 @@ export type CoreClientMessage =
   | CoreClientDeleteCellValues
   | CoreClientDataTableMutations
   | CoreClientSetCodeCellValue
-  | CoreClientCoreError;
+  | CoreClientCoreError
+  | CoreClientGetAICells
+  | CoreClientSetFormats
+  | CoreClientGetAIFormats
+  | CoreClientGridToDataTable;

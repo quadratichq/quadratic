@@ -133,8 +133,15 @@ impl A1Selection {
                             a1_context,
                         )
                     }
-                    // two tables cannot overlap
-                    CellRefRange::Table { .. } => false,
+                    CellRefRange::Table { range: other_range } => {
+                        let rect = range.to_largest_rect(a1_context);
+                        let other = other_range.to_largest_rect(a1_context);
+                        if let (Some(rect), Some(other)) = (rect, other) {
+                            rect.intersects(other)
+                        } else {
+                            false
+                        }
+                    }
                 })
             }
         })
@@ -312,6 +319,13 @@ mod tests {
             "Nested rectangles should overlap"
         );
 
+        let sel1 = A1Selection::test_a1("A1:B2");
+        let sel2 = A1Selection::test_a1("B2:D4");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2, &context),
+            "Nested rectangles should overlap"
+        );
+
         // Overlapping columns
         let sel1 = A1Selection::test_a1("A:C");
         let sel2 = A1Selection::test_a1("B:D");
@@ -425,5 +439,32 @@ mod tests {
         let sel1 = A1Selection::test_a1("D1:E1");
         let sel2 = A1Selection::test_a1_context("Table1", &context);
         assert_eq!(sel1.intersection(&sel2, &context), None);
+    }
+
+    #[test]
+    fn test_overlap_ref_range_bounds_table_ref() {
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B4"))],
+        );
+
+        // Test overlapping range with table
+        let selection = A1Selection::test_a1_context("Table1[Col1]", &context);
+        let CellRefRange::Table { range: table_ref } = &selection.ranges[0] else {
+            panic!("Table range not found");
+        };
+
+        let range = RefRangeBounds::test_a1("A1:B4");
+        assert!(
+            A1Selection::overlap_ref_range_bounds_table_ref(&range, table_ref, &context),
+            "Range should overlap with table"
+        );
+
+        // Test non-overlapping range with table
+        let range = RefRangeBounds::test_a1("C1:D4");
+        assert!(
+            !A1Selection::overlap_ref_range_bounds_table_ref(&range, table_ref, &context),
+            "Range should not overlap with table"
+        );
     }
 }

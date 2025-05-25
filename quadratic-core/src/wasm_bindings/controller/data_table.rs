@@ -24,11 +24,13 @@ impl GridController {
     pub fn js_grid_to_data_table(
         &mut self,
         sheet_rect: String,
+        table_name: Option<String>,
+        first_row_is_header: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let sheet_rect =
             serde_json::from_str::<SheetRect>(&sheet_rect).map_err(|e| e.to_string())?;
-        self.grid_to_data_table(sheet_rect, cursor);
+        self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor);
 
         Ok(())
     }
@@ -99,7 +101,6 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns_js: Option<String>,
-        show_ui: Option<bool>,
         show_name: Option<bool>,
         show_columns: Option<bool>,
         cursor: Option<String>,
@@ -120,9 +121,8 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_ui,
-            show_name,
-            show_columns,
+            show_name.map(Some),
+            show_columns.map(Some),
             cursor,
         );
 

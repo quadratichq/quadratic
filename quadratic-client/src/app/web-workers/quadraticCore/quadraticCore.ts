@@ -4,9 +4,10 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debug, debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   BorderSelection,
@@ -19,6 +20,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -52,6 +54,7 @@ import type {
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
   CoreClientFiniteRectFromSelection,
+  CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
@@ -212,6 +215,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientCoreError') {
       events.emit('coreError', e.data.from, e.data.error);
+      if (debug) {
+        console.error('[quadraticCore] core error', e.data.from, e.data.error);
+      }
       return;
     }
 
@@ -234,7 +240,7 @@ class QuadraticCore {
     }
   };
 
-  private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
+  send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
     // worker may not be defined during hmr
     if (!this.worker) return;
 
@@ -403,6 +409,16 @@ class QuadraticCore {
     });
   }
 
+  getAICells(selection: string, sheetId: string, page: number): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { aiCells: string }) => {
+        resolve(message.aiCells);
+      };
+      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId, page });
+    });
+  }
+
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
@@ -491,6 +507,7 @@ class QuadraticCore {
     y: number;
     language: CodeCellLanguage;
     codeString: string;
+    codeCellName?: string;
     cursor?: string;
   }): Promise<string | undefined> {
     const id = this.id++;
@@ -506,6 +523,7 @@ class QuadraticCore {
         language: options.language,
         codeString: options.codeString,
         cursor: options.cursor,
+        codeCellName: options.codeCellName,
         id,
       });
     });
@@ -775,6 +793,38 @@ class QuadraticCore {
       selection,
       format,
       cursor,
+    });
+  }
+
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreSetFormats',
+        id,
+        sheetId,
+        selection,
+        formats,
+      });
+    });
+  }
+
+  getAICellFormats(sheetId: string, selection: string, page: number) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
+        resolve(message.formats);
+      };
+      this.send({
+        type: 'clientCoreGetAIFormats',
+        id,
+        sheetId,
+        selection,
+        page,
+      });
     });
   }
 
@@ -1347,11 +1397,12 @@ class QuadraticCore {
     });
   }
 
-  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertColumn',
+      type: 'clientCoreInsertColumns',
       sheetId,
       column,
+      count,
       right,
       cursor,
     });
@@ -1366,11 +1417,12 @@ class QuadraticCore {
     });
   }
 
-  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertRow',
+      type: 'clientCoreInsertRows',
       sheetId,
       row,
+      count,
       below,
       cursor,
     });
@@ -1421,11 +1473,20 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, cursor: string) {
-    this.send({
-      type: 'clientCoreGridToDataTable',
-      sheetRect,
-      cursor,
+  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreGridToDataTable',
+        id,
+        sheetRect,
+        firstRowIsHeader,
+        tableName,
+        cursor,
+      });
     });
   }
 
@@ -1437,9 +1498,8 @@ class QuadraticCore {
       name?: string;
       alternatingColors?: boolean;
       columns?: JsDataTableColumnHeader[];
-      showColumns?: boolean;
       showName?: boolean;
-      showUI?: boolean;
+      showColumns?: boolean;
     },
     cursor?: string
   ) {
@@ -1451,7 +1511,6 @@ class QuadraticCore {
       name: options.name,
       alternatingColors: options.alternatingColors,
       columns: options.columns,
-      showUI: options.showUI,
       showName: options.showName,
       showColumns: options.showColumns,
       cursor: cursor || '',
@@ -1544,6 +1603,42 @@ class QuadraticCore {
     });
   }
   //#endregion
+
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
+    this.send({
+      type: 'clientCoreResizeColumns',
+      sheetId,
+      columns,
+      cursor,
+    });
+  }
+
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
+    this.send({
+      type: 'clientCoreResizeRows',
+      sheetId,
+      rows,
+      cursor,
+    });
+  }
+
+  resizeAllColumns(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllColumns',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  resizeAllRows(sheetId: string, size: number) {
+    this.send({
+      type: 'clientCoreResizeAllRows',
+      sheetId,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();

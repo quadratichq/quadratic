@@ -26,17 +26,6 @@ impl GridController {
                         return;
                     }
 
-                    // if cfg!(target_family = "wasm")
-                    //     && !transaction.is_server()
-                    //     && values.into_iter().any(|(_, _, value)| value.is_html())
-                    // {
-                    //     if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
-                    //         if let Ok(html) = serde_json::to_string(&html) {
-                    //             crate::wasm_bindings::js::jsUpdateHtml(html);
-                    //         }
-                    //     }
-                    // };
-
                     let min = sheet_pos.into();
                     let sheet_rect = SheetRect {
                         sheet_id: sheet_pos.sheet_id,
@@ -181,6 +170,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
@@ -229,6 +219,7 @@ mod tests {
             },
             CodeCellLanguage::Formula,
             "A0 + 5".to_string(),
+            None,
             None,
         );
         gc.set_cell_value(

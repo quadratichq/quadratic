@@ -31,13 +31,13 @@ export class Update {
     this.scrollBarsHandler = scrollBarsHandler;
   };
 
-  start(): void {
+  start() {
     if (!this.raf) {
       this.raf = requestAnimationFrame(this.update);
     }
   }
 
-  destroy(): void {
+  destroy() {
     if (this.raf) {
       cancelAnimationFrame(this.raf);
       this.raf = undefined;
@@ -46,11 +46,20 @@ export class Update {
     this.scrollBarsHandler = undefined;
   }
 
+  private lastFocusElement?: HTMLElement;
+  private showFocus = () => {
+    const focus = document.activeElement;
+    if (focus !== this.lastFocusElement) {
+      this.lastFocusElement = focus as HTMLElement;
+      console.log('current focus:', focus);
+    }
+  };
+
   // update loop w/debug checks
-  private update = (): void => {
+  private update = () => {
     if (pixiApp.destroyed) return;
 
-    if (pixiApp.paused) {
+    if (pixiApp.copying) {
       this.raf = requestAnimationFrame(this.update);
       this.fps?.update();
       return;
@@ -59,6 +68,10 @@ export class Update {
     if (!pixiApp.cellsSheets.isReady()) {
       this.raf = requestAnimationFrame(this.update);
       return;
+    }
+
+    if (debugFlag('debugShowFocus')) {
+      this.showFocus();
     }
 
     pixiApp.viewport.updateViewport();

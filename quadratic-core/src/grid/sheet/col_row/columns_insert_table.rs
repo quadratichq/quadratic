@@ -28,8 +28,7 @@ impl Sheet {
             // if html or image, then we need to change the width
             if dt.is_html_or_image() {
                 if let Some((width, height)) = dt.chart_output {
-                    if source_column >= pos.x && source_column < pos.x + output_rect.width() as i64
-                    {
+                    if column >= pos.x && column < pos.x + output_rect.width() as i64 {
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
                     }
@@ -37,7 +36,7 @@ impl Sheet {
             } else {
                 // Adds columns to data tables if the column is inserted inside the
                 // table. Code is not impacted by this change.
-                if !dt.readonly
+                if !dt.is_code()
                     && source_column >= pos.x
                     && (column < pos.x + output_rect.width() as i64
                         || (CopyFormats::Before == copy_formats
@@ -75,9 +74,10 @@ impl Sheet {
         let mut data_tables_to_move_back = Vec::new();
 
         for (pos, dt) in self.data_tables.iter() {
+            // Catch all cases where the dt needs to be pushed to the right b/c of an insert.
             if (copy_formats == CopyFormats::Before && pos.x > column)
-                || ((copy_formats == CopyFormats::After || copy_formats == CopyFormats::None)
-                    && pos.x >= column)
+                || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
+                || (copy_formats != CopyFormats::Before && pos.x >= column)
             {
                 data_tables_to_move_right.push(*pos);
             }
@@ -85,7 +85,7 @@ impl Sheet {
             // first column. That should insert a table column and not push the
             // table over. data_tables_to_move_left handles this case. Note: we
             // treat charts differently and they are moved over.
-            if (!dt.readonly || dt.is_html_or_image())
+            if (!dt.is_code() || dt.is_html_or_image())
                 && copy_formats == CopyFormats::Before
                 && pos.x == column
             {
@@ -137,7 +137,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
 
-        gc.insert_column(sheet_id, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 3, "0");
 
@@ -160,7 +160,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_column(sheet_id, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
 
@@ -185,7 +185,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_column(sheet_id, 10, false, None);
+        gc.insert_columns(sheet_id, 10, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
 
@@ -205,7 +205,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         // insert column before the table (which should shift the table over by 1)
-        gc.insert_column(sheet_id, 2, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
         assert_data_table_size(&gc, sheet_id, pos![C2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
@@ -215,7 +215,7 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
-        gc.insert_column(sheet_id, 2, false, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
@@ -236,7 +236,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_column(sheet_id, 3, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "");
@@ -254,7 +254,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_column(sheet_id, 5, false, None);
+        gc.insert_columns(sheet_id, 5, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");
@@ -279,7 +279,7 @@ mod tests {
         test_create_html_chart(&mut gc, sheet_id, pos![B5], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
-        gc.insert_column(sheet_id, 3, true, None);
+        gc.insert_columns(sheet_id, 3, 1, true, None);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
 
@@ -298,7 +298,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        gc.insert_column(sheet_id, 3, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
 
         gc.undo(None);
@@ -312,7 +312,7 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
 
         clear_js_calls();
-        gc.insert_column(sheet_id, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None);
         assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
         expect_js_call_count("jsUpdateCodeCell", 2, false);
         expect_js_call_count("jsSendImage", 2, true);

@@ -94,14 +94,13 @@ export class Table extends Container {
         this.codeCell.alternating_colors ? this.codeCell : undefined
       );
     }
-    this.outline.update();
 
     const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
-
     if (!cellsMarkers) {
       console.log('Expected CellsMarkers to be defined in sheet');
       return;
     }
+
     if (this.codeCell.state === 'RunError' || this.codeCell.state === 'SpillError') {
       const box = this.sheet.getCellOffsets(this.codeCell.x, this.codeCell.y);
       cellsMarkers.add(box, this.codeCell);
@@ -112,7 +111,6 @@ export class Table extends Container {
     if (
       !this.codeCell.spill_error &&
       // !this.codeCell.is_html_image &&
-      this.codeCell.show_ui &&
       this.codeCell.show_name
     ) {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y, this.codeCell.w, 1);
@@ -125,7 +123,6 @@ export class Table extends Container {
     const codeCell = this.codeCell;
     if (
       !codeCell.is_html &&
-      codeCell.show_ui &&
       (codeCell.show_name || codeCell.show_columns) &&
       this.tableBounds.top < bounds.top + gridHeading
     ) {
@@ -157,7 +154,6 @@ export class Table extends Container {
       return;
     }
     if (
-      this.codeCell.show_ui &&
       (this.codeCell.show_name || this.codeCell.show_columns) &&
       this.codeCell.state !== 'RunError' &&
       this.codeCell.state !== 'SpillError'
@@ -213,7 +209,7 @@ export class Table extends Container {
   }
 
   getTableNameBounds(ignoreOverHeadings = false): Rectangle | undefined {
-    if (!this.codeCell.show_ui || !this.codeCell.show_name) {
+    if (!this.codeCell.show_name) {
       return;
     }
     const bounds = this.header.getTableNameBounds().clone();
@@ -286,7 +282,7 @@ export class Table extends Container {
   }
 
   shouldHideTableName(): boolean {
-    return !this.codeCell.show_ui || !this.codeCell.show_name;
+    return !this.codeCell.show_name;
   }
 
   isCodeCell = (): boolean => {

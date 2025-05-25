@@ -22,28 +22,87 @@ use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError};
+use crate::net::ssh::SshConfig;
+use crate::quadratic_api::Connection as ApiConnection;
 use crate::sql::Connection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 
+use super::UsesSsh;
+
 /// Microsoft SQL Server connection
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MsSqlConnection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
     pub database: String,
+    pub use_ssh: Option<bool>,
+    pub ssh_host: Option<String>,
+    pub ssh_port: Option<String>,
+    pub ssh_username: Option<String>,
+    pub ssh_key: Option<String>,
+}
+
+impl From<&ApiConnection<MsSqlConnection>> for MsSqlConnection {
+    fn from(connection: &ApiConnection<MsSqlConnection>) -> Self {
+        let details = connection.type_details.to_owned();
+        MsSqlConnection::new(
+            details.username,
+            details.password,
+            details.host,
+            details.port,
+            details.database,
+            details.use_ssh,
+            details.ssh_host,
+            details.ssh_port,
+            details.ssh_username,
+            details.ssh_key,
+        )
+    }
+}
+
+impl TryFrom<MsSqlConnection> for SshConfig {
+    type Error = SharedError;
+
+    fn try_from(connection: MsSqlConnection) -> Result<Self> {
+        let required = |value: Option<String>| {
+            value.ok_or(SharedError::Sql(SqlError::Connect(
+                "Required field is missing".into(),
+            )))
+        };
+
+        let ssh_port = <MsSqlConnection as UsesSsh>::parse_port(&connection.ssh_port).ok_or(
+            SharedError::Sql(SqlError::Connect("SSH port is required".into())),
+        )??;
+
+        Ok(SshConfig::new(
+            required(connection.ssh_host)?,
+            ssh_port,
+            required(connection.ssh_username)?,
+            connection.password,
+            required(connection.ssh_key)?,
+            None,
+        ))
+    }
 }
 
 impl MsSqlConnection {
     /// Create a new Microsoft SQL Server connection
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         username: Option<String>,
         password: Option<String>,
         host: String,
         port: Option<String>,
         database: String,
+        use_ssh: Option<bool>,
+        ssh_host: Option<String>,
+        ssh_port: Option<String>,
+        ssh_username: Option<String>,
+        ssh_key: Option<String>,
     ) -> MsSqlConnection {
         MsSqlConnection {
             username,
@@ -51,6 +110,11 @@ impl MsSqlConnection {
             host,
             port,
             database,
+            use_ssh,
+            ssh_host,
+            ssh_port,
+            ssh_username,
+            ssh_key,
         }
     }
 
@@ -101,12 +165,8 @@ impl Connection for MsSqlConnection {
         config.host(&self.host);
         config.database(&self.database);
 
-        if let Some(port) = &self.port {
-            config.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(SqlError::Connect(
-                    "Could not parse port into a number".into(),
-                ))
-            })?);
+        if let Some(port) = self.port() {
+            config.port(port?);
         }
 
         if let Some(username) = &self.username {
@@ -334,6 +394,28 @@ where
         .unwrap_or(ArrowType::Void)
 }
 
+impl UsesSsh for MsSqlConnection {
+    fn use_ssh(&self) -> bool {
+        self.use_ssh.unwrap_or(false)
+    }
+
+    fn port(&self) -> Option<Result<u16>> {
+        Self::parse_port(&self.port)
+    }
+
+    fn set_port(&mut self, port: u16) {
+        self.port = Some(port.to_string());
+    }
+
+    fn ssh_host(&self) -> Option<String> {
+        self.ssh_host.to_owned()
+    }
+
+    fn set_ssh_key(&mut self, ssh_key: Option<String>) {
+        self.ssh_key = ssh_key;
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -350,6 +432,11 @@ mod tests {
             "0.0.0.0".into(),
             Some("1433".into()),
             "AllTypes".into(),
+            None,
+            None,
+            None,
+            None,
+            None,
         )
     }
 

@@ -305,9 +305,12 @@ impl Sheet {
             if bounds.min.y == pos.y {
                 // table name, or column header if no table name, or top of data if no column header or table name
                 return true;
-            } else if bounds.min.y
-                + (if dt.show_ui && dt.show_name { 1 } else { 0 })
-                + (if dt.show_ui && dt.show_columns { 1 } else { 0 })
+            }
+
+            let show_name = dt.get_show_name();
+            let show_columns = dt.get_show_columns();
+
+            if bounds.min.y + (if show_name { 1 } else { 0 }) + (if show_columns { 1 } else { 0 })
                 == pos.y
             {
                 // ignore column header--just go to first line of data or table name
@@ -466,6 +469,64 @@ impl Sheet {
         sheet_format
     }
 
+    /// Returns a string representation of the format of a cell for use by AI.
+    pub fn cell_text_format_as_string(&self, pos: Pos) -> Option<String> {
+        let format = self.cell_format(pos);
+        if format.is_default() {
+            None
+        } else {
+            let mut values = vec![];
+            if format.bold.is_some_and(|b| b) {
+                values.push("bold".to_string());
+            }
+            if format.italic.is_some_and(|i| i) {
+                values.push("italic".to_string());
+            }
+            if format.underline.is_some_and(|u| u) {
+                values.push("underline".to_string());
+            }
+            if format.strike_through.is_some_and(|s| s) {
+                values.push("strike through".to_string());
+            }
+            if let Some(text_color) = format.text_color {
+                if !text_color.is_empty() {
+                    values.push(format!("text color is {}", text_color.clone()));
+                }
+            }
+            if let Some(fill_color) = format.fill_color {
+                if !fill_color.is_empty() {
+                    values.push(format!("fill color is {}", fill_color.clone()));
+                }
+            }
+            if let Some(align) = format.align {
+                values.push(format!("horizontal align is {}", align.clone()));
+            }
+            if let Some(vertical_align) = format.vertical_align {
+                values.push(format!("vertical align is {}", vertical_align.clone()));
+            }
+            if let Some(wrap) = format.wrap {
+                values.push(format!("wrap is {}", wrap.clone()));
+            }
+            if let Some(numeric_format) = format.numeric_format {
+                values.push(format!("numeric kind is {}", numeric_format.kind));
+                if let Some(symbol) = numeric_format.symbol {
+                    values.push(format!("numeric symbol is {}", symbol));
+                }
+            }
+            if let Some(numeric_decimals) = format.numeric_decimals {
+                values.push(format!("numeric decimals is {}", numeric_decimals));
+            }
+            if let Some(numeric_commas) = format.numeric_commas {
+                values.push(format!("numeric commas is {}", numeric_commas));
+            }
+            if let Some(date_time) = format.date_time {
+                values.push(format!("date time is {}", date_time.clone()));
+            }
+
+            Some(values.join(", "))
+        }
+    }
+
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
         let format = self.cell_format(pos);
@@ -506,14 +567,8 @@ impl Sheet {
     /// that index.
     pub(crate) fn get_or_create_column(&mut self, x: i64) -> &mut Column {
         match self.columns.entry(x) {
-            btree_map::Entry::Vacant(e) => {
-                let column = e.insert(Column::new(x));
-                column
-            }
-            btree_map::Entry::Occupied(e) => {
-                let column = e.into_mut();
-                column
-            }
+            btree_map::Entry::Vacant(e) => e.insert(Column::new(x)),
+            btree_map::Entry::Occupied(e) => e.into_mut(),
         }
     }
 
@@ -1138,7 +1193,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert(pos, dt.clone());
@@ -1386,7 +1442,8 @@ mod test {
             ])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert(anchor_pos, dt);
@@ -1414,10 +1471,11 @@ mod test {
             Value::Array(Array::from(vec![vec!["a", "b"], vec!["c", "d"]])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
-        dt_no_ui.show_name = false;
+        dt_no_ui.show_name = Some(false);
         sheet.data_tables.insert(pos![E5], dt_no_ui);
 
         // Test edges without UI
@@ -1456,7 +1514,8 @@ mod test {
             Value::Array(Array::from(vec![vec!["test", "test"]])),
             false,
             false,
-            true,
+            Some(true),
+            Some(true),
             None,
         );
         sheet.data_tables.insert(pos, dt.clone());

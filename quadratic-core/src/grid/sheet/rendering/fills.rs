@@ -212,7 +212,14 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // set a data table at E2 that's 3x3 and show_header is true
-        gc.test_set_data_table(pos!(E2).to_sheet_pos(sheet_id), 3, 3, false, true);
+        gc.test_set_data_table(
+            pos!(E2).to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(true),
+            Some(true),
+        );
         gc.set_fill_color(
             &A1Selection::test_a1_context("Table1[Column 2]", gc.a1_context()),
             Some("red".to_string()),
@@ -226,7 +233,9 @@ mod tests {
         )
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
+        let dt = sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap();
+        dt.show_name = Some(true);
+        dt.show_columns = Some(true);
         let fills = sheet.get_all_render_fills();
         assert_eq!(fills.len(), 2);
         assert_fill_eq(&fills[0], 6, 4, 1, 3, "red");
@@ -263,7 +272,14 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // set a data table at E2 that's 3x3 and show_header is true
-        gc.test_set_data_table(pos!(E2).to_sheet_pos(sheet_id), 3, 3, false, true);
+        gc.test_set_data_table(
+            pos!(E2).to_sheet_pos(sheet_id),
+            3,
+            3,
+            false,
+            Some(true),
+            Some(true),
+        );
         gc.set_fill_color(
             &A1Selection::test_a1_sheet_id("E5:I5", sheet_id),
             Some("red".to_string()),
@@ -278,7 +294,9 @@ mod tests {
         .unwrap();
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = false;
+        let dt = sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap();
+        dt.show_name = Some(false);
+        dt.show_columns = Some(false);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
@@ -286,7 +304,9 @@ mod tests {
         assert_fill_eq(&fills[3], 7, 3, 1, 1, "red");
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
+        let dt = sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap();
+        dt.show_name = Some(true);
+        dt.show_columns = Some(true);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 5, 1, 1, "red");
@@ -294,7 +314,7 @@ mod tests {
         assert_fill_eq(&fills[3], 7, 5, 1, 1, "red");
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_name = false;
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_name = Some(false);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 4, 1, 1, "red");
@@ -305,7 +325,7 @@ mod tests {
         sheet
             .data_table_mut(Pos { x: 5, y: 2 })
             .unwrap()
-            .show_columns = false;
+            .show_columns = Some(false);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
@@ -327,7 +347,7 @@ mod tests {
         sheet
             .data_table_mut(Pos { x: 5, y: 2 })
             .unwrap()
-            .show_columns = true;
+            .show_columns = Some(true);
         let fills = sheet.get_all_render_fills();
         assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
         assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
@@ -423,7 +443,6 @@ mod tests {
             Some(column_headers),
             None,
             None,
-            None,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -469,7 +488,6 @@ mod tests {
         gc.test_data_table_update_meta(
             pos.to_sheet_pos(sheet_id),
             Some(column_headers),
-            None,
             None,
             None,
         );

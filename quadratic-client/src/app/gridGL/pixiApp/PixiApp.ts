@@ -1,3 +1,5 @@
+import './pixiApp.css';
+
 import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import {
@@ -37,7 +39,6 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import './pixiApp.css';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -82,7 +83,6 @@ export class PixiApp {
   stage = new Container();
   loading = true;
   destroyed = false;
-  paused = true;
 
   accentColor = colors.cursorCell;
 
@@ -90,6 +90,9 @@ export class PixiApp {
   debug!: Graphics;
 
   initialized = false;
+
+  // only prepare one copy at a time
+  copying = false;
 
   constructor() {
     // This is created first so it can listen to messages from QuadraticCore.
@@ -191,6 +194,7 @@ export class PixiApp {
     this.reset();
 
     this.pointer = new Pointer(this.viewport);
+
     this.update = new Update();
 
     this.setupListeners();
@@ -298,21 +302,22 @@ export class PixiApp {
   };
 
   // called before and after a render
-  prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle }): Container {
+  prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+    this.copying = true;
     this.gridLines.visible = options?.gridLines ?? false;
-    this.cursor.visible = false;
+    this.cursor.visible = options?.ai ?? false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
-    this.headings.visible = false;
+    this.headings.visible = options?.ai ?? false;
     this.boxCells.visible = false;
-    this.htmlPlaceholders.prepare();
+    await this.htmlPlaceholders.prepare(options?.cull);
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
     }
     return this.viewportContents;
-  }
+  };
 
   cleanUpAfterCopying(culled?: boolean): void {
     this.gridLines.visible = true;
@@ -327,9 +332,9 @@ export class PixiApp {
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());
     }
+    this.copying = false;
   }
 
-  // helper for playwright
   render(): void {
     this.renderer.render(this.stage);
   }
@@ -344,7 +349,6 @@ export class PixiApp {
   }
 
   rebuild() {
-    this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.headings.dirty = true;
@@ -352,7 +356,6 @@ export class PixiApp {
     this.cellHighlights.setDirty();
     this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
-    this.paused = false;
     this.reset();
     this.setViewportDirty();
   }

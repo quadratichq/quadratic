@@ -301,6 +301,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1 + 1".into(),
             None,
+            None,
         );
         gc.set_code_cell(
             SheetPos {
@@ -311,6 +312,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "{1, 2, 3}".into(),
             None,
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         let run = sheet.data_table(Pos { x: 0, y: 0 }).unwrap();
@@ -320,8 +322,8 @@ mod tests {
             Pos { x: 0, y: 0 },
         );
         assert_eq!(reasons.len(), 2);
-        assert!(reasons.iter().any(|p| *p == Pos { x: 1, y: 0 }));
-        assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 0 }));
+        assert!(reasons.contains(&Pos { x: 1, y: 0 }));
+        assert!(reasons.contains(&Pos { x: 2, y: 0 }));
     }
 
     #[test]

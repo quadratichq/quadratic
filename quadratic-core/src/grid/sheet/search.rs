@@ -530,6 +530,8 @@ mod test {
             }),
         );
         let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "hello".into(),
             error: None,
             std_out: None,
             std_err: None,
@@ -544,7 +546,8 @@ mod test {
             Value::Single("world".into()),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
@@ -574,6 +577,8 @@ mod test {
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "".into(),
             error: None,
             std_out: None,
             std_err: None,
@@ -591,7 +596,8 @@ mod test {
             ])),
             false,
             false,
-            false,
+            Some(false),
+            Some(false),
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));

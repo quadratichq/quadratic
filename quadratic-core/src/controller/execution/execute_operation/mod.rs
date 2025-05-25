@@ -60,7 +60,6 @@ impl GridController {
 
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
-                Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
                     self.execute_set_chart_size(transaction, op),
                 ),
@@ -88,6 +87,9 @@ impl GridController {
                 ),
                 Operation::DataTableMeta { .. } => Self::handle_execution_operation_result(
                     self.execute_data_table_meta(transaction, op),
+                ),
+                Operation::DataTableOptionMeta { .. } => Self::handle_execution_operation_result(
+                    self.execute_data_table_option_meta(transaction, op),
                 ),
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
@@ -128,9 +130,6 @@ impl GridController {
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
-                Operation::SetCodeRunVersion { .. } => {
-                    self.execute_set_code_run_version(transaction, op);
-                }
                 Operation::SetDataTable { .. } => {
                     self.execute_set_data_table(transaction, op);
                 }
@@ -163,6 +162,11 @@ impl GridController {
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
                 Operation::ResizeRows { .. } => self.execute_resize_rows(transaction, op),
+                Operation::ResizeColumns { .. } => self.execute_resize_columns(transaction, op),
+                Operation::DefaultColumnSize { .. } => {
+                    self.execute_default_column_size(transaction, op);
+                }
+                Operation::DefaultRowSize { .. } => self.execute_default_row_size(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
