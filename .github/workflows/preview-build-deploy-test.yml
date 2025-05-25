@@ -530,7 +530,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 64
+      matrix_runner: 151
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
@@ -624,23 +624,25 @@ jobs:
         uses: useblacksmith/setup-node@v5
         with:
           node-version: 24
+          cache: "npm"
 
       - name: Install Dependencies
         if: ${{ !cancelled() }}
         run: cd test/e2e && npm install
 
-      - name: Download blob reports from GitHub Actions Artifacts
+      - name: Download and merge all blob into HTML report
         if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v4
-        with:
-          path: all-blob-reports
-          pattern: blob-report-${{ github.run_id }}-*
-          merge-multiple: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Download all blob reports from GitHub Actions Artifacts
+          gh run download ${{ github.run_id }} \
+            --repo ${{ github.repository }} \
+            --pattern "blob-report-${{ github.run_id }}-*" \
+            --dir all-blob-reports
 
-      - name: Merge into HTML Report
-        if: ${{ !cancelled() }}
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+          # Merge all blob reports into a single HTML report
+          npx playwright merge-reports --reporter html ./all-blob-reports
 
       - name: Upload HTML report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
