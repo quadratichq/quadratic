@@ -140,7 +140,6 @@ RUN if [ -z "$ENV_HASH" ]; then \
   find /quadratic/build -type f \
   \( \
   -name "*.wasm" -o \
-  -name "*.whl" -o \
   -name "*.json" -o \
   -name "*.css" -o \
   -name "*.html" -o \
@@ -169,8 +168,8 @@ RUN if [ -z "$ENV_HASH" ]; then \
   \) -print0 | \
   xargs -0 -n1 -P$(nproc) -I {} sh -c '\
   echo "Compressing: {}" && \
-  brotli -q 9 -w 24 -f "{}" && \
-  pigz -6kf "{}" && \
+  brotli -q 11 -w 24 -f "{}" && \
+  pigz -9kf "{}" && \
   echo "Created: {}.br and {}.gz" \
   '; \
   fi
