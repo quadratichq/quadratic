@@ -629,19 +629,35 @@ jobs:
         if: ${{ !cancelled() }}
         run: cd test/e2e && npm install
 
-      - name: Download and merge all blob into HTML report
+      - name: Download and merge all blobs into HTML report
         if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Download all blob reports from GitHub Actions Artifacts
+          # Create temp directory for download
+          mkdir -p temp-download
+
+          # Download all matching artifacts (handles pagination automatically)
           gh run download ${{ github.run_id }} \
             --repo ${{ github.repository }} \
             --pattern "blob-report-${{ github.run_id }}-*" \
-            --dir all-blob-reports
+            --dir temp-download
 
-          # Merge all blob reports into a single HTML report
-          npx playwright merge-reports --reporter html ./all-blob-reports
+          # Create the target directory
+          mkdir -p all-blob-reports
+
+          # Move all files from subdirectories to the target directory
+          find temp-download -type f -exec mv {} all-blob-reports/ \;
+
+          # Clean up
+          rm -rf temp-download
+
+          # Verify download
+          echo "Downloaded $(find all-blob-reports -type f | wc -l) files"
+
+      - name: Merge into HTML Report
+        if: ${{ !cancelled() }}
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
 
       - name: Upload HTML report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
