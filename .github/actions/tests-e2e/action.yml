@@ -55,7 +55,7 @@ runs:
       if: ${{ !cancelled() }}
       id: upload-playwright-report
       with:
-        name: blob-report-${{ github.run_id }}-${{ matrix.shardIndex }}
+        name: blob-report-${{ github.run_id }}-${{ inputs.shard_index }}
         path: test/e2e/blob-report
         retention-days: 1
         overwrite: true
