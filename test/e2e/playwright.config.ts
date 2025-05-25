@@ -31,8 +31,8 @@ export default defineConfig({
     baseURL: (process.env.E2E_URL || 'http://localhost:3000').replace(/\/$/, ''),
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'off',
-    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
+    video: 'on',
   },
   /* Timeout for each test */
   timeout: 10 * 60 * 1000,
