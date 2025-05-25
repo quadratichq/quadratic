@@ -24,12 +24,13 @@ export const QuadraticAppDebugSettings = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === 'KeyI' && event.shiftKey && event.altKey && event.metaKey) {
         event.preventDefault();
+        event.stopPropagation();
         setOpen((prev) => !prev);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
     };
   }, []);
 
@@ -54,41 +55,50 @@ export const QuadraticAppDebugSettings = () => {
               onChange={(newValue) => setDebugFlag('debug', newValue)}
             />
           </div>
-          {debugFlagGroups.map((group) => {
-            return (
-              <div key={group} className="mb-4">
-                <div
-                  className="flex cursor-pointer items-center gap-2 font-bold"
-                  onClick={() => setCollapsed((prev) => ({ ...prev, [group]: !prev[group] }))}
-                >
+          {debugFlags.debug &&
+            debugFlagGroups.map((group) => {
+              return (
+                <div key={group} className="mb-4">
                   <div
-                    className="rotate-90 transition-transform"
-                    style={{ transform: collapsed[group] ? 'rotate(0deg)' : 'rotate(90deg)' }}
+                    className="flex cursor-pointer items-center gap-2 font-bold"
+                    onClick={() => setCollapsed((prev) => ({ ...prev, [group]: !prev[group] }))}
                   >
-                    ▶
+                    <div
+                      className="rotate-90 transition-transform"
+                      style={{ transform: collapsed[group] ? 'rotate(0deg)' : 'rotate(90deg)' }}
+                    >
+                      ▶
+                    </div>
+                    {group}
+                    {(() => {
+                      const count = Object.entries(debugFlagDescriptions).filter(
+                        ([key, value]) => value.group === group && debugFlags[key]
+                      ).length;
+                      return count > 0 ? (
+                        <span className="text-sm font-normal text-muted-foreground">({count})</span>
+                      ) : null;
+                    })()}
                   </div>
-                  {group}
+                  {!collapsed[group] && (
+                    <>
+                      {Object.entries(debugFlagDescriptions)
+                        .filter(([_, value]) => value.group === group)
+                        .map(([key, value]) => (
+                          <Setting
+                            className={key === 'debug' ? '-mx-3 mb-1 rounded bg-accent px-3 py-3' : ''}
+                            keyName={key}
+                            debug={value}
+                            value={debugFlags[key]}
+                            onChange={(newValue) => setDebugFlag(key, newValue)}
+                            key={key}
+                            disabled={key !== 'debug' && !debugFlags.debug}
+                          />
+                        ))}
+                    </>
+                  )}
                 </div>
-                {!collapsed[group] && (
-                  <>
-                    {Object.entries(debugFlagDescriptions)
-                      .filter(([_, value]) => value.group === group)
-                      .map(([key, value]) => (
-                        <Setting
-                          className={key === 'debug' ? '-mx-3 mb-1 rounded bg-accent px-3 py-3' : ''}
-                          keyName={key}
-                          debug={value}
-                          value={debugFlags[key]}
-                          onChange={(newValue) => setDebugFlag(key, newValue)}
-                          key={key}
-                          disabled={key !== 'debug' && !debugFlags.debug}
-                        />
-                      ))}
-                  </>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </SheetContent>
     </Sheet>
