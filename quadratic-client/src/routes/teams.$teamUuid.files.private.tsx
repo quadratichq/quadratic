@@ -1,4 +1,4 @@
-import { debugShowUILogs } from '@/app/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
@@ -46,6 +46,7 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
+  const { debugShowUILogs } = useDebugFlags();
 
   if (debugShowUILogs) console.error('[<MineRoute>.<ErrorBoundary>]', error);
 

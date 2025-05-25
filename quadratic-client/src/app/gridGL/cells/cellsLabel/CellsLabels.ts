@@ -6,7 +6,7 @@
  * geometries sent to the GPU.
  */
 
-import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
@@ -174,7 +174,7 @@ export class CellsLabels extends Container {
 
   show(bounds: Rectangle) {
     let count = 0;
-    if (debugShowCellsHashBoxes) {
+    if (debugFlag('debugShowCellsHashBoxes')) {
       this.cellsTextDebug.clear();
       this.cellsTextHashDebug.removeChildren();
     }
@@ -182,7 +182,7 @@ export class CellsLabels extends Container {
       const hashBounds = cellsTextHash.bounds.toRectangle();
       if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
         cellsTextHash.show();
-        if (debugShowCellsHashBoxes) {
+        if (debugFlag('debugShowCellsHashBoxes')) {
           cellsTextHash.drawDebugBox(this.cellsTextDebug, this.cellsTextHashDebug);
         }
         count++;
@@ -190,7 +190,7 @@ export class CellsLabels extends Container {
         cellsTextHash.hide();
       }
     });
-    if (debugShowCellsSheetCulling) {
+    if (debugFlag('debugShowCellsSheetCulling')) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
     }
   }

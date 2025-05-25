@@ -1,5 +1,5 @@
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
-import { useDebugFlags } from '@/app/ui/QuaraticAppDebugSettings';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { VERSION } from '@/shared/constants/appConstants';
 import { useRecoilValue } from 'recoil';
 import BottomBarItem from './BottomBarItem';
@@ -8,7 +8,7 @@ import SyncState from './SyncState';
 
 export const BottomBar = () => {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
-  const [{ debugShowFPS }] = useDebugFlags();
+  const { debugShowFPS } = useDebugFlags();
 
   return (
     <div

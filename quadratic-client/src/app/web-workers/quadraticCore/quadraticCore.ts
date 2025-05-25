@@ -4,7 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debug, debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -101,7 +101,7 @@ class QuadraticCore {
   }
 
   private handleMessage = async (e: MessageEvent<CoreClientMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[quadraticCore] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[quadraticCore] message: ${e.data.type}`);
 
     // quadratic-core initiated messages
     if (e.data.type === 'coreClientAddSheet') {
@@ -215,7 +215,7 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientCoreError') {
       events.emit('coreError', e.data.from, e.data.error);
-      if (debug) {
+      if (debugFlag('debug')) {
         console.error('[quadraticCore] core error', e.data.from, e.data.error);
       }
       return;
@@ -273,10 +273,10 @@ class QuadraticCore {
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientLoad) => {
         if (message.error) {
-          if (debugShowFileIO) console.log(`[quadraticCore] error loading file "${message.error}".`);
+          if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] error loading file "${message.error}".`);
           resolve({ error: message.error });
         } else if (message.version) {
-          if (debugShowFileIO) console.log(`[quadraticCore] file loaded.`);
+          if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] file loaded.`);
           resolve({ version: message.version });
         } else {
           throw new Error('Expected CoreClientLoad to include either version or error');
@@ -292,7 +292,7 @@ class QuadraticCore {
         fileId,
         teamUuid,
       };
-      if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
+      if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);
     });
   }
