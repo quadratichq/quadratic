@@ -432,7 +432,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}) successfully deployed at ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
+            ✅ Deploy images - deployed at ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}, [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }})
             ⏳ Tests-E2E
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
@@ -558,7 +558,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - [Preview](https://${{ env.e2e_url }}) successfully deployed at ${{ env.deploy_time }}
+            ✅ Deploy images - deployed at ${{ env.deploy_time }}, [Preview](https://${{ env.e2e_url }})
             ⏳ Tests-E2E running...
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
@@ -659,18 +659,6 @@ jobs:
         if: ${{ !cancelled() }}
         run: npx playwright merge-reports --reporter html ./all-blob-reports
 
-      - name: Upload HTML report to GitHub Actions Artifacts
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        id: e2e-test-report
-        with:
-          name: pr-${{ github.event.pull_request.number }}-e2e-report
-          path: playwright-report
-          retention-days: 14
-          overwrite: true
-          include-hidden-files: true
-          if-no-files-found: warn
-
       - name: Configure AWS Credentials
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v4
@@ -679,7 +667,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Upload Report to S3
+      - name: Upload HTML report to S3
         if: ${{ !cancelled() }}
         run: |
           # Upload entire build directory to S3
@@ -703,8 +691,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - [Preview](https://${{ env.e2e_url }}) successfully deployed at ${{ env.deploy_time }}
-
+            ✅ Deploy images - deployed at ${{ env.deploy_time }}, [Preview](https://${{ env.e2e_url }})
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [View](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)  [Download](${{ steps.e2e-test-report.outputs.artifact-url }})
           edit-mode: replace
 
@@ -717,7 +704,6 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - [Preview](https://${{ env.e2e_url }}) successfully deployed at ${{ env.deploy_time }}
-
+            ✅ Deploy images - deployed at ${{ env.deploy_time }}, [Preview](https://${{ env.e2e_url }})
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace

@@ -1745,6 +1745,10 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   await page.getByRole(`button`, { name: fileName }).click();
   await page.keyboard.type(fileName, { delay: 50 });
 
+  // Initial state
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_multiple_columns_initial.png`);
+
   //--------------------------------
   // Act:
   //--------------------------------
@@ -1845,6 +1849,16 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('1	2			7');
   await page.keyboard.press('Escape');
+
+  // Final state
+  await page.keyboard.press('Control+Z'); // Undo delete columns
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+Z'); // Undo insert columns right
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+Z'); // Undo insert columns left
+  await page.waitForTimeout(5 * 1000);
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_multiple_columns_initial.png`);
 
   //--------------------------------
   // Clean up:
@@ -2037,6 +2051,10 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   await page.getByRole(`button`, { name: fileName }).click();
   await page.keyboard.type(fileName, { delay: 50 });
 
+  // Initial state
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_multiple_rows_initial.png`);
+
   //--------------------------------
   // Act:
   //--------------------------------
@@ -2137,6 +2155,16 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('2\n\n\n7');
   await page.keyboard.press('Escape');
+
+  // Final state
+  await page.keyboard.press('Control+Z'); // Undo delete rows
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+Z'); // Undo insert rows below
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+Z'); // Undo insert rows above
+  await page.waitForTimeout(5 * 1000);
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_multiple_rows_initial.png`);
 
   //--------------------------------
   // Clean up:
