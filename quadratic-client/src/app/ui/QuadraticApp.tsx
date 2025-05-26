@@ -12,7 +12,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSearchParams } from 'react-router';
 import { useRecoilValue } from 'recoil';
@@ -24,7 +24,7 @@ export function QuadraticApp() {
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [searchParams] = useSearchParams();
-  const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
+  const checkpointId = useMemo(() => searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY), [searchParams]);
 
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
