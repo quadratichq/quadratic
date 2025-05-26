@@ -10,14 +10,14 @@
   "private": true,
   "workspaces": [
     "quadratic-api",
-    "quadratic-shared",
     "quadratic-client",
-    "quadratic-files",
-    "quadratic-multiplayer",
+    "quadratic-connection",
     "quadratic-core",
+    "quadratic-files",
     "quadratic-kernels/python-wasm",
+    "quadratic-multiplayer",
     "quadratic-rust-shared",
-    "quadratic-connection"
+    "quadratic-shared"
   ],
   "type": "module",
   "scripts": {

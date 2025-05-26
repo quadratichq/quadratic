@@ -1,9 +1,10 @@
 // This file is the main entry point for the javascript worker. It handles
 // managing the Javascript runners, which is where the code is executed.
 
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { CoreJavascriptRun } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
-import { JavascriptAPI } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptAPI';
 import {
   javascriptFindSyntaxError,
   prepareJavascriptCode,
@@ -16,13 +17,13 @@ import {
 import type { RunnerJavascriptMessage } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptRunnerMessages';
 import { javascriptLibraryLines } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generateJavascriptForRunner';
 import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
+import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
 
 export const LINE_NUMBER_VAR = '___line_number___';
 
 export class Javascript {
-  private api: JavascriptAPI;
   private awaitingExecution: CodeRun[];
   private id = 0;
   private getCellsResponses: Record<number, Uint8Array> = {};
@@ -34,7 +35,6 @@ export class Javascript {
   constructor() {
     this.awaitingExecution = [];
     this.init();
-    this.api = new JavascriptAPI(this);
   }
 
   private init = async () => {
@@ -47,6 +47,24 @@ export class Javascript {
 
     this.state = 'ready';
     return this.next();
+  };
+
+  private getCellsA1 = async (transactionId: string, a1: string): Promise<ArrayBuffer> => {
+    let responseBuffer: ArrayBuffer;
+    try {
+      responseBuffer = await javascriptCore.sendGetCellsA1(transactionId, a1);
+    } catch (error: any) {
+      const response: JsCellsA1Response = {
+        values: null,
+        error: {
+          core_error: `Failed to parse getCellsA1 response: ${error}`,
+        },
+      };
+      const responseUint8Array = toUint8Array(response);
+      responseBuffer = responseUint8Array.buffer as ArrayBuffer;
+    }
+
+    return responseBuffer;
   };
 
   private codeRunToCoreJavascript = (codeRun: CodeRun): CoreJavascriptRun => ({
@@ -144,7 +162,7 @@ export class Javascript {
           return this.next();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
-          this.api.getCellsA1(message.transactionId, a1).then((cellsBuffer) => {
+          this.getCellsA1(message.transactionId, a1).then((cellsBuffer) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
             if (cellsBuffer) {
               const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
