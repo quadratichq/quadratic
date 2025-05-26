@@ -124,10 +124,9 @@ const parsePosition = (position: string) => {
 };
 
 type DisplayMouseCoordsOptions = {
-  page: Page;
   offsets?: boolean; // If true, display coordinates relative to the canvas
 };
-export const displayMouseCoords = async ({ page, offsets }: DisplayMouseCoordsOptions) => {
+export const displayMouseCoords = async (page: Page, { offsets }: DisplayMouseCoordsOptions) => {
   await page.evaluate(
     ({ offsets }) => {
       const positionDisplay = document.createElement('div');

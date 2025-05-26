@@ -4764,3 +4764,249 @@ test('Charts Copy Paste', async ({ page }) => {
   await page.locator(`nav a svg`).click();
   await cleanUpFiles(page, { fileName });
 });
+
+test('Multiple Columns Resizing', async ({ page }) => {
+  // Constants
+  const fileName = 'Multiple_Columns_Resizing';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_multiple_column_resizing` });
+
+  // // Create a new team
+  // const teamName = `Multiple Columns Resizing - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Create new file
+  await uploadFile(page, { fileName, fileType });
+
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_initial.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  //--------------------------------
+  // Resize Column width with Fill
+  //--------------------------------
+  // Expand column B's width by 200px
+  await page.mouse.move(318, 90);
+  await page.mouse.down();
+  await page.mouse.move(518, 90);
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
+  // Assert that color filled cell's width updates per expanded column 2 width
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_1.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // select column B
+  await page.mouse.click(343, 90);
+
+  // Expand column C's width by 100px
+  await page.mouse.move(618, 90);
+  await page.mouse.down();
+  await page.mouse.move(718, 90);
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
+  // Assert that color filled cell's width in column B did not update
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_2.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // select column B-D
+  await page.mouse.click(343, 90);
+  await page.keyboard.down('Shift');
+  await page.mouse.click(767, 90);
+  await page.keyboard.up('Shift');
+
+  // Shrink column C's width by 100px
+  await page.mouse.move(718, 90);
+  await page.mouse.down();
+  await page.mouse.move(618, 90);
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
+  // Assert that color filled cell's width updates per shrunken column C width
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_3.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Undo shrink column C width
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(5 * 1000);
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_2.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Undo expand column C width
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(5 * 1000);
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_1.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Undo expand column B width
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(5 * 1000);
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_2.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test.skip('Multiple Rows Resizing', async ({ page }) => {
+  // Constants
+  const fileName = 'Multiple_Rows_Resizing';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_multiple_row_resizing` });
+
+  // // Create a new team
+  // const teamName = `Multiple Rows Resizing - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Create new file
+  await uploadFile(page, { fileName, fileType });
+
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_initial.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  //--------------------------------
+  // Resize Row height with Fill
+  //--------------------------------
+  // Expand row 2's height by 200px
+  await page.mouse.move(60, 168);
+  await page.mouse.down();
+  await page.mouse.move(90, 318);
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
+  // Assert that color filled cell's width height per expanded row 2 height
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_1.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // select row 2
+  await page.mouse.click(343, 90);
+
+  // Expand row 3's height by 100px
+  await page.mouse.move(90, 318);
+  await page.mouse.down();
+  await page.mouse.move(718, 90);
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
+  // Assert that color filled cell's height in row 2 did not update
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_2.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // select row 2-4
+  await page.mouse.click(343, 90);
+  await page.keyboard.down('Shift');
+  await page.mouse.click(767, 90);
+  await page.keyboard.up('Shift');
+
+  // Shrink row 3's height by 100px
+  await page.mouse.move(718, 90);
+  await page.mouse.down();
+  await page.mouse.move(618, 90);
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
+  // Assert that color filled cell's height updates per shrunken row 3 height
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_3.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Undo shrink row 3 height
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(5 * 1000);
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_2.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Undo expand row 3 height
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(5 * 1000);
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_1.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Undo expand row 2 width
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(5 * 1000);
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_2.png', {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});

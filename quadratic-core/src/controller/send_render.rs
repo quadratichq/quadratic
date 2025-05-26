@@ -100,6 +100,7 @@ impl GridController {
             || transaction.is_server()
             || transaction.dirty_hashes.is_empty()
         {
+            transaction.dirty_hashes.clear();
             return;
         }
 
@@ -209,6 +210,7 @@ impl GridController {
             || transaction.is_server()
             || transaction.dirty_hashes.is_empty()
         {
+            transaction.dirty_hashes.clear();
             return;
         }
 
@@ -342,6 +344,7 @@ impl GridController {
     /// Sends sheet info to the client
     pub(crate) fn send_sheet_info(&mut self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.sheet_info.clear();
             return;
         }
 
@@ -477,7 +480,7 @@ impl GridController {
 
     fn send_fills(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            transaction.sheet_borders.clear();
+            transaction.fill_cells.clear();
             return;
         }
 
