@@ -4672,3 +4672,78 @@ test('Zoom In and Out', async ({ page }) => {
   await page.locator(`nav a svg`).click();
   await cleanUpFiles(page, { fileName });
 });
+
+test('Charts Copy Paste', async ({ page }) => {
+  //--------------------------------
+  // Charts
+  //--------------------------------
+
+  // Constants
+  const fileName = 'Charts Copy Paste';
+
+  // Log in
+  await logIn(page, { emailPrefix: 'e2e_charts_copy_paste' });
+
+  // // Admin user creates a new team
+  // const teamName = `Charts - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up file
+  await cleanUpFiles(page, { fileName });
+
+  // Create new file
+  await createFile(page, { fileName });
+
+  await navigateIntoFile(page, { fileName });
+
+  // Select a cell
+  await navigateOnSheet(page, { targetColumn: 2, targetRow: 2 });
+
+  // Press "/" key on keyboard
+  await page.keyboard.press('/');
+
+  // Click on Python option from popup menu
+  await page.locator('[data-value="Python"]').click();
+
+  await page.waitForTimeout(2000);
+
+  // Click an option from the popup menu
+  await page.getByRole(`button`, { name: `Create chart` }).click();
+
+  // Click the blue play arrow to 'Save and run'
+  await page.getByRole(`button`, { name: `play_arrow` }).click();
+
+  // wait for the chart to render
+  await page.waitForTimeout(30 * 1000);
+
+  // Close the code editor
+  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click();
+
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 300, y: 55 } });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`chart_copy_paste_initial.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Cut the chart at (2, 2)
+  await page.keyboard.press('Control+X'); // Cut chart
+  await page.waitForTimeout(5 * 1000);
+
+  // Select a new range of cells to paste the chart, only one chart should be pasted
+  await selectCells(page, { startXY: [3, 3], endXY: [5, 5] });
+  await page.keyboard.press('Control+V'); // Paste chart
+
+  // wait for the chart to render
+  await page.waitForTimeout(30 * 1000);
+
+  // assert that the chart has been pasted correctly
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`chart_copy_paste_final.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
