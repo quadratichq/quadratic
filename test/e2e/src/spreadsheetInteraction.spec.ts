@@ -4673,7 +4673,7 @@ test('Zoom In and Out', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Charts Copy Paste', async ({ page }) => {
+test.only('Charts Copy Paste', async ({ page }) => {
   //--------------------------------
   // Charts
   //--------------------------------
@@ -4737,6 +4737,23 @@ test('Charts Copy Paste', async ({ page }) => {
 
   // assert that the chart has been pasted correctly
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`chart_copy_paste_final.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Undo paste chart
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(10 * 1000);
+
+  // Reset sheet pan
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+
+  // Undo cut chart
+  await page.keyboard.press('Control+Z');
+  await page.waitForTimeout(30 * 1000);
+
+  // assert that the chart has been reverted to its original position
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 300, y: 55 } });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`chart_copy_paste_initial.png`, {
     maxDiffPixelRatio: 0.001,
   });
 
