@@ -50,10 +50,10 @@ test('Create New File', async ({ page }) => {
   await page.locator(`[title="#E74C3C"]:visible`).click(); // Red color
 
   // Ensure the cell color is updated (you can add specific assertions if needed)
-  await page.waitForTimeout(2000); // Give some time for the update
+  await page.waitForTimeout(5 * 1000); // Give some time for the update
 
   // Navigate to files page
-  await page.goBack();
+  await page.locator(`nav a svg`).click();
 
   //--------------------------------
   // Assert:

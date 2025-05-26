@@ -4673,9 +4673,9 @@ test('Zoom In and Out', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Charts Copy Paste', async ({ page }) => {
+test('Charts Copy Paste', async ({ page }) => {
   //--------------------------------
-  // Charts
+  // Charts Copy Paste
   //--------------------------------
 
   // Constants

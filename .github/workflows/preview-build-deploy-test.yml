@@ -432,7 +432,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - deployed at ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}, [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }})
+            ✅ Deploy images - ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }} - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }})
             ⏳ Tests-E2E
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
@@ -558,7 +558,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - deployed at ${{ env.deploy_time }}, [Preview](https://${{ env.e2e_url }})
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ⏳ Tests-E2E running...
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
@@ -691,7 +691,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - deployed at ${{ env.deploy_time }}, [Preview](https://${{ env.e2e_url }})
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)
           edit-mode: replace
 
@@ -704,6 +704,6 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - deployed at ${{ env.deploy_time }}, [Preview](https://${{ env.e2e_url }})
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
             ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           edit-mode: replace
