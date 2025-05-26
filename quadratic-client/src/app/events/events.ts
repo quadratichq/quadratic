@@ -65,7 +65,7 @@ interface EventTypes {
   sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
-  bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
+  bordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
   hashRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
   renderCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
 

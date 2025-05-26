@@ -9,36 +9,40 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type {
-  BorderSelection,
-  BorderStyle,
-  CellAlign,
-  CellFormatSummary,
-  CellVerticalAlign,
-  CellWrap,
-  CodeCellLanguage,
-  DataTableSort,
-  Direction,
-  Format,
-  FormatUpdate,
-  JsCellValue,
-  JsClipboard,
-  JsCodeCell,
-  JsCoordinate,
-  JsDataTableColumnHeader,
-  JsHashValidationWarnings,
-  JsSelectionContext,
-  JsSummarizeSelectionResult,
-  JsTablesContext,
-  JsUpdateCodeCell,
-  MinMax,
-  PasteSpecial,
-  Pos,
-  SearchOptions,
-  SheetInfo,
-  SheetPos,
-  SheetRect,
-  Validation,
+import type { JsBordersSheet, JsOffset } from '@/app/quadratic-core-types';
+import {
+  type BorderSelection,
+  type BorderStyle,
+  type CellAlign,
+  type CellFormatSummary,
+  type CellVerticalAlign,
+  type CellWrap,
+  type CodeCellLanguage,
+  type DataTableSort,
+  type Direction,
+  type Format,
+  type FormatUpdate,
+  type JsCellValue,
+  type JsClipboard,
+  type JsCodeCell,
+  type JsCoordinate,
+  type JsDataTableColumnHeader,
+  type JsHashValidationWarnings,
+  type JsHtmlOutput,
+  type JsRenderFill,
+  type JsSelectionContext,
+  type JsSheetFill,
+  type JsSummarizeSelectionResult,
+  type JsTablesContext,
+  type JsUpdateCodeCell,
+  type MinMax,
+  type PasteSpecial,
+  type Pos,
+  type SearchOptions,
+  type SheetInfo,
+  type SheetPos,
+  type SheetRect,
+  type Validation,
 } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
@@ -114,7 +118,7 @@ class QuadraticCore {
       events.emit('sheetsInfo', fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
       return;
     } else if (e.data.type === 'coreClientSheetFills') {
-      events.emit('sheetFills', e.data.sheetId, e.data.fills);
+      events.emit('sheetFills', e.data.sheetId, fromUint8Array<JsRenderFill[]>(e.data.fills));
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
@@ -126,13 +130,13 @@ class QuadraticCore {
       events.emit('setCursor', e.data.cursor);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
-      events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
+      events.emit('sheetOffsets', e.data.sheetId, fromUint8Array<JsOffset[]>(e.data.offsets));
       return;
     } else if (e.data.type === 'coreClientHtmlOutput') {
-      events.emit('htmlOutput', e.data.html);
+      events.emit('htmlOutput', fromUint8Array<JsHtmlOutput[]>(e.data.html));
       return;
     } else if (e.data.type === 'coreClientUpdateHtml') {
-      events.emit('htmlUpdate', e.data.html);
+      events.emit('htmlUpdate', fromUint8Array<JsHtmlOutput>(e.data.html));
       return;
     } else if (e.data.type === 'coreClientGenerateThumbnail') {
       events.emit('generateThumbnail');
@@ -182,7 +186,7 @@ class QuadraticCore {
       events.emit('updateImage', e.data);
       return;
     } else if (e.data.type === 'coreClientSheetMetaFills') {
-      events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
+      events.emit('sheetMetaFills', e.data.sheetId, fromUint8Array<JsSheetFill[]>(e.data.fills));
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
       const sheetValidations = fromUint8Array<Validation[]>(e.data.sheetValidations);
@@ -196,7 +200,7 @@ class QuadraticCore {
       events.emit('multiplayerSynced');
       return;
     } else if (e.data.type === 'coreClientBordersSheet') {
-      events.emit('bordersSheet', e.data.sheetId, e.data.borders);
+      events.emit('bordersSheet', e.data.sheetId, fromUint8Array<JsBordersSheet>(e.data.borders));
       return;
     } else if (e.data.type === 'coreClientClientMessage') {
       pixiAppSettings.snackbar(e.data.message, { severity: e.data.severity });

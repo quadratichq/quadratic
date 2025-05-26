@@ -275,20 +275,22 @@ mod test {
             false,
         );
         // should send sheet fills for the duplicated sheet
+        let fills = gc.sheet(duplicated_sheet_id).get_all_render_fills();
         expect_js_call(
             "jsSheetFills",
             format!(
-                "{},{}",
-                duplicated_sheet_id, r#"[{"x":1,"y":1,"w":1,"h":1,"color":"red"}]"#
+                "{},{:?}",
+                duplicated_sheet_id,
+                serde_json::to_vec(&fills).unwrap()
             ),
             false,
         );
         // should send borders for the duplicated sheet
-        let borders = gc.sheet(duplicated_sheet_id).borders_in_sheet().unwrap();
-        let borders_str = serde_json::to_string(&borders).unwrap();
+        let borders = gc.sheet(duplicated_sheet_id).borders_in_sheet();
+        let borders_str = serde_json::to_vec(&borders).unwrap();
         expect_js_call(
             "jsBordersSheet",
-            format!("{},{}", duplicated_sheet_id, borders_str),
+            format!("{},{:?}", duplicated_sheet_id, borders_str),
             false,
         );
         // code cells should rerun and send updated code cell

@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsRenderCell, SheetInfo } from '@/app/quadratic-core-types';
+import type { JsOffset, JsRenderCell, SheetInfo } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
@@ -52,7 +52,7 @@ class RenderCore {
         break;
 
       case 'coreRenderSheetOffsets':
-        renderText.sheetOffsetsSize(e.data.sheetId, e.data.offsets);
+        renderText.sheetOffsetsSize(e.data.sheetId, fromUint8Array<JsOffset[]>(e.data.offsets));
         break;
 
       case 'coreRenderSheetInfoUpdate':

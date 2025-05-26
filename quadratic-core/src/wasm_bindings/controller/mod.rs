@@ -88,7 +88,7 @@ impl GridController {
                     });
 
                     if !html.is_empty() {
-                        if let Ok(html) = serde_json::to_string(&html) {
+                        if let Ok(html) = serde_json::to_vec(&html) {
                             crate::wasm_bindings::js::jsHtmlOutput(html);
                         }
                     }
