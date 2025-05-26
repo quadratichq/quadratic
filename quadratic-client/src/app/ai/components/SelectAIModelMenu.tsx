@@ -34,7 +34,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
     // only show enabled models in production
     return configs.filter(([_, config]) => config.enabled);
-  }, []);
+  }, [debug]);
 
   const canToggleThinking = useMemo(
     () => selectedModelConfig.thinkingToggle !== undefined,
