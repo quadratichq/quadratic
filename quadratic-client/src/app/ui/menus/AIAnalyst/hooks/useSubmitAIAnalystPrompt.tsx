@@ -293,11 +293,20 @@ export function useSubmitAIAnalystPrompt() {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
 
-            if (debugFlag('debugShowAIInternalContext')) {
-              console.log('AIAnalyst messages with context:', {
-                context,
-                messagesWithContext,
-              });
+            if (debugFlag('debugPrintAIInternalContext')) {
+              console.log(
+                messagesWithContext
+                  .map((message) => {
+                    return `${message.role}: ${message.content.map((content) => {
+                      if ('type' in content && content.type === 'text') {
+                        return content.text;
+                      } else {
+                        return 'data';
+                      }
+                    })}`;
+                  })
+                  .join('\n')
+              );
             }
 
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);

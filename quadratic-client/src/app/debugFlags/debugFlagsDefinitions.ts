@@ -154,7 +154,13 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
   debugShowAIInternalContext: {
     initial: false,
     title: 'Show AI Internal Context',
-    description: 'Show AI internal context information',
+    description: 'Shows the internal context in AI chat',
+    group: 'AI',
+  },
+  debugPrintAIInternalContext: {
+    initial: false,
+    title: 'Print readable AI Context',
+    description: 'Prints the AI Context to the console in a readable form',
     group: 'AI',
   },
 };
