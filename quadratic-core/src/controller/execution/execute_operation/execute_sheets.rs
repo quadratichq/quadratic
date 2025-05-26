@@ -383,7 +383,7 @@ mod tests {
         let sheet_info = SheetInfo::from(sheet);
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -409,7 +409,7 @@ mod tests {
         let sheet_info = SheetInfo::from(sheet);
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             false,
         );
         expect_js_call("jsDeleteSheet", format!("{},{}", new_sheet_id, true), true);
@@ -464,7 +464,7 @@ mod tests {
         let sheet_info = SheetInfo::from(sheet);
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             false,
         );
 
@@ -494,7 +494,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
 
@@ -503,7 +503,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
     }
@@ -518,7 +518,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
 
@@ -527,7 +527,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
     }
@@ -552,7 +552,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
 
@@ -563,7 +563,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
 
@@ -573,7 +573,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id2));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
 
@@ -583,7 +583,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id2));
         expect_js_call(
             "jsSheetInfoUpdate",
-            serde_json::to_string(&sheet_info).unwrap(),
+            format!("{:?}", serde_json::to_vec(&sheet_info).unwrap()),
             true,
         );
     }
@@ -618,7 +618,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -640,7 +640,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -656,7 +656,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -675,7 +675,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
     }
