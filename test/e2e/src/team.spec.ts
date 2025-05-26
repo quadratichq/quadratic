@@ -348,6 +348,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.waitForLoadState('domcontentloaded');
   await manageUserPage.waitForLoadState('networkidle');
   await manageUserPage.locator(`nav :text-is("Members")`).click();
+  await manageUserPage.waitForTimeout(2000);
 
   //--------------------------------
   // Assert: Owner Permission

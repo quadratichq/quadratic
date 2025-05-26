@@ -123,11 +123,16 @@ const parsePosition = (position: string) => {
   };
 };
 
-export const displayMouseCoords = async (page: Page) => {
-  await page.evaluate(() => {
-    const positionDisplay = document.createElement('div');
-    positionDisplay.id = 'mousePosition';
-    positionDisplay.style.cssText = `
+type DisplayMouseCoordsOptions = {
+  page: Page;
+  offsets?: boolean; // If true, display coordinates relative to the canvas
+};
+export const displayMouseCoords = async ({ page, offsets }: DisplayMouseCoordsOptions) => {
+  await page.evaluate(
+    ({ offsets }) => {
+      const positionDisplay = document.createElement('div');
+      positionDisplay.id = 'mousePosition';
+      positionDisplay.style.cssText = `
       position: fixed;
       background-color: white;
       z-index: 1000;
@@ -136,15 +141,18 @@ export const displayMouseCoords = async (page: Page) => {
       padding: 2px;
       font-size: '10px';
     `;
-    positionDisplay.textContent = 'X: -, Y: -'; // Initial text
-    document.body.appendChild(positionDisplay);
-
-    document.addEventListener('mousemove', (event) => {
-      const { clientX: x, clientY: y } = event;
-
-      positionDisplay.textContent = `X: ${x}, Y: ${y}`;
-    });
-  });
+      positionDisplay.textContent = 'X: -, Y: -'; // Initial text
+      document.body.appendChild(positionDisplay);
+      document.addEventListener('mousemove', (event) => {
+        const mouseEvent = event as MouseEvent;
+        const { x, y } = offsets
+          ? { x: mouseEvent.offsetX, y: mouseEvent.offsetY }
+          : { x: mouseEvent.clientX, y: mouseEvent.clientY };
+        positionDisplay.textContent = `X: ${x}, Y: ${y}`;
+      });
+    },
+    { offsets }
+  );
 };
 
 /**

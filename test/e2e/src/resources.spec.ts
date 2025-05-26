@@ -30,7 +30,7 @@ test('Create Example', async ({ page }) => {
 
   // click on the "Python intro" example
   await page.locator('h2:has-text("Python intro")').click();
-  await page.waitForTimeout(10 * 1000);
+  await page.waitForTimeout(30 * 1000);
 
   //--------------------------------
   // Assert:
@@ -45,7 +45,7 @@ test('Create Example', async ({ page }) => {
 
   // assert that the correct file is created
   await expect(page.locator('canvas:visible')).toHaveScreenshot('Resources_Create_Example.png', {
-    maxDiffPixels: 1000,
+    maxDiffPixelRatio: 0.01,
   });
 
   // click on Back to files

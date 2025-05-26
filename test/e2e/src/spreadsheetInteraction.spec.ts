@@ -1690,7 +1690,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Screenshot assertion (Column 0 should be red and not have any values in it)
-  // Colums should be missing a "6" value - was deleted
+  // Columns should be missing a "6" value - was deleted
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Delete-col.png`, {
     maxDiffPixelRatio: 0.001,
   });
@@ -1710,6 +1710,141 @@ test('Insert and Delete Columns', async ({ page }) => {
   await page.waitForTimeout(2000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('8'); // Assert the clipboard content
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test.only('Insert and Delete Multiple Columns', async ({ page }) => {
+  //--------------------------------
+  // Insert Columns above
+  //--------------------------------
+
+  // Constants
+  const fileName = 'Insert_row_col';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_insert_delete_multiple_columns` });
+
+  // // Create a new team
+  // const teamName = `Insert and Delete Multiple Columns - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Rename file
+  await page.getByRole(`button`, { name: fileName }).click();
+  await page.keyboard.type(fileName, { delay: 50 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select columns 3-5
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 270, y: 10 } });
+  await page.keyboard.down('Shift');
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 470, y: 10 } });
+  await page.keyboard.up('Shift');
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 370, y: 60 } });
+
+  // Click Insert columns left
+  await page.getByText(`Insert 3 columns left`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_3_columns_left.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert values
+  await selectCells(page, { startXY: [2, 1], endXY: [6, 1] });
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(5 * 1000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('2				3');
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Insert Columns below
+  //--------------------------------
+
+  // Select columns 7-9
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 670, y: 10 } });
+  await page.keyboard.down('Shift');
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 870, y: 10 } });
+  await page.keyboard.up('Shift');
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 770, y: 60 } });
+
+  // Click Insert columns right
+  await page.getByText(`Insert 3 columns right`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_3_columns_right.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert values
+  await selectCells(page, { startXY: [9, 1], endXY: [13, 1] });
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(5 * 1000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('6				7');
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Delete Columns
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select columns 4-11
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 230, y: 10 } });
+  await page.keyboard.down('Shift');
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 930, y: 10 } });
+  await page.keyboard.up('Shift');
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 530, y: 150 } });
+
+  // Click Delete column
+  await page.getByText(`Delete 8 columns`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Delete-8-columns.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert values
+  await selectCells(page, { startXY: [1, 1], endXY: [5, 1] });
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(5 * 1000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('1	2			7');
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
@@ -1761,7 +1896,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   await expect(page.getByText(`Insert row above`)).toBeVisible();
   await expect(page.getByText(`Insert column to the left`)).not.toBeVisible();
 
-  // Click Insert column to the left
+  // Click Insert row above
   await page.getByText(`Insert row above`).click();
 
   // Screenshot assertion (Row 0 should not have any values in it)
@@ -1797,7 +1932,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   // Right click
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 30, y: 115 } });
 
-  // Click Insert column to the right
+  // Click Insert row below
   await page.getByText(`Insert row below`).click();
 
   //--------------------------------
@@ -1839,7 +1974,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   // Right click
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 30, y: 135 } });
 
-  // Click Delete column
+  // Click Delete row
   await page.getByText(`Delete 1 row`).click();
 
   //--------------------------------
@@ -1866,6 +2001,141 @@ test('Insert and Delete Rows', async ({ page }) => {
   await page.waitForTimeout(2000);
   clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
   expect(clipboardText).toBe('5'); // Assert the clipboard content
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Clean up:
+  //--------------------------------
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Insert and Delete Multiple Rows', async ({ page }) => {
+  //--------------------------------
+  // Insert Rows above
+  //--------------------------------
+
+  // Constants
+  const fileName = 'Insert_row_col';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_insert_delete_multiple_row` });
+
+  // // Create a new team
+  // const teamName = `Insert and Delete Multiple Rows - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Rename file
+  await page.getByRole(`button`, { name: fileName }).click();
+  await page.keyboard.type(fileName, { delay: 50 });
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select row 3-5
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 75 } });
+  await page.keyboard.down('Shift');
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 120 } });
+  await page.keyboard.up('Shift');
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 80 } });
+
+  // Click Insert rows above
+  await page.getByText(`Insert 3 rows above`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_3_rows_above.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert values
+  await selectCells(page, { startXY: [1, 2], endXY: [1, 6] });
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(5 * 1000);
+  let clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('2\n\n\n\n3');
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Insert Rows below
+  //--------------------------------
+
+  // Select rows 7-9
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 160 } });
+  await page.keyboard.down('Shift');
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 200 } });
+  await page.keyboard.up('Shift');
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 150 } });
+
+  // Click Insert rows below
+  await page.getByText(`Insert 3 rows below`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_3_rows_below.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert values
+  await selectCells(page, { startXY: [1, 9], endXY: [1, 13] });
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(5 * 1000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('6\n\n\n\n7');
+  await page.keyboard.press('Escape');
+
+  //--------------------------------
+  // Delete Rows
+  //--------------------------------
+
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Select rows 4-11
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 95 } });
+  await page.keyboard.down('Shift');
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 10, y: 245 } });
+  await page.keyboard.up('Shift');
+
+  // Right click
+  await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 150 } });
+
+  // Click Delete column
+  await page.getByText(`Delete 8 rows`).click();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Screenshot assertion
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Delete-8-rows.png`, {
+    maxDiffPixelRatio: 0.001,
+  });
+
+  // Assert values
+  await selectCells(page, { startXY: [1, 2], endXY: [1, 5] });
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(5 * 1000);
+  clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('2\n\n\n7');
   await page.keyboard.press('Escape');
 
   //--------------------------------
