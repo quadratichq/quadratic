@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import type { SheetBounds, TransactionName } from '@/app/quadratic-core-types';
+import type { TransactionName } from '@/app/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';
@@ -70,7 +70,7 @@ export interface CoreRenderSheetInfoUpdate {
 
 export interface CoreRenderSheetBoundsUpdate {
   type: 'coreRenderSheetBoundsUpdate';
-  sheetBounds: SheetBounds;
+  sheetBounds: Uint8Array;
 }
 
 export interface CoreRenderRequestRowHeights {

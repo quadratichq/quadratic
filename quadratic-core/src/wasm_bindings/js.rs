@@ -65,7 +65,7 @@ extern "C" {
         sheet_id: String,
         render_code_cells: Vec<u8>, /* Vec<JsRenderCodeCell> */
     );
-    pub fn jsSheetBoundsUpdate(bounds: String);
+    pub fn jsSheetBoundsUpdate(bounds: Vec<u8> /* Vec<SheetBounds> */);
 
     pub fn jsImportProgress(
         file_name: &str,
@@ -396,8 +396,8 @@ pub fn jsSheetCodeCells(sheet_id: String, render_code_cells: Vec<u8>) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetBoundsUpdate(bounds: String) {
-    js_call("jsSheetBoundsUpdate", bounds);
+pub fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
+    js_call("jsSheetBoundsUpdate", format!("{:?}", bounds));
 }
 
 #[cfg(test)]

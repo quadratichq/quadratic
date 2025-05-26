@@ -23,7 +23,6 @@ import type {
   MinMax,
   Pos,
   SearchOptions,
-  SheetBounds,
   SheetPos,
   SheetRect,
   TransactionName,
@@ -567,7 +566,7 @@ export interface CoreClientSheetsInfo {
 
 export interface CoreClientSheetBoundsUpdate {
   type: 'coreClientSheetBoundsUpdate';
-  sheetBounds: SheetBounds;
+  sheetBounds: Uint8Array;
 }
 
 export interface ClientCoreAddSheet {

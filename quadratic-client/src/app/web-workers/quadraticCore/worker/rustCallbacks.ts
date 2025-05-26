@@ -1,6 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import type { ConnectionKind, JsSnackbarSeverity, SheetBounds, TransactionName } from '@/app/quadratic-core-types';
+import type { ConnectionKind, JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -35,8 +35,8 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: Uint8Array) => void;
     sendGenerateThumbnail: () => void;
     sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
-    sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
-    sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: Uint8Array) => void;
+    sendSheetBoundsUpdateRender: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
@@ -154,10 +154,10 @@ export const jsSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) =
   self.sendSheetCodeCells(sheetId, renderCodeCells);
 };
 
-export const jsSheetBoundsUpdate = (bounds: string) => {
-  const sheetBounds = JSON.parse(bounds) as SheetBounds;
-  self.sendSheetBoundsUpdateClient(sheetBounds);
-  self.sendSheetBoundsUpdateRender(sheetBounds);
+export const jsSheetBoundsUpdate = (bounds: Uint8Array) => {
+  const clientCopy = new Uint8Array(bounds);
+  self.sendSheetBoundsUpdateClient(clientCopy);
+  self.sendSheetBoundsUpdateRender(bounds);
 };
 
 export const jsTransactionStart = (transaction_id: string, transaction_name: string) => {

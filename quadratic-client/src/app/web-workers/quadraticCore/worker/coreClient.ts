@@ -7,7 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import type { JsSnackbarSeverity, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
+import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type {
   ClientCoreGetJwt,
@@ -46,7 +46,7 @@ declare var self: WorkerGlobalScope &
     sendGenerateThumbnail: () => void;
     sendBordersSheet: (sheetId: string, borders: Uint8Array) => void;
     sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
-    sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
@@ -820,8 +820,8 @@ class CoreClient {
     this.send({ type: 'coreClientSheetCodeCells', sheetId, renderCodeCells }, renderCodeCells.buffer);
   };
 
-  sendSheetBoundsUpdate = (bounds: SheetBounds) => {
-    this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
+  sendSheetBoundsUpdate = (bounds: Uint8Array) => {
+    this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds }, bounds.buffer);
   };
 
   sendTransactionStart = (transactionId: string, transactionName: TransactionName) => {

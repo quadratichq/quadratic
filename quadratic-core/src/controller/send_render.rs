@@ -280,9 +280,9 @@ impl GridController {
             return;
         };
 
-        match serde_json::to_string(&SheetBounds::from(sheet)) {
-            Ok(sheet_info) => {
-                crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
+        match serde_json::to_vec(&SheetBounds::from(sheet)) {
+            Ok(sheet_bounds) => {
+                crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_bounds);
             }
             Err(e) => {
                 dbgjs!(format!(

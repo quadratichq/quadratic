@@ -9,7 +9,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsBordersSheet, JsOffset } from '@/app/quadratic-core-types';
+import type { JsBordersSheet, JsOffset, SheetBounds } from '@/app/quadratic-core-types';
 import {
   type BorderSelection,
   type BorderStyle,
@@ -145,7 +145,7 @@ class QuadraticCore {
       events.emit('renderCodeCells', e.data.sheetId, e.data.renderCodeCells);
       return;
     } else if (e.data.type === 'coreClientSheetBoundsUpdate') {
-      events.emit('sheetBounds', e.data.sheetBounds);
+      events.emit('sheetBounds', fromUint8Array<SheetBounds>(e.data.sheetBounds));
       return;
     } else if (e.data.type === 'coreClientImportProgress') {
       events.emit('importProgress', e.data);

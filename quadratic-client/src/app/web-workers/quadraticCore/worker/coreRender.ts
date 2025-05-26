@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { SheetBounds, TransactionName } from '@/app/quadratic-core-types';
+import type { TransactionName } from '@/app/quadratic-core-types';
 import type {
   CoreRenderMessage,
   RenderCoreMessage,
@@ -23,7 +23,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheetRender: (sheetInfo: Uint8Array) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSheetOffsetsRender: (sheetId: string, offsets: Uint8Array) => void;
-    sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
+    sendSheetBoundsUpdateRender: (sheetBounds: Uint8Array) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
@@ -109,8 +109,8 @@ class CoreRender {
     );
   };
 
-  sendSheetBoundsUpdate = (sheetBounds: SheetBounds) => {
-    this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
+  sendSheetBoundsUpdate = (sheetBounds: Uint8Array) => {
+    this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds }, sheetBounds.buffer);
   };
 
   sendRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
