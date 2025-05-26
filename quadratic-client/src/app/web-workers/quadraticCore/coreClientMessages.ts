@@ -29,7 +29,6 @@ import type {
   Pos,
   SearchOptions,
   SheetBounds,
-  SheetInfo,
   SheetPos,
   SheetRect,
   TransactionName,
@@ -566,9 +565,9 @@ export interface ClientCoreGetValidationFromPos {
 
 //#region Sheets
 
-export interface CoreClientSheetInfo {
-  type: 'coreClientSheetInfo';
-  sheetInfo: SheetInfo[];
+export interface CoreClientSheetsInfo {
+  type: 'coreClientSheetsInfo';
+  sheetsInfo: Uint8Array;
 }
 
 export interface CoreClientSheetBoundsUpdate {
@@ -583,7 +582,7 @@ export interface ClientCoreAddSheet {
 
 export interface CoreClientAddSheet {
   type: 'coreClientAddSheet';
-  sheetInfo: SheetInfo;
+  sheetInfo: Uint8Array;
   user: boolean;
 }
 
@@ -608,7 +607,7 @@ export interface ClientCoreMoveSheet {
 
 export interface CoreClientSheetInfoUpdate {
   type: 'coreClientSheetInfoUpdate';
-  sheetInfo: SheetInfo;
+  sheetInfo: Uint8Array;
 }
 
 export interface ClientCoreSetSheetName {
@@ -1444,7 +1443,7 @@ export type CoreClientMessage =
   | CoreClientGetRenderCell
   | CoreClientImportFile
   | CoreClientAddSheet
-  | CoreClientSheetInfo
+  | CoreClientSheetsInfo
   | CoreClientSheetFills
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate

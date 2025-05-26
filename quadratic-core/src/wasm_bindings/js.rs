@@ -44,16 +44,16 @@ extern "C" {
     pub fn jsHashesRenderCells(render_cells: Vec<u8> /*Vec<JsHashRenderCells>*/);
     pub fn jsHashesDirty(dirty_hashes: Vec<u8> /* Vec<JsHashesDirty> */);
 
-    pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */);
-    pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */);
+    pub fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool);
+    pub fn jsDeleteSheet(sheetId: String, user: bool);
+    pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */);
+    pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */);
 
     // todo: there should be a jsSheetFillUpdate instead of constantly passing back all sheet fills
     pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */);
 
     pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */);
 
-    pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
-    pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
     pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsRenderCodeCell> */);
     pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
@@ -305,14 +305,26 @@ pub fn jsHashesDirty(dirty_hashes: Vec<u8> /*Vec<JsHashesDirty>*/) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */) {
-    js_call("jsSheetInfo", sheets);
+pub fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool) {
+    js_call("jsAddSheet", format!("{:?},{}", sheetInfo, user));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */) {
-    js_call("jsSheetInfoUpdate", sheet);
+pub fn jsDeleteSheet(sheetId: String, user: bool) {
+    js_call("jsDeleteSheet", format!("{},{}", sheetId, user));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */) {
+    js_call("jsSheetInfo", format!("{:?}", sheets_info));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */) {
+    js_call("jsSheetInfoUpdate", format!("{:?}", sheet_info));
 }
 
 #[cfg(test)]
@@ -325,18 +337,6 @@ pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */) {
 #[allow(non_snake_case)]
 pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */) {
     js_call("jsSheetMetaFills", format!("{},{}", sheet_id, fills));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool) {
-    js_call("jsAddSheet", format!("{},{}", sheetInfo, user));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsDeleteSheet(sheetId: String, user: bool) {
-    js_call("jsDeleteSheet", format!("{},{}", sheetId, user));
 }
 
 #[cfg(test)]

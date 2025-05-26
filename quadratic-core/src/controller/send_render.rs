@@ -309,8 +309,7 @@ impl GridController {
             return;
         };
 
-        let sheet_info = SheetInfo::from(sheet);
-        match serde_json::to_string(&sheet_info) {
+        match serde_json::to_vec(&SheetInfo::from(sheet)) {
             Ok(sheet_info) => {
                 crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user_undo_redo());
             }
@@ -354,8 +353,7 @@ impl GridController {
                 continue;
             };
 
-            let sheet_info = SheetInfo::from(sheet);
-            match serde_json::to_string(&sheet_info) {
+            match serde_json::to_vec(&SheetInfo::from(sheet)) {
                 Ok(sheet_info) => {
                     crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
                 }
