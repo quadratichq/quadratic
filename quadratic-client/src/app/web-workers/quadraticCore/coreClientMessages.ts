@@ -11,24 +11,18 @@ import type {
   Direction,
   Format,
   FormatUpdate,
-  JsBordersSheet,
   JsCellValue,
   JsCodeCell,
   JsCoordinate,
   JsDataTableColumnHeader,
-  JsHtmlOutput,
-  JsOffset,
   JsRenderCell,
-  JsRenderFill,
   JsSelectionContext,
-  JsSheetFill,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsTablesContext,
   MinMax,
   Pos,
   SearchOptions,
-  SheetBounds,
   SheetPos,
   SheetRect,
   TransactionName,
@@ -258,12 +252,12 @@ export interface CoreClientGetRenderCell {
 
 export interface CoreClientHtmlOutput {
   type: 'coreClientHtmlOutput';
-  html: JsHtmlOutput[];
+  html: Uint8Array;
 }
 
 export interface CoreClientUpdateHtml {
   type: 'coreClientUpdateHtml';
-  html: JsHtmlOutput;
+  html: Uint8Array;
 }
 
 //#endregion
@@ -485,13 +479,13 @@ export interface CoreClientSetCodeCellValue {
 export interface CoreClientSheetFills {
   type: 'coreClientSheetFills';
   sheetId: string;
-  fills: JsRenderFill[];
+  fills: Uint8Array;
 }
 
 export interface CoreClientSheetMetaFills {
   type: 'coreClientSheetMetaFills';
   sheetId: string;
-  fills: JsSheetFill[];
+  fills: Uint8Array;
 }
 
 export interface ClientCoreRerunCodeCells {
@@ -572,7 +566,7 @@ export interface CoreClientSheetsInfo {
 
 export interface CoreClientSheetBoundsUpdate {
   type: 'coreClientSheetBoundsUpdate';
-  sheetBounds: SheetBounds;
+  sheetBounds: Uint8Array;
 }
 
 export interface ClientCoreAddSheet {
@@ -638,7 +632,7 @@ export interface CoreClientSetCursor {
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
-  offsets: JsOffset[];
+  offsets: Uint8Array;
 }
 
 export interface CoreClientGenerateThumbnail {
@@ -648,7 +642,7 @@ export interface CoreClientGenerateThumbnail {
 export interface CoreClientBordersSheet {
   type: 'coreClientBordersSheet';
   sheetId: string;
-  borders: JsBordersSheet;
+  borders: Uint8Array;
 }
 
 export interface CoreClientSheetCodeCellRender {

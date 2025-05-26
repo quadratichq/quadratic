@@ -6,7 +6,8 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsRenderCell, SheetInfo } from '@/app/quadratic-core-types';
+import type { SheetBounds } from '@/app/quadratic-core-types';
+import { type JsOffset, type JsRenderCell, type SheetInfo } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
@@ -52,7 +53,7 @@ class RenderCore {
         break;
 
       case 'coreRenderSheetOffsets':
-        renderText.sheetOffsetsSize(e.data.sheetId, e.data.offsets);
+        renderText.sheetOffsetsSize(e.data.sheetId, fromUint8Array<JsOffset[]>(e.data.offsets));
         break;
 
       case 'coreRenderSheetInfoUpdate':
@@ -60,7 +61,7 @@ class RenderCore {
         break;
 
       case 'coreRenderSheetBoundsUpdate':
-        renderText.sheetBoundsUpdate(e.data.sheetBounds);
+        renderText.sheetBoundsUpdate(fromUint8Array<SheetBounds>(e.data.sheetBounds));
         break;
 
       case 'coreRenderRequestRowHeights':

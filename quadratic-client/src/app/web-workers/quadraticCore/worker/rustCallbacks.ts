@@ -1,16 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import type {
-  ConnectionKind,
-  JsBordersSheet,
-  JsHtmlOutput,
-  JsOffset,
-  JsRenderFill,
-  JsSheetFill,
-  JsSnackbarSeverity,
-  SheetBounds,
-  TransactionName,
-} from '@/app/quadratic-core-types';
+import type { ConnectionKind, JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -33,20 +23,20 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
     sendSheetInfoUpdateRender: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
-    sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
-    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
-    sendBordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
+    sendSheetFills: (sheetId: string, fill: Uint8Array) => void;
+    sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
+    sendBordersSheet: (sheetId: string, borders: Uint8Array) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
     requestTransactions: (sequenceNum: number) => void;
-    sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
-    sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
-    sendSheetHtml: (html: JsHtmlOutput[]) => void;
-    sendUpdateHtml: (html: JsHtmlOutput) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: Uint8Array) => void;
+    sendSheetOffsetsRender: (sheetId: string, offsets: Uint8Array) => void;
+    sendSheetHtml: (html: Uint8Array) => void;
+    sendUpdateHtml: (html: Uint8Array) => void;
     sendGenerateThumbnail: () => void;
     sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
-    sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
-    sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: Uint8Array) => void;
+    sendSheetBoundsUpdateRender: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
@@ -122,29 +112,25 @@ export const jsSheetInfoUpdate = (sheetInfo: Uint8Array) => {
   self.sendSheetInfoUpdateRender(sheetInfo);
 };
 
-export const jsSheetFills = (sheetId: string, fills: string) => {
-  const sheetFills = JSON.parse(fills);
+export const jsSheetFills = (sheetId: string, sheetFills: Uint8Array) => {
   self.sendSheetFills(sheetId, sheetFills);
 };
 
-export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
-  const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
+export const jsSheetMetaFills = (sheetId: string, sheetMetaFills: Uint8Array) => {
   self.sendSheetMetaFills(sheetId, sheetMetaFills);
 };
 
-export const jsOffsetsModified = (sheetId: string, offsetsStringified: string) => {
-  const offsets = JSON.parse(offsetsStringified) as JsOffset[];
-  self.sendSheetOffsetsClient(sheetId, offsets);
+export const jsOffsetsModified = (sheetId: string, offsets: Uint8Array) => {
+  const clientCopy = new Uint8Array(offsets);
+  self.sendSheetOffsetsClient(sheetId, clientCopy);
   self.sendSheetOffsetsRender(sheetId, offsets);
 };
 
-export const jsHtmlOutput = (htmlStringified: string) => {
-  const html: JsHtmlOutput[] = JSON.parse(htmlStringified);
+export const jsHtmlOutput = (html: Uint8Array) => {
   self.sendSheetHtml(html);
 };
 
-export const jsUpdateHtml = (htmlStringified: string) => {
-  const html: JsHtmlOutput = JSON.parse(htmlStringified);
+export const jsUpdateHtml = (html: Uint8Array) => {
   self.sendUpdateHtml(html);
 };
 
@@ -160,23 +146,18 @@ export const jsGenerateThumbnail = () => {
   self.sendGenerateThumbnail();
 };
 
-export const jsBordersSheet = (sheetId: string, bordersStringified: string) => {
-  if (bordersStringified) {
-    const borders = JSON.parse(bordersStringified) as JsBordersSheet;
-    self.sendBordersSheet(sheetId, borders);
-  } else {
-    self.sendBordersSheet(sheetId, undefined);
-  }
+export const jsBordersSheet = (sheetId: string, borders: Uint8Array) => {
+  self.sendBordersSheet(sheetId, borders);
 };
 
 export const jsSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
   self.sendSheetCodeCells(sheetId, renderCodeCells);
 };
 
-export const jsSheetBoundsUpdate = (bounds: string) => {
-  const sheetBounds = JSON.parse(bounds) as SheetBounds;
-  self.sendSheetBoundsUpdateClient(sheetBounds);
-  self.sendSheetBoundsUpdateRender(sheetBounds);
+export const jsSheetBoundsUpdate = (bounds: Uint8Array) => {
+  const clientCopy = new Uint8Array(bounds);
+  self.sendSheetBoundsUpdateClient(clientCopy);
+  self.sendSheetBoundsUpdateRender(bounds);
 };
 
 export const jsTransactionStart = (transaction_id: string, transaction_name: string) => {

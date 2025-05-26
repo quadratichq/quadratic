@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsOffset, SheetBounds, TransactionName } from '@/app/quadratic-core-types';
+import type { TransactionName } from '@/app/quadratic-core-types';
 import type {
   CoreRenderMessage,
   RenderCoreMessage,
@@ -22,8 +22,8 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoUpdateRender: (sheetInfo: Uint8Array) => void;
     sendAddSheetRender: (sheetInfo: Uint8Array) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
-    sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
-    sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
+    sendSheetOffsetsRender: (sheetId: string, offsets: Uint8Array) => void;
+    sendSheetBoundsUpdateRender: (sheetBounds: Uint8Array) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
@@ -98,16 +98,19 @@ class CoreRender {
     this.send({ type: 'coreRenderDeleteSheet', sheetId });
   };
 
-  sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
-    this.send({
-      type: 'coreRenderSheetOffsets',
-      sheetId,
-      offsets,
-    });
+  sendSheetOffsets = (sheetId: string, offsets: Uint8Array) => {
+    this.send(
+      {
+        type: 'coreRenderSheetOffsets',
+        sheetId,
+        offsets,
+      },
+      offsets.buffer
+    );
   };
 
-  sendSheetBoundsUpdate = (sheetBounds: SheetBounds) => {
-    this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
+  sendSheetBoundsUpdate = (sheetBounds: Uint8Array) => {
+    this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds }, sheetBounds.buffer);
   };
 
   sendRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
