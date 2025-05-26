@@ -271,7 +271,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             false,
         );
         // should send sheet fills for the duplicated sheet
@@ -326,7 +326,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -338,7 +338,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -357,7 +357,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
     }
@@ -410,7 +410,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
