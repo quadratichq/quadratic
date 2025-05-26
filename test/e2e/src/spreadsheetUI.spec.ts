@@ -89,10 +89,7 @@ test.skip('AI Assistant', async ({ page }) => {
 test('Can Stop Code Execution', async ({ page }) => {
   // Constants
   const fileName = 'Code_Stop_Execution';
-  const infinitePythonCode = `
-while True:
-  pass
-`;
+  const infinitePythonCode = `while True:\npass`;
   const regularPythonCode = '5+5';
   const expectedRegularPythonCodeOutput = 'Line 1 returned int';
 
@@ -115,8 +112,7 @@ while True:
   // Can Stop Code Execution
   //--------------------------------
   // Select a cell
-  // await navigateOnSheet(page, 1, 1); -> this is flaky because it runs fine during editing and fails during runs
-  await page.locator(`#QuadraticCanvasID`).click();
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Press "/" key on keyboard
   await page.keyboard.press('/');
@@ -131,22 +127,23 @@ while True:
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).focus();
 
   // Click code editor
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 60 * 1000 });
 
   // Type the infinite Python code in the code editor
   await page.keyboard.type(infinitePythonCode);
 
   // Run code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(30 * 1000);
 
   // Click stop execution
-  await page.getByRole(`button`, { name: `stop`, exact: true }).click();
+  await page.getByRole(`button`, { name: `stop`, exact: true }).click({ timeout: 60 * 1000 });
 
   // Check that the execution stopped by checking for a error message
   await expect(page.getByLabel(`Console`)).toHaveText(`ERROR: Execution cancelled by user`);
 
   // Click code editor
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 60 * 1000 });
 
   // Select all depending on system and delete existing code
   const isMac = process.platform === 'darwin';
@@ -158,12 +155,20 @@ while True:
   await page.keyboard.type(regularPythonCode);
 
   // Run code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
-
-  await page.waitForTimeout(30 * 1000);
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(10 * 1000);
 
   // Check that the regular Python code executed successfully
   await expect(page.getByText(expectedRegularPythonCodeOutput)).toBeVisible();
+
+  // Assert code output value on sheet
+  await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
+  await page.waitForTimeout(5 * 1000);
+  await page.keyboard.press('Control+C'); // Copy the text in the cell
+  await page.waitForTimeout(5 * 1000);
+  const clipboardText = await page.evaluate(() => navigator.clipboard.readText()); // Get clipboard content
+  expect(clipboardText).toBe('10');
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
