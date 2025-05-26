@@ -35,6 +35,7 @@ import type {
   PasteSpecial,
   Pos,
   SearchOptions,
+  SheetInfo,
   SheetPos,
   SheetRect,
   Validation,
@@ -107,10 +108,10 @@ class QuadraticCore {
 
     // quadratic-core initiated messages
     if (e.data.type === 'coreClientAddSheet') {
-      events.emit('addSheet', e.data.sheetInfo, e.data.user);
+      events.emit('addSheet', fromUint8Array<SheetInfo>(e.data.sheetInfo), e.data.user);
       return;
-    } else if (e.data.type === 'coreClientSheetInfo') {
-      events.emit('sheetInfo', e.data.sheetInfo);
+    } else if (e.data.type === 'coreClientSheetsInfo') {
+      events.emit('sheetsInfo', fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
       return;
     } else if (e.data.type === 'coreClientSheetFills') {
       events.emit('sheetFills', e.data.sheetId, e.data.fills);
@@ -119,7 +120,7 @@ class QuadraticCore {
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
       return;
     } else if (e.data.type === 'coreClientSheetInfoUpdate') {
-      events.emit('sheetInfoUpdate', e.data.sheetInfo);
+      events.emit('sheetInfoUpdate', fromUint8Array<SheetInfo>(e.data.sheetInfo));
       return;
     } else if (e.data.type === 'coreClientSetCursor') {
       events.emit('setCursor', e.data.cursor);
@@ -155,8 +156,7 @@ class QuadraticCore {
       events.emit('transactionEnd', e.data);
       return;
     } else if (e.data.type === 'coreClientUpdateCodeCells') {
-      const updateCodeCells = fromUint8Array<JsUpdateCodeCell[]>(e.data.updateCodeCells);
-      events.emit('updateCodeCells', updateCodeCells);
+      events.emit('updateCodeCells', fromUint8Array<JsUpdateCodeCell[]>(e.data.updateCodeCells));
       return;
     } else if (e.data.type === 'coreClientMultiplayerState') {
       events.emit('multiplayerState', e.data.state);

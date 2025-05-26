@@ -42,10 +42,10 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
+    sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
-    sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
-    sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
+    sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
+    sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
@@ -88,7 +88,7 @@ class CoreClient {
     self.sendImportProgress = coreClient.sendImportProgress;
     self.sendAddSheetClient = coreClient.sendAddSheet;
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
-    self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
+    self.sendSheetsInfoClient = coreClient.sendSheetsInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sendSheetInfoUpdateClient = coreClient.sendSheetInfoUpdate;
@@ -771,16 +771,20 @@ class CoreClient {
     this.send({ type: 'coreClientImportProgress', filename, current, total, x, y, width, height });
   };
 
-  sendAddSheet = (sheetInfo: SheetInfo, user: boolean) => {
-    this.send({ type: 'coreClientAddSheet', sheetInfo, user });
+  sendAddSheet = (sheetInfo: Uint8Array, user: boolean) => {
+    this.send({ type: 'coreClientAddSheet', sheetInfo, user }, sheetInfo.buffer);
   };
 
   sendDeleteSheet = (sheetId: string, user: boolean) => {
     this.send({ type: 'coreClientDeleteSheet', sheetId, user });
   };
 
-  sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {
-    this.send({ type: 'coreClientSheetInfo', sheetInfo });
+  sendSheetsInfoClient = (sheetsInfo: Uint8Array) => {
+    this.send({ type: 'coreClientSheetsInfo', sheetsInfo }, sheetsInfo.buffer);
+  };
+
+  sendSheetInfoUpdate = (sheetInfo: Uint8Array) => {
+    this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo }, sheetInfo.buffer);
   };
 
   sendSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
@@ -789,10 +793,6 @@ class CoreClient {
 
   sendSheetMetaFills = (sheetId: string, fills: JsSheetFill[]) => {
     this.send({ type: 'coreClientSheetMetaFills', sheetId, fills });
-  };
-
-  sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {
-    this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo });
   };
 
   sendSetCursor = (cursor: string) => {

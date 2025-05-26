@@ -48,7 +48,7 @@ interface EventTypes {
 
   addSheet: (sheetInfo: SheetInfo, user: boolean) => void;
   deleteSheet: (sheetId: string, user: boolean) => void;
-  sheetInfo: (sheetInfo: SheetInfo[]) => void;
+  sheetsInfo: (sheetInfo: SheetInfo[]) => void;
   sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
