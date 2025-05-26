@@ -18,6 +18,6 @@ export const useDebugFlags = (): DebugFlagOptions => {
     return () => {
       events.off('debugFlags', updateFlags);
     };
-  });
+  }, []);
   return flags;
 };
