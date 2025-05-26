@@ -1719,7 +1719,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Insert and Delete Multiple Columns', async ({ page }) => {
+test('Insert and Delete Multiple Columns', async ({ page }) => {
   //--------------------------------
   // Insert Columns above
   //--------------------------------
