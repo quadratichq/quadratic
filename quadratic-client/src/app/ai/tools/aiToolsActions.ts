@@ -561,4 +561,12 @@ export const aiToolsActions: AIToolActionsRecord = {
       ];
     }
   },
+  [AITool.Search]: async (args) => {
+    return [
+      {
+        type: 'text',
+        text: 'Search tool executed successfully.',
+      },
+    ];
+  },
 } as const;

@@ -10,6 +10,8 @@ export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:g
 
 export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
 
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
+
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 13;
 
