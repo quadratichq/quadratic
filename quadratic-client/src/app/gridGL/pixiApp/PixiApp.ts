@@ -125,7 +125,6 @@ export class PixiApp {
         return;
       }
       if (!this.initialized) {
-        this.initialized = true;
         renderWebWorker.sendBitmapFonts();
         this.initCanvas();
         this.rebuild();
@@ -134,6 +133,7 @@ export class PixiApp {
         if (this.alreadyRendered) {
           this.firstRenderComplete();
         }
+        this.initialized = true;
       }
     });
   };
