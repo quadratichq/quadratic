@@ -35,7 +35,7 @@ ${
 ${
   formatBounds.type === 'nonEmpty'
     ? `Formatting (like bold, currency, fill, etc.) is contained within ${rectToA1(formatBounds)}. Note: there may non-formatted cells within this range\n`
-    : 'There is no data in this sheet.'
+    : 'There is no formatting in this sheet.'
 }\n
 <Instruction>
   If you need additional information about the sheet, use the get_cell_data function to retrieve information about the sheet that is not contained within the context.
