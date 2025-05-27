@@ -32,7 +32,6 @@ export function useCurrentSheetContextMessages() {
             {
               type: 'text',
               text: `
-Note: This is an internal message for context. Do not quote it in your response.\n\n
 I have an open sheet, with sheet name '${currentSheetName}', all actions are performed on this sheet, unless the user specifies otherwise.\n
 You can reference data from this or other sheets in the currently open file.\n
 
