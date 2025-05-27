@@ -17,12 +17,12 @@ export const QuadraticAppDebugSettings = () => {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
     Object.fromEntries(debugFlagGroups.map((group) => [group, true]))
   );
-  const debugFlags = useDebugFlags();
+  const { getFlag } = useDebugFlags();
 
   // Magic shortcut cmd+shift+option+i opens settings
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'KeyI' && event.shiftKey && event.altKey && event.metaKey) {
+      if (event.code === 'KeyI' && event.shiftKey && event.altKey && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         event.stopPropagation();
         setOpen((prev) => !prev);
@@ -51,11 +51,11 @@ export const QuadraticAppDebugSettings = () => {
             <Setting
               keyName="debug"
               debug={debugFlagDescriptions.debug}
-              value={debugFlags.debug}
+              value={getFlag('debug')}
               onChange={(newValue) => setDebugFlag('debug', newValue)}
             />
           </div>
-          {debugFlags.debug &&
+          {getFlag('debug') &&
             debugFlagGroups.map((group) => {
               return (
                 <div key={group} className="mb-4">
@@ -72,7 +72,7 @@ export const QuadraticAppDebugSettings = () => {
                     {group}
                     {(() => {
                       const count = Object.entries(debugFlagDescriptions).filter(
-                        ([key, value]) => value.group === group && debugFlags[key]
+                        ([key, value]) => value.group === group && getFlag(key)
                       ).length;
                       return count > 0 ? (
                         <span className="text-sm font-normal text-muted-foreground">({count})</span>
@@ -88,10 +88,10 @@ export const QuadraticAppDebugSettings = () => {
                             className={key === 'debug' ? '-mx-3 mb-1 rounded bg-accent px-3 py-3' : ''}
                             keyName={key}
                             debug={value}
-                            value={debugFlags[key]}
+                            value={getFlag('key')}
                             onChange={(newValue) => setDebugFlag(key, newValue)}
                             key={key}
-                            disabled={key !== 'debug' && !debugFlags.debug}
+                            disabled={key !== 'debug' && !getFlag('debug')}
                           />
                         ))}
                     </>

@@ -50,7 +50,7 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     title: 'Draws CellsHash boxes',
     description: 'Draws colored boxes around each CellsHash',
     group: 'Rendering',
-    restart: true,
+    restart: false,
   },
   debugShowCellHashesInfo: {
     initial: false,

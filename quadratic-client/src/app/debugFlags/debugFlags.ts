@@ -50,19 +50,19 @@ class DebugFlags {
 
   /// Returns the value of the debug flag for the given key. Note: if the flags
   /// are not initialized, it returns false.
-  getFlag(key: DebugFlag): boolean {
-    if (!this.flags || !this.debugAvailable) return false;
-    return this.flags.debug && this.flags[key];
-  }
+  getFlag = (key: DebugFlag): boolean => {
+    if (!this.flags || !this.debugAvailable || !this.flags.debug) return false;
+    return this.flags[key];
+  };
 
   /// Sets the value of the debug flag for the given key. Note: if the flags
   /// are not initialized, it does nothing.
-  setFlag(key: DebugFlag, value: boolean) {
+  setFlag = (key: DebugFlag, value: boolean) => {
     if (!this.flags) return;
     this.flags[key] = value;
     localforage.setItem(KEY, JSON.stringify(this.flags));
     events.emit('debugFlags');
-  }
+  };
 }
 
 export const debugFlagWait = async (key: DebugFlag) => {

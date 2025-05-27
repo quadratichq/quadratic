@@ -8,7 +8,7 @@ import SyncState from './SyncState';
 
 export const BottomBar = () => {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
-  const { debugShowFPS } = useDebugFlags();
+  const { getFlag } = useDebugFlags();
 
   return (
     <div
@@ -33,7 +33,7 @@ export const BottomBar = () => {
           </BottomBarItem>
         )}
 
-        {debugShowFPS && (
+        {getFlag('debugShowFPS') && (
           <BottomBarItem>
             <div
               className="debug-show-renderer"

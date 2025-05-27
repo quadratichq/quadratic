@@ -62,7 +62,7 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const { getAICompletion } = useCodeEditorCompletions({ language: codeCell.language });
-  const { debug } = useDebugFlags();
+  const { getFlag } = useDebugFlags();
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
@@ -269,7 +269,7 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
           token: monaco.CancellationToken
         ) => {
           // enabled in debug mode only
-          if (!debug) return;
+          if (!getFlag('debug')) return;
 
           return new Promise((resolve) => {
             clearTimeout(completionTimeoutAndController.timeout);
@@ -345,7 +345,7 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
         completionProvider.dispose();
       });
     },
-    [addCommands, debug, getAICompletion, monacoLanguage, setEditorInst]
+    [addCommands, getFlag, getAICompletion, monacoLanguage, setEditorInst]
   );
 
   const onChange = useCallback(
