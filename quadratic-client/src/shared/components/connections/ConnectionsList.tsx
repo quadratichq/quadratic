@@ -1,6 +1,6 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { AddIcon } from '@/shared/components/Icons';
+import { AddIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -12,11 +12,13 @@ import { connectionsByType } from '@/shared/components/connections/connectionsBy
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
+import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
+import { useLocation } from 'react-router';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -123,6 +125,8 @@ function ListItems({
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
+  const location = useLocation();
+  const isApp = location.pathname.startsWith('/file/');
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
@@ -130,7 +134,7 @@ function ListItems({
         <div className="group relative flex items-center gap-1" key={uuid}>
           <button
             onClick={() => {
-              handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
+              handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
             }}
             disabled={disabled}
             key={uuid}
@@ -150,17 +154,19 @@ function ListItems({
               </time>
             </div>
           </button>
-          {!disabled && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
-              onClick={() => {
-                handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-              }}
-            >
-              <Pencil1Icon />
-            </Button>
+          {!disabled && !isApp && (
+            <TooltipPopover label="Browse schema">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+                onClick={() => {
+                  handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
+                }}
+              >
+                <ExploreSchemaIcon />
+              </Button>
+            </TooltipPopover>
           )}
         </div>
       ))}

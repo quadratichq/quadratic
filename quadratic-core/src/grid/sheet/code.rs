@@ -448,6 +448,7 @@ mod test {
             CodeCellLanguage::Formula,
             "{1, 2, 3}".to_string(),
             None,
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

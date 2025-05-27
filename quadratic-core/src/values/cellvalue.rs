@@ -393,9 +393,16 @@ impl CellValue {
     }
 
     fn strip_parentheses(value: &str) -> String {
-        let trimmed = value.trim();
+        let mut trimmed = value.trim();
+
+        let percent = if trimmed.ends_with("%") {
+            trimmed = trimmed.strip_suffix("%").unwrap_or(trimmed);
+            "%"
+        } else {
+            ""
+        };
         if trimmed.starts_with("(") && trimmed.ends_with(")") {
-            format!("-{}", trimmed[1..trimmed.len() - 1].trim())
+            format!("-{}{}", trimmed[1..trimmed.len() - 1].trim(), percent)
         } else {
             value.to_string()
         }
@@ -921,7 +928,9 @@ impl CellValue {
             }
             // date - date
             (CellValue::Date(d1), CellValue::Date(d2)) => {
-                CellValue::Duration(Duration::from(*d1 - *d2))
+                // number is more consistent with other spreadsheets.
+                // will coerce to a duration when used.
+                CellValue::from(Duration::from(*d1 - *d2).to_fractional_days())
             }
 
             // time - time
@@ -1420,5 +1429,22 @@ mod test {
             assert_eq!(expected, l.eq(&r).unwrap());
             assert_eq!(expected, r.eq(&l).unwrap());
         }
+    }
+
+    #[test]
+    fn test_strip_negative_percent() {
+        let value = CellValue::parse_from_str("-123.123%");
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123.123").unwrap())
+        );
+
+        let value = CellValue::parse_from_str("(123.123)%");
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("-123.123").unwrap())
+        );
+
+
     }
 }
