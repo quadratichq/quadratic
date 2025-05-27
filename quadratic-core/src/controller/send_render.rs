@@ -280,9 +280,9 @@ impl GridController {
             return;
         };
 
-        match serde_json::to_string(&SheetBounds::from(sheet)) {
-            Ok(sheet_info) => {
-                crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
+        match serde_json::to_vec(&SheetBounds::from(sheet)) {
+            Ok(sheet_bounds) => {
+                crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_bounds);
             }
             Err(e) => {
                 dbgjs!(format!(
@@ -309,8 +309,7 @@ impl GridController {
             return;
         };
 
-        let sheet_info = SheetInfo::from(sheet);
-        match serde_json::to_string(&sheet_info) {
+        match serde_json::to_vec(&SheetInfo::from(sheet)) {
             Ok(sheet_info) => {
                 crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user_undo_redo());
             }
@@ -354,8 +353,7 @@ impl GridController {
                 continue;
             };
 
-            let sheet_info = SheetInfo::from(sheet);
-            match serde_json::to_string(&sheet_info) {
+            match serde_json::to_vec(&SheetInfo::from(sheet)) {
                 Ok(sheet_info) => {
                     crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
                 }
@@ -419,7 +417,7 @@ impl GridController {
                 .collect::<Vec<JsOffset>>();
             offsets.sort_by(|a, b| a.row.cmp(&b.row).then(a.column.cmp(&b.column)));
 
-            match serde_json::to_string(&offsets) {
+            match serde_json::to_vec(&offsets) {
                 Ok(offsets) => {
                     crate::wasm_bindings::js::jsOffsetsModified(sheet_id.to_string(), offsets);
                 }
@@ -500,12 +498,12 @@ impl GridController {
         };
 
         let fills = sheet.get_all_render_fills();
-        if let Ok(fills) = serde_json::to_string(&fills) {
+        if let Ok(fills) = serde_json::to_vec(&fills) {
             crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
         }
 
         let sheet_fills = sheet.get_all_sheet_fills();
-        if let Ok(sheet_fills) = serde_json::to_string(&sheet_fills) {
+        if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
             crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
         }
     }
@@ -534,7 +532,7 @@ impl GridController {
                     show_name: true,
                 });
 
-                match serde_json::to_string(&html) {
+                match serde_json::to_vec(&html) {
                     Ok(html) => {
                         crate::wasm_bindings::js::jsUpdateHtml(html);
                     }
@@ -728,17 +726,20 @@ mod test {
 
         expect_js_call(
             "jsUpdateHtml",
-            serde_json::to_string(&JsHtmlOutput {
-                sheet_id: sheet_id.to_string(),
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 3,
-                html: Some("<html></html>".to_string()),
-                show_name: true,
-                name: "Python1".to_string(),
-            })
-            .unwrap(),
+            format!(
+                "{:?}",
+                serde_json::to_vec(&JsHtmlOutput {
+                    sheet_id: sheet_id.to_string(),
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 3,
+                    html: Some("<html></html>".to_string()),
+                    show_name: true,
+                    name: "Python1".to_string(),
+                })
+                .unwrap()
+            ),
             true,
         );
     }
@@ -803,7 +804,7 @@ mod test {
         let fills = sheet.get_all_sheet_fills();
         expect_js_call(
             "jsSheetMetaFills",
-            format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()),
+            format!("{},{:?}", sheet.id, serde_json::to_vec(&fills).unwrap()),
             true,
         );
     }

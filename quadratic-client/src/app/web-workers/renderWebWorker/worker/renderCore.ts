@@ -6,7 +6,8 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsRenderCell } from '@/app/quadratic-core-types';
+import type { SheetBounds } from '@/app/quadratic-core-types';
+import { type JsOffset, type JsRenderCell, type SheetInfo } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
@@ -31,8 +32,8 @@ class RenderCore {
     if (debugWebWorkersMessages) console.log(`[renderCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
-      case 'coreRenderSheetInfo':
-        renderText.coreInit(e.data.sheetInfo);
+      case 'coreRenderSheetsInfo':
+        renderText.coreInit(fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
         break;
 
       case 'coreRenderRenderCells':
@@ -44,7 +45,7 @@ class RenderCore {
         break;
 
       case 'coreRenderAddSheet':
-        renderText.addSheet(e.data.sheetInfo);
+        renderText.addSheet(fromUint8Array<SheetInfo>(e.data.sheetInfo));
         break;
 
       case 'coreRenderDeleteSheet':
@@ -52,15 +53,15 @@ class RenderCore {
         break;
 
       case 'coreRenderSheetOffsets':
-        renderText.sheetOffsetsSize(e.data.sheetId, e.data.offsets);
+        renderText.sheetOffsetsSize(e.data.sheetId, fromUint8Array<JsOffset[]>(e.data.offsets));
         break;
 
       case 'coreRenderSheetInfoUpdate':
-        renderText.sheetInfoUpdate(e.data.sheetInfo);
+        renderText.sheetInfoUpdate(fromUint8Array<SheetInfo>(e.data.sheetInfo));
         break;
 
       case 'coreRenderSheetBoundsUpdate':
-        renderText.sheetBoundsUpdate(e.data.sheetBounds);
+        renderText.sheetBoundsUpdate(fromUint8Array<SheetBounds>(e.data.sheetBounds));
         break;
 
       case 'coreRenderRequestRowHeights':

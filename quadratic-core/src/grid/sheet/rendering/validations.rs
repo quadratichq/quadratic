@@ -36,7 +36,6 @@ impl Sheet {
         };
 
         let warnings = self.get_validation_warnings_in_rect(rect, true);
-
         self.send_validation_warnings(warnings);
     }
 
