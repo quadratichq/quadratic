@@ -23,10 +23,10 @@ export function loadAssets() {
   createBorderTypes();
 
   // Load HTML fonts for Input
-  loadFont('OpenSans');
-  loadFont('OpenSans-Bold');
-  loadFont('OpenSans-Italic');
-  loadFont('OpenSans-BoldItalic');
+  const font1Promise = loadFont('OpenSans');
+  const font2Promise = loadFont('OpenSans-Bold');
+  const font3Promise = loadFont('OpenSans-Italic');
+  const font4Promise = loadFont('OpenSans-BoldItalic');
 
   // Load PixiJS fonts for canvas
   const bundle = {
@@ -53,7 +53,9 @@ export function loadAssets() {
 
   // Add bundles to Assets
   Assets.addBundle('bundle', bundle);
-  Assets.loadBundle('bundle').then(() => {
+  const bundlePromise = Assets.loadBundle('bundle');
+
+  Promise.all([font1Promise, font2Promise, font3Promise, font4Promise, bundlePromise]).then(() => {
     if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
     events.emit('bitmapFontsLoaded');
   });
