@@ -82,11 +82,6 @@ export const debugFlags = new DebugFlags();
 
 /// Returns a promise that resolves when the debug flags are initialized
 export const waitForDebugFlags = async (): Promise<void> => {
-  // If flags are already initialized, return immediately
-  if (debugFlags.flags) {
-    return;
-  }
-
   // Otherwise, wait for flags to be initialized
   return new Promise((resolve) => {
     const checkFlags = () => {
