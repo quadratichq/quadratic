@@ -17,7 +17,7 @@ export function isBitmapFontLoaded(): boolean {
   return bitmapFonts.every((font) => BitmapFont.available[font]);
 }
 
-export function loadAssets() {
+export async function loadAssets() {
   if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
@@ -55,8 +55,8 @@ export function loadAssets() {
   Assets.addBundle('bundle', bundle);
   const bundlePromise = Assets.loadBundle('bundle');
 
-  Promise.all([font1Promise, font2Promise, font3Promise, font4Promise, bundlePromise]).then(() => {
-    if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
-    events.emit('bitmapFontsLoaded');
-  });
+  await Promise.all([font1Promise, font2Promise, font3Promise, font4Promise, bundlePromise]);
+
+  if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+  events.emit('bitmapFontsLoaded');
 }
