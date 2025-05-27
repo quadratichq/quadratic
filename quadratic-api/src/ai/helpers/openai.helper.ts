@@ -268,6 +268,11 @@ export async function parseOpenAIStream(
     }));
   }
 
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  if (!response?.writableEnded) {
+    response?.end();
+  }
+
   return { responseMessage, usage };
 }
 

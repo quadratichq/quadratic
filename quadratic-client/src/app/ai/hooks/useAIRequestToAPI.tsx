@@ -99,10 +99,6 @@ export function useAIRequestToAPI() {
                 if (line.startsWith('data: ')) {
                   try {
                     const newResponseMessage = AIMessagePromptSchema.parse(JSON.parse(line.slice(6)));
-                    if (newResponseMessage.fineTuningInput) {
-                      console.log(newResponseMessage.fineTuningInput);
-                      newResponseMessage.fineTuningInput = undefined;
-                    }
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
                     responseMessage = newResponseMessage;
                   } catch (error) {

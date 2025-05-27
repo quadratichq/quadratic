@@ -8,7 +8,6 @@ import type {
   ParsedAIResponse,
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 import { getVertexAIApiArgs, parseVertexAIResponse, parseVertexAIStream } from '../helpers/vertexai.helper';
 
 const KEEP_ALIVE_INTERVAL = 25000;
@@ -64,9 +63,6 @@ export const handleVertexAIRequest = async (
       clearTimeout(timeout);
 
       const parsedResponse = await parseVertexAIStream(result, modelKey, response);
-
-      createFileForFineTuning(modelKey, args, parsedResponse, response);
-
       return parsedResponse;
     } else {
       const result = await generativeModel.generateContent(apiArgs);

@@ -1,4 +1,3 @@
-import type { Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
@@ -8,8 +7,7 @@ import { getOpenAIApiArgs } from '../helpers/openai.helper';
 export const createFileForFineTuning = (
   modelKey: AIModelKey,
   args: AIRequestHelperArgs,
-  parsedResponse: ParsedAIResponse,
-  response?: Response
+  parsedResponse: ParsedAIResponse
 ) => {
   const model = getModelFromModelKey(modelKey);
 
@@ -21,13 +19,6 @@ export const createFileForFineTuning = (
     messages,
     ...(tools ? { functions: tools.map((tool) => tool.function) } : {}),
   };
-  copyResponse.fineTuningInput = JSON.stringify(fineTuningInput);
-
-  // send back to client with fine tuning input
-  response?.write(`data: ${JSON.stringify(copyResponse)}\n\n`);
-  if (!response?.writableEnded) {
-    response?.end();
-  }
 
   // write local file at quadratic/finetuning/<model>_<timestamp>.json
   const dirPath = path.join(__dirname, '../../../../finetuning');

@@ -15,7 +15,8 @@ import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
 import { handleVertexAIRequest } from '../../ai/handler/vertexai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
-import { DEBUG } from '../../env-vars';
+import { DEBUG, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
+import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 import { calculateUsage } from '../helpers/usage.helper';
 
 export const handleAIRequest = async (
@@ -52,11 +53,15 @@ export const handleAIRequest = async (
     throw new Error(`Model not supported: ${modelKey}`);
   }
 
-  if (DEBUG && !!parsedResponse) {
+  if (ENVIRONMENT !== 'production' && !!DEBUG && !!parsedResponse) {
     parsedResponse.usage.source = args.source;
     parsedResponse.usage.modelKey = modelKey;
     parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
     console.log('[AI.Usage]', parsedResponse.usage);
+  }
+
+  if (!!FINE_TUNE && ENVIRONMENT !== 'production' && !!DEBUG && !!parsedResponse) {
+    createFileForFineTuning(modelKey, args, parsedResponse);
   }
 
   return parsedResponse;

@@ -17,7 +17,6 @@ import type {
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
-import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 
 export const handleAnthropicRequest = async (
   modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
@@ -64,9 +63,6 @@ export const handleAnthropicRequest = async (
       const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
 
       const parsedResponse = await parseAnthropicStream(chunks, modelKey, response);
-
-      createFileForFineTuning(modelKey, args, parsedResponse, response);
-
       return parsedResponse;
     } else {
       const result = await anthropic.messages.create(apiArgs as MessageCreateParamsNonStreaming);

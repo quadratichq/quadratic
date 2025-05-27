@@ -332,7 +332,6 @@ export const AIMessagePromptSchema = z.object({
     })
   ),
   modelKey: AIModelKeySchema,
-  fineTuningInput: z.string().optional(),
 });
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
