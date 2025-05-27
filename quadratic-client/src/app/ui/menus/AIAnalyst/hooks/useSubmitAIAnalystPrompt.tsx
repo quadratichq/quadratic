@@ -299,6 +299,21 @@ export function useSubmitAIAnalystPrompt() {
                 messagesWithContext,
               });
             }
+            if (debugFlag('debugPrintAIInternalContext')) {
+              console.log(
+                messagesWithContext
+                  .map((message) => {
+                    return `${message.role}: ${message.content.map((content) => {
+                      if ('type' in content && content.type === 'text') {
+                        return content.text;
+                      } else {
+                        return 'data';
+                      }
+                    })}`;
+                  })
+                  .join('\n')
+              );
+            }
 
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
