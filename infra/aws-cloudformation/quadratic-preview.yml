@@ -85,17 +85,17 @@ Resources:
 
           # Update and install dependencies
           sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common unzip jq awscli
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common unzip jq
 
           # Install AWS CLI v2
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
+          sudo curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          sudo unzip awscliv2.zip
           sudo ./aws/install
-          rm -rf aws awscliv2.zip
+          sudo rm -rf aws awscliv2.zip
 
           # Install Docker
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -106,7 +106,7 @@ Resources:
           sudo usermod -aG docker ubuntu
 
           # Download Quadratic initialization script
-          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init-aws-preview.sh -o init.sh
+          sudo curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init-aws-preview.sh -o init.sh
 
           # Fetch License Key
           LICENSE_KEY="$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)"
@@ -115,8 +115,8 @@ Resources:
           DOMAIN_NAME="${SubDomainName}.quadratic-preview.com"
 
           # Run Quadratic initialization script
-          chmod +x init.sh
-          ./init.sh $LICENSE_KEY $DOMAIN_NAME
+          sudo chmod +x init.sh
+          sudo ./init.sh $LICENSE_KEY $DOMAIN_NAME
 
           # Append environment variables to .env file
           cat << EOF >> /quadratic-selfhost/.env
@@ -162,8 +162,8 @@ Resources:
           aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
           EOF
 
-          chmod +x /quadratic-selfhost/login.sh
-          chmod +x /quadratic-selfhost/pull_start.sh
+          sudo chmod +x /quadratic-selfhost/login.sh
+          sudo chmod +x /quadratic-selfhost/pull_start.sh
 
           cd /quadratic-selfhost
           ./login.sh
