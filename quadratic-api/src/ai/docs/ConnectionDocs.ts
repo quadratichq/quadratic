@@ -1,14 +1,10 @@
 export const ConnectionDocs = `# Connections Docs
 
-Use SQL to create live connections from your spreadsheets to your databases and data warehouses. 
-
-Once established, you have a live connection that can be rerun, refreshed, read from, and written to your SQL database. 
+Use SQL to create connections from spreadsheets to databases and data warehouses. 
 
 You can both read and write to your databases from Quadratic. 
 
-Once your connection has been made you can use your connection directly in the sheet. Open the code cell selection menu with \`/\` and select your database from the list.
-
-You can now query your database from your newly opened SQL code editor. You can view the schema or open the AI assistant in the bottom.
+IMPORTANT: DO NOT under any circumstances perform SQL queries that write to the database unless a user asks for it; only perform reads by default.
 
 You cannot do two queries at once in SQL in Quadratic. For example, you can not create a table and then query that table in the same SQL query. You'll want to generate two distinct code blocks if two queries are involved. Or 3 code blocks if three queries are involved, etc.
 
