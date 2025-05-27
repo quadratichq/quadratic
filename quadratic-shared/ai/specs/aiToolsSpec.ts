@@ -1,7 +1,9 @@
-import type { AISource, AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
+  SetAIModel = 'set_ai_model',
   SetChatName = 'set_chat_name',
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
@@ -19,6 +21,7 @@ export enum AITool {
 }
 
 export const AIToolSchema = z.enum([
+  AITool.SetAIModel,
   AITool.SetChatName,
   AITool.AddDataTable,
   AITool.SetCellValues,
@@ -89,7 +92,15 @@ const cellLanguageSchema = z
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
   .pipe(z.enum(['Python', 'Javascript', 'Formula']));
 
+const modelRouterModels = z
+  .string()
+  .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
+  .pipe(z.enum(['gpt-4.1-mini', 'claude', 'flash']));
+
 export const AIToolsArgsSchema = {
+  [AITool.SetAIModel]: z.object({
+    ai_model: modelRouterModels,
+  }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
   }),
@@ -177,7 +188,36 @@ export type AIToolSpecRecord = {
   [K in AITool]: AIToolSpec<K>;
 };
 
+export const MODELS_ROUTER_CONFIGURATION: {
+  [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
+} = {
+  claude: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  flash: 'vertexai:gemini-2.5-flash-preview-05-20',
+  'gpt-4.1-mini': 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
+};
+
 export const aiToolsSpec: AIToolSpecRecord = {
+  [AITool.SetAIModel]: {
+    sources: ['ModelRouter'],
+    description: `
+Sets the AI Model to use for this user prompt.\n
+Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        ai_model: {
+          type: 'string',
+          description:
+            'Value can be only one of the following: "claude", "flash", and "gpt-4.1-mini" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+        },
+      },
+      required: ['ai_model'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetAIModel],
+    prompt: '',
+  },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
     description: `
@@ -199,12 +239,7 @@ This name should be from user's perspective, not the assistant's.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetChatName],
-    prompt: `
-You can use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
-This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
-The chat name should be based on user's messages and should reflect his/her queries and goals.\n
-This name should be from user's perspective, not the assistant's.\n
-`,
+    prompt: '',
   },
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
@@ -318,6 +353,7 @@ Values are string representation of text, number, logical, time instant, duratio
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
     parameters: {
       type: 'object',
@@ -359,6 +395,7 @@ When setting cell values, follow these rules for headers:\n
 This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
@@ -371,6 +408,7 @@ Never use set_code_cell_value function to set the value of a cell to a value tha
 Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
 Note: we only rename the code cell if its new. Otherwise we keep the old name.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Do not attempt to add formulas or code to data tables, it will result in an error.\n
 `,
     parameters: {
       type: 'object',

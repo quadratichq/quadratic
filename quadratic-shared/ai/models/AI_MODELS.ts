@@ -1,14 +1,21 @@
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off';
+export const DEFAULT_MODEL: AIModelKey = 'quadratic:quadratic-auto';
+export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
 export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
+
+export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
+
+export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
+export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 14;
@@ -16,6 +23,23 @@ export const DEFAULT_MODEL_VERSION = 14;
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
 } = {
+  // uses `DEFAULT_MODEL_ROUTER_MODEL` to find the best model for this prompt,
+  // settings and price correspond to the current `DEFAULT_MODEL_ROUTER_MODEL`
+  'quadratic:quadratic-auto': {
+    model: 'quadratic-auto',
+    displayName: 'auto',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'quadratic',
+    promptCaching: false,
+    rate_per_million_input_tokens: 0.15,
+    rate_per_million_output_tokens: 1,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'vertexai-anthropic:claude-opus-4:thinking-toggle-off': {
     model: 'claude-opus-4@20250514',
     displayName: `claude opus 4`,
@@ -176,11 +200,11 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'vertexai:gemini-2.0-flash-001': {
-    model: 'gemini-2.0-flash-001',
-    displayName: 'gemini 2.0 flash',
+  'vertexai:gemini-2.5-flash-preview-05-20': {
+    model: 'gemini-2.5-flash-preview-05-20',
+    displayName: 'gemini 2.5 flash preview',
     temperature: 0,
-    max_tokens: 8192,
+    max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -264,7 +288,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
@@ -280,7 +304,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
@@ -511,11 +535,27 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.3,
     rate_per_million_cache_write_tokens: 3.75,
   },
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
+    displayName: 'gpt 4.1 mini fine-tuned (stable)',
+    temperature: 0,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: false,
+    rate_per_million_input_tokens: 0.8,
+    rate_per_million_output_tokens: 3.2,
+    rate_per_million_cache_read_tokens: 0.2,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
     temperature: 0,
-    max_tokens: 32768, // not used for openai
+    max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -527,11 +567,27 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.5,
     rate_per_million_cache_write_tokens: 0,
   },
+  'openai:gpt-4.1-mini-2025-04-14': {
+    model: 'gpt-4.1-mini-2025-04-14',
+    displayName: 'gpt 4.1 mini',
+    temperature: 0,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: false,
+    rate_per_million_input_tokens: 0.4,
+    rate_per_million_output_tokens: 1.6,
+    rate_per_million_cache_read_tokens: 0.1,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'openai:o4-mini-2025-04-16': {
     model: 'o4-mini-2025-04-16',
     displayName: 'o4 mini',
     temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 100000, // not used for openai
+    max_tokens: 100000,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -547,7 +603,7 @@ export const MODELS_CONFIGURATION: {
     model: 'o3-2025-04-16',
     displayName: 'o3',
     temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 100000, // not used for openai
+    max_tokens: 100000,
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
     enabled: false,

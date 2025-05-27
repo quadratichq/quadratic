@@ -9,12 +9,13 @@ import type {
   ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
+import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 
 export const handleBedrockRequest = async (
   modelKey: BedrockModelKey,
   args: AIRequestHelperArgs,
-  response: Response,
-  bedrock: BedrockRuntimeClient
+  bedrock: BedrockRuntimeClient,
+  response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
@@ -34,26 +35,29 @@ export const handleBedrockRequest = async (
     };
 
     if (options.stream) {
-      response.setHeader('Content-Type', 'text/event-stream');
-      response.setHeader('Cache-Control', 'no-cache');
-      response.setHeader('Connection', 'keep-alive');
-      response.write(`stream\n\n`);
+      response?.setHeader('Content-Type', 'text/event-stream');
+      response?.setHeader('Cache-Control', 'no-cache');
+      response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
 
       const command = new ConverseStreamCommand(apiArgs);
       const chunks = (await bedrock.send(command)).stream ?? [];
 
-      const parsedResponse = await parseBedrockStream(chunks, response, modelKey);
+      const parsedResponse = await parseBedrockStream(chunks, modelKey, response);
+
+      createFileForFineTuning(modelKey, args, parsedResponse, response);
+
       return parsedResponse;
     } else {
       const command = new ConverseCommand(apiArgs);
 
       const result = await bedrock.send(command);
-      const parsedResponse = parseBedrockResponse(result, response, modelKey);
+      const parsedResponse = parseBedrockResponse(result, modelKey, response);
       return parsedResponse;
     }
   } catch (error: any) {
-    if (!options.stream || !response.headersSent) {
-      response.status(400).json({ error });
+    if (!options.stream || !response?.headersSent) {
+      response?.status(400).json({ error });
       console.error(error);
     } else {
       const responseMessage: AIMessagePrompt = {
@@ -66,10 +70,10 @@ export const handleBedrockRequest = async (
         ],
         contextType: 'userPrompt',
         toolCalls: [],
-        model: getModelFromModelKey(modelKey),
+        modelKey,
       };
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-      response.end();
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.end();
       console.error('Error occurred after headers were sent:', error);
     }
   }
