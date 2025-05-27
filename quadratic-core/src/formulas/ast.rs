@@ -64,15 +64,22 @@ impl AstNodeContents {
 impl Formula {
     /// Evaluates a formula.
     pub fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
-        self.ast.eval(ctx).unwrap_or_else(|e| Spanned {
-            span: self.ast.span,
-            inner: e.into(),
-        })
+        self.ast.eval(ctx)
     }
 }
 
 impl AstNode {
-    fn eval<'expr, 'ctx: 'expr>(&'expr self, ctx: &'expr mut Ctx<'ctx>) -> CodeResult {
+    /// Evaluates an AST node. Errors are converted to [`CellValue::Error`].
+    fn eval<'expr, 'ctx: 'expr>(&'expr self, ctx: &'expr mut Ctx<'ctx>) -> Spanned<Value> {
+        self.eval_to_result(ctx).unwrap_or_else(|e| Spanned {
+            span: self.span,
+            inner: e.into(),
+        })
+    }
+
+    /// Helper function used by `eval()` so that we can use `?` for error
+    /// propogation.
+    fn eval_to_result<'expr, 'ctx: 'expr>(&'expr self, ctx: &'expr mut Ctx<'ctx>) -> CodeResult {
         let value: Value = match &self.inner {
             AstNodeContents::Empty => Value::Single(CellValue::Blank),
 
@@ -89,8 +96,7 @@ impl AstNode {
                 let func_name = &func.inner;
                 match functions::lookup_function(func_name) {
                     Some(f) => {
-                        let arg_values: Vec<Spanned<Value>> =
-                            args.iter().map(|arg| arg.eval(&mut *ctx)).try_collect()?;
+                        let arg_values = args.iter().map(|arg| arg.eval(&mut *ctx)).collect_vec();
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
                         (f.eval)(&mut *ctx, args)?
                     }
@@ -106,11 +112,10 @@ impl AstNode {
             }
 
             AstNodeContents::Paren(contents) => {
-                let mut expressions: Vec<Array> = contents
+                let mut expressions = contents
                     .iter()
-                    .map(|expr| CodeResult::Ok(expr.eval(ctx)?.inner.into_arrays()))
-                    .flatten_ok()
-                    .try_collect()?;
+                    .flat_map(|expr| expr.eval(ctx).inner.into_arrays())
+                    .collect_vec();
                 if expressions.len() == 1 {
                     expressions
                         .pop()
@@ -135,7 +140,7 @@ impl AstNode {
                         return Err(RunErrorMsg::NonRectangularArray.with_span(self.span));
                     }
                     for elem_expr in row {
-                        flat_array.push(elem_expr.eval(ctx)?.into_cell_value()?.inner);
+                        flat_array.push(elem_expr.eval(ctx).into_cell_value()?.inner);
                     }
                 }
 
@@ -262,11 +267,11 @@ impl AstNode {
                     .try_collect()?;
 
                 // Get other arguments
-                let arg_values: Vec<Spanned<Value>> = args
+                let arg_values = args
                     .iter()
                     .skip(1)
                     .map(|arg| arg.eval(&mut *ctx))
-                    .try_collect()?;
+                    .collect_vec();
                 let mut args = FormulaFnArgs::new(arg_values, self.span, "INDEX");
                 let row = args
                     .take_next_optional()
