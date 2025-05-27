@@ -140,7 +140,10 @@ mod tests {
         // Test short-circuiting
         eval_to_err(&g, "1/0");
         assert_eq!("ok", eval_to_string(&g, "IF(TRUE,\"ok\",1/0)"));
-        eval_to_err(&g, "VLOOKUP(\"nope\",F1:G1,2,0),\"ok\")");
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "VLOOKUP(\"nope\",F1:G1,2,0)").msg
+        );
         assert_eq!(
             "ok",
             eval_to_string(&g, "IF(FALSE,VLOOKUP(\"nope\",F1:G1,2,0),\"ok\")")
@@ -160,7 +163,10 @@ mod tests {
         assert_eq!("ok", eval_to_string(&g, "IFERROR(\"ok\", 0/0)"));
         eval_to_err(&g, "0/0");
         assert_eq!("42", eval_to_string(&g, "IFERROR(0/0, 42)"));
-        eval_to_err(&g, "VLOOKUP(\"nope\",F1:G1,2,0),\"ok\")");
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "VLOOKUP(\"nope\",F1:G1,2,0)").msg
+        );
         assert_eq!(
             "ok",
             eval_to_string(&g, "IFERROR(VLOOKUP(\"nope\",F1:G1,2,0),\"ok\")")
