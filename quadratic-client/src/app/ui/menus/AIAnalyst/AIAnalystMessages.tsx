@@ -8,7 +8,7 @@ import {
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debugShowAIInternalContext, debugShowAIModel } from '@/app/debugFlags';
+import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -177,6 +177,10 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               message.contextType === 'userPrompt' ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
+            {debug && !!modelKey && (
+              <span className="text-xs text-muted-foreground">{getModelFromModelKey(modelKey)}</span>
+            )}
+
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAnalystUserMessageForm
                 initialContent={message.content}
@@ -219,10 +223,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                     />
                   ))}
               </>
-            )}
-
-            {!debugShowAIModel && !!modelKey && (
-              <span className="text-xs text-muted-foreground">{getModelFromModelKey(modelKey)}</span>
             )}
           </div>
         );

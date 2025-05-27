@@ -136,6 +136,7 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_read_tokens: z.number(),
   rate_per_million_cache_write_tokens: z.number(),
 });
+export type AIRates = z.infer<typeof AIRatesSchema>;
 export const AIModelConfigSchema = z
   .object({
     model: AIModelSchema,
