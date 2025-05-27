@@ -52,59 +52,55 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
               type: 'text',
               text: `
  <role>
-  You are an AI model selector for a data analysis application. Based on the user's prompt, choose the most suitable model.
+  You are an AI model selector for a spreadsheet application. Based on the user's prompt, choose the most suitable model.
  </role>
 
  <models>
-  <model name="Claude">
+  <model name="Pro">
    <capabilities>
-    <capability>Conditional formatting</capability>
-    <capability>Handling prompts that involve frustration</capability>
+    <capability>Data cleaning</capability>
+    <capability>Creating sample data</capability>
+    <capability>Augmenting data</capability>
     <capability>Processing images and PDFs</capability>
     <capability>Writing JavaScript</capability>
-   </capabilities>
-  </model>
-  <model name="Flash">
-   <capabilities>
-    <capability>Creating simple formulas for the most basic calculations</capability>
-    <capability>Any explicit formula request</capability>
     <capability>Simple formatting</capability>
+    <capability>Anything not explicitly defined in these instructions</capability>
    </capabilities>
   </model>
-  <model name="GPT-4.1-mini">
+  <model name="Claude">
    <capabilities>
-    <capability>Code and data analysis tasks - charting, summarizing, correlations, api requests, etc.</capability>
-    <capability>Requests to repeat that don't make it clear it didn't work</capability>
-    <capability>Calculations that are best solved by code</capability>
-    <capability>Calculations of any relative complexity</capability>
+    <capability>Requests that involve frustration</capability>
+    <capability>Conditional formatting</capability>
+    <capability>API requests</capability>
+    <capability>Building, editing, and refining charts</capability>
    </capabilities>
   </model>
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Flash" or "GPT-4.1-mini". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "Pro". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
   <example>
    <user>Insert some sample manufacturing data</user>
-   <answer>GPT-4.1-mini</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Create a chart</user>
-   <answer>GPT-4.1-mini</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Add an extra axis to my chart</user>
-   <answer>GPT-4.1-mini</answer>
+   <answer>Claude</answer>
   </example>
   <example>
-   <user>That didn't work</user>
+   <user>Change the line to blue</user>
    <answer>Claude</answer>
   </example>
   <example>
    <user>Analyze my PDFs</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Highlight all the cells with value > 50</user>
@@ -115,12 +111,8 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>do that again</user>
-   <answer>GPT-4.1-mini</answer>
-  </example>
-  <example>
-   <user>move to A7</user>
-   <answer>GPT-4.1-mini</answer>
+   <user>move that to A9</user>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
@@ -128,27 +120,27 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Remove column B from the data</user>
-   <answer>GPT-4.1-mini</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>How much does each crop produce per year?</user>
-   <answer>GPT-4.1-mini</answer>
+   <answer>Pro</answer>
   </example>
  <example>
    <user>Sum the values in column F</user>
-   <answer>Flash</answer>
+   <answer>Pro</answer>
   </example>
  <example>
    <user>Calculate the mean of costs</user>
-   <answer>Flash</answer>
+   <answer>Pro</answer>
   </example>
 <example>
    <user>Find the mean, filtered by product type</user>
-   <answer>GPT-4.1-mini</answer>
+   <answer>Pro</answer>
   </example>
 <example>
    <user>Highlight column C blue</user>
-   <answer>Flash</answer>
+   <answer>Pro</answer>
   </example>
 <example>
    <user>Highlight all male entries orange</user>

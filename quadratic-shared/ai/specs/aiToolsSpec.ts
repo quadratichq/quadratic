@@ -95,7 +95,7 @@ const cellLanguageSchema = z
 const modelRouterModels = z
   .string()
   .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
-  .pipe(z.enum(['gpt-4.1-mini', 'claude', 'flash']));
+  .pipe(z.enum(['claude', 'pro']));
 
 export const AIToolsArgsSchema = {
   [AITool.SetAIModel]: z.object({
@@ -191,9 +191,8 @@ export type AIToolSpecRecord = {
 export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
-  claude: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-  flash: 'vertexai:gemini-2.5-flash-preview-05-20',
-  'gpt-4.1-mini': 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
+  claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
+  pro: 'vertexai:gemini-2.5-pro-preview-05-06',
 };
 
 export const aiToolsSpec: AIToolSpecRecord = {
@@ -209,7 +208,7 @@ Choose the AI model for this user prompt based on the following instructions, al
         ai_model: {
           type: 'string',
           description:
-            'Value can be only one of the following: "claude", "flash", and "gpt-4.1-mini" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+            'Value can be only one of the following: "claude" or "pro" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
         },
       },
       required: ['ai_model'],
