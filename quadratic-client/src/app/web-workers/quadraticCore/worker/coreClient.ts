@@ -7,17 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import type {
-  JsBordersSheet,
-  JsHtmlOutput,
-  JsOffset,
-  JsRenderFill,
-  JsSheetFill,
-  JsSnackbarSeverity,
-  SheetBounds,
-  SheetInfo,
-  TransactionName,
-} from '@/app/quadratic-core-types';
+import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type {
   ClientCoreGetJwt,
@@ -42,21 +32,21 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
+    sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
-    sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
-    sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
+    sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
+    sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
-    sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
+    sendSheetFills: (sheetId: string, fills: Uint8Array) => void;
+    sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
-    sendSheetHtml: (html: JsHtmlOutput[]) => void;
-    sendUpdateHtml: (html: JsHtmlOutput) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: Uint8Array) => void;
+    sendSheetHtml: (html: Uint8Array) => void;
+    sendUpdateHtml: (html: Uint8Array) => void;
     sendGenerateThumbnail: () => void;
-    sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
+    sendBordersSheet: (sheetId: string, borders: Uint8Array) => void;
     sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
-    sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
@@ -88,7 +78,7 @@ class CoreClient {
     self.sendImportProgress = coreClient.sendImportProgress;
     self.sendAddSheetClient = coreClient.sendAddSheet;
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
-    self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
+    self.sendSheetsInfoClient = coreClient.sendSheetsInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sendSheetInfoUpdateClient = coreClient.sendSheetInfoUpdate;
@@ -771,64 +761,67 @@ class CoreClient {
     this.send({ type: 'coreClientImportProgress', filename, current, total, x, y, width, height });
   };
 
-  sendAddSheet = (sheetInfo: SheetInfo, user: boolean) => {
-    this.send({ type: 'coreClientAddSheet', sheetInfo, user });
+  sendAddSheet = (sheetInfo: Uint8Array, user: boolean) => {
+    this.send({ type: 'coreClientAddSheet', sheetInfo, user }, sheetInfo.buffer);
   };
 
   sendDeleteSheet = (sheetId: string, user: boolean) => {
     this.send({ type: 'coreClientDeleteSheet', sheetId, user });
   };
 
-  sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {
-    this.send({ type: 'coreClientSheetInfo', sheetInfo });
+  sendSheetsInfoClient = (sheetsInfo: Uint8Array) => {
+    this.send({ type: 'coreClientSheetsInfo', sheetsInfo }, sheetsInfo.buffer);
   };
 
-  sendSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
-    this.send({ type: 'coreClientSheetFills', sheetId, fills });
+  sendSheetInfoUpdate = (sheetInfo: Uint8Array) => {
+    this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo }, sheetInfo.buffer);
   };
 
-  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill[]) => {
-    this.send({ type: 'coreClientSheetMetaFills', sheetId, fills });
+  sendSheetFills = (sheetId: string, fills: Uint8Array) => {
+    this.send({ type: 'coreClientSheetFills', sheetId, fills }, fills.buffer);
   };
 
-  sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {
-    this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo });
+  sendSheetMetaFills = (sheetId: string, fills: Uint8Array) => {
+    this.send({ type: 'coreClientSheetMetaFills', sheetId, fills }, fills.buffer);
   };
 
   sendSetCursor = (cursor: string) => {
     this.send({ type: 'coreClientSetCursor', cursor });
   };
 
-  sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
-    this.send({
-      type: 'coreClientSheetOffsets',
-      sheetId,
-      offsets,
-    });
+  sendSheetOffsets = (sheetId: string, offsets: Uint8Array) => {
+    this.send(
+      {
+        type: 'coreClientSheetOffsets',
+        sheetId,
+        offsets,
+      },
+      offsets.buffer
+    );
   };
 
-  sendSheetHtml = (html: JsHtmlOutput[]) => {
-    this.send({ type: 'coreClientHtmlOutput', html });
+  sendSheetHtml = (html: Uint8Array) => {
+    this.send({ type: 'coreClientHtmlOutput', html }, html.buffer);
   };
 
-  sendUpdateHtml = (html: JsHtmlOutput) => {
-    this.send({ type: 'coreClientUpdateHtml', html });
+  sendUpdateHtml = (html: Uint8Array) => {
+    this.send({ type: 'coreClientUpdateHtml', html }, html.buffer);
   };
 
   sendGenerateThumbnail = () => {
     this.send({ type: 'coreClientGenerateThumbnail' });
   };
 
-  sendBordersSheet = (sheetId: string, borders: JsBordersSheet) => {
-    this.send({ type: 'coreClientBordersSheet', sheetId, borders });
+  sendBordersSheet = (sheetId: string, borders: Uint8Array) => {
+    this.send({ type: 'coreClientBordersSheet', sheetId, borders }, borders.buffer);
   };
 
   sendSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
     this.send({ type: 'coreClientSheetCodeCells', sheetId, renderCodeCells }, renderCodeCells.buffer);
   };
 
-  sendSheetBoundsUpdate = (bounds: SheetBounds) => {
-    this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
+  sendSheetBoundsUpdate = (bounds: Uint8Array) => {
+    this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds }, bounds.buffer);
   };
 
   sendTransactionStart = (transactionId: string, transactionName: TransactionName) => {

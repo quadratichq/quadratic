@@ -207,6 +207,12 @@ class RenderText {
     this.cellsLabels.delete(sheetId);
   }
 
+  sheetInfoUpdate(sheetInfo: SheetInfo) {
+    const cellsLabels = this.cellsLabels.get(sheetInfo.sheet_id);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetInfoUpdate');
+    cellsLabels.updateSheetInfo(sheetInfo);
+  }
+
   sheetOffsetsDelta(sheetId: string, column: number | null, row: number | null, delta: number) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsDelta');
@@ -217,12 +223,6 @@ class RenderText {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsSize');
     cellsLabels.setOffsetsSize(offsets);
-  }
-
-  sheetInfoUpdate(sheetInfo: SheetInfo) {
-    const cellsLabels = this.cellsLabels.get(sheetInfo.sheet_id);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetInfoUpdate');
-    cellsLabels.updateSheetInfo(sheetInfo);
   }
 
   sheetBoundsUpdate(sheetBounds: SheetBounds) {

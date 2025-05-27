@@ -56,23 +56,21 @@ export class PythonCore {
       Atomics.store(int32View, 0, 0);
 
       this.send({ type: 'pythonCoreGetCellsA1Length', sharedBuffer, transactionId, a1 });
-      let result = Atomics.wait(int32View, 0, 0);
-      const length = int32View[1];
-      if (result !== 'ok' || length === 0)
-        return { values: null, error: { core_error: 'Error in get cells a1 length' } };
+      Atomics.wait(int32View, 0, 0);
+      const byteLength = int32View[1];
+      if (byteLength === 0) return { values: null, error: { core_error: 'Error in get cells a1 length' } };
 
       const id = int32View[2];
 
       // New shared buffer, which is sized to hold the cells string
-      sharedBuffer = new SharedArrayBuffer(4 + length);
+      sharedBuffer = new SharedArrayBuffer(4 + byteLength);
       int32View = new Int32Array(sharedBuffer, 0, 1);
       Atomics.store(int32View, 0, 0);
 
       this.send({ type: 'pythonCoreGetCellsA1Data', id, sharedBuffer });
-      result = Atomics.wait(int32View, 0, 0);
-      if (result !== 'ok') return { values: null, error: { core_error: 'Error in get cells a1 data' } };
+      Atomics.wait(int32View, 0, 0);
 
-      let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
+      let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, byteLength);
 
       // Copy the data to a non-shared buffer, for decoding
       const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);

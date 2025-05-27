@@ -48,7 +48,7 @@ interface EventTypes {
 
   addSheet: (sheetInfo: SheetInfo, user: boolean) => void;
   deleteSheet: (sheetId: string, user: boolean) => void;
-  sheetInfo: (sheetInfo: SheetInfo[]) => void;
+  sheetsInfo: (sheetInfo: SheetInfo[]) => void;
   sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
@@ -65,7 +65,7 @@ interface EventTypes {
   sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
-  bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
+  bordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
   hashRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
   renderCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
 

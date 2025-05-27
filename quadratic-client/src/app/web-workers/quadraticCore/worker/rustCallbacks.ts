@@ -1,17 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import type {
-  ConnectionKind,
-  JsBordersSheet,
-  JsHtmlOutput,
-  JsOffset,
-  JsRenderFill,
-  JsSheetFill,
-  JsSnackbarSeverity,
-  SheetBounds,
-  SheetInfo,
-  TransactionName,
-} from '@/app/quadratic-core-types';
+import type { ConnectionKind, JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -26,29 +15,28 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendHashRenderCellsRender: (hashRenderCells: Uint8Array) => void;
-    sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
+    sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
+    sendAddSheetRender: (sheetInfo: Uint8Array) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
-    sendSheetInfoClient: (sheets: SheetInfo[]) => void;
+    sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
+    sendSheetsInfoRender: (sheetsInfo: Uint8Array) => void;
+    sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
+    sendSheetInfoUpdateRender: (sheetInfo: Uint8Array) => void;
     sendA1Context: (context: Uint8Array) => void;
-    sendSheetInfoRender: (sheets: SheetInfo[]) => void;
-    sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
-    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
-    sendBordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
-    sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
-    sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
-    sendAddSheetRender: (sheetInfo: SheetInfo) => void;
+    sendSheetFills: (sheetId: string, fill: Uint8Array) => void;
+    sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
+    sendBordersSheet: (sheetId: string, borders: Uint8Array) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
     requestTransactions: (sequenceNum: number) => void;
-    sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
-    sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
-    sendSheetHtml: (html: JsHtmlOutput[]) => void;
-    sendUpdateHtml: (html: JsHtmlOutput) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: Uint8Array) => void;
+    sendSheetOffsetsRender: (sheetId: string, offsets: Uint8Array) => void;
+    sendSheetHtml: (html: Uint8Array) => void;
+    sendUpdateHtml: (html: Uint8Array) => void;
     sendGenerateThumbnail: () => void;
     sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
-    sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
-    sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: Uint8Array) => void;
+    sendSheetBoundsUpdateRender: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
@@ -72,6 +60,7 @@ declare var self: WorkerGlobalScope &
     sendValidationWarnings: (warnings: Uint8Array) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     sendMultiplayerSynced: () => void;
+    sendHashRenderCellsRender: (hashRenderCells: Uint8Array) => void;
     sendHashesDirtyRender: (dirtyHashes: Uint8Array) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
@@ -100,13 +89,9 @@ export const jsImportProgress = (
   return self.sendImportProgress(filename, current, total, x, y, width, height);
 };
 
-export const jsHashesRenderCells = (render_cells: Uint8Array) => {
-  self.sendHashRenderCellsRender(render_cells);
-};
-
-export const jsAddSheet = (sheetInfoStringified: string, user: boolean) => {
-  const sheetInfo = JSON.parse(sheetInfoStringified);
-  self.sendAddSheetClient(sheetInfo, user);
+export const jsAddSheet = (sheetInfo: Uint8Array, user: boolean) => {
+  const clientCopy = new Uint8Array(sheetInfo);
+  self.sendAddSheetClient(clientCopy, user);
   self.sendAddSheetRender(sheetInfo);
 };
 
@@ -115,36 +100,37 @@ export const jsDeleteSheet = (sheetId: string, user: boolean) => {
   self.sendDeleteSheetRender(sheetId);
 };
 
-export const jsSheetInfo = (sheetInfoStringified: string) => {
-  const sheetInfo = JSON.parse(sheetInfoStringified);
-  self.sendSheetInfoClient(sheetInfo);
-  self.sendSheetInfoRender(sheetInfo);
+export const jsSheetInfo = (sheetInfo: Uint8Array) => {
+  const clientCopy = new Uint8Array(sheetInfo);
+  self.sendSheetsInfoClient(clientCopy);
+  self.sendSheetsInfoRender(sheetInfo);
 };
 
-export const jsSheetFills = (sheetId: string, fills: string) => {
-  const sheetFills = JSON.parse(fills);
-  self.sendSheetFills(sheetId, sheetFills);
-};
-
-export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
-  const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
-  self.sendSheetMetaFills(sheetId, sheetMetaFills);
-};
-
-export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
-  const sheetInfo = JSON.parse(sheetInfoStringified);
-  self.sendSheetInfoUpdateClient(sheetInfo);
+export const jsSheetInfoUpdate = (sheetInfo: Uint8Array) => {
+  const clientCopy = new Uint8Array(sheetInfo);
+  self.sendSheetInfoUpdateClient(clientCopy);
   self.sendSheetInfoUpdateRender(sheetInfo);
 };
 
-export const jsOffsetsModified = (sheetId: string, offsetsStringified: string) => {
-  const offsets = JSON.parse(offsetsStringified) as JsOffset[];
-  self.sendSheetOffsetsClient(sheetId, offsets);
+export const jsSheetFills = (sheetId: string, sheetFills: Uint8Array) => {
+  self.sendSheetFills(sheetId, sheetFills);
+};
+
+export const jsSheetMetaFills = (sheetId: string, sheetMetaFills: Uint8Array) => {
+  self.sendSheetMetaFills(sheetId, sheetMetaFills);
+};
+
+export const jsOffsetsModified = (sheetId: string, offsets: Uint8Array) => {
+  const clientCopy = new Uint8Array(offsets);
+  self.sendSheetOffsetsClient(sheetId, clientCopy);
   self.sendSheetOffsetsRender(sheetId, offsets);
 };
 
-export const jsUpdateHtml = (htmlStringified: string) => {
-  const html: JsHtmlOutput = JSON.parse(htmlStringified);
+export const jsHtmlOutput = (html: Uint8Array) => {
+  self.sendSheetHtml(html);
+};
+
+export const jsUpdateHtml = (html: Uint8Array) => {
   self.sendUpdateHtml(html);
 };
 
@@ -156,32 +142,22 @@ export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
 };
 
-export const jsHtmlOutput = (htmlStringified: string) => {
-  const html: JsHtmlOutput[] = JSON.parse(htmlStringified);
-  self.sendSheetHtml(html);
-};
-
 export const jsGenerateThumbnail = () => {
   self.sendGenerateThumbnail();
 };
 
-export const jsBordersSheet = (sheetId: string, bordersStringified: string) => {
-  if (bordersStringified) {
-    const borders = JSON.parse(bordersStringified) as JsBordersSheet;
-    self.sendBordersSheet(sheetId, borders);
-  } else {
-    self.sendBordersSheet(sheetId, undefined);
-  }
+export const jsBordersSheet = (sheetId: string, borders: Uint8Array) => {
+  self.sendBordersSheet(sheetId, borders);
 };
 
 export const jsSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
   self.sendSheetCodeCells(sheetId, renderCodeCells);
 };
 
-export const jsSheetBoundsUpdate = (bounds: string) => {
-  const sheetBounds = JSON.parse(bounds) as SheetBounds;
-  self.sendSheetBoundsUpdateClient(sheetBounds);
-  self.sendSheetBoundsUpdateRender(sheetBounds);
+export const jsSheetBoundsUpdate = (bounds: Uint8Array) => {
+  const clientCopy = new Uint8Array(bounds);
+  self.sendSheetBoundsUpdateClient(clientCopy);
+  self.sendSheetBoundsUpdateRender(bounds);
 };
 
 export const jsTransactionStart = (transaction_id: string, transaction_name: string) => {
@@ -246,6 +222,10 @@ export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows
 
 export const jsMultiplayerSynced = () => {
   self.sendMultiplayerSynced();
+};
+
+export const jsHashesRenderCells = (render_cells: Uint8Array) => {
+  self.sendHashRenderCellsRender(render_cells);
 };
 
 export const jsHashesDirty = (dirtyHashes: Uint8Array) => {

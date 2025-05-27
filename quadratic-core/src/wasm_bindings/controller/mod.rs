@@ -61,7 +61,7 @@ impl GridController {
                             })
                         })
                         .collect::<Vec<SheetInfo>>();
-                    if let Ok(sheets_info) = serde_json::to_string(&sheets_info) {
+                    if let Ok(sheets_info) = serde_json::to_vec(&sheets_info) {
                         crate::wasm_bindings::js::jsSheetInfo(sheets_info);
                     }
                     drop(sheets_info);
@@ -88,7 +88,7 @@ impl GridController {
                     });
 
                     if !html.is_empty() {
-                        if let Ok(html) = serde_json::to_string(&html) {
+                        if let Ok(html) = serde_json::to_vec(&html) {
                             crate::wasm_bindings::js::jsHtmlOutput(html);
                         }
                     }
