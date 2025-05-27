@@ -4797,10 +4797,6 @@ test('Multiple Columns Resizing', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
-  // Set cursor at A1 for consistent screenshot
-  await page.mouse.click(110, 110);
-  await page.waitForTimeout(5 * 1000);
-
   // Assert that color filled cell's width updates per expanded column 2 width
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_1.png', {
     maxDiffPixelRatio: 0.001,
@@ -4888,7 +4884,7 @@ test('Multiple Columns Resizing', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.skip('Multiple Rows Resizing', async ({ page }) => {
+test('Multiple Rows Resizing', async ({ page }) => {
   // Constants
   const fileName = 'Multiple_Rows_Resizing';
   const fileType = 'grid';
@@ -4916,13 +4912,9 @@ test.skip('Multiple Rows Resizing', async ({ page }) => {
   // Expand row 2's height by 200px
   await page.mouse.move(60, 168);
   await page.mouse.down();
-  await page.mouse.move(90, 318);
+  await page.mouse.move(60, 318);
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
-
-  // Set cursor at A1 for consistent screenshot
-  await page.mouse.click(110, 110);
-  await page.waitForTimeout(5 * 1000);
 
   // Assert that color filled cell's width height per expanded row 2 height
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_1.png', {
@@ -4930,12 +4922,12 @@ test.skip('Multiple Rows Resizing', async ({ page }) => {
   });
 
   // select row 2
-  await page.mouse.click(343, 90);
+  await page.mouse.click(60, 224);
 
   // Expand row 3's height by 100px
-  await page.mouse.move(90, 318);
+  await page.mouse.move(60, 340);
   await page.mouse.down();
-  await page.mouse.move(718, 90);
+  await page.mouse.move(60, 440);
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
@@ -4949,15 +4941,15 @@ test.skip('Multiple Rows Resizing', async ({ page }) => {
   });
 
   // select row 2-4
-  await page.mouse.click(343, 90);
+  await page.mouse.click(60, 224);
   await page.keyboard.down('Shift');
-  await page.mouse.click(767, 90);
+  await page.mouse.click(60, 454);
   await page.keyboard.up('Shift');
 
   // Shrink row 3's height by 100px
-  await page.mouse.move(718, 90);
+  await page.mouse.move(60, 440);
   await page.mouse.down();
-  await page.mouse.move(618, 90);
+  await page.mouse.move(60, 340);
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
