@@ -7,7 +7,7 @@ import {
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Label } from '@/shared/shadcn/ui/label';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/shadcn/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/shadcn/ui/sheet';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
@@ -17,12 +17,12 @@ export const QuadraticAppDebugSettings = () => {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
     Object.fromEntries(debugFlagGroups.map((group) => [group, true]))
   );
-  const debugFlags = useDebugFlags();
+  const { getFlag } = useDebugFlags();
 
   // Magic shortcut cmd+shift+option+i opens settings
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'KeyI' && event.shiftKey && event.altKey && event.metaKey) {
+      if (event.code === 'KeyI' && event.shiftKey && event.altKey && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         event.stopPropagation();
         setOpen((prev) => !prev);
@@ -45,17 +45,21 @@ export const QuadraticAppDebugSettings = () => {
       <SheetContent showOverlay={false}>
         <SheetHeader>
           <SheetTitle>Debugging flags</SheetTitle>
+          <SheetDescription>
+            This menu is always available in development. In production or PR previews, debug flags are only available
+            by adding <span className="rounded bg-muted px-1 font-mono">?debug</span> to the url.
+          </SheetDescription>
         </SheetHeader>
         <div className="h-full w-full overflow-y-auto pt-2">
           <div key="debug">
             <Setting
               keyName="debug"
               debug={debugFlagDescriptions.debug}
-              value={debugFlags.debug}
+              value={getFlag('debug')}
               onChange={(newValue) => setDebugFlag('debug', newValue)}
             />
           </div>
-          {debugFlags.debug &&
+          {getFlag('debug') &&
             debugFlagGroups.map((group) => {
               return (
                 <div key={group} className="mb-4">
@@ -72,7 +76,7 @@ export const QuadraticAppDebugSettings = () => {
                     {group}
                     {(() => {
                       const count = Object.entries(debugFlagDescriptions).filter(
-                        ([key, value]) => value.group === group && debugFlags[key]
+                        ([key, value]) => value.group === group && getFlag(key)
                       ).length;
                       return count > 0 ? (
                         <span className="text-sm font-normal text-muted-foreground">({count})</span>
@@ -88,10 +92,10 @@ export const QuadraticAppDebugSettings = () => {
                             className={key === 'debug' ? '-mx-3 mb-1 rounded bg-accent px-3 py-3' : ''}
                             keyName={key}
                             debug={value}
-                            value={debugFlags[key]}
+                            value={getFlag(key)}
                             onChange={(newValue) => setDebugFlag(key, newValue)}
                             key={key}
-                            disabled={key !== 'debug' && !debugFlags.debug}
+                            disabled={key !== 'debug' && !getFlag('debug')}
                           />
                         ))}
                     </>

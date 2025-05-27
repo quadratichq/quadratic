@@ -22,7 +22,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
-  const { debugShowAIInternalContext } = useDebugFlags();
+  const { getFlag } = useDebugFlags();
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
     setDiv(node);
@@ -97,7 +97,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!getFlag('debugShowAIInternalContext') && message.contextType !== 'userPrompt') {
           return null;
         }
 

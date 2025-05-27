@@ -45,8 +45,8 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
-  const { debugShowUILogs } = useDebugFlags();
-  if (debugShowUILogs) console.error('[<MineRoute>.<ErrorBoundary>]', error);
+  const { getFlag } = useDebugFlags();
+  if (getFlag('debugShowUILogs')) console.error('[<MineRoute>.<ErrorBoundary>]', error);
 
   return (
     <EmptyPage

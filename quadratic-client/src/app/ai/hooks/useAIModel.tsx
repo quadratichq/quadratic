@@ -10,7 +10,7 @@ const THINKING_TOGGLE_LOCAL_STORAGE_KEY = 'aiThinkingToggle';
 const MODEL_VERSION_LOCAL_STORAGE_KEY = 'aiModelVersion';
 
 export function useAIModel(): [AIModelKey, SetValue<AIModelKey>, AIModelConfig, boolean, SetValue<boolean>] {
-  const { debug } = useDebugFlags();
+  const { getFlag } = useDebugFlags();
   const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL);
   const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(THINKING_TOGGLE_LOCAL_STORAGE_KEY, false);
   const [version] = useLocalStorage<number>('aiModelVersion', 0);
@@ -31,11 +31,11 @@ export function useAIModel(): [AIModelKey, SetValue<AIModelKey>, AIModelConfig, 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
     const config = MODELS_CONFIGURATION[modelKey];
-    if (!config || (!debug && !config.enabled)) {
+    if (!config || (!getFlag('debug') && !config.enabled)) {
       window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL));
       window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
     }
-  }, [modelKey, debug]);
+  }, [modelKey, getFlag]);
 
   const config = useMemo(() => {
     return MODELS_CONFIGURATION[modelKey];
