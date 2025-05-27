@@ -7,7 +7,7 @@ import {
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Label } from '@/shared/shadcn/ui/label';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/shadcn/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/shadcn/ui/sheet';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
@@ -45,6 +45,10 @@ export const QuadraticAppDebugSettings = () => {
       <SheetContent showOverlay={false}>
         <SheetHeader>
           <SheetTitle>Debugging flags</SheetTitle>
+          <SheetDescription>
+            This menu is always available in development. In production or PR previews, debug flags are only available
+            by adding <span className="rounded bg-muted px-1 font-mono">?debug</span> to the url.
+          </SheetDescription>
         </SheetHeader>
         <div className="h-full w-full overflow-y-auto pt-2">
           <div key="debug">
@@ -88,7 +92,7 @@ export const QuadraticAppDebugSettings = () => {
                             className={key === 'debug' ? '-mx-3 mb-1 rounded bg-accent px-3 py-3' : ''}
                             keyName={key}
                             debug={value}
-                            value={getFlag('key')}
+                            value={getFlag(key)}
                             onChange={(newValue) => setDebugFlag(key, newValue)}
                             key={key}
                             disabled={key !== 'debug' && !getFlag('debug')}

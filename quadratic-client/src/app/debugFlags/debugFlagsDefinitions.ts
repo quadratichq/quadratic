@@ -17,8 +17,7 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
   debug: {
     initial: false,
     title: 'Debug Flag',
-    description:
-      'Master override for all debug flags. This is on in development. In production, debug is not available unless you add `?debug` to the url.',
+    description: 'Master override for all debug flags.',
   },
 
   debugShowFPS: {
