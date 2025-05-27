@@ -69,8 +69,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${ImageTag}"
-      InstanceType: m6a.large
-      ImageId: ami-0b8c6b923777519db # AMI for us-west-2 (Ubuntu 22.04 LTS amd64)
+      InstanceType: m7a.large
+      ImageId: ami-075686beab831bb7f # AMI for us-west-2 (Ubuntu 24.04 LTS amd64)
       IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroups:
         - !Ref SecurityGroup
