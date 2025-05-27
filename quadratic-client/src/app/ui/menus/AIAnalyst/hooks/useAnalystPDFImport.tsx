@@ -186,7 +186,7 @@ export const useAnalystSearch = () => {
           modelKey: DEFAULT_SEARCH_MODEL,
           messages,
           useStream: false,
-          toolName: AITool.Search,
+          toolName: AITool.WebSearch,
           useToolsPrompt: true,
           language: undefined,
           useQuadraticContext: false,

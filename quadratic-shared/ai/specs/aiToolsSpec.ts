@@ -17,6 +17,7 @@ export enum AITool {
   GetTextFormats = 'get_text_formats',
   ConvertToTable = 'convert_to_table',
   Search = 'search',
+  WebSearch = 'web_search',
 }
 
 export const AIToolSchema = z.enum([
@@ -35,6 +36,7 @@ export const AIToolSchema = z.enum([
   AITool.GetTextFormats,
   AITool.ConvertToTable,
   AITool.Search,
+  AITool.WebSearch,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -175,6 +177,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.Search]: z.object({
     sheet_name: z.string(),
+    query: z.string(),
+  }),
+  [AITool.WebSearch]: z.object({
     query: z.string(),
   }),
 } as const;
@@ -839,6 +844,29 @@ It requires the query to search for and the data table name to store results.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.Search],
+    prompt: `
+This tool searches the web for information based on the query.\n
+It requires the query to search for and the data table name to store results.\n
+`,
+  },
+  [AITool.WebSearch]: {
+    sources: ['Search'],
+    description: `
+This tool searches the web for information based on the query.\n
+It requires the query to search for and the data table name to store results.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.WebSearch],
     prompt: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for and the data table name to store results.\n
