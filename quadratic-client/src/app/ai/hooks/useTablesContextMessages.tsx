@@ -50,8 +50,8 @@ If there is any data present in the sheet where the table or chart is suppose to
 ${
   dataTables.length > 0
     ? `
-I am sharing data tables in the currently open file for reference as an array of objects described below:\n
-Each data table has following properties:\n
+I am sharing data tables in the currently open file for reference as an array of objects described below:
+Each data table has following properties:
 - sheet_name: This is the name of the sheet.\n
 - data_table_name: This is the name of the data table.\n
 - all_columns: This is an array of all columns in the data table.\n
@@ -87,22 +87,22 @@ Data tables are editable and can values can be modified by using set_cell_values
 ${
   codeTables.length > 0
     ? `
-I am sharing code tables in the currently open file for reference as an array of objects described below:\n
-Each code table has following properties:\n
-- sheet_name: This is the name of the sheet.\n
-- code_table_name: This is the name of the code table.\n
-- all_columns: This is an array of all columns in the code table.\n
-- visible_columns: This is an array of visible columns in the code table.\n
-- first_row_visible_values: This is an array of visible values in the first row of the data table.\n
-- last_row_visible_values: This is an array of visible values in the last row of the data table.\n
-- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
-- show_name: This is a boolean value representing if the table name is visible.\n
-- show_columns: This is a boolean value representing if the column headers are visible.\n
-- language: This is the language of the code code which outputs the table.\n
-- code_string: This is the code in the code cell which outputs the table.\n
-- std_err: This is the standard error of the after running the code, this is an optional property only if the code has an error.\n
-- error: This is a boolean value representing if the code table has an error.\n
-- spill: This is a boolean value representing if the code table has a spill.\n\n
+I am sharing code tables in the currently open file for reference as an array of objects described below:
+Each code table has following properties:
+- sheet_name: This is the name of the sheet.
+- code_table_name: This is the name of the code table.
+- all_columns: This is an array of all columns in the code table.
+- visible_columns: This is an array of visible columns in the code table.
+- first_row_visible_values: This is an array of visible values in the first row of the data table.
+- last_row_visible_values: This is an array of visible values in the last row of the data table.
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.
+- show_name: This is a boolean value representing if the table name is visible.
+- show_columns: This is a boolean value representing if the column headers are visible.
+- language: This is the language of the code code which outputs the table.
+- code_string: This is the code in the code cell which outputs the table.
+- std_err: This is the standard error of the after running the code, this is an optional property only if the code has an error.
+- error: This is a boolean value representing if the code table has an error.
+- spill: This is a boolean value representing if the code table has a spill.
 
 first_row_visible_values is an array of objects with following properties:\n
 - value: This is the value of the cell.\n
