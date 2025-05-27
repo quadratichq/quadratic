@@ -159,7 +159,7 @@ export class Sheet {
   }
 
   // @returns screen rectangle from a selection rectangle
-  getScreenRectangleFromRect(rect: Rectangle): Rectangle {
+  getScreenRectangleFromRectangle(rect: Rectangle): Rectangle {
     return this.getScreenRectangle(rect.x, rect.y, rect.width, rect.height);
   }
 

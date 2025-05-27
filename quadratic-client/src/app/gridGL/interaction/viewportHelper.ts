@@ -128,6 +128,20 @@ function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectang
   return false;
 }
 
+export function ensureSelectionVisible() {
+  const selection = sheets.sheet.cursor.getLargestRectangle();
+  const selectionBounds = sheets.sheet.getScreenRectangleFromRectangle(selection);
+  const bounds = pixiApp.viewport.getVisibleBounds();
+
+  // if any part of the selection is visible
+  if (intersects.rectangleRectangle(bounds, selectionBounds)) {
+    return true;
+  }
+  cellVisible(sheets.sheet.cursor.position);
+  pixiApp.viewportChanged();
+  return false;
+}
+
 // Makes a cell visible in the viewport
 export function cellVisible(
   coordinate: JsCoordinate = {
@@ -196,8 +210,12 @@ export function cellVisible(
 
 // Ensures the cursor is always visible
 export function ensureVisible(visible: JsCoordinate | undefined) {
-  if (!cellVisible(visible)) {
-    pixiApp.viewportChanged();
+  if (visible) {
+    if (!cellVisible(visible)) {
+      pixiApp.viewportChanged();
+    }
+  } else {
+    ensureSelectionVisible();
   }
 }
 
