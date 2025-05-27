@@ -6,14 +6,15 @@ const CHECK_CHANGE_INTERVAL = 1000;
 const KEY = 'debugFlags';
 
 class DebugFlags {
-  flags?: DebugFlagOptions;
   private intervalId?: number;
+  private debugAvailable: boolean;
+  flags?: DebugFlagOptions;
 
   constructor() {
     // set this in .env (if set to false then all debug flags are turned off)
     const url = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
-    const debugAvailable = url.has('debug') || import.meta.env.VITE_DEBUG === '1' ? true : false;
-    if (!debugAvailable) {
+    this.debugAvailable = url.has('debug') || import.meta.env.VITE_DEBUG === '1' ? true : false;
+    if (!this.debugAvailable) {
       this.flags = debugFlagDefaults;
       return;
     }
@@ -49,19 +50,19 @@ class DebugFlags {
 
   /// Returns the value of the debug flag for the given key. Note: if the flags
   /// are not initialized, it returns false.
-  getFlag(key: DebugFlag): boolean {
-    if (!this.flags) return false;
-    return this.flags.debug && this.flags[key];
-  }
+  getFlag = (key: DebugFlag): boolean => {
+    if (!this.flags || !this.debugAvailable || !this.flags.debug) return false;
+    return this.flags[key];
+  };
 
   /// Sets the value of the debug flag for the given key. Note: if the flags
   /// are not initialized, it does nothing.
-  setFlag(key: DebugFlag, value: boolean) {
+  setFlag = (key: DebugFlag, value: boolean) => {
     if (!this.flags) return;
     this.flags[key] = value;
     localforage.setItem(KEY, JSON.stringify(this.flags));
     events.emit('debugFlags');
-  }
+  };
 }
 
 export const debugFlagWait = async (key: DebugFlag) => {
