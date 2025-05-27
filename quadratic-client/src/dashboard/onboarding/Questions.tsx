@@ -483,7 +483,7 @@ function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }
           </Button>
         )}
         <Button type="submit" className={cn(btnClassName)} size="lg" disabled={_disabled || isSubmitting}>
-          {countCurrent === countTotal ? 'Submit' : 'Next'}
+          {countCurrent === countTotal ? 'Done' : 'Next'}
         </Button>
       </div>
     </div>
@@ -508,15 +508,14 @@ function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
 }
 
 function Logo() {
-  const { currentIndex } = useOnboardingLoaderData();
   const className = 'h-5 w-5 bg-border transition-colors';
   return (
     <div className="inline-grid grid-cols-2 justify-center gap-0.5">
-      <div className={cn(className, 'justify-self-end', currentIndex >= 0 && 'bg-[#CB8999]')} />
-      <div className={cn(className, currentIndex > 0 && 'bg-[#8ECB89]')} />
-      <div className={cn(className, 'justify-self-end', currentIndex > 1 && 'bg-[#5D576B]')} />
-      <div className={cn(className, currentIndex > 2 && 'bg-[#6CD4FF]')} />
-      <div className={cn(className, 'col-start-2', currentIndex > 3 && 'bg-[#FFC800]')} />
+      <div className={cn(className, 'justify-self-end', 'bg-[#CB8999]')} />
+      <div className={cn(className, 'bg-[#8ECB89]')} />
+      <div className={cn(className, 'justify-self-end', 'bg-[#5D576B]')} />
+      <div className={cn(className, 'bg-[#6CD4FF]')} />
+      <div className={cn(className, 'col-start-2', 'bg-[#FFC800]')} />
     </div>
   );
 }
