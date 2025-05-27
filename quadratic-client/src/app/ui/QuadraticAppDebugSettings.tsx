@@ -17,7 +17,7 @@ export const QuadraticAppDebugSettings = () => {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
     Object.fromEntries(debugFlagGroups.map((group) => [group, true]))
   );
-  const { getFlag } = useDebugFlags();
+  const { debugAvailable, getFlag } = useDebugFlags();
 
   // Magic shortcut cmd+shift+option+i opens settings
   useEffect(() => {
@@ -39,6 +39,10 @@ export const QuadraticAppDebugSettings = () => {
       focusGrid();
     }
   }, [open]);
+
+  if (!debugAvailable) {
+    return null;
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

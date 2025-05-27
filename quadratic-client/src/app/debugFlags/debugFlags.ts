@@ -7,7 +7,7 @@ const KEY = 'debugFlags';
 
 class DebugFlags {
   private intervalId?: number;
-  private debugAvailable: boolean;
+  debugAvailable: boolean;
   flags?: DebugFlagOptions;
 
   constructor() {

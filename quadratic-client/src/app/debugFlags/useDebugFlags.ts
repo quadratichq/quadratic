@@ -5,7 +5,13 @@ import type { DebugFlag } from '@/app/debugFlags/debugFlagsDefinitions';
 import { events } from '@/app/events/events';
 import { useEffect, useState } from 'react';
 
-export const useDebugFlags = (): { getFlag: (key: DebugFlag) => boolean; _trigger: number } => {
+interface UseDebugFlags {
+  getFlag: (key: DebugFlag) => boolean;
+  _trigger: number;
+  debugAvailable: boolean;
+}
+
+export const useDebugFlags = (): UseDebugFlags => {
   const [_trigger, setTrigger] = useState(0);
   useEffect(() => {
     const updateFlags = () => {
@@ -20,5 +26,6 @@ export const useDebugFlags = (): { getFlag: (key: DebugFlag) => boolean; _trigge
   return {
     _trigger,
     getFlag: debugFlags.getFlag,
+    debugAvailable: debugFlags.debugAvailable,
   };
 };
