@@ -408,18 +408,22 @@ You should use the set_code_cell_value function to set this code cell value. Use
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
-The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
+
+Python and JavaScript placement: The required location code_cell_position for this code cell in Python or JavaScript is one which satisfies the following conditions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
-- If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
-- If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n
-- Always leave a blank row / column between the code cell and the data it references. Example if placing to the right: if nearest content is in D1 and you're inserting to the right, you would use F1; example placement underneath: if nearest content is in C17 and you're inserting below, you would use C19.\n
+- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table.\n
+- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table.\n
+- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space.\n
 - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
 - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
 - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
-- Do not use conditional returns in python code cells.\n
-- Do not attempt to return data using conditionals in code cells. Even if the conditional is the last line, it will not be returned if buried in a conditional.
+
+Formulas placement: The required location code_cell_position for this code cell in Formulas is one which satisfies the following conditions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
+- Unlike code, you do not need to consider leaving extra empty space to nearest content. Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath the data being referenced. 
 - Don't prefix formulas with \`=\` in code cells.\n
 `,
   },
