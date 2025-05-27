@@ -78,7 +78,7 @@ impl AstNode {
     }
 
     /// Helper function used by `eval()` so that we can use `?` for error
-    /// propogation.
+    /// propagation.
     fn eval_to_result<'expr, 'ctx: 'expr>(&'expr self, ctx: &'expr mut Ctx<'ctx>) -> CodeResult {
         let value: Value = match &self.inner {
             AstNodeContents::Empty => Value::Single(CellValue::Blank),
