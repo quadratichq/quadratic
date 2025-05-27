@@ -293,7 +293,6 @@ export class HtmlCell {
   }
 
   private recalculateBounds() {
-    console.log('recalculating bounds', this.htmlCell.w, this.htmlCell.h);
     this.offset = this.sheet.getScreenRectangle(
       this.x,
       this.adjustedY,
