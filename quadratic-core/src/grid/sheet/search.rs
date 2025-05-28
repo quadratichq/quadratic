@@ -87,7 +87,7 @@ impl Sheet {
         search_code: bool,
     ) -> Vec<SheetPos> {
         self.columns
-            .iter()
+            .expensive_iter()
             .flat_map(|(x, column)| {
                 column.values.iter().flat_map(|(y, cell_value)| {
                     if self.compare_cell_value(

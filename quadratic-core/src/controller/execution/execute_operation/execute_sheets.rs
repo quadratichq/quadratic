@@ -26,8 +26,8 @@ impl GridController {
         let sheet = self.try_sheet_result(sheet_id)?;
         let data_tables_pos = sheet
             .data_tables
-            .keys()
-            .map(|p| p.to_owned())
+            .expensive_iter()
+            .map(|(p, _)| p.to_owned())
             .collect::<Vec<_>>();
         let mut table_names_to_update_in_cell_ref = vec![];
 
