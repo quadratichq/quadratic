@@ -112,5 +112,4 @@ But if you are adding a critical env variables that the app absolutely depends o
 
 ### Production
 
-1. Add the env variable to AWS...
-2. ???
+1. Ask David K.
