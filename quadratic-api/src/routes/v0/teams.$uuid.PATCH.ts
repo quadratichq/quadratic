@@ -10,7 +10,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { updateCustomer } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { validateClientDataKv } from '../../utils/teams';
+import { parseAndValidateClientDataKv } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -43,7 +43,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Validate existing data in the db
-  const validatedExistingClientDataKv = validateClientDataKv(existingClientDataKv);
+  const validatedExistingClientDataKv = parseAndValidateClientDataKv(existingClientDataKv);
 
   // Update the team with supplied data
   const newTeam = await dbClient.team.update({
@@ -72,7 +72,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Return the new data
-  const newClientDataKv = validateClientDataKv(newTeam.clientDataKv);
+  const newClientDataKv = parseAndValidateClientDataKv(newTeam.clientDataKv);
 
   return res.status(200).json({
     name: newTeam.name,

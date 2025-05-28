@@ -94,7 +94,7 @@ export function decryptSshKeys(team: Team): DecryptedTeam {
  * Ensures that the data going in & coming out of this column is always a
  * JSON object
  */
-export function validateClientDataKv(clientDataKv: unknown) {
+export function parseAndValidateClientDataKv(clientDataKv: unknown) {
   const parseResult = TeamClientDataKvSchema.safeParse(clientDataKv);
   if (!parseResult.success) {
     throw new ApiError(500, '`clientDataKv` must be a valid JSON object');
