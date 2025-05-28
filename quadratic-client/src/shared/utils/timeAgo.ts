@@ -57,7 +57,7 @@ export interface TimeAgoAndNextTimeout {
 }
 
 // this will have to be better handle localization
-export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNextTimeout => {
+export const timeAgoAndNextTimeout = (dateString: string | number, noNow = false): TimeAgoAndNextTimeout => {
   const now = Date.now();
   const date = new Date(dateString);
 
@@ -83,7 +83,7 @@ export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNe
     if (current < division.amount) {
       // if it's less than a minute, show "< 1m ago"
       if (division.name === 'seconds') {
-        if (duration < SHOW_NOW_AT) {
+        if (!noNow && duration < SHOW_NOW_AT) {
           return {
             timeAgo: 'Now',
             nextInterval: SHOW_NOW_AT - duration,
