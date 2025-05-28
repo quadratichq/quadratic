@@ -14,12 +14,12 @@ interface Division {
 
 const DIVISIONS: Division[] = [
   { amount: 60, name: 'seconds', ms: 1000 },
-  { amount: 60, name: 'minutes', ms: 60000 },
-  { amount: 24, name: 'hours', ms: 86400000 },
-  { amount: 7, name: 'days', ms: 604800000 },
-  { amount: 4.34524, name: 'weeks', ms: 2592000000 },
-  { amount: 12, name: 'months', ms: 31536000000 },
-  { amount: Number.POSITIVE_INFINITY, name: 'years', ms: 31536000000 },
+  { amount: 60, name: 'minutes', ms: 60 * 1000 },
+  { amount: 24, name: 'hours', ms: 60 * 60 * 1000 },
+  { amount: 7, name: 'days', ms: 24 * 60 * 60 * 1000 },
+  { amount: 4.34524, name: 'weeks', ms: 7 * 24 * 60 * 60 * 1000 },
+  { amount: 12, name: 'months', ms: 30 * 24 * 60 * 60 * 1000 },
+  { amount: Number.POSITIVE_INFINITY, name: 'years', ms: 12 * 30 * 24 * 60 * 60 * 1000 },
 ];
 
 export function timeAgo(dateString: string | number, force = false) {
@@ -56,14 +56,14 @@ export interface TimeAgoAndNextTimeout {
 
 // this will have to be better handle localization
 export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNextTimeout => {
+  const now = Date.now();
   const date = new Date(dateString);
-  const now = new Date();
 
-  // Calculate the duration in seconds
-  let duration = (date.getTime() - now.getTime()) / 1000;
+  // Calculate the duration in milliseconds
+  let duration = now - date.getTime();
 
   // If the difference is more than 24 hours, return the formatted date
-  if (Math.abs(duration) > 86400) {
+  if (duration > 86400000) {
     return {
       timeAgo: date.toLocaleDateString(undefined, {
         year: 'numeric',
@@ -75,22 +75,24 @@ export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNe
   }
 
   // Otherwise, return the relative time
-  for (let i = 0; i < DIVISIONS.length; i++) {
-    const division = DIVISIONS[i];
-    if (Math.abs(duration) < division.amount) {
+  for (const division of DIVISIONS) {
+    const current = duration / division.ms;
+
+    if (current < division.amount) {
       // if it's less than a minute, show "< 1m ago"
       if (division.name === 'seconds') {
+        const gap = division.amount * division.ms - duration + 1; // +1 to ensure we don't show the same time again
         return {
           timeAgo: `< ${formatter.format(-1, 'minute')}`,
-          nextInterval: 60 * 1000 - (now.getTime() - date.getTime()),
+          nextInterval: gap,
         };
       }
+
       return {
-        timeAgo: formatter.format(Math.round(duration), division.name),
-        nextInterval: division.ms - (now.getTime() - date.getTime()),
+        timeAgo: formatter.format(-Math.round(current), division.name),
+        nextInterval: division.ms + 1, // +1 to ensure we don't show the same time again
       };
     }
-    duration /= division.amount;
   }
 
   // Fallback case (should never reach here due to POSITIVE_INFINITY in DIVISIONS)
