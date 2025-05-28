@@ -4,7 +4,7 @@ use super::v1_7;
 use super::v1_7_1;
 use super::v1_8;
 use super::v1_9;
-use super::v2_0;
+use super::v1_10;
 use crate::grid::Sheet;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum SheetSchema {
-    V2_0(v2_0::SheetSchema),
+    V1_10(v1_10::SheetSchema),
     V1_9(v1_9::SheetSchema),
     V1_8(v1_8::SheetSchema),
     V1_7_1(v1_7_1::SheetSchema),
@@ -25,7 +25,7 @@ impl SheetSchema {
     /// Imports a Sheet from the schema.
     pub fn into_latest(self) -> Result<Sheet> {
         match self {
-            SheetSchema::V2_0(sheet) => import_sheet(sheet),
+            SheetSchema::V1_10(sheet) => import_sheet(sheet),
             SheetSchema::V1_9(sheet) => import_sheet(v1_9::upgrade_sheet(sheet)),
             SheetSchema::V1_8(sheet) => {
                 import_sheet(v1_9::upgrade_sheet(v1_8::upgrade_sheet(sheet)))
@@ -46,7 +46,7 @@ impl SheetSchema {
 /// Exports a Sheet to the latest schema version.
 pub fn export_sheet(sheet: Sheet) -> SheetSchema {
     let schema = super::serialize::sheets::export_sheet(sheet);
-    SheetSchema::V2_0(schema)
+    SheetSchema::V1_10(schema)
 }
 
 #[cfg(test)]
