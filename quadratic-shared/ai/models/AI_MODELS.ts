@@ -2,7 +2,7 @@ import type { AIModelConfig, AIModelKey, AIRates } from 'quadratic-shared/typesA
 
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
-export const DEFAULT_MODEL: AIModelKey = 'quadratic:quadratic-auto';
+export const DEFAULT_MODEL: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
@@ -39,9 +39,9 @@ const claude_opus_4_20250514_rate: AIRates = {
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
 } = {
-  // uses `DEFAULT_MODEL_ROUTER_MODEL` to find the best model for this prompt,
-  // settings and price correspond to the current `DEFAULT_MODEL_ROUTER_MODEL`
-  'quadratic:quadratic-auto': {
+  // uses 'DEFAULT_MODEL_ROUTER_MODEL' to find the best model for this prompt,
+  // settings and price correspond to the current 'DEFAULT_MODEL_ROUTER_MODEL'
+  'quadratic:quadratic-auto:thinking-toggle-off': {
     model: 'quadratic-auto',
     displayName: 'auto',
     temperature: 0,
@@ -51,14 +51,29 @@ export const MODELS_CONFIGURATION: {
     enabled: true,
     provider: 'quadratic',
     promptCaching: false,
+    thinkingToggle: false,
     rate_per_million_input_tokens: 0.15,
     rate_per_million_output_tokens: 1,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
+  'quadratic:quadratic-auto:thinking-toggle-on': {
+    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    displayName: 'auto',
+    temperature: 1,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'bedrock-anthropic',
+    promptCaching: true,
+    thinking: true,
+    thinkingToggle: true,
+    ...claude_sonnet_3_7_20250514_rate,
+  },
   'vertexai-anthropic:claude-opus-4:thinking-toggle-off': {
     model: 'claude-opus-4@20250514',
-    displayName: `claude opus 4`,
+    displayName: 'claude opus 4',
     temperature: 0,
     max_tokens: 32000,
     canStream: true,
@@ -71,7 +86,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-opus-4:thinking-toggle-on': {
     model: 'claude-opus-4@20250514',
-    displayName: `claude opus 4`,
+    displayName: 'claude opus 4',
     temperature: 1,
     max_tokens: 32000,
     canStream: true,
@@ -85,7 +100,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4@20250514',
-    displayName: `claude sonnet 4`,
+    displayName: 'claude sonnet 4',
     temperature: 0,
     max_tokens: 64000,
     canStream: true,
@@ -98,7 +113,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'claude-sonnet-4@20250514',
-    displayName: `claude sonnet 4`,
+    displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
@@ -112,7 +127,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude:thinking-toggle-off': {
     model: 'claude-3-5-sonnet-v2@20241022',
-    displayName: `claude`,
+    displayName: 'claude',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -125,7 +140,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude:thinking-toggle-on': {
     model: 'claude-3-7-sonnet@20250219',
-    displayName: `claude`,
+    displayName: 'claude',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
@@ -139,7 +154,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-3-7-sonnet@20250219': {
     model: 'claude-3-7-sonnet@20250219',
-    displayName: `claude 3.7 sonnet`,
+    displayName: 'claude 3.7 sonnet',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -151,7 +166,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-3-7-sonnet@20250219:thinking': {
     model: 'claude-3-7-sonnet@20250219',
-    displayName: `claude 3.7 sonnet thinking`,
+    displayName: 'claude 3.7 sonnet thinking',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
@@ -164,7 +179,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-3-5-sonnet-v2@20241022': {
     model: 'claude-3-5-sonnet-v2@20241022',
-    displayName: `claude 3.5 sonnet`,
+    displayName: 'claude 3.5 sonnet',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -206,7 +221,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:claude-opus-4:thinking-toggle-off': {
     model: 'us.anthropic.claude-opus-4-20250514-v1:0',
-    displayName: `claude opus 4`,
+    displayName: 'claude opus 4',
     temperature: 0,
     max_tokens: 32000,
     canStream: true,
@@ -219,7 +234,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:claude-opus-4:thinking-toggle-on': {
     model: 'us.anthropic.claude-opus-4-20250514-v1:0',
-    displayName: `claude opus 4`,
+    displayName: 'claude opus 4',
     temperature: 1,
     max_tokens: 32000,
     canStream: true,
@@ -233,7 +248,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    displayName: `claude sonnet 4`,
+    displayName: 'claude sonnet 4',
     temperature: 0,
     max_tokens: 32000,
     canStream: true,
@@ -246,7 +261,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    displayName: `claude sonnet 4`,
+    displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 32000,
     canStream: true,
@@ -260,7 +275,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:claude:thinking-toggle-off': {
     model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-    displayName: `claude`,
+    displayName: 'claude',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -273,7 +288,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:claude:thinking-toggle-on': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: `claude`,
+    displayName: 'claude',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
@@ -287,7 +302,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: `claude 3.7 sonnet`,
+    displayName: 'claude 3.7 sonnet',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -299,7 +314,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: `claude 3.7 sonnet thinking`,
+    displayName: 'claude 3.7 sonnet thinking',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
@@ -312,7 +327,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
     model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-    displayName: `claude 3.5 sonnet`,
+    displayName: 'claude 3.5 sonnet',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -324,7 +339,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0': {
     model: 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-    displayName: `claude 3.5 haiku`,
+    displayName: 'claude 3.5 haiku',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -354,7 +369,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-opus-4:thinking-toggle-off': {
     model: 'claude-opus-4-20250514',
-    displayName: `claude opus 4`,
+    displayName: 'claude opus 4',
     temperature: 0,
     max_tokens: 32000,
     canStream: true,
@@ -367,7 +382,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-opus-4:thinking-toggle-on': {
     model: 'claude-opus-4-20250514',
-    displayName: `claude opus 4`,
+    displayName: 'claude opus 4',
     temperature: 1,
     max_tokens: 32000,
     canStream: true,
@@ -381,7 +396,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4-20250514',
-    displayName: `claude sonnet 4`,
+    displayName: 'claude sonnet 4',
     temperature: 0,
     max_tokens: 64000,
     canStream: true,
@@ -394,7 +409,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'claude-sonnet-4-20250514',
-    displayName: `claude sonnet 4`,
+    displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
@@ -408,7 +423,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude:thinking-toggle-off': {
     model: 'claude-3-5-sonnet-20241022',
-    displayName: `claude`,
+    displayName: 'claude',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -421,7 +436,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude:thinking-toggle-on': {
     model: 'claude-3-7-sonnet-20250219',
-    displayName: `claude`,
+    displayName: 'claude',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
@@ -552,7 +567,7 @@ export const MODELS_CONFIGURATION: {
   },
   'xai:grok-3-beta': {
     model: 'grok-3-beta',
-    displayName: `grok 3 beta`,
+    displayName: 'grok 3 beta',
     temperature: 0,
     max_tokens: 131072,
     canStream: true,

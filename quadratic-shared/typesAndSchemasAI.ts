@@ -54,7 +54,10 @@ const AIModelSchema = z.union([
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
-const QuadraticModelKeySchema = z.enum(['quadratic:quadratic-auto']);
+const QuadraticModelKeySchema = z.enum([
+  'quadratic:quadratic-auto:thinking-toggle-off',
+  'quadratic:quadratic-auto:thinking-toggle-on',
+]);
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
