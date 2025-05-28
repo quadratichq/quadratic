@@ -1,10 +1,6 @@
 import { requireAuth } from '@/auth/auth';
-import {
-  allQuestions,
-  OnboardingResponseV1Schema,
-  Questions,
-  type OnboardingResponseV1,
-} from '@/dashboard/onboarding/Questions';
+import { getPrompt } from '@/dashboard/onboarding/getPrompt';
+import { OnboardingResponseV1Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import * as Sentry from '@sentry/react';
@@ -32,22 +28,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const currentUse = searchParams.get('use');
   const uniqueKeys = new Set(Array.from(searchParams.keys()).filter((key) => !key.endsWith('-other')));
-  const currentQuestionStack = currentUse
-    ? allQuestions.filter((q) => (q.appliesToUse ? q.appliesToUse === currentUse : true))
-    : [];
+  const currentQuestionStackIds = currentUse ? questionStackIdsByUse[currentUse] : [];
   const currentIndex = uniqueKeys.size;
   const currentId = currentUse
-    ? currentQuestionStack[currentIndex]
-      ? currentQuestionStack[currentIndex].id
-      : currentQuestionStack[currentIndex - 1].id
+    ? currentQuestionStackIds[currentIndex]
+      ? currentQuestionStackIds[currentIndex]
+      : currentQuestionStackIds[currentIndex - 1]
     : 'use';
+  const currentQuestionNumber = currentQuestionStackIds.indexOf(currentId);
+  const currentQuestionsTotal = currentQuestionStackIds.length - 1;
 
-  return {
+  const out = {
     currentId,
     currentIndex: currentIndex,
-    currentQuestionStack,
-    isLastQuestion: currentId === allQuestions[allQuestions.length - 1].id,
+    currentQuestionStackIds,
+    currentQuestionNumber,
+    currentQuestionsTotal,
+    isLastQuestion: currentQuestionStackIds.indexOf(currentId) === currentQuestionStackIds.length - 1,
   };
+  return out;
 };
 
 export const useOnboardingLoaderData = () => {
@@ -158,38 +157,3 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     : '/files/create?private=false';
   return null;
 };
-
-function getPrompt(data: OnboardingResponseV1) {
-  let prompt = '';
-  if (data.use === 'work' && data['work-role'] && data['work-role'] !== 'other') {
-    const optionValue = data['work-role'];
-    const label = allQuestions.find((q) => q.id === 'work-role')?.options.find((o) => o.value === optionValue)?.label;
-    if (label)
-      prompt = `I work in ${label}; create me a sample dataset for that field. Once finished with the dataset, create a chart that helps explain the data.`;
-  } else if (data.use === 'personal' && data['personal-uses[]'] && data['personal-uses[]'].length > 0) {
-    const optionValue = data['personal-uses[]'][0];
-    const label = allQuestions
-      .find((q) => q.id === 'personal-uses[]')
-      ?.options.find((o) => o.value === optionValue)?.label;
-    if (label)
-      prompt = `One of the things I'm planning on using Quadratic for is ${label}; create me a sample dataset for that field. Once finished with the dataset, create a chart that helps explain the data.`;
-  } else if (
-    data.use === 'education' &&
-    data['education-identity'] &&
-    data['education-identity'] !== 'other' &&
-    data['education-subjects[]'] &&
-    data['education-subjects[]'].length > 0
-  ) {
-    const optionValueIdentity = data['education-identity'];
-    const labelIdentity = allQuestions
-      .find((q) => q.id === 'education-identity')
-      ?.options.find((o) => o.value === optionValueIdentity)?.label;
-    const optionValueSubject = data['education-subjects[]'][0];
-    const labelSubject = allQuestions
-      .find((q) => q.id === 'education-subjects')
-      ?.options.find((o) => o.value === optionValueSubject)?.label;
-    if (labelIdentity && labelSubject)
-      prompt = `I’m a ${labelIdentity} and one of the areas I’m working in is ${labelSubject}; create me a sample dataset for my field. Once finished with the dataset, create a chart that helps explain the data.`;
-  }
-  return prompt;
-}

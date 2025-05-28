@@ -51,27 +51,30 @@ export const OnboardingResponseV1Schema = z.object({
 });
 
 export type OnboardingResponseV1 = z.infer<typeof OnboardingResponseV1Schema>;
-type QuestionFormProps = {
-  id: string;
-  appliesToUse?: string;
+type QuestionProps = {
   title: string;
   subtitle?: string;
-  options: Array<{ value: string; label: string }>;
+  optionsByValue: Record<string, string>;
 };
 
-// Note: these are in a specific order for a reason. They represent the order
-// of the questions in the onboarding flow. Any with `use` will be filtered out
-// based on the value of `use` in the search params.
-export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFormProps) => React.ReactNode }> = [
-  {
-    id: 'use',
+export const questionStackIdsByUse: Record<string, string[]> = {
+  work: ['use', 'work-role', 'languages[]', 'goals[]'],
+  personal: ['use', 'personal-uses[]', 'languages[]', 'goals[]'],
+  education: ['use', 'education-identity', 'education-subjects[]', 'languages[]', 'goals[]'],
+};
+
+export const questionsById: Record<
+  string,
+  QuestionProps & { Form: (props: QuestionProps & { id: string }) => React.ReactNode }
+> = {
+  use: {
     title: 'How will you use Quadratic?',
     subtitle: 'Your answers help personalize your experience.',
-    options: [
-      { value: 'work', label: 'Work' },
-      { value: 'personal', label: 'Personal' },
-      { value: 'education', label: 'Education' },
-    ],
+    optionsByValue: {
+      work: 'Work',
+      personal: 'Personal',
+      education: 'Education',
+    },
     Form: (props) => {
       const iconsByValue: Record<string, React.ReactNode> = {
         work: <WorkIcon size="lg" className="text-primary" />,
@@ -82,12 +85,12 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="grid grid-cols-3 gap-2">
-            {props.options.map((option) => (
-              <Link key={option.value} to={`./?${props.id}=${option.value}`}>
+            {Object.entries(props.optionsByValue).map(([value, label]) => (
+              <Link key={value} to={`./?${props.id}=${value}`}>
                 <ControlLinkStacked>
-                  {iconsByValue[option.value]}
+                  {iconsByValue[value]}
                   <span className="relative flex items-center">
-                    {option.label}
+                    {label}
                     <ArrowRightIcon className="absolute left-full top-1/2 -translate-y-1/2 opacity-20 group-hover:text-primary group-hover:opacity-100" />
                   </span>
                 </ControlLinkStacked>
@@ -101,22 +104,20 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
   },
 
   // Work
-  {
-    id: 'work-role',
-    appliesToUse: 'work',
+  'work-role': {
     title: 'What best describes your role?',
-    options: [
-      { value: 'data-analytics', label: 'Data / Analytics' },
-      { value: 'product', label: 'Product' },
-      { value: 'finance', label: 'Finance' },
-      { value: 'c-suite-management', label: 'C-Suite / Management' },
-      { value: 'marketing', label: 'Marketing' },
-      { value: 'sales', label: 'Sales' },
-      { value: 'engineering', label: 'Engineering' },
-      { value: 'software-development', label: 'Software Development' },
-      { value: 'ml-ai', label: 'Machine Learning / AI' },
-      { value: 'other', label: 'Other' },
-    ],
+    optionsByValue: {
+      'data-analytics': 'Data / Analytics',
+      product: 'Product',
+      finance: 'Finance',
+      'c-suite-management': 'C-Suite / Management',
+      marketing: 'Marketing',
+      sales: 'Sales',
+      'software-development': 'Software Development',
+      engineering: 'Engineering',
+      'ml-ai': 'Machine Learning / AI',
+      other: 'Other',
+    },
     Form: (props) => {
       const [searchParams] = useSearchParams();
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
@@ -124,24 +125,18 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
       return (
         <Question title={props.title}>
           <QuestionForm className="grid grid-cols-2 gap-2">
-            {props.options.map((option) =>
-              option.value === 'other' ? (
-                <ControlCheckboxInputOther
-                  key={option.value}
-                  id={props.id}
-                  value={option.value}
-                  checked={other}
-                  onChange={setOther}
-                >
-                  {option.label}
+            {Object.entries(props.optionsByValue).map(([value, label]) =>
+              value === 'other' ? (
+                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
+                  {label}
                 </ControlCheckboxInputOther>
               ) : (
-                <Link to={`./?${searchParams.toString()}&${props.id}=${option.value}`} key={option.value}>
-                  <ControlLinkInline>{option.label}</ControlLinkInline>
+                <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                  <ControlLinkInline>{label}</ControlLinkInline>
                 </Link>
               )
             )}
-            <QuestionFormFooter id={props.id} disabled={!other} />
+            <QuestionFormFooter disabled={!other} />
           </QuestionForm>
         </Question>
       );
@@ -149,19 +144,17 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
   },
 
   // Personal
-  {
-    id: 'personal-uses[]',
-    appliesToUse: 'personal',
+  'personal-uses[]': {
     title: 'What are you planning to use Quadratic for?',
     subtitle: 'Select all that apply',
-    options: [
-      { value: 'personal-finance', label: 'Personal finance' },
-      { value: 'trading-investing', label: 'Trading / Investing' },
-      { value: 'side-projects-hobbies', label: 'Side projects / Hobbies' },
-      { value: 'learn-code', label: 'Learning to code' },
-      { value: 'ai', label: 'Getting better at AI' },
-      { value: 'other', label: 'Other' },
-    ],
+    optionsByValue: {
+      'personal-finance': 'Personal finance',
+      'trading-investing': 'Trading / Investing',
+      'side-projects-hobbies': 'Side projects / Hobbies',
+      'learn-code': 'Learning to code',
+      ai: 'Getting better at AI',
+      other: 'Other',
+    },
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
@@ -177,24 +170,18 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
               setIsValid(values.length > 0);
             }}
           >
-            {props.options.map((option) =>
-              option.value === 'other' ? (
-                <ControlCheckboxInputOther
-                  key={option.value}
-                  id={props.id}
-                  value={option.value}
-                  checked={other}
-                  onChange={setOther}
-                >
-                  {option.label}
+            {Object.entries(props.optionsByValue).map(([value, label]) =>
+              value === 'other' ? (
+                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
+                  {label}
                 </ControlCheckboxInputOther>
               ) : (
-                <ControlCheckboxInline name={props.id} value={option.value} key={option.value}>
-                  {option.label}
+                <ControlCheckboxInline name={props.id} value={value} key={value}>
+                  {label}
                 </ControlCheckboxInline>
               )
             )}
-            <QuestionFormFooter id={props.id} disabled={!isValid} />
+            <QuestionFormFooter disabled={!isValid} />
           </QuestionForm>
         </Question>
       );
@@ -202,18 +189,16 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
   },
 
   // Education
-  {
-    id: 'education-identity',
-    appliesToUse: 'education',
+  'education-identity': {
     title: 'What best describes you?',
-    options: [
-      { value: 'university-student', label: 'University student' },
-      { value: 'high-school-student', label: 'High school student' },
-      { value: 'educator-professor', label: 'Educator / Professor' },
-      { value: 'researcher', label: 'Researcher' },
-      { value: 'bootcamp-self-taught', label: 'Bootcamp / Self-taught' },
-      { value: 'other', label: 'Other' },
-    ],
+    optionsByValue: {
+      'university-student': 'University student',
+      'high-school-student': 'High school student',
+      'educator-professor': 'Educator / Professor',
+      researcher: 'Researcher',
+      'bootcamp-self-taught': 'Bootcamp / Self-taught',
+      other: 'Other',
+    },
     Form: (props) => {
       const [searchParams] = useSearchParams();
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
@@ -221,47 +206,39 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
       return (
         <Question title={props.title}>
           <QuestionForm className="grid grid-cols-2 gap-2">
-            {props.options.map((option) =>
-              option.value === 'other' ? (
-                <ControlCheckboxInputOther
-                  key={option.value}
-                  id={props.id}
-                  value={option.value}
-                  checked={other}
-                  onChange={setOther}
-                >
-                  {option.label}
+            {Object.entries(props.optionsByValue).map(([value, label]) =>
+              value === 'other' ? (
+                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
+                  {label}
                 </ControlCheckboxInputOther>
               ) : (
                 <Link
-                  to={`./?${searchParams.toString()}&${props.id}=${option.value}`}
-                  key={option.value}
+                  to={`./?${searchParams.toString()}&${props.id}=${value}`}
+                  key={value}
                   onClick={() => setOther(false)}
                 >
-                  <ControlLinkInline>{option.label}</ControlLinkInline>
+                  <ControlLinkInline>{label}</ControlLinkInline>
                 </Link>
               )
             )}
-            <QuestionFormFooter id={props.id} disabled={!other} />
+            <QuestionFormFooter disabled={!other} />
           </QuestionForm>
         </Question>
       );
     },
   },
-  {
-    id: 'education-subjects[]',
-    appliesToUse: 'education',
+  'education-subjects[]': {
     title: 'What subject areas are you working in?',
     subtitle: 'Select all that apply',
-    options: [
-      { value: 'math', label: 'Math' },
-      { value: 'finance-economics', label: 'Finance / Economics' },
-      { value: 'physics-engineering', label: 'Physics / Engineering' },
-      { value: 'computer-science-ai', label: 'Computer Science / AI' },
-      { value: 'business-marketing', label: 'Business / Marketing' },
-      { value: 'social-sciences', label: 'Social Sciences' },
-      { value: 'other', label: 'Other' },
-    ],
+    optionsByValue: {
+      math: 'Math',
+      'finance-economics': 'Finance / Economics',
+      'physics-engineering': 'Physics / Engineering',
+      'computer-science-ai': 'Computer Science / AI',
+      'business-marketing': 'Business / Marketing',
+      'social-sciences': 'Social Sciences',
+      other: 'Other',
+    },
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
@@ -277,24 +254,18 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
               setIsValid(values.length > 0);
             }}
           >
-            {props.options.map((option) =>
-              option.value === 'other' ? (
-                <ControlCheckboxInputOther
-                  key={option.value}
-                  id={props.id}
-                  value={option.value}
-                  checked={other}
-                  onChange={setOther}
-                >
-                  {option.label}
+            {Object.entries(props.optionsByValue).map(([value, label]) =>
+              value === 'other' ? (
+                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
+                  {label}
                 </ControlCheckboxInputOther>
               ) : (
-                <ControlCheckboxInline name={props.id} value={option.value} key={option.value}>
-                  {option.label}
+                <ControlCheckboxInline name={props.id} value={value} key={value}>
+                  {label}
                 </ControlCheckboxInline>
               )
             )}
-            <QuestionFormFooter id={props.id} disabled={!isValid} />
+            <QuestionFormFooter disabled={!isValid} />
           </QuestionForm>
         </Question>
       );
@@ -302,17 +273,16 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
   },
 
   // Shared
-  {
-    id: 'languages[]',
+  'languages[]': {
     title: 'Which languages are you proficient in?',
     subtitle: 'Select all that apply',
-    options: [
-      { value: 'formulas', label: 'Formulas' },
-      { value: 'python', label: 'Python' },
-      { value: 'javascript', label: 'JavaScript' },
-      { value: 'sql', label: 'SQL' },
-      { value: 'ai', label: 'AI / Vibe coding' },
-    ],
+    optionsByValue: {
+      formulas: 'Formulas',
+      python: 'Python',
+      javascript: 'JavaScript',
+      sql: 'SQL',
+      ai: 'AI / Vibe coding',
+    },
     Form: (props) => {
       const languageClassName = 'h-10 w-10';
       const languageIconByValue: Record<string, React.ReactNode> = {
@@ -326,36 +296,35 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="grid grid-cols-3 gap-2">
-            {props.options.map((option) => (
-              <ControlCheckboxStacked name={props.id} value={option.value} key={option.value}>
-                {languageIconByValue[option.value]}
-                {option.label}
+            {Object.entries(props.optionsByValue).map(([value, label]) => (
+              <ControlCheckboxStacked name={props.id} value={value} key={value}>
+                {languageIconByValue[value]}
+                {label}
               </ControlCheckboxStacked>
             ))}
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
 
-            <QuestionFormFooter id={props.id} />
+            <QuestionFormFooter />
           </QuestionForm>
         </Question>
       );
     },
   },
-  {
-    id: 'goals[]',
+  'goals[]': {
     title: 'What are you looking to accomplish in Quadratic?',
     subtitle: 'Select all that apply',
-    options: [
-      { value: 'db-connections', label: 'Database connections' },
-      { value: 'api-integrations', label: 'API integrations' },
-      { value: 'data-cleaning', label: 'Data cleaning' },
-      { value: 'data-analysis', label: 'Data analysis' },
-      { value: 'data-modeling', label: 'Data modeling' },
-      { value: 'data-visualization', label: 'Data visualization' },
-      { value: 'ai-analysis', label: 'AI analysis' },
-      { value: 'other', label: 'Other' },
-    ],
+    optionsByValue: {
+      'ai-analysis': 'AI analysis',
+      'db-connections': 'Database connections',
+      'api-integrations': 'API integrations',
+      'data-cleaning': 'Data cleaning',
+      'data-analysis': 'Data analysis',
+      'data-modeling': 'Data modeling',
+      'data-visualization': 'Data visualization',
+      other: 'Other',
+    },
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
@@ -370,34 +339,28 @@ export const allQuestions: Array<QuestionFormProps & { Form: (props: QuestionFor
               setIsValid(values.length > 0);
             }}
           >
-            {props.options.map((option) =>
-              option.value === 'other' ? (
-                <ControlCheckboxInputOther
-                  key={option.value}
-                  id={props.id}
-                  value={option.value}
-                  checked={other}
-                  onChange={setOther}
-                >
-                  {option.label}
+            {Object.entries(props.optionsByValue).map(([value, label]) =>
+              value === 'other' ? (
+                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
+                  {label}
                 </ControlCheckboxInputOther>
               ) : (
-                <ControlCheckboxInline name={props.id} value={option.value} key={option.value}>
-                  {option.label}
+                <ControlCheckboxInline name={props.id} value={value} key={value}>
+                  {label}
                 </ControlCheckboxInline>
               )
             )}
-            <QuestionFormFooter id={props.id} disabled={!isValid} />
+            <QuestionFormFooter disabled={!isValid} />
           </QuestionForm>
           {isValid && <FreePromptsMsg isLastQuestion={true} />}
         </Question>
       );
     },
   },
-];
+};
 
 export function Questions() {
-  const { currentId } = useOnboardingLoaderData();
+  const { currentId, currentIndex, currentQuestionStackIds } = useOnboardingLoaderData();
   const setOther = useSetRecoilState(otherCheckboxAtom);
   const setIsValid = useSetRecoilState(isValidFormAtom);
   const [searchParams] = useSearchParams();
@@ -409,6 +372,8 @@ export function Questions() {
     setIsValid((prev) => (prev === true ? false : prev));
   }, [searchParams, setOther, setIsValid]);
 
+  const questionIds = Object.keys(questionsById);
+
   return (
     <div className="h-full overflow-auto">
       <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
@@ -416,26 +381,27 @@ export function Questions() {
 
         <div className="relative w-full max-w-xl transition-all">
           <div className="relative min-h-[4rem]">
-            {allQuestions.map(({ Form, ...props }, i) => {
-              // see if the id is before or after the currentId in allQuestions
-              const isBeforeCurrentId = allQuestions.findIndex((q) => q.id === currentId) > i;
+            {questionIds.map((id) => {
+              const { Form, ...props } = questionsById[id];
+              const isASubsequentQuestion =
+                currentId === 'use' ? true : currentQuestionStackIds.indexOf(id) > currentIndex;
               return (
                 <div
-                  key={props.id}
+                  key={id}
                   className={cn(
                     'absolute inset-0 transition-all duration-500 ease-in-out',
                     'transform',
                     // Current question
-                    props.id === currentId
+                    id === currentId
                       ? 'z-10 translate-x-0 opacity-100'
-                      : // Previous question(s)
-                        isBeforeCurrentId
-                        ? 'invisible z-0 -translate-x-1/3 opacity-0'
-                        : // Next question(s)
-                          'invisible z-0 translate-x-1/3 opacity-0'
+                      : // Next question(s)
+                        isASubsequentQuestion
+                        ? 'invisible z-0 translate-x-1/3 opacity-0'
+                        : // Previous question(s)
+                          'invisible z-0 -translate-x-1/3 opacity-0'
                   )}
                 >
-                  <Form {...props} />
+                  <Form id={id} {...props} />
                 </div>
               );
             })}
@@ -446,13 +412,12 @@ export function Questions() {
   );
 }
 
-function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }) {
+function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
   const navigate = useNavigate();
   const fetcher = useFetcher({ key: FETCHER_KEY });
-  const { currentQuestionStack } = useOnboardingLoaderData();
+  const { currentId, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
   const btnClassName = 'select-none';
-  const countCurrent = currentQuestionStack.length > 0 ? currentQuestionStack.findIndex((q) => q.id === id) : 0;
-  const countTotal = currentQuestionStack.length > 0 ? currentQuestionStack.length - 1 : 0;
+
   let _disabled = disabled === undefined ? false : disabled;
   const isSubmitting = fetcher.state !== 'idle';
 
@@ -462,9 +427,14 @@ function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }
         'col-span-full grid grid-cols-2 items-center justify-between gap-4 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
       )}
     >
-      <div className={cn('flex select-none items-center gap-2 text-sm text-muted-foreground')}>
-        <Progress value={(countCurrent / countTotal) * 100} className="h-3 w-1/3" /> Question {countCurrent} /{' '}
-        {countTotal}
+      <div
+        className={cn(
+          'flex select-none items-center gap-2 text-sm text-muted-foreground',
+          currentId === 'use' && 'invisible opacity-0'
+        )}
+      >
+        <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
+        Question {currentQuestionNumber} / {currentQuestionsTotal}
       </div>
       <div className="flex items-center justify-end gap-2">
         {isSubmitting ? (
@@ -483,7 +453,7 @@ function QuestionFormFooter({ id, disabled }: { id: string; disabled?: boolean }
           </Button>
         )}
         <Button type="submit" className={cn(btnClassName)} size="lg" disabled={_disabled || isSubmitting}>
-          {countCurrent === countTotal ? 'Done' : 'Next'}
+          {currentQuestionNumber === currentQuestionsTotal ? 'Done' : 'Next'}
         </Button>
       </div>
     </div>

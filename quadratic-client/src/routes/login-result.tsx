@@ -43,10 +43,11 @@ export const loader = async () => {
       }
 
       let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
-      // For new users coming directly to `/`, we'll send them to the onboarding flow
+      // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
-        return redirect('/onboarding');
+        // Onboarding questions are for ~25% of new users
+        return Math.random() < 0.25 ? redirect('/onboarding') : redirect('/files/create?private=false');
       }
       return redirect(redirectTo);
     }
