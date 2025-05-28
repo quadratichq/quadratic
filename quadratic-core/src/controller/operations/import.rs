@@ -66,6 +66,8 @@ impl GridController {
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
         let converted_file = clean_csv_file(&file)?;
+        drop(file); // free the memory of the original file
+
         let (d, width, height) = find_csv_info(&converted_file);
         let delimiter = delimiter.unwrap_or(d);
 
