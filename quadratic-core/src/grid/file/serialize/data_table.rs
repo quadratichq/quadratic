@@ -342,7 +342,7 @@ pub(crate) fn import_data_table_builder(
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
     }
 
-    Ok(SheetDataTables::from_data_tables(new_data_tables))
+    Ok(new_data_tables.into())
 }
 
 fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {

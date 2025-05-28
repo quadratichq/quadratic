@@ -47,17 +47,8 @@ impl IntoIterator for SheetDataTables {
     }
 }
 
-impl SheetDataTables {
-    pub fn new() -> Self {
-        Self {
-            data_tables: IndexMap::new(),
-            has_data_table_anchor: Contiguous2D::new(),
-            spilled_output_rects: Contiguous2D::new(),
-            un_spilled_output_rects: SheetRegionMap::new(),
-        }
-    }
-
-    pub fn from_data_tables(mut data_tables: IndexMap<Pos, DataTable>) -> Self {
+impl From<IndexMap<Pos, DataTable>> for SheetDataTables {
+    fn from(mut data_tables: IndexMap<Pos, DataTable>) -> Self {
         let mut data_tables_pos = Vec::new();
         data_tables.iter_mut().for_each(|(pos, dt)| {
             dt.spill_data_table = false;
@@ -70,6 +61,17 @@ impl SheetDataTables {
             sheet_data_tables.update_spill_and_cache(index, pos, None);
         }
         sheet_data_tables
+    }
+}
+
+impl SheetDataTables {
+    pub fn new() -> Self {
+        Self {
+            data_tables: IndexMap::new(),
+            has_data_table_anchor: Contiguous2D::new(),
+            spilled_output_rects: Contiguous2D::new(),
+            un_spilled_output_rects: SheetRegionMap::new(),
+        }
     }
 
     pub fn is_empty(&self) -> bool {
