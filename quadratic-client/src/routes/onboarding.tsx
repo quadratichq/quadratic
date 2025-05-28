@@ -5,6 +5,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { useEffect } from 'react';
 import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { RecoilRoot } from 'recoil';
 
@@ -55,6 +56,11 @@ export const useOnboardingLoaderData = () => {
 
 export const Component = () => {
   useRemoveInitialLoadingUI();
+
+  useEffect(() => {
+    mixpanel.track('[Onboarding].loaded');
+  }, []);
+
   return (
     <RecoilRoot>
       <Questions />
