@@ -32,21 +32,22 @@ impl IntoIterator for SheetColumns {
     }
 }
 
+impl From<(BTreeMap<i64, Column>, Contiguous2D<Option<bool>>)> for SheetColumns {
+    fn from(
+        (columns, has_cell_value): (BTreeMap<i64, Column>, Contiguous2D<Option<bool>>),
+    ) -> Self {
+        Self {
+            columns,
+            has_cell_value,
+        }
+    }
+}
+
 impl SheetColumns {
     pub fn new() -> Self {
         Self {
             columns: BTreeMap::new(),
             has_cell_value: Contiguous2D::new(),
-        }
-    }
-
-    pub fn from(
-        columns: BTreeMap<i64, Column>,
-        has_cell_value: Contiguous2D<Option<bool>>,
-    ) -> Self {
-        Self {
-            columns,
-            has_cell_value,
         }
     }
 
