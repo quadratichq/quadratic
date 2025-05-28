@@ -30,7 +30,7 @@ pub(crate) fn eval_at(grid_controller: &GridController, pos: SheetPos, s: &str) 
         grid_controller.a1_context(),
         grid_controller.grid().origin_in_first_sheet(),
     ) {
-        Ok(formula) => dbg!(formula).eval(&mut ctx).inner,
+        Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
 }
