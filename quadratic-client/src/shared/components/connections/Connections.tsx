@@ -120,7 +120,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
         : c
     );
   }
-  connections = connections.filter((c) => (c.isDemo ? c.isDemoVisible : false));
+  connections = connections.filter((c) => (c.hasOwnProperty('isDemo') ? c.isDemoVisible : true));
 
   /**
    * Navigation

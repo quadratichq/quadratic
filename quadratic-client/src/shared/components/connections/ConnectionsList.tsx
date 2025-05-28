@@ -1,6 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { AddIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
+import { AddIcon, CloseIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -143,6 +144,8 @@ function ListItems({
   handleShowConnectionDemo: Props['handleShowConnectionDemo'];
   items: ConnectionsListConnection[];
 }) {
+  const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
+
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
@@ -151,54 +154,79 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
-        <div className="group" key={uuid}>
-          <div
-            className={cn(
-              'relative flex max-w-full items-center gap-1',
-              disabled
-                ? 'cursor-not-allowed opacity-50'
-                : isApp
-                  ? 'group-hover:bg-accent'
-                  : 'pr-12 group-hover:bg-accent'
-            )}
-          >
-            <button
-              onClick={() => {
-                handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-              }}
-              disabled={disabled}
-              key={uuid}
-              className={cn('flex max-w-full items-center gap-4 rounded px-1 py-2')}
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => {
+        const isNavigable = !(disabled || isDemo);
+        const showIcon = !isApp && !disabled;
+        const showIconHideDemo = showIcon && isDemo;
+        const showIconBrowseSchema = showIcon && !isDemo;
+        return (
+          <div className="group" key={uuid}>
+            <div
+              className={cn(
+                'relative flex w-full items-center gap-1',
+                disabled && 'cursor-not-allowed opacity-50',
+                isNavigable && 'group-hover:bg-accent',
+                showIcon && 'pr-12'
+              )}
             >
-              <div className="flex h-6 w-6 items-center justify-center">
-                <LanguageIcon language={type} />
-              </div>
+              <button
+                onClick={() => {
+                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                }}
+                disabled={!isNavigable}
+                key={uuid}
+                className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}
+              >
+                <div className="flex h-6 w-6 items-center justify-center">
+                  <LanguageIcon language={type} />
+                </div>
 
-              <div className="flex min-w-0 max-w-full flex-grow flex-col text-left">
-                <span className="truncate text-sm">{name}</span>
+                <div className="flex w-full min-w-0 flex-grow flex-col text-left">
+                  <span className="truncate text-sm">{name}</span>
 
-                <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                  Created {timeAgo(createdDate)}
-                </time>
-              </div>
-            </button>
+                  {isDemo ? (
+                    <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
+                  ) : (
+                    <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                      Created {timeAgo(createdDate)}
+                    </time>
+                  )}
+                </div>
+              </button>
 
-            {!disabled && !isApp && (
-              <TooltipPopover label="Browse schema">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded p-2 text-muted-foreground hover:bg-background"
-                  onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
-                >
-                  <ExploreSchemaIcon />
-                </Button>
-              </TooltipPopover>
-            )}
+              {showIconHideDemo && (
+                <TooltipPopover label="Remove connection">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
+                    onClick={async () => {
+                      if (await confirmFn()) {
+                        handleShowConnectionDemo(false);
+                      }
+                    }}
+                  >
+                    <CloseIcon />
+                  </Button>
+                </TooltipPopover>
+              )}
+
+              {showIconBrowseSchema && (
+                <TooltipPopover label="Browse schema">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 rounded p-2 text-muted-foreground hover:bg-background"
+                    onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
+                  >
+                    <ExploreSchemaIcon />
+                  </Button>
+                </TooltipPopover>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   ) : (
     <Type className="py-2 text-center">No matches.</Type>

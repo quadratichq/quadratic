@@ -133,7 +133,6 @@ export default function CellTypeMenu() {
                   key={uuid}
                   uuid={uuid}
                   name={name}
-                  badge={isDemo ? 'Demo' : ''}
                   icon={<LanguageIcon language={type} />}
                   onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
                 />
