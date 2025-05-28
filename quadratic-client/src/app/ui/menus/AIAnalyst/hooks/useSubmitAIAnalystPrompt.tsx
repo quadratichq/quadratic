@@ -298,6 +298,7 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
+            console.log('messagesWithContext', messagesWithContext);
 
             if (debugShowAIInternalContext) {
               console.log('AIAnalyst messages with context:', {
@@ -341,7 +342,7 @@ export function useSubmitAIAnalystPrompt() {
             >['prompt_suggestions'] = [];
 
             for (const toolCall of response.toolCalls) {
-              if (toolCall.name in [AITool.PDFImport, AITool.Search]) {
+              if (toolCall.name === AITool.PDFImport || toolCall.name === AITool.Search) {
                 continue;
               }
 

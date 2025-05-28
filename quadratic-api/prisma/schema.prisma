@@ -269,6 +269,7 @@ enum AIChatSource {
     CodeEditorCompletions    @map("code_editor_completions")
     GetUserPromptSuggestions @map("get_user_prompt_suggestions")
     PDFImport                @map("pdf_import")
+    Search                   @map("search")
 }
 
 enum AIChatMessageType {

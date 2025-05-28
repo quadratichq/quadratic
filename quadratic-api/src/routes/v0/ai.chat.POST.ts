@@ -52,6 +52,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   // }
 
   const { body } = parseRequest(req, schema);
+  console.log('body.messages', body.messages);
   const { chatId, fileUuid, modelKey, ...args } = body;
   const source = args.source;
 
