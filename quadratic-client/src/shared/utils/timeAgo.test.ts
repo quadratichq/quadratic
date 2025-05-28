@@ -41,7 +41,7 @@ describe('timeAgoAndNextTimeout', () => {
     const fourDaysAgo = new Date().getTime() - 4 * 24 * 60 * 60 * 1000;
     const result = timeAgoAndNextTimeout(fourDaysAgo);
     expect(result.timeAgo).toBe('Dec 28, 2023');
-    const expectedInterval = 24 * 60 * 60 * 1000 - (new Date().getTime() - fourDaysAgo);
+    const expectedInterval = -1; // No next interval for formatted date
     expect(result.nextInterval).toBe(expectedInterval);
   });
 
@@ -49,7 +49,7 @@ describe('timeAgoAndNextTimeout', () => {
     const sevenDaysAgo = new Date().getTime() - 7 * 24 * 60 * 60 * 1000;
     const result = timeAgoAndNextTimeout(sevenDaysAgo);
     expect(result.timeAgo).toBe('Dec 25, 2023');
-    const expectedInterval = 24 * 60 * 60 * 1000 - (new Date().getTime() - sevenDaysAgo);
+    const expectedInterval = -1; // No next interval for formatted date
     expect(result.nextInterval).toBe(expectedInterval);
   });
 });
