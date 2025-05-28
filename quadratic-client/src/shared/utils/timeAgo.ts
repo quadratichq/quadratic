@@ -72,7 +72,7 @@ export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNe
         month: 'short',
         day: 'numeric',
       }),
-      nextInterval: 24 * 60 * 60 * 1000 - duration, // Time until next date change
+      nextInterval: -1, // No next interval for formatted date
     };
   }
 
