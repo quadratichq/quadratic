@@ -621,4 +621,29 @@ mod tests {
         assert_eq!(gc.data_table(pos![sheet_id!A1]), Some(&dt));
         assert!(gc.data_table(pos![sheet_id!A2]).is_none());
     }
+
+    #[test]
+    fn test_data_table_delete_rows_undo() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+
+        gc.data_table_mutations(
+            pos![sheet_id!A1],
+            false,
+            None,
+            None,
+            None,
+            Some(vec![2]),
+            None,
+            None,
+            None,
+        );
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["2", "3"]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+    }
 }
