@@ -184,6 +184,13 @@ export class Sheet {
     return JSON.parse(columnRowStringified);
   }
 
+  // @returns the rectangle in cell coordinates from screen coordinates
+  getRectangleFromScreen(rectangle: Rectangle): Rectangle {
+    const start = this.getColumnRowFromScreen(rectangle.x, rectangle.y);
+    const end = this.getColumnRowFromScreen(rectangle.right + 1, rectangle.bottom + 1);
+    return new Rectangle(start.column, start.row, end.column - start.column + 1, end.row - start.row + 1);
+  }
+
   //#endregion
 
   getValidationById(id: string): Validation | undefined {

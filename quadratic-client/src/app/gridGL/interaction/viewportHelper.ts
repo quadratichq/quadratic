@@ -129,12 +129,14 @@ function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectang
 }
 
 export function ensureSelectionVisible() {
+  // use cell coordinates b/c selection may include unbounded ranges that we
+  // don't want to translate to world coordinates
   const selection = sheets.sheet.cursor.getLargestRectangleUnbounded();
-  const selectionBounds = sheets.sheet.getScreenRectangleFromRectangle(selection);
-  const bounds = pixiApp.viewport.getVisibleBounds();
+  const viewportBounds = pixiApp.viewport.getVisibleBounds();
+  const viewportBoundsInCellCoordinates = sheets.sheet.getRectangleFromScreen(viewportBounds);
 
   // if any part of the selection is visible
-  if (intersects.rectangleRectangle(bounds, selectionBounds)) {
+  if (intersects.rectangleRectangle(selection, viewportBoundsInCellCoordinates)) {
     return true;
   }
   cellVisible(sheets.sheet.cursor.position);
