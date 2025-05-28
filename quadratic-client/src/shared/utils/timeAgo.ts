@@ -70,7 +70,7 @@ export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNe
         month: 'short',
         day: 'numeric',
       }),
-      nextInterval: 24 * 60 * 60 * 1000 - (now.getTime() - date.getTime()),
+      nextInterval: -1, // No next interval for formatted date
     };
   }
 
@@ -96,6 +96,6 @@ export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNe
   // Fallback case (should never reach here due to POSITIVE_INFINITY in DIVISIONS)
   return {
     timeAgo: formatter.format(Math.round(duration), 'years'),
-    nextInterval: 365 * 24 * 60 * 60 * 1000 - (now.getTime() - date.getTime()),
+    nextInterval: -1, // No next interval for fallback
   };
 };

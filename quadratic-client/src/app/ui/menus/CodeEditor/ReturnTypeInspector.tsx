@@ -143,16 +143,19 @@ export const ReturnTypeInspector = memo(() => {
     let timeout: number | undefined;
     if (codeCell.lastModified) {
       const update = () => {
-        const modified = timeAgoAndNextTimeout(codeCell.lastModified);
+        const { timeAgo, nextInterval } = timeAgoAndNextTimeout(codeCell.lastModified);
         // add `on` for dates
         // fixed date, does not need to be updated
-        if (!modified.timeAgo.includes('ago')) {
-          setLastModified(`on ${modified.timeAgo}`);
+        if (!timeAgo.includes('ago')) {
+          setLastModified(`on ${timeAgo}`);
         }
         // relative time, needs to be updated
         else {
-          setLastModified(modified.timeAgo);
-          timeout = window.setTimeout(update, modified.nextInterval);
+          setLastModified(timeAgo);
+        }
+
+        if (nextInterval > 0) {
+          timeout = window.setTimeout(update, nextInterval);
         }
       };
 

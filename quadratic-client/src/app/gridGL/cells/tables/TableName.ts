@@ -219,15 +219,20 @@ export class TableName extends Container {
       clearTimeout(this.modifiedTimeout);
       this.modifiedTimeout = undefined;
     }
+
     if (this.modified) {
       const { timeAgo, nextInterval } = timeAgoAndNextTimeout(Number(this.table.codeCell.last_modified));
+
       if (timeAgo !== this.modified.text) {
         this.drawModified();
         if (!pixiApp.viewport.dirty && pixiApp.viewport.getVisibleBounds().intersects(this.tableNameBounds)) {
           pixiApp.setViewportDirty();
         }
       }
-      this.modifiedTimeout = window.setTimeout(this.updateModifiedTime, nextInterval);
+
+      if (nextInterval > 0) {
+        this.modifiedTimeout = window.setTimeout(this.updateModifiedTime, nextInterval);
+      }
     }
   };
 }
