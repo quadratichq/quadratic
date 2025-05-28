@@ -203,10 +203,4 @@ export class CellsSheets extends Container<CellsSheet> {
   update = (dirtyViewport: boolean) => {
     this.current?.update(dirtyViewport);
   };
-
-  tableUpdateModifiedTime = () => {
-    this.children.forEach((child) => {
-      child.tables.updateModifiedTime();
-    });
-  };
 }

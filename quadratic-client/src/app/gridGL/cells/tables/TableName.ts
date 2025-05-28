@@ -55,14 +55,14 @@ export class TableName extends Container {
     sharedEvents.on('changeThemeAccentColor', this.drawBackground);
   }
 
-  destroy() {
+  destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.drawBackground);
     super.destroy();
     if (this.modifiedTimeout) {
       clearTimeout(this.modifiedTimeout);
       this.modifiedTimeout = undefined;
     }
-  }
+  };
 
   private drawBackground = () => {
     this.backgroundWidth = this.table.tableBounds.width;
@@ -73,7 +73,7 @@ export class TableName extends Container {
     this.background.endFill();
   };
 
-  private drawSymbol() {
+  private drawSymbol = () => {
     if (this.symbol) {
       this.removeChild(this.symbol);
       this.symbol = undefined;
@@ -96,7 +96,7 @@ export class TableName extends Container {
         }
       }
     }
-  }
+  };
 
   private drawText() {
     this.text.text = this.table.codeCell.name;
@@ -129,16 +129,33 @@ export class TableName extends Container {
     );
   }
 
-  private drawModified() {
-    if (!this.modified) return;
+  private drawModified = () => {
+    if (!this.modified) {
+      return;
+    }
+
     if (this.modifiedTimeout) {
       clearTimeout(this.modifiedTimeout);
       this.modifiedTimeout = undefined;
     }
 
     const { timeAgo, nextInterval } = timeAgoAndNextTimeout(Number(this.table.codeCell.last_modified));
-    if (timeAgo) {
+
+    if (nextInterval > 0) {
+      this.modifiedTimeout = window.setTimeout(this.drawModified, nextInterval);
+    }
+
+    if (!timeAgo) {
+      this.modified.visible = false;
+      return;
+    }
+
+    if (timeAgo !== this.modified.text) {
       this.modified.text = timeAgo;
+      if (!pixiApp.viewport.dirty && pixiApp.viewport.getVisibleBounds().intersects(this.tableNameBounds)) {
+        pixiApp.setViewportDirty();
+      }
+
       // don't show the modified text if it overlaps the left text
       if (
         this.dropdown.x + this.dropdown.width + TABLE_NAME_PADDING[0] + this.modified.width + SYMBOL_PADDING >
@@ -149,14 +166,11 @@ export class TableName extends Container {
         this.modified.visible = true;
         this.modified.anchor.set(0, 0.5);
         this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, this.text.y);
-        this.modifiedTimeout = window.setTimeout(this.updateModifiedTime, nextInterval);
       }
-    } else {
-      this.modified.visible = false;
     }
-  }
+  };
 
-  update() {
+  update = () => {
     this.h = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
     this.tableNameBounds = new Rectangle(
       this.table.tableBounds.x,
@@ -167,16 +181,14 @@ export class TableName extends Container {
     this.drawSymbol();
     this.drawText();
     this.drawDropdown();
-    if (this.modified) {
-      this.drawModified();
-    }
+    this.drawModified();
     if (this.table.active) {
       this.dropdown.visible = true;
     } else {
       this.dropdown.visible = false;
     }
     this.drawBackground();
-  }
+  };
 
   intersects(world: Point): TablePointerDownResult | undefined {
     if (this.visible && intersects.rectanglePoint(this.tableNameBounds, world)) {
@@ -213,26 +225,4 @@ export class TableName extends Container {
   toGrid() {
     this.tableNameBounds.y = this.table.tableBounds.y;
   }
-
-  updateModifiedTime = () => {
-    if (this.modifiedTimeout) {
-      clearTimeout(this.modifiedTimeout);
-      this.modifiedTimeout = undefined;
-    }
-
-    if (this.modified) {
-      const { timeAgo, nextInterval } = timeAgoAndNextTimeout(Number(this.table.codeCell.last_modified));
-
-      if (timeAgo !== this.modified.text) {
-        this.drawModified();
-        if (!pixiApp.viewport.dirty && pixiApp.viewport.getVisibleBounds().intersects(this.tableNameBounds)) {
-          pixiApp.setViewportDirty();
-        }
-      }
-
-      if (nextInterval > 0) {
-        this.modifiedTimeout = window.setTimeout(this.updateModifiedTime, nextInterval);
-      }
-    }
-  };
 }

@@ -432,10 +432,6 @@ export class PixiApp {
   cellsSheetsCreate() {
     this.cellsSheets.create();
   }
-
-  tableUpdateModifiedTime() {
-    this.cellsSheets.tableUpdateModifiedTime();
-  }
 }
 
 export const pixiApp = new PixiApp();
