@@ -73,15 +73,11 @@ impl Sheet {
 
     /// Returns true if there is a data table intersecting a rect, excluding a specific position
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
-        if let Some(skip) = skip {
-            self.data_tables
-                .get_pos_in_rect(rect, false)
-                .filter(|pos| pos != skip)
-                .count()
-                > 0
-        } else {
-            self.data_tables.get_pos_in_rect(rect, false).count() > 0
-        }
+        self.data_tables
+            .get_pos_in_rect(rect, false)
+            .filter(|pos| skip.map_or(true, |s| pos != s))
+            .next()
+            .is_some()
     }
 
     /// Returns a DataTable at a Pos as a result
