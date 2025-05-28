@@ -206,6 +206,44 @@ impl Sheet {
             }
         }
     }
+
+    /// Recalculates all bounds of the sheet.
+    ///
+    /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
+    /// and Contiguous2d cache does not work for -ve coordinates
+    pub fn migration_recalculate_bounds(&mut self, a1_context: &A1Context) {
+        self.data_bounds.clear();
+        self.format_bounds.clear();
+
+        if let Some(rect) = self.columns.migration_finite_bounds() {
+            self.data_bounds.add_rect(rect);
+        };
+
+        self.data_tables
+            .expensive_iter()
+            .for_each(|(pos, code_cell_value)| {
+                let output_rect = code_cell_value.output_rect(*pos, false);
+                self.data_bounds.add_rect(output_rect);
+            });
+
+        for validation in self.validations.validations.iter() {
+            if validation.render_special().is_some() {
+                if let Some(rect) =
+                    self.selection_bounds(&validation.selection, false, false, a1_context)
+                {
+                    self.data_bounds.add(rect.min);
+                    self.data_bounds.add(rect.max);
+                }
+            }
+        }
+        for (&pos, _) in self.validations.warnings.iter() {
+            self.data_bounds.add(pos);
+        }
+
+        if let Some(rect) = self.formats.finite_bounds() {
+            self.format_bounds.add_rect(rect);
+        }
+    }
 }
 
 /// Private functions just required for shift_negative_offsets for v1.7.1 A1 migration
