@@ -6,7 +6,7 @@ import {
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
-import { DatabaseIcon } from '@/shared/components/Icons';
+import { SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -21,7 +21,7 @@ import {
 } from '@/shared/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export interface CellTypeOption {
   name: string;
@@ -54,7 +54,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export default function CellTypeMenu() {
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { connections } = useConnectionsFetcher();
@@ -62,7 +62,8 @@ export default function CellTypeMenu() {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
 
-  const searchLabel = 'Choose a cell type…';
+  const includeLanguages = showCellTypeMenu !== 'connections';
+  const searchLabel = `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`;
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -101,28 +102,28 @@ export default function CellTypeMenu() {
       overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
+
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Languages">
-          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
-            <CommandItemWrapper
-              key={name}
-              disabled={disabled}
-              icon={icon}
-              name={name}
-              badge={
-                experimental ? (
-                  <Badge variant="outline" className="ml-2">
-                    Experimental
-                  </Badge>
-                ) : undefined
-              }
-              onSelect={() => openEditor(mode)}
-            />
-          ))}
-        </CommandGroup>
 
-        <CommandSeparator />
+        {includeLanguages && (
+          <>
+            <CommandGroup heading="Languages">
+              {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
+                <CommandItemWrapper
+                  key={name}
+                  disabled={disabled}
+                  icon={icon}
+                  name={name}
+                  badge={experimental ? 'Experimental' : ''}
+                  onSelect={() => openEditor(mode)}
+                />
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
+
         {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
             {connections
@@ -132,22 +133,15 @@ export default function CellTypeMenu() {
                   key={uuid}
                   uuid={uuid}
                   name={name}
-                  badge={
-                    isDemo ? (
-                      <Badge variant="outline" className="ml-2">
-                        Demo
-                      </Badge>
-                    ) : (
-                      ''
-                    )
-                  }
+                  badge={isDemo ? 'Demo' : ''}
                   icon={<LanguageIcon language={type} />}
                   onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
                 />
               ))}
+
             <CommandItemWrapper
-              name="Manage connections"
-              icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}
+              name="Add or manage…"
+              icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
             />
           </CommandGroup>
@@ -162,6 +156,7 @@ function CommandItemWrapper({
   icon,
   name,
   badge,
+  value,
   onSelect,
   uuid,
 }: {
@@ -169,6 +164,7 @@ function CommandItemWrapper({
   icon: React.ReactNode;
   name: string;
   badge?: React.ReactNode;
+  value?: string;
   onSelect: () => void;
   uuid?: string;
 }) {
@@ -176,16 +172,21 @@ function CommandItemWrapper({
     <CommandItem
       disabled={disabled}
       onSelect={onSelect}
-      value={name + (uuid ? uuid : '')}
+      value={value ? value : name}
       onPointerDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
       }}
     >
       <div className="mr-4 flex h-5 w-5 items-center">{icon}</div>
-      <div className="flex flex-col">
+      <div className="flex flex-col truncate">
         <span className="flex items-center">
-          {name} {badge ? badge : null}
+          {name}{' '}
+          {badge && (
+            <Badge variant="outline" className="ml-2">
+              {badge}
+            </Badge>
+          )}
         </span>
       </div>
     </CommandItem>

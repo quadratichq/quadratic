@@ -281,10 +281,8 @@ export const insertActionsSpec: InsertActionSpec = {
     label: () => 'Table',
     labelVerbose: 'Insert a table',
     Icon: TableConvertIcon,
-    isDisabled: () => sheets.sheet.cursor.isSingleSelection(),
-    run: () => {
-      gridToDataTable();
-    },
+    isDisabled: () => sheets.sheet.cursor.canConvertToDataTable(),
+    run: () => gridToDataTable(),
   },
   [Action.InsertSheet]: {
     label: () => 'Sheet',

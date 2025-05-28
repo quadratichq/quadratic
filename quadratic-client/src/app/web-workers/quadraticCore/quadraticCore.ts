@@ -20,6 +20,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -53,10 +54,10 @@ import type {
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
   CoreClientFiniteRectFromSelection,
+  CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
-  CoreClientGetCsvPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
@@ -407,6 +408,16 @@ class QuadraticCore {
     });
   }
 
+  getAICells(selection: string, sheetId: string, page: number): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { aiCells: string }) => {
+        resolve(message.aiCells);
+      };
+      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId, page });
+    });
+  }
+
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
@@ -495,6 +506,7 @@ class QuadraticCore {
     y: number;
     language: CodeCellLanguage;
     codeString: string;
+    codeCellName?: string;
     cursor?: string;
   }): Promise<string | undefined> {
     const id = this.id++;
@@ -510,6 +522,7 @@ class QuadraticCore {
         language: options.language,
         codeString: options.codeString,
         cursor: options.cursor,
+        codeCellName: options.codeCellName,
         id,
       });
     });
@@ -594,24 +607,6 @@ class QuadraticCore {
       );
     });
   };
-
-  getCsvPreview({
-    file,
-    maxRows,
-    delimiter,
-  }: {
-    file: ArrayBuffer;
-    maxRows: number;
-    delimiter: number | undefined;
-  }): Promise<CoreClientGetCsvPreview['preview']> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetCsvPreview) => {
-        resolve(message.preview);
-      };
-      this.send({ type: 'clientCoreGetCsvPreview', file, maxRows, delimiter, id }, file);
-    });
-  }
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
@@ -779,6 +774,38 @@ class QuadraticCore {
       selection,
       format,
       cursor,
+    });
+  }
+
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreSetFormats',
+        id,
+        sheetId,
+        selection,
+        formats,
+      });
+    });
+  }
+
+  getAICellFormats(sheetId: string, selection: string, page: number) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
+        resolve(message.formats);
+      };
+      this.send({
+        type: 'clientCoreGetAIFormats',
+        id,
+        sheetId,
+        selection,
+        page,
+      });
     });
   }
 
@@ -1351,11 +1378,12 @@ class QuadraticCore {
     });
   }
 
-  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertColumn',
+      type: 'clientCoreInsertColumns',
       sheetId,
       column,
+      count,
       right,
       cursor,
     });
@@ -1370,11 +1398,12 @@ class QuadraticCore {
     });
   }
 
-  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertRow',
+      type: 'clientCoreInsertRows',
       sheetId,
       row,
+      count,
       below,
       cursor,
     });
@@ -1425,11 +1454,20 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, cursor: string) {
-    this.send({
-      type: 'clientCoreGridToDataTable',
-      sheetRect,
-      cursor,
+  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreGridToDataTable',
+        id,
+        sheetRect,
+        firstRowIsHeader,
+        tableName,
+        cursor,
+      });
     });
   }
 

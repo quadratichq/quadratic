@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::grid::{GridBounds, Sheet};
 
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, TS)]
 pub struct SheetInfo {
     pub sheet_id: String,
     pub name: String,
@@ -12,6 +12,7 @@ pub struct SheetInfo {
     pub offsets: String,
     pub bounds: GridBounds,
     pub bounds_without_formatting: GridBounds,
+    pub format_bounds: GridBounds,
 }
 
 impl From<&Sheet> for SheetInfo {
@@ -25,16 +26,17 @@ impl From<&Sheet> for SheetInfo {
             offsets,
             bounds: sheet.bounds(false),
             bounds_without_formatting: sheet.bounds(true),
+            format_bounds: sheet.format_bounds(),
         }
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, TS)]
 pub struct SheetBounds {
     pub sheet_id: String,
     pub bounds: GridBounds,
     pub bounds_without_formatting: GridBounds,
+    pub format_bounds: GridBounds,
 }
 
 impl From<&Sheet> for SheetBounds {
@@ -43,6 +45,7 @@ impl From<&Sheet> for SheetBounds {
             sheet_id: sheet.id.to_string(),
             bounds: sheet.bounds(false),
             bounds_without_formatting: sheet.bounds(true),
+            format_bounds: sheet.format_bounds(),
         }
     }
 }

@@ -19,6 +19,7 @@ import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { handleVertexAIRequest } from '../../ai/handler/vertexai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { calculateUsage } from '../../ai/helpers/usage.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
@@ -86,8 +87,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.push(parsedResponse.responseMessage);
   }
 
-  if (DEBUG) {
-    console.log('[AI.TokenUsage]', parsedResponse?.usage);
+  if (DEBUG && !!parsedResponse) {
+    parsedResponse.usage.source = source;
+    parsedResponse.usage.modelKey = modelKey;
+    parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
+    console.log('[AI.Usage]', parsedResponse.usage);
   }
 
   const {

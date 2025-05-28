@@ -135,6 +135,7 @@ mod test {
             CodeCellLanguage::Formula,
             "A1 + 5".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.get_dependent_code_cells(&SheetRect {

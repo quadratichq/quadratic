@@ -1,17 +1,15 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
-import { connectionClient } from '@/shared/api/connectionClient';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
-import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
-import { SpinnerIcon } from '@/shared/components/Icons';
+import { SKIP_TEST_BUTTON_NAME } from '@/shared/components/connections/ConnectionForm';
+import { ErrorIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { Button } from '@/shared/shadcn/ui/button';
-import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { useSubmit } from 'react-router';
-
-type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 
 export function ConnectionFormActions({
   connectionType,
@@ -28,8 +26,6 @@ export function ConnectionFormActions({
 }) {
   const submit = useSubmit();
   const confirmFn = useConfirmDialog('deleteConnection', undefined);
-  const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
-  const [connectionError, setConnectionError] = useState<string>('');
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
   const formData = form.watch();
 
@@ -38,95 +34,75 @@ export function ConnectionFormActions({
   useEffect(() => {
     const hasChanges = Object.keys(formData).some((key) => formData[key] !== formDataSnapshot[key]);
     if (hasChanges) {
-      setConnectionState('idle');
       setFormDataSnapshot(formData);
     }
   }, [formData, formDataSnapshot]);
 
+  const dbConnectionError = form.formState.errors.root;
+  const isSubmitting = form.formState.isSubmitting;
+
   return (
     <div className="flex flex-col gap-4 pt-4">
       <div className="flex flex-col gap-1">
-        <div className="flex w-full justify-end gap-2">
+        <div className="flex w-full items-center justify-end gap-2">
           <div className="mr-auto flex items-center gap-2">
-            <Button
-              type="button"
-              className="w-32"
-              variant={connectionState === 'success' ? 'success' : 'secondary'}
-              disabled={connectionState === 'loading'}
-              onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
-                const { name, type, ...typeDetails } = values;
-                mixpanel.track('[Connections].test', { type });
-                setConnectionState('loading');
-
-                try {
-                  const { connected, message } = await connectionClient.test.run({
-                    type,
-                    typeDetails,
-                    teamUuid,
-                  });
-                  setConnectionError(connected === false && message ? message : '');
-                  setConnectionState(connected ? 'success' : 'error');
-                } catch (e) {
-                  setConnectionError('Network error: failed to make connection.');
-                  setConnectionState('error');
-                }
-              })}
-            >
-              {connectionState === 'success' ? (
-                <>
-                  <CheckCircledIcon className="mr-1" /> Connected
-                </>
-              ) : connectionState === 'loading' ? (
-                <SpinnerIcon className="text-primary" />
-              ) : (
-                'Test'
-              )}
-            </Button>
-            {connectionState === 'error' && (
-              <div className={`ml-auto flex items-center gap-1 pr-1 font-medium text-destructive`}>
-                <ExclamationTriangleIcon />
-              </div>
+            {connectionUuid && (
+              <Button
+                type="button"
+                variant="outline-destructive"
+                className="flex-shrink-0"
+                onClick={async () => {
+                  if (await confirmFn()) {
+                    mixpanel.track('[Connections].delete', { type: connectionType });
+                    const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
+                    submit(json, {
+                      ...options,
+                      navigate: false,
+                    });
+                    handleNavigateToListView();
+                  }
+                }}
+              >
+                Delete
+              </Button>
             )}
           </div>
-
-          <Button variant="outline" onClick={handleNavigateToListView} type="button">
+          {isSubmitting && <SpinnerIcon className="mr-2 text-primary" />}
+          <Button variant="outline" onClick={handleNavigateToListView} type="button" disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit">{connectionUuid ? 'Save changes' : 'Create'}</Button>
-        </div>
-        {connectionState === 'error' && (
-          <div className="mt-2 font-mono text-xs text-destructive">{connectionError}</div>
-        )}
-      </div>
 
-      {connectionUuid && (
-        <div className="mt-2 flex items-center justify-between gap-6 rounded border border-border p-4 text-sm">
-          <div className="">
-            <strong className="font-semibold">Delete connection:</strong>{' '}
-            <span className="text-muted-foreground">
-              this connection will be disabled in existing sheets and no longer usable elsewhere.{' '}
-            </span>
-          </div>
-          <Button
-            type="button"
-            variant="outline-destructive"
-            className="flex-shrink-0"
-            onClick={async () => {
-              if (await confirmFn()) {
-                mixpanel.track('[Connections].delete', { type: connectionType });
-                const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
-                submit(json, {
-                  ...options,
-                  navigate: false,
-                });
-                handleNavigateToListView();
-              }
-            }}
-          >
-            Delete
+          <Button type="submit" disabled={isSubmitting}>
+            {connectionUuid ? 'Test & save changes' : 'Test & create'}
           </Button>
         </div>
-      )}
+        {dbConnectionError && (
+          <div className="mt-4 flex flex-col gap-2">
+            <Alert variant="destructive">
+              <ErrorIcon />
+              <AlertTitle>A test to your connection failed</AlertTitle>
+              <AlertDescription className="flex flex-col gap-2">
+                <span>
+                  Check the details and try again. Or,{' '}
+                  <button type="submit" name={SKIP_TEST_BUTTON_NAME} className="font-medium text-primary">
+                    {connectionUuid ? 'save changes' : 'create the connection'} without testing
+                  </button>
+                  .
+                </span>
+                <div className="mt-1 w-full whitespace-pre-wrap break-words font-mono text-xs">
+                  {dbConnectionError.message}
+                </div>
+              </AlertDescription>
+            </Alert>
+            <p className="text-xs text-muted-foreground">
+              Need help?{' '}
+              <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="underline">
+                Contact us.
+              </a>
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

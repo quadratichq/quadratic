@@ -1,7 +1,6 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { AddIcon, CloseIcon, EditIcon } from '@/shared/components/Icons';
+import { AddIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -10,15 +9,16 @@ import type {
   NavigateToView,
 } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
+import { useLocation } from 'react-router';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -41,7 +41,7 @@ export const ConnectionsList = ({
 
   return (
     <>
-      <div className="grid gap-4">
+      <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
             <Button
@@ -146,68 +146,57 @@ function ListItems({
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
-  const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
+  const location = useLocation();
+  const isApp = location.pathname.startsWith('/file/');
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => (
-        <div className="group relative flex items-center gap-1" key={uuid}>
-          <button
-            onClick={() => {
-              handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
-            }}
-            disabled={disabled}
-            key={uuid}
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
+        <div className="group" key={uuid}>
+          <div
             className={cn(
-              `flex w-full items-center gap-4 rounded px-1 py-2`,
-              disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
-              // i < filteredConnections.length - 1 && 'border-b border-border'
+              'relative flex max-w-full items-center gap-1',
+              disabled
+                ? 'cursor-not-allowed opacity-50'
+                : isApp
+                  ? 'group-hover:bg-accent'
+                  : 'pr-12 group-hover:bg-accent'
             )}
           >
-            <div className={'flex h-6 w-6 items-center justify-center'}>
-              <LanguageIcon language={type} />
-            </div>
-            <div className="flex flex-grow flex-col text-left">
-              <span className="text-sm">
-                {name}{' '}
-                {isDemo && (
-                  <Badge variant="outline" className="ml-1">
-                    Demo
-                  </Badge>
-                )}
-              </span>
-              <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                {isDemo ? 'Maintained by the Quadratic team' : `Created ${timeAgo(createdDate)}`}
-              </time>
-            </div>
-          </button>
-          {isDemo ? (
-            <Button
-              aria-label="Hide demo connection"
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
-              onClick={async () => {
-                if (await confirmFn()) {
-                  handleShowConnectionDemo(false);
-                }
-              }}
-            >
-              <CloseIcon />
-            </Button>
-          ) : disabled ? null : (
-            <Button
-              aria-label="Edit connection"
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+            <button
               onClick={() => {
                 handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
               }}
+              disabled={disabled}
+              key={uuid}
+              className={cn('flex max-w-full items-center gap-4 rounded px-1 py-2')}
             >
-              <EditIcon />
-            </Button>
-          )}
+              <div className="flex h-6 w-6 items-center justify-center">
+                <LanguageIcon language={type} />
+              </div>
+
+              <div className="flex min-w-0 max-w-full flex-grow flex-col text-left">
+                <span className="truncate text-sm">{name}</span>
+
+                <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                  Created {timeAgo(createdDate)}
+                </time>
+              </div>
+            </button>
+
+            {!disabled && !isApp && (
+              <TooltipPopover label="Browse schema">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded p-2 text-muted-foreground hover:bg-background"
+                  onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
+                >
+                  <ExploreSchemaIcon />
+                </Button>
+              </TooltipPopover>
+            )}
+          </div>
         </div>
       ))}
     </div>
