@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { getVisibleConnections } from '@/shared/utils/connections';
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -33,8 +34,8 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const navigate = useNavigate();
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const connectionsToDisplay = connections.filter((c) => (c.hasOwnProperty('isDemo') ? c.isDemoVisible : true));
-  const moreConnectionsCount = connectionsToDisplay.length - CONNECTIONS_DISPLAY_LIMIT;
+  const visibleConnections = getVisibleConnections(connections);
+  const moreConnectionsCount = visibleConnections.length - CONNECTIONS_DISPLAY_LIMIT;
 
   return (
     <div className="flex flex-row-reverse gap-2">
@@ -96,7 +97,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from connections</DropdownMenuLabel>
-            {connectionsToDisplay.slice(0, CONNECTIONS_DISPLAY_LIMIT).map(({ uuid, name, type }) => {
+            {visibleConnections.slice(0, CONNECTIONS_DISPLAY_LIMIT).map(({ uuid, name, type }) => {
               const { label } = codeCellsById[type];
               const to = newNewFileFromStateConnection({
                 isPrivate,

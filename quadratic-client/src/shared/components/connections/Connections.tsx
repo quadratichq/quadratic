@@ -10,6 +10,7 @@ import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/co
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
+import { getVisibleConnections } from '@/shared/utils/connections';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
@@ -112,7 +113,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   if (demoConnectionToggling.length) {
     const activeFetcher = demoConnectionToggling.slice(-1)[0];
     connections = connections.map((c) =>
-      c.hasOwnProperty('isDemo')
+      c.isDemo
         ? {
             ...c,
             isDemoVisible: (activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo,
@@ -120,7 +121,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
         : c
     );
   }
-  connections = connections.filter((c) => (c.hasOwnProperty('isDemo') ? c.isDemoVisible : true));
+  connections = getVisibleConnections(connections);
 
   /**
    * Navigation
