@@ -19,7 +19,7 @@ export const getScreenImage = async (): Promise<Blob | null> => {
 export const copyAsPNG = async (): Promise<Blob | null> => {
   if (!renderer) {
     renderer = new Renderer({
-      resolution: 1,
+      resolution,
       antialias: true,
       backgroundColor: 0xffffff,
     });
@@ -48,7 +48,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  await pixiApp.prepareForCopying();
+  await pixiApp.prepareForCopying({ cull: screenRect });
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
