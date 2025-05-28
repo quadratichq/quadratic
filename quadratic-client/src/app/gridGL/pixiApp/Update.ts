@@ -60,7 +60,7 @@ export class Update {
     }
   };
 
-  // handles slow updates (every second)
+  // handles slow updates (every `MODIFIED_TIME_UPDATE` ms)
   private updateSlowUpdate = () => {
     const now = Date.now();
     if (now > this.slowUpdate) {

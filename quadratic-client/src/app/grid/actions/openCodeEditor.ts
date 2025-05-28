@@ -116,7 +116,7 @@ export const openCodeEditor = async () => {
         sheetId: sheets.current,
         pos: { x, y },
         language: codeEditorState.codeCell.language,
-        lastModified: codeEditorState.codeCell.lastModified,
+        lastModified: 0,
       },
     });
   }
