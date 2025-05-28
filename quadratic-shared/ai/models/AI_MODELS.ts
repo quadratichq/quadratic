@@ -59,7 +59,7 @@ export const MODELS_CONFIGURATION: {
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: 'auto',
+    displayName: 'claude 3.7 sonnet',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
