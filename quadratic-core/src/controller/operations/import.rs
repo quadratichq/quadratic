@@ -52,43 +52,6 @@ impl GridController {
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
 
-    pub fn get_csv_preview(
-        file: Vec<u8>,
-        max_rows: u32,
-        delimiter: Option<u8>,
-    ) -> Result<Vec<Vec<String>>> {
-        let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
-
-        let converted_file = clean_csv_file(&file)?;
-        let (d, _, _) = find_csv_info(&converted_file);
-        let delimiter = delimiter.unwrap_or(d);
-
-        let mut reader = csv::ReaderBuilder::new()
-            .delimiter(delimiter)
-            .has_headers(false)
-            .flexible(true)
-            .from_reader(converted_file.as_slice());
-
-        let mut preview = vec![];
-        for (i, entry) in reader.records().enumerate() {
-            if i >= max_rows as usize {
-                break;
-            }
-            match entry {
-                Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
-                Ok(record) => {
-                    let mut preview_row = vec![];
-                    for value in record.iter() {
-                        preview_row.push(value.to_string());
-                    }
-                    preview.push(preview_row);
-                }
-            }
-        }
-
-        Ok(preview)
-    }
-
     /// Imports a CSV file into the grid.
     pub fn import_csv_operations(
         &mut self,
@@ -458,72 +421,6 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let values = sheet.data_table(pos).unwrap().value_as_array().unwrap();
         assert!(gc.guess_csv_first_row_is_header(values));
-    }
-
-    #[test]
-    fn test_get_csv_preview_with_valid_csv() {
-        let csv_data = b"header1,header2\nvalue1,value2\nvalue3,value4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, Some(b','));
-        assert!(result.is_ok());
-        let preview = result.unwrap();
-        assert_eq!(preview.len(), 3);
-        assert_eq!(preview[0], vec!["header1", "header2"]);
-        assert_eq!(preview[1], vec!["value1", "value2"]);
-        assert_eq!(preview[2], vec!["value3", "value4"]);
-    }
-
-    #[test]
-    fn test_get_csv_preview_with_auto_delimiter() {
-        let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, None);
-        assert!(result.is_ok());
-        let preview = result.unwrap();
-        assert_eq!(preview.len(), 3);
-        assert_eq!(preview[0], vec!["header1", "header2"]);
-        assert_eq!(preview[1], vec!["value1", "value2"]);
-        assert_eq!(preview[2], vec!["value3", "value4"]);
-    }
-
-    #[test]
-    fn test_get_csv_preview_with_utf16() {
-        let utf16_data: Vec<u8> = vec![
-            0xFF, 0xFE, // BOM
-            0x68, 0x00, // h
-            0x65, 0x00, // e
-            0x61, 0x00, // a
-            0x64, 0x00, // d
-            0x65, 0x00, // e
-            0x72, 0x00, // r
-            0x31, 0x00, // 1
-            0x2C, 0x00, // ,
-            0x68, 0x00, // h
-            0x65, 0x00, // e
-            0x61, 0x00, // a
-            0x64, 0x00, // d
-            0x65, 0x00, // e
-            0x72, 0x00, // r
-            0x32, 0x00, // 2
-            0x0A, 0x00, // \n
-            0x76, 0x00, // v
-            0x61, 0x00, // a
-            0x6C, 0x00, // l
-            0x75, 0x00, // u
-            0x65, 0x00, // e
-            0x31, 0x00, // 1
-            0x2C, 0x00, // ,
-            0x76, 0x00, // v
-            0x61, 0x00, // a
-            0x6C, 0x00, // l
-            0x75, 0x00, // u
-            0x65, 0x00, // e
-            0x32, 0x00, // 2
-        ];
-        let result = GridController::get_csv_preview(utf16_data, 6, Some(b','));
-        assert!(result.is_ok());
-        let preview = result.unwrap();
-        assert_eq!(preview.len(), 2);
-        assert_eq!(preview[0], vec!["header1", "header2"]);
-        assert_eq!(preview[1], vec!["value1", "value2"]);
     }
 
     #[test]
