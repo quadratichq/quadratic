@@ -13,13 +13,14 @@ use serde::{Deserialize, Serialize};
 pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
-pub use v2_0 as current;
+pub use v1_10 as current;
 
 mod migrate_code_cell_references;
 mod migrate_data_table_spills;
 pub mod serialize;
 pub mod sheet_schema;
 mod shift_negative_offsets;
+pub mod v1_10;
 mod v1_3;
 mod v1_4;
 mod v1_5;
@@ -28,9 +29,8 @@ mod v1_7;
 mod v1_7_1;
 mod v1_8;
 mod v1_9;
-pub mod v2_0;
 
-pub static CURRENT_VERSION: &str = "2.0";
+pub static CURRENT_VERSION: &str = "1.10";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
@@ -43,10 +43,10 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
-    #[serde(rename = "2.0")]
-    V2_0 {
+    #[serde(rename = "1.10")]
+    V1_10 {
         #[serde(flatten)]
-        grid: v2_0::GridSchema,
+        grid: v1_10::GridSchema,
     },
     #[serde(rename = "1.9")]
     V1_9 {
@@ -92,9 +92,9 @@ enum GridFile {
 
 // TODO(ddimaria): refactor to be recursive
 impl GridFile {
-    fn into_latest(self) -> Result<v2_0::GridSchema> {
+    fn into_latest(self) -> Result<v1_10::GridSchema> {
         match self {
-            GridFile::V2_0 { grid } => Ok(grid),
+            GridFile::V1_10 { grid } => Ok(grid),
             GridFile::V1_9 { grid } => v1_9::upgrade(grid),
             GridFile::V1_8 { grid } => v1_9::upgrade(v1_8::upgrade(grid)?),
             GridFile::V1_7_1 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(grid)?)?),
@@ -198,7 +198,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             let schema = v1_9::upgrade(schema)?;
             Ok(serialize::import(schema)?)
         }
-        "2.0" => {
+        "1.10" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<current::GridSchema>(
                 &SERIALIZATION_FORMAT,
@@ -265,7 +265,7 @@ fn import_json(file_contents: String) -> Result<Grid> {
             | GridFile::V1_7_1 { .. }
             | GridFile::V1_8 { .. }
             | GridFile::V1_9 { .. }
-            | GridFile::V2_0 { .. }
+            | GridFile::V1_10 { .. }
     );
 
     let file = json.into_latest()?;

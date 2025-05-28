@@ -1440,7 +1440,7 @@ impl GridController {
             swallow,
             select_table,
 
-            // todo
+            // todo, implement copy formats
             copy_formats_from,
             copy_formats,
         } = op.to_owned()
@@ -1735,7 +1735,7 @@ impl GridController {
                     swallow: false,
                     select_table,
 
-                    // todo
+                    // todo, implement copy formats
                     copy_formats_from: None,
                     copy_formats: None,
                 });

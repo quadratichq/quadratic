@@ -18,17 +18,17 @@ pub struct SheetDataTables {
 
     // boolean map indicating presence of data table root cell at a position
     // uses Contiguous2D for efficient storage and fast lookup
-    has_data_table: Contiguous2D<Option<bool>>,
+    has_data_table_anchor: Contiguous2D<Option<bool>>,
 
     // position map indicating presence of data table output at a position,
     // each position value is the root cell position of the data table
     // this accounts for table spills hence values cannot overlap
-    // single cell output values are not stored here, check `has_data_table` map for single cell values
+    // single cell output values are not stored here, check `has_data_table_anchor` map for single cell values
     spilled_output_rects: Contiguous2D<Option<Pos>>,
 
     // region map indicating output rects of data tables ignoring spills (as if un spilled)
     // as spills are ignored, rects can overlap i.e. same position can have multiple tables trying to output
-    // single cell output values are not stored here, check `has_data_table` map for single cell values
+    // single cell output values are not stored here, check `has_data_table_anchor` map for single cell values
     un_spilled_output_rects: SheetRegionMap,
 }
 
@@ -47,17 +47,8 @@ impl IntoIterator for SheetDataTables {
     }
 }
 
-impl SheetDataTables {
-    pub fn new() -> Self {
-        Self {
-            data_tables: IndexMap::new(),
-            has_data_table: Contiguous2D::new(),
-            spilled_output_rects: Contiguous2D::new(),
-            un_spilled_output_rects: SheetRegionMap::new(),
-        }
-    }
-
-    pub fn from_data_tables(mut data_tables: IndexMap<Pos, DataTable>) -> Self {
+impl From<IndexMap<Pos, DataTable>> for SheetDataTables {
+    fn from(mut data_tables: IndexMap<Pos, DataTable>) -> Self {
         let mut data_tables_pos = Vec::new();
         data_tables.iter_mut().for_each(|(pos, dt)| {
             dt.spill_data_table = false;
@@ -70,6 +61,17 @@ impl SheetDataTables {
             sheet_data_tables.update_spill_and_cache(index, pos, None);
         }
         sheet_data_tables
+    }
+}
+
+impl SheetDataTables {
+    pub fn new() -> Self {
+        Self {
+            data_tables: IndexMap::new(),
+            has_data_table_anchor: Contiguous2D::new(),
+            spilled_output_rects: Contiguous2D::new(),
+            un_spilled_output_rects: SheetRegionMap::new(),
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -96,7 +98,7 @@ impl SheetDataTables {
 
         // remove data table from cache
         if let Some(old_spilled_output_rect) = old_output_rect {
-            self.has_data_table.set(*pos, None);
+            self.has_data_table_anchor.set(*pos, None);
 
             let rects = self
                 .spilled_output_rects
@@ -142,7 +144,7 @@ impl SheetDataTables {
         if let Some(data_table) = self.data_tables.get_mut(pos) {
             data_table.spill_data_table = spill_current_data_table;
 
-            self.has_data_table.set(*pos, Some(true));
+            self.has_data_table_anchor.set(*pos, Some(true));
 
             let new_spilled_output_rect = data_table.output_rect(*pos, false);
             if new_spilled_output_rect.len() > 1 {
@@ -278,12 +280,12 @@ impl SheetDataTables {
         }
     }
 
-    pub fn get_pos_in_rect(
+    pub fn iter_pos_in_rect(
         &self,
         rect: Rect,
         ignore_spill_error: bool,
     ) -> impl Iterator<Item = Pos> {
-        self.has_data_table
+        self.has_data_table_anchor
             .nondefault_rects_in_rect(rect)
             .flat_map(|(rect, _)| {
                 rect.x_range()
@@ -313,7 +315,7 @@ impl SheetDataTables {
         rect: Rect,
         ignore_spill_error: bool,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
-        self.get_pos_in_rect(rect, ignore_spill_error)
+        self.iter_pos_in_rect(rect, ignore_spill_error)
             .filter_map(|pos| {
                 self.data_tables
                     .get_full(&pos)
@@ -326,7 +328,7 @@ impl SheetDataTables {
         rect: Rect,
         ignore_spill_error: bool,
     ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
-        self.get_pos_in_rect(rect, ignore_spill_error)
+        self.iter_pos_in_rect(rect, ignore_spill_error)
             .filter_map(|pos| {
                 self.data_tables
                     .get_full(&pos)
@@ -479,7 +481,7 @@ impl SheetDataTables {
     }
 
     pub fn column_bounds(&self, column: i64) -> (i64, i64) {
-        let has_data_min = self.has_data_table.col_min(column);
+        let has_data_min = self.has_data_table_anchor.col_min(column);
         let output_rects_min = self.spilled_output_rects.col_min(column);
         let min = match (has_data_min > 0, output_rects_min > 0) {
             (true, true) => has_data_min.min(output_rects_min),
@@ -488,7 +490,7 @@ impl SheetDataTables {
             (false, false) => 0,
         };
 
-        let has_data_max = self.has_data_table.col_max(column);
+        let has_data_max = self.has_data_table_anchor.col_max(column);
         let output_rects_max = self.spilled_output_rects.col_max(column);
         let max = match (has_data_max > 0, output_rects_max > 0) {
             (true, true) => has_data_max.max(output_rects_max),
@@ -501,7 +503,7 @@ impl SheetDataTables {
     }
 
     pub fn row_bounds(&self, row: i64) -> (i64, i64) {
-        let has_data_min = self.has_data_table.row_min(row);
+        let has_data_min = self.has_data_table_anchor.row_min(row);
         let output_rects_min = self.spilled_output_rects.row_min(row);
         let min = match (has_data_min > 0, output_rects_min > 0) {
             (true, true) => has_data_min.min(output_rects_min),
@@ -510,7 +512,7 @@ impl SheetDataTables {
             (false, false) => 0,
         };
 
-        let has_data_max = self.has_data_table.row_max(row);
+        let has_data_max = self.has_data_table_anchor.row_max(row);
         let output_rects_max = self.spilled_output_rects.row_max(row);
         let max = match (has_data_max > 0, output_rects_max > 0) {
             (true, true) => has_data_max.max(output_rects_max),
@@ -524,7 +526,7 @@ impl SheetDataTables {
 
     pub fn finite_bounds(&self) -> Option<Rect> {
         match (
-            self.has_data_table.finite_bounds(),
+            self.has_data_table_anchor.finite_bounds(),
             self.spilled_output_rects.finite_bounds(),
         ) {
             (Some(has_data_table_bounds), Some(output_rects_bounds)) => {

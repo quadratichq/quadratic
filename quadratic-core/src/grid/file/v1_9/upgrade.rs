@@ -1,9 +1,9 @@
 use anyhow::Result;
 
 use crate::grid::file::v1_9 as current;
-use crate::grid::file::v2_0;
+use crate::grid::file::v1_10;
 
-fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v2_0::DataTablesSchema {
+fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v1_10::DataTablesSchema {
     data_tables
         .into_iter()
         .map(|(pos, data_table)| {
@@ -20,7 +20,7 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v2_0::DataTabl
 
             (
                 pos,
-                v2_0::DataTableSchema {
+                v1_10::DataTableSchema {
                     kind: data_table.kind,
                     name: data_table.name,
                     header_is_first_row: data_table.header_is_first_row,
@@ -45,8 +45,8 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v2_0::DataTabl
         .collect()
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v2_0::SheetSchema {
-    v2_0::SheetSchema {
+pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_10::SheetSchema {
+    v1_10::SheetSchema {
         id: sheet.id,
         name: sheet.name,
         color: sheet.color,
@@ -61,9 +61,9 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v2_0::SheetSchema {
     }
 }
 
-pub fn upgrade(grid: current::GridSchema) -> Result<v2_0::GridSchema> {
-    let new_grid = v2_0::GridSchema {
-        version: Some("2.0".to_string()),
+pub fn upgrade(grid: current::GridSchema) -> Result<v1_10::GridSchema> {
+    let new_grid = v1_10::GridSchema {
+        version: Some("1.10".to_string()),
         sheets: grid.sheets.into_iter().map(upgrade_sheet).collect(),
     };
     Ok(new_grid)

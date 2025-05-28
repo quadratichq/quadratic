@@ -28,7 +28,7 @@ pub(crate) fn import_column_builder(
         }
         columns.insert(x, col);
     }
-    Ok(SheetColumns::from(columns, has_cell_value))
+    Ok((columns, has_cell_value).into())
 }
 
 pub(crate) fn export_values(values: BTreeMap<i64, CellValue>) -> current::ColumnSchema {
