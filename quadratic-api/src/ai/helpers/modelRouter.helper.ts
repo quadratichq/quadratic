@@ -71,6 +71,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   <model name="Claude">
    <capabilities>
     <capability>Creating sample data</capability>
+    <capability>Creating calculators</capability>
     <capability>Requests that involve frustration</capability>
     <capability>Creating new charts</capability>
    </capabilities>
@@ -92,6 +93,14 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Create a chart</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Create a debt snowball calculator</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Create a mortgage calculator</user>
    <answer>Claude</answer>
   </example>
   <example>
