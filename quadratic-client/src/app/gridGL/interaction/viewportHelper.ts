@@ -129,7 +129,7 @@ function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectang
 }
 
 export function ensureSelectionVisible() {
-  const selection = sheets.sheet.cursor.getLargestRectangle();
+  const selection = sheets.sheet.cursor.getLargestRectangleUnbounded();
   const selectionBounds = sheets.sheet.getScreenRectangleFromRectangle(selection);
   const bounds = pixiApp.viewport.getVisibleBounds();
 
