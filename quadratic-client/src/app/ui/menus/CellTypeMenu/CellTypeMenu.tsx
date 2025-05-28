@@ -127,8 +127,8 @@ export default function CellTypeMenu() {
         {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
             {connections
-              .filter((c) => (c.isDemo ? c.isDemoVisible : false))
-              .map(({ name, type, uuid, isDemo }) => (
+              .filter((c) => (c.hasOwnProperty('isDemo') ? c.isDemoVisible : false))
+              .map(({ name, type, uuid }) => (
                 <CommandItemWrapper
                   key={uuid}
                   uuid={uuid}

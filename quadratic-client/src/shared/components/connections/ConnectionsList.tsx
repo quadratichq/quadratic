@@ -156,9 +156,9 @@ function ListItems({
     <div className="relative -mt-3">
       {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => {
         const isNavigable = !(disabled || isDemo);
-        const showIcon = !isApp && !disabled;
-        const showIconHideDemo = showIcon && isDemo;
-        const showIconBrowseSchema = showIcon && !isDemo;
+        const showSecondaryAction = !isApp && !disabled;
+        const showIconHideDemo = !disabled && isDemo;
+        const showIconBrowseSchema = !isApp && !disabled && !isDemo;
         return (
           <div className="group" key={uuid}>
             <div
@@ -166,7 +166,7 @@ function ListItems({
                 'relative flex w-full items-center gap-1',
                 disabled && 'cursor-not-allowed opacity-50',
                 isNavigable && 'group-hover:bg-accent',
-                showIcon && 'pr-12'
+                showSecondaryAction && 'pr-12'
               )}
             >
               <button

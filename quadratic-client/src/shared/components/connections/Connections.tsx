@@ -112,7 +112,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   if (demoConnectionToggling.length) {
     const activeFetcher = demoConnectionToggling.slice(-1)[0];
     connections = connections.map((c) =>
-      c.isDemo
+      c.hasOwnProperty('isDemo')
         ? {
             ...c,
             isDemoVisible: (activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo,
