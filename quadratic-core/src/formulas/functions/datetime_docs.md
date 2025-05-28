@@ -32,4 +32,6 @@ Quadratic automatically converts between years and months (with 1 year = 12 mont
 
 In formulas:
 
-Durations can also be constructed by subtracting two dates, two times, or two datetimes. Durations can be added to or subtracted from all of these types as well, including other durations.
+Durations can also be constructed by subtracting two times or two datetimes. Durations can be added to or subtracted from all of these types as well, including other durations.
+
+For compatibility with other spreadsheets, subtracting two days gives a number of days. This can be converted to a duration using [`DURATION.YMD()`](#durationymd).

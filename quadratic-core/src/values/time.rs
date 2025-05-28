@@ -467,6 +467,16 @@ impl Duration {
         self.seconds.rem_euclid(60.0)
     }
 
+    /// Returns a number of fractional days representing this duration.
+    ///
+    /// If the duration contains months or years, then this is an approximation
+    /// using `365.24 / 12.0` as the number of days in a month. The number of
+    /// days contributed by months/years is always rounded to the nearest
+    /// integer.
+    pub fn to_fractional_days(self) -> f64 {
+        self.seconds / 86_400.0 + (self.months as f64 * (365.24 / 12.0)).round()
+    }
+
     /// Returns the largest unit that is still smaller than this duration, or
     /// `None` if the duration is zero. If the duration is less than the
     /// smallest known unit (one attosecond, at time of writing), then that
@@ -688,5 +698,17 @@ mod tests {
         assert_eq!(Duration::from_attoseconds(3.2).to_string(), "3.2as");
         assert_eq!(Duration::from_femtoseconds(3.2).to_string(), "3.2fs");
         assert_eq!(Duration::from_picoseconds(3.2).to_string(), "3.2ps");
+    }
+
+    #[test]
+    fn test_duration_to_fractional_days() {
+        assert_eq!(
+            (Duration::from_months(12) + Duration::from_days(5.5)).to_fractional_days(),
+            370.5,
+        );
+        assert_eq!(
+            (Duration::from_months(1) + Duration::from_days(-3.0)).to_fractional_days(),
+            27.0,
+        );
     }
 }
