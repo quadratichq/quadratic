@@ -6,7 +6,7 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
-import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
+import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { RecoilRoot } from 'recoil';
 
 /**
@@ -158,8 +158,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // Hard-redirect user to a new file
-  window.location.href = prompt
-    ? `/files/create?private=false&prompt=${encodeURIComponent(prompt)}`
-    : '/files/create?private=false';
-  return null;
+  return redirectDocument(`/files/create?private=false${prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''}`);
 };
