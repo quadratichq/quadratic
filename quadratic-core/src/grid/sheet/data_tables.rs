@@ -280,7 +280,7 @@ impl SheetDataTables {
         }
     }
 
-    pub fn get_pos_in_rect(
+    pub fn iter_pos_in_rect(
         &self,
         rect: Rect,
         ignore_spill_error: bool,
@@ -315,7 +315,7 @@ impl SheetDataTables {
         rect: Rect,
         ignore_spill_error: bool,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
-        self.get_pos_in_rect(rect, ignore_spill_error)
+        self.iter_pos_in_rect(rect, ignore_spill_error)
             .filter_map(|pos| {
                 self.data_tables
                     .get_full(&pos)
@@ -328,7 +328,7 @@ impl SheetDataTables {
         rect: Rect,
         ignore_spill_error: bool,
     ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
-        self.get_pos_in_rect(rect, ignore_spill_error)
+        self.iter_pos_in_rect(rect, ignore_spill_error)
             .filter_map(|pos| {
                 self.data_tables
                     .get_full(&pos)

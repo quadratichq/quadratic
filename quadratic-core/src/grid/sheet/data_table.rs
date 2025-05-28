@@ -60,7 +60,7 @@ impl Sheet {
 
     /// Returns anchor positions of data tables that intersect a rect
     pub fn data_tables_pos_intersect_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
-        self.data_tables.get_pos_in_rect(rect, false)
+        self.data_tables.iter_pos_in_rect(rect, false)
     }
 
     /// Returns data tables that intersect a rect
@@ -74,7 +74,7 @@ impl Sheet {
     /// Returns true if there is a data table intersecting a rect, excluding a specific position
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
         self.data_tables
-            .get_pos_in_rect(rect, false)
+            .iter_pos_in_rect(rect, false)
             .filter(|pos| skip.map_or(true, |s| pos != s))
             .next()
             .is_some()
