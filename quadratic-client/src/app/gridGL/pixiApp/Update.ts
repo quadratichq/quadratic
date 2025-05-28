@@ -21,7 +21,7 @@ export class Update {
 
   private scrollBarsHandler?: ScrollBarsHandler;
 
-  private slowUpdate = 0;
+  private slowUpdate = Date.now() + MODIFIED_TIME_UPDATE;
 
   firstRenderComplete = false;
 
