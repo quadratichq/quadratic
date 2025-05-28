@@ -59,20 +59,20 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   <model name="Pro">
    <capabilities>
     <capability>Data cleaning</capability>
-    <capability>Creating sample data</capability>
     <capability>Augmenting data</capability>
     <capability>Processing images and PDFs</capability>
     <capability>Writing JavaScript</capability>
-    <capability>Simple formatting</capability>
-    <capability>Anything not explicitly defined in these instructions</capability>
+    <capability>Formatting - simple, conditional, etc.</capability>
+    <capability>Editing existing charts</capability>
+    <capability>API requests</capability>
+    <capability>Any capabilitiesnot defined in these instructions</capability>
    </capabilities>
   </model>
   <model name="Claude">
    <capabilities>
+    <capability>Creating sample data</capability>
     <capability>Requests that involve frustration</capability>
-    <capability>Conditional formatting</capability>
-    <capability>API requests</capability>
-    <capability>Building, editing, and refining charts</capability>
+    <capability>Creating new charts</capability>
    </capabilities>
   </model>
  </models>
@@ -84,7 +84,11 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  <examples>
   <example>
    <user>Insert some sample manufacturing data</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>create a dataset of sales data</user>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Create a chart</user>
@@ -92,11 +96,11 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Add an extra axis to my chart</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Change the line to blue</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Analyze my PDFs</user>
@@ -104,7 +108,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Highlight all the cells with value > 50</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>try again</user>
@@ -116,7 +120,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Remove column B from the data</user>
@@ -126,7 +130,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <user>How much does each crop produce per year?</user>
    <answer>Pro</answer>
   </example>
- <example>
+  <example>
    <user>Sum the values in column F</user>
    <answer>Pro</answer>
   </example>
@@ -134,16 +138,24 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <user>Calculate the mean of costs</user>
    <answer>Pro</answer>
   </example>
-<example>
+  <example>
    <user>Find the mean, filtered by product type</user>
    <answer>Pro</answer>
   </example>
-<example>
+  <example>
    <user>Highlight column C blue</user>
    <answer>Pro</answer>
   </example>
-<example>
+  <example>
    <user>Highlight all male entries orange</user>
+   <answer>Pro</answer>
+  </example>
+  <example>
+   <user>Why do you keep failing?</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Hi</user>
    <answer>Claude</answer>
   </example>
  </examples>
