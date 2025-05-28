@@ -75,9 +75,7 @@ impl Sheet {
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
         self.data_tables
             .iter_pos_in_rect(rect, false)
-            .filter(|pos| skip.map_or(true, |s| pos != s))
-            .next()
-            .is_some()
+            .any(|pos| skip != Some(&pos))
     }
 
     /// Returns a DataTable at a Pos as a result
