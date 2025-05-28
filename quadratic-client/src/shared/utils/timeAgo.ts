@@ -22,6 +22,8 @@ const DIVISIONS: Division[] = [
   { amount: Number.POSITIVE_INFINITY, name: 'years', ms: 12 * 30 * 24 * 60 * 60 * 1000 },
 ];
 
+const SHOW_NOW_AT = 10 * 1000;
+
 export function timeAgo(dateString: string | number, force = false) {
   const date = new Date(dateString);
   const now = new Date();
@@ -81,10 +83,15 @@ export const timeAgoAndNextTimeout = (dateString: string | number): TimeAgoAndNe
     if (current < division.amount) {
       // if it's less than a minute, show "< 1m ago"
       if (division.name === 'seconds') {
-        const gap = division.amount * division.ms - duration + 1; // +1 to ensure we don't show the same time again
+        if (duration < SHOW_NOW_AT) {
+          return {
+            timeAgo: 'Now',
+            nextInterval: SHOW_NOW_AT - duration,
+          };
+        }
         return {
           timeAgo: `< ${formatter.format(-1, 'minute')}`,
-          nextInterval: gap,
+          nextInterval: division.amount * division.ms - duration + 1, // +1 to ensure we don't show the same time again
         };
       }
 
