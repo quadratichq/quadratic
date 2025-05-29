@@ -29,7 +29,8 @@ impl ValidationList {
         value: &CellValue,
         a1_context: &A1Context,
     ) -> bool {
-        if let Some(values) = sheet.selection_values(selection, None, false, true, a1_context) {
+        if let Some(values) = sheet.selection_values(selection, None, false, true, true, a1_context)
+        {
             values.iter().any(|(_, search)| *search == value)
         } else {
             false
@@ -73,7 +74,8 @@ impl ValidationList {
         }
         match &self.source {
             ValidationListSource::Selection(selection) => {
-                let values = sheet.selection_values(selection, None, false, false, a1_context)?;
+                let values =
+                    sheet.selection_values(selection, None, false, false, true, a1_context)?;
                 Some(
                     values
                         .values()

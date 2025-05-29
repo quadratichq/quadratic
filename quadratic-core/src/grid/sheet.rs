@@ -673,12 +673,15 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         include_blanks: bool,
+        ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
             if let Some(rect) = match range {
-                CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
+                CellRefRange::Sheet { range } => {
+                    Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
+                }
                 CellRefRange::Table { range } => {
                     self.table_ref_to_rect(range, false, false, a1_context)
                 }
@@ -1134,14 +1137,14 @@ mod test {
         let selection = A1Selection::test_a1("A1:A4");
         let a1_context = sheet.make_a1_context();
         assert_eq!(
-            sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context),
+            sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context),
             Vec::<i64>::new()
         );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context);
+        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context);
         rows.sort();
         assert_eq!(rows, vec![1, 3]);
     }
