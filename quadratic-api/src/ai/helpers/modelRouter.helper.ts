@@ -40,7 +40,12 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     const userTextPrompt = lastPromptMessage.content
       .filter(isContentText)
       .map((content) => content.text)
-      .join('\n');
+      .join('\n')
+      .trim();
+
+    if (!userTextPrompt) {
+      return DEFAULT_BACKUP_MODEL;
+    }
 
     const args: AIRequestHelperArgs = {
       source: 'ModelRouter',
