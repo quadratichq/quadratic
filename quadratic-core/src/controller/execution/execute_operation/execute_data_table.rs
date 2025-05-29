@@ -1632,7 +1632,7 @@ impl GridController {
                 });
             }
 
-            // delete columns
+            // delete rows
             for index in rows.into_iter() {
                 let (reverse_row_index, reverse_row, _, _) =
                     data_table.delete_row_sorted(index as usize)?;

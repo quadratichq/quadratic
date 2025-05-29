@@ -410,7 +410,6 @@ export const removeTableRow = (selectTable = false) => {
 
   const table = getTable();
   const rows = getSelectedRows();
-
   if (table && rows && rows.length > 0) {
     quadraticCore.dataTableMutations({
       sheetId: sheets.current,
