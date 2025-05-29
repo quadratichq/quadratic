@@ -1,3 +1,10 @@
+import {
+  ControlCheckboxInline,
+  ControlCheckboxInputOther,
+  ControlCheckboxStacked,
+  ControlLinkInline,
+  ControlLinkStacked,
+} from '@/dashboard/onboarding/Controls';
 import { useOnboardingLoaderData } from '@/routes/onboarding';
 import {
   AIIcon,
@@ -18,13 +25,6 @@ import { useEffect, useRef } from 'react';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 import { z } from 'zod';
-import {
-  ControlCheckboxInline,
-  ControlCheckboxInputOther,
-  ControlCheckboxStacked,
-  ControlLinkInline,
-  ControlLinkStacked,
-} from './Controls';
 const FETCHER_KEY = 'onboarding-form-submission';
 const NUM_FREE_PROMPTS = 12;
 
