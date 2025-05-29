@@ -664,7 +664,11 @@ impl GridController {
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
         let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
-        let existing_data_tables = self.a1_context_sheet_table_bounds(sheet_id);
+        let existing_data_tables = self
+            .a1_context_sheet_table_bounds(sheet_id)
+            .into_iter()
+            .filter(|rect| rect.intersects(clipboard_rect))
+            .collect::<Vec<_>>();
         let mut growing_data_tables = existing_data_tables.clone();
         let bypass_growing =
             !Sheet::should_expand_data_table(&existing_data_tables, clipboard_rect);
