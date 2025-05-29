@@ -732,7 +732,7 @@ impl GridController {
                                 if let (false, false, Some(sheet)) =
                                     (within_data_table, bypass_growing, self.try_sheet(sheet_id))
                                 {
-                                    self.grow_data_table(
+                                    GridController::grow_data_table(
                                         sheet,
                                         &mut growing_data_tables,
                                         &mut data_table_columns,
@@ -783,7 +783,10 @@ impl GridController {
             selection: selection.to_owned(),
         });
 
-        data_table_ops.extend(self.grow_data_table_operations(data_table_columns, data_table_rows));
+        data_table_ops.extend(GridController::grow_data_table_operations(
+            data_table_columns,
+            data_table_rows,
+        ));
 
         ops.extend(compute_code_ops);
 

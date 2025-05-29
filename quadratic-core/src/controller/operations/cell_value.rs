@@ -96,7 +96,7 @@ impl GridController {
 
                         // expand the data table to the right or bottom if the
                         // cell value is touching the right or bottom edge
-                        self.grow_data_table(
+                        GridController::grow_data_table(
                             sheet,
                             &mut growing_data_tables,
                             &mut data_table_columns,
@@ -139,8 +139,10 @@ impl GridController {
                 });
             }
 
-            data_table_ops
-                .extend(self.grow_data_table_operations(data_table_columns, data_table_rows));
+            data_table_ops.extend(GridController::grow_data_table_operations(
+                data_table_columns,
+                data_table_rows,
+            ));
 
             ops.extend(compute_code_ops);
         }

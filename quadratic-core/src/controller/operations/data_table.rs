@@ -322,7 +322,6 @@ impl GridController {
     /// Expands a data table to the right or bottom if the cell value is
     /// touching the right or bottom edge.
     pub fn grow_data_table(
-        &self,
         sheet: &Sheet,
         data_tables: &mut [Rect],
         data_table_columns: &mut HashMap<SheetPos, Vec<u32>>,
@@ -385,7 +384,6 @@ impl GridController {
     /// Returns operations to grow a data table to the right or bottom if the
     /// cell value is touching the right or bottom edge.
     pub fn grow_data_table_operations(
-        &self,
         data_table_columns: HashMap<SheetPos, Vec<u32>>,
         data_table_rows: HashMap<SheetPos, Vec<u32>>,
     ) -> Vec<Operation> {
