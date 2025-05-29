@@ -50,7 +50,6 @@ import type {
   ClientCoreAddDataTable,
   ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRowForRect,
-  ClientCoreGetCsvPreview,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
@@ -615,16 +614,6 @@ class Core {
           resolve({ error: error as string });
         }
       });
-    }
-  }
-
-  async getCsvPreview({ file, maxRows, delimiter }: ClientCoreGetCsvPreview): Promise<string[][] | undefined> {
-    try {
-      await initCore();
-      return GridController.getCsvPreview(new Uint8Array(file), maxRows, delimiter);
-    } catch (error: unknown) {
-      this.sendAnalyticsError('getCsvPreview.Dashboard', error);
-      return undefined;
     }
   }
 

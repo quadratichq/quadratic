@@ -58,7 +58,6 @@ import type {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
-  CoreClientGetCsvPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
@@ -608,24 +607,6 @@ class QuadraticCore {
       );
     });
   };
-
-  getCsvPreview({
-    file,
-    maxRows,
-    delimiter,
-  }: {
-    file: ArrayBuffer;
-    maxRows: number;
-    delimiter: number | undefined;
-  }): Promise<CoreClientGetCsvPreview['preview']> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetCsvPreview) => {
-        resolve(message.preview);
-      };
-      this.send({ type: 'clientCoreGetCsvPreview', file, maxRows, delimiter, id }, file);
-    });
-  }
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
