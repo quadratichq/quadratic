@@ -138,13 +138,6 @@ export class SheetCursor {
   /// unbounded ranges. Converts the BigInt::MAX to Number::MAX.
   getLargestRectangleUnbounded = (): Rectangle => {
     const rect = this.jsSelection.getLargestUnboundedRectangle();
-    console.log(rect.min.x, rect.min.y, rect.max.x, rect.max.y);
-    console.log(
-      Number(rect.min.x),
-      Number(rect.min.y),
-      rect.max.x > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(rect.max.x),
-      rect.max.y > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(rect.max.y)
-    );
     return new Rectangle(
       Number(rect.min.x),
       Number(rect.min.y),
