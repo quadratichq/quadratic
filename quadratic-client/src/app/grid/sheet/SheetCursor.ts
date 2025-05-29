@@ -11,7 +11,7 @@ import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-core/qu
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import type { IViewportTransformState } from 'pixi-viewport';
-import type { Rectangle } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 
 // Select column and/or row for the entire sheet.
 export interface ColumnRowCursor {
@@ -132,6 +132,18 @@ export class SheetCursor {
   getLargestRectangle = (): Rectangle => {
     const rect = this.jsSelection.getLargestRectangle();
     return rectToRectangle(rect);
+  };
+
+  /// Returns the largest rectangle that contains all the selection, including
+  /// unbounded ranges. Converts the BigInt::MAX to Number::MAX.
+  getLargestRectangleUnbounded = (): Rectangle => {
+    const rect = this.jsSelection.getLargestUnboundedRectangle();
+    return new Rectangle(
+      Number(rect.min.x),
+      Number(rect.min.y),
+      rect.max.x > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(rect.max.x),
+      rect.max.y > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(rect.max.y)
+    );
   };
 
   // Returns rectangle in case of single finite range selection having more than one cell

@@ -420,43 +420,11 @@ class CoreClient {
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         return;
 
-      case 'clientCoreGetColumnsBounds':
-        this.send({
-          type: 'coreClientGetColumnsBounds',
-          id: e.data.id,
-          bounds: await core.getColumnsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
-        });
-        return;
-
-      case 'clientCoreGetRowsBounds':
-        this.send({
-          type: 'coreClientGetRowsBounds',
-          id: e.data.id,
-          bounds: await core.getRowsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
-        });
-        return;
-
       case 'clientCoreJumpCursor':
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
           coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
-        });
-        return;
-
-      case 'clientCoreFindNextColumnForRect':
-        this.send({
-          type: 'coreClientFindNextColumnForRect',
-          id: e.data.id,
-          column: await core.findNextColumnForRect(e.data),
-        });
-        return;
-
-      case 'clientCoreFindNextRowForRect':
-        this.send({
-          type: 'coreClientFindNextRowForRect',
-          id: e.data.id,
-          row: await core.findNextRowForRect(e.data),
         });
         return;
 
@@ -700,14 +668,6 @@ class CoreClient {
         this.send({
           type: 'coreClientAddDataTable',
           id: e.data.id,
-        });
-        return;
-
-      case 'clientCoreFiniteRectFromSelection':
-        this.send({
-          type: 'coreClientFiniteRectFromSelection',
-          id: e.data.id,
-          rect: core.finiteRectFromSelection(e.data.selection),
         });
         return;
 
