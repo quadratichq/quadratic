@@ -154,7 +154,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if (sentryPromises.length > 0) {
-    await Promise.all(sentryPromises);
+    await Promise.all(sentryPromises).catch(console.error);
   }
 
   // Hard-redirect user to a new file
