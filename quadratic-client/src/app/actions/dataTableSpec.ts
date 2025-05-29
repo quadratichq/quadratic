@@ -614,7 +614,7 @@ export const dataTableSpec: DataTableSpec = {
     label: () => {
       const length = sheets.sheet.cursor.getRowsWithSelectedCells().length;
       const plural = length > 1 ? 's' : '';
-      return `Delete ${length} row${plural}`;
+      return `Delete ${length} table row${plural}`;
     },
     Icon: DeleteIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
