@@ -40,7 +40,7 @@ export const useAnalystWebSearch = () => {
           source: 'WebSearch',
           modelKey: DEFAULT_SEARCH_MODEL,
           messages,
-          useStream: true,
+          useStream: false,
           toolName: AITool.WebSearchInternal,
           useToolsPrompt: false,
           language: undefined,
