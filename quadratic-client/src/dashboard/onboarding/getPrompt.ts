@@ -12,7 +12,7 @@ export function getPrompt(data: OnboardingResponseV1) {
     const value = data['work-role'];
     const label = questionsById['work-role'].optionsByValue[value];
     if (label)
-      return `Hi, I’m a new user to Quadratic and I plan on using it for work. I work in ${label}; show me what you can by creating me a sample dataset for that field. Once finished with the dataset, create a chart that helps explain the data. Then tell me what else is possible in Quadratic.`;
+      return `Hi, I'm a new user to Quadratic and I plan on using it for work. I work in ${label}; show me what you can do by creating me a sample dataset for that field. Once finished with the dataset, create a chart that helps explain the data. Then tell me what else is possible in Quadratic.`;
   } else if (data.use === 'personal' && data['personal-uses[]'] && data['personal-uses[]'].length > 0) {
     const value = data['personal-uses[]'].filter((value) => value !== 'other')[0];
     const label = questionsById['personal-uses[]'].optionsByValue[value];
