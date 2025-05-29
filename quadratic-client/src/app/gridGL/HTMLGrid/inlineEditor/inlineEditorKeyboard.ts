@@ -387,6 +387,7 @@ class InlineEditorKeyboard {
           sheetId: sheets.current,
           pos: { x: cursor.x, y: cursor.y },
           language: pixiAppSettings.codeEditorState.codeCell.language,
+          lastModified: pixiAppSettings.codeEditorState.codeCell.lastModified,
         },
       });
     } else if (matchShortcut(Action.InsertToday, e)) {

@@ -64,6 +64,7 @@ export const defaultCodeEditorState: CodeEditorState = {
     sheetId: '',
     pos: { x: 1, y: 1 },
     language: 'Python',
+    lastModified: 0,
   },
   codeString: undefined,
   evaluationResult: undefined,

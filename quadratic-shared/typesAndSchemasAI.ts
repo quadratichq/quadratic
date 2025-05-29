@@ -197,6 +197,16 @@ const ContextSchema = z.object({
         y: z.number(),
       }),
       language: CodeCellLanguageSchema,
+      lastModified: z
+        .number()
+        .optional()
+        .transform((val) => {
+          // lastModified is optional in the context, but required in the code cell
+          if (val === undefined) {
+            return 0; // default to 0 if not provided
+          }
+          return val;
+        }),
     })
     .optional(),
 });
