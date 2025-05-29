@@ -84,3 +84,5 @@ function ensureSampleTokenNotUsedInProduction() {
     );
   }
 }
+
+export const debugAndNotInProduction = ENVIRONMENT !== 'production' && !!DEBUG;
