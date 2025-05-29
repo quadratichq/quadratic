@@ -26,6 +26,7 @@ import {
   ControlLinkStacked,
 } from './Controls';
 const FETCHER_KEY = 'onboarding-form-submission';
+const NUM_FREE_PROMPTS = 12;
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',
@@ -464,11 +465,12 @@ function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
       <StarShineIcon className="mr-2" />
       {isLastQuestion ? (
         <>
-          You've unlocked <strong className="ml-1 font-semibold">20 free prompts</strong>!
+          You've unlocked <strong className="ml-1 font-semibold">{NUM_FREE_PROMPTS} free prompts</strong>!
         </>
       ) : (
         <>
-          You'll be rewarded <strong className="mx-1 font-semibold">20 free prompts</strong> on completion!
+          You'll be rewarded <strong className="mx-1 font-semibold">{NUM_FREE_PROMPTS} free prompts</strong> on
+          completion!
         </>
       )}
     </aside>
