@@ -17,7 +17,7 @@ export function getPrompt(data: OnboardingResponseV1) {
     const value = data['personal-uses[]'].filter((value) => value !== 'other')[0];
     const label = questionsById['personal-uses[]'].optionsByValue[value];
     if (value && label)
-      return `Hi, I’m a new user to Quadratic and I plan on using it for personal projects. One thing I’m going to use it for in particular is ${label}; show me what you can by creating a sample dataset for that. Once finished with the dataset, create a chart that helps explain the data. Then tell me what else is possible in Quadratic.`;
+      return `Hi, I'm a new user to Quadratic and I plan on using it for personal projects. One thing I'm going to use it for in particular is ${label}; show me what you can do by creating a sample dataset for that. Once finished with the dataset, create a chart that helps explain the data. Then tell me what else is possible in Quadratic.`;
   } else if (
     data.use === 'education' &&
     data['education-identity'] &&
