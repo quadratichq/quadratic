@@ -115,6 +115,8 @@ export class PixiApp {
     this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();
     this.debug = new Graphics();
+
+    events.on('debugFlags', this.setViewportDirty);
   }
 
   init = (): Promise<void> => {
@@ -348,7 +350,7 @@ export class PixiApp {
     pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
-  rebuild() {
+  rebuild = () => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.headings.dirty = true;
@@ -358,7 +360,7 @@ export class PixiApp {
     this.boxCells.reset();
     this.reset();
     this.setViewportDirty();
-  }
+  };
 
   saveMultiplayerViewport(): string {
     const viewport = this.viewport;

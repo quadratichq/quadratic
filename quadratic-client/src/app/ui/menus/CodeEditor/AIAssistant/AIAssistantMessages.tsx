@@ -3,7 +3,7 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
@@ -22,7 +22,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
-
+  const { getFlag } = useDebugFlags();
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
     setDiv(node);
@@ -97,7 +97,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!getFlag('debugShowAIInternalContext') && message.contextType !== 'userPrompt') {
           return null;
         }
 

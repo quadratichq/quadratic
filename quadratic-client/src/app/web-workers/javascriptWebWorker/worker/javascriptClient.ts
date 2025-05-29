@@ -1,4 +1,4 @@
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type {
   ClientJavascriptGetJwt,
@@ -17,7 +17,7 @@ class JavascriptClient {
 
   start() {
     self.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[javascriptClient] initialized.');
+    if (debugFlag('debugWebWorkers')) console.log('[javascriptClient] initialized.');
   }
 
   private send(message: JavascriptClientMessage, transfer?: Transferable[]) {
@@ -29,7 +29,7 @@ class JavascriptClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientJavascriptMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[coreClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'clientJavascriptCoreChannel':

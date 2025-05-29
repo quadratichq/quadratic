@@ -1,4 +1,4 @@
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/toUint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -140,7 +140,8 @@ class Python {
     const pythonVersion = await this.pyodide.runPythonAsync('import platform; platform.python_version()');
     const pyodideVersion = this.pyodide.version;
 
-    if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
+    if (debugFlag('debugWebWorkers'))
+      console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
 
     pythonClient.sendInit(pythonVersion);
     pythonClient.sendPythonState('ready');

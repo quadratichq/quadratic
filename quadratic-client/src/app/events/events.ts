@@ -160,6 +160,8 @@ interface EventTypes {
   scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
 
   bitmapFontsLoaded: () => void;
+
+  debugFlags: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

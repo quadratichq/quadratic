@@ -9,7 +9,7 @@
  * webGL buffers do not exceed the maximum size.
  */
 
-import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import type { JsCoordinate, JsRenderCell } from '@/app/quadratic-core-types';
@@ -154,7 +154,7 @@ export class CellsTextHash {
 
   unload = () => {
     if (this.loaded) {
-      if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
+      if (debugFlag('debugShowLoadingHashes')) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
       this.loaded = false;
       this.labels.clear();
       this.special.clear();
@@ -232,7 +232,7 @@ export class CellsTextHash {
         cells = false;
       }
 
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
+      if (debugFlag('debugShowHashUpdates')) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
 
       if (cells) {
         this.createLabels(cells);
@@ -243,7 +243,8 @@ export class CellsTextHash {
 
       return true;
     } else if (this.dirtyText || this.dirtyBuffers) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text and buffers ${this.hashX}, ${this.hashY}`);
+      if (debugFlag('debugShowHashUpdates'))
+        console.log(`[CellsTextHash] updating text and buffers ${this.hashX}, ${this.hashY}`);
 
       this.updateText();
       this.updateBuffers();
@@ -483,7 +484,7 @@ export class CellsTextHash {
 
     changed = changed || specialsChanged;
 
-    if (changed && debugShowHashUpdates) {
+    if (changed && debugFlag('debugShowHashUpdates')) {
       console.log(
         `[CellsTextHash] adjustHeadings for ${this.hashX}, ${this.hashY} because of changes in column: ${column}, row: ${row}`
       );

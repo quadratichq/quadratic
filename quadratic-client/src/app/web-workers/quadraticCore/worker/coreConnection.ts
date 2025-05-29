@@ -1,4 +1,4 @@
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { ConnectionKind } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
@@ -23,10 +23,10 @@ class CoreConnection {
 
   lastTransactionId?: string;
 
-  start = () => {
+  start = async () => {
     self.sendConnection = this.sendConnection;
 
-    if (debugWebWorkers) console.log('[coreConnection] initialized.');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[coreConnection] initialized.');
   };
 
   private send(message: any) {

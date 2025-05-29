@@ -1,13 +1,14 @@
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { VERSION } from '@/shared/constants/appConstants';
 import { useRecoilValue } from 'recoil';
-import { debugShowFPS } from '../../../debugFlags';
 import BottomBarItem from './BottomBarItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
 export const BottomBar = () => {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
+  const { getFlag } = useDebugFlags();
 
   return (
     <div
@@ -30,7 +31,7 @@ export const BottomBar = () => {
           </BottomBarItem>
         )}
 
-        {debugShowFPS && (
+        {getFlag('debugShowFPS') && (
           <BottomBarItem>
             <div
               className="debug-show-renderer"

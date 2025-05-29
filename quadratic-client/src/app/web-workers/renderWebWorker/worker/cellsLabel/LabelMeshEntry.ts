@@ -7,7 +7,7 @@
  * are rendered.
  */
 
-import { debugShowCellHashesInfo } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { LabelMesh } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMesh';
 import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
@@ -72,17 +72,21 @@ export class LabelMeshEntry {
       message.colors = this.colors;
       this.memory = this.vertices.byteLength + this.uvs.byteLength + this.indices.byteLength + this.colors.byteLength;
       renderClient.sendLabelMeshEntry(message, [
-        this.vertices.buffer,
-        this.uvs.buffer,
-        this.indices.buffer,
-        this.colors.buffer,
+        this.vertices.buffer as ArrayBuffer,
+        this.uvs.buffer as ArrayBuffer,
+        this.indices.buffer as ArrayBuffer,
+        this.colors.buffer as ArrayBuffer,
       ]);
     } else {
       this.memory = this.vertices.byteLength + this.uvs.byteLength + this.indices.byteLength;
-      renderClient.sendLabelMeshEntry(message, [this.vertices.buffer, this.uvs.buffer, this.indices.buffer]);
+      renderClient.sendLabelMeshEntry(message, [
+        this.vertices.buffer as ArrayBuffer,
+        this.uvs.buffer as ArrayBuffer,
+        this.indices.buffer as ArrayBuffer,
+      ]);
     }
 
-    if (debugShowCellHashesInfo) {
+    if (debugFlag('debugShowCellHashesInfo')) {
       console.log(`[LabelMeshes] buffer size: ${this.size}`);
     }
   }

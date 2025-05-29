@@ -5,7 +5,7 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsRenderCell } from '@/app/quadratic-core-types';
 import type {
   CoreRenderCells,
@@ -20,14 +20,14 @@ class RenderCore {
   private waitingForResponse: Map<number, Function> = new Map();
   private id = 0;
 
-  clientInit(renderPort: MessagePort) {
+  async clientInit(renderPort: MessagePort) {
     this.renderCorePort = renderPort;
     this.renderCorePort.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[renderCore] initialized');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[renderCore] initialized');
   }
 
   private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[renderCore] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[renderCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'coreRenderSheetInfo':
