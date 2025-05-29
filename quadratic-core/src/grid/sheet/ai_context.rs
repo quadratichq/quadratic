@@ -512,6 +512,7 @@ mod tests {
                     output_type: None,
                 }),
                 cells_accessed: Some(Default::default()),
+                last_modified: js_errored_code_cells[0].last_modified,
             },
             JsCodeCell {
                 x: 9,
@@ -529,6 +530,7 @@ mod tests {
                     output_type: None,
                 }),
                 cells_accessed: Some(Default::default()),
+                last_modified: js_errored_code_cells[1].last_modified,
             },
         ];
 
