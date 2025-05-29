@@ -1,4 +1,3 @@
-import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
@@ -23,20 +22,11 @@ type Props = {
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
-  // If this is present, we're in the app and we'll do stuff slightly differently
-  handleNavigateToDetailsViewOverride?: (language: CodeCellLanguage) => void;
 };
 export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
-export const Connections = ({
-  connections,
-  connectionsAreLoading,
-  teamUuid,
-  staticIps,
-  handleNavigateToDetailsViewOverride,
-  sshPublicKey,
-}: Props) => {
+export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps, sshPublicKey }: Props) => {
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
@@ -127,12 +117,6 @@ export const Connections = ({
     setActiveConnectionType(connectionType);
   };
   const handleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
-    // If we're in the app, insert a query on the sheet.
-    if (handleNavigateToDetailsViewOverride) {
-      handleNavigateToDetailsViewOverride({ Connection: { kind: connectionType, id: connectionUuid } });
-      return;
-    }
-    // Otherwise we're on the dashboard, so navigate to the connection details
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
   };

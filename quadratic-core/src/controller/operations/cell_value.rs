@@ -160,8 +160,13 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects =
-                sheet.selection_to_rects(selection, false, force_table_bounds, &self.a1_context);
+            let rects = sheet.selection_to_rects(
+                selection,
+                false,
+                force_table_bounds,
+                true,
+                &self.a1_context,
+            );
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
@@ -794,6 +799,7 @@ mod test {
             CodeCellLanguage::Formula,
             "5 + 5".to_string(),
             None,
+            None,
         );
 
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
@@ -834,6 +840,7 @@ mod test {
             sheet_pos_2,
             CodeCellLanguage::Formula,
             "5 + 5".to_string(),
+            None,
             None,
         );
         let selection = A1Selection::test_a1("A2:,B");

@@ -643,6 +643,7 @@ mod test {
             CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
+            None,
         );
         let transaction = gc.last_transaction().unwrap();
         let result = JsCodeResult {
@@ -668,7 +669,7 @@ mod test {
         let languages = vec![CodeCellLanguage::Javascript, CodeCellLanguage::Python];
 
         for language in languages {
-            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None);
+            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -683,7 +684,7 @@ mod test {
             assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
-            gc.set_code_cell(sheet_pos, language, "code".to_string(), None);
+            gc.set_code_cell(sheet_pos, language, "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),

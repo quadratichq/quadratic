@@ -91,6 +91,27 @@ impl A1Selection {
         rect
     }
 
+    /// Returns the largest rectangle that can be formed by the selection, including unbounded ranges.
+    pub fn largest_rect_unbounded(&self, a1_context: &A1Context) -> Rect {
+        let mut rect = Rect::single_pos(self.cursor);
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                rect = rect.union(&Rect::new(
+                    range.start.col(),
+                    range.start.row(),
+                    range.end.col(),
+                    range.end.row(),
+                ));
+            }
+            CellRefRange::Table { range } => {
+                if let Some(table_rect) = range.to_largest_rect(a1_context) {
+                    rect = rect.union(&table_rect);
+                }
+            }
+        });
+        rect
+    }
+
     /// Returns rectangle in case of single finite range selection having more than one cell.
     pub fn single_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         if self.ranges.len() != 1 || !self.is_multi_cursor(a1_context) {
@@ -121,7 +142,7 @@ impl A1Selection {
     // Converts to a set of quadrant positions.
     pub fn rects_to_hashes(&self, sheet: &Sheet, a1_context: &A1Context) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
-        let finite_selection = sheet.finitize_selection(self, false, false, a1_context);
+        let finite_selection = sheet.finitize_selection(self, false, false, false, a1_context);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
             if let Some(rect) = range.to_rect(a1_context) {
@@ -237,7 +258,9 @@ impl A1Selection {
                     return;
                 }
                 if range.is_col_range() {
-                    for col in range.start.col()..=range.end.col() {
+                    let start = range.start.col().min(range.end.col());
+                    let end = range.start.col().max(range.end.col());
+                    for col in start..=end {
                         columns.insert(col);
                     }
                 }
@@ -322,7 +345,9 @@ impl A1Selection {
                     return;
                 }
                 if range.is_row_range() {
-                    for row in range.start.row()..=range.end.row() {
+                    let start = range.start.row().min(range.end.row());
+                    let end = range.start.row().max(range.end.row());
+                    for row in start..=end {
                         rows.insert(row);
                     }
                 }
@@ -391,6 +416,25 @@ impl A1Selection {
         range.is_col_range()
             || range.is_row_range()
             || (one_cell && range.is_single_cell(a1_context))
+    }
+
+    /// Returns true if the selection can insert column or row:
+    /// The selection is a single range AND
+    /// 1. is a column or row selection OR
+    /// 2. is a rect selection
+    pub fn can_insert_column_row(&self) -> bool {
+        if self.ranges.len() != 1 {
+            return false;
+        }
+        let Some(range) = self.ranges.first() else {
+            return false;
+        };
+        match range {
+            CellRefRange::Sheet { range } => {
+                range.end.col() != UNBOUNDED || range.end.row() != UNBOUNDED
+            }
+            CellRefRange::Table { .. } => true,
+        }
     }
 
     /// Returns true if the selection is a single cell.
@@ -1707,6 +1751,9 @@ mod tests {
         let selection = A1Selection::test_a1("A:C");
         assert_eq!(selection.selected_columns(), vec![1, 2, 3]);
 
+        let selection = A1Selection::test_a1("C:A");
+        assert_eq!(selection.selected_columns(), vec![1, 2, 3]);
+
         // Test multiple column ranges
         let selection = A1Selection::test_a1("A:C,E:G");
         assert_eq!(selection.selected_columns(), vec![1, 2, 3, 5, 6, 7]);
@@ -1742,6 +1789,10 @@ mod tests {
         let selection = A1Selection::test_a1("1:3");
         assert_eq!(selection.selected_rows(), vec![1, 2, 3]);
 
+        // Test reverse row range
+        let selection = A1Selection::test_a1("3:1");
+        assert_eq!(selection.selected_rows(), vec![1, 2, 3]);
+
         // Test multiple row ranges
         let selection = A1Selection::test_a1("1:3,5:7");
         assert_eq!(selection.selected_rows(), vec![1, 2, 3, 5, 6, 7]);
@@ -1761,5 +1812,31 @@ mod tests {
         // Test column selections (should not return any rows)
         let selection = A1Selection::test_a1("A:C");
         assert!(selection.selected_rows().is_empty());
+    }
+
+    #[test]
+    fn test_can_insert_column_row() {
+        // Test single column selection
+        assert!(A1Selection::test_a1("A").can_insert_column_row());
+        assert!(A1Selection::test_a1("A:C").can_insert_column_row());
+
+        // Test single row selection
+        assert!(A1Selection::test_a1("1").can_insert_column_row());
+        assert!(A1Selection::test_a1("1:3").can_insert_column_row());
+
+        // Test single finite range
+        assert!(A1Selection::test_a1("A1:B2").can_insert_column_row());
+        assert!(A1Selection::test_a1("A1").can_insert_column_row());
+
+        // Test multiple ranges (should be false)
+        assert!(!A1Selection::test_a1("A1,B2").can_insert_column_row());
+        assert!(!A1Selection::test_a1("A,B").can_insert_column_row());
+        assert!(!A1Selection::test_a1("1,2").can_insert_column_row());
+
+        // Test infinite ranges (should be false)
+        assert!(!A1Selection::test_a1("A:").can_insert_column_row());
+        assert!(!A1Selection::test_a1("1:").can_insert_column_row());
+        assert!(!A1Selection::test_a1("B2:").can_insert_column_row());
+        assert!(!A1Selection::test_a1("*").can_insert_column_row());
     }
 }

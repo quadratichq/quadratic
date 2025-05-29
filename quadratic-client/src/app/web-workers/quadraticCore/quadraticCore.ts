@@ -20,6 +20,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
@@ -29,7 +30,6 @@ import type {
   JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
-  MinMax,
   PasteSpecial,
   Pos,
   SearchOptions,
@@ -50,18 +50,13 @@ import type {
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
-  CoreClientFindNextColumnForRect,
-  CoreClientFindNextRowForRect,
-  CoreClientFiniteRectFromSelection,
+  CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
-  CoreClientGetColumnsBounds,
-  CoreClientGetCsvPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
   CoreClientGetRenderCell,
-  CoreClientGetRowsBounds,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
   CoreClientJumpCursor,
@@ -77,7 +72,6 @@ import type {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
-import type { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -407,6 +401,16 @@ class QuadraticCore {
     });
   }
 
+  getAICells(selection: string, sheetId: string, page: number): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { aiCells: string }) => {
+        resolve(message.aiCells);
+      };
+      this.send({ type: 'clientCoreGetAICells', id, selection, sheetId, page });
+    });
+  }
+
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
@@ -495,6 +499,7 @@ class QuadraticCore {
     y: number;
     language: CodeCellLanguage;
     codeString: string;
+    codeCellName?: string;
     cursor?: string;
   }): Promise<string | undefined> {
     const id = this.id++;
@@ -510,6 +515,7 @@ class QuadraticCore {
         language: options.language,
         codeString: options.codeString,
         cursor: options.cursor,
+        codeCellName: options.codeCellName,
         id,
       });
     });
@@ -594,24 +600,6 @@ class QuadraticCore {
       );
     });
   };
-
-  getCsvPreview({
-    file,
-    maxRows,
-    delimiter,
-  }: {
-    file: ArrayBuffer;
-    maxRows: number;
-    delimiter: number | undefined;
-  }): Promise<CoreClientGetCsvPreview['preview']> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetCsvPreview) => {
-        resolve(message.preview);
-      };
-      this.send({ type: 'clientCoreGetCsvPreview', file, maxRows, delimiter, id }, file);
-    });
-  }
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
@@ -779,6 +767,38 @@ class QuadraticCore {
       selection,
       format,
       cursor,
+    });
+  }
+
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreSetFormats',
+        id,
+        sheetId,
+        selection,
+        formats,
+      });
+    });
+  }
+
+  getAICellFormats(sheetId: string, selection: string, page: number) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
+        resolve(message.formats);
+      };
+      this.send({
+        type: 'clientCoreGetAIFormats',
+        id,
+        sheetId,
+        selection,
+        page,
+      });
     });
   }
 
@@ -1085,40 +1105,6 @@ class QuadraticCore {
 
   //#region Bounds
 
-  getColumnsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetColumnsBounds) => {
-        resolve(message.bounds);
-      };
-      this.send({
-        type: 'clientCoreGetColumnsBounds',
-        sheetId,
-        start,
-        end,
-        id,
-        ignoreFormatting,
-      });
-    });
-  }
-
-  getRowsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetRowsBounds) => {
-        resolve(message.bounds);
-      };
-      this.send({
-        type: 'clientCoreGetRowsBounds',
-        sheetId,
-        start,
-        end,
-        id,
-        ignoreFormatting,
-      });
-    });
-  }
-
   jumpCursor(
     sheetId: string,
     current: JsCoordinate,
@@ -1141,60 +1127,6 @@ class QuadraticCore {
     });
   }
 
-  findNextColumnForRect(options: {
-    sheetId: string;
-    columnStart: number;
-    row: number;
-    width: number;
-    height: number;
-    reverse: boolean;
-  }): Promise<number> {
-    const { sheetId, columnStart, row, width, height, reverse } = options;
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientFindNextColumnForRect) => {
-        resolve(message.column);
-      };
-      this.send({
-        type: 'clientCoreFindNextColumnForRect',
-        id,
-        sheetId,
-        columnStart,
-        row,
-        width,
-        height,
-        reverse,
-      });
-    });
-  }
-
-  findNextRowForRect(options: {
-    sheetId: string;
-    column: number;
-    rowStart: number;
-    width: number;
-    height: number;
-    reverse: boolean;
-  }): Promise<number> {
-    const { sheetId, column, rowStart, width, height, reverse } = options;
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientFindNextRowForRect) => {
-        resolve(message.row);
-      };
-      this.send({
-        type: 'clientCoreFindNextRowForRect',
-        id,
-        sheetId,
-        column,
-        rowStart,
-        width,
-        height,
-        reverse,
-      });
-    });
-  }
-
   commitTransientResize(sheetId: string, transientResize: string) {
     this.send({
       type: 'clientCoreCommitTransientResize',
@@ -1212,18 +1144,6 @@ class QuadraticCore {
       row,
       size,
       cursor: sheets.getCursorPosition(),
-    });
-  }
-
-  finiteRectFromSelection(selection: string): Promise<Rectangle | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientFiniteRectFromSelection) => resolve(message.rect);
-      this.send({
-        type: 'clientCoreFiniteRectFromSelection',
-        id,
-        selection,
-      });
     });
   }
 
@@ -1351,11 +1271,12 @@ class QuadraticCore {
     });
   }
 
-  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertColumn',
+      type: 'clientCoreInsertColumns',
       sheetId,
       column,
+      count,
       right,
       cursor,
     });
@@ -1370,11 +1291,12 @@ class QuadraticCore {
     });
   }
 
-  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
     this.send({
-      type: 'clientCoreInsertRow',
+      type: 'clientCoreInsertRows',
       sheetId,
       row,
+      count,
       below,
       cursor,
     });
@@ -1425,11 +1347,20 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, cursor: string) {
-    this.send({
-      type: 'clientCoreGridToDataTable',
-      sheetRect,
-      cursor,
+  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreGridToDataTable',
+        id,
+        sheetRect,
+        firstRowIsHeader,
+        tableName,
+        cursor,
+      });
     });
   }
 

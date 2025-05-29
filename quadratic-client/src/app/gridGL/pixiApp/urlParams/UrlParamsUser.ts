@@ -60,6 +60,7 @@ export class UrlParamsUser {
             sheetId: sheets.current,
             pos: { x, y },
             language,
+            lastModified: 0,
           },
         }));
       }

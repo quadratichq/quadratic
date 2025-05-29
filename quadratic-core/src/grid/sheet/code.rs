@@ -310,6 +310,7 @@ impl Sheet {
                                     output_type: code_run.output_type.clone(),
                                 }),
                                 cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                                last_modified: data_table.last_modified.timestamp_millis(),
                             })
                         }
                         DataTableKind::Import(_) => Some(JsCodeCell {
@@ -323,6 +324,7 @@ impl Sheet {
                             spill_error,
                             return_info: None,
                             cells_accessed: None,
+                            last_modified: 0,
                         }),
                     }
                 } else {
@@ -337,6 +339,7 @@ impl Sheet {
                         spill_error: None,
                         return_info: None,
                         cells_accessed: None,
+                        last_modified: 0,
                     })
                 }
             }
@@ -390,8 +393,10 @@ mod test {
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         let sheet = gc.sheet(sheet_id);
+        let edit_code_value = sheet.edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context());
+        let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 1, y: 1 },gc.a1_context()),
+            edit_code_value,
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -402,11 +407,14 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
-                cells_accessed: Some(Default::default())
+                cells_accessed: Some(Default::default()),
+                last_modified,
             })
         );
+        let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 }, gc.a1_context());
+        let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 2, y: 1 },gc.a1_context()),
+            edit_code_value,
             Some(JsCodeCell {
                 x: 1,
                 y: 1,
@@ -417,7 +425,8 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
-                cells_accessed: Some(Default::default())
+                cells_accessed: Some(Default::default()),
+                last_modified,
             })
         );
         assert_eq!(
@@ -447,6 +456,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "{1, 2, 3}".to_string(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);

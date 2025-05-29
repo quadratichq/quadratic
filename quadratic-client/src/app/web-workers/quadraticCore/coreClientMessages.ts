@@ -10,6 +10,7 @@ import type {
   DataTableSort,
   Direction,
   Format,
+  FormatUpdate,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
@@ -26,7 +27,6 @@ import type {
   JsSummarizeSelectionResult,
   JsTablesContext,
   JsValidationWarning,
-  MinMax,
   Pos,
   SearchOptions,
   SheetBounds,
@@ -38,7 +38,6 @@ import type {
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import type { Rectangle } from 'pixi.js';
 
 //#region Initialize
 
@@ -448,20 +447,6 @@ export interface CoreClientImportFile {
   error?: string;
 }
 
-export interface ClientCoreGetCsvPreview {
-  type: 'clientCoreGetCsvPreview';
-  file: ArrayBuffer;
-  maxRows: number;
-  delimiter: number | undefined;
-  id: number;
-}
-
-export interface CoreClientGetCsvPreview {
-  type: 'coreClientGetCsvPreview';
-  preview: string[][] | undefined;
-  id: number;
-}
-
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
   selection: string;
@@ -483,6 +468,7 @@ export interface ClientCoreSetCodeCellValue {
   codeString: string;
   cursor?: string;
   id: number;
+  codeCellName?: string;
 }
 
 export interface CoreClientSetCodeCellValue {
@@ -730,36 +716,6 @@ export interface ClientCorePasteFromClipboard {
 
 //#region Bounds
 
-export interface ClientCoreGetColumnsBounds {
-  type: 'clientCoreGetColumnsBounds';
-  sheetId: string;
-  start: number;
-  end: number;
-  ignoreFormatting: boolean;
-  id: number;
-}
-
-export interface CoreClientGetColumnsBounds {
-  type: 'coreClientGetColumnsBounds';
-  bounds?: MinMax;
-  id: number;
-}
-
-export interface ClientCoreGetRowsBounds {
-  type: 'clientCoreGetRowsBounds';
-  sheetId: string;
-  start: number;
-  end: number;
-  ignoreFormatting: boolean;
-  id: number;
-}
-
-export interface CoreClientGetRowsBounds {
-  type: 'coreClientGetRowsBounds';
-  bounds?: MinMax;
-  id: number;
-}
-
 export interface ClientCoreJumpCursor {
   type: 'clientCoreJumpCursor';
   id: number;
@@ -785,40 +741,6 @@ export interface CoreClientFindNextRow {
   type: 'coreClientFindNextRow';
   id: number;
   row?: number;
-}
-
-export interface ClientCoreFindNextColumnForRect {
-  type: 'clientCoreFindNextColumnForRect';
-  id: number;
-  sheetId: string;
-  columnStart: number;
-  row: number;
-  width: number;
-  height: number;
-  reverse: boolean;
-}
-
-export interface CoreClientFindNextColumnForRect {
-  type: 'coreClientFindNextColumnForRect';
-  id: number;
-  column: number;
-}
-
-export interface ClientCoreFindNextRowForRect {
-  type: 'clientCoreFindNextRowForRect';
-  id: number;
-  sheetId: string;
-  column: number;
-  rowStart: number;
-  width: number;
-  height: number;
-  reverse: boolean;
-}
-
-export interface CoreClientFindNextRowForRect {
-  type: 'coreClientFindNextRowForRect';
-  id: number;
-  row: number;
 }
 
 export interface ClientCoreCommitTransientResize {
@@ -1121,18 +1043,20 @@ export interface ClientCoreDeleteRows {
   cursor: string;
 }
 
-export interface ClientCoreInsertColumn {
-  type: 'clientCoreInsertColumn';
+export interface ClientCoreInsertColumns {
+  type: 'clientCoreInsertColumns';
   sheetId: string;
   column: number;
+  count: number;
   right: boolean;
   cursor: string;
 }
 
-export interface ClientCoreInsertRow {
-  type: 'clientCoreInsertRow';
+export interface ClientCoreInsertRows {
+  type: 'clientCoreInsertRows';
   sheetId: string;
   row: number;
+  count: number;
   below: boolean;
   cursor: string;
 }
@@ -1155,8 +1079,16 @@ export interface ClientCoreCodeDataTableToDataTable {
 
 export interface ClientCoreGridToDataTable {
   type: 'clientCoreGridToDataTable';
+  id: number;
   sheetRect: string;
+  tableName?: string;
+  firstRowIsHeader: boolean;
   cursor: string;
+}
+
+export interface CoreClientGridToDataTable {
+  type: 'coreClientGridToDataTable';
+  id: number;
 }
 
 export interface ClientCoreDataTableMeta {
@@ -1217,18 +1149,6 @@ export interface CoreClientClientMessage {
   severity: JsSnackbarSeverity;
 }
 
-export interface ClientCoreFiniteRectFromSelection {
-  type: 'clientCoreFiniteRectFromSelection';
-  id: number;
-  selection: string;
-}
-
-export interface CoreClientFiniteRectFromSelection {
-  type: 'coreClientFiniteRectFromSelection';
-  id: number;
-  rect?: Rectangle;
-}
-
 export interface CoreClientA1Context {
   type: 'coreClientA1Context';
   context: string;
@@ -1273,6 +1193,47 @@ export interface CoreClientCoreError {
   type: 'coreClientCoreError';
   from: string;
   error: Error | unknown;
+}
+
+export interface ClientCoreGetAICells {
+  type: 'clientCoreGetAICells';
+  id: number;
+  selection: string;
+  sheetId: string;
+  page: number;
+}
+
+export interface CoreClientGetAICells {
+  type: 'coreClientGetAICells';
+  id: number;
+  aiCells: string;
+}
+
+export interface ClientCoreSetFormats {
+  type: 'clientCoreSetFormats';
+  sheetId: string;
+  selection: string;
+  formats: FormatUpdate;
+  id: number;
+}
+
+export interface CoreClientSetFormats {
+  type: 'coreClientSetFormats';
+  id: number;
+}
+
+export interface ClientCoreGetAIFormats {
+  type: 'clientCoreGetAIFormats';
+  id: number;
+  sheetId: string;
+  selection: string;
+  page: number;
+}
+
+export interface CoreClientGetAIFormats {
+  type: 'coreClientGetAIFormats';
+  id: number;
+  formats: string;
 }
 
 export interface ClientCoreResizeColumns {
@@ -1353,8 +1314,6 @@ export type ClientCoreMessage =
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
-  | ClientCoreGetColumnsBounds
-  | ClientCoreGetRowsBounds
   | ClientCoreJumpCursor
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
@@ -1379,8 +1338,8 @@ export type ClientCoreMessage =
   | ClientCoreNeighborText
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
-  | ClientCoreInsertColumn
-  | ClientCoreInsertRow
+  | ClientCoreInsertColumns
+  | ClientCoreInsertRows
   | ClientCoreFlattenDataTable
   | ClientCoreCodeDataTableToDataTable
   | ClientCoreGridToDataTable
@@ -1391,15 +1350,14 @@ export type ClientCoreMessage =
   | ClientCoreGetCellValue
   | ClientCoreGetAISelectionContexts
   | ClientCoreGetAITablesContext
-  | ClientCoreFindNextColumnForRect
-  | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
-  | ClientCoreFiniteRectFromSelection
-  | ClientCoreGetCsvPreview
   | ClientCoreAddDataTable
   | ClientCoreMoveColumns
   | ClientCoreMoveRows
+  | ClientCoreGetAICells
+  | ClientCoreSetFormats
+  | ClientCoreGetAIFormats
   | ClientCoreResizeColumns
   | ClientCoreResizeRows
   | ClientCoreResizeAllColumns
@@ -1429,8 +1387,6 @@ export type CoreClientMessage =
   | CoreClientHtmlOutput
   | CoreClientUpdateHtml
   | CoreClientExportCsvSelection
-  | CoreClientGetColumnsBounds
-  | CoreClientGetRowsBounds
   | CoreClientJumpCursor
   | CoreClientGenerateThumbnail
   | CoreClientLoad
@@ -1466,17 +1422,17 @@ export type CoreClientMessage =
   | CoreClientClientMessage
   | CoreClientGetAISelectionContexts
   | CoreClientGetAITablesContext
-  | CoreClientFindNextColumnForRect
-  | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
-  | CoreClientFiniteRectFromSelection
   | CoreClientA1Context
-  | CoreClientGetCsvPreview
   | CoreClientAddDataTable
   | CoreClientSetCellValues
   | CoreClientMoveCells
   | CoreClientDeleteCellValues
   | CoreClientDataTableMutations
   | CoreClientSetCodeCellValue
-  | CoreClientCoreError;
+  | CoreClientCoreError
+  | CoreClientGetAICells
+  | CoreClientSetFormats
+  | CoreClientGetAIFormats
+  | CoreClientGridToDataTable;

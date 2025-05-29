@@ -272,11 +272,6 @@ class CoreClient {
         this.send({ type: 'coreClientImportFile', id: e.data.id, ...fileResult }, fileResult.contents);
         return;
 
-      case 'clientCoreGetCsvPreview':
-        const preview = await core.getCsvPreview(e.data);
-        this.send({ type: 'coreClientGetCsvPreview', id: e.data.id, preview });
-        return;
-
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
         this.send({
@@ -292,6 +287,7 @@ class CoreClient {
           e.data.y,
           e.data.language,
           e.data.codeString,
+          e.data.codeCellName,
           e.data.cursor
         );
         this.send({
@@ -424,43 +420,11 @@ class CoreClient {
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         return;
 
-      case 'clientCoreGetColumnsBounds':
-        this.send({
-          type: 'coreClientGetColumnsBounds',
-          id: e.data.id,
-          bounds: await core.getColumnsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
-        });
-        return;
-
-      case 'clientCoreGetRowsBounds':
-        this.send({
-          type: 'coreClientGetRowsBounds',
-          id: e.data.id,
-          bounds: await core.getRowsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
-        });
-        return;
-
       case 'clientCoreJumpCursor':
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
           coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
-        });
-        return;
-
-      case 'clientCoreFindNextColumnForRect':
-        this.send({
-          type: 'coreClientFindNextColumnForRect',
-          id: e.data.id,
-          column: await core.findNextColumnForRect(e.data),
-        });
-        return;
-
-      case 'clientCoreFindNextRowForRect':
-        this.send({
-          type: 'coreClientFindNextRowForRect',
-          id: e.data.id,
-          row: await core.findNextRowForRect(e.data),
         });
         return;
 
@@ -633,12 +597,12 @@ class CoreClient {
         core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
         return;
 
-      case 'clientCoreInsertColumn':
-        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
+      case 'clientCoreInsertColumns':
+        core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor);
         return;
 
-      case 'clientCoreInsertRow':
-        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+      case 'clientCoreInsertRows':
+        core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor);
         return;
 
       case 'clientCoreFlattenDataTable':
@@ -650,7 +614,11 @@ class CoreClient {
         return;
 
       case 'clientCoreGridToDataTable':
-        core.gridToDataTable(e.data.sheetRect, e.data.cursor);
+        core.gridToDataTable(e.data.sheetRect, e.data.tableName, e.data.firstRowIsHeader, e.data.cursor);
+        this.send({
+          type: 'coreClientGridToDataTable',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreDataTableMeta':
@@ -703,20 +671,36 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreFiniteRectFromSelection':
-        this.send({
-          type: 'coreClientFiniteRectFromSelection',
-          id: e.data.id,
-          rect: core.finiteRectFromSelection(e.data.selection),
-        });
-        return;
-
       case 'clientCoreMoveColumns':
         core.moveColumns(e.data.sheetId, e.data.colStart, e.data.colEnd, e.data.to, e.data.cursor);
         return;
 
       case 'clientCoreMoveRows':
         core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
+        return;
+
+      case 'clientCoreGetAICells':
+        this.send({
+          type: 'coreClientGetAICells',
+          id: e.data.id,
+          aiCells: core.getAICells(e.data.selection, e.data.sheetId, e.data.page),
+        });
+        return;
+
+      case 'clientCoreGetAIFormats':
+        this.send({
+          type: 'coreClientGetAIFormats',
+          id: e.data.id,
+          formats: core.getAICellFormats(e.data.sheetId, e.data.selection, e.data.page),
+        });
+        return;
+
+      case 'clientCoreSetFormats':
+        core.setFormats(e.data.sheetId, e.data.selection, e.data.formats);
+        this.send({
+          type: 'coreClientSetFormats',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreResizeColumns':

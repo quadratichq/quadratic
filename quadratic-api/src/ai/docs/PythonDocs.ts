@@ -1,34 +1,22 @@
 export const PythonDocs = `# Python Docs
 
-Python is a first-class citizen that integrates seamlessly with Quadratic spreadsheets.
-Below are in-depth details for Python in Quadratic. 
-
 You can reference cells in the spreadsheet to use in code, and you can return results from your Python code back to the spreadsheet. The last line of code is returned to the spreadsheet.
-Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one type of return from a code cell, data or chart.
+Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one variable returned to the sheet per code cell.
 
-When the data that code references is updated, the code cell is automatically re-run. 
+Data, variables, and imports are not global; they are scoped to the code cell they exist in and must be imported or referenced in every code cell that uses them.
 
-Single cell references are placed in a variable of corresponding type. Multi-line references are placed in a DataFrame.
-
-Essential Python basics in Quadratic: 
-1. Cell references - use q.cells() to read data from the sheet into Python with table references and A1 notation
-2. Return data to the sheet - return Python outputs from code to the sheet; the last line is what gets returned 
-3. Import Python packages - supporting some built-in libraries and others via micropip
-4. Make API requests - use the Requests library to query APIs
-5. Visualize data - turn your data into charts with Plotly exclusively, no other charting libraries supported 
+When the data that code references is updated, the code cell is automatically re-run. Editing code and data dependencies always re-runs any dependencies.
 
 ## Reference cells from Python
 
 You can reference tables, individual cells, and ranges of cells using Python.
 
+Use table references by default when referencing data that is in a table; use A1 references when referencing data not in a table. 
+
 ### Referencing tables
 
-Much of Quadratic's data is formatted in Data Tables for ease of use. To perform any reference type you can use \`q.cells\`. For table references this places the table in a DataFrame.
-
-
-Note the following examples that use table references: 
 \`\`\`python
-# References entire table, including headers, places into DataFrame 
+# References entire table, including headers, places into DataFrame with table headers as DataFrame headers 
 df = q.cells("Table1")
 
 # Retrieves the column data and its header, places into single column DataFrame
@@ -41,24 +29,18 @@ df_headers = q.cells("Table1[#HEADERS]")
 df_columns = q.cells("Table1[[Column 1]:[Column 3]]")
 \`\`\`python
 
-Tables should be used whenever possible. Use ranged A1 references or single cell references otherwise. 
+Tables should be used whenever possible with tables. Use ranged A1 references or single cell references otherwise. 
 
 ### Referencing individual cells
-
-To reference an individual cell, use the global function \`q.cells\` which returns the cell value, as shown in following example.
 
 \`\`\`python
 # Reads the value in cell A1 and stores in variable x 
 x = q.cells('A1')
 \`\`\`
 
-You can reference cells and use them directly in a Pythonic fashion, as shown in following example. 
-
 \`\`\`python
-q.cells('A1') + q.cells('A2') # Sums the values in cells A1 and A2 
+q.cells('A1') + q.cells('A2') # sum of values in A1 and A2
 \`\`\`
-
-Any time cells dependent on other cells update the dependent cell will also update; your code will execute whenever it makes a reference to another cell.
 
 ### Referencing a range of cells
 
@@ -73,9 +55,9 @@ q.cells('A5:A') # Returns all values in column A starting at A5 and going down u
 q.cells('A5:C') # Returns all values in columns A to C, starting at A5 and going down
 \`\`\`
 
-If the first row of cells is a header, you should set \`first_row_header\` as an argument. This makes the first row of your DataFrame the column names, otherwise will default to the default integer column names as 0, 1, 2, 3, etc.
+If the first row of cells is a header, you should set \`first_row_header\` as an argument. This makes the first row of your received DataFrame the column names, otherwise will default to the default integer column names as 0, 1, 2, 3, etc. If the data being referenced in a ranged reference has headers, you should ALWAYS set first_row_header=True.
 
-Use first_row_header when you have column names that you want as the header of the DataFrame. This should be used commonly. You can tell when a column name should be a header when the column name describes the data below. 
+IMPORTANT: Use first_row_header when you have column names that you want as the header of the DataFrame. You can tell when a column name should be a header when the column name describes the data below. 
 
 \`\`\`python
 # first_row_header=True will be used any time the first row is the intended header for that data.
@@ -84,38 +66,15 @@ q.cells('A1:B9', first_row_header=True) # returns a 2x9 DataFrame with first row
 
 ### Referencing another sheet
 
-To reference another sheet's table, individual cells , or range of cells use the following: 
-
 \`\`\`python
 # Use the sheet name as an argument for referencing range of cells 
-q.cells("'Sheet_name_here'!A1:C9")
+q.cells("'Sheet_name_here'!A1:C9", first_row_header=True)
 
 # For individual cell reference 
 q.cells("'Sheet_name_here'!A1")
 
 # Since tables are global to a file, they can be referenced across sheets without defining sheet name
 q.cells("Table1")
-\`\`\`
-
-### Column references
-
-To reference all the data in a column or set of columns without defining the range, use the following syntax. 
-
-Column references span from row 1 to wherever the content in that column ends. 
-
-\`\`\`python
-# references all values in the column from row 1 to the end of the content 
-q.cells('A') # returns all the data in the column starting from row 1 to end of data 
-
-q.cells('A:D') # returns all the data in columns A to D starting from row 1 to end of data in longest column
-
-q.cells('A5:A') # returns all values from A5 to the end of the content in column A 
-
-q.cells('A5:C') # returns all values from A5 to end of content in C
-
-q.cells('A:C', first_row_header=True) # same rules with first_row_header apply 
-
-q.cells("'Sheet2'!A:C", first_row_header=True) # same rules to reference in other sheets apply
 \`\`\`
 
 ### Relative vs absolute references
@@ -144,13 +103,9 @@ By default, the last line of code is output to the spreadsheet. Primarily return
 
 Only one value or variable (single value, single list, single dataframe, single series, single chart, etc) can be returned per code cell. If you need to return multiple things, such as numerical results of an analysis and a chart, you should use multiple code cells, outputting the analysis in one cell and the chart in another.
 
-All code outputs by default are given names that can be referenced, regardless of their return type. 
-
-You can expect to primarily use DataFrames as Quadratic is heavily built around Pandas DataFrames.
+Tuples, dictionaries, and sets are not ideal return types because they are output to a single cell formatted as they would if printed.
 
 ### Single value
-
-Note the simplest possible example, where we set \`x = 5\` and then return \`x\` to the spreadsheet by placing \`x\` in the last line of code.
 
 \`\`\`python
 # create variable 
@@ -166,7 +121,7 @@ Lists can be returned directly to the sheet.
 \`\`\`python
 my_list = [1, 2, 3, 4, 5]
 
-# Returns the list to the spreadsheet, with each value from the list occupying their own cell  
+# Each value of list occupies their own cell respectively  
 my_list
 \`\`\`
 
@@ -188,7 +143,7 @@ df = pd.DataFrame(data, columns=['Name', 'Age'])
 df
 \`\`\`
 
-Note that if your DataFrame has an index it will not be returned to the sheet. If you want to return the index to the sheet use the following code:
+DataFrame and series index will not be returned to the sheet. Reset index to return the index to the sheet. 
 
 \`\`\`python
 # use reset_index() method where df is the dataframe name
@@ -196,11 +151,8 @@ df.reset_index()
 \`\`\`
 
 This is necessary any time you use describe() method in Pandas or any method that returns a named index.
-These methods create a named index so you'll need to use reset_index() if you want to correctly display the index in the sheet when you return the DataFrame. The index is never returned to the sheet. 
 
 ### Charts
-
-Build your chart and return it to the spreadsheet by using the \`fig\` variable name or \`fig.show()\` as the last line of code. Chart will only get displayed if fig (or whatever the chart variable name is) or fig.show() are the last line of code.
 
 \`\`\`python
 import plotly.express as px
@@ -217,8 +169,8 @@ fig.show()
 
 ### Function outputs
 
-You can not use the \`return\` keyword to return data to the sheet, as that keyword only works inside of Python functions. The last line of code is what gets returned to the sheet, even if it's a function call.
-Here is an example of using a Python function to return data to the sheet. 
+You can not use the \`return\` keyword to return data to the sheet. 
+Here is an example of successfully using a Python function to return data to the sheet. 
 
 \`\`\`python
 def do_some_math(x): 
@@ -230,7 +182,7 @@ do_some_math(5)
 
 Note that conditionals will not return the value to the sheet if the last line is a conditional. The following is an example that will return nothing to the sheet:
 
-Negative example: 
+NEGATIVE EXAMPLE:  
 \`\`\`python
 x = 3
 y = 0 
@@ -240,9 +192,8 @@ else:
     y = False
 \`\`\`
 
-The following is how you would return the result of that conditional to the sheet.
-
-Positive example: 
+The following is a positive example of how you would return the result of that conditional to the sheet.
+ 
 \`\`\`python
 x = 3
 y = 0 
@@ -276,13 +227,17 @@ x = 3
 x += 1
 \`\`\`
 
+### Formatting 
+
+Do NOT try to use formatting options like f-strings (f"") or .format() on numerical return types. Returning formatted data will not flow through to the sheet; the sheet will read formatted numerical values as strings, keeping formatting options like currencies and significant digits from working on the returned values. 
+
 ## Packages
 
 Using and installing Python packages.
 
 ### Default Packages
 
-Some libraries are included by default, here are some examples:
+Some libraries are included by default, here are some examples (note that they need to be imported in every cell they are used even though they're included by default):
 
 * Pandas 
 * NumPy 
@@ -326,75 +281,35 @@ If you receive the following error then the library is likely not available in Q
 
 API Requests in Python must use the Requests library.
 
-### GET request
-
-Import the basic Requests library, query the API, and get the data into a Pandas DataFrame. 
-
-\`\`\`python
-# Imports
-import requests
-import pandas as pd
-
-# Request
-response = requests.get('your_API_url_here')
-
-# JSON to DataFrame
-df = pd.DataFrame(response.json())
-
-# Display DataFrame in the sheet 
-df
-\`\`\`
-
-### POST request
-
-\`\`\`python
-import requests
-
-url = 'your_API_url_here'
-
-obj = {'somekey': 'somevalue'}
-
-x = requests.post(url, json = myobj)
-
-# return the API response to the sheet
-x.text
-\`\`\`
-
 ## Charts/visualizations
 
-Plotly is the only charting library supported in Quadratic. Do not try to use other libraries like Seaborn or Matplotlib. Matplotlib DOES NOT WORK in Quadratic. 
+Plotly is the ONLY charting library supported in Quadratic. 
 
-To return a chart to the sheet, put fig.show() as the last line of code. 
+### Trendlines 
 
-When creating charts do not try to state the code in the chat, use the set_code_cell_value function to place the code instead.
+When using Trendlines in Plotly you MUST import statsmodels for the trendline to work. Note an example trendline below.
 
 \`\`\`python
-# Here are some example styling options for prettier charts
+import plotly.express as px
+import pandas as pd
+import statsmodels
+
+# Get the data
+df = q.cells("concrete_data")
+
+# Create scatter plot
+fig = px.scatter(df, x='age', y='strength', 
+                title='Concrete Strength vs Age',
+                trendline="lowess")
+
+# Update layout
 fig.update_layout(
-    xaxis=dict(
-        showline=True,
-        showgrid=False,
-        showticklabels=True,
-        linecolor='rgb(204, 204, 204)',
-        linewidth=2,
-        ticks='outside',
-        tickfont=dict(
-            family='Arial',
-            size=12,
-            color='rgb(82, 82, 82)',
-        ),
-    ),
-    yaxis=dict(
-        showgrid=False,
-        zeroline=False,
-        showline=False,
-        showticklabels=True,
-    ),
-    autosize=False,
-    showlegend=False,
-    plot_bgcolor='white',
-    title='Your_title_here' # replace with the relevant chart title based on the data in the chart/x and y-axis names
+    xaxis_title="Age (days)",
+    yaxis_title="Strength (MPa)",
+    plot_bgcolor='white'
 )
+
+fig.show()
 \`\`\`
 
 ## Time-series analysis
@@ -406,7 +321,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from statsmodels.tsa.arima.model import ARIMA
+from .tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller
 
 # Generate sample time series data
@@ -550,8 +465,6 @@ fig.show()
 Do not attempt to build a correlation analysis unless the user asks for it. 
 
 Note there are two code examples here. A good correlation analysis will have two code cells generated - the first is for the correlations, the second visualizes in a heatmap.
-
-Here is an example of a successful correlation analysis.
 
 First code block finds the correlations. 
 \`\`\`python
@@ -713,9 +626,6 @@ nuggets_info
 
 ## Summarizing data 
 
-A good data summary will likely include some summary statistics and visualizations. 
-
-Here is a successful summary statistics example.
 \`\`\`python
 import pandas as pd
 import plotly.express as px
@@ -749,8 +659,6 @@ region_summary = df.groupby('Region').agg({
 # Return the summary statistics
 summary
 \`\`\`
-
-It would probably make sense to follow up these summary statistics with a visualization. 
 
 ## Reading JSON strings
 
