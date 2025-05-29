@@ -669,7 +669,9 @@ impl GridController {
         let bypass_growing =
             !Sheet::should_expand_data_table(&existing_data_tables, clipboard_rect);
 
-        // loop through the clipboard and replace cell references in formulas and other languages
+        // loop through the clipboard and replace cell references in formulas
+        // and other languages.  Also grow data tables if the cell value is touching
+        // the right or bottom edge of the clipboard.
         for (start_x, x) in (insert_at.x..=max_x)
             .enumerate()
             .step_by(clipboard.w as usize)
