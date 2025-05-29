@@ -15,6 +15,7 @@ export const AIAnalystEffects = memo(() => {
   const { getChatName } = useGetChatName();
   const setCurrentChatName = useSetRecoilState(aiAnalystCurrentChatNameAtom);
   useEffect(() => {
+    // 2 = 1 user message + 1 ai message before we trigger the getChatName function
     if (!loading && !currentChat.name && currentChat.messages.length >= 2) {
       getChatName()
         .then((name) => {
