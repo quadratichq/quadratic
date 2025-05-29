@@ -417,8 +417,6 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
   const fetcher = useFetcher({ key: FETCHER_KEY });
   const { currentId, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
   const btnClassName = 'select-none';
-
-  let _disabled = disabled === undefined ? false : disabled;
   const isSubmitting = fetcher.state !== 'idle';
 
   return (
@@ -452,7 +450,7 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
             Back
           </Button>
         )}
-        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={_disabled || isSubmitting}>
+        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled || isSubmitting}>
           {currentQuestionNumber === currentQuestionsTotal ? 'Done' : 'Next'}
         </Button>
       </div>

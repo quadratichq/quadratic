@@ -3,6 +3,9 @@ import { apiClient } from '@/shared/api/apiClient';
 import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
+// Show onboarding for ~25% of new users
+const SHOW_ONBOARDING = Math.random() < 0.25;
+
 export const loader = async () => {
   // try/catch here handles case where this _could_ error out and we
   // have no errorElement so we just redirect back to home
@@ -46,8 +49,7 @@ export const loader = async () => {
       // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
-        // Onboarding questions are for ~25% of new users
-        return Math.random() < 0.25 ? redirect('/onboarding') : redirect('/files/create?private=false');
+        return SHOW_ONBOARDING ? redirect('/onboarding') : redirect('/files/create?private=false');
       }
       return redirect(redirectTo);
     }
