@@ -1,4 +1,3 @@
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
@@ -96,7 +95,7 @@ describe('POST /v0/ai/chat', () => {
                 loading: false,
               },
             ],
-            model: getModelFromModelKey(payload.modelKey),
+            modelKey: payload.modelKey,
           });
         });
 
