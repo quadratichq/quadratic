@@ -85,7 +85,7 @@ impl AstNode {
 
             AstNodeContents::FunctionCall { func, .. } if func.inner == ":" => {
                 let range = self.to_ref_range(ctx)?;
-                let rect = ctx.resolve_range_ref(&range, self.span)?;
+                let rect = ctx.resolve_range_ref(&range, self.span, true)?;
                 let array = ctx.get_cell_array(rect.inner, self.span)?;
 
                 Value::Array(array.inner)
@@ -151,7 +151,7 @@ impl AstNode {
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(_, _) | AstNodeContents::RangeRef(_) => {
                 let ref_range = self.to_ref_range(ctx)?;
-                let sheet_rect = ctx.resolve_range_ref(&ref_range, self.span)?.inner;
+                let sheet_rect = ctx.resolve_range_ref(&ref_range, self.span, true)?.inner;
                 ctx.get_cell_array(sheet_rect, self.span)?.inner.into()
             }
 
@@ -263,7 +263,7 @@ impl AstNode {
                     )?
                     .to_range_ref_tuple(ctx)?
                     .into_iter()
-                    .map(|range_ref| ctx.resolve_range_ref(&range_ref, self.span))
+                    .map(|range_ref| ctx.resolve_range_ref(&range_ref, self.span, true))
                     .try_collect()?;
 
                 // Get other arguments
