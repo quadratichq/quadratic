@@ -4,9 +4,9 @@ import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsCont
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
-import { aiAnalystPDFImportAtom, aiAnalystSearchAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { DEFAULT_PDF_IMPORT_MODEL, DEFAULT_SEARCH_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, Context, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
@@ -14,7 +14,6 @@ import { v4 } from 'uuid';
 import type { z } from 'zod';
 
 type PDFImportResponse = z.infer<(typeof aiToolsSpec)[AITool.PDFImport]['responseSchema']>;
-type SearchArgs = z.infer<(typeof aiToolsSpec)[AITool.Search]['responseSchema']>;
 
 export const useAnalystPDFImport = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -153,56 +152,4 @@ How can I help you?`,
   );
 
   return { importPDF };
-};
-
-export const useAnalystSearch = () => {
-  const { handleAIRequestToAPI } = useAIRequestToAPI();
-
-  const search = useRecoilCallback(
-    ({ set }) =>
-      async ({ searchArgs }: { searchArgs: SearchArgs }): Promise<ToolResultContent> => {
-        const { query } = searchArgs;
-
-        const messages: ChatMessage[] = [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: query,
-              },
-            ],
-            contextType: 'userPrompt',
-          },
-        ];
-
-        const abortController = new AbortController();
-        set(aiAnalystSearchAtom, { abortController, loading: true });
-
-        const chatId = v4();
-        const response = await handleAIRequestToAPI({
-          chatId,
-          source: 'AIAnalyst',
-          modelKey: DEFAULT_SEARCH_MODEL,
-          messages,
-          useStream: false,
-          toolName: AITool.WebSearch,
-          useToolsPrompt: true,
-          language: undefined,
-          useQuadraticContext: false,
-          signal: abortController.signal,
-        });
-
-        if (abortController.signal.aborted) {
-          return [{ type: 'text', text: 'Request aborted by the user.' }];
-        }
-
-        set(aiAnalystSearchAtom, { abortController: undefined, loading: false });
-
-        return [{ type: 'text', text: response.content.map((c) => c.text).join('\n') }];
-      },
-    [handleAIRequestToAPI]
-  );
-
-  return { search };
 };

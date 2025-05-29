@@ -5,6 +5,7 @@ import {
   isAnthropicModel,
   isBedrockAnthropicModel,
   isBedrockModel,
+  isGenAIModel,
   isOpenAIModel,
   isVertexAIAnthropicModel,
   isVertexAIModel,
@@ -16,12 +17,22 @@ import type { ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
+import { handleGenAIRequest } from '../../ai/handler/genai.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { handleVertexAIRequest } from '../../ai/handler/vertexai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { calculateUsage } from '../../ai/helpers/usage.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
-import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
+import {
+  anthropic,
+  bedrock,
+  bedrock_anthropic,
+  genai,
+  openai,
+  vertex_anthropic,
+  vertexai,
+  xai,
+} from '../../ai/providers';
 import dbClient from '../../dbClient';
 import { DEBUG, STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -52,7 +63,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   // }
 
   const { body } = parseRequest(req, schema);
-  console.log('body.messages', body.messages);
   const { chatId, fileUuid, modelKey, ...args } = body;
   const source = args.source;
 
@@ -79,6 +89,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     parsedResponse = await handleOpenAIRequest(modelKey, args, res, xai);
   } else if (isVertexAIModel(modelKey)) {
     parsedResponse = await handleVertexAIRequest(modelKey, args, res, vertexai);
+  } else if (isGenAIModel(modelKey)) {
+    parsedResponse = await handleGenAIRequest(modelKey, args, genai, res);
   } else if (isBedrockModel(modelKey)) {
     parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
   } else {
@@ -100,7 +112,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = await getFile({ uuid: fileUuid, userId });
 
   const model = getModelFromModelKey(modelKey);
-  const messageIndex = getLastAIPromptMessageIndex(args.messages);
+  const messageIndex = getLastAIPromptMessageIndex(args.messages) + (parsedResponse ? 0 : 1);
   const messageType = getLastPromptMessageType(args.messages);
 
   const chat = await dbClient.analyticsAIChat.upsert({

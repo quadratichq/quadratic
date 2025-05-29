@@ -16,8 +16,8 @@ export enum AITool {
   SetTextFormats = 'set_text_formats',
   GetTextFormats = 'get_text_formats',
   ConvertToTable = 'convert_to_table',
-  Search = 'search',
   WebSearch = 'web_search',
+  WebSearchInternal = 'web_search_internal',
 }
 
 export const AIToolSchema = z.enum([
@@ -35,8 +35,8 @@ export const AIToolSchema = z.enum([
   AITool.SetTextFormats,
   AITool.GetTextFormats,
   AITool.ConvertToTable,
-  AITool.Search,
   AITool.WebSearch,
+  AITool.WebSearchInternal,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -175,11 +175,10 @@ export const AIToolsArgsSchema = {
     table_name: z.string(),
     first_row_is_column_names: z.boolean(),
   }),
-  [AITool.Search]: z.object({
-    sheet_name: z.string(),
+  [AITool.WebSearch]: z.object({
     query: z.string(),
   }),
-  [AITool.WebSearch]: z.object({
+  [AITool.WebSearchInternal]: z.object({
     query: z.string(),
   }),
 } as const;
@@ -822,35 +821,8 @@ The table will be created with the first row as the header row if first_row_is_c
 The data table will include a table name as the first row, which will push down all data by one row.\n
 `,
   },
-  [AITool.Search]: {
-    sources: ['AIAnalyst', 'AIAssistant'],
-    description: `
-This tool searches the web for information based on the query.\n
-It requires the query to search for and the data table name to store results.\n
-`,
-    parameters: {
-      type: 'object',
-      properties: {
-        sheet_name: {
-          type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
-        },
-        query: {
-          type: 'string',
-          description: 'The search query',
-        },
-      },
-      required: ['query'],
-      additionalProperties: false,
-    },
-    responseSchema: AIToolsArgsSchema[AITool.Search],
-    prompt: `
-This tool searches the web for information based on the query.\n
-It requires the query to search for and the data table name to store results.\n
-`,
-  },
   [AITool.WebSearch]: {
-    sources: ['Search'],
+    sources: ['AIAnalyst'],
     description: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for and the data table name to store results.\n
@@ -867,6 +839,30 @@ It requires the query to search for and the data table name to store results.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.WebSearch],
+    prompt: `
+This tool searches the web for information based on the query.\n
+It requires the query to search for and the data table name to store results.\n
+`,
+  },
+  // This is tool internal to AI model and is called by `WebSearch` tool.
+  [AITool.WebSearchInternal]: {
+    sources: ['WebSearch'],
+    description: `
+This tool searches the web for information based on the query.\n
+It requires the query to search for and the data table name to store results.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.WebSearchInternal],
     prompt: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for and the data table name to store results.\n

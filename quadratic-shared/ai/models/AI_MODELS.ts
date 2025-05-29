@@ -2,15 +2,15 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 
 export const DEFAULT_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
 export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
 
-export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'genai:gemini-2.5-pro-preview-05-06';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 13;
@@ -114,15 +114,45 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'vertexai:gemini-2.0-flash-001': {
-    model: 'gemini-2.0-flash-001',
-    displayName: 'gemini 2.0 flash',
+  'vertexai:gemini-2.5-flash-preview-05-20': {
+    model: 'gemini-2.5-flash-preview-05-20',
+    displayName: 'gemini 2.5 flash preview',
     temperature: 0,
-    max_tokens: 8192,
+    max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
     provider: 'vertexai',
+    promptCaching: false,
+    rate_per_million_input_tokens: 0.15,
+    rate_per_million_output_tokens: 1,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'genai:gemini-2.5-pro-preview-05-06': {
+    model: 'gemini-2.5-pro-preview-05-06',
+    displayName: 'gemini 2.5 pro preview',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'genai',
+    promptCaching: false,
+    rate_per_million_input_tokens: 1.25,
+    rate_per_million_output_tokens: 10,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'genai:gemini-2.5-flash-preview-05-20': {
+    model: 'gemini-2.5-flash-preview-05-20',
+    displayName: 'gemini 2.5 flash preview',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'genai',
     promptCaching: false,
     rate_per_million_input_tokens: 0.15,
     rate_per_million_output_tokens: 1,

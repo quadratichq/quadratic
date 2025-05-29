@@ -561,7 +561,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       ];
     }
   },
-  [AITool.Search]: async (args) => {
+  [AITool.WebSearch]: async (args) => {
     return [
       {
         type: 'text',
@@ -569,7 +569,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
-  [AITool.WebSearch]: async (args) => {
+  [AITool.WebSearchInternal]: async (args) => {
     return [
       {
         type: 'text',

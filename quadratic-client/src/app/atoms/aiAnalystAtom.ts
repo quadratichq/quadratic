@@ -27,7 +27,7 @@ export interface AIAnalystState {
     abortController: AbortController | undefined;
     loading: boolean;
   };
-  search: {
+  webSearch: {
     abortController: AbortController | undefined;
     loading: boolean;
   };
@@ -55,7 +55,7 @@ export const defaultAIAnalystState: AIAnalystState = {
     abortController: undefined,
     loading: false,
   },
-  search: {
+  webSearch: {
     abortController: undefined,
     loading: false,
   },
@@ -343,10 +343,10 @@ export const aiAnalystPDFImportLoadingAtom = selector<boolean>({
   get: ({ get }) => get(aiAnalystPDFImportAtom).loading,
 });
 
-export const aiAnalystSearchAtom = createSelector('search');
-export const aiAnalystSearchLoadingAtom = selector<boolean>({
-  key: 'aiAnalystSearchLoadingAtom',
-  get: ({ get }) => get(aiAnalystSearchAtom).loading,
+export const aiAnalystWebSearchAtom = createSelector('webSearch');
+export const aiAnalystWebSearchLoadingAtom = selector<boolean>({
+  key: 'aiAnalystWebSearchLoadingAtom',
+  get: ({ get }) => get(aiAnalystWebSearchAtom).loading,
 });
 
 export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({

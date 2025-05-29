@@ -3,6 +3,7 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
 import { OpenAI } from 'openai';
 import {
@@ -11,6 +12,7 @@ import {
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
   GCP_CLIENT_EMAIL,
+  GCP_GEMINI_API_KEY,
   GCP_PRIVATE_KEY,
   GCP_PROJECT_ID,
   GCP_REGION,
@@ -40,6 +42,11 @@ export const vertexai = new VertexAI({
   project: GCP_PROJECT_ID,
   location: GCP_REGION,
   googleAuthOptions,
+});
+
+// gcp-sdk for genai
+export const genai = new GoogleGenAI({
+  apiKey: GCP_GEMINI_API_KEY,
 });
 
 // anthropic-sdk for bedrock
