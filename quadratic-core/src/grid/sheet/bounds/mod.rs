@@ -1,11 +1,7 @@
 //! Calculates all bounds for the sheet: data, formatting, and borders. We cache
 //! this value and only recalculate when necessary.
 
-use crate::{
-    CellValue, Pos, Rect,
-    a1::A1Context,
-    grid::{Column, GridBounds},
-};
+use crate::{CellValue, Pos, Rect, a1::A1Context, grid::GridBounds};
 use std::cmp::Reverse;
 
 use super::Sheet;
@@ -88,7 +84,9 @@ impl Sheet {
 
         // Get bounds from formatting if needed
         let format_range = if !ignore_formatting {
-            self.formats.col_max(column).map(|max| (1i64, max))
+            self.formats
+                .col_max(column)
+                .map(|max| (self.formats.col_min(column).unwrap_or(1i64), max))
         } else {
             None
         };
@@ -161,19 +159,12 @@ impl Sheet {
     /// is `false`, then data and formatting are both considered.
     ///
     pub fn row_bounds(&self, row: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
-            true => column.has_data_in_row(row),
-            false => column.has_data_in_row(row) || self.formats.has_format_in_row(row),
-        };
-        let mut min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
-            Some(*index)
-        } else {
-            None
-        };
-        let mut max = if let Some((index, _)) = self.columns.iter().rfind(column_has_row) {
-            Some(*index)
-        } else {
-            None
+        let (mut min, mut max) = match self.columns.row_bounds(row) {
+            Some((min, max)) => (
+                if min > 0 { Some(min) } else { None },
+                if max > 0 { Some(max) } else { None },
+            ),
+            None => (None, None),
         };
 
         if !ignore_formatting {
@@ -582,13 +573,7 @@ mod test {
 
         assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
 
-        assert_eq!(sheet.columns_bounds(1, 100, false), Some((1, 200)));
-
-        // this should be 50, 200, but formats do not have col_min, row_min fns
-        // yet
-        assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
-
-        assert_eq!(sheet.columns_bounds(1, 100, false), Some((1, 200)));
+        assert_eq!(sheet.columns_bounds(1, 100, false), Some((50, 200)));
 
         assert_eq!(sheet.columns_bounds(1000, 2000, true), None);
         assert_eq!(sheet.columns_bounds(1000, 2000, false), None);

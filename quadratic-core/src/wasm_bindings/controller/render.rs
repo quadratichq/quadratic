@@ -9,7 +9,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "getRenderCells")]
     pub fn get_render_cells(&self, sheet_id: String, rect: String) -> Result<Vec<u8>, JsValue> {
         let rect = serde_json::from_str::<Rect>(&rect).map_err(|e| e.to_string())?;
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+        let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return Result::Err("Sheet not found".into());
         };
         sheet.send_validation_warnings_rect(rect, true);
@@ -21,7 +21,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "hasRenderCells")]
     pub fn has_render_cells(&self, sheet_id: String, rect: String) -> bool {
         if let Ok(rect) = serde_json::from_str::<Rect>(&rect) {
-            let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
                 return false;
             };
             sheet.has_render_cells(rect)

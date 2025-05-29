@@ -44,6 +44,7 @@ impl From<(BTreeMap<i64, Column>, Contiguous2D<Option<bool>>)> for SheetColumns 
 }
 
 impl SheetColumns {
+    /// Creates a new instance of `SheetColumns` with empty columns and has_cell_value.
     pub fn new() -> Self {
         Self {
             columns: BTreeMap::new(),
@@ -51,30 +52,63 @@ impl SheetColumns {
         }
     }
 
-    pub fn iter(&self) -> btree_map::Iter<'_, i64, Column> {
-        self.columns.iter()
-    }
-
+    /// Returns true if there are no columns in the sheet.
     pub fn is_empty(&self) -> bool {
         self.columns.is_empty()
     }
 
+    /// Returns the number of columns in the sheet.
     pub fn len(&self) -> usize {
         self.columns.len()
     }
 
+    /// Returns the column at the given index.
     pub fn get_column(&self, column: i64) -> Option<&Column> {
         self.columns.get(&column)
     }
 
+    /// Returns the bounds of the column at the given index.
+    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
+        if self.has_cell_value.is_col_default(column) {
+            return None;
+        }
+
+        (
+            self.has_cell_value.col_min(column),
+            self.has_cell_value.col_max(column),
+        )
+            .into()
+    }
+
+    /// Returns the bounds of the row at the given index.
+    pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
+        if self.has_cell_value.is_row_default(row) {
+            return None;
+        }
+
+        (
+            self.has_cell_value.row_min(row),
+            self.has_cell_value.row_max(row),
+        )
+            .into()
+    }
+
+    /// Returns the finite bounds of the sheet columns.
+    pub fn finite_bounds(&self) -> Option<Rect> {
+        self.has_cell_value.finite_bounds()
+    }
+
+    /// Returns the value at the given position.
     pub fn get_value(&self, pos: &Pos) -> Option<&CellValue> {
         self.columns.get(&pos.x)?.values.get(&pos.y)
     }
 
+    /// Returns a mutable reference to the value at the given position.
     pub fn get_value_mut(&mut self, pos: &Pos) -> Option<&mut CellValue> {
         self.columns.get_mut(&pos.x)?.values.get_mut(&pos.y)
     }
 
+    /// Returns the rectangles that have some value in the given rectangle.
     pub fn get_nondefault_rects_in_rect(
         &self,
         rect: Rect,
@@ -82,6 +116,7 @@ impl SheetColumns {
         self.has_cell_value.nondefault_rects_in_rect(rect)
     }
 
+    /// Sets the value at the given position.
     pub fn set_value(&mut self, pos: &Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         let value = value.into();
         let is_empty = value.is_blank_or_empty_string();
@@ -106,6 +141,7 @@ impl SheetColumns {
         }
     }
 
+    /// Deletes the values in the given rectangle.
     pub fn delete_values(&mut self, rect: Rect) -> Array {
         self.has_cell_value.set_rect(
             rect.min.x,
@@ -142,15 +178,13 @@ impl SheetColumns {
         old_cell_values_array
     }
 
+    /// Clears the sheet columns.
     pub fn clear(&mut self) {
         self.has_cell_value.set_rect(1, 1, None, None, None);
         self.columns.clear();
     }
 
-    pub fn finite_bounds(&self) -> Option<Rect> {
-        self.has_cell_value.finite_bounds()
-    }
-
+    /// Inserts a column at the given index, shifting the existing columns to the right.
     pub fn insert_column(&mut self, column: i64) {
         self.has_cell_value.insert_column(column, CopyFormats::None);
 
@@ -170,6 +204,7 @@ impl SheetColumns {
         }
     }
 
+    /// Inserts a row at the given index, shifting the existing rows down.
     pub fn insert_row(&mut self, row: i64) {
         self.has_cell_value.insert_row(row, CopyFormats::None);
 
@@ -192,6 +227,7 @@ impl SheetColumns {
         }
     }
 
+    /// Removes the column at the given index, shifting the existing columns to the left.
     pub fn remove_column(&mut self, column: i64) {
         self.has_cell_value.remove_column(column);
 
@@ -213,6 +249,7 @@ impl SheetColumns {
         }
     }
 
+    /// Removes the row at the given index, shifting the existing rows up.
     pub fn remove_row(&mut self, row: i64) {
         self.has_cell_value.remove_row(row);
 
@@ -241,6 +278,11 @@ impl SheetColumns {
     pub fn move_cell_value(&mut self, old_pos: &Pos, new_pos: &Pos) {
         let cell_value = self.set_value(old_pos, CellValue::Blank);
         self.set_value(new_pos, cell_value);
+    }
+
+    /// Returns an iterator over the columns
+    pub fn expensive_iter(&self) -> btree_map::Iter<'_, i64, Column> {
+        self.columns.iter()
     }
 
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates

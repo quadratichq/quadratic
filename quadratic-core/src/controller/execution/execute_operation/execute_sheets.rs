@@ -26,8 +26,8 @@ impl GridController {
         let sheet = self.try_sheet_result(sheet_id)?;
         let data_tables_pos = sheet
             .data_tables
-            .keys()
-            .map(|p| p.to_owned())
+            .expensive_iter()
+            .map(|(p, _)| p.to_owned())
             .collect::<Vec<_>>();
         let mut table_names_to_update_in_cell_ref = vec![];
 
@@ -332,11 +332,10 @@ impl GridController {
                 new_sheet.order = order;
             };
             let name = format!("{} Copy", sheet.name);
-            let sheet_names = self.sheet_names();
-            if !sheet_names.contains(&name.as_str()) {
-                new_sheet.name = name;
-            } else {
+            if self.try_sheet_from_name(&name).is_some() {
                 new_sheet.name = crate::util::unused_name(&name, &self.sheet_names());
+            } else {
+                new_sheet.name = name;
             }
             self.grid.add_sheet(Some(new_sheet));
 

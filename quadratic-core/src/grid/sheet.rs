@@ -105,11 +105,12 @@ impl Sheet {
         Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
     }
 
+    /// Returns an error if a sheet name would be invalid to add.
     pub fn validate_sheet_name(
         name: &str,
         sheet_id: SheetId,
         a1_context: &A1Context,
-    ) -> Result<bool, String> {
+    ) -> Result<(), String> {
         // Check length limit
         if name.is_empty() || name.len() > 31 {
             return Err("Sheet name must be between 1 and 31 characters".to_string());
@@ -121,14 +122,13 @@ impl Sheet {
         }
 
         // Check if sheet name already exists
-
         if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name) {
             if existing_sheet_id != sheet_id {
                 return Err("Sheet name must be unique".to_string());
             }
         }
 
-        Ok(true)
+        Ok(())
     }
 
     /// Replaces a sheet name when referenced in code cells.
@@ -1291,12 +1291,11 @@ mod test {
 
         // Test duplicate sheet name
         let result = Sheet::validate_sheet_name("ExistingSheet", SheetId::new(), &context);
-        assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Sheet name must be unique");
 
         // Test same sheet name with different case
         let result = Sheet::validate_sheet_name("EXISTINGSHEET", SheetId::TEST, &context);
-        assert!(result.is_ok());
+        result.unwrap();
     }
 
     #[test]

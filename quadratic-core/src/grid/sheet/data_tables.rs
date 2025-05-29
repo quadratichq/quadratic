@@ -65,6 +65,7 @@ impl From<IndexMap<Pos, DataTable>> for SheetDataTables {
 }
 
 impl SheetDataTables {
+    /// Constructs a new empty sheet data tables.
     pub fn new() -> Self {
         Self {
             data_tables: IndexMap::new(),
@@ -74,18 +75,39 @@ impl SheetDataTables {
         }
     }
 
+    /// Returns true if the sheet data tables are empty.
     pub fn is_empty(&self) -> bool {
         self.data_tables.is_empty()
     }
 
+    /// Returns the number of data tables in the sheet data tables.
     pub fn len(&self) -> usize {
         self.data_tables.len()
     }
 
-    pub fn keys(&self) -> impl Iterator<Item = &Pos> {
-        self.data_tables.keys()
+    /// Returns the index (position in indexmap) of the data table at the given position, if it exists.
+    pub fn get_index_of(&self, pos: &Pos) -> Option<usize> {
+        self.data_tables.get_index_of(pos)
     }
 
+    /// Returns the data table at the given position, if it exists.
+    pub fn get_at_index(&self, index: usize) -> Option<(&Pos, &DataTable)> {
+        self.data_tables.get_index(index)
+    }
+
+    /// Returns the data table at the given position, if it exists.
+    pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
+        self.data_tables.get(pos)
+    }
+
+    /// Returns the data table at the given position, if it exists, along with its index and position.
+    pub fn get_full(&self, pos: &Pos) -> Option<(usize, &Pos, &DataTable)> {
+        self.data_tables.get_full(pos)
+    }
+
+    /// Updates mutual spill and cache for the data table at the given index and position.
+    ///
+    /// This function only updates spill due to another data table, not due to cell values in columns.
     fn update_spill_and_cache(
         &mut self,
         index: usize,
@@ -213,22 +235,7 @@ impl SheetDataTables {
         dirty_rects
     }
 
-    pub fn get_index_of(&self, pos: &Pos) -> Option<usize> {
-        self.data_tables.get_index_of(pos)
-    }
-
-    pub fn get_at_index(&self, index: usize) -> Option<(&Pos, &DataTable)> {
-        self.data_tables.get_index(index)
-    }
-
-    pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
-        self.data_tables.get(pos)
-    }
-
-    pub fn get_full(&self, pos: &Pos) -> Option<(usize, &Pos, &DataTable)> {
-        self.data_tables.get_full(pos)
-    }
-
+    /// Modifies the data table at the given position, updating its spill and cache.
     pub fn modify_data_table_at(
         &mut self,
         pos: &Pos,
@@ -246,6 +253,7 @@ impl SheetDataTables {
         Ok((data_table, dirty_rects))
     }
 
+    /// Returns the anchor position of the data table which contains the given position, if it exists.
     pub fn get_pos_contains(&self, pos: &Pos) -> Option<Pos> {
         if self.data_tables.get(pos).is_some() {
             Some(*pos)
@@ -254,6 +262,7 @@ impl SheetDataTables {
         }
     }
 
+    /// Returns the data table (with anchor position) that contains the given position, if it exists.
     pub fn get_contains(&self, pos: &Pos) -> Option<(Pos, &DataTable)> {
         if let Some(data_table) = self.data_tables.get(pos) {
             Some((*pos, data_table))
@@ -268,6 +277,7 @@ impl SheetDataTables {
         }
     }
 
+    /// Returns a mutable reference to the data table (with anchor position) that contains the given position, if it exists.
     pub fn get_mut_contains(&mut self, pos: &Pos) -> Option<(Pos, &mut DataTable)> {
         if let Some(data_table_pos) = self.spilled_output_rects.get(*pos) {
             self.data_tables
@@ -280,6 +290,7 @@ impl SheetDataTables {
         }
     }
 
+    /// Returns an iterator over all positions in the sheet data tables that intersect with a given rectangle.
     pub fn iter_pos_in_rect(
         &self,
         rect: Rect,
@@ -310,6 +321,7 @@ impl SheetDataTables {
             .dedup()
     }
 
+    /// Returns an iterator over all data tables in the sheet data tables that intersect with a given rectangle.
     pub fn get_in_rect(
         &self,
         rect: Rect,
@@ -323,6 +335,7 @@ impl SheetDataTables {
             })
     }
 
+    /// Returns an iterator over all code runs in the sheet data tables that intersect with a given rectangle.
     pub fn get_code_runs_in_rect(
         &self,
         rect: Rect,
@@ -338,6 +351,7 @@ impl SheetDataTables {
             })
     }
 
+    /// Returns an iterator over all data tables in the sheet data tables that intersect with a given rectangle, sorted by index.
     pub fn get_in_rect_sorted(
         &self,
         rect: Rect,
@@ -347,6 +361,7 @@ impl SheetDataTables {
             .sorted_by(|a, b| a.0.cmp(&b.0))
     }
 
+    /// Returns an iterator over all code runs in the sheet data tables that intersect with a given rectangle, sorted by index.
     pub fn get_code_runs_in_sorted(
         &self,
         rect: Rect,
@@ -356,6 +371,7 @@ impl SheetDataTables {
             .sorted_by(|a, b| a.0.cmp(&b.0))
     }
 
+    /// Returns a Vec of (index, position) for all data tables in the sheet data tables that intersect with given columns, sorted by index.
     pub fn get_pos_in_columns_sorted(
         &self,
         columns: &[i64],
@@ -375,6 +391,7 @@ impl SheetDataTables {
             .collect::<Vec<_>>()
     }
 
+    /// Returns a Vec of (index, position) for all data tables in the sheet data tables intersect with region after the given column (inclusive), sorted by index.
     pub fn get_pos_after_column_sorted(
         &self,
         column: i64,
@@ -390,6 +407,7 @@ impl SheetDataTables {
             .collect::<Vec<_>>()
     }
 
+    /// Returns a Vec of (index, position) for all data tables in the sheet data tables intersect with given rows, sorted by index.
     pub fn get_pos_in_rows_sorted(
         &self,
         rows: &[i64],
@@ -409,6 +427,7 @@ impl SheetDataTables {
             .collect::<Vec<_>>()
     }
 
+    /// Returns a Vec of (index, position) for all data tables in the sheet data tables intersect with region after the given row (inclusive), sorted by index.
     pub fn get_pos_after_row_sorted(
         &self,
         row: i64,
@@ -424,6 +443,7 @@ impl SheetDataTables {
             .collect::<Vec<_>>()
     }
 
+    /// Inserts a data table at the given position, updating mutual spill and cache.
     pub fn insert_full(
         &mut self,
         pos: &Pos,
@@ -442,6 +462,7 @@ impl SheetDataTables {
         (index, old_data_table, dirty_rects)
     }
 
+    /// Inserts a data table before the given index, updating mutual spill and cache.
     pub fn insert_before(
         &mut self,
         mut index: usize,
@@ -463,6 +484,7 @@ impl SheetDataTables {
         (index, old_data_table, dirty_rects)
     }
 
+    /// Removes a data table at the given position, updating mutual spill and cache.
     pub fn shift_remove_full(
         &mut self,
         pos: &Pos,
@@ -476,10 +498,12 @@ impl SheetDataTables {
         Some((index, *pos, old_data_table, dirty_rects))
     }
 
+    /// Removes a data table at the given position, updating mutual spill and cache.
     pub fn shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
         self.shift_remove_full(pos).map(|full| (full.2, full.3))
     }
 
+    /// Returns the bounds of the column at the given index.
     pub fn column_bounds(&self, column: i64) -> (i64, i64) {
         let has_data_min = self.has_data_table_anchor.col_min(column);
         let output_rects_min = self.spilled_output_rects.col_min(column);
@@ -502,6 +526,7 @@ impl SheetDataTables {
         (min, max)
     }
 
+    /// Returns the bounds of the row at the given index.
     pub fn row_bounds(&self, row: i64) -> (i64, i64) {
         let has_data_min = self.has_data_table_anchor.row_min(row);
         let output_rects_min = self.spilled_output_rects.row_min(row);
@@ -524,6 +549,7 @@ impl SheetDataTables {
         (min, max)
     }
 
+    /// Returns the finite bounds of the sheet data tables.
     pub fn finite_bounds(&self) -> Option<Rect> {
         match (
             self.has_data_table_anchor.finite_bounds(),
@@ -538,10 +564,12 @@ impl SheetDataTables {
         }
     }
 
+    /// Returns an iterator over all data tables in the sheet data tables.
     pub fn expensive_iter(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
         self.data_tables.iter()
     }
 
+    /// Returns an iterator over all code runs in the sheet data tables.
     pub fn expensive_iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
         self.data_tables
             .iter()
