@@ -10,8 +10,10 @@
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
-    "test:fix": "npx playwright test --update-snapshots",
-    "test:report": "npx playwright show-report"
+    "test:report": "npx playwright show-report",
+    "test:update": "npx playwright test --update-snapshots",
+    "docker:test": "docker compose run --rm playwright npm run test",
+    "docker:update": "docker compose run --rm playwright npm run test:update"
   },
   "keywords": [],
   "engines": {

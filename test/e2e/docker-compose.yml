@@ -1,0 +1,12 @@
+services:
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.52.0-noble
+    working_dir: /e2e
+    volumes:
+      - .:/e2e:rw
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    stdin_open: true
+    tty: true
+    environment:
+      - E2E_URL=${E2E_URL:-http://host.docker.internal:3000}
