@@ -212,7 +212,7 @@ export class Table extends Container {
     if (!this.codeCell.show_name) {
       return;
     }
-    const bounds = this.header.getTableNameBounds().clone();
+    const bounds = this.header.getTableNameBounds()?.clone();
     if (!ignoreOverHeadings && this.inOverHeadings) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       bounds.y = bounds.top;
@@ -221,7 +221,7 @@ export class Table extends Container {
   }
 
   // Gets the column header bounds
-  getColumnHeaderBounds(index: number): Rectangle {
+  getColumnHeaderBounds(index: number): Rectangle | undefined {
     return this.header.getColumnHeaderBounds(index);
   }
 
@@ -289,6 +289,7 @@ export class Table extends Container {
     return this.codeCell.language !== 'Import';
   };
 
+  // returns whether the table's output is 1x1
   isSingleValue = (): boolean => {
     return this.codeCell.w === 1 && this.codeCell.h === 1;
   };

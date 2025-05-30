@@ -8,6 +8,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
+import { TablesCache } from '@/app/gridGL/cells/tables/TablesCache';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
@@ -31,7 +32,9 @@ export interface TablePointerDownResult {
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
-  private tablesIndex: Record<string, Table> = {};
+  // cache to speed up lookups
+  private tablesCache: TablesCache;
+
   private activeTables: Table[] = [];
 
   // either rename or sort
@@ -41,6 +44,8 @@ export class Tables extends Container<Table> {
   private htmlOrImage: Set<string>;
 
   private saveToggleOutlines = false;
+
+  private singleCellTables: Record<string, JsRenderCodeCell> = {};
 
   // Holds the table headers that hover over the grid.
   hoverTableHeaders: Container;
@@ -52,6 +57,7 @@ export class Tables extends Container<Table> {
     this.cellsSheet = cellsSheet;
     this.htmlOrImage = new Set();
     this.hoverTableHeaders = new Container();
+    this.tablesCache = new TablesCache();
 
     events.on('renderCodeCells', this.renderCodeCells);
     events.on('updateCodeCells', this.updateCodeCells);
@@ -120,12 +126,8 @@ export class Tables extends Container<Table> {
     return sheet;
   }
 
-  private addTableToIndex = (table: Table) => {
-    this.tablesIndex[`${table.codeCell.x},${table.codeCell.y}`] = table;
-  };
-
   getTable = (x: number | bigint, y: number | bigint): Table | undefined => {
-    return this.tablesIndex[`${x},${y}`];
+    return this.tablesCache.getByXY(x, y);
   };
 
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
@@ -135,20 +137,41 @@ export class Tables extends Container<Table> {
         const { pos, render_code_cell } = updateCodeCell;
         const x = Number(pos.x);
         const y = Number(pos.y);
+        const isSingleCell =
+          render_code_cell?.w === 1 &&
+          render_code_cell?.h === 1 &&
+          !render_code_cell?.show_name &&
+          !render_code_cell?.show_columns;
+        const key = `${x},${y}`;
+        if (isSingleCell) {
+          this.singleCellTables[key] = render_code_cell;
+        } else {
+          delete this.singleCellTables[key];
+        }
         const table = this.getTable(x, y);
+        if (isSingleCell) {
+          if (table) {
+            this.removeChild(table);
+            table.destroy();
+            this.tablesCache.remo;
+          }
+        }
         if (table) {
           if (!render_code_cell) {
             pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
             this.removeChild(table);
             table.destroy();
+            this.tablesCache.remove(table);
           } else {
+            this.tablesCache.updateTableName(table, render_code_cell.name);
             table.updateCodeCell(render_code_cell);
             if (this.isActive(table)) {
               table.showActive();
             }
           }
         } else if (render_code_cell) {
-          this.addChild(new Table(this.sheet, render_code_cell));
+          const table = this.addChild(new Table(this.sheet, render_code_cell));
+          this.tablesCache.add(table);
         }
         pixiApp.setViewportDirty();
       });
@@ -160,6 +183,7 @@ export class Tables extends Container<Table> {
     if (sheetId === this.cellsSheet.sheetId) {
       const codeCells = fromUint8Array<JsRenderCodeCell[]>(renderCodeCells);
       this.removeChildren();
+      this.tablesCache.clear();
       if (!isBitmapFontLoaded()) {
         console.log('bitmapFontsLoaded event not received');
         events.once('bitmapFontsLoaded', () => this.completeRenderCodeCells(codeCells));
@@ -171,7 +195,8 @@ export class Tables extends Container<Table> {
 
   private completeRenderCodeCells = (codeCells: JsRenderCodeCell[]) => {
     codeCells.forEach((codeCell) => {
-      this.addChild(new Table(this.sheet, codeCell));
+      const table = this.addChild(new Table(this.sheet, codeCell));
+      this.tablesCache.add(table);
     });
   };
 
@@ -314,7 +339,7 @@ export class Tables extends Container<Table> {
   }
 
   getTableFromName(name: string): Table | undefined {
-    return this.children.find((table) => table.codeCell.name === name);
+    return this.tablesCache.getByName(name);
   }
 
   // Intersects a column/row rectangle
@@ -427,13 +452,15 @@ export class Tables extends Container<Table> {
           const index = table.codeCell.columns.filter((c) => c.display)[cell.x - table.codeCell.x]?.valueIndex ?? -1;
           if (index !== -1) {
             const bounds = table.header.getColumnHeaderBounds(index);
-            return {
-              table,
-              x: bounds.x,
-              y: bounds.y,
-              width: bounds.width,
-              height: bounds.height,
-            };
+            if (bounds) {
+              return {
+                table,
+                x: bounds.x,
+                y: bounds.y,
+                width: bounds.width,
+                height: bounds.height,
+              };
+            }
           }
         }
       }
@@ -441,24 +468,13 @@ export class Tables extends Container<Table> {
   }
 
   // Returns true if the cell is a table name cell
-  isTableNameCell(cell: JsCoordinate): boolean {
+  isInTableHeader(cell: JsCoordinate): boolean {
     return this.children.some(
       (table) =>
         table.codeCell.show_name &&
         cell.x >= table.codeCell.x &&
         cell.x < table.codeCell.x + table.codeCell.w &&
         cell.y === table.codeCell.y
-    );
-  }
-
-  /// Returns true if the cell is a column header cell in a table
-  isColumnHeaderCell(cell: JsCoordinate): boolean {
-    return !!this.children.find(
-      (table) =>
-        table.codeCell.show_columns &&
-        cell.x >= table.codeCell.x &&
-        cell.x < table.codeCell.x + table.codeCell.w &&
-        table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
     );
   }
 
