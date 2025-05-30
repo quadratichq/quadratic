@@ -22,6 +22,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            infra/aws-cloudformation/quadratic-preview.yml
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
