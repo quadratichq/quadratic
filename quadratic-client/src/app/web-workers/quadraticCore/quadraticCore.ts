@@ -9,40 +9,41 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsBordersSheet, JsOffset, SheetBounds } from '@/app/quadratic-core-types';
-import {
-  type BorderSelection,
-  type BorderStyle,
-  type CellAlign,
-  type CellFormatSummary,
-  type CellVerticalAlign,
-  type CellWrap,
-  type CodeCellLanguage,
-  type DataTableSort,
-  type Direction,
-  type Format,
-  type FormatUpdate,
-  type JsCellValue,
-  type JsClipboard,
-  type JsCodeCell,
-  type JsCoordinate,
-  type JsDataTableColumnHeader,
-  type JsHashValidationWarnings,
-  type JsHtmlOutput,
-  type JsRenderFill,
-  type JsSelectionContext,
-  type JsSheetFill,
-  type JsSummarizeSelectionResult,
-  type JsTablesContext,
-  type JsUpdateCodeCell,
-  type MinMax,
-  type PasteSpecial,
-  type Pos,
-  type SearchOptions,
-  type SheetInfo,
-  type SheetPos,
-  type SheetRect,
-  type Validation,
+import type {
+  BorderSelection,
+  BorderStyle,
+  CellAlign,
+  CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
+  CodeCellLanguage,
+  DataTableSort,
+  Direction,
+  Format,
+  FormatUpdate,
+  JsBordersSheet,
+  JsCellValue,
+  JsClipboard,
+  JsCodeCell,
+  JsCoordinate,
+  JsDataTableColumnHeader,
+  JsHashValidationWarnings,
+  JsHtmlOutput,
+  JsOffset,
+  JsRenderFill,
+  JsSelectionContext,
+  JsSheetFill,
+  JsSummarizeSelectionResult,
+  JsTablesContext,
+  JsUpdateCodeCell,
+  PasteSpecial,
+  Pos,
+  SearchOptions,
+  SheetBounds,
+  SheetInfo,
+  SheetPos,
+  SheetRect,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
@@ -59,18 +60,12 @@ import type {
   ClientCoreUpgradeGridFile,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
-  CoreClientFindNextColumnForRect,
-  CoreClientFindNextRowForRect,
-  CoreClientFiniteRectFromSelection,
   CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
-  CoreClientGetColumnsBounds,
-  CoreClientGetCsvPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
-  CoreClientGetRowsBounds,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
   CoreClientJumpCursor,
@@ -86,7 +81,6 @@ import type {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
-import type { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -591,24 +585,6 @@ class QuadraticCore {
       );
     });
   };
-
-  getCsvPreview({
-    file,
-    maxRows,
-    delimiter,
-  }: {
-    file: ArrayBuffer;
-    maxRows: number;
-    delimiter: number | undefined;
-  }): Promise<CoreClientGetCsvPreview['preview']> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetCsvPreview) => {
-        resolve(message.preview);
-      };
-      this.send({ type: 'clientCoreGetCsvPreview', file, maxRows, delimiter, id }, file);
-    });
-  }
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
@@ -1122,40 +1098,6 @@ class QuadraticCore {
 
   //#region Bounds
 
-  getColumnsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetColumnsBounds) => {
-        resolve(message.bounds);
-      };
-      this.send({
-        type: 'clientCoreGetColumnsBounds',
-        sheetId,
-        start,
-        end,
-        id,
-        ignoreFormatting,
-      });
-    });
-  }
-
-  getRowsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetRowsBounds) => {
-        resolve(message.bounds);
-      };
-      this.send({
-        type: 'clientCoreGetRowsBounds',
-        sheetId,
-        start,
-        end,
-        id,
-        ignoreFormatting,
-      });
-    });
-  }
-
   jumpCursor(
     sheetId: string,
     current: JsCoordinate,
@@ -1178,60 +1120,6 @@ class QuadraticCore {
     });
   }
 
-  findNextColumnForRect(options: {
-    sheetId: string;
-    columnStart: number;
-    row: number;
-    width: number;
-    height: number;
-    reverse: boolean;
-  }): Promise<number> {
-    const { sheetId, columnStart, row, width, height, reverse } = options;
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientFindNextColumnForRect) => {
-        resolve(message.column);
-      };
-      this.send({
-        type: 'clientCoreFindNextColumnForRect',
-        id,
-        sheetId,
-        columnStart,
-        row,
-        width,
-        height,
-        reverse,
-      });
-    });
-  }
-
-  findNextRowForRect(options: {
-    sheetId: string;
-    column: number;
-    rowStart: number;
-    width: number;
-    height: number;
-    reverse: boolean;
-  }): Promise<number> {
-    const { sheetId, column, rowStart, width, height, reverse } = options;
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientFindNextRowForRect) => {
-        resolve(message.row);
-      };
-      this.send({
-        type: 'clientCoreFindNextRowForRect',
-        id,
-        sheetId,
-        column,
-        rowStart,
-        width,
-        height,
-        reverse,
-      });
-    });
-  }
-
   commitTransientResize(sheetId: string, transientResize: string) {
     this.send({
       type: 'clientCoreCommitTransientResize',
@@ -1249,18 +1137,6 @@ class QuadraticCore {
       row,
       size,
       cursor: sheets.getCursorPosition(),
-    });
-  }
-
-  finiteRectFromSelection(selection: string): Promise<Rectangle | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientFiniteRectFromSelection) => resolve(message.rect);
-      this.send({
-        type: 'clientCoreFiniteRectFromSelection',
-        id,
-        selection,
-      });
     });
   }
 

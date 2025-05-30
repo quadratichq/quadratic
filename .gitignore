@@ -95,3 +95,6 @@ test/e2e/playwright/.cache/
 jmeter.log
 
 ~$*
+
+# ai
+/finetuning

@@ -26,6 +26,7 @@ export const useUpdateCodeEditor = () => {
               sheetId,
               pos: { x, y },
               language: codeCell.language,
+              lastModified: Number(codeCell.last_modified),
             },
             codeString: codeCell.code_string,
             editorContent: initialCode
@@ -49,6 +50,7 @@ export const useUpdateCodeEditor = () => {
               sheetId,
               pos: { x, y },
               language: prev.codeCell.language,
+              lastModified: prev.codeCell.lastModified,
             },
             codeString: '',
             editorContent: initialCode ? initialCode : (prev.diffEditorContent?.editorContent ?? ''),

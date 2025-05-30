@@ -1,5 +1,6 @@
 import type {
   AIMessagePrompt,
+  AIModelKey,
   ChatMessage,
   Content,
   ImageContent,
@@ -12,8 +13,9 @@ import type {
   UserMessagePrompt,
   UserPromptContextType,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { isQuadraticModel } from './model.helper';
 
-export const getSystemMessages = (messages: ChatMessage[]): string[] => {
+const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
     (message): message is SystemMessage =>
       message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
@@ -84,6 +86,16 @@ export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptCon
 
 export const getLastAIPromptMessageIndex = (messages: ChatMessage[]): number => {
   return getAIPromptMessages(messages).length - 1;
+};
+
+export const getLastAIPromptMessageModelKey = (messages: ChatMessage[]): AIModelKey | undefined => {
+  const aiPromptMessages = getAIPromptMessages(messages);
+  for (let i = aiPromptMessages.length - 1; i >= 0; i--) {
+    const message = aiPromptMessages[i];
+    if (!!message.modelKey && !isQuadraticModel(message.modelKey)) {
+      return message.modelKey;
+    }
+  }
 };
 
 export const getSystemPromptMessages = (
