@@ -31,6 +31,7 @@ export interface TablePointerDownResult {
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
+  private tablesIndex: Record<string, Table> = {};
   private activeTables: Table[] = [];
 
   // either rename or sort
@@ -119,6 +120,14 @@ export class Tables extends Container<Table> {
     return sheet;
   }
 
+  private addTableToIndex = (table: Table) => {
+    this.tablesIndex[`${table.codeCell.x},${table.codeCell.y}`] = table;
+  };
+
+  getTable = (x: number | bigint, y: number | bigint): Table | undefined => {
+    return this.tablesIndex[`${x},${y}`];
+  };
+
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
     updateCodeCells
       .filter((updateCodeCell) => updateCodeCell.sheet_id.id === this.cellsSheet.sheetId)
@@ -126,7 +135,7 @@ export class Tables extends Container<Table> {
         const { pos, render_code_cell } = updateCodeCell;
         const x = Number(pos.x);
         const y = Number(pos.y);
-        const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+        const table = this.getTable(x, y);
         if (table) {
           if (!render_code_cell) {
             pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
@@ -258,18 +267,18 @@ export class Tables extends Container<Table> {
       return;
     }
     if (options.type === ContextMenuType.TableSort) {
-      this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+      this.actionDataTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
       if (this.actionDataTable) {
         this.actionDataTable.showActive();
       }
     } else if (options.type === ContextMenuType.Table && options.table) {
       if (options.rename) {
-        this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+        this.actionDataTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
         if (this.actionDataTable) {
           this.actionDataTable.showActive();
         }
       } else {
-        const contextMenuTable = this.children.find((table) => table.codeCell === options.table);
+        const contextMenuTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
         if (contextMenuTable) {
           contextMenuTable.showActive();
         }
@@ -280,7 +289,7 @@ export class Tables extends Container<Table> {
       options.rename &&
       options.selectedColumn !== undefined
     ) {
-      this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+      this.actionDataTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
       if (this.actionDataTable) {
         this.actionDataTable.showActive();
         this.actionDataTable.hideColumnHeaders(options.selectedColumn);
@@ -290,15 +299,12 @@ export class Tables extends Container<Table> {
   };
 
   getTableNamePosition(x: number, y: number): Rectangle | undefined {
-    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-    if (!table) {
-      return;
-    }
-    return table.getTableNameBounds();
+    const table = this.getTable(x, y);
+    return table?.getTableNameBounds();
   }
 
   getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
-    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+    const table = this.getTable(x, y);
     return table?.getColumnHeaderBounds(index);
   }
 
@@ -322,11 +328,8 @@ export class Tables extends Container<Table> {
   }
 
   getSortDialogPosition(codeCell: JsRenderCodeCell): JsCoordinate | undefined {
-    const table = this.children.find((table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y);
-    if (!table) {
-      return;
-    }
-    return table.getSortDialogPosition();
+    const table = this.getTable(codeCell.x, codeCell.y);
+    return table?.getSortDialogPosition();
   }
 
   // Toggles the outlines of the table (used during thumbnail generation)
@@ -336,7 +339,7 @@ export class Tables extends Container<Table> {
       this.activeTables.forEach((table) => table.showActive());
       const contextMenuTable = pixiAppSettings.contextMenu?.table;
       if (contextMenuTable && pixiAppSettings.contextMenu?.column === undefined) {
-        const table = this.children.find((table) => table.codeCell === contextMenuTable);
+        const table = this.getTable(contextMenuTable.x, contextMenuTable.y);
         table?.showActive();
       }
       this.actionDataTable?.showActive();
@@ -352,7 +355,7 @@ export class Tables extends Container<Table> {
   }
 
   resizeTable(x: number, y: number, width: number, height: number) {
-    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+    const table = this.getTable(x, y);
     if (table) {
       table.resize(width, height);
       pixiApp.gridLines.dirty = true;
