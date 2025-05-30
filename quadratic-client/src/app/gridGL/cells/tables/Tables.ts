@@ -222,11 +222,33 @@ export class Tables extends Container<Table> {
     });
   };
 
+  /// Returns the tables that are visible in the viewport.
+  private getVisibleTables(): Table[] {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
+    const tables = this.dataTablesCache?.getTablesInRect(
+      cellBounds.x,
+      cellBounds.y,
+      cellBounds.width,
+      cellBounds.height
+    );
+    return (
+      tables?.flatMap((pos) => {
+        const table = this.getTable(pos.x, pos.y);
+        if (table) {
+          return [table];
+        }
+        return [];
+      }) ?? []
+    );
+  }
+
   update(dirtyViewport: boolean) {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-      this.children.forEach((table) => table.update(bounds, gridHeading));
+      const visibleTables = this.getVisibleTables();
+      visibleTables?.forEach((table) => table.update(bounds, gridHeading));
     }
   }
 
@@ -275,26 +297,28 @@ export class Tables extends Container<Table> {
   // clicked). Otherwise it handles TableName. We ignore the table name if the
   // table is not active to allow the user to select the row above the table.
   pointerDown(world: Point): TablePointerDownResult | undefined {
-    for (const table of this.children) {
-      const result = table.intersectsTableName(world);
-      if (result) return result;
-      const columnName = table.pointerDown(world);
-      if (columnName && columnName.type !== 'table-name') {
-        return columnName;
-      }
-      if (table.pointerDownChart(world)) {
-        return { type: 'chart', table: table.codeCell };
-      }
+    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const table = this.getTable(cell.x, cell.y);
+    if (!table) return;
+    const result = table.intersectsTableName(world);
+    if (result) return result;
+    const columnName = table?.pointerDown(world);
+    if (columnName && columnName.type !== 'table-name') {
+      return columnName;
+    }
+    if (table.pointerDownChart(world)) {
+      return { type: 'chart', table: table.codeCell };
     }
   }
 
   pointerMove = (world: Point): boolean => {
-    for (const table of this.children) {
-      const result = table.pointerMove(world);
-      if (result) {
-        this.tableCursor = table.tableCursor;
-        return true;
-      }
+    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const table = this.getTable(cell.x, cell.y);
+    if (!table) return false;
+    const result = table.pointerMove(world);
+    if (result) {
+      this.tableCursor = table.tableCursor;
+      return true;
     }
     this.tableCursor = undefined;
     return false;
