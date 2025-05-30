@@ -177,6 +177,10 @@ export type AIToolActionsRecord = {
 };
 
 export const aiToolsActions: AIToolActionsRecord = {
+  [AITool.SetAIModel]: async (args) => {
+    // no action as this tool is only meant to get structured data from AI
+    return [{ type: 'text', text: `Executed set ai model tool successfully with name: ${args.ai_model}` }];
+  },
   [AITool.SetChatName]: async (args) => {
     // no action as this tool is only meant to get structured data from AI
     return [{ type: 'text', text: `Executed set chat name tool successfully with name: ${args.chat_name}` }];

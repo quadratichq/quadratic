@@ -82,8 +82,6 @@ export class HtmlCell {
     this.iframe.height = `${this.height}px`;
     this.iframe.setAttribute('border', '0');
     this.iframe.setAttribute('scrolling', 'no');
-    this.iframe.style.minWidth = `${CELL_WIDTH}px`;
-    this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
     // Hard-coded for now, since we invert this color
     this.iframe.style.backgroundColor = '#fff';
 
@@ -305,6 +303,8 @@ export class HtmlCell {
     this.div.style.top = `${this.offset.y}px`;
     this.iframe.width = this.width.toString();
     this.iframe.height = this.height.toString();
+    this.border.style.width = `${this.width}px`;
+    this.border.style.height = `${this.height}px`;
 
     const topHeight = this.sheet.offsets.getRowHeight(this.y);
     this.right.style.top = `-${topHeight}px`;
@@ -359,7 +359,7 @@ export class HtmlCell {
         });
       }
     } else {
-      setTimeout(() => this.autoResize(), 100);
+      setTimeout(this.autoResize, 100);
     }
   };
 

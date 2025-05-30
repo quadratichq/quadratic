@@ -14,7 +14,6 @@ import {
   isContentText,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
@@ -175,7 +174,7 @@ export async function parseGenAIStream(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
@@ -273,7 +272,7 @@ export function parseGenAIResponse(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
   const candidate = result?.candidates?.[0];

@@ -95,7 +95,7 @@ export const handleGenAIRequest = async (
         ],
         contextType: 'userPrompt',
         toolCalls: [],
-        model: getModelFromModelKey(modelKey),
+        modelKey,
       };
       response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response?.end();
