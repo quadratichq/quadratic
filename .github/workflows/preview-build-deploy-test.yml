@@ -508,6 +508,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions/verify-version
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
 
       - name: Verify ${{ matrix.service.name }} version
         uses: ./.github/actions/verify-version
@@ -584,6 +592,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions/tests-e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
 
       - name: Run tests e2e
         uses: ./.github/actions/tests-e2e
@@ -618,6 +634,14 @@ jobs:
       - name: Checkout code
         if: ${{ !cancelled() }}
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            test/e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
 
       - name: Setup Node
         if: ${{ !cancelled() }}

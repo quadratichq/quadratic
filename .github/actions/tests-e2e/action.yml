@@ -15,6 +15,14 @@ runs:
   steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        sparse-checkout: |
+          test/e2e
+        sparse-checkout-cone-mode: false
+        fetch-tags: false
+        submodules: false
+        lfs: false
 
     - name: Setup Node
       uses: useblacksmith/setup-node@v5
@@ -51,7 +59,7 @@ runs:
       shell: bash
       env:
         CI: true
-        GIT_CEILING_DIRECTORIES: /home/runner/work
+        GITHUB_ACTIONS: false
 
     - name: Upload blob report to GitHub Actions Artifacts
       uses: actions/upload-artifact@v4
