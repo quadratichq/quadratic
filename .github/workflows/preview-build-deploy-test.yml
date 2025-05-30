@@ -695,7 +695,9 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           # Upload entire build directory to S3
-          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} --delete
+          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} \
+            --delete \
+            --cache-control "public, max-age=30"
 
       - name: Find Build & Deploy Images Comment
         if: always()

@@ -54,7 +54,14 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
-          args: ['--platform=linux'],
+          args: [
+            '--platform=linux',
+            '--disable-font-subpixel-positioning',
+            '--font-render-hinting=none',
+            '--disable-lcd-text',
+            '--disable-gpu',
+            '--disable-composited-antialiasing',
+          ],
         },
         userAgent:
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.25 Safari/537.36',

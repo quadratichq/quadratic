@@ -49,9 +49,21 @@ runs:
         path: ~/.cache/ms-playwright
         key: playwright-browsers-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
 
+    - name: Install fonts
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          fonts-roboto \
+          fonts-liberation \
+          fonts-dejavu-core \
+          fonts-noto-color-emoji \
+          fontconfig
+        sudo fc-cache -f -v
+      shell: bash
+
     - name: Setup Playwright
       if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps chromium
       shell: bash
 
     - name: Run Playwright tests
