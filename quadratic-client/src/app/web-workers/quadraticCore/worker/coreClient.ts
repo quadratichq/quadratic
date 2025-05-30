@@ -66,6 +66,7 @@ declare var self: WorkerGlobalScope &
     sendValidationWarnings: (warnings: Uint8Array) => void;
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
+    sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
   };
 
 class CoreClient {
@@ -101,6 +102,7 @@ class CoreClient {
     self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
+    self.sendDataTablesCache = coreClient.sendDataTablesCache;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -864,6 +866,10 @@ class CoreClient {
 
   sendCoreError = (from: string, error: Error | unknown) => {
     this.send({ type: 'coreClientCoreError', from, error });
+  };
+
+  sendDataTablesCache = (sheetId: string, dataTablesCache: Uint8Array) => {
+    this.send({ type: 'coreClientDataTablesCache', sheetId, dataTablesCache }, dataTablesCache.buffer);
   };
 }
 

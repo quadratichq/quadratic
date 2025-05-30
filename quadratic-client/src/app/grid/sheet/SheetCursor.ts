@@ -368,7 +368,6 @@ export class SheetCursor {
     return !!this.sheet.cursor.getSingleRectangle();
   };
 
-  // return !tables.intersects(this.multiCursor[0]);
   // getCopyRange(): RefRangeBounds | undefined {
   getRanges = (): CellRefRange[] => {
     const rangesStringified = this.jsSelection.getRanges();

@@ -6,6 +6,7 @@ export class TablesCache {
   // cache of tables by x,y
   private xyIndex: Record<string, Table> = {};
 
+  // todo: maybe replace this with a1_context info?
   // cache of table by name
   private nameIndex: Record<string, Table> = {};
 

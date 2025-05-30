@@ -1232,6 +1232,12 @@ export interface ClientCoreResizeAllRows {
   cursor: string;
 }
 
+export interface CoreClientDataTablesCache {
+  type: 'coreClientDataTablesCache';
+  sheetId: string;
+  dataTablesCache: Uint8Array;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1401,4 +1407,5 @@ export type CoreClientMessage =
   | CoreClientGetAICells
   | CoreClientSetFormats
   | CoreClientGetAIFormats
-  | CoreClientGridToDataTable;
+  | CoreClientGridToDataTable
+  | CoreClientDataTablesCache;

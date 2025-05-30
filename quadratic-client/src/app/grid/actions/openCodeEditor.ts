@@ -16,7 +16,7 @@ export const openCodeEditor = async () => {
   codeEditorState.aiAssistant.abortController?.abort();
 
   const { x, y } = sheets.sheet.cursor.position;
-  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+  const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
   const codeCell = table?.codeCell;
   if (codeCell) {
     const {

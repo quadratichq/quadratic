@@ -17,6 +17,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { DataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
@@ -149,6 +150,8 @@ interface EventTypes {
   scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
 
   bitmapFontsLoaded: () => void;
+
+  dataTablesCache: (sheetId: string, dataTablesCache: DataTablesCache) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

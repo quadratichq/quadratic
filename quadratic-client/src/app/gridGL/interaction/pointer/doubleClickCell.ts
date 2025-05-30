@@ -30,7 +30,7 @@ export async function doubleClickCell(options: {
   }
 
   const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
-  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
+  const table = pixiApp.cellsSheet().tables.getTableIntersects(column, row);
   const codeCell = table?.codeCell;
   const language = codeCell?.language;
 

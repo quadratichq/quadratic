@@ -45,6 +45,7 @@ import type {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
+import { DataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   ClientCoreCellHasContent,
@@ -212,6 +213,9 @@ class QuadraticCore {
       if (debug) {
         console.error('[quadraticCore] core error', e.data.from, e.data.error);
       }
+      return;
+    } else if (e.data.type === 'coreClientDataTablesCache') {
+      events.emit('dataTablesCache', e.data.sheetId, new DataTablesCache(e.data.dataTablesCache));
       return;
     }
 

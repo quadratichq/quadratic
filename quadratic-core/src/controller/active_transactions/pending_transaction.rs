@@ -29,8 +29,6 @@ type SheetValidationsWarnings = HashMap<Pos, JsValidationWarning>;
 // offsets modified ((column, row) -> new_size)
 type SheetOffsets = HashMap<(Option<i64>, Option<i64>), f64>;
 
-// todo: add sheet bounds to this list
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct PendingTransaction {
     pub id: Uuid,
@@ -109,6 +107,9 @@ pub struct PendingTransaction {
     /// sheets w/updated info
     pub sheet_info: HashSet<SheetId>,
 
+    /// sheets that need updated DataTablesCache
+    pub sheet_data_tables: HashSet<SheetId>,
+
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
 
@@ -150,6 +151,7 @@ impl Default for PendingTransaction {
             offsets_modified: HashMap::new(),
             offsets_reloaded: HashSet::new(),
             update_selection: None,
+            sheet_data_tables: HashSet::new(),
         }
     }
 }

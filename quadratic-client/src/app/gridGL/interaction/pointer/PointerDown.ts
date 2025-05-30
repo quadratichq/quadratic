@@ -111,7 +111,7 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
+        const table = pixiApp.cellsSheet().tables.getTableIntersects(column, row);
         if (table) {
           doubleClickCell({ column, row });
         } else {

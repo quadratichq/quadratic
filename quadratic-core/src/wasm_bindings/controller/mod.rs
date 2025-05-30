@@ -84,6 +84,9 @@ impl GridController {
 
                             // sends all borders to the client
                             sheet.send_sheet_borders();
+
+                            // sends DataTablesCache to the client
+                            sheet.send_data_tables_cache();
                         }
                     });
 

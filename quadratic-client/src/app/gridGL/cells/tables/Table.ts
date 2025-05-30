@@ -168,12 +168,14 @@ export class Table extends Container {
   hideActive() {
     this.activate(false);
     htmlCellsHandler.hideActive(this.codeCell);
+    this.header.updateSelection();
     pixiApp.setViewportDirty();
   }
 
   showActive() {
     this.activate(true);
     htmlCellsHandler.showActive(this.codeCell);
+    this.header.updateSelection();
     pixiApp.setViewportDirty();
   }
 

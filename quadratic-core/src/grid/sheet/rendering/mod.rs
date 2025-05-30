@@ -3,5 +3,6 @@
 mod borders;
 mod cells;
 mod code;
+mod data_tables;
 mod fills;
 mod validations;
