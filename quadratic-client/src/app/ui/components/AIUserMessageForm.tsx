@@ -183,7 +183,10 @@ export const AIUserMessageForm = memo(
 
     return (
       <form
-        className={cn('group relative h-min rounded-lg bg-accent pt-1.5', editing ? '' : 'select-none')}
+        className={cn(
+          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[:focus]:border-primary',
+          editing ? '' : 'select-none'
+        )}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) {

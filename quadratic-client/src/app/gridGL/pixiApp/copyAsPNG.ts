@@ -10,6 +10,12 @@ const maxTextureSize = 4096;
 
 let renderer: Renderer | undefined;
 
+export const getScreenImage = async (): Promise<Blob | null> => {
+  return new Promise((resolve) => {
+    pixiApp.renderer.canvas.toBlob?.((blob) => resolve(blob));
+  });
+};
+
 /** returns a dataURL to a copy of the selected cells */
 export const copyAsPNG = async (): Promise<Blob | null> => {
   if (!renderer) {
@@ -44,7 +50,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.canvas.width = imageWidth;
   renderer.canvas.height = imageHeight;
-  pixiApp.prepareForCopying();
+  await pixiApp.prepareForCopying({ cull: screenRect });
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);

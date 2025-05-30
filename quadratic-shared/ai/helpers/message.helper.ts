@@ -1,5 +1,6 @@
 import type {
   AIMessagePrompt,
+  AIModelKey,
   ChatMessage,
   Content,
   ImageContent,
@@ -12,8 +13,9 @@ import type {
   UserMessagePrompt,
   UserPromptContextType,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { isQuadraticModel } from './model.helper';
 
-export const getSystemMessages = (messages: ChatMessage[]): string[] => {
+const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
     (message): message is SystemMessage =>
       message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
@@ -45,6 +47,28 @@ export const getPromptMessagesWithoutPDF = (
   });
 };
 
+export const removeOldFilesInToolResult = (
+  messages: ChatMessage[],
+  files: Set<string>
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+  return getPromptMessages(messages).map((message) => {
+    if (message.contextType !== 'toolResult') {
+      return message;
+    }
+
+    return {
+      ...message,
+      content: message.content.map((result) => ({
+        id: result.id,
+        content:
+          result.content.length === 1
+            ? result.content
+            : result.content.filter((content) => isContentText(content) || !files.has(content.fileName)),
+      })),
+    };
+  });
+};
+
 export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
   return getPromptMessages(messages).filter(
     (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'
@@ -62,6 +86,16 @@ export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptCon
 
 export const getLastAIPromptMessageIndex = (messages: ChatMessage[]): number => {
   return getAIPromptMessages(messages).length - 1;
+};
+
+export const getLastAIPromptMessageModelKey = (messages: ChatMessage[]): AIModelKey | undefined => {
+  const aiPromptMessages = getAIPromptMessages(messages);
+  for (let i = aiPromptMessages.length - 1; i >= 0; i--) {
+    const message = aiPromptMessages[i];
+    if (!!message.modelKey && !isQuadraticModel(message.modelKey)) {
+      return message.modelKey;
+    }
+  }
 };
 
 export const getSystemPromptMessages = (
@@ -114,4 +148,47 @@ export const filterPdfFilesInChatMessages = (messages: ChatMessage[]): PdfFileCo
 
 export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessage[]): PdfFileContent | undefined => {
   return filterPdfFilesInChatMessages(messages).find((content) => content.fileName === fileName);
+};
+
+// Cleans up old get_ tool messages to avoid expensive contexts.
+export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessage[] => {
+  const CLEAN_UP_MESSAGE =
+    'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST call the tool again.';
+
+  const getToolIds = new Set();
+  messages.forEach((message) => {
+    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+      message.toolCalls.forEach((toolCall) => {
+        if (toolCall.name === 'get_cell_data' || toolCall.name === 'get_text_formats') {
+          getToolIds.add(toolCall.id);
+        }
+      });
+    }
+  });
+
+  // If we have multiple get_cell_data messages, keep only the tool call if it's the last one
+  return messages.map((message) => {
+    if (message.role === 'user' && message.contextType === 'toolResult') {
+      return {
+        ...message,
+        content: message.content.map((content) => {
+          if (getToolIds.has(content.id)) {
+            return {
+              id: content.id,
+              content: [
+                {
+                  type: 'text' as const,
+                  text: CLEAN_UP_MESSAGE,
+                },
+              ],
+            };
+          } else {
+            return content;
+          }
+        }),
+      };
+    } else {
+      return message;
+    }
+  });
 };

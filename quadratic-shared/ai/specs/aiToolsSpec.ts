@@ -1,7 +1,9 @@
-import type { AISource, AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
+  SetAIModel = 'set_ai_model',
   SetChatName = 'set_chat_name',
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
@@ -12,9 +14,14 @@ export enum AITool {
   CodeEditorCompletions = 'code_editor_completions',
   UserPromptSuggestions = 'user_prompt_suggestions',
   PDFImport = 'pdf_import',
+  GetCellData = 'get_cell_data',
+  SetTextFormats = 'set_text_formats',
+  GetTextFormats = 'get_text_formats',
+  ConvertToTable = 'convert_to_table',
 }
 
 export const AIToolSchema = z.enum([
+  AITool.SetAIModel,
   AITool.SetChatName,
   AITool.AddDataTable,
   AITool.SetCellValues,
@@ -25,6 +32,10 @@ export const AIToolSchema = z.enum([
   AITool.CodeEditorCompletions,
   AITool.UserPromptSuggestions,
   AITool.PDFImport,
+  AITool.GetCellData,
+  AITool.SetTextFormats,
+  AITool.GetTextFormats,
+  AITool.ConvertToTable,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -81,7 +92,15 @@ const cellLanguageSchema = z
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
   .pipe(z.enum(['Python', 'Javascript', 'Formula']));
 
+const modelRouterModels = z
+  .string()
+  .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
+  .pipe(z.enum(['claude', 'pro']));
+
 export const AIToolsArgsSchema = {
+  [AITool.SetAIModel]: z.object({
+    ai_model: modelRouterModels,
+  }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
   }),
@@ -93,6 +112,7 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.SetCodeCellValue]: z.object({
     sheet_name: z.string(),
+    code_cell_name: z.string(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
@@ -129,13 +149,74 @@ export const AIToolsArgsSchema = {
     file_name: z.string(),
     prompt: z.string(),
   }),
+  [AITool.GetCellData]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
+    page: z.number(),
+  }),
+  [AITool.SetTextFormats]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
+    bold: z.boolean().optional(),
+    italic: z.boolean().optional(),
+    underline: z.boolean().optional(),
+    strike_through: z.boolean().optional(),
+    text_color: z.string().optional(),
+    fill_color: z.string().optional(),
+    align: z.string().optional(),
+    vertical_align: z.string().optional(),
+    wrap: z.string().optional(),
+    numeric_commas: z.boolean().optional(),
+    number_type: z.string().optional(),
+    currency_symbol: z.string().optional(),
+    date_time: z.string().optional(),
+  }),
+  [AITool.GetTextFormats]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
+    page: z.number(),
+  }),
+  [AITool.ConvertToTable]: z.object({
+    sheet_name: z.string(),
+    selection: z.string(),
+    table_name: z.string(),
+    first_row_is_column_names: z.boolean(),
+  }),
 } as const;
 
 export type AIToolSpecRecord = {
   [K in AITool]: AIToolSpec<K>;
 };
 
+export const MODELS_ROUTER_CONFIGURATION: {
+  [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
+} = {
+  claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
+  pro: 'vertexai:gemini-2.5-pro-preview-05-06',
+};
+
 export const aiToolsSpec: AIToolSpecRecord = {
+  [AITool.SetAIModel]: {
+    sources: ['ModelRouter'],
+    description: `
+Sets the AI Model to use for this user prompt.\n
+Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        ai_model: {
+          type: 'string',
+          description:
+            'Value can be only one of the following: "claude" or "pro" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+        },
+      },
+      required: ['ai_model'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetAIModel],
+    prompt: '',
+  },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
     description: `
@@ -157,23 +238,65 @@ This name should be from user's perspective, not the assistant's.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetChatName],
+    prompt: '',
+  },
+  [AITool.GetCellData]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Do NOT use this tool if there is no data based in the data bounds provided for the sheet, or if you already have the data in context.\n
+You should use the get_cell_data function to get the values of the cells when you need more data to reference.\n
+Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
+get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
+The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
+IMPORTANT: If the results include page information:\n
+- if the tool tells you it has too many pages, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
+- you MUST perform actions on the current page's results before requesting the next page of results.\n
+- as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name of the current sheet as defined in the context, unless the user is requesting data from another sheet. In which case, use that sheet name.',
+        },
+        selection: {
+          type: 'string',
+          description: `
+The string representation (in a1 notation) of the selection of cells to get the values of. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
+        },
+        page: {
+          type: 'number',
+          description:
+            'The page number of the results to return. The first page is always 0. Use the parameters with a different page to get the next set of results.',
+        },
+      },
+      required: ['selection', 'sheet_name', 'page'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
-You can use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
-This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
-The chat name should be based on user's messages and should reflect his/her queries and goals.\n
-This name should be from user's perspective, not the assistant's.\n
+This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
+Do NOT use this tool if there is no data based in the data bounds provided for the sheet, or if you already have the data in context.\n
+You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
+This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
+IMPORTANT: If the results include page information:\n
+- if the tool tells you it has too many pages, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
+- you MUST perform actions on the current page's results before requesting the next page of results.\n
+- as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
 `,
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
     description: `
-Adds a data table to the current open sheet, requires the top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
-Always use this tool when adding a new tabular data to the current open sheet. Don't use set_cell_values function to add tabular data.\n
+Data tables are best for adding new tabular data to the sheet.\n\n
 Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
-Always prefer using this tool to add structured data to the current open sheet. Don't use set_cell_values or set_code_cell_value function to add structured data.\n
 `,
     parameters: {
       type: 'object',
@@ -210,25 +333,26 @@ Always prefer using this tool to add structured data to the current open sheet. 
     prompt: `
 Adds a data table to the current sheet defined in the context, requires the sheet name, top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 top_left_position is the anchor position of the data table.\n
+Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Always use this tool when adding a new tabular data to the current open sheet. Don't use set_cell_values function to add tabular data.\n
+Data tables are best for adding new tabular data to the sheet.\n
 Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
-Don't attempt to add formulas or code to data tables.\n
-`,
+Don't attempt to add formulas or code to data tables.\n`,
   },
   [AITool.SetCellValues]: {
     sources: ['AIAnalyst'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
-Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
+Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
     parameters: {
       type: 'object',
@@ -258,11 +382,19 @@ To clear the values of a cell, set the value to an empty string.\n
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
-You should use the set_cell_values function to set the values of the current open sheet cells to a 2d array of strings.\n
-Use this function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n
-This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation), and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
+You should use the set_cell_values function to set the values of a sheet to a 2d array of strings.\n
+Use this function to add data to a sheet. Don't use code cell for adding data. Always add data using this function.\n\n
+CRITICALLY IMPORTANT: you MUST insert column headers ABOVE the first row of data.\n
+When setting cell values, follow these rules for headers:\n
+1. The header row MUST be the first row in the cell_values array\n
+2. The header row MUST contain column names that describe the data below\n
+3. The header row MUST have the same number of columns as the data rows\n
+4. The header row MUST be included in the cell_values array, not as a separate operation\n
+5. The top_left_position MUST point to where the header row should start, which is usually the row above the first row of inserted data\n\n
+This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
@@ -272,7 +404,10 @@ Sets the value of a code cell and runs it in the current open sheet, requires th
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
+Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Note: we only rename the code cell if its new. Otherwise we keep the old name.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Do not attempt to add formulas or code to data tables, it will result in an error.\n
 `,
     parameters: {
       type: 'object',
@@ -280,6 +415,11 @@ Always refer to the data from cell by its position in a1 notation from respectiv
         sheet_name: {
           type: 'string',
           description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_name: {
+          type: 'string',
+          description:
+            'What to name the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed). First letter capitalized is preferred.',
         },
         code_cell_language: {
           type: 'string',
@@ -296,7 +436,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
           description: 'The code which will run in the cell',
         },
       },
-      required: ['sheet_name', 'code_cell_language', 'code_cell_position', 'code_string'],
+      required: ['sheet_name', 'code_cell_name', 'code_cell_language', 'code_cell_position', 'code_string'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
@@ -305,20 +445,24 @@ You should use the set_code_cell_value function to set this code cell value. Use
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
-The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
- - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
- - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
- - If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
- - If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n
- - Always leave a blank row / column between the code cell and the data it references.\n
- - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
- - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
- - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
- - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
- - Do not use conditional returns in python code cells.\n
- - Do not attempt to return data using conditionals in code cells. Even if the conditional is the last line, it will not be returned if buried in a conditional.
- - Don't prefix formulas with \`=\` in code cells.\n
- `,
+
+Python and JavaScript Placement: the required location code_cell_position for this code cell in Python or JavaScript is one which satisfies the following conditions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
+- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
+- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
+- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21.\n
+- In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
+- If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
+- Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
+
+Formulas Placement: the required location code_cell_position for this code cell in Formulas is one which satisfies the following conditions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referenced from the Formula and use the nearest unoccupied cell. If multiple data references are being made, choose the one which is most relevant to the Formula.\n
+- Unlike code, with Formulas you should not leave extra empty space to nearest content. Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath or directly beside the data being referenced. With Formulas, unlike code, you do not need to leave an extra space to the data being referenced. 
+- Don't prefix formulas with \`=\` in code cells.\n
+`,
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],
@@ -360,7 +504,7 @@ Target position is the top left corner of the target position on the current ope
     sources: ['AIAnalyst'],
     description: `
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
-You should use the delete_cells function to delete the value(s) of a selection of cells on the current open sheet.\n
+You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 `,
     parameters: {
@@ -381,7 +525,8 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     },
     responseSchema: AIToolsArgsSchema[AITool.DeleteCells],
     prompt: `
-You should use the delete_cells function to delete value(s) on the current open sheet.\n
+You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
+You MUST NOT delete cells that are referenced by code cells. For example, if you write Python code that references cells, you MUST NOT delete the original cells or the Python code will stop working.\n
 delete_cells functions requires the current sheet name provided in the context, and a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 `,
   },
@@ -417,6 +562,140 @@ When using this tool, make sure this is the only tool used in the response.\n
 When using this tool, make sure the code cell is the only cell being edited.\n
 `,
   },
+  [AITool.GetTextFormats]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
+It should be used to find formatting within a sheet's formatting bounds.\n
+It returns a string representation of the formatting information of the cells in the selection.\n
+If there are multiple pages of formatting information, use the page parameter to get the next set of results.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        selection: {
+          type: 'string',
+          description: 'The selection of cells to get the formats of, in a1 notation',
+        },
+        page: {
+          type: 'number',
+          description:
+            'The page number of the results to return. The first page is always 0. Use the parameters with a different page to get the next set of results.',
+        },
+      },
+      required: ['sheet_name', 'selection', 'page'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetTextFormats],
+    prompt: `
+The get_text_formats tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
+It should be used to find formatting within a sheet's formatting bounds.\n
+It returns a string representation of the formatting information of the cells in the selection.\n
+CRITICALLY IMPORTANT: If too large, the results will include page information:\n
+- if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
+- ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
+`,
+  },
+  [AITool.SetTextFormats]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool sets the text formats of a selection of cells on a specified sheet.\n
+It requires the sheet name, the selection of cells to set the formats of, and any formats to set.\n
+There must be at least one format to set.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        selection: {
+          type: 'string',
+          description: 'The selection of cells to set the formats of, in a1 notation',
+        },
+        bold: {
+          type: 'boolean',
+          description: 'Whether to set the cell to bold',
+        },
+        italic: {
+          type: 'boolean',
+          description: 'Whether to set the cell to italic',
+        },
+        underline: {
+          type: 'boolean',
+          description: 'Whether to set the cell to underline',
+        },
+        strike_through: {
+          type: 'boolean',
+          description: 'Whether to set the cell to strike through',
+        },
+        text_color: {
+          type: 'string',
+          description:
+            'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
+        },
+        fill_color: {
+          type: 'string',
+          description:
+            'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
+        },
+        align: {
+          type: 'string',
+          description: 'The horizontal alignment of the text, this can be one of "left", "center", "right"',
+        },
+        vertical_align: {
+          type: 'string',
+          description: 'The vertical alignment of the text, this can be one of "top", "middle", "bottom"',
+        },
+        wrap: {
+          type: 'string',
+          description: 'The wrapping of the text, this can be one of "wrap", "clip", "overflow"',
+        },
+        numeric_commas: {
+          type: 'boolean',
+          description:
+            'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas.',
+        },
+        number_type: {
+          type: 'string',
+          description:
+            'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.',
+        },
+        currency_symbol: {
+          type: 'string',
+          description:
+            'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR',
+        },
+        date_time: {
+          type: 'string',
+          description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
+    prompt: `The set_text_formats tool sets the text formats of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to set the formats of, and the formats to set.\n
+Here are the formats you can set:\n
+- bold, italics, underline, or strike through\n
+- text color and fill color using hex format, for example, #FF0000 for red\n
+- horizontal alignment, this can be one of "left", "center", "right"\n
+- vertical alignment, this can be one of "top", "middle", "bottom"\n
+- wrapping, this can be one of "wrap", "clip", "overflow"\n
+- numeric_commas, adds or removes commas from numbers\n
+- number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
+- currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
+- date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
+There must be at least one format to set.\n
+You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
+  },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
     description: `
@@ -443,7 +722,7 @@ Completion is the delta that will be inserted at the cursor position in the code
 `,
   },
   [AITool.UserPromptSuggestions]: {
-    sources: ['GetUserPromptSuggestions', 'AIAnalyst'],
+    sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
@@ -527,6 +806,50 @@ Use this tool only if there is a PDF file that needs to be extracted. If there i
 Never extract data from PDF files that are not relevant to the user's prompt. Never try to extract data from PDF files on your own. Always use the pdf_import tool when dealing with PDF files.\n
 Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
 Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
+`,
+  },
+  [AITool.ConvertToTable]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool converts a selection of cells on a specified sheet into a data table.\n
+IMPORTANT: the selection can NOT contain any code cells or data tables.\n
+It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
+A data table cannot be created over any existing code cells or data tables.\n
+The data table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to convert to a data table, in a1 notation. This MUST be a rectangle, like A2:D20',
+        },
+        table_name: {
+          type: 'string',
+          description:
+            "The name of the data table to create, this should be a concise and descriptive name of the data table. Don't use special characters or spaces in the name. Always use a unique name for the data table. Spaces, if any, in name are replaced with underscores.",
+        },
+        first_row_is_column_names: {
+          type: 'boolean',
+          description: 'Whether the first row of the selection is the column names',
+        },
+      },
+      required: ['sheet_name', 'selection', 'table_name', 'first_row_is_column_names'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ConvertToTable],
+    prompt: `
+This tool converts a selection of cells on a specified sheet into a data table.\n
+IMPORTANT: the selection can NOT contain any code cells or data tables.\n
+It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
+A data table cannot be created over any existing code cells or data tables.\n
+The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
+The data table will include a table name as the first row, which will push down all data by one row.\n
 `,
   },
 } as const;

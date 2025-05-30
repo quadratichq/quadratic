@@ -234,6 +234,7 @@ pub mod test {
             CodeCellLanguage::Python,
             "code".to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         gc.calculation_complete(JsCodeResult {

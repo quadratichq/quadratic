@@ -109,11 +109,13 @@ export class Pointer {
     this.updateCursor();
   };
 
-  private pointerMove = (e: FederatedPointerEvent) => {
+  pointerMove = (e: FederatedPointerEvent) => {
     // ignore pointerMove if the target is a child of an element with class pointer-move-ignore
-    const target = e.originalEvent.target;
-    const isWithinPointerMoveIgnore = target instanceof HTMLElement && !!target.closest('.pointer-move-ignore');
-    if (isWithinPointerMoveIgnore) return;
+    const target = e.originalEvent?.target;
+    if (target) {
+      const isWithinPointerMoveIgnore = target instanceof HTMLElement && !!target.closest('.pointer-move-ignore');
+      if (isWithinPointerMoveIgnore) return;
+    }
 
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
 

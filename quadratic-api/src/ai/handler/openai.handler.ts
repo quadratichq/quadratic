@@ -14,8 +14,8 @@ import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../hel
 export const handleOpenAIRequest = async (
   modelKey: OpenAIModelKey | XAIModelKey,
   args: AIRequestHelperArgs,
-  response: Response,
-  openai: OpenAI
+  openai: OpenAI,
+  response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
@@ -32,10 +32,10 @@ export const handleOpenAIRequest = async (
       tool_choice,
     };
     if (options.stream) {
-      response.setHeader('Content-Type', 'text/event-stream');
-      response.setHeader('Cache-Control', 'no-cache');
-      response.setHeader('Connection', 'keep-alive');
-      response.write(`stream\n\n`);
+      response?.setHeader('Content-Type', 'text/event-stream');
+      response?.setHeader('Cache-Control', 'no-cache');
+      response?.setHeader('Connection', 'keep-alive');
+      response?.write(`stream\n\n`);
 
       apiArgs = {
         ...apiArgs,
@@ -45,21 +45,21 @@ export const handleOpenAIRequest = async (
       };
       const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
 
-      const parsedResponse = await parseOpenAIStream(completion, response, modelKey);
+      const parsedResponse = await parseOpenAIStream(completion, modelKey, response);
       return parsedResponse;
     } else {
       const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
 
-      const parsedResponse = parseOpenAIResponse(result, response, modelKey);
+      const parsedResponse = parseOpenAIResponse(result, modelKey, response);
       return parsedResponse;
     }
   } catch (error: any) {
-    if (!options.stream || !response.headersSent) {
+    if (!options.stream || !response?.headersSent) {
       if (error instanceof OpenAI.APIError) {
-        response.status(error.status ?? 400).json({ error: error.message });
+        response?.status(error.status ?? 400).json({ error: error.message });
         console.error(error.status, error.message);
       } else {
-        response.status(400).json({ error });
+        response?.status(400).json({ error });
         console.error(error);
       }
     } else {
@@ -68,10 +68,10 @@ export const handleOpenAIRequest = async (
         content: [{ type: 'text', text: error instanceof OpenAI.APIError ? error.message : JSON.stringify(error) }],
         contextType: 'userPrompt',
         toolCalls: [],
-        model: getModelFromModelKey(modelKey),
+        modelKey,
       };
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-      response.end();
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.end();
       console.error('Error occurred after headers were sent:', error);
     }
   }

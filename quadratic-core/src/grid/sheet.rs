@@ -469,6 +469,64 @@ impl Sheet {
         sheet_format
     }
 
+    /// Returns a string representation of the format of a cell for use by AI.
+    pub fn cell_text_format_as_string(&self, pos: Pos) -> Option<String> {
+        let format = self.cell_format(pos);
+        if format.is_default() {
+            None
+        } else {
+            let mut values = vec![];
+            if format.bold.is_some_and(|b| b) {
+                values.push("bold".to_string());
+            }
+            if format.italic.is_some_and(|i| i) {
+                values.push("italic".to_string());
+            }
+            if format.underline.is_some_and(|u| u) {
+                values.push("underline".to_string());
+            }
+            if format.strike_through.is_some_and(|s| s) {
+                values.push("strike through".to_string());
+            }
+            if let Some(text_color) = format.text_color {
+                if !text_color.is_empty() {
+                    values.push(format!("text color is {}", text_color.clone()));
+                }
+            }
+            if let Some(fill_color) = format.fill_color {
+                if !fill_color.is_empty() {
+                    values.push(format!("fill color is {}", fill_color.clone()));
+                }
+            }
+            if let Some(align) = format.align {
+                values.push(format!("horizontal align is {}", align.clone()));
+            }
+            if let Some(vertical_align) = format.vertical_align {
+                values.push(format!("vertical align is {}", vertical_align.clone()));
+            }
+            if let Some(wrap) = format.wrap {
+                values.push(format!("wrap is {}", wrap.clone()));
+            }
+            if let Some(numeric_format) = format.numeric_format {
+                values.push(format!("numeric kind is {}", numeric_format.kind));
+                if let Some(symbol) = numeric_format.symbol {
+                    values.push(format!("numeric symbol is {}", symbol));
+                }
+            }
+            if let Some(numeric_decimals) = format.numeric_decimals {
+                values.push(format!("numeric decimals is {}", numeric_decimals));
+            }
+            if let Some(numeric_commas) = format.numeric_commas {
+                values.push(format!("numeric commas is {}", numeric_commas));
+            }
+            if let Some(date_time) = format.date_time {
+                values.push(format!("date time is {}", date_time.clone()));
+            }
+
+            Some(values.join(", "))
+        }
+    }
+
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
         let format = self.cell_format(pos);
@@ -615,12 +673,15 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         include_blanks: bool,
+        ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
             if let Some(rect) = match range {
-                CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
+                CellRefRange::Sheet { range } => {
+                    Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
+                }
                 CellRefRange::Table { range } => {
                     self.table_ref_to_rect(range, false, false, a1_context)
                 }
@@ -1076,14 +1137,14 @@ mod test {
         let selection = A1Selection::test_a1("A1:A4");
         let a1_context = sheet.make_a1_context();
         assert_eq!(
-            sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context),
+            sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context),
             Vec::<i64>::new()
         );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false, &a1_context);
+        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context);
         rows.sort();
         assert_eq!(rows, vec![1, 3]);
     }

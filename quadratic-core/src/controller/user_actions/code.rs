@@ -11,9 +11,10 @@ impl GridController {
         sheet_pos: SheetPos,
         language: CodeCellLanguage,
         code_string: String,
+        code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> String {
-        let ops = self.set_code_cell_operations(sheet_pos, language, code_string);
+        let ops = self.set_code_cell_operations(sheet_pos, language, code_string, code_cell_name);
         self.start_user_transaction(ops, cursor, TransactionName::SetCode)
     }
 
@@ -50,6 +51,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_util::*;
 
     #[test]
     fn test_grid_formula_results() {
@@ -62,11 +64,13 @@ mod tests {
             CodeCellLanguage::Formula,
             "=2 / {1;2;0}".to_owned(),
             None,
+            None,
         );
         g.set_code_cell(
             pos![B1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "=A1:A3".to_owned(),
+            None,
             None,
         );
         g.set_cell_value(pos![C1].to_sheet_pos(sheet_id), "meow".to_string(), None);
@@ -87,5 +91,35 @@ mod tests {
         assert!(matches!(get_cell(pos![B3]), crate::CellValue::Error(_)));
         assert!(matches!(get_cell(pos![C1]), crate::CellValue::Text(_)));
         assert!(matches!(get_cell(pos![C2]), crate::CellValue::Blank));
+    }
+
+    #[test]
+    fn test_set_code_cell_with_table_name() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Set a code cell with a table name
+        gc.set_code_cell(
+            pos![A1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "=SUM(1, 2)".to_owned(),
+            Some("MyCode".to_string()),
+            None,
+        );
+
+        let dt = gc.data_table(pos![sheet_id!A1]).unwrap();
+        assert_eq!(dt.name(), "MyCode".to_string());
+
+        // Set a code cell with a table name
+        gc.set_code_cell(
+            pos![A1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "=SUM(1, 2)".to_owned(),
+            Some("NameShouldNotChange".to_string()),
+            None,
+        );
+
+        let dt = gc.data_table(pos![sheet_id!A1]).unwrap();
+        assert_eq!(dt.name(), "MyCode".to_string());
     }
 }
