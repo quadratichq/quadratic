@@ -153,10 +153,9 @@ export class Tables extends Container<Table> {
           if (table) {
             this.removeChild(table);
             table.destroy();
-            this.tablesCache.remo;
+            this.tablesCache.remove(table);
           }
-        }
-        if (table) {
+        } else if (table) {
           if (!render_code_cell) {
             pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
             this.removeChild(table);
