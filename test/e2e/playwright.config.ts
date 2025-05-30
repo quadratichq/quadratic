@@ -38,6 +38,11 @@ export default defineConfig({
     screenshot: {
       mode: 'on',
     },
+
+    /* Set a consistent timezone for all tests */
+    timezoneId: 'UTC',
+    /* Set a consistent locale if needed */
+    locale: 'en-US',
   },
   /* Timeout for each test */
   timeout: 10 * 60 * 1000,

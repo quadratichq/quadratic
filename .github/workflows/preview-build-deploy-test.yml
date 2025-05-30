@@ -637,7 +637,7 @@ jobs:
           # Create temp directory for download
           mkdir -p temp-download
 
-          # Download all matching artifacts (handles pagination automatically)
+          # Download all matching artifacts
           gh run download ${{ github.run_id }} \
             --repo ${{ github.repository }} \
             --pattern "blob-report-${{ github.run_id }}-*" \
