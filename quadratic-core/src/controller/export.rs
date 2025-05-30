@@ -23,10 +23,10 @@ impl GridController {
         }
 
         let bounds = sheet
-            .selection_bounds(selection, false, false, &self.a1_context)
+            .selection_bounds(selection, false, false, true, &self.a1_context)
             .context("No values")?;
 
-        let values = sheet.selection_sorted_vec(selection, false, &self.a1_context);
+        let values = sheet.selection_sorted_vec(selection, false, true, &self.a1_context);
         let mut writer = Writer::from_writer(vec![]);
         let mut iter = values.iter();
         let context = self.a1_context();
