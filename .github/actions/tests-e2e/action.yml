@@ -54,6 +54,15 @@ runs:
       run: npx playwright install --with-deps
       shell: bash
 
+    - name: Install fonts
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fonts-liberation fonts-noto-color-emoji fonts-noto-cjk
+        echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | sudo debconf-set-selections
+        sudo apt-get install -y ttf-mscorefonts-installer
+        fc-cache -f -v
+      shell: bash
+
     - name: Run Playwright tests
       run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
       shell: bash

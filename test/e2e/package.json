@@ -7,6 +7,7 @@
   "scripts": {
     "lint:ts": "tsc --noemit",
     "test": "npm run lint:ts && npx playwright test",
+    "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
     "test:fix": "npx playwright test --update-snapshots",
