@@ -4,6 +4,7 @@ export interface CodeCell {
   sheetId: string;
   pos: JsCoordinate;
   language: CodeCellLanguage;
+  lastModified: number;
 }
 
 export const isSameCodeCell = (cell1: CodeCell, cell2: CodeCell) => {

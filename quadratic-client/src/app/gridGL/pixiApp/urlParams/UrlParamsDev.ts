@@ -89,6 +89,7 @@ export class UrlParamsDev {
             sheetId,
             pos: { x, y },
             language: code,
+            lastModified: 0,
           },
         }));
       }
@@ -137,6 +138,7 @@ export class UrlParamsDev {
           sheetId,
           pos: { x, y },
           language,
+          lastModified: 0,
         },
       }));
 

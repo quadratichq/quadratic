@@ -41,6 +41,11 @@ impl JsSelection {
         Ok(self.selection.largest_rect_finite(&self.context))
     }
 
+    #[wasm_bindgen(js_name = "getLargestUnboundedRectangle")]
+    pub fn get_largest_unbounded_rectangle(&self) -> Result<Rect, String> {
+        Ok(self.selection.largest_rect_unbounded(&self.context))
+    }
+
     #[wasm_bindgen(js_name = "getSingleRectangle")]
     pub fn get_single_rectangle(&self) -> Result<Option<Rect>, String> {
         Ok(self.selection.single_rect(&self.context))

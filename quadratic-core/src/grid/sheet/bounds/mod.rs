@@ -44,7 +44,7 @@ impl Sheet {
         for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
                 if let Some(rect) =
-                    self.selection_bounds(&validation.selection, false, false, a1_context)
+                    self.selection_bounds(&validation.selection, false, false, true, a1_context)
                 {
                     self.data_bounds.add(rect.min);
                     self.data_bounds.add(rect.max);

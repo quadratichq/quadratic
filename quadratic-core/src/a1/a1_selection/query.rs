@@ -91,6 +91,27 @@ impl A1Selection {
         rect
     }
 
+    /// Returns the largest rectangle that can be formed by the selection, including unbounded ranges.
+    pub fn largest_rect_unbounded(&self, a1_context: &A1Context) -> Rect {
+        let mut rect = Rect::single_pos(self.cursor);
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                rect = rect.union(&Rect::new(
+                    range.start.col(),
+                    range.start.row(),
+                    range.end.col(),
+                    range.end.row(),
+                ));
+            }
+            CellRefRange::Table { range } => {
+                if let Some(table_rect) = range.to_largest_rect(a1_context) {
+                    rect = rect.union(&table_rect);
+                }
+            }
+        });
+        rect
+    }
+
     /// Returns rectangle in case of single finite range selection having more than one cell.
     pub fn single_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         if self.ranges.len() != 1 || !self.is_multi_cursor(a1_context) {
@@ -121,7 +142,7 @@ impl A1Selection {
     // Converts to a set of quadrant positions.
     pub fn rects_to_hashes(&self, sheet: &Sheet, a1_context: &A1Context) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
-        let finite_selection = sheet.finitize_selection(self, false, false, a1_context);
+        let finite_selection = sheet.finitize_selection(self, false, false, false, a1_context);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
             if let Some(rect) = range.to_rect(a1_context) {

@@ -16,9 +16,10 @@ import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { timeAgoAndNextTimeout } from '@/shared/utils/timeAgo';
 import mixpanel from 'mixpanel-browser';
 import type { JSX, ReactNode } from 'react';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
@@ -28,6 +29,7 @@ export const ReturnTypeInspector = memo(() => {
   const mode = useMemo(() => getLanguage(language), [language]);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
@@ -136,6 +138,36 @@ export const ReturnTypeInspector = memo(() => {
     );
   }
 
+  const [lastModified, setLastModified] = useState('');
+  useEffect(() => {
+    let timeout: number | undefined;
+    if (codeCell.lastModified) {
+      const update = () => {
+        const { timeAgo, nextInterval } = timeAgoAndNextTimeout(codeCell.lastModified, true);
+        // add `on` for dates
+        // fixed date, does not need to be updated
+        if (!timeAgo.includes('ago')) {
+          setLastModified(`on ${timeAgo}`);
+        }
+        // relative time, needs to be updated
+        else {
+          setLastModified(timeAgo);
+        }
+
+        if (nextInterval > 0) {
+          timeout = window.setTimeout(update, nextInterval);
+        }
+      };
+
+      update();
+    }
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [codeCell]);
+
   if (message === undefined || language === 'Formula' || !editorContent || loading) {
     return null;
   }
@@ -152,7 +184,10 @@ export const ReturnTypeInspector = memo(() => {
     >
       <span style={{ transform: 'scaleX(-1)', display: 'inline-block', fontSize: '10px' }}>⮐</span>
 
-      <span className="leading-snug">{message}</span>
+      <span className="leading-snug">
+        {message}
+        {lastModified && <span> {lastModified}</span>}
+      </span>
 
       {action && <span className="ml-auto font-sans">{action}</span>}
     </div>

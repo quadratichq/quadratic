@@ -1,6 +1,5 @@
 import type {
   ContentBlock,
-  ToolResultContentBlock,
   ConverseResponse,
   ConverseStreamOutput,
   DocumentBlock,
@@ -11,6 +10,7 @@ import type {
   SystemContentBlock,
   Tool,
   ToolChoice,
+  ToolResultContentBlock,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import {
@@ -20,7 +20,6 @@ import {
   isContentTextFile,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -167,18 +166,18 @@ function getBedrockToolChoice(toolName?: AITool): ToolChoice {
 
 export async function parseBedrockStream(
   chunks: AsyncIterable<ConverseStreamOutput> | never[],
-  response: Response,
-  modelKey: BedrockModelKey
+  modelKey: BedrockModelKey,
+  response?: Response
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   const usage: AIUsage = {
     inputTokens: 0,
@@ -193,7 +192,7 @@ export async function parseBedrockStream(
       usage.outputTokens = Math.max(usage.outputTokens, chunk.metadata.usage?.outputTokens ?? 0);
     }
 
-    if (!response.writableEnded) {
+    if (!response?.writableEnded) {
       if (chunk.contentBlockStart) {
         // tool use start
         if (chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
@@ -242,7 +241,7 @@ export async function parseBedrockStream(
         }
       }
 
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
     } else {
       break;
     }
@@ -264,10 +263,9 @@ export async function parseBedrockStream(
     }));
   }
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-
-  if (!response.writableEnded) {
-    response.end();
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  if (!response?.writableEnded) {
+    response?.end();
   }
 
   return { responseMessage, usage };
@@ -275,15 +273,15 @@ export async function parseBedrockStream(
 
 export function parseBedrockResponse(
   result: ConverseResponse,
-  response: Response,
-  modelKey: BedrockModelKey
+  modelKey: BedrockModelKey,
+  response?: Response
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
   result.output?.message?.content?.forEach((contentBlock) => {
@@ -315,7 +313,7 @@ export function parseBedrockResponse(
     });
   }
 
-  response.json(responseMessage);
+  response?.json(responseMessage);
 
   const usage: AIUsage = {
     inputTokens: result.usage?.inputTokens ?? 0,

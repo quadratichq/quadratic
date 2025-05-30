@@ -553,6 +553,7 @@ class InlineEditorHandler {
           sheetId,
           pos: { x, y },
           language: 'Formula',
+          lastModified: 0,
         },
         showCellTypeMenu: false,
         initialCode: inlineEditorMonaco.get().slice(1),

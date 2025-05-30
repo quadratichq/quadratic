@@ -243,13 +243,13 @@ export class PointerCellMoving {
     return false;
   };
 
-  pointerMove = (world: Point, event: FederatedPointerEvent): boolean => {
-    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
+  pointerMove = (world: Point, event?: FederatedPointerEvent): boolean => {
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event?.button === 1) return false;
 
     if (this.state === 'move') {
       this.pointerMoveMoving(world);
       return true;
-    } else if (event.buttons === 0) {
+    } else if (event?.buttons === 0) {
       return this.pointerMoveHover(world);
     }
     return false;

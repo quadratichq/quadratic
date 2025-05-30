@@ -51,6 +51,7 @@ impl<'ctx> Ctx<'ctx> {
         &self,
         range: &SheetCellRefRange,
         span: Span,
+        ignore_formatting: bool,
     ) -> CodeResult<Spanned<SheetRect>> {
         let sheet = self
             .grid_controller
@@ -60,7 +61,9 @@ impl<'ctx> Ctx<'ctx> {
         let a1_context = self.grid_controller.a1_context();
 
         let rect = match &range.cells {
-            CellRefRange::Sheet { range } => sheet.ref_range_bounds_to_rect(range),
+            CellRefRange::Sheet { range } => {
+                sheet.ref_range_bounds_to_rect(range, ignore_formatting)
+            }
             CellRefRange::Table { range } => sheet
                 .table_ref_to_rect(range, false, false, a1_context)
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,

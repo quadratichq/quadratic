@@ -49,7 +49,7 @@ export const AddDataTable = memo(({ args, loading }: AddDataTableProps) => {
       icon={icon}
       label={
         <span>
-          {label} <span className="text-muted-foreground">| {table_name}</span>
+          {label} <span className="ml-1 font-normal text-muted-foreground">{table_name}</span>
         </span>
       }
       description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}

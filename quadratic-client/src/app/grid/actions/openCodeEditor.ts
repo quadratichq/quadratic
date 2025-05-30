@@ -63,6 +63,7 @@ export const openCodeEditor = async () => {
             sheetId: sheets.current,
             pos: { x: codeCell.x, y: codeCell.y },
             language: codeCell.language,
+            lastModified: Number(codeCell.last_modified),
           },
           showCellTypeMenu: false,
           initialCode: '',
@@ -87,6 +88,7 @@ export const openCodeEditor = async () => {
           sheetId: sheets.current,
           pos: { x, y },
           language: 'Python',
+          lastModified: 0,
         },
         showCellTypeMenu: true,
         initialCode: '',
@@ -114,6 +116,7 @@ export const openCodeEditor = async () => {
         sheetId: sheets.current,
         pos: { x, y },
         language: codeEditorState.codeCell.language,
+        lastModified: 0,
       },
     });
   }

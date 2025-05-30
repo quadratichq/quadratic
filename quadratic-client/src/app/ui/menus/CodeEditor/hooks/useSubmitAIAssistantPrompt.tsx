@@ -29,7 +29,6 @@ import {
   isContentText,
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRef } from 'react';
@@ -147,7 +146,7 @@ export function useSubmitAIAssistantPrompt() {
                 content: [{ type: 'text', text: 'Request aborted by the user.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model: getModelFromModelKey(modelKey),
+                modelKey,
               };
               return [...prevMessages, newLastMessage];
             }
@@ -311,7 +310,7 @@ export function useSubmitAIAssistantPrompt() {
                 content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model: getModelFromModelKey(modelKey),
+                modelKey,
               };
               return [...prevMessages, newLastMessage];
             }

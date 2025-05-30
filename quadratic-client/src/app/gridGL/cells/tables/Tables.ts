@@ -443,7 +443,7 @@ export class Tables extends Container<Table> {
       (table) =>
         table.codeCell.show_name &&
         cell.x >= table.codeCell.x &&
-        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        cell.x < table.codeCell.x + table.codeCell.w &&
         cell.y === table.codeCell.y
     );
   }
@@ -454,7 +454,7 @@ export class Tables extends Container<Table> {
       (table) =>
         table.codeCell.show_columns &&
         cell.x >= table.codeCell.x &&
-        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        cell.x < table.codeCell.x + table.codeCell.w &&
         table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
     );
   }

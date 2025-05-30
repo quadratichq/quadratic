@@ -89,7 +89,9 @@ export function ConnectionFormActions({
                   </button>
                   .
                 </span>
-                <span className="mt-1 font-mono text-xs">{dbConnectionError.message}</span>
+                <div className="mt-1 w-full whitespace-pre-wrap break-words font-mono text-xs">
+                  {dbConnectionError.message}
+                </div>
               </AlertDescription>
             </Alert>
             <p className="text-xs text-muted-foreground">

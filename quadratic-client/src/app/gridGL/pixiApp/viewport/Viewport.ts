@@ -1,9 +1,10 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
-import type { PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiApp, type PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Decelerate } from '@/app/gridGL/pixiApp/viewport/Decelerate';
 import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
+import { MouseEdges } from '@/app/gridGL/pixiApp/viewport/MouseEdges';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Viewport as PixiViewport, type IMouseEdgesOptions } from 'pixi-viewport';
@@ -38,9 +39,6 @@ export class Viewport extends PixiViewport {
 
   private snapState?: SnapState;
   private snapTimeout?: number;
-
-  // the last pointer position where the mouse edges were enabled
-  lastMouse?: Point;
 
   constructor(pixiApp: PixiApp) {
     super({
@@ -91,6 +89,7 @@ export class Viewport extends PixiViewport {
     this.on('pinch-start', this.handleWaitForZoomEnd);
     this.on('pinch-end', this.handleZoomEnd);
     this.on('snap-end', this.handleSnapEnd);
+    this.on('mouse-edge-move', this.handleMouseEdgeMove);
   }
 
   private turnOffDecelerate = () => {
@@ -163,7 +162,6 @@ export class Viewport extends PixiViewport {
   };
 
   enableMouseEdges = (world?: Point, direction?: 'horizontal' | 'vertical') => {
-    this.lastMouse = world;
     const mouseEdges = this.plugins.get('mouse-edges');
     if (mouseEdges && !mouseEdges.paused) return;
     const options: IMouseEdgesOptions = {
@@ -174,12 +172,11 @@ export class Viewport extends PixiViewport {
       left: direction === 'vertical' ? null : MOUSE_EDGES_DISTANCE,
       right: direction === 'vertical' ? null : MOUSE_EDGES_DISTANCE,
     };
-    this.mouseEdges(options);
+    this.plugins.add('mouse-edges', new MouseEdges(this, options));
   };
 
   disableMouseEdges = () => {
     this.plugins.remove('mouse-edges');
-    this.lastMouse = undefined;
   };
 
   sendRenderViewport() {
@@ -294,47 +291,6 @@ export class Viewport extends PixiViewport {
         }
       }
     }
-
-    this.checkForMouseEdges();
-  };
-
-  // select cells as we are edge scrolling
-  private checkForMouseEdges = () => {
-    if (!this.lastMouse) return;
-
-    const mouseEdges = this.plugins.get('mouse-edges');
-    const vertical = mouseEdges?.['vertical'];
-    if (vertical) {
-      if (this.pixiApp.pointer.pointerHeading.handleMouseEdges()) return;
-
-      const bounds = this.getVisibleBounds();
-      if (vertical > 0) {
-        // use the second-to-last row of the screen for selection
-        const cell = sheets.sheet.getColumnRowFromScreen(this.lastMouse.x, bounds.bottom);
-        sheets.sheet.cursor.selectTo(cell.column, cell.row - 1, true, false);
-      } else if (vertical < 0) {
-        const headings = this.pixiApp.headings.headingSize;
-
-        // use the second row of the screen for selection
-        const cell = sheets.sheet.getColumnRowFromScreen(this.lastMouse.x, bounds.top + headings.height / this.scaled);
-        sheets.sheet.cursor.selectTo(cell.column, cell.row + 1, true, false);
-      }
-    }
-    const horizontal = mouseEdges?.['horizontal'];
-    if (horizontal) {
-      if (this.pixiApp.pointer.pointerHeading.handleMouseEdges()) return;
-
-      const bounds = this.getVisibleBounds();
-      if (horizontal > 0) {
-        // use the second-to-last column of the screen for selection
-        const cell = sheets.sheet.getColumnRowFromScreen(bounds.right, this.lastMouse.y);
-        sheets.sheet.cursor.selectTo(cell.column - 1, cell.row, true, false);
-      } else if (horizontal < 0) {
-        // use the second column of the screen for selection
-        const cell = sheets.sheet.getColumnRowFromScreen(bounds.left, this.lastMouse.y);
-        sheets.sheet.cursor.selectTo(cell.column + 1, cell.row, true, false);
-      }
-    }
   };
 
   private handleWaitForZoomEnd = () => {
@@ -349,5 +305,11 @@ export class Viewport extends PixiViewport {
   private handleSnapEnd = () => {
     this.snapState = undefined;
     this.snapTimeout = undefined;
+  };
+
+  private handleMouseEdgeMove = (event: { viewport: Viewport; type: string }) => {
+    if (event.type === 'mouse-edges') {
+      pixiApp.pointer.pointerMove(this.pixiApp.renderer.events.pointer);
+    }
   };
 }

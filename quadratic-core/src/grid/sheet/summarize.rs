@@ -28,6 +28,7 @@ impl Sheet {
             Some(MAX_SUMMARIZE_SELECTION_SIZE),
             false,
             false,
+            true,
             a1_context,
         )?;
         values.iter().for_each(|(_pos, value)| match value {

@@ -57,6 +57,7 @@ export const useSaveAndRunCell = () => {
                 spill_error: null,
                 return_info: null,
                 cells_accessed: null,
+                last_modified: BigInt(0),
               },
               renderCodeCell: {
                 x: pos.x,
@@ -77,6 +78,7 @@ export const useSaveAndRunCell = () => {
                 is_html_image: false,
                 show_name: false,
                 show_columns: false,
+                last_modified: BigInt(0),
               },
             });
           }

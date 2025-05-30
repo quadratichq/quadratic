@@ -91,7 +91,7 @@ pub(crate) mod tests {
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
-        test_util::{assert_cell_value_row, print_table_at, print_table_in_rect},
+        test_util::*,
         wasm_bindings::js::clear_js_calls,
     };
 
@@ -525,7 +525,7 @@ pub(crate) mod tests {
 
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
 
         gc.import_csv(
             sheet_id,
@@ -534,15 +534,29 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
-            Some(false),
+            None,
         )
         .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
+        print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["issue", " test", " value"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 3, vec!["0", "1", " Invalid"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["0", "2", " Valid"]);
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            2,
+            vec!["issue", " test", " value\u{feff}"],
+        );
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            3,
+            vec!["0", "1", " Inv\u{feff}alid\u{feff}"],
+        );
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {
@@ -562,4 +576,18 @@ pub(crate) mod tests {
     //         Rect::new_span(pos, Pos { x: 6, y: 10 }),
     //     );
     // }
+
+    #[test]
+    fn test_import_kaggle_csv() {
+        let file_name = "kaggle_top_100_dataset.csv";
+        let csv_file = read_test_csv_file(file_name);
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
+        assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
+    }
 }

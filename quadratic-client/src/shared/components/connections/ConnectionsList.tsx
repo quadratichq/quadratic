@@ -39,7 +39,7 @@ export const ConnectionsList = ({
 
   return (
     <>
-      <div className="grid gap-4">
+      <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
             <Button
@@ -131,43 +131,51 @@ function ListItems({
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
       {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
-        <div className="group relative flex items-center gap-1" key={uuid}>
-          <button
-            onClick={() => {
-              handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-            }}
-            disabled={disabled}
-            key={uuid}
+        <div className="group" key={uuid}>
+          <div
             className={cn(
-              `flex w-full items-center gap-4 rounded px-1 py-2`,
-              disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
-              // i < filteredConnections.length - 1 && 'border-b border-border'
+              'relative flex max-w-full items-center gap-1',
+              disabled
+                ? 'cursor-not-allowed opacity-50'
+                : isApp
+                  ? 'group-hover:bg-accent'
+                  : 'pr-12 group-hover:bg-accent'
             )}
           >
-            <div className="flex h-6 w-6 items-center justify-center">
-              <LanguageIcon language={type} />
-            </div>
-            <div className="flex flex-grow flex-col text-left">
-              <span className="text-sm">{name}</span>
-              <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                Created {timeAgo(createdDate)}
-              </time>
-            </div>
-          </button>
-          {!disabled && !isApp && (
-            <TooltipPopover label="Browse schema">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
-                onClick={() => {
-                  handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
-                }}
-              >
-                <ExploreSchemaIcon />
-              </Button>
-            </TooltipPopover>
-          )}
+            <button
+              onClick={() => {
+                handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+              }}
+              disabled={disabled}
+              key={uuid}
+              className={cn('flex max-w-full items-center gap-4 rounded px-1 py-2')}
+            >
+              <div className="flex h-6 w-6 items-center justify-center">
+                <LanguageIcon language={type} />
+              </div>
+
+              <div className="flex min-w-0 max-w-full flex-grow flex-col text-left">
+                <span className="truncate text-sm">{name}</span>
+
+                <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                  Created {timeAgo(createdDate)}
+                </time>
+              </div>
+            </button>
+
+            {!disabled && !isApp && (
+              <TooltipPopover label="Browse schema">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded p-2 text-muted-foreground hover:bg-background"
+                  onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
+                >
+                  <ExploreSchemaIcon />
+                </Button>
+              </TooltipPopover>
+            )}
+          </div>
         </div>
       ))}
     </div>

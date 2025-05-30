@@ -63,6 +63,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
               sheetId: sheets.current,
               pos: codeCellPos,
               language: toolArgs.code_cell_language,
+              lastModified: 0,
             },
             showCellTypeMenu: false,
             inlineEditor: false,

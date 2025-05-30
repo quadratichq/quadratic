@@ -42,7 +42,7 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsCellValuePosContext> {
         let mut data_rects = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
+        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
@@ -65,7 +65,7 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
+        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         for selection_rect in selection_rects {
             for x in selection_rect.x_range() {
                 if let Some(column) = self.get_column(x) {
@@ -99,7 +99,7 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsTableSummaryContext> {
         let mut tables_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
+        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let tables_summary_in_rect = self
@@ -143,7 +143,7 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsChartSummaryContext> {
         let mut charts_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, a1_context);
+        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let charts_summary_in_rect = self
@@ -512,6 +512,7 @@ mod tests {
                     output_type: None,
                 }),
                 cells_accessed: Some(Default::default()),
+                last_modified: js_errored_code_cells[0].last_modified,
             },
             JsCodeCell {
                 x: 9,
@@ -529,6 +530,7 @@ mod tests {
                     output_type: None,
                 }),
                 cells_accessed: Some(Default::default()),
+                last_modified: js_errored_code_cells[1].last_modified,
             },
         ];
 

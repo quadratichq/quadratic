@@ -27,7 +27,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     ctx.grid_controller.a1_context(),
                 )
                 .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
-                let sheet_rect = ctx.resolve_range_ref(&cell_ref, span)?.inner;
+                let sheet_rect = ctx.resolve_range_ref(&cell_ref, span, true)?.inner;
                 ctx.get_cell_array(sheet_rect, span)?.inner
             }
         ),

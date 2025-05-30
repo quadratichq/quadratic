@@ -231,6 +231,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
       sheetId: sheets.current,
       pos: { x, y },
       language: codeCellCore.language,
+      lastModified: 0,
     }),
     [codeCellCore.language, x, y]
   );
@@ -279,6 +280,7 @@ function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: Js
       sheetId: sheets.current,
       pos: { x, y },
       language: codeCellCore.language,
+      lastModified: 0,
     }),
     [codeCellCore.language, x, y]
   );
@@ -367,5 +369,5 @@ function HoverCellDisplayError({ children }: { children: string | null }) {
     return null;
   }
 
-  return <p className="font-mono text-[11px] text-destructive">{children}</p>;
+  return <p className="break-words font-mono text-[11px] text-destructive">{children}</p>;
 }

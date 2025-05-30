@@ -113,6 +113,7 @@ impl Sheet {
             is_code: data_table.is_code(),
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
+            last_modified: data_table.last_modified.timestamp_millis(),
         })
     }
 
@@ -417,7 +418,7 @@ mod tests {
     }
 
     #[test]
-    fn render_code_cell() {
+    fn test_render_code_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
@@ -451,6 +452,7 @@ mod tests {
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
+        let last_modified = rendering.as_ref().unwrap().last_modified;
         assert_eq!(
             rendering,
             Some(JsRenderCodeCell {
@@ -472,6 +474,7 @@ mod tests {
                 is_code: true,
                 is_html: false,
                 is_html_image: false,
+                last_modified,
             })
         );
     }

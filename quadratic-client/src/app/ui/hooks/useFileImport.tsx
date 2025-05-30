@@ -1,6 +1,5 @@
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { DEFAULT_CSV_DELIMITER } from '@/app/ui/components/CSVImportSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { FileImportProgress } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
@@ -104,22 +103,6 @@ export function useFileImport() {
       }
       const totalFiles = files.length;
 
-      let csvDelimiter: number | undefined = DEFAULT_CSV_DELIMITER.charCodeAt(0);
-      // let hasHeading: boolean | undefined = DEFAULT_HAS_HEADING;
-      // const firstCSVFile = files.find((file) => getFileType(file) === 'csv');
-      // if (firstCSVFile) {
-      //   try {
-      //     const importSettings = await getCSVImportSettings(firstCSVFile);
-      //     csvDelimiter = importSettings.csvDelimiter;
-      //     hasHeading = importSettings.hasHeading;
-      //   } catch (e) {
-      //     if (!(e instanceof Error && e.message === 'Cancelled')) {
-      //       console.error(e);
-      //     }
-      //     return;
-      //   }
-      // }
-
       setFilesImportProgressState(() => ({
         importing: true,
         createNewFile,
@@ -186,8 +169,6 @@ export function useFileImport() {
               cursor,
               sheetId,
               location: insertAt,
-              csvDelimiter,
-              // hasHeading,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);

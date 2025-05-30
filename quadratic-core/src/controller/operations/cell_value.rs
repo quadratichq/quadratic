@@ -237,8 +237,13 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects =
-                sheet.selection_to_rects(selection, false, force_table_bounds, &self.a1_context);
+            let rects = sheet.selection_to_rects(
+                selection,
+                false,
+                force_table_bounds,
+                true,
+                &self.a1_context,
+            );
 
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
