@@ -30,10 +30,12 @@ impl GridController {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
+        let cell_value_rect =
+            Rect::from_numbers(sheet_pos.x, sheet_pos.y, values[0].len(), values.len());
         let existing_data_tables = self
             .a1_context_sheet_table_bounds(sheet_pos.sheet_id)
             .into_iter()
-            .filter(|rect| rect.intersects(clipboard_rect))
+            .filter(|rect| rect.intersects(cell_value_rect))
             .collect::<Vec<_>>();
         let mut growing_data_tables = existing_data_tables.clone();
 
