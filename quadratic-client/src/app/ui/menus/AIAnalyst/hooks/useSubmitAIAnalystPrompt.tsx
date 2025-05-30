@@ -17,12 +17,14 @@ import {
   aiAnalystPromptSuggestionsAtom,
   aiAnalystShowChatHistoryAtom,
   aiAnalystWaitingOnMessageIndexAtom,
+  aiAnalystWebSearchAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
+import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import {
@@ -77,6 +79,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
+  const { search } = useAnalystWebSearch();
   const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
@@ -174,6 +177,10 @@ export function useSubmitAIAnalystPrompt() {
             return undefined;
           });
           set(aiAnalystPDFImportAtom, (prev) => {
+            prev.abortController?.abort();
+            return { abortController: undefined, loading: false };
+          });
+          set(aiAnalystWebSearchAtom, (prev) => {
             prev.abortController?.abort();
             return { abortController: undefined, loading: false };
           });
@@ -334,7 +341,7 @@ export function useSubmitAIAnalystPrompt() {
             >['prompt_suggestions'] = [];
 
             for (const toolCall of response.toolCalls) {
-              if (toolCall.name === AITool.PDFImport) {
+              if (toolCall.name === AITool.PDFImport || toolCall.name === AITool.WebSearch) {
                 continue;
               }
 
@@ -385,6 +392,17 @@ export function useSubmitAIAnalystPrompt() {
               const argsObject = JSON.parse(toolCall.arguments);
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
               const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
+              toolResultMessage.content.push({
+                id: toolCall.id,
+                content: toolResultContent,
+              });
+            }
+
+            const webSearchToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.WebSearch);
+            for (const toolCall of webSearchToolCalls) {
+              const argsObject = JSON.parse(toolCall.arguments);
+              const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
+              const toolResultContent = await search({ searchArgs });
               toolResultMessage.content.push({
                 id: toolCall.id,
                 content: toolResultContent,
@@ -449,7 +467,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, updateInternalContext, modelKey, importPDF]
+    [handleAIRequestToAPI, updateInternalContext, modelKey, importPDF, search]
   );
 
   return { submitPrompt };

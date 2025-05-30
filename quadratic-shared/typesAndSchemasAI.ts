@@ -4,12 +4,13 @@ import { z } from 'zod';
 const AIProvidersSchema = z.enum([
   'quadratic',
   'vertexai-anthropic',
+  'vertexai',
+  'genai',
   'bedrock-anthropic',
+  'bedrock',
   'anthropic',
   'openai',
   'xai',
-  'vertexai',
-  'bedrock',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
@@ -20,6 +21,7 @@ const VertexAnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-v2@20241022',
 ]);
 const VertexAIModelSchema = z.enum(['gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-05-20']);
+const GenAIModelSchema = z.enum(['gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-05-20']);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-opus-4-20250514-v1:0',
   'us.anthropic.claude-sonnet-4-20250514-v1:0',
@@ -46,6 +48,7 @@ const AIModelSchema = z.union([
   QuadraticModelSchema,
   VertexAnthropicModelSchema,
   VertexAIModelSchema,
+  GenAIModelSchema,
   BedrockAnthropicModelSchema,
   BedrockModelSchema,
   AnthropicModelSchema,
@@ -78,6 +81,9 @@ const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-flash-preview-05-20',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
+
+const GenAIModelKeySchema = z.enum(['genai:gemini-2.5-pro-preview-05-06', 'genai:gemini-2.5-flash-preview-05-20']);
+export type GenAIModelKey = z.infer<typeof GenAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:claude-opus-4:thinking-toggle-off',
@@ -125,6 +131,7 @@ const AIModelKeySchema = z.union([
   QuadraticModelKeySchema,
   VertexAIAnthropicModelKeySchema,
   VertexAIModelKeySchema,
+  GenAIModelKeySchema,
   BedrockAnthropicModelKeySchema,
   BedrockModelKeySchema,
   AnthropicModelKeySchema,
@@ -312,12 +319,19 @@ const AIResponseContentSchema = z.array(
       text: z.string(),
       signature: z.string(),
     })
-  ).or(
-    z.object({
-      type: z.literal('anthropic_redacted_thinking'),
-      text: z.string(),
-    })
   )
+    .or(
+      z.object({
+        type: z.literal('anthropic_redacted_thinking'),
+        text: z.string(),
+      })
+    )
+    .or(
+      z.object({
+        type: z.literal('google_search_grounding_metadata'),
+        text: z.string(),
+      })
+    )
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
@@ -402,7 +416,9 @@ const AISourceSchema = z.enum([
   'CodeEditorCompletions',
   'GetUserPromptSuggestions',
   'PDFImport',
+
   'ModelRouter',
+  'WebSearch',
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 
