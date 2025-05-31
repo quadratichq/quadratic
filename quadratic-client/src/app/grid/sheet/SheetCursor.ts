@@ -403,6 +403,9 @@ export class SheetCursor {
     let names: string[] = [];
     try {
       names = this.jsSelection.getSelectedTableNames();
+      const rects = this.jsSelection.getSheetRefRangeBounds();
+      console.log(rects);
+      console.log('TODO: we need to check the DataTableCache for tables that are fully enclosed by the selection');
     } catch (e) {
       console.warn('Error getting selected table names', e);
     }
