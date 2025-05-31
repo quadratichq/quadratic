@@ -31,7 +31,7 @@ export function CodeEditorHeaderLabel() {
       setCellRef(cellRef);
     };
 
-    const updateTableName = (a1Context: string) => {
+    const updateTableName = (a1Context: Uint8Array) => {
       if (!codeCellState.sheetId) return;
       const tableName = getTableNameFromPos(a1Context, codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
       setTableName(tableName);

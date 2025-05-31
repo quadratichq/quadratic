@@ -9,25 +9,6 @@ use crate::{
 };
 
 impl Sheet {
-    /// Insert a column and shift all columns to the right of the given column index.
-    fn insert_and_shift_columns(&mut self, column: i64) {
-        // update the indices of all columns impacted by the insertion by
-        // incrementing by one
-        let mut columns_to_update = Vec::new();
-        for col in self.columns.keys() {
-            if *col >= column {
-                columns_to_update.push(*col);
-            }
-        }
-        columns_to_update.sort_by(|a, b| b.cmp(a));
-        for col in columns_to_update {
-            if let Some(mut column_data) = self.columns.remove(&col) {
-                column_data.x += 1;
-                self.columns.insert(col + 1, column_data);
-            }
-        }
-    }
-
     /// Inserts a column at the given column index.
     ///
     /// send_client indicates whether this should trigger client changes
@@ -52,7 +33,7 @@ impl Sheet {
 
         self.check_insert_tables_columns(transaction, column, copy_formats);
 
-        self.insert_and_shift_columns(column);
+        self.columns.insert_column(column);
 
         self.adjust_insert_tables_columns(transaction, column, copy_formats);
 

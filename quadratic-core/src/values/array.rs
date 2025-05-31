@@ -5,9 +5,7 @@ use std::num::NonZeroU32;
 use std::slice::Iter;
 
 use anyhow::{Result, bail};
-use bigdecimal::BigDecimal;
 use itertools::Itertools;
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
 
@@ -146,7 +144,11 @@ impl Array {
         Self::new_row_major(size, values).expect("error constructing empty array")
     }
     /// Constructs an array of random float values.
+    #[cfg(test)]
     pub fn from_random_floats(size: ArraySize) -> Self {
+        use bigdecimal::BigDecimal;
+        use rand::Rng;
+
         let mut rng = rand::rng();
         let values = std::iter::from_fn(|| {
             Some(CellValue::Number(BigDecimal::from(

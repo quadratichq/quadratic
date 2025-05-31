@@ -1,9 +1,10 @@
 // This file is the main entry point for the javascript worker. It handles
 // managing the Javascript runners, which is where the code is executed.
 
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { CoreJavascriptRun } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
-import { JavascriptAPI } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptAPI';
 import {
   javascriptFindSyntaxError,
   prepareJavascriptCode,
@@ -16,29 +17,24 @@ import {
 import type { RunnerJavascriptMessage } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptRunnerMessages';
 import { javascriptLibraryLines } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generateJavascriptForRunner';
 import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
+import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
 
 export const LINE_NUMBER_VAR = '___line_number___';
 
 export class Javascript {
-  private api: JavascriptAPI;
   private awaitingExecution: CodeRun[];
   private id = 0;
   private getCellsResponses: Record<number, Uint8Array> = {};
 
-  state: LanguageState = 'loading';
+  private state: LanguageState = 'loading';
 
-  // current running transaction
-  transactionId?: string;
-  column?: number;
-  row?: number;
   private withLineNumbers = true;
 
   constructor() {
     this.awaitingExecution = [];
     this.init();
-    this.api = new JavascriptAPI(this);
   }
 
   private init = async () => {
@@ -50,7 +46,25 @@ export class Javascript {
     });
 
     this.state = 'ready';
-    this.next();
+    return this.next();
+  };
+
+  private getCellsA1 = async (transactionId: string, a1: string): Promise<ArrayBuffer> => {
+    let responseBuffer: ArrayBuffer;
+    try {
+      responseBuffer = await javascriptCore.sendGetCellsA1(transactionId, a1);
+    } catch (error: any) {
+      const response: JsCellsA1Response = {
+        values: null,
+        error: {
+          core_error: `Failed to parse getCellsA1 response: ${error}`,
+        },
+      };
+      const responseUint8Array = toUint8Array(response);
+      responseBuffer = responseUint8Array.buffer as ArrayBuffer;
+    }
+
+    return responseBuffer;
   };
 
   private codeRunToCoreJavascript = (codeRun: CodeRun): CoreJavascriptRun => ({
@@ -68,40 +82,40 @@ export class Javascript {
     code: coreJavascriptRun.code,
   });
 
-  private next = async () => {
+  private next = (): Promise<void> | undefined => {
     if (this.state === 'ready' && this.awaitingExecution.length > 0) {
       const run = this.awaitingExecution.shift();
       if (run) {
-        await this.run(this.codeRunToCoreJavascript(run));
+        return this.run(this.codeRunToCoreJavascript(run));
       }
     } else {
       javascriptClient.sendState('ready');
     }
   };
 
-  run = async (message: CoreJavascriptRun, withLineNumbers = true) => {
+  run = async (message: CoreJavascriptRun, withLineNumbers = true): Promise<void> => {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
       return;
     }
+
+    this.state = 'running';
+    javascriptClient.sendState('running', {
+      current: this.coreJavascriptToCodeRun(message),
+      awaitingExecution: this.awaitingExecution,
+    });
+
+    this.withLineNumbers = withLineNumbers;
 
     const transformedCode = transformCode(message.code);
     if (withLineNumbers) {
       const error = await javascriptFindSyntaxError(transformedCode);
       if (error) {
         javascriptErrorResult(message.transactionId, error.text, error.lineNumber);
-        return;
+        this.state = 'ready';
+        return this.next();
       }
     }
-
-    this.withLineNumbers = withLineNumbers;
-    javascriptClient.sendState('running', {
-      current: this.coreJavascriptToCodeRun(message),
-      awaitingExecution: this.awaitingExecution,
-    });
-    this.transactionId = message.transactionId;
-    this.column = message.x;
-    this.row = message.y;
 
     try {
       const proxyUrl = `${javascriptClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
@@ -122,15 +136,14 @@ export class Javascript {
         cleanup();
 
         if (this.withLineNumbers) {
-          this.run(message, false);
-          return;
+          return this.run(message, false);
         }
 
         // todo: handle worker errors (although there should not be any as the Worker
         // should catch all user code errors)
         javascriptErrorResult(message.transactionId, e.message);
         this.state = 'ready';
-        setTimeout(this.next, 0);
+        return this.next();
       };
 
       runner.onmessage = (e: MessageEvent<RunnerJavascriptMessage>) => {
@@ -146,15 +159,15 @@ export class Javascript {
           );
           cleanup();
           this.state = 'ready';
-          setTimeout(this.next, 0);
+          return this.next();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
-          this.api.getCellsA1(a1).then((cellsBuffer) => {
+          this.getCellsA1(message.transactionId, a1).then((cellsBuffer) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
             if (cellsBuffer) {
               const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
-              const length = cellsUint8Array.length;
-              Atomics.store(int32View, 1, length);
+              const byteLength = cellsUint8Array.byteLength;
+              Atomics.store(int32View, 1, byteLength);
               const id = this.id++;
               this.getCellsResponses[id] = cellsUint8Array;
               Atomics.store(int32View, 2, id);
@@ -164,8 +177,6 @@ export class Javascript {
               Atomics.store(int32View, 1, 0);
               Atomics.store(int32View, 0, 1);
               Atomics.notify(int32View, 0, 1);
-              this.state = 'ready';
-              setTimeout(this.next, 0);
             }
           });
         } else if (e.data.type === 'getCellsData') {
@@ -182,6 +193,8 @@ export class Javascript {
           Atomics.store(int32View, 0, 1);
           Atomics.notify(int32View, 0, 1);
         } else if (e.data.type === 'error') {
+          cleanup();
+
           let errorLine: number | undefined;
           let errorColumn: number | undefined;
           let errorMessage = e.data.error;
@@ -208,20 +221,21 @@ export class Javascript {
           if (e.data.console) {
             errorMessage += '\n' + e.data.console;
           }
-          cleanup();
+
           javascriptErrorResult(message.transactionId, errorMessage, errorLine);
           this.state = 'ready';
-          setTimeout(this.next, 0);
+          return this.next();
         } else {
+          console.error('[javascript] Unknown message type:', e.data);
           cleanup();
-          throw new Error('Unknown message type from javascript runner');
+          this.state = 'ready';
+          return this.next();
         }
       };
     } catch (e: any) {
       javascriptErrorResult(message.transactionId, e.message, e.stack);
       this.state = 'ready';
-      setTimeout(this.next, 0);
-      return;
+      return this.next();
     }
   };
 }

@@ -1,4 +1,4 @@
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 import { beforeAll, describe, expect, test, vi } from 'vitest';

@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
+import type { TransactionName } from '@/app/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';
@@ -24,7 +24,7 @@ export interface RenderCoreResponseRowHeights {
 export interface CoreRenderCells {
   type: 'coreRenderRenderCells';
   id: number;
-  cells: JsRenderCell[];
+  data: Uint8Array | undefined;
 }
 
 export type SheetRenderMetadata = {
@@ -32,22 +32,24 @@ export type SheetRenderMetadata = {
   bounds?: { x: number; y: number; width: number; height: number };
 };
 
-export interface CoreRenderSheetInfo {
-  type: 'coreRenderSheetInfo';
-  sheetInfo: SheetInfo[];
+export interface CoreRenderSheetsInfo {
+  type: 'coreRenderSheetsInfo';
+  sheetsInfo: Uint8Array;
 }
 
-export interface CoreRenderCompleteRenderCells {
-  type: 'coreRenderCompleteRenderCells';
-  sheetId: string;
-  hashX: number;
-  hashY: number;
-  renderCells: JsRenderCell[];
+export interface CoreRenderHashRenderCells {
+  type: 'coreRenderHashRenderCells';
+  hashRenderCells: Uint8Array;
+}
+
+export interface CoreRenderHashesDirty {
+  type: 'coreRenderHashesDirty';
+  dirtyHashes: Uint8Array;
 }
 
 export interface CoreRenderAddSheet {
   type: 'coreRenderAddSheet';
-  sheetInfo: SheetInfo;
+  sheetInfo: Uint8Array;
 }
 
 export interface CoreRenderDeleteSheet {
@@ -58,17 +60,17 @@ export interface CoreRenderDeleteSheet {
 export interface CoreRenderSheetOffsets {
   type: 'coreRenderSheetOffsets';
   sheetId: string;
-  offsets: JsOffset[];
+  offsets: Uint8Array;
 }
 
 export interface CoreRenderSheetInfoUpdate {
   type: 'coreRenderSheetInfoUpdate';
-  sheetInfo: SheetInfo;
+  sheetInfo: Uint8Array;
 }
 
 export interface CoreRenderSheetBoundsUpdate {
   type: 'coreRenderSheetBoundsUpdate';
-  sheetBounds: SheetBounds;
+  sheetBounds: Uint8Array;
 }
 
 export interface CoreRenderRequestRowHeights {
@@ -76,12 +78,6 @@ export interface CoreRenderRequestRowHeights {
   transactionId: string;
   sheetId: string;
   rows: string;
-}
-
-export interface CoreRenderHashesDirty {
-  type: 'coreRenderHashesDirty';
-  sheetId: string;
-  hashes: string;
 }
 
 export interface CoreRenderViewportBuffer {
@@ -103,15 +99,15 @@ export interface CoreRenderTransactionEnd {
 
 export type CoreRenderMessage =
   | CoreRenderCells
-  | CoreRenderSheetInfo
-  | CoreRenderCompleteRenderCells
+  | CoreRenderSheetsInfo
+  | CoreRenderHashRenderCells
+  | CoreRenderHashesDirty
   | CoreRenderAddSheet
   | CoreRenderDeleteSheet
   | CoreRenderSheetOffsets
   | CoreRenderSheetInfoUpdate
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
-  | CoreRenderHashesDirty
   | CoreRenderViewportBuffer
   | CoreRenderTransactionStart
   | CoreRenderTransactionEnd;

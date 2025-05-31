@@ -78,30 +78,30 @@ impl Sheet {
                         }
                     }
                 }
-            };
 
-            if !skip_code_runs {
-                for (pos, code_run) in self.data_tables.iter() {
-                    let code_rect = code_run.output_rect(*pos, false);
-                    for x in code_rect.x_range() {
-                        for y in code_rect.y_range() {
-                            if rect.is_some_and(|rect| rect.contains(Pos { x, y })) {
-                                if let Some(entry) = code_run
-                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                {
-                                    if !matches!(entry, &CellValue::Blank) {
-                                        count += 1;
-                                        if count >= max_count {
-                                            return None;
+                if !skip_code_runs {
+                    for (_, pos, data_table) in self.data_tables.get_in_rect(rect, false) {
+                        let data_table_rect = data_table.output_rect(pos, false);
+                        if let Some(intersection) = data_table_rect.intersection(&rect) {
+                            for x in intersection.x_range() {
+                                for y in intersection.y_range() {
+                                    if let Some(entry) = data_table
+                                        .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
+                                    {
+                                        if !matches!(entry, &CellValue::Blank) {
+                                            count += 1;
+                                            if count >= max_count {
+                                                return None;
+                                            }
+                                            cells.insert(Pos { x, y }, entry);
                                         }
-                                        cells.insert(Pos { x, y }, entry);
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
+            };
         }
 
         if cells.is_empty() { None } else { Some(cells) }
@@ -321,7 +321,7 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Test fully specified range
@@ -340,7 +340,7 @@ mod tests {
         let sheet = Sheet::test();
         let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let rects = sheet.selection_to_rects(&selection, false, false, false, &a1_context);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
     }
@@ -351,7 +351,7 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Test unbounded range
@@ -376,7 +376,7 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         let selection = A1Selection::test_a1("A1:C3,E5:");
@@ -407,7 +407,7 @@ mod tests {
         // Setup some data to establish sheet bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Single cell selection

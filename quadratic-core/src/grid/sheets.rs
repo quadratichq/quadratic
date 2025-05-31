@@ -1,16 +1,23 @@
 use std::str::FromStr;
 
-use crate::constants::SHEET_NAME;
+use crate::{constants::SHEET_NAME, util::case_fold};
 
 use super::{Grid, Sheet, SheetId};
 use anyhow::{Context, Result, anyhow};
+use indexmap::IndexMap;
 use lexicon_fractional_index::key_between;
 
 impl Grid {
-    pub fn sheets(&self) -> &[Sheet] {
+    /// Returns a list of all sheets by ID.
+    pub fn sheets(&self) -> &IndexMap<SheetId, Sheet> {
         &self.sheets
     }
 
+    /// Returns the ID of the first sheet.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if the grid contains no sheets.
     pub fn first_sheet_id(&self) -> SheetId {
         if self.sheets.is_empty() {
             unreachable!("grid should always have at least one sheet");
@@ -18,71 +25,93 @@ impl Grid {
         self.sheets[0].id
     }
 
+    /// Returns the first sheet.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if the grid contains no sheets.
     pub fn first_sheet(&self) -> &Sheet {
         let id = self.first_sheet_id();
         self.try_sheet(id)
             .expect("there should always be a first sheet in the grid")
     }
 
+    /// Returns a mutable reference to the first sheet.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if the grid contains no sheets.
     pub fn first_sheet_mut(&mut self) -> &mut Sheet {
         let id = self.first_sheet_id();
         self.try_sheet_mut(id)
             .expect("there should always be a first sheet in the grid")
     }
 
+    /// Returns a list of all sheet IDs in order.
     pub fn sheet_ids(&self) -> Vec<SheetId> {
-        self.sheets.iter().map(|sheet| sheet.id).collect()
+        self.sheets.keys().copied().collect()
     }
 
-    pub fn try_sheet_from_name(&self, name: String) -> Option<&Sheet> {
-        let name = name.trim();
-        self.sheets.iter().find(|sheet| sheet.name == name)
+    /// Returns the sheet with the given name.
+    ///
+    /// This runs in O(n) time.
+    ///
+    /// `name` is automatically case-folded.
+    pub fn try_sheet_from_name(&self, name: &str) -> Option<&Sheet> {
+        let name = case_fold(name.trim());
+        self.sheets
+            .values()
+            .find(|sheet| case_fold(&sheet.name) == name)
     }
 
-    pub fn try_sheet_mut_from_name(&mut self, name: String) -> Option<&mut Sheet> {
-        self.sheets.iter_mut().find(|sheet| sheet.name == name)
+    /// Returns a mutable reference to the sheet with the given name.
+    ///
+    /// This runs in O(n) time.
+    ///
+    /// `name` is automatically case-folded.
+    pub fn try_sheet_mut_from_name(&mut self, name: &str) -> Option<&mut Sheet> {
+        let name = case_fold(name.trim());
+        self.sheets
+            .values_mut()
+            .find(|sheet| case_fold(&sheet.name) == name)
     }
 
-    pub fn try_sheet_from_string_id(&self, id: String) -> Option<&Sheet> {
-        SheetId::from_str(&id).map_or(None, |sheet_id| self.try_sheet(sheet_id))
+    /// Parses `id` to a `SheetId` and returns the sheet with that ID.
+    pub fn try_sheet_from_string_id(&self, id: &str) -> Option<&Sheet> {
+        SheetId::from_str(id).map_or(None, |sheet_id| self.try_sheet(sheet_id))
     }
 
-    pub fn try_sheet_mut_from_string_id(&mut self, id: String) -> Option<&mut Sheet> {
-        SheetId::from_str(&id).map_or(None, |sheet_id| self.try_sheet_mut(sheet_id))
+    /// Parses `id` to a `SheetId` and returns a mutable reference to the sheet
+    /// with that ID.
+    pub fn try_sheet_mut_from_string_id(&mut self, id: &str) -> Option<&mut Sheet> {
+        SheetId::from_str(id).map_or(None, |sheet_id| self.try_sheet_mut(sheet_id))
     }
 
+    /// Sorts sheets according to their `order` fields.
     pub fn sort_sheets(&mut self) {
-        self.sheets.sort_by(|a, b| a.order.cmp(&b.order));
+        self.sheets
+            .sort_by(|_id1, sheet1, _id2, sheet2| sheet1.order.cmp(&sheet2.order));
     }
 
+    /// Returns the `order` field to use for a new sheet that is placed at the
+    /// end of the sheet list.
     pub fn end_order(&self) -> String {
-        let last_order = self.sheets.last().map(|last| last.order.clone());
+        let last_order = self.sheets.last().map(|(_id, last)| last.order.clone());
         key_between(last_order.as_deref(), None).unwrap()
     }
 
-    /// Find the order of the sheet before the given id
-    pub fn previous_sheet_order(&self, sheet_id: SheetId) -> Option<String> {
-        let mut previous: Option<&Sheet> = None;
-        for sheet in self.sheets.iter() {
-            if sheet.id == sheet_id {
-                return previous.map(|previous| previous.order.clone());
-            }
-            previous = Some(sheet);
-        }
-        None
+    /// Returns the `order` field of the sheet immediately before `sheet_id`.
+    pub fn previous_sheet_order(&self, sheet_id: SheetId) -> Option<&str> {
+        let i = self.sheets.get_index_of(&sheet_id)?;
+        let (_, sheet) = self.sheets.get_index(i.checked_sub(1)?)?;
+        Some(&sheet.order)
     }
 
+    /// Returns the sheet immediately after `sheet_id`.
     pub fn next_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        let mut next = false;
-        for sheet in self.sheets.iter() {
-            if next {
-                return Some(sheet);
-            }
-            if sheet.id == sheet_id {
-                next = true;
-            };
-        }
-        None
+        let i = self.sheets.get_index_of(&sheet_id)?;
+        let (_, sheet) = self.sheets.get_index(i + 1)?;
+        Some(sheet)
     }
 
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
@@ -94,7 +123,7 @@ impl Grid {
     /// Adds a suffix if the sheet already exists.
     pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> SheetId {
         // for new sheets, order is after the last one
-        let mut sheet = sheet.unwrap_or_else(|| {
+        let mut new_sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
                 SheetId::new(),
                 format!("{}{}", SHEET_NAME.to_owned(), self.sheets.len() + 1),
@@ -103,34 +132,35 @@ impl Grid {
         });
 
         // add a suffix if a duplicate name is detected. This will protect against two users creating sheets with the same name in multiplayer.
-        let id = sheet.id;
+        let new_id = new_sheet.id;
         let mut index = 1;
         loop {
-            if self
-                .sheets
-                .iter()
-                .any(|old_sheet| old_sheet.name == sheet.name)
-            {
-                sheet.name = format!("{} ({})", sheet.name, index);
+            let folded_new_name = case_fold(&new_sheet.name);
+            if self.sheets.values().any(|old_sheet| {
+                old_sheet.id != new_id && case_fold(&old_sheet.name) == folded_new_name
+            }) {
+                new_sheet.name = format!("{} ({})", new_sheet.name, index);
                 index += 1;
             } else {
                 break;
             }
         }
-        self.sheets.push(sheet);
+        self.sheets.insert(new_id, new_sheet);
         self.sort_sheets();
-        id
+        new_id
     }
 
+    /// Removes the sheet with ID `sheet_id`.
     pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
-        let i = self.sheet_id_to_index(sheet_id);
+        let i = self.sheets.get_index_of(&sheet_id);
         match i {
-            Some(i) => Some(self.sheets.remove(i)),
+            Some(i) => Some(self.sheets.shift_remove_index(i)?.1),
             None => None,
         }
     }
 
-    /// Moves a sheet before another sheet
+    /// Sets the `order` for the sheet with ID `target` reorders sheets
+    /// appropriately.
     pub fn move_sheet(&mut self, target: SheetId, order: String) {
         if let Some(target) = self.try_sheet_mut(target) {
             target.order = order;
@@ -138,32 +168,33 @@ impl Grid {
         }
     }
 
+    /// Returns the index of a sheet.
     pub fn sheet_id_to_index(&self, id: SheetId) -> Option<usize> {
-        self.sheets.iter().position(|sheet| sheet.id == id)
+        self.sheets.get_index_of(&id)
     }
 
-    pub fn sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
-        Some(self.sheets.get(index)?.id)
-    }
-
-    pub fn sheet_has_id(&self, sheet_id: Option<SheetId>) -> bool {
-        let Some(sheet_id) = sheet_id else {
-            return false;
-        };
-        self.sheets.iter().any(|s| s.id == sheet_id)
-    }
-
+    /// Returns the sheet with the given ID.
     pub fn try_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        self.sheets.iter().find(|s| s.id == sheet_id)
+        self.sheets.get(&sheet_id)
     }
 
+    /// Returns the sheet with the given ID, or a user-friendly error if it does
+    /// not exist.
     pub fn try_sheet_result(&self, sheet_id: SheetId) -> Result<&Sheet> {
         self.try_sheet(sheet_id)
-            .ok_or_else(|| anyhow!("Sheet not found: {:?}", sheet_id))
+            .ok_or_else(|| anyhow!("Sheet not found: {sheet_id:?}"))
     }
 
+    /// Returns a mutable reference to the sheet with the given ID.
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
-        self.sheets.iter_mut().find(|s| s.id == sheet_id)
+        self.sheets.get_mut(&sheet_id)
+    }
+
+    /// Returns a mutable reference to the sheet with the given ID,
+    /// or a user-friendly error if it does not exist.
+    pub fn try_sheet_mut_result(&mut self, sheet_id: SheetId) -> Result<&mut Sheet> {
+        self.try_sheet_mut(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet not found: {:?}", sheet_id))
     }
 
     /// Updates a sheet's name and returns the old name.
@@ -175,16 +206,21 @@ impl Grid {
 
         let old_name = std::mem::replace(&mut sheet.name, new_name.to_owned());
 
-        for sheet in &mut self.sheets {
+        for sheet in self.sheets.values_mut() {
             sheet.replace_sheet_name_in_code_cells(&old_name, new_name);
         }
 
         Ok(old_name)
     }
 
+    /// Sets the ID of the first sheet.
+    ///
+    /// This method is incredibly dubious and should only be used for testing.
     #[cfg(test)]
-    pub fn sheets_mut(&mut self) -> &mut [Sheet] {
-        &mut self.sheets
+    pub fn set_first_sheet_id(&mut self, new_id: SheetId) {
+        let (_old_id, mut sheet) = self.sheets.swap_remove_index(0).expect("no first sheet");
+        sheet.id = new_id;
+        self.add_sheet(Some(sheet));
     }
 }
 
@@ -282,11 +318,11 @@ mod test {
         assert_eq!(grid.previous_sheet_order(grid.sheets[0].id), None);
         assert_eq!(
             grid.previous_sheet_order(grid.sheets[1].id),
-            Some(grid.sheets[0].order.clone())
+            Some(grid.sheets[0].order.as_str())
         );
         assert_eq!(
             grid.previous_sheet_order(grid.sheets[2].id),
-            Some(grid.sheets[1].order.clone())
+            Some(grid.sheets[1].order.as_str())
         );
     }
 

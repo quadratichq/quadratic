@@ -16,6 +16,7 @@ use crate::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
+        sheet::data_tables::SheetDataTables,
     },
 };
 
@@ -266,7 +267,7 @@ fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> 
 
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
-) -> Result<IndexMap<Pos, DataTable>> {
+) -> Result<SheetDataTables> {
     let mut new_data_tables = IndexMap::new();
 
     for (pos, data_table) in data_tables.into_iter() {
@@ -296,12 +297,11 @@ pub(crate) fn import_data_table_builder(
                 }
             },
             name: CellValue::Text(data_table.name),
+            value,
+            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             header_is_first_row: data_table.header_is_first_row,
             show_name: data_table.show_name,
             show_columns: data_table.show_columns,
-            last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
-            spill_error: data_table.spill_error,
-            value,
             column_headers: data_table.columns.map(|columns| {
                 columns
                     .into_iter()
@@ -330,9 +330,11 @@ pub(crate) fn import_data_table_builder(
             }),
             sort_dirty: data_table.sort_dirty,
             display_buffer: data_table.display_buffer,
+            spill_value: data_table.spill_value,
+            spill_data_table: data_table.spill_data_table,
             alternating_colors: data_table.alternating_colors,
-            formats: import_formats(data_table.formats),
-            borders: import_borders(data_table.borders),
+            formats: data_table.formats.map(import_formats),
+            borders: data_table.borders.map(import_borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
         };
@@ -340,7 +342,7 @@ pub(crate) fn import_data_table_builder(
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
     }
 
-    Ok(new_data_tables)
+    Ok(new_data_tables.into())
 }
 
 fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
@@ -462,9 +464,9 @@ fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
 }
 
 pub(crate) fn export_data_tables(
-    data_tables: IndexMap<Pos, DataTable>,
+    sheet_data_tables: SheetDataTables,
 ) -> Vec<(current::PosSchema, current::DataTableSchema)> {
-    data_tables
+    sheet_data_tables
         .into_iter()
         .map(|(pos, data_table)| {
             let name = data_table.name().to_string();
@@ -528,9 +530,27 @@ pub(crate) fn export_data_tables(
                 }
             };
 
+            let formats = data_table.formats.and_then(|formats| {
+                if formats.is_all_default() {
+                    None
+                } else {
+                    Some(export_formats(formats))
+                }
+            });
+
+            let borders = data_table.borders.and_then(|borders| {
+                if borders.is_default() {
+                    None
+                } else {
+                    Some(export_borders(borders))
+                }
+            });
+
             let data_table = current::DataTableSchema {
                 kind,
                 name,
+                value,
+                last_modified: Some(data_table.last_modified),
                 header_is_first_row: data_table.header_is_first_row,
                 show_name: data_table.show_name,
                 show_columns: data_table.show_columns,
@@ -538,12 +558,11 @@ pub(crate) fn export_data_tables(
                 sort,
                 sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
-                last_modified: Some(data_table.last_modified),
-                spill_error: data_table.spill_error,
-                value,
+                spill_value: data_table.spill_value,
+                spill_data_table: data_table.spill_data_table,
                 alternating_colors: data_table.alternating_colors,
-                formats: export_formats(data_table.formats),
-                borders: export_borders(data_table.borders),
+                formats,
+                borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };

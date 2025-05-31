@@ -102,7 +102,7 @@ mod tests {
             drop_down: true,
         };
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         assert!(list.validate(
             &sheet,
@@ -123,7 +123,7 @@ mod tests {
         sheet.set_cell_value((1, 1).into(), "test");
         let selection = A1Selection::test_a1("A1");
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         assert!(ValidationList::validate_selection(
             &sheet,
@@ -156,7 +156,7 @@ mod tests {
             drop_down: true,
         };
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         assert_eq!(
             list.to_drop_down(&sheet, &a1_context),
@@ -183,7 +183,7 @@ mod tests {
             drop_down: true,
         };
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         assert_eq!(
             list.to_drop_down(&sheet, &a1_context),
@@ -200,7 +200,7 @@ mod tests {
             drop_down: true,
         };
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         // Test with ignore_blank = true
         assert!(list.validate(&sheet, Some(&CellValue::Blank), &a1_context));

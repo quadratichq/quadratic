@@ -6,7 +6,7 @@ impl Sheet {
     /// Adds this sheet to the A1Context.
     pub fn add_sheet_to_a1_context(&self, context: &mut A1Context) {
         context.sheet_map.insert(self);
-        self.data_tables.iter().for_each(|(pos, table)| {
+        self.data_tables.expensive_iter().for_each(|(pos, table)| {
             context.table_map.insert_table(self.id, *pos, table);
         });
     }
@@ -14,7 +14,7 @@ impl Sheet {
     /// Creates an A1Context with information only from this sheet (ie, it does
     /// not have info from other sheets within the grid).
     #[cfg(test)]
-    pub(crate) fn make_a1_context(&self) -> A1Context {
+    pub(crate) fn expensive_make_a1_context(&self) -> A1Context {
         let mut context = A1Context::default();
         self.add_sheet_to_a1_context(&mut context);
         context

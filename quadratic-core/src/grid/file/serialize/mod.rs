@@ -1,6 +1,7 @@
 #![allow(unused)] // TODO: remove this
 
 use anyhow::Result;
+use itertools::Itertools;
 use sheets::{export_sheet, import_sheet};
 
 use crate::grid::Grid;
@@ -25,10 +26,11 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
             .sheets
             .into_iter()
             .map(import_sheet)
+            .map_ok(|sheet| (sheet.id, sheet))
             .collect::<Result<_>>()?,
     };
-    let a1_context = grid.make_a1_context();
-    for sheet in grid.sheets.iter_mut() {
+    let a1_context = grid.expensive_make_a1_context();
+    for sheet in grid.sheets.values_mut() {
         sheet.recalculate_bounds(&a1_context);
     }
     Ok(grid)
@@ -37,6 +39,6 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
 pub fn export(grid: Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
-        sheets: grid.sheets.into_iter().map(export_sheet).collect(),
+        sheets: grid.sheets.into_values().map(export_sheet).collect(),
     })
 }

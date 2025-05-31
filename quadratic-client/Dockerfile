@@ -141,7 +141,6 @@ RUN if [ -z "$ENV_HASH" ]; then \
   find /quadratic/build -type f \
   \( \
   -name "*.wasm" -o \
-  -name "*.whl" -o \
   -name "*.json" -o \
   -name "*.css" -o \
   -name "*.html" -o \

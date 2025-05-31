@@ -46,3 +46,21 @@ pub struct SheetFormattingSchema {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub strike_through: Contiguous2DSchema<Option<bool>>,
 }
+
+impl SheetFormattingSchema {
+    pub fn is_empty(&self) -> bool {
+        self.align.is_empty()
+            && self.vertical_align.is_empty()
+            && self.wrap.is_empty()
+            && self.numeric_format.is_empty()
+            && self.numeric_decimals.is_empty()
+            && self.numeric_commas.is_empty()
+            && self.bold.is_empty()
+            && self.italic.is_empty()
+            && self.text_color.is_empty()
+            && self.fill_color.is_empty()
+            && self.date_time.is_empty()
+            && self.underline.is_empty()
+            && self.strike_through.is_empty()
+    }
+}

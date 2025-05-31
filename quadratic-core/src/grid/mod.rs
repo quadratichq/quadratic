@@ -11,10 +11,12 @@ pub use formatting::{
     NumericDecimals, NumericFormat, NumericFormatKind, StrikeThrough, TextColor, Underline,
 };
 pub use ids::*;
+use indexmap::IndexMap;
+pub use region_map::RegionMap;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
 pub use sheet_formatting::SheetFormatting;
-pub use region_map::RegionMap;
+pub use sheet_region_map::SheetRegionMap;
 
 use crate::CellValue;
 #[cfg(test)]
@@ -25,28 +27,30 @@ pub mod ai;
 mod block;
 mod bounds;
 mod cells_accessed;
+mod cells_accessed_cache;
 mod code_cell;
 mod code_run;
 pub mod column;
 pub mod contiguous;
 pub mod data_table;
-mod region_map;
 pub mod file;
 pub mod formats;
 pub mod formatting;
 mod ids;
 pub mod js_types;
+mod region_map;
 pub mod resize;
 pub mod search;
 pub mod selection;
 pub mod series;
 pub mod sheet;
 pub mod sheet_formatting;
+mod sheet_region_map;
 pub mod sheets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Grid {
-    pub sheets: Vec<Sheet>,
+    pub sheets: IndexMap<SheetId, Sheet>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -60,7 +64,9 @@ impl Grid {
         ret
     }
     pub fn new_blank() -> Self {
-        Grid { sheets: vec![] }
+        Grid {
+            sheets: IndexMap::new(),
+        }
     }
 
     /// Creates a grid for testing.
@@ -74,7 +80,7 @@ impl Grid {
     #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();
-        let sheet = &mut ret.sheets_mut()[0];
+        let sheet = ret.first_sheet_mut();
         for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
             let x = base_pos.x + x as i64;
             let y = base_pos.y + y as i64;

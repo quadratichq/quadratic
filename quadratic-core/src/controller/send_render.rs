@@ -1,12 +1,13 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 
 use crate::{
-    Pos, Rect,
+    Instant, Pos, Rect,
     grid::{
         SheetId,
-        js_types::{JsHtmlOutput, JsOffset},
+        js_types::{
+            JsHashRenderCells, JsHashValidationWarnings, JsHashesDirty, JsHtmlOutput, JsOffset,
+            JsUpdateCodeCell,
+        },
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     viewport::ViewportBuffer,
@@ -14,6 +15,8 @@ use crate::{
 };
 
 use super::{GridController, active_transactions::pending_transaction::PendingTransaction};
+
+const CLIENT_UPDATE_INTERVAL_SEC: f64 = 0.5;
 
 impl GridController {
     pub(crate) fn send_viewport_buffer(&mut self) {
@@ -26,8 +29,46 @@ impl GridController {
         self.viewport_buffer = Some(viewport_buffer);
     }
 
+    /// Sends all updates to the client during the transaction
+    pub(crate) fn send_client_updates_during_transaction(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        send_hashes_dirty: bool,
+    ) {
+        let code_cells_a1_context = std::mem::take(&mut transaction.code_cells_a1_context);
+        self.update_a1_context_table_map(code_cells_a1_context, false);
+
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
+            return;
+        }
+
+        if transaction
+            .last_client_update
+            .is_some_and(|last_client_update| {
+                Instant::now().seconds - last_client_update.seconds < CLIENT_UPDATE_INTERVAL_SEC
+            })
+        {
+            return;
+        }
+        transaction.last_client_update = Some(Instant::now());
+
+        self.send_transaction_progress(transaction);
+        self.send_sheet_info(transaction);
+        self.send_code_cells(transaction);
+        self.process_visible_dirty_hashes(transaction);
+        if send_hashes_dirty {
+            self.process_remaining_dirty_hashes(transaction);
+        }
+    }
+
     /// Sends all pending updates to the client
-    pub(crate) fn send_transaction_client_updates(&mut self, transaction: &mut PendingTransaction) {
+    pub(crate) fn send_client_updates_after_transaction(
+        &mut self,
+        transaction: &mut PendingTransaction,
+    ) {
+        let code_cells_a1_context = std::mem::take(&mut transaction.code_cells_a1_context);
+        self.update_a1_context_table_map(code_cells_a1_context, true);
+
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return;
         }
@@ -44,11 +85,7 @@ impl GridController {
         self.process_remaining_dirty_hashes(transaction);
         self.send_validations(transaction);
         self.send_borders(transaction);
-
-        transaction.fill_cells.iter().for_each(|sheet_id| {
-            self.send_all_fills(*sheet_id);
-        });
-        transaction.fill_cells.clear();
+        self.send_fills(transaction);
 
         // send updated SheetMap and TableMap to client
         self.send_a1_context();
@@ -63,6 +100,7 @@ impl GridController {
             || transaction.is_server()
             || transaction.dirty_hashes.is_empty()
         {
+            transaction.dirty_hashes.clear();
             return;
         }
 
@@ -84,92 +122,42 @@ impl GridController {
             x: (top_left.x + bottom_right.x) / 2,
             y: (top_left.y + bottom_right.y) / 2,
         };
+
         let nearest_dirty_hashes = dirty_hashes_in_viewport
-            .iter()
-            .cloned()
+            .into_iter()
             .sorted_by(|a, b| {
                 let a_distance = (a.x - center.x).abs() + (a.y - center.y).abs();
                 let b_distance = (b.x - center.x).abs() + (b.y - center.y).abs();
                 a_distance.cmp(&b_distance)
             })
-            .collect();
+            .collect::<Vec<_>>();
 
-        let remaining_hashes = self.send_render_cells_in_viewport(
-            transaction,
-            viewport_sheet_id,
-            nearest_dirty_hashes,
-        );
+        let mut viewport_hashes = Vec::new();
+        let mut remaining_hashes = Vec::new();
+
+        for pos in nearest_dirty_hashes.into_iter() {
+            if Rect::new_span(top_left, bottom_right).contains(pos) {
+                viewport_hashes.push(pos);
+            } else {
+                remaining_hashes.push(pos);
+            }
+        }
+
+        self.send_render_cells_in_hashes(transaction, viewport_sheet_id, viewport_hashes);
+
         if !remaining_hashes.is_empty() {
             transaction
                 .dirty_hashes
-                .insert(viewport_sheet_id, remaining_hashes);
-        }
-    }
-
-    fn send_render_cells_in_viewport(
-        &self,
-        transaction: &PendingTransaction,
-        sheet_id: SheetId,
-        dirty_hashes: Vec<Pos>,
-    ) -> HashSet<Pos> {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || dirty_hashes.is_empty() {
-            return HashSet::new();
-        }
-
-        let mut remaining_hashes = HashSet::new();
-        if let Some(viewport_buffer) = &self.viewport_buffer {
-            for pos in dirty_hashes.into_iter() {
-                if let Some((top_left, bottom_right, viewport_sheet_id)) =
-                    viewport_buffer.get_viewport()
-                {
-                    if sheet_id == viewport_sheet_id
-                        && pos.x >= top_left.x
-                        && pos.x <= bottom_right.x
-                        && pos.y >= top_left.y
-                        && pos.y <= bottom_right.y
-                    {
-                        self.send_render_cells_in_hash(transaction, sheet_id, pos);
-                    } else {
-                        remaining_hashes.insert(pos);
-                    }
-                }
-            }
-        }
-        remaining_hashes
-    }
-
-    pub(crate) fn process_remaining_dirty_hashes(&self, transaction: &mut PendingTransaction) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test))
-            || transaction.is_server()
-            || transaction.dirty_hashes.is_empty()
-        {
-            return;
-        }
-
-        for (&sheet_id, dirty_hashes) in transaction.dirty_hashes.iter_mut() {
-            self.flag_hashes_dirty(sheet_id, dirty_hashes);
-            dirty_hashes.clear();
-        }
-        transaction.dirty_hashes.clear();
-    }
-
-    fn flag_hashes_dirty(&self, sheet_id: SheetId, dirty_hashes: &HashSet<Pos>) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || dirty_hashes.is_empty() {
-            return;
-        }
-
-        let hashes = dirty_hashes.iter().cloned().collect::<Vec<Pos>>();
-        if let Ok(hashes_string) = serde_json::to_string(&hashes) {
-            crate::wasm_bindings::js::jsHashesDirty(sheet_id.to_string(), hashes_string);
+                .insert(viewport_sheet_id, remaining_hashes.into_iter().collect());
         }
     }
 
     /// Sends the modified cells in hash to the render web worker
-    fn send_render_cells_in_hash(
+    fn send_render_cells_in_hashes(
         &self,
         transaction: &PendingTransaction,
         sheet_id: SheetId,
-        hash: Pos,
+        hashes: Vec<Pos>,
     ) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
@@ -179,41 +167,93 @@ impl GridController {
             return;
         };
 
-        let rect = Rect::from_numbers(
-            hash.x * CELL_SHEET_WIDTH as i64,
-            hash.y * CELL_SHEET_HEIGHT as i64,
-            CELL_SHEET_WIDTH as i64,
-            CELL_SHEET_HEIGHT as i64,
-        );
-        let render_cells = sheet.get_render_cells(rect, &self.a1_context);
-        if let Ok(cells) = serde_json::to_string(&render_cells) {
-            crate::wasm_bindings::js::jsRenderCellSheets(
-                sheet_id.to_string(),
-                hash.x,
-                hash.y,
-                cells,
+        let mut render_cells_in_hashes = Vec::new();
+
+        let mut validation_warnings = Vec::new();
+
+        for hash in hashes.into_iter() {
+            let rect = Rect::from_numbers(
+                hash.x * CELL_SHEET_WIDTH as i64,
+                hash.y * CELL_SHEET_HEIGHT as i64,
+                CELL_SHEET_WIDTH as i64,
+                CELL_SHEET_HEIGHT as i64,
             );
+
+            render_cells_in_hashes.push(JsHashRenderCells {
+                sheet_id,
+                hash,
+                cells: sheet.get_render_cells(rect, &self.a1_context),
+            });
+
+            validation_warnings.extend(sheet.get_validation_warnings_in_rect(rect, true));
         }
-        sheet.send_validation_warnings_from_hash(hash.x, hash.y, rect);
+
+        if !render_cells_in_hashes.is_empty() {
+            match serde_json::to_vec(&render_cells_in_hashes) {
+                Ok(render_cells) => {
+                    crate::wasm_bindings::js::jsHashesRenderCells(render_cells);
+                }
+                Err(e) => {
+                    dbgjs!(format!(
+                        "[send_render_cells_in_hashes] Error serializing render cells {:?}",
+                        e
+                    ));
+                }
+            }
+        }
+
+        self.send_validation_warnings(validation_warnings);
     }
 
-    pub(crate) fn send_all_fills(&self, sheet_id: SheetId) {
+    pub(crate) fn process_remaining_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test))
+            || transaction.is_server()
+            || transaction.dirty_hashes.is_empty()
+        {
+            transaction.dirty_hashes.clear();
+            return;
+        }
+
+        let dirty_hashes = std::mem::take(&mut transaction.dirty_hashes);
+        let dirty_hashes = dirty_hashes
+            .into_iter()
+            .map(|(sheet_id, hashes)| JsHashesDirty {
+                sheet_id,
+                hashes: hashes.into_iter().collect::<Vec<Pos>>(),
+            })
+            .collect::<Vec<_>>();
+        if !dirty_hashes.is_empty() {
+            match serde_json::to_vec(&dirty_hashes) {
+                Ok(dirty_hashes) => {
+                    crate::wasm_bindings::js::jsHashesDirty(dirty_hashes);
+                }
+                Err(e) => {
+                    dbgjs!(format!(
+                        "[process_remaining_dirty_hashes] Error serializing dirty hashes {:?}",
+                        e
+                    ));
+                }
+            }
+        }
+    }
+
+    pub(crate) fn send_validation_warnings(&self, warnings: Vec<JsHashValidationWarnings>) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            return;
-        };
-
-        let fills = sheet.get_all_render_fills();
-        if let Ok(fills) = serde_json::to_string(&fills) {
-            crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
-        }
-
-        let sheet_fills = sheet.get_all_sheet_fills();
-        if let Ok(sheet_fills) = serde_json::to_string(&sheet_fills) {
-            crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+        if !warnings.is_empty() {
+            match serde_json::to_vec(&warnings) {
+                Ok(warnings) => {
+                    crate::wasm_bindings::js::jsValidationWarnings(warnings);
+                }
+                Err(e) => {
+                    dbgjs!(format!(
+                        "[send_validation_warnings] Error serializing validation warnings {:?}",
+                        e
+                    ));
+                }
+            }
         }
     }
 
@@ -240,9 +280,9 @@ impl GridController {
             return;
         };
 
-        match serde_json::to_string(&SheetBounds::from(sheet)) {
-            Ok(sheet_info) => {
-                crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
+        match serde_json::to_vec(&SheetBounds::from(sheet)) {
+            Ok(sheet_bounds) => {
+                crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_bounds);
             }
             Err(e) => {
                 dbgjs!(format!(
@@ -269,8 +309,7 @@ impl GridController {
             return;
         };
 
-        let sheet_info = SheetInfo::from(sheet);
-        match serde_json::to_string(&sheet_info) {
+        match serde_json::to_vec(&SheetInfo::from(sheet)) {
             Ok(sheet_info) => {
                 crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user_undo_redo());
             }
@@ -303,19 +342,18 @@ impl GridController {
 
     /// Sends sheet info to the client
     pub(crate) fn send_sheet_info(&mut self, transaction: &mut PendingTransaction) {
-        for sheet_id in transaction.sheet_info.iter() {
-            self.update_a1_context_sheet_map(*sheet_id);
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.sheet_info.clear();
+            return;
+        }
 
-            if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-                continue;
-            }
-
+        let sheet_ids = std::mem::take(&mut transaction.sheet_info);
+        for sheet_id in sheet_ids.iter() {
             let Some(sheet) = self.try_sheet(*sheet_id) else {
                 continue;
             };
 
-            let sheet_info = SheetInfo::from(sheet);
-            match serde_json::to_string(&sheet_info) {
+            match serde_json::to_vec(&SheetInfo::from(sheet)) {
                 Ok(sheet_info) => {
                     crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
                 }
@@ -327,25 +365,35 @@ impl GridController {
                 }
             }
         }
-        transaction.sheet_info.clear();
     }
 
     pub(crate) fn send_code_cells(&mut self, transaction: &mut PendingTransaction) {
-        self.update_a1_context_table_map(&transaction.code_cells);
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            return;
+        }
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            for (sheet_id, positions) in transaction.code_cells.iter() {
-                let Some(sheet) = self.try_sheet(*sheet_id) else {
-                    continue;
-                };
+        let mut update_code_cells = Vec::new();
 
-                for pos in positions.iter() {
-                    sheet.send_code_cell(*pos, &self.a1_context);
-                }
+        let code_cells = std::mem::take(&mut transaction.code_cells);
+        for (sheet_id, positions) in code_cells.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            for pos in positions.into_iter() {
+                update_code_cells.push(JsUpdateCodeCell {
+                    sheet_id: sheet.id,
+                    pos,
+                    render_code_cell: sheet.get_render_code_cell(pos),
+                });
             }
         }
 
-        transaction.code_cells.clear();
+        if !update_code_cells.is_empty() {
+            if let Ok(update_code_cells) = serde_json::to_vec(&update_code_cells) {
+                crate::wasm_bindings::js::jsUpdateCodeCells(update_code_cells);
+            }
+        }
 
         self.send_html_cells(transaction);
         self.send_images(transaction);
@@ -369,7 +417,7 @@ impl GridController {
                 .collect::<Vec<JsOffset>>();
             offsets.sort_by(|a, b| a.row.cmp(&b.row).then(a.column.cmp(&b.column)));
 
-            match serde_json::to_string(&offsets) {
+            match serde_json::to_vec(&offsets) {
                 Ok(offsets) => {
                     crate::wasm_bindings::js::jsOffsetsModified(sheet_id.to_string(), offsets);
                 }
@@ -391,24 +439,25 @@ impl GridController {
             return;
         }
 
-        for sheet_id in transaction.validations.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
+        let validations = std::mem::take(&mut transaction.validations);
+        for sheet_id in validations.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
                 continue;
             };
 
             sheet.send_all_validations();
         }
-        transaction.validations.clear();
 
-        for (sheet_id, warnings) in transaction.validations_warnings.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
-                continue;
-            };
-
-            let warnings = warnings.values().cloned().collect::<Vec<_>>();
-            sheet.send_validation_warnings(warnings);
+        let validations_warnings = std::mem::take(&mut transaction.validations_warnings);
+        let mut all_warnings = Vec::new();
+        for (sheet_id, warnings) in validations_warnings.into_iter() {
+            all_warnings.push(JsHashValidationWarnings {
+                sheet_id,
+                hash: None,
+                warnings: warnings.into_values().collect::<Vec<_>>(),
+            });
         }
-        transaction.validations_warnings.clear();
+        self.send_validation_warnings(all_warnings);
     }
 
     fn send_borders(&self, transaction: &mut PendingTransaction) {
@@ -425,6 +474,38 @@ impl GridController {
             sheet.send_sheet_borders();
         }
         transaction.sheet_borders.clear();
+    }
+
+    fn send_fills(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.fill_cells.clear();
+            return;
+        }
+
+        for sheet_id in transaction.fill_cells.iter() {
+            self.send_all_fills(*sheet_id);
+        }
+        transaction.fill_cells.clear();
+    }
+
+    pub(crate) fn send_all_fills(&self, sheet_id: SheetId) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return;
+        };
+
+        let fills = sheet.get_all_render_fills();
+        if let Ok(fills) = serde_json::to_vec(&fills) {
+            crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+        }
+
+        let sheet_fills = sheet.get_all_sheet_fills();
+        if let Ok(sheet_fills) = serde_json::to_vec(&sheet_fills) {
+            crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+        }
     }
 
     fn send_html_cells(&self, transaction: &mut PendingTransaction) {
@@ -451,7 +532,7 @@ impl GridController {
                     show_name: true,
                 });
 
-                match serde_json::to_string(&html) {
+                match serde_json::to_vec(&html) {
                     Ok(html) => {
                         crate::wasm_bindings::js::jsUpdateHtml(html);
                     }
@@ -503,7 +584,7 @@ impl GridController {
         }
 
         let context = self.a1_context();
-        if let Ok(context) = serde_json::to_string(context) {
+        if let Ok(context) = serde_json::to_vec(context) {
             crate::wasm_bindings::js::jsA1Context(context);
         }
     }
@@ -523,9 +604,9 @@ mod test {
         grid::{
             Contiguous2D, SheetId,
             formats::SheetFormatUpdates,
-            js_types::{JsHtmlOutput, JsRenderCell},
+            js_types::{JsHashRenderCells, JsHashesDirty, JsHtmlOutput, JsRenderCell},
         },
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
     use std::collections::HashSet;
 
@@ -539,7 +620,7 @@ mod test {
         let mut transaction = PendingTransaction::default();
         gc.process_visible_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
-        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesRenderCells", 0, false);
         expect_js_call_count("jsHashesDirty", 0, false);
 
         // User transaction
@@ -554,11 +635,11 @@ mod test {
         );
         gc.process_visible_dirty_hashes(&mut transaction);
         assert!(!transaction.dirty_hashes.is_empty());
-        expect_js_call_count("jsRenderCellSheets", 2, false);
+        expect_js_call_count("jsHashesRenderCells", 1, false);
         expect_js_call_count("jsHashesDirty", 0, false);
         gc.process_remaining_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
-        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesRenderCells", 0, false);
         expect_js_call_count("jsHashesDirty", 1, false);
 
         // Server transaction
@@ -576,11 +657,11 @@ mod test {
         );
         gc.process_visible_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
-        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesRenderCells", 0, false);
         expect_js_call_count("jsHashesDirty", 0, false);
         gc.process_remaining_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
-        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesRenderCells", 0, false);
         expect_js_call_count("jsHashesDirty", 0, false);
     }
 
@@ -597,14 +678,16 @@ mod test {
         gc.process_remaining_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
 
-        let hashes: HashSet<Pos> = vec![Pos { x: 0, y: 0 }].into_iter().collect();
-        let hashes_string = serde_json::to_string(&hashes).unwrap();
+        let dirty_hashes = vec![JsHashesDirty {
+            sheet_id,
+            hashes: vec![Pos { x: 0, y: 0 }],
+        }];
         expect_js_call(
             "jsHashesDirty",
-            format!("{},{}", sheet_id, hashes_string),
+            format!("{:?}", serde_json::to_vec(&dirty_hashes).unwrap()),
             false,
         );
-        expect_js_call_count("jsRenderCellSheets", 0, true);
+        expect_js_call_count("jsHashesRenderCells", 0, true);
     }
 
     #[test]
@@ -643,17 +726,20 @@ mod test {
 
         expect_js_call(
             "jsUpdateHtml",
-            serde_json::to_string(&JsHtmlOutput {
-                sheet_id: sheet_id.to_string(),
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 3,
-                html: Some("<html></html>".to_string()),
-                show_name: true,
-                name: "Python1".to_string(),
-            })
-            .unwrap(),
+            format!(
+                "{:?}",
+                serde_json::to_vec(&JsHtmlOutput {
+                    sheet_id: sheet_id.to_string(),
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 3,
+                    html: Some("<html></html>".to_string()),
+                    show_name: true,
+                    name: "Python1".to_string(),
+                })
+                .unwrap()
+            ),
             true,
         );
     }
@@ -666,27 +752,33 @@ mod test {
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
         gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
 
-        let result = vec![JsRenderCell {
-            value: "test 1".to_string(),
-            ..Default::default()
+        let render_cells = vec![JsHashRenderCells {
+            sheet_id,
+            hash: (Pos { x: 0, y: 0 }).quadrant().into(),
+            cells: vec![JsRenderCell {
+                value: "test 1".to_string(),
+                ..Default::default()
+            }],
         }];
-        let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
-            "jsRenderCellSheets",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&result)),
+            "jsHashesRenderCells",
+            format!("{:?}", serde_json::to_vec(&render_cells).unwrap()),
             false,
         );
 
-        let result = vec![JsRenderCell {
-            x: 100,
-            y: 100,
-            value: "test 2".to_string(),
-            ..Default::default()
+        let render_cells = vec![JsHashRenderCells {
+            sheet_id,
+            hash: (Pos { x: 100, y: 100 }).quadrant().into(),
+            cells: vec![JsRenderCell {
+                x: 100,
+                y: 100,
+                value: "test 2".to_string(),
+                ..Default::default()
+            }],
         }];
-        let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
-            "jsRenderCellSheets",
-            format!("{},{},{},{}", sheet_id, 6, 3, hash_test(&result)),
+            "jsHashesRenderCells",
+            format!("{:?}", serde_json::to_vec(&render_cells).unwrap()),
             true,
         );
     }
@@ -712,7 +804,7 @@ mod test {
         let fills = sheet.get_all_sheet_fills();
         expect_js_call(
             "jsSheetMetaFills",
-            format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()),
+            format!("{},{:?}", sheet.id, serde_json::to_vec(&fills).unwrap()),
             true,
         );
     }

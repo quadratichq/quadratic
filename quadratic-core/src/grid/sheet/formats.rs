@@ -198,7 +198,7 @@ mod tests {
         // Add some data to create non-empty bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
         sheet.set_cell_value(pos![E5], CellValue::Text("test".to_string()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Create format updates with alignment
