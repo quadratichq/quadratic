@@ -511,4 +511,18 @@ export class Tables extends Container<Table> {
       this.dataTablesCache = dataTablesCache;
     }
   };
+
+  /// Returns the table name if the cell is in the table header.
+  getTableNameInNameOrColumn(x: number, y: number): string | undefined {
+    const table = this.getTable(x, y);
+    if (table) {
+      if (
+        (table.codeCell.show_name && y === table.codeCell.y) ||
+        (table.codeCell.show_columns && y === table.codeCell.y + (table.codeCell.show_name ? 1 : 0))
+      ) {
+        return table.codeCell.name;
+      }
+      return;
+    }
+  }
 }

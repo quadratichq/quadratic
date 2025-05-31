@@ -158,9 +158,7 @@ export function cellVisible(
 
   // check if the cell is part of a table header that is visible b/c it is
   // hovering over the table
-  console.time('getTableNameInNameOrColumn');
-  const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
-  console.timeEnd('getTableNameInNameOrColumn');
+  const tableName = pixiApp.cellsSheet().tables.getTableNameInNameOrColumn(coordinate.x, coordinate.y);
   if (tableName) return true;
 
   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
