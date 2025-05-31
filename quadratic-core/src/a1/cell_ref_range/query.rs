@@ -80,6 +80,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns true if the range is a single column range.
     pub fn is_col_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_col_range(),
@@ -87,6 +88,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns true if the range contains the given column.
     pub fn has_col_range(&self, col: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_col_range(col),
@@ -94,6 +96,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns true if the range is a single row range.
     pub fn is_row_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_row_range(),
@@ -101,6 +104,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns true if the range contains the given row.
     pub fn has_row_range(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_row_range(row),
@@ -116,6 +120,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns true if the range is a finite range.
     pub fn is_finite(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_finite(),
@@ -123,6 +128,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the largest finite rectangle that contains the range.
     pub fn to_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
             Self::Sheet { range } => range.to_rect(),
@@ -130,6 +136,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the largest rectangle that contains the range.
     pub fn to_rect_unbounded(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
             Self::Sheet { range } => Some(range.to_rect_unbounded()),
@@ -137,6 +144,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the selected finite columns in the range.
     pub fn selected_columns_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns_finite(),
@@ -144,6 +152,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the selected columns in the range that fall between `from` and `to`.
     pub fn selected_columns(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns(from, to),
@@ -151,6 +160,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the selected finite rows in the range.
     pub fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows_finite(),
@@ -158,6 +168,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the selected rows in the range that fall between `from` and `to`.
     pub fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows(from, to),
@@ -165,6 +176,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the position if the range is a single cell.
     pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
         match self {
             Self::Sheet { range } => range.try_to_pos(),
@@ -172,6 +184,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns true if the range is a single cell.
     pub fn is_single_cell(&self, a1_context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.is_single_cell(),
