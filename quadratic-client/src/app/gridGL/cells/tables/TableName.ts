@@ -155,18 +155,18 @@ export class TableName extends Container {
       if (!pixiApp.viewport.dirty && pixiApp.viewport.getVisibleBounds().intersects(this.tableNameBounds)) {
         pixiApp.setViewportDirty();
       }
+    }
 
-      // don't show the modified text if it overlaps the left text
-      if (
-        this.dropdown.x + this.dropdown.width + TABLE_NAME_PADDING[0] + this.modified.width + SYMBOL_PADDING >
-        this.table.tableBounds.width
-      ) {
-        this.modified.visible = false;
-      } else {
-        this.modified.visible = true;
-        this.modified.anchor.set(0, 0.5);
-        this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, this.text.y);
-      }
+    // don't show the modified text if it overlaps the left text
+    if (
+      this.dropdown.x + this.dropdown.width + TABLE_NAME_PADDING[0] + this.modified.width + SYMBOL_PADDING >
+      this.table.tableBounds.width
+    ) {
+      this.modified.visible = false;
+    } else {
+      this.modified.visible = true;
+      this.modified.anchor.set(0, 0.5);
+      this.modified.position.set(this.table.tableBounds.width - this.modified.width - SYMBOL_PADDING, this.text.y);
     }
   };
 
