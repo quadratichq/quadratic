@@ -41,6 +41,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
   let data;
+  if (debugStartupTime) console.time('[file.$uuid.tsx] fetching file');
   try {
     data = await apiClient.files.get(uuid);
   } catch (error: any) {
@@ -55,6 +56,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     console.log(
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] fetching file');
 
   if (debugStartupTime) console.time('[file.$uuid.tsx] initializing workers');
   initWorkers();
@@ -64,10 +66,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   loadAssets();
   if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
 
-  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
-  // initialize: Rust metadata
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust');
   await initCoreClient();
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing Rust');
 
+  if (debugStartupTime) console.time('[file.$uuid.tsx] loading Quadratic file (parallel)');
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
     url: data.file.lastCheckpointDataUrl,
@@ -129,7 +132,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (isVersionHistoryPreview) {
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
-  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] loading Quadratic file (parallel)');
   return data;
 };
 

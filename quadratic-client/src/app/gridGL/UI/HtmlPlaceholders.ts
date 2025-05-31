@@ -2,16 +2,22 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { colors } from '@/app/theme/colors';
-import { Graphics, Sprite, Texture, type Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 
 const BORDER_WIDTH = 1;
 const SPRITE_WIDTH = 100;
 
 // Draws the html placeholder for thumbnails
-export class HtmlPlaceholders extends Graphics {
+export class HtmlPlaceholders extends Container {
+  private graphics: Graphics;
+  private thumbnails: Container;
+
   constructor() {
     super();
     this.visible = false;
+    this.thumbnails = this.addChild(new Container());
+    this.graphics = this.addChild(new Graphics());
   }
 
   private drawPlaceholder = async (htmlCell: HtmlCell) => {
@@ -24,10 +30,9 @@ export class HtmlPlaceholders extends Graphics {
     }
 
     const offsets = sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
-    this.lineStyle(BORDER_WIDTH, colors.htmlPlaceholderThumbnailBorderColor, 1);
-    this.beginFill(colors.htmlPlaceholderThumbnailColor);
-    this.drawRect(offsets.x, offsets.y + offsets.height, w, h);
-    this.endFill();
+    this.graphics.rect(offsets.x, offsets.y + offsets.height, w, h);
+    this.graphics.fill({ color: colors.htmlPlaceholderThumbnailColor });
+    this.graphics.stroke({ color: colors.htmlPlaceholderThumbnailBorderColor, width: BORDER_WIDTH });
 
     const dataUrl = await htmlCell.getImageDataUrl();
     if (dataUrl) {
@@ -39,13 +44,9 @@ export class HtmlPlaceholders extends Graphics {
         sprite.height = htmlCell.height - offsets.height;
         sprite.x = offsets.x + 1;
         sprite.y = offsets.y + offsets.height;
-        if (sprite.texture.valid) {
+        sprite.texture.once('update', () => {
           resolve(undefined);
-        } else {
-          sprite.texture.once('update', () => {
-            resolve(undefined);
-          });
-        }
+        });
       });
     } else {
       const sprite = this.addChild(new Sprite(Texture.from('chart-placeholder')));
@@ -58,7 +59,7 @@ export class HtmlPlaceholders extends Graphics {
 
   prepare = async (cull?: Rectangle) => {
     this.removeChildren();
-    this.clear();
+    this.graphics.clear();
     const firstId = sheets.getFirst().id;
 
     const drawPlaceholderPromises = htmlCellsHandler.getCells().map((cell) => {

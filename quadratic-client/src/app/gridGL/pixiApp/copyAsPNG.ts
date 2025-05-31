@@ -1,5 +1,6 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { Matrix, Renderer } from 'pixi.js';
+import type { Renderer } from 'pixi.js';
+import { autoDetectRenderer, Matrix } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
 
@@ -11,14 +12,15 @@ let renderer: Renderer | undefined;
 
 export const getScreenImage = async (): Promise<Blob | null> => {
   return new Promise((resolve) => {
-    pixiApp.renderer.view.toBlob?.((blob) => resolve(blob));
+    pixiApp.renderer.canvas.toBlob?.((blob) => resolve(blob));
   });
 };
 
 /** returns a dataURL to a copy of the selected cells */
 export const copyAsPNG = async (): Promise<Blob | null> => {
   if (!renderer) {
-    renderer = new Renderer({
+    renderer = await autoDetectRenderer({
+      preference: 'webgl',
       resolution,
       antialias: true,
       backgroundColor: 0xffffff,
@@ -46,15 +48,15 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     }
   }
   renderer.resize(imageWidth, imageHeight);
-  renderer.view.width = imageWidth;
-  renderer.view.height = imageHeight;
+  renderer.canvas.width = imageWidth;
+  renderer.canvas.height = imageHeight;
   await pixiApp.prepareForCopying({ cull: screenRect });
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
   const scale = imageWidth / (screenRect.width * resolution);
   transform.scale(scale, scale);
-  renderer.render(pixiApp.viewportContents, { transform });
+  renderer.render({ container: pixiApp.viewportContents, transform });
   pixiApp.cleanUpAfterCopying();
 
   // force a pixiApp rerender to clean up interactions (I think)
@@ -62,6 +64,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
 
   focusGrid();
   return new Promise((resolve) => {
-    renderer!.view.toBlob?.((blob) => resolve(blob));
+    renderer!.canvas.toBlob?.((blob) => resolve(blob));
   });
 };

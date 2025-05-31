@@ -3,10 +3,10 @@ import { CONTACT_URL, DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/c
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
-import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { isWebGLSupported } from 'pixi.js';
 import { useEffect, useState } from 'react';
 import { engineName, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
@@ -18,10 +18,11 @@ export function Component() {
   );
 
   useEffect(() => {
-    if (!isWASMSupported || !isWebGLSupported()) {
+    const webGLSupported = isWebGLSupported();
+    if (!isWASMSupported || !webGLSupported) {
       mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {
         isWASMSupported,
-        isWebGLSupported,
+        isWebGLSupported: webGLSupported,
       });
 
       Sentry.captureEvent({
