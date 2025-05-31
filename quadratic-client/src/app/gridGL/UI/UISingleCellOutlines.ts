@@ -17,7 +17,6 @@ export class UISingleCellOutlines extends Graphics {
     const bounds = pixiApp.viewport.getVisibleBounds();
     const boundsCells = sheets.sheet.getRectangleFromScreen(bounds);
 
-    console.log(boundsCells);
     const singleCellTables = tables.getSingleCellTablesInRectangle(boundsCells);
 
     this.lineStyle({ color: getCSSVariableTint('muted-foreground'), width: 1, alignment: 0.5 });
