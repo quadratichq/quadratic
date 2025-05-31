@@ -340,7 +340,8 @@ impl Sheet {
             .iter()
             .find(|rect| rect.intersects(rect_moved_left));
 
-        let should_not_expand = data_table_immediate_left.map(|rect| rect_moved_left.min.y <= rect.min.y)
+        let should_not_expand = data_table_immediate_left
+            .map(|rect| rect_moved_left.min.y <= rect.min.y)
             .unwrap_or(false);
 
         !should_not_expand

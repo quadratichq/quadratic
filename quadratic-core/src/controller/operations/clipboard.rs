@@ -664,10 +664,17 @@ impl GridController {
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
         let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
+        // move the clipboard rect left and up by 1 to make adjacent tables intersect
+        let moved_left_up_rect = Rect::from_numbers(
+            insert_at.x - 1,
+            insert_at.y - 1,
+            clipboard.w as i64 + 1,
+            clipboard.h as i64 + 1,
+        );
         let existing_data_tables = self
             .a1_context_sheet_table_bounds(sheet_id)
             .into_iter()
-            .filter(|rect| rect.intersects(clipboard_rect))
+            .filter(|rect| rect.intersects(moved_left_up_rect))
             .collect::<Vec<_>>();
         let mut growing_data_tables = existing_data_tables.clone();
         let bypass_growing =
