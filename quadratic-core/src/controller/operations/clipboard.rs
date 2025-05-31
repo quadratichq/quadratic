@@ -135,8 +135,9 @@ impl Clipboard {
         }
     }
 
-    pub fn to_rect(&self, pos: Pos) -> Rect {
-        Rect::from_numbers(pos.x, pos.y, self.w as i64, self.h as i64)
+    /// Return the largest rect that contains the clipboard, with `insert_at` as the top left corner
+    pub fn to_rect(&self, insert_at: Pos) -> Rect {
+        Rect::from_numbers(insert_at.x, insert_at.y, self.w as i64, self.h as i64)
     }
 }
 
@@ -664,6 +665,7 @@ impl GridController {
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
         let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
+
         // move the clipboard rect left and up by 1 to make adjacent tables intersect
         let moved_left_up_rect = Rect::from_numbers(
             insert_at.x - 1,
@@ -676,7 +678,9 @@ impl GridController {
             .into_iter()
             .filter(|rect| rect.intersects(moved_left_up_rect))
             .collect::<Vec<_>>();
+
         let mut growing_data_tables = existing_data_tables.clone();
+
         let bypass_growing =
             !Sheet::should_expand_data_table(&existing_data_tables, clipboard_rect);
 

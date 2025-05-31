@@ -30,6 +30,7 @@ impl GridController {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
+
         // move the cell values rect left and up by 1 to make adjacent tables intersect
         let cell_value_rect = Rect::from_numbers(
             sheet_pos.x - 1,
@@ -42,6 +43,7 @@ impl GridController {
             .into_iter()
             .filter(|rect| rect.intersects(cell_value_rect))
             .collect::<Vec<_>>();
+
         let mut growing_data_tables = existing_data_tables.clone();
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
