@@ -398,18 +398,46 @@ export class SheetCursor {
     return this.jsSelection.cursorIsOnHtmlImage();
   };
 
+  /// Returns a collection of Rectangles that represent sheet ranges in the
+  /// selection.
+  private getSheetRefRangeBounds(): Rectangle[] {
+    const rangeBounds = this.jsSelection.getSheetRefRangeBounds();
+    return rangeBounds.map((range: RefRangeBounds) => {
+      const startX =
+        range.start.col.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.start.col.coord);
+      const startY =
+        range.start.row.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.start.row.coord);
+      const endX =
+        range.end.col.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.end.col.coord);
+      const endY =
+        range.end.row.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.end.row.coord);
+      return new Rectangle(startX, startY, endX - startX, endY - startY);
+    });
+  }
+
+  private selectedTableNamesFromTableSelection(): string[] {
+    return this.jsSelection.getSelectedTableNames() as string[];
+  }
+
   /// Returns the names of the tables that are selected.
   getSelectedTableNames = (): string[] => {
-    let names: string[] = [];
+    const names = new Set<string>();
     try {
-      names = this.jsSelection.getSelectedTableNames();
-      const rects = this.jsSelection.getSheetRefRangeBounds();
+      this.selectedTableNamesFromTableSelection().forEach((name) => names.add(name));
+      const rects = this.getSheetRefRangeBounds();
       console.log(rects);
-      console.log('TODO: we need to check the DataTableCache for tables that are fully enclosed by the selection');
+      rects.forEach((rect) => {
+        const tables = pixiApp.cellsSheet().tables.getLargeTablesInRect(rect);
+        tables.forEach((table) => {
+          if (table.name) {
+            names.add(table.name);
+          }
+        });
+      });
     } catch (e) {
       console.warn('Error getting selected table names', e);
     }
-    return names;
+    return Array.from(names);
   };
 
   getTableColumnSelection = (tableName: string): number[] | undefined => {
