@@ -48,7 +48,7 @@ const setCodeCellResult = async (
   y: number,
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
-  const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
+  const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableIntersects(x, y);
   const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
   if (!table || !codeCell) {
     return [
@@ -267,7 +267,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         await waitForSetCodeCellValue(transactionId);
 
         // After execution, adjust viewport to show full output if it exists
-        const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
+        const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableIntersects(x, y);
         if (table) {
           const width = table.codeCell.w;
           const height = table.codeCell.h;

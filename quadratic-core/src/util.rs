@@ -170,6 +170,7 @@ macro_rules! row {
 macro_rules! pos {
     [$sheet_id:ident ! $s:ident] => { pos![($sheet_id) ! $s] };
     [($sheet_id:expr) ! $s:ident] => { pos![$s].to_sheet_pos($sheet_id) };
+    [$col:expr, $row:expr] => { $crate::Pos::new($col, $row) };
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
         let pos = $crate::formulas::legacy_cell_ref::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)

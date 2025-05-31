@@ -1,0 +1,46 @@
+// This is wasm_bindgen code that provides a JavaScript interface to the SheetDataTablesCache.
+// This is meant for querying only, not for modifying the cache.
+// Cache modifications should be done through the SheetDataTables struct only.
+
+use wasm_bindgen::prelude::*;
+
+use crate::{Pos, Rect, grid::sheet::data_tables::cache::SheetDataTablesCache};
+
+#[wasm_bindgen]
+impl SheetDataTablesCache {
+    #[wasm_bindgen(constructor)]
+    pub fn new(bytes: Vec<u8>) -> Self {
+        serde_json::from_slice::<SheetDataTablesCache>(&bytes).unwrap_or_default()
+    }
+
+    /// Returns what table is the table Pos at the given position.
+    #[wasm_bindgen(js_name = "getTableInPos")]
+    pub fn table_in_pos(&self, x: i32, y: i32) -> Option<Pos> {
+        let pos = Pos {
+            x: x as i64,
+            y: y as i64,
+        };
+        if self.single_cell_tables.get(pos).is_some() {
+            Some(pos)
+        } else {
+            self.multi_cell_tables.get(pos)
+        }
+    }
+
+    /// Returns all single-cell tables in the given rectangle.
+    #[wasm_bindgen(js_name = "getSingleCellTablesInRect")]
+    pub fn single_cell_tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
+        self.single_cell_tables
+            .rect_non_default_pos(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
+    }
+
+    /// Returns all tables that are not single cells in the given rectangle.
+    #[wasm_bindgen(js_name = "getLargeTablesInRect")]
+    pub fn large_tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
+        self.multi_cell_tables
+            .unique_values_in_rect(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
+            .into_iter()
+            .flatten()
+            .collect()
+    }
+}

@@ -38,22 +38,6 @@ pub fn convert_table_to_range(
         .map_err(|e| e.to_string())
 }
 
-#[wasm_bindgen(js_name = "getTableNameInNameOrColumn")]
-pub fn get_table_name_in_name_or_column(
-    sheet_id: &str,
-    x: u32,
-    y: u32,
-    context: &[u8],
-) -> Option<String> {
-    let Ok(sheet_id) = SheetId::from_str(sheet_id) else {
-        return None;
-    };
-    let Ok(context) = serde_json::from_slice::<A1Context>(context) else {
-        return None;
-    };
-    context.table_in_name_or_column(sheet_id, x, y)
-}
-
 #[wasm_bindgen(js_name = "toggleReferenceTypes")]
 pub fn toggle_reference_types(reference: &str) -> Result<String, String> {
     // Check that reference contains both a letter and a number (otherwise we don't toggle it)

@@ -187,7 +187,7 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
-        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+        const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
         if (table) {
           doubleClickCell({
             column: x,
@@ -214,7 +214,7 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
-        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+        const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
         if (table) {
           doubleClickCell({
             column: x,

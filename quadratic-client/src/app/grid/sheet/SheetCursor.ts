@@ -7,7 +7,7 @@ import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import type { IViewportTransformState } from 'pixi-viewport';
@@ -368,7 +368,6 @@ export class SheetCursor {
     return !!this.sheet.cursor.getSingleRectangle();
   };
 
-  // return !tables.intersects(this.multiCursor[0]);
   // getCopyRange(): RefRangeBounds | undefined {
   getRanges = (): CellRefRange[] => {
     const rangesStringified = this.jsSelection.getRanges();
@@ -399,15 +398,45 @@ export class SheetCursor {
     return this.jsSelection.cursorIsOnHtmlImage();
   };
 
+  /// Returns a collection of Rectangles that represent sheet ranges in the
+  /// selection.
+  private getSheetRefRangeBounds(): Rectangle[] {
+    const rangeBounds = this.jsSelection.getSheetRefRangeBounds();
+    return rangeBounds.map((range: RefRangeBounds) => {
+      const startX =
+        range.start.col.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.start.col.coord);
+      const startY =
+        range.start.row.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.start.row.coord);
+      const endX =
+        range.end.col.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.end.col.coord);
+      const endY =
+        range.end.row.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.end.row.coord);
+      return new Rectangle(startX, startY, endX - startX + 1, endY - startY + 1);
+    });
+  }
+
+  private selectedTableNamesFromTableSelection(): string[] {
+    return this.jsSelection.getSelectedTableNames() as string[];
+  }
+
   /// Returns the names of the tables that are selected.
   getSelectedTableNames = (): string[] => {
-    let names: string[] = [];
+    const names = new Set<string>();
     try {
-      names = this.jsSelection.getSelectedTableNames();
+      this.selectedTableNamesFromTableSelection().forEach((name) => names.add(name));
+      const rects = this.getSheetRefRangeBounds();
+      rects.forEach((rect) => {
+        const tables = pixiApp.cellsSheet().tables.getLargeTablesInRect(rect);
+        tables.forEach((table) => {
+          if (table.codeCell.show_name && table.codeCell.y >= rect.y && table.codeCell.y <= rect.bottom - 1) {
+            names.add(table.codeCell.name);
+          }
+        });
+      });
     } catch (e) {
       console.warn('Error getting selected table names', e);
     }
-    return names;
+    return Array.from(names);
   };
 
   getTableColumnSelection = (tableName: string): number[] | undefined => {
@@ -434,10 +463,6 @@ export class SheetCursor {
 
   getSingleFullTableSelectionName(): string | undefined {
     return this.jsSelection.getSingleFullTableSelectionName();
-  }
-
-  getTableNameInNameOrColumn(sheetId: string, x: number, y: number): string | undefined {
-    return getTableNameInNameOrColumn(sheetId, x, y, this.sheet.sheets.a1Context);
   }
 
   updateTableName = (oldName: string, newName: string) => {

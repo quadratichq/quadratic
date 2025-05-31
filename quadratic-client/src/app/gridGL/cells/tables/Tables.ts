@@ -8,16 +8,18 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
+import { TablesCache } from '@/app/gridGL/cells/tables/TablesCache';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
+import type { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import type { Point } from 'pixi.js';
-import { Container, Rectangle } from 'pixi.js';
+import type { Point, Rectangle } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export interface TablePointerDownResult {
   table: JsRenderCodeCell;
@@ -31,6 +33,11 @@ export interface TablePointerDownResult {
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
+  // cache to speed up lookups
+  private tablesCache: TablesCache;
+
+  private dataTablesCache?: SheetDataTablesCache;
+
   private activeTables: Table[] = [];
 
   // either rename or sort
@@ -40,6 +47,9 @@ export class Tables extends Container<Table> {
   private htmlOrImage: Set<string>;
 
   private saveToggleOutlines = false;
+
+  // a cache of single cell tables
+  private singleCellTables: Record<string, JsRenderCodeCell> = {};
 
   // Holds the table headers that hover over the grid.
   hoverTableHeaders: Container;
@@ -51,6 +61,7 @@ export class Tables extends Container<Table> {
     this.cellsSheet = cellsSheet;
     this.htmlOrImage = new Set();
     this.hoverTableHeaders = new Container();
+    this.tablesCache = new TablesCache();
 
     events.on('renderCodeCells', this.renderCodeCells);
     events.on('updateCodeCells', this.updateCodeCells);
@@ -63,6 +74,8 @@ export class Tables extends Container<Table> {
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
     events.on('updateImage', this.updateImage);
+
+    events.on('dataTablesCache', this.updateDataTablesCache);
   }
 
   destroy() {
@@ -77,6 +90,8 @@ export class Tables extends Container<Table> {
     events.off('htmlOutput', this.htmlOutput);
     events.off('htmlUpdate', this.htmlUpdate);
     events.off('updateImage', this.updateImage);
+
+    events.off('dataTablesCache', this.updateDataTablesCache);
 
     super.destroy();
   }
@@ -119,6 +134,28 @@ export class Tables extends Container<Table> {
     return sheet;
   }
 
+  /// Returns an existing Table if it exists at the given position. Note: this
+  /// only returns if the table's anchor is at that position.
+  getTable = (x: number | bigint, y: number | bigint): Table | undefined => {
+    return this.tablesCache.getByXY(x, y);
+  };
+
+  /// Returns true if the code cell has no UI and is 1x1.
+  private isCodeCellSingle = (codeCell: JsRenderCodeCell): boolean => {
+    return codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns;
+  };
+
+  /// Deletes a table from Tables and removes cache.
+  private deleteTable = (x: number, y: number) => {
+    const table = this.getTable(x, y);
+    if (table) {
+      this.removeChild(table);
+      table.destroy();
+      this.tablesCache.remove(table);
+    }
+  };
+
+  /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
     updateCodeCells
       .filter((updateCodeCell) => updateCodeCell.sheet_id.id === this.cellsSheet.sheetId)
@@ -126,20 +163,31 @@ export class Tables extends Container<Table> {
         const { pos, render_code_cell } = updateCodeCell;
         const x = Number(pos.x);
         const y = Number(pos.y);
-        const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-        if (table) {
-          if (!render_code_cell) {
-            pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
-            this.removeChild(table);
-            table.destroy();
-          } else {
+        const key = `${x},${y}`;
+        if (!render_code_cell) {
+          delete this.singleCellTables[key];
+          this.deleteTable(x, y);
+          return;
+        }
+        const isSingleCell = this.isCodeCellSingle(render_code_cell);
+        if (isSingleCell) {
+          this.singleCellTables[key] = render_code_cell;
+          this.deleteTable(x, y);
+        } else {
+          delete this.singleCellTables[key];
+          const table = this.getTable(x, y);
+          if (table) {
+            // updating an existing table
+            this.tablesCache.updateTableName(table, render_code_cell.name);
             table.updateCodeCell(render_code_cell);
             if (this.isActive(table)) {
               table.showActive();
             }
+          } else {
+            // adding a new table
+            const table = this.addChild(new Table(this.sheet, render_code_cell));
+            this.tablesCache.add(table);
           }
-        } else if (render_code_cell) {
-          this.addChild(new Table(this.sheet, render_code_cell));
         }
         pixiApp.setViewportDirty();
       });
@@ -151,8 +199,8 @@ export class Tables extends Container<Table> {
     if (sheetId === this.cellsSheet.sheetId) {
       const codeCells = fromUint8Array<JsRenderCodeCell[]>(renderCodeCells);
       this.removeChildren();
+      this.tablesCache.clear();
       if (!isBitmapFontLoaded()) {
-        console.log('bitmapFontsLoaded event not received');
         events.once('bitmapFontsLoaded', () => this.completeRenderCodeCells(codeCells));
         return;
       }
@@ -160,17 +208,47 @@ export class Tables extends Container<Table> {
     }
   };
 
+  /// Creates new Tables for each code cell. This expects all data structures to
+  /// be empty.
   private completeRenderCodeCells = (codeCells: JsRenderCodeCell[]) => {
     codeCells.forEach((codeCell) => {
-      this.addChild(new Table(this.sheet, codeCell));
+      if (this.isCodeCellSingle(codeCell)) {
+        this.singleCellTables[`${codeCell.x},${codeCell.y}`] = codeCell;
+        return;
+      } else {
+        const table = this.addChild(new Table(this.sheet, codeCell));
+        this.tablesCache.add(table);
+      }
     });
   };
+
+  /// Returns the tables that are visible in the viewport.
+  private getVisibleTables(): Table[] {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
+    const tables = this.dataTablesCache?.getLargeTablesInRect(
+      cellBounds.x,
+      cellBounds.y,
+      cellBounds.width,
+      cellBounds.height
+    );
+    return (
+      tables?.flatMap((pos) => {
+        const table = this.getTable(pos.x, pos.y);
+        if (table) {
+          return [table];
+        }
+        return [];
+      }) ?? []
+    );
+  }
 
   update(dirtyViewport: boolean) {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-      this.children.forEach((table) => table.update(bounds, gridHeading));
+      const visibleTables = this.getVisibleTables();
+      visibleTables?.forEach((table) => table.update(bounds, gridHeading));
     }
   }
 
@@ -179,16 +257,15 @@ export class Tables extends Container<Table> {
     if (this.sheet.id !== sheets.current) {
       return;
     }
-
     const tables = sheets.sheet.cursor.getSelectedTableNames();
-    this.activeTables = tables.flatMap((table) => this.children.filter((t) => t.codeCell.name === table));
-    this.children.forEach((table) => {
-      if (this.activeTables.includes(table)) {
+    this.activeTables.forEach((table) => table.hideActive());
+    this.activeTables = tables.flatMap((tableName) => {
+      const table = this.getTableFromName(tableName);
+      if (table) {
         table.showActive();
-      } else {
-        table.hideActive();
+        return [table];
       }
-      table.header.updateSelection();
+      return [];
     });
   };
 
@@ -201,11 +278,11 @@ export class Tables extends Container<Table> {
   };
 
   isTable(x: number, y: number): boolean {
-    return this.children.some((table) => table.codeCell.x === x && table.codeCell.y === y);
+    return !!this.getTable(x, y) || !!this.singleCellTables[`${x},${y}`];
   }
 
   isWithinCodeCell(x: number, y: number): boolean {
-    const table = this.getTableFromTableCell(x, y);
+    const table = this.getTableIntersects(x, y);
     if (!table) {
       return false;
     }
@@ -220,26 +297,28 @@ export class Tables extends Container<Table> {
   // clicked). Otherwise it handles TableName. We ignore the table name if the
   // table is not active to allow the user to select the row above the table.
   pointerDown(world: Point): TablePointerDownResult | undefined {
-    for (const table of this.children) {
-      const result = table.intersectsTableName(world);
-      if (result) return result;
-      const columnName = table.pointerDown(world);
-      if (columnName && columnName.type !== 'table-name') {
-        return columnName;
-      }
-      if (table.pointerDownChart(world)) {
-        return { type: 'chart', table: table.codeCell };
-      }
+    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const table = this.getTable(cell.x, cell.y);
+    if (!table) return;
+    const result = table.intersectsTableName(world);
+    if (result) return result;
+    const columnName = table?.pointerDown(world);
+    if (columnName && columnName.type !== 'table-name') {
+      return columnName;
+    }
+    if (table.pointerDownChart(world)) {
+      return { type: 'chart', table: table.codeCell };
     }
   }
 
   pointerMove = (world: Point): boolean => {
-    for (const table of this.children) {
-      const result = table.pointerMove(world);
-      if (result) {
-        this.tableCursor = table.tableCursor;
-        return true;
-      }
+    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const table = this.getTable(cell.x, cell.y);
+    if (!table) return false;
+    const result = table.pointerMove(world);
+    if (result) {
+      this.tableCursor = table.tableCursor;
+      return true;
     }
     this.tableCursor = undefined;
     return false;
@@ -258,18 +337,18 @@ export class Tables extends Container<Table> {
       return;
     }
     if (options.type === ContextMenuType.TableSort) {
-      this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+      this.actionDataTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
       if (this.actionDataTable) {
         this.actionDataTable.showActive();
       }
     } else if (options.type === ContextMenuType.Table && options.table) {
       if (options.rename) {
-        this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+        this.actionDataTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
         if (this.actionDataTable) {
           this.actionDataTable.showActive();
         }
       } else {
-        const contextMenuTable = this.children.find((table) => table.codeCell === options.table);
+        const contextMenuTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
         if (contextMenuTable) {
           contextMenuTable.showActive();
         }
@@ -280,7 +359,7 @@ export class Tables extends Container<Table> {
       options.rename &&
       options.selectedColumn !== undefined
     ) {
-      this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+      this.actionDataTable = options.table ? this.getTable(options.table.x, options.table.y) : undefined;
       if (this.actionDataTable) {
         this.actionDataTable.showActive();
         this.actionDataTable.hideColumnHeaders(options.selectedColumn);
@@ -289,44 +368,42 @@ export class Tables extends Container<Table> {
     pixiApp.setViewportDirty();
   };
 
-  getTableNamePosition(x: number, y: number): Rectangle | undefined {
-    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-    if (!table) {
-      return;
+  /// Gets the code cell of a cell within a large table, or the single cell.
+  getCodeCell(x: number, y: number): JsRenderCodeCell | undefined {
+    const table = this.getTableIntersects(x, y);
+    if (table) {
+      return table.codeCell;
     }
-    return table.getTableNameBounds();
+    return this.singleCellTables[`${x},${y}`];
+  }
+
+  getTableNamePosition(x: number, y: number): Rectangle | undefined {
+    const table = this.getTable(x, y);
+    return table?.getTableNameBounds();
   }
 
   getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
-    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+    const table = this.getTable(x, y);
     return table?.getColumnHeaderBounds(index);
   }
 
-  getTableFromTableCell(x: number, y: number): Table | undefined {
-    const cellRectangle = new Rectangle(x, y, 1, 1);
-    return this.children.find((table) => table.intersects(cellRectangle));
+  /// Returns the table that the cell intersects.
+  getTableIntersects(x: number, y: number): Table | undefined {
+    if (this.dataTablesCache) {
+      const tablePos = this.dataTablesCache.getTableInPos(x, y);
+      if (tablePos) {
+        return this.getTable(tablePos.x, tablePos.y);
+      }
+    }
   }
 
   getTableFromName(name: string): Table | undefined {
-    return this.children.find((table) => table.codeCell.name === name);
-  }
-
-  // Intersects a column/row rectangle
-  intersects(rectangle: Rectangle): boolean {
-    return this.children.some((table) => table.intersects(rectangle));
-  }
-
-  // Returns the table that the cursor is on, or undefined if the cursor is not on a table.
-  cursorOnDataTable(): JsRenderCodeCell | undefined {
-    return this.children.find((table) => table.isCursorOnDataTable())?.codeCell;
+    return this.tablesCache.getByName(name);
   }
 
   getSortDialogPosition(codeCell: JsRenderCodeCell): JsCoordinate | undefined {
-    const table = this.children.find((table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y);
-    if (!table) {
-      return;
-    }
-    return table.getSortDialogPosition();
+    const table = this.getTable(codeCell.x, codeCell.y);
+    return table?.getSortDialogPosition();
   }
 
   // Toggles the outlines of the table (used during thumbnail generation)
@@ -336,7 +413,7 @@ export class Tables extends Container<Table> {
       this.activeTables.forEach((table) => table.showActive());
       const contextMenuTable = pixiAppSettings.contextMenu?.table;
       if (contextMenuTable && pixiAppSettings.contextMenu?.column === undefined) {
-        const table = this.children.find((table) => table.codeCell === contextMenuTable);
+        const table = this.getTable(contextMenuTable.x, contextMenuTable.y);
         table?.showActive();
       }
       this.actionDataTable?.showActive();
@@ -352,7 +429,7 @@ export class Tables extends Container<Table> {
   }
 
   resizeTable(x: number, y: number, width: number, height: number) {
-    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+    const table = this.getTable(x, y);
     if (table) {
       table.resize(width, height);
       pixiApp.gridLines.dirty = true;
@@ -371,59 +448,30 @@ export class Tables extends Container<Table> {
     );
   };
 
-  /// Returns true if the cell is inside a table's UI (column, table name, or html/image).
-  getTableFromCell(cell: JsCoordinate): Table | undefined {
-    return this.children.find((table) => {
-      const code = table.codeCell;
-      if (code.state === 'SpillError' || code.state === 'RunError') {
-        return false;
-      }
-      if (
-        code.is_html_image &&
-        cell.x >= code.x &&
-        cell.x <= code.x + code.w - 1 &&
-        cell.y >= code.y &&
-        cell.y <= code.y + code.h - 1
-      ) {
-        return true;
-      }
-      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y === code.y;
-    });
-  }
-
   // Returns Table if the cell is inside a table.
   getInTable(cell: JsCoordinate): Table | undefined {
-    return this.children.find((table) => {
-      const code = table.codeCell;
-      if (code.state === 'SpillError' || code.state === 'RunError') {
-        return false;
-      }
-      if (
-        code.is_html_image &&
-        cell.x >= code.x &&
-        cell.x <= code.x + code.w - 1 &&
-        cell.y >= code.y &&
-        cell.y <= code.y + code.h - 1
-      ) {
-        return true;
-      }
-      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y >= code.y && cell.y <= code.y + code.h - 1;
-    });
+    if (!this.dataTablesCache) return;
+    const table = this.dataTablesCache.getTableInPos(cell.x, cell.y);
+    if (table) {
+      return this.getTable(table.x, table.y);
+    }
   }
 
   getColumnHeaderCell(
     cell: JsCoordinate
   ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
-    for (const table of this.children) {
-      if (table.codeCell.show_columns && table.inOverHeadings) {
-        if (
-          cell.x >= table.codeCell.x &&
-          cell.x < table.codeCell.x + table.codeCell.w &&
-          table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
-        ) {
-          const index = table.codeCell.columns.filter((c) => c.display)[cell.x - table.codeCell.x]?.valueIndex ?? -1;
-          if (index !== -1) {
-            const bounds = table.header.getColumnHeaderBounds(index);
+    const table = this.getInTable(cell);
+    if (!table) return;
+    if (table.codeCell.show_columns && table.inOverHeadings) {
+      if (
+        cell.x >= table.codeCell.x &&
+        cell.x < table.codeCell.x + table.codeCell.w &&
+        table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
+      ) {
+        const index = table.codeCell.columns.filter((c) => c.display)[cell.x - table.codeCell.x]?.valueIndex ?? -1;
+        if (index !== -1) {
+          const bounds = table.header.getColumnHeaderBounds(index);
+          if (bounds) {
             return {
               table,
               x: bounds.x,
@@ -438,38 +486,82 @@ export class Tables extends Container<Table> {
   }
 
   // Returns true if the cell is a table name cell
-  isTableNameCell(cell: JsCoordinate): boolean {
-    return this.children.some(
-      (table) =>
-        table.codeCell.show_name &&
-        cell.x >= table.codeCell.x &&
-        cell.x < table.codeCell.x + table.codeCell.w &&
-        cell.y === table.codeCell.y
-    );
-  }
-
-  /// Returns true if the cell is a column header cell in a table
-  isColumnHeaderCell(cell: JsCoordinate): boolean {
-    return !!this.children.find(
-      (table) =>
-        table.codeCell.show_columns &&
-        cell.x >= table.codeCell.x &&
-        cell.x < table.codeCell.x + table.codeCell.w &&
-        table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
+  isInTableHeader(cell: JsCoordinate): boolean {
+    const table = this.getInTable(cell);
+    if (!table) return false;
+    return (
+      table.codeCell.show_name &&
+      cell.x >= table.codeCell.x &&
+      cell.x < table.codeCell.x + table.codeCell.w &&
+      cell.y === table.codeCell.y
     );
   }
 
   intersectsCodeInfo(world: Point): JsRenderCodeCell | undefined {
-    for (const table of this.children) {
-      if (
-        pixiAppSettings.showCodePeek ||
-        table.codeCell.state === 'SpillError' ||
-        table.codeCell.state === 'RunError'
-      ) {
-        if (!table.codeCell.is_html_image && intersects.rectanglePoint(table.tableBounds, world)) {
-          return table.codeCell;
-        }
+    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const table = this.getInTable(cell);
+    if (!table) return;
+    if (pixiAppSettings.showCodePeek || table.codeCell.state === 'SpillError' || table.codeCell.state === 'RunError') {
+      if (!table.codeCell.is_html_image && intersects.rectanglePoint(table.tableBounds, world)) {
+        return table.codeCell;
       }
     }
+  }
+
+  private updateDataTablesCache = (sheetId: string, dataTablesCache: SheetDataTablesCache) => {
+    if (sheetId === this.sheet.id) {
+      this.dataTablesCache = dataTablesCache;
+      if (sheets.sheet.id === this.sheet.id) {
+        pixiApp.singleCellOutlines.dirty = true;
+      }
+    }
+  };
+
+  /// Returns the table name if the cell is in the table header.
+  getTableNameInNameOrColumn(x: number, y: number): string | undefined {
+    const table = this.getTable(x, y);
+    if (table) {
+      if (
+        (table.codeCell.show_name && y === table.codeCell.y) ||
+        (table.codeCell.show_columns && y === table.codeCell.y + (table.codeCell.show_name ? 1 : 0))
+      ) {
+        return table.codeCell.name;
+      }
+      return;
+    }
+  }
+
+  // Returns the single cell tables that are in the given cell-based rectangle.
+  getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
+    if (!this.dataTablesCache) return [];
+    const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
+      cellRectangle.x,
+      cellRectangle.y,
+      cellRectangle.right,
+      cellRectangle.bottom
+    );
+    if (!tablePositions) return [];
+
+    return tablePositions?.flatMap((pos) => {
+      const codeCell = this.singleCellTables[`${pos.x},${pos.y}`];
+      if (codeCell) {
+        return [codeCell];
+      } else {
+        return [];
+      }
+    });
+  };
+
+  getLargeTablesInRect(rect: Rectangle): Table[] {
+    if (!this.dataTablesCache) return [];
+    const tablePositions = this.dataTablesCache.getLargeTablesInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
+    return tablePositions.flatMap((pos) => {
+      const table = this.getTable(pos.x, pos.y);
+      if (table) {
+        return [table];
+      } else {
+        return [];
+      }
+    });
   }
 }

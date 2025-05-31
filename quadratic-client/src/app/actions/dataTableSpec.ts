@@ -60,7 +60,8 @@ type DataTableSpec = Pick<
 >;
 
 export const getTable = (): JsRenderCodeCell | undefined => {
-  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
+  const cursor = sheets.sheet.cursor.position;
+  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().tables.getInTable(cursor)?.codeCell;
 };
 
 const getRow = (): number | undefined => {

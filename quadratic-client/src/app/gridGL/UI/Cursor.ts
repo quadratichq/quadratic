@@ -81,7 +81,7 @@ export class Cursor extends Container {
       return;
     }
     const tables = pixiApp.cellsSheet().tables;
-    const table = tables.getTableFromCell(cell);
+    const table = tables.getTable(cell.x, cell.y);
     const tableName = table?.getTableNameBounds();
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
@@ -90,13 +90,11 @@ export class Cursor extends Container {
 
     pixiApp.hoverTableColumnsSelection.clear();
 
-    // todo: cursorOnDataTable hides the indicator within tables. When we want to re-enable
     // it so we can autocomplete within tables, then we should change this logic.
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      !pixiApp.cellsSheet().tables.isTableNameCell(cell) &&
-      !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
+      !pixiApp.cellsSheet().tables.isInTableHeader(cell) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
@@ -304,7 +302,8 @@ export class Cursor extends Container {
   }
 
   private cursorIsOnSpill() {
-    const table = pixiApp.cellsSheet().tables.getTableFromCell(sheets.sheet.cursor.position);
+    const pos = sheets.sheet.cursor.position;
+    const table = pixiApp.cellsSheet().tables.getTable(pos.x, pos.y);
     return table?.codeCell.spill_error;
   }
 

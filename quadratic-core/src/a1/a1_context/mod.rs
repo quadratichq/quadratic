@@ -116,10 +116,6 @@ impl A1Context {
         }
     }
 
-    pub fn table_in_name_or_column(&self, sheet_id: SheetId, x: u32, y: u32) -> Option<String> {
-        self.table_map.table_in_name_or_column(sheet_id, x, y)
-    }
-
     pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
         self.table_map.hide_column(table_name, column_name);
     }

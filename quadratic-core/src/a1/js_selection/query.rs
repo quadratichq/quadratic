@@ -77,29 +77,20 @@ impl JsSelection {
         serde_json::to_string(&self.selection.ranges).map_err(|e| e.to_string())
     }
 
-    // may be useful if we decide to show a selection on a chart
-    // #[wasm_bindgen(js_name = "getChartSelections")]
-    // pub fn chart_selections(&self, context: &[u8]) -> Result<String, String> {
-    //     let Ok(context) = serde_json::from_slice::<A1Context>(context) else {
-    //         return Err("Unable to parse context".to_string());
-    //     };
-    //     let chart_names = self
-    //         .selection
-    //         .ranges
-    //         .iter()
-    //         .filter_map(|range| {
-    //             if let CellRefRange::Table { range } = range {
-    //                 if let Some(t) = context.try_table(range.table_name.as_str()) {
-    //                     if t.is_html_image {
-    //                         return Some(t.table_name.clone());
-    //                     }
-    //                 }
-    //             }
-    //             None
-    //         })
-    //         .collect::<Vec<_>>();
-    //     serde_json::to_string(&chart_names).map_err(|e| e.to_string())
-    // }
+    #[wasm_bindgen(js_name = "getSheetRefRangeBounds")]
+    pub fn sheet_ref_range_bounds(&self) -> Result<JsValue, String> {
+        let ranges = self
+            .selection
+            .ranges
+            .iter()
+            .filter(|r| r.is_finite())
+            .filter_map(|range| match range {
+                CellRefRange::Sheet { range } => Some(*range),
+                CellRefRange::Table { .. } => None,
+            })
+            .collect::<Vec<_>>();
+        serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
+    }
 
     #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
     pub fn finite_ref_range_bounds(&self) -> Result<JsValue, String> {
@@ -268,7 +259,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
     pub fn get_selected_table_names(&self) -> Result<JsValue, String> {
-        serde_wasm_bindgen::to_value(&self.selection.selected_table_names(&self.context))
+        serde_wasm_bindgen::to_value(&self.selection.selected_table_names())
             .map_err(|e| e.to_string())
     }
 
