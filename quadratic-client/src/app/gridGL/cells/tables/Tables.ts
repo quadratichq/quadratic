@@ -552,7 +552,7 @@ export class Tables extends Container<Table> {
 
   getLargeTablesInRect(rect: Rectangle): Table[] {
     if (!this.dataTablesCache) return [];
-    const tablePositions = this.dataTablesCache.getLargeTablesInRect(rect.x, rect.y, rect.right, rect.bottom);
+    const tablePositions = this.dataTablesCache.getLargeTablesInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
     return tablePositions.flatMap((pos) => {
       const table = this.getTable(pos.x, pos.y);
       if (table) {

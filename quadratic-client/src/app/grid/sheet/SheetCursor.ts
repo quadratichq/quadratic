@@ -411,7 +411,7 @@ export class SheetCursor {
         range.end.col.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.end.col.coord);
       const endY =
         range.end.row.coord > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(range.end.row.coord);
-      return new Rectangle(startX, startY, endX - startX, endY - startY);
+      return new Rectangle(startX, startY, endX - startX + 1, endY - startY + 1);
     });
   }
 
@@ -425,12 +425,11 @@ export class SheetCursor {
     try {
       this.selectedTableNamesFromTableSelection().forEach((name) => names.add(name));
       const rects = this.getSheetRefRangeBounds();
-      console.log(rects);
       rects.forEach((rect) => {
         const tables = pixiApp.cellsSheet().tables.getLargeTablesInRect(rect);
         tables.forEach((table) => {
-          if (table.name) {
-            names.add(table.name);
+          if (table.codeCell.show_name && table.codeCell.y >= rect.y && table.codeCell.y <= rect.bottom - 1) {
+            names.add(table.codeCell.name);
           }
         });
       });
