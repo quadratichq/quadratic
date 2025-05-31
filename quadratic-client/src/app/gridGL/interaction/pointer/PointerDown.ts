@@ -75,23 +75,11 @@ export class PointerDown {
       if (!cursor.contains(column, row)) {
         cursor.moveTo(column, row);
       }
-      const tableName = cursor.getSingleTableSelection();
-      if (tableName) {
-        const table = pixiApp.cellsSheet().tables.getTableFromName(tableName);
-        if (table) {
-          events.emit('contextMenu', { type: ContextMenuType.Table, world, column, row, table: table.codeCell });
-          return;
-        }
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCell(column, row);
+      if (codeCell) {
+        events.emit('contextMenu', { type: ContextMenuType.Table, world, column, row, table: codeCell });
+        return;
       }
-
-      events.emit('contextMenu', {
-        type: ContextMenuType.Grid,
-        world,
-        column,
-        row,
-        // _could_ have an associated table if it's a cell inside a table on the grid
-        table: pixiApp.cellsSheet().cursorOnDataTable(),
-      });
       return;
     }
 

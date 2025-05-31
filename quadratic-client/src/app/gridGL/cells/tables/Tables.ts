@@ -368,6 +368,15 @@ export class Tables extends Container<Table> {
     pixiApp.setViewportDirty();
   };
 
+  /// Gets the code cell of a cell within a large table, or the single cell.
+  getCodeCell(x: number, y: number): JsRenderCodeCell | undefined {
+    const table = this.getTableIntersects(x, y);
+    if (table) {
+      return table.codeCell;
+    }
+    return this.singleCellTables[`${x},${y}`];
+  }
+
   getTableNamePosition(x: number, y: number): Rectangle | undefined {
     const table = this.getTable(x, y);
     return table?.getTableNameBounds();
@@ -390,13 +399,6 @@ export class Tables extends Container<Table> {
 
   getTableFromName(name: string): Table | undefined {
     return this.tablesCache.getByName(name);
-  }
-
-  // Returns the table that the cursor is on, or undefined if the cursor is not on a table.
-  cursorOnDataTable(): JsRenderCodeCell | undefined {
-    const cursor = pixiApp.cursor.position;
-    const table = this.getTableIntersects(cursor.x, cursor.y);
-    return table?.codeCell;
   }
 
   getSortDialogPosition(codeCell: JsRenderCodeCell): JsCoordinate | undefined {

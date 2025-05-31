@@ -90,7 +90,6 @@ export class Cursor extends Container {
 
     pixiApp.hoverTableColumnsSelection.clear();
 
-    // todo: cursorOnDataTable hides the indicator within tables. When we want to re-enable
     // it so we can autocomplete within tables, then we should change this logic.
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
