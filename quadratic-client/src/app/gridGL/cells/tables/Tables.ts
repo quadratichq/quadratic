@@ -226,7 +226,7 @@ export class Tables extends Container<Table> {
   private getVisibleTables(): Table[] {
     const bounds = pixiApp.viewport.getVisibleBounds();
     const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
-    const tables = this.dataTablesCache?.getTablesInRect(
+    const tables = this.dataTablesCache?.getLargeTablesInRect(
       cellBounds.x,
       cellBounds.y,
       cellBounds.width,
@@ -509,6 +509,9 @@ export class Tables extends Container<Table> {
   private updateDataTablesCache = (sheetId: string, dataTablesCache: DataTablesCache) => {
     if (sheetId === this.sheet.id) {
       this.dataTablesCache = dataTablesCache;
+      if (sheets.sheet.id === this.sheet.id) {
+        pixiApp.singleCellOutlines.dirty = true;
+      }
     }
   };
 
@@ -525,4 +528,25 @@ export class Tables extends Container<Table> {
       return;
     }
   }
+
+  // Returns the single cell tables that are in the given cell-based rectangle.
+  getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
+    if (!this.dataTablesCache) return [];
+    const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
+      cellRectangle.x,
+      cellRectangle.y,
+      cellRectangle.right,
+      cellRectangle.bottom
+    );
+    if (!tablePositions) return [];
+
+    return tablePositions?.flatMap((pos) => {
+      const codeCell = this.singleCellTables[`${pos.x},${pos.y}`];
+      if (codeCell) {
+        return [codeCell];
+      } else {
+        return [];
+      }
+    });
+  };
 }
