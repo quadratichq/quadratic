@@ -45,13 +45,27 @@ impl DataTablesCache {
         }
     }
 
-    /// Returns all tables in the given rect.
-    #[wasm_bindgen(js_name = "getTablesInRect")]
-    pub fn tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
+    /// Returns all tables that are not single cells in the given rectangle.
+    #[wasm_bindgen(js_name = "getLargeTablesInRect")]
+    pub fn large_tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
         self.spilled_output_rects
             .unique_values_in_rect(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
             .into_iter()
             .flatten()
+            .collect()
+    }
+
+    /// Returns all single-cell tables in the given rectangle.
+    #[wasm_bindgen(js_name = "getSingleCellTablesInRect")]
+    pub fn single_cell_tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
+        let rect = Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64);
+        let large_tables = self
+            .spilled_output_rects
+            .unique_values_in_rect(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64));
+        let small_tables = self.has_data_table_anchor.rect_non_default_pos(rect);
+        small_tables
+            .into_iter()
+            .filter(|pos| !large_tables.contains(&Some(*pos)))
             .collect()
     }
 }
