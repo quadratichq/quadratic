@@ -43,7 +43,10 @@ impl GridController {
                     js_clipboard.html,
                     PasteSpecial::None,
                 ) {
-                    Ok(paste_ops) => ops.extend(paste_ops),
+                    Ok((paste_ops, data_table_ops)) => {
+                        ops.extend(paste_ops);
+                        ops.extend(data_table_ops);
+                    }
                     Err(_) => return,
                 }
             }
