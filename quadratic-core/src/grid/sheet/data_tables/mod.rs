@@ -18,11 +18,14 @@ pub struct SheetDataTables {
     #[serde(with = "crate::util::indexmap_serde")]
     data_tables: IndexMap<Pos, DataTable>,
 
+    // cache of anchor positions and output rects (with spills) of data tables
+    // this is used to find any table on the sheet
     cache: DataTablesCache,
 
     // region map indicating output rects of data tables ignoring spills (as if un spilled)
     // as spills are ignored, rects can overlap i.e. same position can have multiple tables trying to output
     // single cell output values are not stored here, check `has_data_table_anchor` map for single cell values
+    // this is used for spill calculation and when spill is ignored
     un_spilled_output_rects: SheetRegionMap,
 }
 

@@ -554,6 +554,6 @@ pub fn jsA1Context(context: Vec<u8> /* A1Context */) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendDataTablesCache(sheet_id: String, _cache: Vec<u8> /* DataTablesCache */) {
-    js_call("jsSendDataTablesCache", format!("{}", sheet_id));
+pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* DataTablesCache */) {
+    js_call("jsSendDataTablesCache", format!("{},{:?}", sheet_id, cache));
 }
