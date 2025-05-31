@@ -588,7 +588,7 @@ impl SheetDataTables {
     }
 
     /// Exports the cache of data tables.
-    pub fn export_cache(&self) -> DataTablesCache {
-        self.cache.clone()
+    pub fn cache_ref(&self) -> &DataTablesCache {
+        &self.cache
     }
 }

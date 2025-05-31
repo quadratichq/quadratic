@@ -7,9 +7,16 @@ impl Sheet {
             return;
         }
 
-        let cache = self.data_tables.export_cache();
-        if let Ok(bytes) = serde_json::to_vec(&cache) {
-            crate::wasm_bindings::js::jsSendDataTablesCache(self.id_to_string(), bytes);
+        match serde_json::to_vec(self.data_tables.cache_ref()) {
+            Ok(bytes) => {
+                crate::wasm_bindings::js::jsSendDataTablesCache(self.id_to_string(), bytes)
+            }
+            Err(e) => {
+                dbgjs!(format!(
+                    "[send_data_tables_cache] Error serializing data tables cache {:?}",
+                    e.to_string()
+                ));
+            }
         }
     }
 }
