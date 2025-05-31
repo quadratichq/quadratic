@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ApiSchemas, TeamClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -10,6 +10,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { updateCustomer } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { parseAndValidateClientDataKv } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -42,7 +43,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Validate existing data in the db
-  const validatedExistingClientDataKv = validateClientDataKv(existingClientDataKv);
+  const validatedExistingClientDataKv = parseAndValidateClientDataKv(existingClientDataKv);
 
   // Update the team with supplied data
   const newTeam = await dbClient.team.update({
@@ -52,7 +53,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     data: {
       ...(name ? { name } : {}),
       ...(clientDataKv ? { clientDataKv: { ...validatedExistingClientDataKv, ...clientDataKv } } : {}),
-      ...(settings ? { settingAnalyticsAi: settings.analyticsAi } : {}),
+      ...(settings
+        ? {
+            ...(settings.analyticsAi !== undefined ? { settingAnalyticsAi: settings.analyticsAi } : {}),
+            ...(settings.showConnectionDemo !== undefined
+              ? { settingShowConnectionDemo: settings.showConnectionDemo }
+              : {}),
+          }
+        : {}),
     },
   });
 
@@ -64,21 +72,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Return the new data
-  const newClientDataKv = validateClientDataKv(newTeam.clientDataKv);
+  const newClientDataKv = parseAndValidateClientDataKv(newTeam.clientDataKv);
 
   return res.status(200).json({
     name: newTeam.name,
     clientDataKv: newClientDataKv,
     settings: {
       analyticsAi: newTeam.settingAnalyticsAi,
+      showConnectionDemo: newTeam.settingShowConnectionDemo,
     },
   });
-}
-
-function validateClientDataKv(clientDataKv: unknown) {
-  const parseResult = TeamClientDataKvSchema.safeParse(clientDataKv);
-  if (!parseResult.success) {
-    throw new ApiError(500, '`clientDataKv` must be a valid JSON object');
-  }
-  return parseResult.data;
 }

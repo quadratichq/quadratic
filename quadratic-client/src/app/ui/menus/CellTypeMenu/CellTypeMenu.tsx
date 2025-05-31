@@ -8,6 +8,7 @@ import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -18,6 +19,7 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
+import { getVisibleConnections } from '@/shared/utils/connections';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
@@ -56,8 +58,11 @@ export default function CellTypeMenu() {
   const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const fetcher = useConnectionsFetcher();
-
+  const { connections } = useConnectionsFetcher();
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
+  const visibleConnections = getVisibleConnections(connections);
   const includeLanguages = showCellTypeMenu !== 'connections';
   const searchLabel = `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`;
 
@@ -111,7 +116,7 @@ export default function CellTypeMenu() {
                   disabled={disabled}
                   icon={icon}
                   name={name}
-                  experimental={experimental}
+                  badge={experimental ? 'Experimental' : ''}
                   onSelect={() => openEditor(mode)}
                 />
               ))}
@@ -120,17 +125,19 @@ export default function CellTypeMenu() {
           </>
         )}
 
-        {fetcher.data?.connections && (
+        {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
-            {fetcher.data.connections.map(({ name, type, uuid }) => (
+            {visibleConnections.map(({ name, type, uuid }, i) => (
               <CommandItemWrapper
                 key={uuid}
+                uuid={uuid}
                 name={name}
-                value={name + '--' + uuid}
+                value={`${name}__${i}`}
                 icon={<LanguageIcon language={type} />}
                 onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
               />
             ))}
+
             <CommandItemWrapper
               name="Add or manage…"
               icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
@@ -147,16 +154,16 @@ function CommandItemWrapper({
   disabled,
   icon,
   name,
+  badge,
   value,
-  experimental,
   onSelect,
   uuid,
 }: {
   disabled?: boolean;
   icon: React.ReactNode;
   name: string;
+  badge?: React.ReactNode;
   value?: string;
-  experimental?: boolean;
   onSelect: () => void;
   uuid?: string;
 }) {
@@ -174,9 +181,9 @@ function CommandItemWrapper({
       <div className="flex flex-col truncate">
         <span className="flex items-center">
           {name}{' '}
-          {experimental && (
-            <Badge variant="secondary" className="ml-2">
-              Experimental
+          {badge && (
+            <Badge variant="outline" className="ml-2">
+              {badge}
             </Badge>
           )}
         </span>

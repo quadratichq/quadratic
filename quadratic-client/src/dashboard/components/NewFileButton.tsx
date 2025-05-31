@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { getVisibleConnections } from '@/shared/utils/connections';
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -33,6 +34,8 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const navigate = useNavigate();
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const visibleConnections = getVisibleConnections(connections);
+  const moreConnectionsCount = visibleConnections.length - CONNECTIONS_DISPLAY_LIMIT;
 
   return (
     <div className="flex flex-row-reverse gap-2">
@@ -94,7 +97,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from connections</DropdownMenuLabel>
-            {connections.slice(0, CONNECTIONS_DISPLAY_LIMIT).map(({ uuid, name, type }) => {
+            {visibleConnections.slice(0, CONNECTIONS_DISPLAY_LIMIT).map(({ uuid, name, type }) => {
               const { label } = codeCellsById[type];
               const to = newNewFileFromStateConnection({
                 isPrivate,
@@ -117,14 +120,12 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
                 </DropdownMenuItem>
               );
             })}
-            {connections.length > CONNECTIONS_DISPLAY_LIMIT && (
+            {moreConnectionsCount > 0 && (
               <DropdownMenuItem onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))}>
                 <DatabaseIcon className="mr-3 text-muted-foreground" />
                 <span className="flex flex-col">
                   View all connections
-                  <span className="text-xs text-muted-foreground">
-                    {connections.length - CONNECTIONS_DISPLAY_LIMIT} more
-                  </span>
+                  <span className="text-xs text-muted-foreground">{moreConnectionsCount} more</span>
                 </span>
               </DropdownMenuItem>
             )}
