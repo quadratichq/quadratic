@@ -47,36 +47,38 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await page.locator(`button:text("Continue")`).click();
   await page.waitForTimeout(10 * 1000);
 
+  // Handle authorize screen
   const authorizeApp = page.locator(`button[name="action"]`).filter({ hasText: 'Accept' });
-  const quadraticLoading = page.locator('html[data-loading-start]');
+  while (await authorizeApp.isVisible()) {
+    await authorizeApp.click();
+    await page.waitForTimeout(10 * 1000);
+  }
 
-  // Handle both authorize screen and loading state in parallel
-  await Promise.all([
-    (async () => {
-      try {
-        await authorizeApp.waitFor({ state: 'visible', timeout: 5000 });
-        await authorizeApp.click();
-      } catch (error) {
-        // Authorize screen didn't appear, which is fine
-        void error;
-      }
-    })(),
-    (async () => {
-      while (await quadraticLoading.isVisible()) {
-        try {
-          await page.waitForLoadState('domcontentloaded');
-          await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-          await page.waitForTimeout(10 * 1000);
-        } catch (error) {
-          void error;
-        }
-      }
-    })(),
-  ]);
+  // Handle loading state
+  const quadraticLoading = page.locator('html[data-loading-start]');
+  while (await quadraticLoading.isVisible()) {
+    await page.waitForLoadState('domcontentloaded');
+    await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+    await page.waitForTimeout(10 * 1000);
+  }
+
+  // Handle onboarding
+  const onboarding = page.locator('h2:has-text("How will you use Quadratic?")');
+  while (await onboarding.isVisible()) {
+    await page.goto(buildUrl(options?.route ?? '/'), {
+      waitUntil: 'domcontentloaded',
+      timeout: 3 * 60 * 1000,
+    });
+
+    while (await quadraticLoading.isVisible()) {
+      await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+      await page.waitForTimeout(10 * 1000);
+    }
+  }
 
   // go to dashboard if in app
   const dashboardLink = page.locator('nav a[href="/"]');
-  while ((await dashboardLink.isVisible()) || (await quadraticLoading.isVisible())) {
+  while (await dashboardLink.isVisible()) {
     await dashboardLink.click();
     await page.waitForLoadState('domcontentloaded');
     await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
