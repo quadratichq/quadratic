@@ -8,6 +8,31 @@ import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/rout
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
 
+/**
+ * When adding a new first level route, make sure to add it to the cloudflare as well for both QA and Prod
+ * Cloudflare redirects the all the root and subroutes to the index.html file
+ *
+ * currently the cloudflare routes are:
+ *  - *.quadratichq.com/teams/*
+ *  - *.quadratichq.com/files/*
+ *  - *.quadratichq.com/file/*
+ *  - *.quadratichq.com/education/*
+ *  - *.quadratichq.com/api/*
+ *  - *.quadratichq.com/examples
+ *  - *.quadratichq.com/account
+ *  - *.quadratichq.com/login
+ *  - *.quadratichq.com/login-result*
+ *  - *.quadratichq.com/logout
+ *  - *.quadratichq.com/education
+ *  - *.quadratichq.com/onboarding
+ *
+ *  To add a new route:
+ *  1. go to the respective cloudflare account (QA / Prod)
+ *  2. go to the "Rules" tab
+ *  3. go to `Rewrite Path for Object Storage Bucket [Template]` rule
+ *  4. add the new route with a `OR` condition
+ **/
+
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -100,6 +125,8 @@ export const router = createBrowserRouter(
             </Route>
           </Route>
         </Route>
+
+        <Route path="onboarding" lazy={() => import('./routes/onboarding')} />
         <Route path="*" Component={Page404.Component} />
       </Route>
       <Route path={ROUTES.LOGIN} loader={Login.loader} Component={EmptyComponent} HydrateFallback={EmptyComponent} />
