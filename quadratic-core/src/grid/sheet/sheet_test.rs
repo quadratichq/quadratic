@@ -410,9 +410,9 @@ mod tests {
     #[test]
     fn test_set_code_run_empty() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_number(0, 0, "11");
+        sheet.test_set_code_run_number(1, 1, "11");
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from_str("11").unwrap()))
         );
     }

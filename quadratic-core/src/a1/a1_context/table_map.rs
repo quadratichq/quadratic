@@ -133,25 +133,6 @@ impl TableMap {
         })
     }
 
-    /// Returns the table name if the given position is in the table's name or column headers.
-    pub fn table_in_name_or_column(&self, sheet_id: SheetId, x: u32, y: u32) -> Option<String> {
-        self.tables.values().find_map(|table| {
-            if table.sheet_id == sheet_id
-                && table.bounds.contains(Pos {
-                    x: x as i64,
-                    y: y as i64,
-                })
-                && y < (table.bounds.min.y as u32)
-                    + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
-                        as u32
-            {
-                return Some(table.table_name.clone());
-            }
-
-            None
-        })
-    }
-
     pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
         if let Some(table) = self.try_table_mut(table_name) {
             if let Some(index) = table
@@ -387,72 +368,6 @@ mod tests {
         assert_eq!(table.col_name_from_index(0), Some("A".to_string()));
         assert_eq!(table.col_name_from_index(1), Some("B".to_string()));
         assert_eq!(table.col_name_from_index(2), Some("C".to_string()));
-    }
-
-    #[test]
-    fn test_table_in_name_or_column() {
-        let mut map = TableMap::default();
-
-        let sheet_id_1 = SheetId::new();
-        let sheet_id_2 = SheetId::new();
-
-        // Create a table with both name and columns shown
-        map.insert(TableMapEntry {
-            sheet_id: sheet_id_1,
-            table_name: "Test Table".to_string(),
-            visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            all_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            bounds: Rect::new(0, 0, 2, 3),
-            show_name: true,
-            show_columns: true,
-            is_html_image: false,
-            header_is_first_row: false,
-            language: CodeCellLanguage::Import,
-        });
-
-        // Test position in table name row (y=0)
-        assert_eq!(
-            map.table_in_name_or_column(sheet_id_1, 0, 0),
-            Some("Test Table".to_string())
-        );
-
-        // Test position in column headers row (y=1)
-        assert_eq!(
-            map.table_in_name_or_column(sheet_id_1, 0, 1),
-            Some("Test Table".to_string())
-        );
-
-        // Test position in data area (y=2)
-        assert_eq!(map.table_in_name_or_column(sheet_id_1, 0, 2), None);
-
-        // Test position outside table
-        assert_eq!(map.table_in_name_or_column(sheet_id_1, 5, 0), None);
-
-        // Test with different sheet_id
-        assert_eq!(map.table_in_name_or_column(sheet_id_2, 0, 0), None);
-
-        // Create a table with only columns shown (no name)
-        map.insert(TableMapEntry {
-            sheet_id: sheet_id_1,
-            table_name: "Table 2".to_string(),
-            visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            all_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            bounds: Rect::new(5, 5, 7, 8),
-            show_name: false,
-            show_columns: true,
-            is_html_image: false,
-            header_is_first_row: false,
-            language: CodeCellLanguage::Import,
-        });
-
-        // Test position in column headers row (y=5)
-        assert_eq!(
-            map.table_in_name_or_column(sheet_id_1, 5, 5),
-            Some("Table 2".to_string())
-        );
-
-        // Test position in data area (y=6)
-        assert_eq!(map.table_in_name_or_column(sheet_id_1, 5, 6), None);
     }
 
     #[test]

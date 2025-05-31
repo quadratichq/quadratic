@@ -15,7 +15,7 @@ import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
-import type { DataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import type { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point, Rectangle } from 'pixi.js';
@@ -36,7 +36,7 @@ export class Tables extends Container<Table> {
   // cache to speed up lookups
   private tablesCache: TablesCache;
 
-  private dataTablesCache?: DataTablesCache;
+  private dataTablesCache?: SheetDataTablesCache;
 
   private activeTables: Table[] = [];
 
@@ -506,7 +506,7 @@ export class Tables extends Container<Table> {
     }
   }
 
-  private updateDataTablesCache = (sheetId: string, dataTablesCache: DataTablesCache) => {
+  private updateDataTablesCache = (sheetId: string, dataTablesCache: SheetDataTablesCache) => {
     if (sheetId === this.sheet.id) {
       this.dataTablesCache = dataTablesCache;
       if (sheets.sheet.id === this.sheet.id) {

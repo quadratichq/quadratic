@@ -107,7 +107,7 @@ pub struct PendingTransaction {
     /// sheets w/updated info
     pub sheet_info: HashSet<SheetId>,
 
-    /// sheets that need updated DataTablesCache
+    /// sheets that need updated SheetDataTablesCache
     pub sheet_data_tables: HashSet<SheetId>,
 
     // offsets modified (sheet_id -> SheetOffsets)

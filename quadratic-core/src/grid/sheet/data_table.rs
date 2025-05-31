@@ -37,17 +37,17 @@ impl Sheet {
     }
 
     /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_that_contains(&self, pos: &Pos) -> Option<(Pos, &DataTable)> {
+    pub fn data_table_that_contains(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
         self.data_tables.get_contains(pos)
     }
 
     /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_mut_that_contains(&mut self, pos: &Pos) -> Option<(Pos, &mut DataTable)> {
+    pub fn data_table_mut_that_contains(&mut self, pos: Pos) -> Option<(Pos, &mut DataTable)> {
         self.data_tables.get_mut_contains(pos)
     }
 
     /// Returns the data table pos of the data table that contains a position
-    pub fn data_table_pos_that_contains(&self, pos: &Pos) -> Result<Pos> {
+    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
             Ok(data_table_pos)
         } else {
@@ -171,7 +171,7 @@ impl Sheet {
         exclude_x: Option<i64>,
         exclude_y: Option<i64>,
     ) -> bool {
-        self.data_table_that_contains(&Pos { x, y })
+        self.data_table_that_contains(Pos { x, y })
             .is_some_and(|(data_table_pos, data_table)| {
                 // we only care about html or image tables
                 if !data_table.is_html_or_image() {
@@ -640,7 +640,7 @@ mod test {
         let _ = code_data_table(sheet, pos![A1]);
 
         // Test position within the data table
-        let result = sheet.data_table_that_contains(&pos![A1]);
+        let result = sheet.data_table_that_contains(pos![A1]);
         assert!(result.is_some());
 
         let (pos, dt) = result.unwrap();
@@ -648,7 +648,7 @@ mod test {
         assert_eq!(dt.name().to_owned(), "Table 1");
 
         // Test position outside the data table
-        assert!(sheet.data_table_that_contains(&pos![D4]).is_none());
+        assert!(sheet.data_table_that_contains(pos![D4]).is_none());
     }
 
     #[test]

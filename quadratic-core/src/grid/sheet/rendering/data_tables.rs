@@ -9,7 +9,7 @@ impl Sheet {
 
         match serde_json::to_vec(self.data_tables.cache_ref()) {
             Ok(bytes) => {
-                crate::wasm_bindings::js::jsSendDataTablesCache(self.id_to_string(), bytes)
+                crate::wasm_bindings::js::jsSendDataTablesCache(self.id_to_string(), bytes);
             }
             Err(e) => {
                 dbgjs!(format!(

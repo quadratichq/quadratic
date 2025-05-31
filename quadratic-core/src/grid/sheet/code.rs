@@ -61,7 +61,7 @@ impl Sheet {
     // TODO(ddimaria): move to DataTable code
     /// Returns the DataTable that overlaps the Pos if it is an HTML or image chart.
     pub fn chart_at(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
-        let (data_table_pos, data_table) = self.data_table_that_contains(&pos)?;
+        let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
         if data_table.is_html_or_image() {
             Some((data_table_pos, data_table))
         } else {
@@ -71,7 +71,7 @@ impl Sheet {
 
     /// Returns the DataTable if the pos intersects with the table header.
     pub fn table_header_at(&self, pos: Pos) -> Option<(Pos, Rect)> {
-        let (data_table_pos, data_table) = self.data_table_that_contains(&pos)?;
+        let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
         let output_rect = data_table.output_rect(data_table_pos, false);
         if data_table.get_show_name() && pos.y == output_rect.min.y {
             Some((data_table_pos, output_rect))
@@ -85,7 +85,7 @@ impl Sheet {
     /// included.
     /// If ignore_readonly is true, it will ignore readonly tables.
     pub fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
-        self.data_table_that_contains(&pos)
+        self.data_table_that_contains(pos)
             .is_some_and(|(_, data_table)| !ignore_readonly || !data_table.is_code())
     }
 
@@ -93,7 +93,7 @@ impl Sheet {
     /// the DataTable's output_rect for the check to ensure that charts are
     /// included. Ignores Blanks.
     pub fn has_table_content_ignore_blanks(&self, pos: Pos) -> bool {
-        self.data_table_that_contains(&pos)
+        self.data_table_that_contains(pos)
             .is_some_and(|(code_cell_pos, data_table)| {
                 data_table
                         .cell_value_ref_at(
@@ -114,7 +114,7 @@ impl Sheet {
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let (data_table_pos, data_table) = self.data_table_that_contains(&pos)?;
+        let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
         data_table.cell_value_at(
             (pos.x - data_table_pos.x) as u32,
             (pos.y - data_table_pos.y) as u32,
@@ -151,7 +151,7 @@ impl Sheet {
     /// Returns true if the value was set.
     /// TODO(ddimaria): move to DataTable code
     pub fn set_code_cell_value(&mut self, pos: Pos, value: CellValue) -> bool {
-        self.data_table_mut_that_contains(&pos)
+        self.data_table_mut_that_contains(pos)
             .map(|(code_cell_pos, data_table)| {
                 let x = (pos.x - code_cell_pos.x) as u32;
                 let y = (pos.y - code_cell_pos.y) as u32;
@@ -162,7 +162,7 @@ impl Sheet {
 
     /// TODO(ddimaria): move to DataTable code
     pub fn set_code_cell_values(&mut self, pos: Pos, mut values: CellValues) {
-        if let Some((code_cell_pos, data_table)) = self.data_table_mut_that_contains(&pos) {
+        if let Some((code_cell_pos, data_table)) = self.data_table_mut_that_contains(pos) {
             let rect = Rect::from(&values);
             for y in rect.y_range() {
                 for x in rect.x_range() {
@@ -204,7 +204,7 @@ impl Sheet {
         let cell_value = if let Some(cell_value) = self.cell_value(pos) {
             Some(cell_value)
         } else {
-            match self.data_table_pos_that_contains(&pos) {
+            match self.data_table_pos_that_contains(pos) {
                 Ok(data_table_pos) => {
                     if let Some(code_value) = self.cell_value(data_table_pos) {
                         code_pos = data_table_pos;
