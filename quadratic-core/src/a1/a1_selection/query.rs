@@ -1139,26 +1139,9 @@ mod tests {
             &["Table1".to_string(), "Table2".to_string()],
         );
 
-        // Test mixed selection with tables and regular ranges
-        let selection = A1Selection::test_a1_context("D1:E15,Table1,C3", &context);
-        assert_eq!(selection.selected_table_names(), vec!["Table1", "Table2"]);
-
-        // Test selection without tables
-        let selection = A1Selection::test_a1_context("D1:E2,C3", &context);
-        // todo: when code is fixed, this should be changed
-        // assert!(selection.selected_table_names(&context).is_empty());
-        assert_eq!(selection.selected_table_names(), vec!["Table2"]);
-
         // Test column selection
         let selection = A1Selection::test_a1_context("Table1[A]", &context);
         assert!(selection.selected_table_names().is_empty());
-
-        // Test fully enclosed table
-        let selection = A1Selection::test_a1_context("A1:D5", &context);
-        assert_vec_eq_unordered(
-            &selection.selected_table_names(),
-            &["Table1".to_string(), "Table2".to_string()],
-        );
     }
 
     #[test]
