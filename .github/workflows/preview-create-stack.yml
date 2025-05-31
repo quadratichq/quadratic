@@ -1,4 +1,4 @@
-name: Preview
+name: Preview Create
 
 on:
   pull_request:
@@ -22,6 +22,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            infra/aws-cloudformation/quadratic-preview.yml
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -36,7 +44,7 @@ jobs:
           if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} 2>/dev/null; then
             STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text)
             echo "Current stack status: $STACK_STATUS"
-            
+
             echo "Stack exists. Attempting deletion..."
             if aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}; then
               echo "Waiting for stack deletion to complete..."

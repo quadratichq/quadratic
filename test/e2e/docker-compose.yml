@@ -1,0 +1,10 @@
+services:
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.52.0-noble
+    working_dir: /e2e
+    volumes:
+      - .:/e2e:rw
+    stdin_open: true
+    tty: true
+    environment:
+      - E2E_URL=${E2E_URL}
