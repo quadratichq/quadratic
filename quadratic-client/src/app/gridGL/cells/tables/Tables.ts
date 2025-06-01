@@ -223,7 +223,7 @@ export class Tables extends Container<Table> {
   };
 
   /// Returns the tables that are visible in the viewport.
-  private getVisibleTables(): Table[] {
+  private getVisibleTables = (): Table[] => {
     const bounds = pixiApp.viewport.getVisibleBounds();
     const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
     const tables = this.dataTablesCache?.getLargeTablesInRect(
@@ -241,16 +241,16 @@ export class Tables extends Container<Table> {
         return [];
       }) ?? []
     );
-  }
+  };
 
-  update(dirtyViewport: boolean) {
+  update = (dirtyViewport: boolean) => {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
       const visibleTables = this.getVisibleTables();
       visibleTables?.forEach((table) => table.update(bounds, gridHeading));
     }
-  }
+  };
 
   // Updates the active table when the cursor moves.
   private cursorPosition = () => {
@@ -277,26 +277,26 @@ export class Tables extends Container<Table> {
     pixiApp.setViewportDirty();
   };
 
-  isTable(x: number, y: number): boolean {
+  isTable = (x: number, y: number): boolean => {
     return !!this.getTable(x, y) || !!this.singleCellTables[`${x},${y}`];
-  }
+  };
 
-  isWithinCodeCell(x: number, y: number): boolean {
+  isWithinCodeCell = (x: number, y: number): boolean => {
     const table = this.getTableIntersects(x, y);
     if (!table) {
       return false;
     }
     return table.isCodeCell();
-  }
+  };
 
-  isActive(table: Table): boolean {
+  isActive = (table: Table): boolean => {
     return this.activeTables.includes(table) || pixiAppSettings.contextMenu?.table === table.codeCell;
-  }
+  };
 
   // Returns true if the pointer down as handled (eg, a column header was
   // clicked). Otherwise it handles TableName. We ignore the table name if the
   // table is not active to allow the user to select the row above the table.
-  pointerDown(world: Point): TablePointerDownResult | undefined {
+  pointerDown = (world: Point): TablePointerDownResult | undefined => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
     const table = this.getTable(cell.x, cell.y);
     if (!table) return;
@@ -309,7 +309,7 @@ export class Tables extends Container<Table> {
     if (table.pointerDownChart(world)) {
       return { type: 'chart', table: table.codeCell };
     }
-  }
+  };
 
   pointerMove = (world: Point): boolean => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
@@ -369,45 +369,45 @@ export class Tables extends Container<Table> {
   };
 
   /// Gets the code cell of a cell within a large table, or the single cell.
-  getCodeCell(x: number, y: number): JsRenderCodeCell | undefined {
+  getCodeCell = (x: number, y: number): JsRenderCodeCell | undefined => {
     const table = this.getTableIntersects(x, y);
     if (table) {
       return table.codeCell;
     }
     return this.singleCellTables[`${x},${y}`];
-  }
+  };
 
-  getTableNamePosition(x: number, y: number): Rectangle | undefined {
+  getTableNamePosition = (x: number, y: number): Rectangle | undefined => {
     const table = this.getTable(x, y);
     return table?.getTableNameBounds();
-  }
+  };
 
-  getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
+  getTableColumnHeaderPosition = (x: number, y: number, index: number): Rectangle | undefined => {
     const table = this.getTable(x, y);
     return table?.getColumnHeaderBounds(index);
-  }
+  };
 
   /// Returns the table that the cell intersects.
-  getTableIntersects(x: number, y: number): Table | undefined {
+  getTableIntersects = (x: number, y: number): Table | undefined => {
     if (this.dataTablesCache) {
       const tablePos = this.dataTablesCache.getTableInPos(x, y);
       if (tablePos) {
         return this.getTable(tablePos.x, tablePos.y);
       }
     }
-  }
+  };
 
-  getTableFromName(name: string): Table | undefined {
+  getTableFromName = (name: string): Table | undefined => {
     return this.tablesCache.getByName(name);
-  }
+  };
 
-  getSortDialogPosition(codeCell: JsRenderCodeCell): JsCoordinate | undefined {
+  getSortDialogPosition = (codeCell: JsRenderCodeCell): JsCoordinate | undefined => {
     const table = this.getTable(codeCell.x, codeCell.y);
     return table?.getSortDialogPosition();
-  }
+  };
 
   // Toggles the outlines of the table (used during thumbnail generation)
-  toggleOutlines() {
+  toggleOutlines = () => {
     if (this.saveToggleOutlines) {
       this.saveToggleOutlines = false;
       this.activeTables.forEach((table) => table.showActive());
@@ -426,9 +426,9 @@ export class Tables extends Container<Table> {
         table.header.toggleTableColumnSelection(true);
       });
     }
-  }
+  };
 
-  resizeTable(x: number, y: number, width: number, height: number) {
+  resizeTable = (x: number, y: number, width: number, height: number) => {
     const table = this.getTable(x, y);
     if (table) {
       table.resize(width, height);
@@ -436,7 +436,7 @@ export class Tables extends Container<Table> {
     } else {
       throw new Error(`Table ${x},${y} not found in Tables.ts`);
     }
-  }
+  };
 
   isHtmlOrImage = (sheetId: string, cell: JsCoordinate): boolean => {
     if (this.htmlOrImage.has(`${cell.x},${cell.y}`)) {
@@ -449,17 +449,17 @@ export class Tables extends Container<Table> {
   };
 
   // Returns Table if the cell is inside a table.
-  getInTable(cell: JsCoordinate): Table | undefined {
+  getInTable = (cell: JsCoordinate): Table | undefined => {
     if (!this.dataTablesCache) return;
     const table = this.dataTablesCache.getTableInPos(cell.x, cell.y);
     if (table) {
       return this.getTable(table.x, table.y);
     }
-  }
+  };
 
-  getColumnHeaderCell(
+  getColumnHeaderCell = (
     cell: JsCoordinate
-  ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
+  ): { table: Table; x: number; y: number; width: number; height: number } | undefined => {
     const table = this.getInTable(cell);
     if (!table) return;
     if (table.codeCell.show_columns && table.inOverHeadings) {
@@ -483,10 +483,10 @@ export class Tables extends Container<Table> {
         }
       }
     }
-  }
+  };
 
   // Returns true if the cell is a table name cell
-  isInTableHeader(cell: JsCoordinate): boolean {
+  isInTableHeader = (cell: JsCoordinate): boolean => {
     const table = this.getInTable(cell);
     if (!table) return false;
     return (
@@ -495,9 +495,9 @@ export class Tables extends Container<Table> {
       cell.x < table.codeCell.x + table.codeCell.w &&
       cell.y === table.codeCell.y
     );
-  }
+  };
 
-  intersectsCodeInfo(world: Point): JsRenderCodeCell | undefined {
+  intersectsCodeInfo = (world: Point): JsRenderCodeCell | undefined => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
     const table = this.getInTable(cell);
     if (!table) return;
@@ -506,7 +506,7 @@ export class Tables extends Container<Table> {
         return table.codeCell;
       }
     }
-  }
+  };
 
   private updateDataTablesCache = (sheetId: string, dataTablesCache: SheetDataTablesCache) => {
     if (sheetId === this.sheet.id) {
@@ -518,7 +518,7 @@ export class Tables extends Container<Table> {
   };
 
   /// Returns the table name if the cell is in the table header.
-  getTableNameInNameOrColumn(x: number, y: number): string | undefined {
+  getTableNameInNameOrColumn = (x: number, y: number): string | undefined => {
     const table = this.getTable(x, y);
     if (table) {
       if (
@@ -529,7 +529,7 @@ export class Tables extends Container<Table> {
       }
       return;
     }
-  }
+  };
 
   // Returns the single cell tables that are in the given cell-based rectangle.
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
@@ -552,7 +552,7 @@ export class Tables extends Container<Table> {
     });
   };
 
-  getLargeTablesInRect(rect: Rectangle): Table[] {
+  getLargeTablesInRect = (rect: Rectangle): Table[] => {
     if (!this.dataTablesCache) return [];
     const tablePositions = this.dataTablesCache.getLargeTablesInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
     return tablePositions.flatMap((pos) => {
@@ -563,5 +563,5 @@ export class Tables extends Container<Table> {
         return [];
       }
     });
-  }
+  };
 }
