@@ -11,7 +11,6 @@ export const tableInfoAtom = atom({
   effects: [
     ({ setSelf }) => {
       const sync = () => {
-        console.time('syncing table info');
         let tableInfo: JsTableInfo[] = [];
         try {
           tableInfo = sheets.getTableInfo();
@@ -20,7 +19,6 @@ export const tableInfoAtom = atom({
         }
         tableInfo.sort((a, b) => a.name.localeCompare(b.name));
         setSelf(tableInfo);
-        console.timeEnd('syncing table info');
       };
 
       sync();

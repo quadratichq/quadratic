@@ -47,9 +47,11 @@ const setCodeCellResult = async (
   y: number,
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
-  const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableIntersects(x, y);
-  const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
-  if (!table || !codeCell) {
+  const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects(x, y);
+  const codeCell = tableCodeCell
+    ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
+    : undefined;
+  if (!tableCodeCell || !codeCell) {
     return [
       {
         type: 'text',
@@ -99,14 +101,14 @@ The code cell has spilled, because the output overlaps with existing data on the
 \`\`\`json\n
 ${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
 \`\`\`
-Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.
+Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.
 Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet.
 `,
       },
     ];
   }
 
-  if (table.codeCell.is_html) {
+  if (tableCodeCell.is_html) {
     const htmlCell = htmlCellsHandler.findCodeCell(sheetId, x, y);
     const dataUrl = (await htmlCell?.getImageDataUrl()) ?? '';
     if (dataUrl) {
@@ -117,7 +119,7 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
             type: 'data',
             data,
             mimeType,
-            fileName: table.codeCell.name,
+            fileName: tableCodeCell.name,
           },
           {
             type: 'text',
@@ -126,7 +128,7 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
         ];
       }
     }
-  } else if (table.codeCell.is_html_image) {
+  } else if (tableCodeCell.is_html_image) {
     const image = pixiApp.cellsSheets.getById(sheetId)?.cellsImages.findCodeCell(x, y);
     if (image?.dataUrl) {
       const { mimeType, data } = dataUrlToMimeTypeAndData(image.dataUrl);
@@ -136,7 +138,7 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
             type: 'data',
             data,
             mimeType,
-            fileName: table.codeCell.name,
+            fileName: tableCodeCell.name,
           },
           {
             type: 'text',
@@ -153,9 +155,9 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
       text: `
 Executed set code cell value tool successfully.
 ${
-  table.isSingleValue()
+  tableCodeCell.w === 1 && tableCodeCell.h === 1
     ? `Output is ${codeCell.evaluation_result}`
-    : `Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.`
+    : `Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`
 }
 `,
     },
@@ -266,10 +268,10 @@ export const aiToolsActions: AIToolActionsRecord = {
         await waitForSetCodeCellValue(transactionId);
 
         // After execution, adjust viewport to show full output if it exists
-        const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableIntersects(x, y);
-        if (table) {
-          const width = table.codeCell.w;
-          const height = table.codeCell.h;
+        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects(x, y);
+        if (tableCodeCell) {
+          const width = tableCodeCell.w;
+          const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
         }
 

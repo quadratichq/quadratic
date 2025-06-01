@@ -187,12 +187,13 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
-        const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
-        if (table) {
+        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+        if (codeCell) {
           doubleClickCell({
-            column: x,
-            row: y,
+            column: codeCell.x,
+            row: codeCell.y,
             cell: '',
+            cursorMode: CursorMode.Edit,
           });
         } else {
           quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
@@ -214,11 +215,11 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
-        const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
-        if (table) {
+        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+        if (codeCell) {
           doubleClickCell({
-            column: x,
-            row: y,
+            column: codeCell.x,
+            row: codeCell.y,
             cell: '',
             cursorMode: CursorMode.Edit,
           });

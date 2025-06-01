@@ -75,9 +75,15 @@ export class PointerDown {
       if (!cursor.contains(column, row)) {
         cursor.moveTo(column, row);
       }
-      const codeCell = pixiApp.cellsSheet().tables.getCodeCell(column, row);
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(column, row);
       if (codeCell) {
-        events.emit('contextMenu', { type: ContextMenuType.Table, world, column, row, table: codeCell });
+        events.emit('contextMenu', {
+          type: ContextMenuType.Table,
+          world,
+          column: codeCell.x,
+          row: codeCell.y,
+          table: codeCell,
+        });
         return;
       }
       return;
@@ -99,9 +105,9 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        const table = pixiApp.cellsSheet().tables.getTableIntersects(column, row);
-        if (table) {
-          doubleClickCell({ column, row });
+        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(column, row);
+        if (codeCell) {
+          doubleClickCell({ column: codeCell.x, row: codeCell.y });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.current, column, row);
           doubleClickCell({ column, row, cell, cursorMode: cell ? CursorMode.Edit : CursorMode.Enter });

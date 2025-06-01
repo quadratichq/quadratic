@@ -168,7 +168,6 @@ impl TableMap {
 
     /// Returns JsTableInfo for all non-formula tables.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
-        dbgjs!(self.non_formula_code.len());
         self.non_formula_code
             .iter()
             .map(|table_name| {
