@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
-use rstar::{AABB, Point, RTree, RTreeObject, primitives::GeomWithData};
+use rstar::{RTree, RTreeObject, primitives::GeomWithData};
 use serde::{Deserialize, Serialize};
 
 use crate::{Pos, Rect, SheetPos};
@@ -147,32 +147,6 @@ impl RegionMap {
     }
 }
 
-impl RTreeObject for Rect {
-    type Envelope = AABB<Pos>;
-
-    fn envelope(&self) -> Self::Envelope {
-        AABB::from_corners(self.min, self.max)
-    }
-}
-
-impl Point for Pos {
-    type Scalar = i64;
-
-    const DIMENSIONS: usize = 2;
-
-    fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
-        Pos::new(generator(0), generator(1))
-    }
-
-    fn nth(&self, index: usize) -> Self::Scalar {
-        [self.x, self.y][index]
-    }
-
-    fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
-        [&mut self.x, &mut self.y][index]
-    }
-}
-
 impl Serialize for RegionMap {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -203,6 +177,54 @@ impl<'de> Deserialize<'de> for RegionMap {
             result.insert(pos, region);
         }
         Ok(result)
+    }
+}
+
+impl PartialEq for RegionMap {
+    fn eq(&self, other: &Self) -> bool {
+        let region_to_pos_self: HashSet<(SheetPos, (SheetId, Rect))> = self
+            .region_to_pos
+            .iter()
+            .flat_map(|(sheet_id, rtree)| {
+                rtree.iter().map(|obj| (obj.data, (*sheet_id, *obj.geom())))
+            })
+            .collect();
+
+        let region_to_pos_other: HashSet<(SheetPos, (SheetId, Rect))> = other
+            .region_to_pos
+            .iter()
+            .flat_map(|(sheet_id, rtree)| {
+                rtree.iter().map(|obj| (obj.data, (*sheet_id, *obj.geom())))
+            })
+            .collect();
+
+        let pos_to_region_self: HashSet<(SheetPos, (SheetId, Rect))> = self
+            .pos_to_region
+            .iter()
+            .flat_map(|(sheet_id, map)| {
+                map.iter().flat_map(|(pos, regions)| {
+                    regions
+                        .iter()
+                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                })
+            })
+            .collect();
+
+        let pos_to_region_other: HashSet<(SheetPos, (SheetId, Rect))> = other
+            .pos_to_region
+            .iter()
+            .flat_map(|(sheet_id, map)| {
+                map.iter().flat_map(|(pos, regions)| {
+                    regions
+                        .iter()
+                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                })
+            })
+            .collect();
+
+        region_to_pos_self == region_to_pos_other
+            && region_to_pos_self == pos_to_region_self
+            && region_to_pos_self == pos_to_region_other
     }
 }
 

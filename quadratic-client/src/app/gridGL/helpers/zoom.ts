@@ -38,7 +38,7 @@ function clampZoom(center: Point, scale: number) {
 export function zoomToFit() {
   const gridBounds = sheets.sheet.getBounds(false);
   if (gridBounds) {
-    const screenRectangle = sheets.sheet.getScreenRectangleFromRect(gridBounds);
+    const screenRectangle = sheets.sheet.getScreenRectangleFromRectangle(gridBounds);
     const { screenWidth, screenHeight } = pixiApp.viewport;
     const headingSize = pixiApp.headings.headingSize;
 
@@ -86,7 +86,7 @@ export function zoomTo100() {
 export function zoomToSelection(): void {
   const sheet = sheets.sheet;
   const rectangle = sheet.cursor.getLargestRectangle();
-  const screenRectangle = sheet.getScreenRectangleFromRect(rectangle);
+  const screenRectangle = sheet.getScreenRectangleFromRectangle(rectangle);
   const headingSize = pixiApp.headings.headingSize;
 
   // calc scale, and leave a little room on the top and sides

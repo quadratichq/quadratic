@@ -65,8 +65,10 @@ impl DataTable {
 
         // formats and borders are 1 indexed
         self.formats
+            .get_or_insert_default()
             .insert_column(column_index as i64 + 1, CopyFormats::None);
         self.borders
+            .get_or_insert_default()
             .insert_column(column_index as i64 + 1, CopyFormats::None);
 
         if let Some(headers) = &mut self.column_headers {
@@ -126,8 +128,12 @@ impl DataTable {
         array.delete_column(column_index)?;
 
         // formats and borders are 1 indexed
-        self.formats.remove_column(column_index as i64 + 1);
-        self.borders.remove_column(column_index as i64 + 1);
+        if let Some(formats) = self.formats.as_mut() {
+            formats.remove_column(column_index as i64 + 1);
+        }
+        if let Some(borders) = self.borders.as_mut() {
+            borders.remove_column(column_index as i64 + 1);
+        }
 
         // remove the header and update the value_index
         if let Some(headers) = &mut self.column_headers {
