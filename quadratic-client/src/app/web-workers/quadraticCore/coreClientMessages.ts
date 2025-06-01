@@ -755,12 +755,6 @@ export interface CoreClientTransactionStart {
   transactionName: TransactionName;
 }
 
-export interface CoreClientTransactionProgress {
-  type: 'coreClientTransactionProgress';
-  transactionId: string;
-  remainingOperations: number;
-}
-
 export interface CoreClientTransactionEnd {
   type: 'coreClientTransactionEnd';
   transactionId: string;
@@ -1367,7 +1361,6 @@ export type CoreClientMessage =
   | CoreClientSheetBoundsUpdate
   | CoreClientImportProgress
   | CoreClientTransactionStart
-  | CoreClientTransactionProgress
   | CoreClientTransactionEnd
   | CoreClientUpdateCodeCells
   | CoreClientMultiplayerState

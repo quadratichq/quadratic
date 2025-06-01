@@ -70,6 +70,9 @@ impl GridController {
                         grid.send_all_fills(*sheet_id);
 
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
+                            // sends SheetDataTablesCache to the client
+                            sheet.send_data_tables_cache();
+
                             // sends all code cells to the client
                             sheet.send_all_render_code_cells();
 
@@ -84,9 +87,6 @@ impl GridController {
 
                             // sends all borders to the client
                             sheet.send_sheet_borders();
-
-                            // sends SheetDataTablesCache to the client
-                            sheet.send_data_tables_cache();
                         }
                     });
 

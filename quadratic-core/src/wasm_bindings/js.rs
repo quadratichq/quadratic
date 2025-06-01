@@ -77,7 +77,6 @@ extern "C" {
         h: u32,
     );
     pub fn jsTransactionStart(transaction_id: String, name: String);
-    pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
     pub fn jsTransactionEnd(transaction_id: String, name: String);
 
     pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
@@ -420,15 +419,6 @@ pub fn jsTransactionStart(transaction_id: String, name: String) {
     js_call(
         "jsTransactionStart",
         format!("{},{}", transaction_id, name,),
-    );
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32) {
-    js_call(
-        "jsTransactionProgress",
-        format!("{},{}", transaction_id, remaining_operations),
     );
 }
 
