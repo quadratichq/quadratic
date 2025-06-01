@@ -22,7 +22,7 @@ export function CodeEditorHeaderLabel() {
     const updateCellRef = () => {
       if (!codeCellState.sheetId) return;
       const selection = newSingleSelection(codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
-      const cellRef = selection.toA1String(sheets.current);
+      const cellRef = selection.toA1String(sheets.current, sheets.jsA1Context);
       setCellRef(cellRef);
     };
 
@@ -31,7 +31,8 @@ export function CodeEditorHeaderLabel() {
       const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
         codeCellState.sheetId,
         codeCellState.pos.x,
-        codeCellState.pos.y
+        codeCellState.pos.y,
+        sheets.jsA1Context
       );
       setTableName(tableName);
     };
@@ -51,7 +52,7 @@ export function CodeEditorHeaderLabel() {
 
   const focusCellRef = useCallback(() => {
     if (!cellRef) return;
-    const selection = sheets.sheet.cursor.jsSelection.stringToSelection(cellRef, sheets.current);
+    const selection = sheets.stringToSelection(cellRef, sheets.current);
     sheets.changeSelection(selection);
   }, [cellRef]);
 
@@ -88,7 +89,7 @@ export function CodeEditorHeaderLabel() {
             codeCellState.sheetId,
             codeCellState.pos.x,
             codeCellState.pos.y,
-            sheets.a1Context
+            sheets.jsA1Context
           );
         } catch (error) {
           isValid = false;

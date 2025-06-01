@@ -261,7 +261,8 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
       const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
         codeCell.sheetId,
         codeCell.pos.x,
-        codeCell.pos.y
+        codeCell.pos.y,
+        sheets.jsA1Context
       );
       setTableName(tableName);
     };

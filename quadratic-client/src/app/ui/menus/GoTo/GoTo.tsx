@@ -27,7 +27,7 @@ export const GoTo = memo(() => {
   const tableNameToRange = useCallback((tableName: string): string => {
     let range = '';
     try {
-      range = sheets.sheet.cursor.jsSelection.convertTableToRange(tableName, sheets.current);
+      range = sheets.convertTableToRange(tableName, sheets.current);
     } catch (e) {
       console.error('Error getting table name range in GoTo.tsx', e);
     }
@@ -43,10 +43,10 @@ export const GoTo = memo(() => {
       );
     }
     try {
-      const selection = sheets.sheet.cursor.jsSelection.stringToSelection(value, sheets.current);
+      const selection = sheets.stringToSelection(value, sheets.current);
       return (
         <span>
-          <span className="font-bold">{selection.toA1String(sheets.current)}</span>
+          <span className="font-bold">{selection.toA1String(sheets.current, sheets.jsA1Context)}</span>
         </span>
       );
     } catch (e: any) {
@@ -79,7 +79,7 @@ export const GoTo = memo(() => {
       pixiApp.viewport.reset();
     } else {
       try {
-        const selection = sheets.sheet.cursor.jsSelection.stringToSelection(value, sheets.current);
+        const selection = sheets.stringToSelection(value, sheets.current);
         sheets.changeSelection(selection);
       } catch (_) {
         // nothing to do if we can't parse the input
@@ -90,7 +90,7 @@ export const GoTo = memo(() => {
 
   const selectTable = useCallback(
     (tableName: string) => {
-      const selection = sheets.sheet.cursor.jsSelection.stringToSelection(tableName, sheets.current);
+      const selection = sheets.stringToSelection(tableName, sheets.current);
       sheets.changeSelection(selection);
       closeMenu();
     },

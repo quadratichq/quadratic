@@ -14,7 +14,7 @@ export const tableInfoAtom = atom({
         console.time('syncing table info');
         let tableInfo: JsTableInfo[] = [];
         try {
-          tableInfo = sheets.sheet.cursor.jsSelection.getTableInfo();
+          tableInfo = sheets.getTableInfo();
         } catch (e) {
           console.error('Error getting table info in tableInfoAtom.ts', e);
         }

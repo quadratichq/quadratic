@@ -11,7 +11,9 @@ export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const visibleRect = sheets.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
-    const visibleA1String = sheets.A1SelectionStringToSelection(visibleRectSelection).toA1String(sheets.current);
+    const visibleA1String = sheets
+      .A1SelectionStringToSelection(visibleRectSelection)
+      .toA1String(sheets.current, sheets.jsA1Context);
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
     const isVisibleEmpty = sheetBounds.type === 'empty' || !intersects.rectRect(sheetBounds, visibleRect);

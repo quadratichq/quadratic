@@ -2,8 +2,26 @@ import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { A1Selection, CellRefRange, JsOffset, Rect, RefRangeBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type {
+  A1Selection,
+  CellRefRange,
+  JsOffset,
+  JsTableInfo,
+  Rect,
+  RefRangeBounds,
+  SheetInfo,
+} from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
+import {
+  A1SelectionStringToSelection,
+  A1SelectionToJsSelection,
+  cellRefRangeToRefRangeBounds,
+  convertTableToRange,
+  getTableInfo,
+  JsA1Context,
+  selectionToSheetRect,
+  stringToSelection,
+} from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -16,8 +34,7 @@ export class Sheets {
   // current sheet id
   private _current: string;
 
-  // Stores stringified TableMap for use by A1 functions
-  a1Context: Uint8Array;
+  jsA1Context!: JsA1Context;
 
   // set up sheet information
   // ------------------------
@@ -25,7 +42,6 @@ export class Sheets {
   constructor() {
     this.sheets = [];
     this._current = '';
-    this.a1Context = new Uint8Array();
     events.on('sheetsInfo', this.create);
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
@@ -37,10 +53,11 @@ export class Sheets {
   }
 
   private updateA1Context = (context: Uint8Array) => {
-    this.a1Context = context;
+    this.jsA1Context = new JsA1Context(context);
   };
 
   private create = (sheetsInfo: SheetInfo[]) => {
+    this.jsA1Context = this.jsA1Context ?? JsA1Context.newEmpty();
     this.sheets = [];
     sheetsInfo.forEach((info) => {
       const sheet = new Sheet(this, info);
@@ -338,7 +355,7 @@ export class Sheets {
   }
 
   getA1String = (sheetId = this.current): string => {
-    return this.sheet.cursor.jsSelection.toA1String(sheetId);
+    return this.sheet.cursor.jsSelection.toA1String(sheetId, this.jsA1Context);
   };
 
   // Changes the cursor to the incoming selection
@@ -392,22 +409,34 @@ export class Sheets {
   };
 
   stringToSelection = (a1: string, sheetId: string): JsSelection => {
-    return this.sheet.cursor.jsSelection.stringToSelection(a1, sheetId);
+    if (!this.jsA1Context) {
+      throw new Error('JsA1Context is not initialized');
+    }
+    return stringToSelection(a1, sheetId, this.jsA1Context);
   };
 
   A1SelectionStringToSelection = (a1: string): JsSelection => {
-    return this.sheet.cursor.jsSelection.A1SelectionStringToSelection(a1);
+    return A1SelectionStringToSelection(a1);
   };
 
   A1SelectionToJsSelection = (a1: A1Selection): JsSelection => {
-    return this.sheet.cursor.jsSelection.A1SelectionToJsSelection(a1);
+    return A1SelectionToJsSelection(a1);
   };
 
   cellRefRangeToRefRangeBounds = (cellRefRange: CellRefRange, isPython: boolean): RefRangeBounds => {
-    return this.sheet.cursor.jsSelection.cellRefRangeToRefRangeBounds(
-      JSON.stringify(cellRefRange, bigIntReplacer),
-      isPython
-    );
+    return cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange, bigIntReplacer), isPython, this.jsA1Context);
+  };
+
+  selectionToSheetRect = (sheetId: string, selection: string): string => {
+    return selectionToSheetRect(sheetId, selection, this.jsA1Context);
+  };
+
+  getTableInfo = (): JsTableInfo[] => {
+    return getTableInfo(this.jsA1Context);
+  };
+
+  convertTableToRange = (tableName: string, currentSheetId: string): string => {
+    return convertTableToRange(tableName, currentSheetId, this.jsA1Context);
   };
 }
 

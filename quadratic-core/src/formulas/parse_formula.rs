@@ -72,7 +72,7 @@ impl From<Spanned<SheetCellRefRange>> for JsCellRefSpan {
 /// `parse_error_span`, `parse_error_msg` may still be present.
 pub fn parse_formula_results(
     formula_string: &str,
-    ctx: A1Context,
+    ctx: &A1Context,
     sheet_id: SheetId,
     x: i32,
     y: i32,
@@ -145,7 +145,7 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B10"))]);
         let sheet_id = SheetId::TEST;
 
-        let result = parse_formula_results("Table1", context, sheet_id, 1, 1);
+        let result = parse_formula_results("Table1", &context, sheet_id, 1, 1);
 
         println!("{:?}", result);
 

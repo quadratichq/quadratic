@@ -189,7 +189,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
       const selection = sheets.stringToSelection(top_left_position, sheetId);
-      if (!selection.isSingleSelection()) {
+      if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
@@ -220,7 +220,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
       const selection = sheets.stringToSelection(top_left_position, sheetId);
-      if (!selection.isSingleSelection()) {
+      if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
@@ -243,7 +243,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
-      if (!selection.isSingleSelection()) {
+      if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
@@ -287,7 +287,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
       const sourceSelection = sheets.stringToSelection(source_selection_rect, sheetId);
-      const sourceRect = sourceSelection.getSingleRectangleOrCursor();
+      const sourceRect = sourceSelection.getSingleRectangleOrCursor(sheets.jsA1Context);
       if (!sourceRect) {
         return [{ type: 'text', text: 'Invalid source selection, this should be a single rectangle, not a range' }];
       }
@@ -306,7 +306,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       };
 
       const targetSelection = sheets.stringToSelection(target_top_left_position, sheetId);
-      if (!targetSelection.isSingleSelection()) {
+      if (!targetSelection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = targetSelection.getCursor();
@@ -525,7 +525,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const sheet = sheets.getSheetByName(args.sheet_name) ?? sheets.sheet;
       const sheetId = sheet.id;
-      const sheetRect = sheet.cursor.jsSelection.selectionToSheetRect(sheetId, args.selection);
+      const sheetRect = sheets.selectionToSheetRect(sheetId, args.selection);
       if (sheetRect) {
         const response = await quadraticCore.gridToDataTable(
           sheetRect,
