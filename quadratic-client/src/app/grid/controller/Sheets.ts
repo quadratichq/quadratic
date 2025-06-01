@@ -34,7 +34,7 @@ export class Sheets {
   // current sheet id
   private _current: string;
 
-  jsA1Context!: JsA1Context;
+  private _jsA1Context?: JsA1Context;
 
   // set up sheet information
   // ------------------------
@@ -52,12 +52,17 @@ export class Sheets {
     this.initialized = false;
   }
 
+  get jsA1Context() {
+    return this._jsA1Context ?? JsA1Context.newEmpty();
+  }
+
   private updateA1Context = (context: Uint8Array) => {
-    this.jsA1Context = new JsA1Context(context);
+    this._jsA1Context = new JsA1Context(context);
+    events.emit('a1ContextUpdated');
   };
 
   private create = (sheetsInfo: SheetInfo[]) => {
-    this.jsA1Context = this.jsA1Context ?? JsA1Context.newEmpty();
+    this._jsA1Context = this.jsA1Context;
     this.sheets = [];
     sheetsInfo.forEach((info) => {
       const sheet = new Sheet(this, info);

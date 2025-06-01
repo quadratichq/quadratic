@@ -269,9 +269,9 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
 
     updateTableName();
 
-    events.on('a1Context', updateTableName);
+    events.on('a1ContextUpdated', updateTableName);
     return () => {
-      events.off('a1Context', updateTableName);
+      events.off('a1ContextUpdated', updateTableName);
     };
   }, [codeCell?.pos.x, codeCell?.pos.y, codeCell?.sheetId]);
 

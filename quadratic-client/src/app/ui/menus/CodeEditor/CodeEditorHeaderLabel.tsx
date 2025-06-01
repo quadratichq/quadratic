@@ -42,11 +42,11 @@ export function CodeEditorHeaderLabel() {
 
     events.on('changeSheet', updateCellRef);
     events.on('sheetInfoUpdate', updateCellRef);
-    events.on('a1Context', updateTableName);
+    events.on('a1ContextUpdated', updateTableName);
     return () => {
       events.off('changeSheet', updateCellRef);
       events.off('sheetInfoUpdate', updateCellRef);
-      events.off('a1Context', updateTableName);
+      events.off('a1ContextUpdated', updateTableName);
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 

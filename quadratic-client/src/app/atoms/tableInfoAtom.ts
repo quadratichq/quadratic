@@ -22,8 +22,8 @@ export const tableInfoAtom = atom({
       };
 
       sync();
-      events.on('a1ContextUpdated', sync);
 
+      events.on('a1ContextUpdated', sync);
       return () => {
         events.off('a1ContextUpdated', sync);
       };
