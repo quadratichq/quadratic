@@ -534,28 +534,6 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         values
     }
 
-    /// Returns the positions of any non-default values in the given rectangle.
-    pub fn rect_non_default_pos(&self, rect: Rect) -> Vec<Pos> {
-        let mut values = vec![];
-        for x in rect.x_range() {
-            let Some(x) = convert_coord(x) else { continue };
-            let Some(column) = self.0.get(x) else {
-                continue;
-            };
-            for y in rect.y_range() {
-                let Some(y) = convert_coord(y) else { continue };
-                if column.get(y).is_none_or(|v| *v == T::default()) {
-                    continue;
-                }
-                values.push(Pos {
-                    x: x as i64,
-                    y: y as i64,
-                });
-            }
-        }
-        values
-    }
-
     /// Returns whether any of the non-default values in `self` intersects
     /// `rect`.
     pub fn intersects(&self, rect: Rect) -> bool {
@@ -1253,41 +1231,5 @@ mod tests {
             ]),
             c.nondefault_rects_in_rect(r).collect()
         );
-    }
-
-    #[test]
-    fn test_rect_pos() {
-        let mut c = Contiguous2D::<Option<bool>>::new();
-
-        // Test empty grid
-        assert_eq!(c.rect_non_default_pos(Rect::new(1, 1, 10, 10)), vec![]);
-
-        // Test single cell
-        c.set(pos![10, 10], Some(true));
-        let positions = c.rect_non_default_pos(Rect::new(1, 1, 10, 10));
-        assert_eq!(positions, vec![pos![10, 10]]);
-
-        // ensure that we don't get values outside the rect
-        let positions = c.rect_non_default_pos(Rect::new(1, 1, 5, 5));
-        assert_eq!(positions, vec![]);
-        let position = c.rect_non_default_pos(Rect::new(20, 20, 30, 30));
-        assert_eq!(position, vec![]);
-
-        // Test multiple cells
-        let mut c = Contiguous2D::<Option<bool>>::new();
-        c.set(pos![1, 1], Some(true));
-        c.set(pos![3, 3], Some(true));
-        c.set_rect(5, 6, Some(5), Some(7), Some(true));
-        let positions = c.rect_non_default_pos(Rect::new(1, 1, 10, 10));
-        assert_eq!(
-            positions,
-            vec![pos![1, 1], pos![3, 3], pos![5, 6], pos![5, 7]]
-        );
-
-        // // Test with default values (should be ignored)
-        // c.set(pos![B1], None);
-        // let mut positions = c.rect_non_default_pos(r);
-        // positions.sort_by_key(|p| (p.x, p.y));
-        // assert_eq!(positions, vec![pos![A1], pos![B2], pos![C3]]);
     }
 }

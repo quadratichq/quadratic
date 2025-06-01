@@ -31,7 +31,12 @@ impl SheetDataTablesCache {
     #[wasm_bindgen(js_name = "getSingleCellTablesInRect")]
     pub fn single_cell_tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
         self.single_cell_tables
-            .rect_non_default_pos(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
+            .nondefault_rects_in_rect(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+            .collect::<Vec<_>>()
     }
 
     /// Returns all tables that are not single cells in the given rectangle.
