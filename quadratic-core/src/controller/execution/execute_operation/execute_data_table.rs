@@ -1599,16 +1599,29 @@ impl GridController {
                 return Ok(());
             }
 
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_result(sheet_id)?;
+            let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
+            let data_table = sheet.data_table_result(&data_table_pos)?;
+
+            // check if the rows to delete are part of the data table's UI, bail if so
+            // we need rows relative to the data table, not the sheet, hence (0, 0)
+            let ui_rows = data_table.ui_rows((0, 0).into());
+            if !ui_rows.is_empty() && rows.iter().any(|row| ui_rows.contains(&(*row as i64))) {
+                let e = "delete_rows_error".to_string();
+                if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
+                    let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
+                    crate::wasm_bindings::js::jsClientMessage(e.to_owned(), severity.to_string());
+                }
+                bail!(e);
+            }
+
             rows.sort_by(|a, b| b.cmp(a));
             let min_display_row = rows.first().map_or(0, |row| row.to_owned());
 
             let mut reverse_rows = vec![];
             let mut reverse_operations: Vec<Operation> = vec![];
 
-            let sheet_id = sheet_pos.sheet_id;
-            let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
-            let data_table = sheet.data_table_result(&data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
