@@ -2,12 +2,7 @@ import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionUuid } from '@/app/helpers/codeCellLanguage';
-import {
-  getTableNameFromPos,
-  newSingleSelection,
-  stringToSelection,
-  validateTableName,
-} from '@/app/quadratic-core/quadratic_core';
+import { newSingleSelection, validateTableName } from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -31,14 +26,18 @@ export function CodeEditorHeaderLabel() {
       setCellRef(cellRef);
     };
 
-    const updateTableName = (a1Context: Uint8Array) => {
+    const updateTableName = () => {
       if (!codeCellState.sheetId) return;
-      const tableName = getTableNameFromPos(a1Context, codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
+      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
+        codeCellState.sheetId,
+        codeCellState.pos.x,
+        codeCellState.pos.y
+      );
       setTableName(tableName);
     };
 
     updateCellRef();
-    updateTableName(sheets.a1Context);
+    updateTableName();
 
     events.on('changeSheet', updateCellRef);
     events.on('sheetInfoUpdate', updateCellRef);
@@ -52,7 +51,7 @@ export function CodeEditorHeaderLabel() {
 
   const focusCellRef = useCallback(() => {
     if (!cellRef) return;
-    const selection = stringToSelection(cellRef, sheets.current, sheets.a1Context);
+    const selection = sheets.sheet.cursor.jsSelection.stringToSelection(cellRef, sheets.current);
     sheets.changeSelection(selection);
   }, [cellRef]);
 

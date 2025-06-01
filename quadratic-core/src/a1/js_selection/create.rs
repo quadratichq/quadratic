@@ -26,7 +26,7 @@ impl JsSelection {
             dbgjs!("Unable to parse sheet_id in JsSelection::new");
             return JsSelection::default();
         };
-        let Ok(context) = serde_json::from_slice::<A1Context>(context) else {
+        let Ok(context) = A1Context::from_bytes(context) else {
             dbgjs!("Unable to parse context in JsSelection::new");
             return JsSelection::default();
         };
@@ -51,6 +51,68 @@ impl JsSelection {
             self.selection = selection;
         }
     }
+
+    #[wasm_bindgen(js_name = "stringToSelection")]
+    pub fn to_selection(&self, a1: &str, default_sheet_id: &str) -> Result<JsSelection, String> {
+        let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
+        let selection = A1Selection::parse_a1(a1, default_sheet_id, &self.context)
+            .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
+        Ok(JsSelection {
+            selection,
+            context: self.context.clone(),
+        })
+    }
+
+    #[wasm_bindgen(js_name = "A1SelectionStringToSelection")]
+    pub fn a1_selection_string_to_selection(
+        &self,
+        a1_selection: &str,
+    ) -> Result<JsSelection, String> {
+        let selection =
+            serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
+        Ok(JsSelection {
+            selection,
+            context: self.context.clone(),
+        })
+    }
+
+    #[wasm_bindgen(js_name = "A1SelectionToJsSelection")]
+    pub fn a1_selection_value_to_selection(
+        &self,
+        a1_selection: JsValue,
+    ) -> Result<JsSelection, String> {
+        let selection = serde_wasm_bindgen::from_value::<A1Selection>(a1_selection)
+            .map_err(|e| e.to_string())?;
+        Ok(JsSelection {
+            selection,
+            context: self.context.clone(),
+        })
+    }
+
+    #[wasm_bindgen(js_name = "cellRefRangeToRefRangeBounds")]
+    pub fn cell_ref_range_to_ref_range_bounds(
+        &self,
+        cell_ref_range: String,
+        show_table_headers_for_python: bool,
+    ) -> Result<JsValue, String> {
+        let cell_ref_range =
+            serde_json::from_str::<CellRefRange>(&cell_ref_range).map_err(|e| e.to_string())?;
+        let ref_range_bounds = match cell_ref_range {
+            CellRefRange::Sheet { range } => range,
+            CellRefRange::Table { range } => {
+                match range.convert_cells_accessed_to_ref_range_bounds(
+                    show_table_headers_for_python,
+                    &self.context,
+                ) {
+                    Some(ref_range_bounds) => ref_range_bounds,
+                    None => {
+                        return Err("Unable to convert table range to ref range bounds".to_string());
+                    }
+                }
+            }
+        };
+        serde_wasm_bindgen::to_value(&ref_range_bounds).map_err(|e| e.to_string())
+    }
 }
 
 #[wasm_bindgen(js_name = "xyToA1")]
@@ -69,19 +131,6 @@ pub fn xyxy_to_a1(x0: i32, y0: i32, x1: i32, y1: i32) -> Result<String, String> 
 pub fn rect_to_a1(rect: JsValue) -> Result<String, String> {
     let rect = serde_wasm_bindgen::from_value::<Rect>(rect).map_err(|e| e.to_string())?;
     Ok(rect.a1_string())
-}
-
-#[wasm_bindgen(js_name = "stringToSelection")]
-pub fn to_selection(
-    a1: &str,
-    default_sheet_id: &str,
-    context: &[u8],
-) -> Result<JsSelection, String> {
-    let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
-    let context = serde_json::from_slice::<A1Context>(context).map_err(|e| e.to_string())?;
-    let selection = A1Selection::parse_a1(a1, default_sheet_id, &context)
-        .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
-    Ok(JsSelection { selection, context })
 }
 
 #[wasm_bindgen(js_name = "newSingleSelection")]
@@ -123,48 +172,4 @@ pub fn new_all_selection(sheet_id: String) -> Result<String, String> {
         context: A1Context::default(),
     };
     selection.save()
-}
-
-#[wasm_bindgen(js_name = "A1SelectionStringToSelection")]
-pub fn a1_selection_string_to_selection(
-    a1_selection: &str,
-    context: &[u8],
-) -> Result<JsSelection, String> {
-    let selection = serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
-    let context = serde_json::from_slice::<A1Context>(context).map_err(|e| e.to_string())?;
-    Ok(JsSelection { selection, context })
-}
-
-#[wasm_bindgen(js_name = "A1SelectionToJsSelection")]
-pub fn a1_selection_value_to_selection(
-    a1_selection: JsValue,
-    context: &[u8],
-) -> Result<JsSelection, String> {
-    let selection =
-        serde_wasm_bindgen::from_value::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
-    let context = serde_json::from_slice::<A1Context>(context).map_err(|e| e.to_string())?;
-    Ok(JsSelection { selection, context })
-}
-
-#[wasm_bindgen(js_name = "cellRefRangeToRefRangeBounds")]
-pub fn cell_ref_range_to_ref_range_bounds(
-    cell_ref_range: String,
-    show_table_headers_for_python: bool,
-    context: &[u8],
-) -> Result<JsValue, String> {
-    let cell_ref_range =
-        serde_json::from_str::<CellRefRange>(&cell_ref_range).map_err(|e| e.to_string())?;
-    let context = serde_json::from_slice::<A1Context>(context).map_err(|e| e.to_string())?;
-    let ref_range_bounds = match cell_ref_range {
-        CellRefRange::Sheet { range } => range,
-        CellRefRange::Table { range } => {
-            match range
-                .convert_cells_accessed_to_ref_range_bounds(show_table_headers_for_python, &context)
-            {
-                Some(ref_range_bounds) => ref_range_bounds,
-                None => return Err("Unable to convert table range to ref range bounds".to_string()),
-            }
-        }
-    };
-    serde_wasm_bindgen::to_value(&ref_range_bounds).map_err(|e| e.to_string())
 }

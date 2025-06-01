@@ -14,7 +14,7 @@ pub fn parse_formula(
     x: i32,
     y: i32,
 ) -> Result<JsValue, String> {
-    let ctx = serde_json::from_slice::<A1Context>(context).expect("invalid A1Context");
+    let ctx = A1Context::from_bytes(context).expect("invalid A1Context");
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
 
     let results = parse_formula_results(formula_string, ctx, sheet_id, x, y);
@@ -29,7 +29,7 @@ pub fn check_formula(
     x: i32,
     y: i32,
 ) -> Result<bool, String> {
-    let ctx = serde_json::from_slice::<A1Context>(context).map_err(|e| e.to_string())?;
+    let ctx = A1Context::from_bytes(context).map_err(|e| e.to_string())?;
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
     let pos = Pos {
         x: x as i64,

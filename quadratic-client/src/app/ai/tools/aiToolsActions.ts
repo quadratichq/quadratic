@@ -14,7 +14,6 @@ import type {
   NumericFormatKind,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { selectionToSheetRect, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
@@ -189,7 +188,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const { sheet_name, top_left_position, table_name, table_data } = args;
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
-      const selection = stringToSelection(top_left_position, sheetId, sheets.a1Context);
+      const selection = sheets.stringToSelection(top_left_position, sheetId);
       if (!selection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
@@ -220,7 +219,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const { sheet_name, top_left_position, cell_values } = args;
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
-      const selection = stringToSelection(top_left_position, sheetId, sheets.a1Context);
+      const selection = sheets.stringToSelection(top_left_position, sheetId);
       if (!selection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
@@ -243,7 +242,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     let { sheet_name, code_cell_language, code_string, code_cell_position, code_cell_name } = args;
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
-      const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
+      const selection = sheets.stringToSelection(code_cell_position, sheetId);
       if (!selection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
@@ -287,7 +286,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const { sheet_name, source_selection_rect, target_top_left_position } = args;
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
-      const sourceSelection = stringToSelection(source_selection_rect, sheetId, sheets.a1Context);
+      const sourceSelection = sheets.stringToSelection(source_selection_rect, sheetId);
       const sourceRect = sourceSelection.getSingleRectangleOrCursor();
       if (!sourceRect) {
         return [{ type: 'text', text: 'Invalid source selection, this should be a single rectangle, not a range' }];
@@ -306,7 +305,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         },
       };
 
-      const targetSelection = stringToSelection(target_top_left_position, sheetId, sheets.a1Context);
+      const targetSelection = sheets.stringToSelection(target_top_left_position, sheetId);
       if (!targetSelection.isSingleSelection()) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
@@ -323,7 +322,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const { sheet_name, selection } = args;
     const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
     try {
-      const sourceSelection = stringToSelection(selection, sheetId, sheets.a1Context);
+      const sourceSelection = sheets.stringToSelection(selection, sheetId);
 
       await quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
 
@@ -524,8 +523,9 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.ConvertToTable]: async (args) => {
     try {
-      const sheetId = sheets.getSheetIdFromName(args.sheet_name);
-      const sheetRect = selectionToSheetRect(sheetId, args.selection, sheets.a1Context);
+      const sheet = sheets.getSheetByName(args.sheet_name) ?? sheets.sheet;
+      const sheetId = sheet.id;
+      const sheetRect = sheet.cursor.jsSelection.selectionToSheetRect(sheetId, args.selection);
       if (sheetRect) {
         const response = await quadraticCore.gridToDataTable(
           sheetRect,

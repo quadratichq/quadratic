@@ -1,7 +1,8 @@
+import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
+import type { A1Selection, CellRefRange, JsOffset, Rect, RefRangeBounds, SheetInfo } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -47,7 +48,7 @@ export class Sheets {
     });
     this.sort();
 
-    // Look for an initial active sheet in the URL. If it's nott there, use the 1st sheet
+    // Look for an initial active sheet in the URL. If it's not there, use the first sheet
     const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
     if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
       this._current = initialActiveSheetId;
@@ -388,6 +389,25 @@ export class Sheets {
     this.sheets.forEach((sheet) => {
       sheet.cursor.updateColumnName(tableName, oldName, newName);
     });
+  };
+
+  stringToSelection = (a1: string, sheetId: string): JsSelection => {
+    return this.sheet.cursor.jsSelection.stringToSelection(a1, sheetId);
+  };
+
+  A1SelectionStringToSelection = (a1: string): JsSelection => {
+    return this.sheet.cursor.jsSelection.A1SelectionStringToSelection(a1);
+  };
+
+  A1SelectionToJsSelection = (a1: A1Selection): JsSelection => {
+    return this.sheet.cursor.jsSelection.A1SelectionToJsSelection(a1);
+  };
+
+  cellRefRangeToRefRangeBounds = (cellRefRange: CellRefRange, isPython: boolean): RefRangeBounds => {
+    return this.sheet.cursor.jsSelection.cellRefRangeToRefRangeBounds(
+      JSON.stringify(cellRefRange, bigIntReplacer),
+      isPython
+    );
   };
 }
 

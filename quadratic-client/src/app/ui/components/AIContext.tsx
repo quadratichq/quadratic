@@ -6,7 +6,6 @@ import {
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { uploadFile } from '@/app/helpers/files';
-import { getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
@@ -257,13 +256,17 @@ type CodeCellContextPillProps = {
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {
-    const updateTableName = (a1Context: Uint8Array) => {
+    const updateTableName = () => {
       if (!codeCell?.sheetId) return;
-      const tableName = getTableNameFromPos(a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
+      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
+        codeCell.sheetId,
+        codeCell.pos.x,
+        codeCell.pos.y
+      );
       setTableName(tableName);
     };
 
-    updateTableName(sheets.a1Context);
+    updateTableName();
 
     events.on('a1Context', updateTableName);
     return () => {

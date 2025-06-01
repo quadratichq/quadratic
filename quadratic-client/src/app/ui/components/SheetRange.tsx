@@ -2,7 +2,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { A1Selection } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
-import { A1SelectionToJsSelection, stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { InsertCellRefIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -66,7 +65,7 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const selection = stringToSelection(value, a1SheetId, sheets.a1Context);
+        const selection = sheets.stringToSelection(value, a1SheetId);
         onChangeRange(selection);
         setRangeError(undefined);
         if (selection && selection.save() !== sheets.sheet.cursor.save()) {
@@ -98,13 +97,13 @@ export const SheetRange = (props: Props) => {
   );
 
   useEffect(() => {
-    setInput(initial ? A1SelectionToJsSelection(initial, sheets.a1Context).toA1String(a1SheetId) : '');
+    setInput(initial ? sheets.A1SelectionToJsSelection(initial).toA1String(a1SheetId) : '');
   }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;
     try {
-      const selection = stringToSelection(input, a1SheetId, sheets.a1Context);
+      const selection = sheets.stringToSelection(input, a1SheetId);
       if (selection && selection.save() !== sheets.sheet.cursor.save()) {
         sheets.changeSelection(selection, true);
 
