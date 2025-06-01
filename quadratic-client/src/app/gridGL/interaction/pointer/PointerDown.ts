@@ -84,7 +84,15 @@ export class PointerDown {
           row: codeCell.y,
           table: codeCell,
         });
-        return;
+      } else {
+        events.emit('contextMenu', {
+          type: ContextMenuType.Grid,
+          world,
+          column,
+          row,
+          // _could_ have an associated table if it's a cell inside a table on the grid
+          table: pixiApp.cellsSheet().tables.getInTable(cursor.position)?.codeCell,
+        });
       }
       return;
     }

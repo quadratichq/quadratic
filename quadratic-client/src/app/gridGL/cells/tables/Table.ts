@@ -107,11 +107,7 @@ export class Table extends Container {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
 
-    if (
-      !this.codeCell.spill_error &&
-      // !this.codeCell.is_html_image &&
-      this.codeCell.show_name
-    ) {
+    if (!this.codeCell.spill_error && this.codeCell.show_name) {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y, this.codeCell.w, 1);
     } else {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);

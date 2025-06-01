@@ -37,8 +37,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useSubmit } from 'react-router';
 import { z } from 'zod';
 
-const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
-
 export function OnboardingBanner() {
   const {
     activeTeam: {
@@ -92,18 +90,17 @@ export function OnboardingBanner() {
                 <PlusIcon className="mr-1" /> Create blank file
               </Link>
             </Button>
-            {SHOW_EXAMPLES && (
-              <Button variant="outline" className={contentBtnClassName} asChild>
-                <Link
-                  to={ROUTES.EXAMPLES}
-                  onClick={() => {
-                    mixpanel.track('[OnboardingBanner].newFileFromExample');
-                  }}
-                >
-                  <MixIcon className="mr-1" /> Explore example files
-                </Link>
-              </Button>
-            )}
+
+            <Button variant="outline" className={contentBtnClassName} asChild>
+              <Link
+                to={ROUTES.EXAMPLES}
+                onClick={() => {
+                  mixpanel.track('[OnboardingBanner].newFileFromExample');
+                }}
+              >
+                <MixIcon className="mr-1" /> Explore example files
+              </Link>
+            </Button>
           </div>
           <p>Or bring your own data:</p>
           <div className="flex flex-wrap gap-2">
@@ -129,7 +126,7 @@ export function OnboardingBanner() {
       completed: connections.length > 0,
       content: (
         <>
-          {/* TODO: (enhancement) set this up 
+          {/* TODO: (enhancement) set this up
           <p>Try pulling data from one of our example connections:</p>
           <div className="mb-2">
             <Button variant="outline" className={contentBtnClassName + ' gap-2'}>
