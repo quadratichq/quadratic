@@ -45,6 +45,7 @@
     "Deque",
     "dgraph",
     "docgen",
+    "domcontentloaded",
     "dotenv",
     "dpkg",
     "elif",
@@ -53,6 +54,7 @@
     "EXISTINGSHEET",
     "expressjwt",
     "fholzer",
+    "filechooser",
     "finitize",
     "fontfaceobserver",
     "fontkit",
@@ -64,6 +66,7 @@
     "grammarly",
     "grcov",
     "Hasher",
+    "haspopup",
     "healthcheck",
     "healthchecks",
     "hljs",
@@ -95,6 +98,7 @@
     "moby",
     "msdf",
     "mysqladmin",
+    "networkidle",
     "nocapture",
     "noemit",
     "nonblank",
@@ -174,6 +178,7 @@
     "vals",
     "vcpu",
     "vertexai",
+    "viewports",
     "VITE",
     "VLOOKUP",
     "websockets",
@@ -228,7 +233,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[dockercompose]": {
-    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
