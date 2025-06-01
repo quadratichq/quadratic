@@ -88,6 +88,8 @@ export class PointerDown {
           table: pixiApp.cellsSheet().tables.getInTable(cursor.position)?.codeCell,
         });
       }
+
+      return;
     }
 
     if (this.doubleClickTimeout) {
