@@ -16,8 +16,8 @@ replace_env_vars() {
     esac
   done
 
-  find "/usr/share/nginx/html/assets" -type f -name "*.js" | xargs grep -l "VITE_" | while read file; do   
-    
+  find "/usr/share/nginx/html/assets" -type f -name "*.js" | xargs grep -l "VITE_" | while read file; do
+
     for env_var in $vite_vars; do
       var="$(echo "$env_var" | cut -d'=' -f1)"
       val="$(echo "$env_var" | cut -d'=' -f2-)"

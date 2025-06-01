@@ -55,8 +55,6 @@ import {
   useSubmit,
 } from 'react-router';
 
-const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
-
 /**
  * Dashboard Navbar
  */
@@ -149,7 +147,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           Resources
         </Type>
         <div className="grid gap-0.5">
-          {canEditTeam && SHOW_EXAMPLES && (
+          {canEditTeam && (
             <SidebarNavLink to={ROUTES.EXAMPLES}>
               <ExamplesIcon className={classNameIcons} />
               Examples
