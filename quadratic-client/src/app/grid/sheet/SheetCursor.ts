@@ -362,7 +362,7 @@ export class SheetCursor {
   canConvertToDataTable = (): boolean => {
     const rectangle = this.sheet.cursor.getSingleRectangle();
     if (!rectangle) return false;
-    return pixiApp.cellsSheet().tables.anyCodeCellInRect(rectangle);
+    return !pixiApp.cellsSheet().tables.hasCodeCellInRect(rectangle);
   };
 
   // getCopyRange(): RefRangeBounds | undefined {

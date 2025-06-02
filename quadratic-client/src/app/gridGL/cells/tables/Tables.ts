@@ -489,7 +489,7 @@ export class Tables extends Container<Table> {
     }
   };
 
-  //#region get table
+  //#region query tables
 
   /// Returns a Table (single-cell code cells are excluded).
   getTable = (x: number | bigint, y: number | bigint): Table | undefined => {
@@ -522,12 +522,6 @@ export class Tables extends Container<Table> {
         return this.getTable(tablePos.x, tablePos.y);
       }
     }
-  };
-
-  /// Returns whether there are any
-  anyCodeCellInRect = (r: Rectangle): boolean => {
-    if (!this.dataTablesCache) return false;
-    return this.dataTablesCache.hasCodeCellInRect(r.x, r.y, r.right - 1, r.bottom - 1);
   };
 
   // Returns single cell code cells that are in the given cell-based rectangle.
@@ -574,6 +568,12 @@ export class Tables extends Container<Table> {
   isWithinCodeCell = (x: number, y: number): boolean => {
     const codeCell = this.getCodeCellIntersects({ x, y });
     return codeCell?.language !== 'Import';
+  };
+
+  /// Returns whether there are any code cells with the cell-based rectangle
+  hasCodeCellInRect = (r: Rectangle): boolean => {
+    if (!this.dataTablesCache) return false;
+    return this.dataTablesCache.hasTableInRect(r.x, r.y, r.right - 1, r.bottom - 1);
   };
 
   //#endregion
