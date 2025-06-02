@@ -1232,6 +1232,12 @@ export interface CoreClientDataTablesCache {
   dataTablesCache: Uint8Array;
 }
 
+export interface CoreClientContentCache {
+  type: 'coreClientContentCache';
+  sheetId: string;
+  contentCache: Uint8Array;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1401,4 +1407,5 @@ export type CoreClientMessage =
   | CoreClientSetFormats
   | CoreClientGetAIFormats
   | CoreClientGridToDataTable
-  | CoreClientDataTablesCache;
+  | CoreClientDataTablesCache
+  | CoreClientContentCache;

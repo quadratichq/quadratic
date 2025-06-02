@@ -73,6 +73,9 @@ impl GridController {
                             // sends SheetDataTablesCache to the client
                             sheet.send_data_tables_cache();
 
+                            // sends SheetContentCache to the client
+                            sheet.send_content_cache();
+
                             // sends all code cells to the client
                             sheet.send_all_render_code_cells();
 

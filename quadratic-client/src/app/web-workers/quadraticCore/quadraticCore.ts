@@ -45,7 +45,7 @@ import type {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   ClientCoreCellHasContent,
@@ -213,6 +213,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientDataTablesCache') {
       events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
+      return;
+    } else if (e.data.type === 'coreClientContentCache') {
+      events.emit('contentCache', e.data.sheetId, new SheetContentCache(e.data.contentCache));
       return;
     }
 

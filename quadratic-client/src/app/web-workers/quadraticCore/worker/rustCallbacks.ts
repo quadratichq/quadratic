@@ -64,6 +64,7 @@ declare var self: WorkerGlobalScope &
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
+    sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -242,4 +243,8 @@ export const jsA1Context = (context: Uint8Array) => {
 
 export const jsSendDataTablesCache = (sheetId: string, dataTablesCache: Uint8Array) => {
   self.sendDataTablesCache(sheetId, dataTablesCache);
+};
+
+export const jsSendContentCache = (sheetId: string, contentCache: Uint8Array) => {
+  self.sendContentCache(sheetId, contentCache);
 };
