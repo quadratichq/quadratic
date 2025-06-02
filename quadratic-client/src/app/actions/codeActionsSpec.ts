@@ -18,9 +18,9 @@ export const cancelExecution = () => {
 
 export const executeCode = () => {
   const { x, y } = sheets.sheet.cursor.position;
-  const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
-  if (table?.isCodeCell()) {
-    quadraticCore.rerunCodeCells(sheets.current, table.codeCell.x, table.codeCell.y, sheets.getCursorPosition());
+  const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+  if (codeCell?.is_code) {
+    quadraticCore.rerunCodeCells(sheets.current, codeCell.x, codeCell.y, sheets.getCursorPosition());
   }
 };
 

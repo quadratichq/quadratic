@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { A1SelectionStringToSelection, xyToA1 } from '@/app/quadratic-core/quadratic_core';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -11,9 +11,9 @@ export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const visibleRect = sheets.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
-    const visibleA1String = A1SelectionStringToSelection(visibleRectSelection, sheets.a1Context).toA1String(
-      sheets.current
-    );
+    const visibleA1String = sheets
+      .A1SelectionStringToSelection(visibleRectSelection)
+      .toA1String(sheets.current, sheets.jsA1Context);
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
     const isVisibleEmpty = sheetBounds.type === 'empty' || !intersects.rectRect(sheetBounds, visibleRect);

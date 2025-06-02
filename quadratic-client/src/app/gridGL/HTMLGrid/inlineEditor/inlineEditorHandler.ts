@@ -4,7 +4,6 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
@@ -14,7 +13,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import type { CellFormatSummary, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -47,7 +46,7 @@ class InlineEditorHandler {
   temporaryUnderline: boolean | undefined;
   temporaryStrikeThrough: boolean | undefined;
 
-  private table?: Table;
+  private codeCell?: JsRenderCodeCell;
 
   constructor() {
     events.on('changeInput', this.changeInput);
@@ -83,7 +82,7 @@ class InlineEditorHandler {
     this.temporaryItalic = undefined;
     this.temporaryUnderline = undefined;
     this.temporaryStrikeThrough = undefined;
-    this.table = undefined;
+    this.codeCell = undefined;
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
@@ -196,7 +195,7 @@ class InlineEditorHandler {
         x: cursor.x,
         y: cursor.y,
       };
-      this.table = pixiApp.cellsSheet().tables.getTableIntersects(this.location.x, this.location.y);
+      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location.x, this.location.y);
       let value: string;
       let changeToFormula = false;
       if (initialValue) {
@@ -213,7 +212,7 @@ class InlineEditorHandler {
         }
       }
 
-      if (this.table?.codeCell.language === 'Import' && changeToFormula) {
+      if (this.codeCell?.language === 'Import' && changeToFormula) {
         pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
         this.closeIfOpen();
         return;
@@ -397,7 +396,7 @@ class InlineEditorHandler {
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
-    if (this.table?.codeCell.language === 'Import' && formula) {
+    if (this.codeCell?.language === 'Import' && formula) {
       pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
       this.closeIfOpen();
       return;

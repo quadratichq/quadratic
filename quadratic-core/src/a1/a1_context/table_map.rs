@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, SheetPos,
-    grid::{DataTable, SheetId},
+    grid::{CodeCellLanguage, DataTable, SheetId},
     util::case_fold_ascii,
 };
 
-use super::TableMapEntry;
+use super::{JsTableInfo, TableMapEntry};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
@@ -17,6 +17,9 @@ pub struct TableMap {
 
     #[serde(with = "crate::util::hashmap_serde")]
     sheet_pos_to_table: HashMap<SheetPos, String>,
+
+    // a cache of code cells that are not formulas, used to speed up table info
+    non_formula_code: Vec<String>,
 }
 
 impl TableMap {
@@ -26,6 +29,11 @@ impl TableMap {
             .bounds
             .min
             .to_sheet_pos(table_map_entry.sheet_id);
+        if table_map_entry.language != CodeCellLanguage::Formula
+            && table_map_entry.language != CodeCellLanguage::Import
+        {
+            self.non_formula_code.push(table_name_folded.clone());
+        }
         self.sheet_pos_to_table
             .insert(sheet_pos, table_name_folded.clone());
         self.tables.insert(table_name_folded, table_map_entry);
@@ -145,6 +153,22 @@ impl TableMap {
         } else {
             false
         }
+    }
+
+    /// Returns JsTableInfo for all non-formula tables.
+    pub fn table_info(&self) -> Vec<JsTableInfo> {
+        self.non_formula_code
+            .iter()
+            .map(|table_name| {
+                self.tables.get(table_name).map(|table| JsTableInfo {
+                    name: table.table_name.clone(),
+                    sheet_id: table.sheet_id.to_string(),
+                    chart: table.is_html_image,
+                    language: table.language.clone(),
+                })
+            })
+            .flatten()
+            .collect()
     }
 
     /// Inserts a test table into the table map.
@@ -419,5 +443,45 @@ mod tests {
         assert!(map.table_has_column("test_table", "VISIBLE1", 1));
         // table_has_column is false when the index is the same as the existing column index
         assert!(!map.table_has_column("test_table", "VISIBLE1", 0));
+    }
+
+    #[test]
+    fn test_table_info() {
+        let mut map = TableMap::default();
+
+        // Insert tables with different languages
+        map.test_insert(
+            "table1",
+            &["A", "B"],
+            None,
+            Rect::new(1, 1, 2, 3),
+            CodeCellLanguage::Python,
+        );
+
+        map.test_insert(
+            "table2",
+            &["C", "D"],
+            None,
+            Rect::new(4, 1, 2, 3),
+            CodeCellLanguage::Formula, // This should be excluded
+        );
+
+        map.test_insert(
+            "table3",
+            &["E", "F"],
+            None,
+            Rect::new(7, 1, 2, 3),
+            CodeCellLanguage::Import, // This should be excluded
+        );
+
+        let info = map.table_info();
+        assert_eq!(info.len(), 1); // Only non-formula tables should be included
+
+        // Verify table1 info
+        let table1_info = info.iter().find(|t| t.name == "table1").unwrap();
+        assert_eq!(table1_info.name, "table1");
+        assert_eq!(table1_info.sheet_id, "Sheet1");
+        assert!(!table1_info.chart);
+        assert_eq!(table1_info.language, CodeCellLanguage::Python);
     }
 }

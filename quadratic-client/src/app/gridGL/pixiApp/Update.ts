@@ -74,8 +74,7 @@ export class Update {
       this.showFocus();
     }
 
-    pixiApp.viewport.updateViewport();
-
+    const viewportChanged = pixiApp.viewport.updateViewport();
     let rendererDirty =
       pixiApp.gridLines.dirty ||
       pixiApp.headings.dirty ||
@@ -136,8 +135,7 @@ export class Update {
     debugTimeCheck('[Update] copy');
     this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
-    debugTimeCheck('[Update] singleCellOutlines');
-    pixiApp.singleCellOutlines.update(pixiApp.viewport.dirty);
+    pixiApp.singleCellOutlines.update(viewportChanged);
     debugTimeCheck('[Update] singleCellOutlines');
 
     if (pixiApp.viewport.dirty || rendererDirty) {

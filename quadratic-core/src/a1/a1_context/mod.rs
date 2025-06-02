@@ -30,7 +30,7 @@ pub struct A1Context {
 #[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
 pub struct JsTableInfo {
     pub name: String,
-    pub sheet_name: String,
+    pub sheet_id: String,
     pub chart: bool,
     pub language: CodeCellLanguage,
 }
@@ -43,6 +43,14 @@ impl std::fmt::Display for A1Context {
 }
 
 impl A1Context {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, postcard::Error> {
+        postcard::to_allocvec(self)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, postcard::Error> {
+        postcard::from_bytes(bytes)
+    }
+
     /// Returns whether a table exists with the given name.
     pub fn has_table(&self, table_name: &str) -> bool {
         self.try_table(table_name).is_some()
@@ -73,20 +81,9 @@ impl A1Context {
         self.table_map.iter_table_values_in_sheet(sheet_id)
     }
 
-    /// Returns a list of all table names in the context.
+    /// Returns a list of all table names in the context except for formulas.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
-        self.iter_tables()
-            .filter_map(|table| {
-                self.sheet_map
-                    .try_sheet_id(table.sheet_id)
-                    .map(|sheet_name| JsTableInfo {
-                        name: table.table_name.clone(),
-                        sheet_name: sheet_name.to_string(),
-                        chart: table.is_html_image,
-                        language: table.language.clone(),
-                    })
-            })
-            .collect()
+        self.table_map.table_info()
     }
 
     /// Returns any table that intersects with the given sheet position.
@@ -194,7 +191,7 @@ mod tests {
             info[0],
             JsTableInfo {
                 name: "Table1".to_string(),
-                sheet_name: "Sheet1".to_string(),
+                sheet_id: "Sheet1".to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }
@@ -203,7 +200,7 @@ mod tests {
             info[1],
             JsTableInfo {
                 name: "Table2".to_string(),
-                sheet_name: "Sheet1".to_string(),
+                sheet_id: "Sheet1".to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }

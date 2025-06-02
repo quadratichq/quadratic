@@ -282,11 +282,8 @@ export class Tables extends Container<Table> {
   };
 
   isWithinCodeCell = (x: number, y: number): boolean => {
-    const table = this.getTableIntersects(x, y);
-    if (!table) {
-      return false;
-    }
-    return table.isCodeCell();
+    const codeCell = this.getCodeCellIntersects(x, y);
+    return codeCell?.language !== 'Import';
   };
 
   isActive = (table: Table): boolean => {
@@ -368,15 +365,6 @@ export class Tables extends Container<Table> {
     pixiApp.setViewportDirty();
   };
 
-  /// Gets the code cell of a cell within a large table, or the single cell.
-  getCodeCell = (x: number, y: number): JsRenderCodeCell | undefined => {
-    const table = this.getTableIntersects(x, y);
-    if (table) {
-      return table.codeCell;
-    }
-    return this.singleCellTables[`${x},${y}`];
-  };
-
   getTableNamePosition = (x: number, y: number): Rectangle | undefined => {
     const table = this.getTable(x, y);
     return table?.getTableNameBounds();
@@ -387,7 +375,16 @@ export class Tables extends Container<Table> {
     return table?.getColumnHeaderBounds(index);
   };
 
-  /// Returns the table that the cell intersects.
+  getCodeCellIntersects = (x: number, y: number): JsRenderCodeCell | undefined => {
+    const singleCell = this.singleCellTables[`${x},${y}`];
+    if (singleCell) return singleCell;
+    const table = this.getTableIntersects(x, y);
+    if (table) {
+      return table.codeCell;
+    }
+  };
+
+  /// Returns the table that the cell intersects (excludes single cell tables).
   getTableIntersects = (x: number, y: number): Table | undefined => {
     if (this.dataTablesCache) {
       const tablePos = this.dataTablesCache.getTableInPos(x, y);
