@@ -10,7 +10,7 @@ use crate::{Pos, Rect, grid::sheet::data_tables::cache::SheetDataTablesCache};
 impl SheetDataTablesCache {
     #[wasm_bindgen(constructor)]
     pub fn new(bytes: Vec<u8>) -> Self {
-        serde_json::from_slice::<SheetDataTablesCache>(&bytes).unwrap_or_default()
+        postcard::from_bytes::<SheetDataTablesCache>(&bytes).unwrap_or_default()
     }
 
     /// Returns what table is the table Pos at the given position.
