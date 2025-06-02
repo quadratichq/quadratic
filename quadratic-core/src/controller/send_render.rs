@@ -94,8 +94,10 @@ impl GridController {
             }
         }
 
+        // send sheet info, offsets are required before sending render cells
         self.send_sheet_info(transaction);
         self.send_offsets_modified(transaction);
+
         self.send_render_cells_in_hashes(transaction, viewport_sheet_id, viewport_hashes);
 
         if !remaining_hashes.is_empty() {
