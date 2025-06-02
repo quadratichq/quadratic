@@ -301,7 +301,7 @@ export class Tables extends Container<Table> {
   // table is not active to allow the user to select the row above the table.
   pointerDown = (world: Point): TablePointerDownResult | undefined => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
-    const table = this.getTable(cell.x, cell.y);
+    const table = this.getInTable(cell);
     if (!table) return;
     const result = table.intersectsTableName(world);
     if (result) return result;
