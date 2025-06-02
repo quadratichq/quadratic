@@ -335,12 +335,8 @@ export class CellsLabels {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
-        if (dirty) {
-          if (hash.clientLoaded) hash.unloadClient();
-          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
-        } else if (hash.loaded) {
-          hash.unload();
-        }
+        hash.unloadClient();
+        hash.unload();
       }
     });
 

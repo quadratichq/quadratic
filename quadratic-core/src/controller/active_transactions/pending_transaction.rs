@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    Instant, Pos, Rect, SheetPos, SheetRect,
+    Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
@@ -71,9 +71,6 @@ pub struct PendingTransaction {
     /// cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
-    /// track last time when updates were sent to client
-    pub last_client_update: Option<Instant>,
-
     /// sheets w/updated validations
     pub validations: HashSet<SheetId>,
 
@@ -108,7 +105,7 @@ pub struct PendingTransaction {
     pub sheet_info: HashSet<SheetId>,
 
     /// sheets that need updated SheetDataTablesCache
-    pub sheet_data_tables: HashSet<SheetId>,
+    pub sheet_data_tables_cache: HashSet<SheetId>,
 
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
@@ -136,7 +133,6 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
-            last_client_update: None,
             validations: HashSet::new(),
             validations_warnings: HashMap::new(),
             resize_rows: HashMap::new(),
@@ -146,12 +142,12 @@ impl Default for PendingTransaction {
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
+            sheet_data_tables_cache: HashSet::new(),
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
             offsets_reloaded: HashSet::new(),
             update_selection: None,
-            sheet_data_tables: HashSet::new(),
         }
     }
 }
@@ -377,6 +373,22 @@ impl PendingTransaction {
         });
     }
 
+    /// Adds a code cell to the transaction
+    pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.code_cells_a1_context
+            .entry(sheet_id)
+            .or_default()
+            .insert(pos);
+
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        self.sheet_data_tables_cache.insert(sheet_id);
+
+        self.code_cells.entry(sheet_id).or_default().insert(pos);
+    }
+
     /// Adds a code cell, html cell and image cell to the transaction from a
     /// CodeRun. If the code_cell no longer exists, then it sends the empty code
     /// cell so the client can remove it.
@@ -394,40 +406,12 @@ impl PendingTransaction {
         }
 
         if is_html {
-            self.add_html_cell(sheet_id, pos);
+            self.html_cells.entry(sheet_id).or_default().insert(pos);
         }
 
         if is_image {
-            self.add_image_cell(sheet_id, pos);
+            self.image_cells.entry(sheet_id).or_default().insert(pos);
         }
-    }
-
-    /// Adds a code cell to the transaction
-    pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
-        self.code_cells_a1_context
-            .entry(sheet_id)
-            .or_default()
-            .insert(pos);
-
-        self.code_cells.entry(sheet_id).or_default().insert(pos);
-    }
-
-    /// Adds an html cell to the transaction
-    pub fn add_html_cell(&mut self, sheet_id: SheetId, pos: Pos) {
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
-            return;
-        }
-
-        self.html_cells.entry(sheet_id).or_default().insert(pos);
-    }
-
-    /// Adds an image cell to the transaction
-    pub fn add_image_cell(&mut self, sheet_id: SheetId, pos: Pos) {
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
-            return;
-        }
-
-        self.image_cells.entry(sheet_id).or_default().insert(pos);
     }
 
     /// Inserts the changed validations into PendingTransaction. Also returns an
@@ -729,27 +713,6 @@ mod tests {
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.code_cells[&sheet_id].len(), 1);
         assert!(transaction.code_cells[&sheet_id].contains(&pos));
-    }
-
-    #[test]
-    fn test_add_html_cell() {
-        let mut transaction = PendingTransaction::default();
-        let sheet_id = SheetId::new();
-        let pos = Pos { x: 0, y: 0 };
-        transaction.add_html_cell(sheet_id, pos);
-        assert_eq!(transaction.html_cells.len(), 1);
-        assert_eq!(transaction.html_cells[&sheet_id].len(), 1);
-        assert!(transaction.html_cells[&sheet_id].contains(&pos));
-    }
-
-    #[test]
-    fn test_add_image_cell() {
-        let mut transaction = PendingTransaction::default();
-        let sheet_id = SheetId::new();
-        let pos = Pos { x: 0, y: 0 };
-        transaction.add_image_cell(sheet_id, pos);
-        assert_eq!(transaction.image_cells.len(), 1);
-        assert_eq!(transaction.image_cells[&sheet_id].len(), 1);
     }
 
     #[test]

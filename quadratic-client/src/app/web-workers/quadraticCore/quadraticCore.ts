@@ -148,9 +148,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientTransactionStart') {
       events.emit('transactionStart', e.data);
       return;
-    } else if (e.data.type === 'coreClientTransactionProgress') {
-      events.emit('transactionProgress', e.data);
-      return;
     } else if (e.data.type === 'coreClientTransactionEnd') {
       events.emit('transactionEnd', e.data);
       return;

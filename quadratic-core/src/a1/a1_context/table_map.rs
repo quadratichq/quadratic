@@ -35,27 +35,16 @@ impl TableMap {
         self.insert(table_map_entry);
     }
 
-    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
-        let table_name_folded = case_fold_ascii(table_name);
-        if let Some(table) = self.tables.shift_remove(&table_name_folded) {
-            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
-            self.sheet_pos_to_table.remove(&sheet_pos);
-            Some(table)
-        } else {
-            None
-        }
-    }
-
     pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
         self.sheet_pos_to_table
             .remove(&pos.to_sheet_pos(sheet_id))
-            .and_then(|table_name| self.tables.shift_remove(&table_name));
+            .and_then(|table_name| self.tables.swap_remove(&table_name));
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
-        self.sheet_pos_to_table.retain(|sheet_pos, table| {
+        self.sheet_pos_to_table.retain(|sheet_pos, name| {
             if sheet_pos.sheet_id == sheet_id {
-                self.tables.shift_remove(table);
+                self.tables.swap_remove(name);
                 false
             } else {
                 true
@@ -194,6 +183,19 @@ impl TableMap {
             bounds,
             language,
         ));
+    }
+
+    // shift_remove is expensive, so we should only use it for testing
+    #[cfg(test)]
+    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
+        let table_name_folded = case_fold_ascii(table_name);
+        if let Some(table) = self.tables.shift_remove(&table_name_folded) {
+            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
+            self.sheet_pos_to_table.remove(&sheet_pos);
+            Some(table)
+        } else {
+            None
+        }
     }
 }
 

@@ -316,7 +316,10 @@ impl GridController {
                             cell,
                             formula_start_name.as_str(),
                         );
-                        gc.send_client_updates_during_transaction(&mut transaction, false);
+                        gc.update_a1_context_table_map(
+                            std::mem::take(&mut transaction.code_cells_a1_context),
+                            false,
+                        );
                     }
                 }
 
