@@ -81,10 +81,16 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Creating new charts</capability>
    </capabilities>
   </model>
+  <model name="Flash">
+   <capabilities>
+    <capability>Explicitly defined formatting tasks</capability>
+    <capability>Explicitly defined inserts/edits.</capability>
+   </capabilities>
+  </model>
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Pro". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "Pro" or "Flash". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
@@ -130,7 +136,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>move that to A9</user>
-   <answer>Pro</answer>
+   <answer>Flash</answer>
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
@@ -158,7 +164,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Highlight column C blue</user>
-   <answer>Pro</answer>
+   <answer>Flash</answer>
   </example>
   <example>
    <user>Highlight all male entries orange</user>
@@ -171,6 +177,10 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   <example>
    <user>Hi</user>
    <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Insert 5 in cell A7</user>
+   <answer>Flash</answer>
   </example>
  </examples>
 `,
