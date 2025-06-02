@@ -57,6 +57,7 @@ export class Sheets {
   }
 
   private updateA1Context = (context: Uint8Array) => {
+    this._jsA1Context?.free();
     this._jsA1Context = new JsA1Context(context);
     events.emit('a1ContextUpdated');
   };

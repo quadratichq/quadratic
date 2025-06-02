@@ -17,8 +17,8 @@ impl JsA1Context {
 #[wasm_bindgen]
 impl JsA1Context {
     #[wasm_bindgen(constructor)]
-    pub fn new(context: &[u8]) -> Self {
-        match A1Context::from_bytes(context) {
+    pub fn new(context: Vec<u8>) -> Self {
+        match A1Context::from_bytes(&context) {
             Ok(context) => Self { context },
             Err(e) => {
                 dbgjs!(&format!("Error creating JsA1Context: {}", e));

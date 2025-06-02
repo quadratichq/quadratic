@@ -507,6 +507,7 @@ export class Tables extends Container<Table> {
 
   private updateDataTablesCache = (sheetId: string, dataTablesCache: SheetDataTablesCache) => {
     if (sheetId === this.sheet.id) {
+      this.dataTablesCache?.free();
       this.dataTablesCache = dataTablesCache;
       if (sheets.sheet.id === this.sheet.id) {
         pixiApp.singleCellOutlines.dirty = true;
