@@ -70,25 +70,27 @@ export class TableHeader extends Container {
   }
 
   updatePosition() {
-    if (!this.table.codeCell.show_name && !this.table.codeCell.show_columns) {
+    const showName = this.table.codeCell.show_name;
+    const showColumns = this.table.codeCell.show_columns;
+    if (!showName && !showColumns) {
       this.visible = false;
       this.removeColumnHeaders();
       this.removeTableName();
     } else {
       this.visible = true;
-      if (this.table.codeCell.show_name) {
+      if (showName) {
         if (!this.tableName) {
           this.tableName = this.addChild(new TableName(this.table));
         }
       } else {
         this.removeTableName();
       }
-      if (this.table.codeCell.show_columns) {
+      if (showColumns) {
         if (!this.columnHeaders || !this.columnHeadersGridLines) {
           this.columnHeaders = this.addChild(new TableColumnHeaders(this.table));
           this.columnHeadersGridLines = this.addChild(new TableColumnHeadersGridLines(this));
         }
-        this.columnHeaders.y = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
+        this.columnHeaders.y = showName ? this.table.sheet.offsets.getRowHeight(this.table.codeCell.y) : 0;
         this.columnHeadersGridLines.y = this.columnHeaders.y;
       } else {
         this.removeColumnHeaders();
