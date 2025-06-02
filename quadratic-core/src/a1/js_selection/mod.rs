@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     Pos, Rect, SheetRect,
-    a1::{A1Context, A1Selection},
+    a1::A1Selection,
     grid::{DataTable, Sheet, SheetId},
     wasm_bindings::js_a1_context::JsA1Context,
 };
@@ -104,10 +104,8 @@ impl JsSelection {
             .ranges
             .first()
             .ok_or("Invalid selection: no ranges")?;
-        // we don't really need the context here, but we need to pass something
-        let context = A1Context::default();
         let rect = range
-            .to_rect(&context)
+            .to_rect(context.get_context())
             .ok_or("Invalid selection: not a rectangle")?;
         let sheet_rect = rect.to_sheet_rect(sheet_id);
         serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())

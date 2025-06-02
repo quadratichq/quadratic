@@ -14,10 +14,8 @@ pub fn parse_formula(
     x: i32,
     y: i32,
 ) -> Result<JsValue, String> {
-    let ctx = context.get_context();
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
-
-    let results = parse_formula_results(formula_string, ctx, sheet_id, x, y);
+    let results = parse_formula_results(formula_string, context.get_context(), sheet_id, x, y);
     serde_wasm_bindgen::to_value(&results).map_err(|e| e.to_string())
 }
 
@@ -29,15 +27,17 @@ pub fn check_formula(
     x: i32,
     y: i32,
 ) -> Result<bool, String> {
-    let ctx = context.get_context();
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
     let pos = Pos {
         x: x as i64,
         y: y as i64,
     }
     .to_sheet_pos(sheet_id);
-
-    Ok(parse_and_check_formula(formula_string, ctx, pos))
+    Ok(parse_and_check_formula(
+        formula_string,
+        context.get_context(),
+        pos,
+    ))
 }
 
 #[wasm_bindgen(js_name = "provideCompletionItems")]

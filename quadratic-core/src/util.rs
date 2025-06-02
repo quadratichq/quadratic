@@ -89,6 +89,7 @@ pub(crate) mod indexmap_serde {
     }
 }
 
+#[allow(unused)]
 pub(crate) mod hashmap_serde {
     use std::collections::HashMap;
     use std::hash::Hash;
