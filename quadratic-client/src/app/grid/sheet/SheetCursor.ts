@@ -2,7 +2,7 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
-import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -64,6 +64,10 @@ export class SheetCursor {
     return this._viewport;
   }
 
+  get sheets(): Sheets {
+    return this.sheet.sheets;
+  }
+
   selection(): A1Selection {
     return this.jsSelection.selection();
   }
@@ -106,12 +110,12 @@ export class SheetCursor {
 
   // Returns the columns that are selected via ranges [c1_start, c1_end, c2_start, c2_end, ...].
   getSelectedColumnRanges = (from: number, to: number): number[] => {
-    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to, sheets.jsA1Context));
+    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to, this.sheets.jsA1Context));
   };
 
   // Returns the rows that are selected via ranges [r1_start, r1_end, r2_start, r2_end, ...].
   getSelectedRowRanges = (from: number, to: number): number[] => {
-    return Array.from(this.jsSelection.getSelectedRowRanges(from, to, sheets.jsA1Context));
+    return Array.from(this.jsSelection.getSelectedRowRanges(from, to, this.sheets.jsA1Context));
   };
 
   // Returns the bottom-right cell for the selection.
@@ -121,14 +125,14 @@ export class SheetCursor {
 
   // Returns the largest rectangle that contains all the multiCursor rectangles
   getLargestRectangle = (): Rectangle => {
-    const rect = this.jsSelection.getLargestRectangle(sheets.jsA1Context);
+    const rect = this.jsSelection.getLargestRectangle(this.sheets.jsA1Context);
     return rectToRectangle(rect);
   };
 
   /// Returns the largest rectangle that contains all the selection, including
   /// unbounded ranges. Converts the BigInt::MAX to Number::MAX.
   getLargestRectangleUnbounded = (): Rectangle => {
-    const rect = this.jsSelection.getLargestUnboundedRectangle(sheets.jsA1Context);
+    const rect = this.jsSelection.getLargestUnboundedRectangle(this.sheets.jsA1Context);
     return new Rectangle(
       Number(rect.min.x),
       Number(rect.min.y),
@@ -140,19 +144,19 @@ export class SheetCursor {
   // Returns rectangle in case of single finite range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle = (): Rectangle | undefined => {
-    const rect = this.jsSelection.getSingleRectangle(sheets.jsA1Context);
+    const rect = this.jsSelection.getSingleRectangle(this.sheets.jsA1Context);
     return rect ? rectToRectangle(rect) : undefined;
   };
 
   // Returns rectangle in case of single finite range selection, otherwise returns a rectangle that represents the cursor
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangleOrCursor = (): Rectangle | undefined => {
-    const rect = this.jsSelection.getSingleRectangleOrCursor(sheets.jsA1Context);
+    const rect = this.jsSelection.getSingleRectangleOrCursor(this.sheets.jsA1Context);
     return rect ? rectToRectangle(rect) : undefined;
   };
 
   overlapsSelection = (a1Selection: string): boolean => {
-    return this.jsSelection.overlapsA1Selection(a1Selection, sheets.jsA1Context);
+    return this.jsSelection.overlapsA1Selection(a1Selection, this.sheets.jsA1Context);
   };
 
   /// Returns true if we can insert columns or rows at the selection
@@ -170,20 +174,20 @@ export class SheetCursor {
 
   // Returns true if the selection is a single cell or a single column or single row.
   hasOneColumnRowSelection = (oneCell?: boolean): boolean => {
-    return this.jsSelection.hasOneColumnRowSelection(oneCell ?? false, sheets.jsA1Context);
+    return this.jsSelection.hasOneColumnRowSelection(oneCell ?? false, this.sheets.jsA1Context);
   };
 
   isSelectedColumnsFinite = (): boolean => {
-    return this.jsSelection.isSelectedColumnsFinite(sheets.jsA1Context);
+    return this.jsSelection.isSelectedColumnsFinite(this.sheets.jsA1Context);
   };
 
   isSelectedRowsFinite = (): boolean => {
-    return this.jsSelection.isSelectedRowsFinite(sheets.jsA1Context);
+    return this.jsSelection.isSelectedRowsFinite(this.sheets.jsA1Context);
   };
 
   // Returns the columns that are selected.
   getColumnsWithSelectedCells = (): number[] => {
-    return Array.from(this.jsSelection.getColumnsWithSelectedCells(sheets.jsA1Context));
+    return Array.from(this.jsSelection.getColumnsWithSelectedCells(this.sheets.jsA1Context));
   };
 
   getSelectedColumns = (): number[] => {
@@ -195,17 +199,17 @@ export class SheetCursor {
   };
 
   getSelectedTableColumns = (tableName: string): number[] => {
-    return Array.from(this.jsSelection.getTableColumnSelection(tableName, sheets.jsA1Context));
+    return Array.from(this.jsSelection.getTableColumnSelection(tableName, this.sheets.jsA1Context));
   };
 
   // Returns the rows that are selected.
   getRowsWithSelectedCells = (): number[] => {
-    return Array.from(this.jsSelection.getRowsWithSelectedCells(sheets.jsA1Context));
+    return Array.from(this.jsSelection.getRowsWithSelectedCells(this.sheets.jsA1Context));
   };
 
   // Returns true if the cursor is only selecting a single cell
   isSingleSelection = (): boolean => {
-    return this.jsSelection.isSingleSelection(sheets.jsA1Context);
+    return this.jsSelection.isSingleSelection(this.sheets.jsA1Context);
   };
 
   selectAll = (append?: boolean) => {
@@ -244,29 +248,29 @@ export class SheetCursor {
   };
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
-    this.jsSelection.selectTo(x, y, append, sheets.jsA1Context);
+    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context);
     this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
   // Selects columns that have a current selection (used by cmd+space)
   setColumnsSelected = () => {
-    this.jsSelection.setColumnsSelected(sheets.jsA1Context);
+    this.jsSelection.setColumnsSelected(this.sheets.jsA1Context);
     this.updatePosition(true);
   };
 
   // Selects rows that have a current selection (used by shift+cmd+space)
   setRowsSelected = () => {
-    this.jsSelection.setRowsSelected(sheets.jsA1Context);
+    this.jsSelection.setRowsSelected(this.sheets.jsA1Context);
     this.updatePosition(true);
   };
 
   selectColumn = (column: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, top: number) => {
-    this.jsSelection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick, top, sheets.jsA1Context);
+    this.jsSelection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick, top, this.sheets.jsA1Context);
     this.updatePosition(true);
   };
 
   selectRow = (row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, left: number) => {
-    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick, left, sheets.jsA1Context);
+    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick, left, this.sheets.jsA1Context);
     this.updatePosition(true);
   };
 
@@ -275,9 +279,9 @@ export class SheetCursor {
     // let end = this.jsSelection.getBottomRightCell();
     // console.log(end.x, end.y);
     // const bounds = pixiApp.viewport.getVisibleBounds();
-    // const y = sheets.sheet.getRowY(end.x);
+    // const y = this.sheets.sheet.getRowY(end.x);
     // const distanceTopToCursorTop = y - bounds.top;
-    // const row = sheets.sheet.getRowFromScreen(y + bounds.height);
+    // const row = this.sheets.sheet.getRowFromScreen(y + bounds.height);
     // this.jsSelection.selectTo(end.x, row, false);
     // this.updatePosition(false);
     // const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
@@ -293,7 +297,7 @@ export class SheetCursor {
   };
 
   isMultiCursor = (): boolean => {
-    return this.jsSelection.isMultiCursor(sheets.jsA1Context);
+    return this.jsSelection.isMultiCursor(this.sheets.jsA1Context);
   };
 
   isMultiRange = (): boolean => {
@@ -305,7 +309,7 @@ export class SheetCursor {
   };
 
   toA1String = (sheetId = this.sheet.sheets.current): string => {
-    return this.jsSelection.toA1String(sheetId, sheets.jsA1Context);
+    return this.jsSelection.toA1String(sheetId, this.sheets.jsA1Context);
   };
 
   toCursorA1 = (): string => {
@@ -313,7 +317,7 @@ export class SheetCursor {
   };
 
   contains = (x: number, y: number): boolean => {
-    return this.jsSelection.contains(x, y, sheets.jsA1Context);
+    return this.jsSelection.contains(x, y, this.sheets.jsA1Context);
   };
 
   selectRect = (left: number, top: number, right: number, bottom: number, append = false, ensureVisible = true) => {
@@ -322,11 +326,11 @@ export class SheetCursor {
   };
 
   a1String = (): string => {
-    return this.jsSelection.toA1String(this.sheet.id, sheets.jsA1Context);
+    return this.jsSelection.toA1String(this.sheet.id, this.sheets.jsA1Context);
   };
 
   excludeCells = (x0: number, y0: number, x1: number, y1: number, ensureVisible = true) => {
-    this.jsSelection.excludeCells(x0, y0, x1, y1, sheets.jsA1Context);
+    this.jsSelection.excludeCells(x0, y0, x1, y1, this.sheets.jsA1Context);
     this.updatePosition(ensureVisible);
   };
 
@@ -337,7 +341,7 @@ export class SheetCursor {
   getFiniteRefRangeBounds = (): RefRangeBounds[] => {
     let ranges: RefRangeBounds[] = [];
     try {
-      ranges = this.jsSelection.getFiniteRefRangeBounds(sheets.jsA1Context);
+      ranges = this.jsSelection.getFiniteRefRangeBounds(this.sheets.jsA1Context);
     } catch (e) {
       console.warn('Error getting ref range bounds', e);
     }
@@ -376,17 +380,17 @@ export class SheetCursor {
     }
     const bounds = pixiApp.viewport.getVisibleBounds();
     const left = this.sheet.getColumnFromScreen(bounds.left) + 1;
-    this.jsSelection.selectTable(tableName, column, left, shiftKey, ctrlKey, sheets.jsA1Context);
+    this.jsSelection.selectTable(tableName, column, left, shiftKey, ctrlKey, this.sheets.jsA1Context);
     this.updatePosition(true);
   };
 
   get selectionEnd(): JsCoordinate {
-    return this.jsSelection.bottomRightCell(sheets.jsA1Context);
+    return this.jsSelection.bottomRightCell(this.sheets.jsA1Context);
   }
 
   /// Returns true if the cursor is on an html or image cell.
   isOnHtmlImage = (): boolean => {
-    return this.jsSelection.cursorIsOnHtmlImage(sheets.jsA1Context);
+    return this.jsSelection.cursorIsOnHtmlImage(this.sheets.jsA1Context);
   };
 
   /// Returns a collection of Rectangles that represent sheet ranges in the
@@ -433,7 +437,7 @@ export class SheetCursor {
   getTableColumnSelection = (tableName: string): number[] | undefined => {
     let cols: number[] | undefined;
     try {
-      cols = this.jsSelection.getTableColumnSelection(tableName, sheets.jsA1Context);
+      cols = this.jsSelection.getTableColumnSelection(tableName, this.sheets.jsA1Context);
     } catch (e) {
       console.warn('Error getting table column selection', e);
     }
@@ -465,7 +469,7 @@ export class SheetCursor {
   };
 
   hideColumn = (tableName: string, columnName: string) => {
-    this.jsSelection.hideColumn(tableName, columnName, sheets.jsA1Context);
+    this.jsSelection.hideColumn(tableName, columnName, this.sheets.jsA1Context);
     const { x, y } = this.position;
     this.selectRect(x, y, x, y);
   };
@@ -479,7 +483,7 @@ export class SheetCursor {
   };
 
   checkForTableRef = () => {
-    this.jsSelection.checkForTableRef(this.sheet.id, sheets.jsA1Context);
+    this.jsSelection.checkForTableRef(this.sheet.id, this.sheets.jsA1Context);
   };
 
   getContiguousColumns = (): number[] | undefined => {
@@ -497,11 +501,11 @@ export class SheetCursor {
   };
 
   isTableColumnSelected = (tableName: string, column: number): boolean => {
-    return this.jsSelection.isTableColumnSelected(tableName, column, sheets.jsA1Context);
+    return this.jsSelection.isTableColumnSelected(tableName, column, this.sheets.jsA1Context);
   };
 
   getSelectedTableColumnsCount = (): number => {
-    return this.jsSelection.getSelectedTableColumnsCount(sheets.jsA1Context);
+    return this.jsSelection.getSelectedTableColumnsCount(this.sheets.jsA1Context);
   };
 
   isAllSelected = (): boolean => {
