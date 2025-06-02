@@ -741,8 +741,22 @@ mod tests {
         gc.undo(None);
         gc.undo(None);
 
-        // absolute references, expect no change
+        // absolute column references, expect no change
         let base = r#"q.cells("$A:$B", first_row_header=True)"#;
+        set_code_cell(&mut gc, base);
+        autocomplete(&mut gc);
+        let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
+        let expected = CellValue::Code(CodeCellValue::new_python(base.to_string()));
+        assert_eq!(value, expected);
+
+        // start over
+        gc.undo(None);
+        gc.undo(None);
+
+        println!("** relative column references, expect no change");
+
+        // relative column references, expect no change
+        let base = r#"q.cells("A:B", first_row_header=True)"#;
         set_code_cell(&mut gc, base);
         autocomplete(&mut gc);
         let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
