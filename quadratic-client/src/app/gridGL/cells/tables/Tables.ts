@@ -149,6 +149,12 @@ export class Tables extends Container<Table> {
   private deleteTable = (x: number, y: number) => {
     const table = this.getTable(x, y);
     if (table) {
+      if (table.codeCell.alternating_colors) {
+        const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+        if (cellsSheet) {
+          cellsSheet.cellsFills.updateAlternatingColors(x, y, undefined);
+        }
+      }
       this.removeChild(table);
       table.destroy();
       this.tablesCache.remove(table);
