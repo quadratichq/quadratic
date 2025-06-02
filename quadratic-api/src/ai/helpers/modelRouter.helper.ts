@@ -115,6 +115,18 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
+   <user>try again</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Why do you keep failing?</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Hi</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
    <user>Add an extra axis to my chart</user>
    <answer>Pro</answer>
   </example>
@@ -129,14 +141,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   <example>
    <user>Highlight all the cells with value > 50</user>
    <answer>Pro</answer>
-  </example>
-  <example>
-   <user>try again</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
-   <user>move that to A9</user>
-   <answer>Flash</answer>
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
@@ -163,20 +167,16 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Highlight column C blue</user>
-   <answer>Flash</answer>
-  </example>
-  <example>
    <user>Highlight all male entries orange</user>
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Why do you keep failing?</user>
-   <answer>Claude</answer>
+   <user>Highlight column C blue</user>
+   <answer>Flash</answer>
   </example>
   <example>
-   <user>Hi</user>
-   <answer>Claude</answer>
+   <user>move that to A9</user>
+   <answer>Flash</answer>
   </example>
   <example>
    <user>Insert 5 in cell A7</user>
