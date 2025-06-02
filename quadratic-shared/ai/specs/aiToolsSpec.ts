@@ -279,7 +279,7 @@ The string representation (in a1 notation) of the selection of cells to get the 
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
 This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
-Do NOT use this tool if there is no data based in the data bounds provided for the sheet, or if you already have the data in context.\n
+Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You SHOULD use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
 You SHOULD use the get_cell_data function rather than assuming patterns; if you're not perfectly confident with the data already provided, check the data on the sheet first.\n
 This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
