@@ -377,7 +377,10 @@ export class Tables extends Container<Table> {
 
   getCodeCellIntersects = (x: number, y: number): JsRenderCodeCell | undefined => {
     const singleCell = this.singleCellTables[`${x},${y}`];
-    if (singleCell) return singleCell;
+    if (singleCell) {
+      return singleCell;
+    }
+
     const table = this.getTableIntersects(x, y);
     if (table) {
       return table.codeCell;
