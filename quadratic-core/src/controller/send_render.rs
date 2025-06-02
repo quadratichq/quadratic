@@ -578,9 +578,7 @@ impl GridController {
         );
     }
 
-    /// Sends A1Context as unsafe bytes to the client.
-    /// This is a workaround to avoid the overhead of serializing and deserializing the A1Context.
-    /// This is safe because the A1Context is only used on the client side and is not modified.
+    /// Sends A1Context as bytes to the client.
     pub(crate) fn send_a1_context(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
