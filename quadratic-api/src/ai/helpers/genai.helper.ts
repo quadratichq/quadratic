@@ -221,8 +221,6 @@ export async function parseGenAIStream(
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
           });
-        } else {
-          console.error(`Invalid AI response: ${JSON.stringify(part)}`);
         }
       }
 
@@ -291,8 +289,6 @@ export function parseGenAIResponse(
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,
       });
-    } else {
-      console.error(`Invalid AI response: ${JSON.stringify(message)}`);
     }
   });
 
