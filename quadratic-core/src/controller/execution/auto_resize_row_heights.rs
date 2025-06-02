@@ -26,6 +26,10 @@ impl GridController {
             if auto_resize_rows.is_empty() {
                 return false;
             }
+
+            // process visible dirty hashes to so that we can get the correct row heights
+            self.process_visible_dirty_hashes(transaction);
+
             auto_resize_rows.sort();
             if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
                 crate::wasm_bindings::js::jsRequestRowHeights(

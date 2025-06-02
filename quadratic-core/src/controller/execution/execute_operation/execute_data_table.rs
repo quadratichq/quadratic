@@ -105,6 +105,7 @@ impl GridController {
             })
             .collect();
 
+        // delete the data tables in reverse order, so that shift_remove is less expensive
         data_tables_to_delete.into_iter().rev().for_each(|pos| {
             self.finalize_data_table(
                 transaction,

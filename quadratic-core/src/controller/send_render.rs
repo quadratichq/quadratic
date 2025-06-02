@@ -94,6 +94,8 @@ impl GridController {
             }
         }
 
+        self.send_sheet_info(transaction);
+        self.send_offsets_modified(transaction);
         self.send_render_cells_in_hashes(transaction, viewport_sheet_id, viewport_hashes);
 
         if !remaining_hashes.is_empty() {
@@ -292,7 +294,7 @@ impl GridController {
     }
 
     /// Sends sheet info to the client
-    pub(crate) fn send_sheet_info(&mut self, transaction: &mut PendingTransaction) {
+    pub(crate) fn send_sheet_info(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             transaction.sheet_info.clear();
             return;
@@ -325,10 +327,11 @@ impl GridController {
             return;
         }
 
-        for (sheet_id, offsets) in transaction.offsets_modified.iter() {
+        let offsets_modified = std::mem::take(&mut transaction.offsets_modified);
+        for (sheet_id, offsets) in offsets_modified.into_iter() {
             let mut offsets = offsets
-                .iter()
-                .map(|(&(column, row), &size)| JsOffset {
+                .into_iter()
+                .map(|((column, row), size)| JsOffset {
                     column: column.map(|c| c as i32),
                     row: row.map(|r| r as i32),
                     size,
@@ -348,7 +351,6 @@ impl GridController {
                 }
             }
         }
-        transaction.offsets_modified.clear();
     }
 
     pub(crate) fn send_code_cells(&mut self, transaction: &mut PendingTransaction) {
@@ -495,14 +497,14 @@ impl GridController {
             return;
         }
 
-        for sheet_id in transaction.sheet_borders.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
+        let sheet_borders = std::mem::take(&mut transaction.sheet_borders);
+        for sheet_id in sheet_borders.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
                 continue;
             };
 
             sheet.send_sheet_borders();
         }
-        transaction.sheet_borders.clear();
     }
 
     fn send_fills(&self, transaction: &mut PendingTransaction) {
@@ -511,10 +513,10 @@ impl GridController {
             return;
         }
 
-        for sheet_id in transaction.fill_cells.iter() {
-            self.send_all_fills(*sheet_id);
+        let fill_cells = std::mem::take(&mut transaction.fill_cells);
+        for sheet_id in fill_cells.into_iter() {
+            self.send_all_fills(sheet_id);
         }
-        transaction.fill_cells.clear();
     }
 
     pub(crate) fn send_all_fills(&self, sheet_id: SheetId) {
@@ -557,6 +559,7 @@ impl GridController {
         if let Some(selection) = std::mem::take(&mut transaction.update_selection) {
             crate::wasm_bindings::js::jsSetCursor(selection);
         }
+        transaction.update_selection = None;
     }
 
     fn send_undo_redo(&self) {
