@@ -191,6 +191,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use itertools::Itertools;
 
     #[test]
     fn test_a1_context_sheet_table_bounds() {
@@ -206,7 +207,12 @@ mod tests {
         let table_bounds = grid_controller.a1_context_sheet_table_bounds(sheet_id);
 
         assert_eq!(table_bounds.len(), 2);
-        assert_eq!(table_bounds[0], Rect::test_a1("A1:B3"));
-        assert_eq!(table_bounds[1], Rect::test_a1("D1:E3"));
+        // table bounds can be in any order
+        let table_bounds_sorted = table_bounds
+            .into_iter()
+            .sorted_by_key(|rect| rect.min.x)
+            .collect::<Vec<_>>();
+        assert_eq!(table_bounds_sorted[0], Rect::test_a1("A1:B3"));
+        assert_eq!(table_bounds_sorted[1], Rect::test_a1("D1:E3"));
     }
 }
