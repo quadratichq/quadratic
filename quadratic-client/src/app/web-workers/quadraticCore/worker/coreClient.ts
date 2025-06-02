@@ -136,14 +136,6 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreCellHasContent':
-        this.send({
-          type: 'coreClientCellHasContent',
-          id: e.data.id,
-          hasContent: await core.cellHasContent(e.data.sheetId, e.data.x, e.data.y),
-        });
-        return;
-
       case 'clientCoreSetCellValue':
         await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
         return;

@@ -293,6 +293,16 @@ impl Sheet {
 
         render_cells
     }
+
+    /// Sends the content cache to the client.
+    pub fn send_content_cache(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+        if let Ok(cache) = postcard::to_allocvec(self.columns.has_cell_value()) {
+            crate::wasm_bindings::js::jsSendContentCache(self.id.to_string(), cache);
+        }
+    }
 }
 
 #[cfg(test)]

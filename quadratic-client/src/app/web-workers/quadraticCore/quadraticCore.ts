@@ -48,7 +48,6 @@ import type {
 import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
-  ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
   ClientCoreGetDisplayCell,
@@ -318,23 +317,6 @@ class QuadraticCore {
       };
       this.waitingForResponse[id] = (message: CoreClientGetCodeCell) => {
         resolve(message.cell);
-      };
-      this.send(message);
-    });
-  }
-
-  cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { hasContent: boolean }) => {
-        resolve(message.hasContent);
-      };
-      const message: ClientCoreCellHasContent = {
-        type: 'clientCoreCellHasContent',
-        sheetId,
-        x,
-        y,
-        id,
       };
       this.send(message);
     });

@@ -563,12 +563,9 @@ impl GridController {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
-
         transaction.sheet_content_cache.iter().for_each(|sheet_id| {
             if let Some(sheet) = self.try_sheet(*sheet_id) {
-                if let Ok(cache) = postcard::to_allocvec(sheet.columns.has_cell_value()) {
-                    crate::wasm_bindings::js::jsSendContentCache(sheet_id.to_string(), cache);
-                }
+                sheet.send_content_cache();
             }
         })
     }

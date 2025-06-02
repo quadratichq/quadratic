@@ -123,20 +123,6 @@ export interface CoreClientGetCodeCell {
   id: number;
 }
 
-export interface ClientCoreCellHasContent {
-  type: 'clientCoreCellHasContent';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
-}
-
-export interface CoreClientCellHasContent {
-  type: 'coreClientCellHasContent';
-  hasContent: boolean;
-  id: number;
-}
-
 export interface ClientCoreGetEditCell {
   type: 'clientCoreGetEditCell';
   sheetId: string;
@@ -1241,7 +1227,6 @@ export interface CoreClientContentCache {
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
-  | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
   | ClientCoreSetCellValues
@@ -1339,7 +1324,6 @@ export type ClientCoreMessage =
 export type CoreClientMessage =
   | CoreClientGetCodeCell
   | CoreClientGetEditCell
-  | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell

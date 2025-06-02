@@ -58,7 +58,6 @@ import {
   numbersToRectStringified,
   pointsToRect,
   posToPos,
-  posToRect,
   toSheetPos,
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import * as Sentry from '@sentry/react';
@@ -189,18 +188,6 @@ class Core {
       } catch (e) {
         this.handleCoreError('getCodeCell', e);
         resolve(undefined);
-      }
-    });
-  }
-
-  cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined in Core.cellHasContent');
-      try {
-        resolve(this.gridController.hasRenderCells(sheetId, posToRect(x, y)));
-      } catch (e) {
-        this.handleCoreError('cellHasContent', e);
-        resolve(false);
       }
     });
   }

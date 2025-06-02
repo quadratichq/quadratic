@@ -22,7 +22,6 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import type { Link } from '@/app/shared/types/links';
 import type { DrawRects } from '@/app/shared/types/size';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import type { Graphics, Point, Renderer } from 'pixi.js';
 import { BitmapText, Container, Rectangle } from 'pixi.js';
@@ -55,8 +54,6 @@ export class CellsTextHash extends Container {
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
-  content: CellsTextHashContent;
-
   links: Link[];
 
   newDrawRects: DrawRects[];
@@ -74,7 +71,6 @@ export class CellsTextHash extends Container {
     this.special = this.addChild(new CellsTextHashSpecial());
     this.warnings = this.addChild(new CellsTextHashValidations(this, sheetId));
 
-    this.content = new CellsTextHashContent();
     this.links = [];
 
     this.newDrawRects = [];
