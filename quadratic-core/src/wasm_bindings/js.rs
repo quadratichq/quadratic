@@ -15,6 +15,12 @@ extern "C" {
     // `log(..)`
     #[wasm_bindgen(js_namespace = console)]
     pub(crate) fn log(s: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    pub(crate) fn time(name: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    pub(crate) fn timeEnd(name: &str);
 }
 
 #[cfg(not(test))]

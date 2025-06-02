@@ -578,14 +578,19 @@ impl GridController {
         );
     }
 
+    /// Sends A1Context as bytes to the client.
     pub(crate) fn send_a1_context(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
-
-        let context = self.a1_context();
-        if let Ok(context) = serde_json::to_vec(context) {
-            crate::wasm_bindings::js::jsA1Context(context);
+        match self.a1_context().to_bytes() {
+            Ok(bytes) => crate::wasm_bindings::js::jsA1Context(bytes),
+            Err(e) => {
+                dbgjs!(format!(
+                    "[send_a1_context] Error serializing A1Context {:?}",
+                    e.to_string()
+                ));
+            }
         }
     }
 }

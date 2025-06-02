@@ -45,12 +45,12 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Move cursor right, don't clear selection
   if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
     const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
-    const table = pixiApp.cellsSheet().tables.getTableIntersects(cursorX, cursorY);
-    if (table) {
-      const tableStartX = table.codeCell.x;
-      const tableStartY = table.codeCell.y;
-      const tableEndX = tableStartX + table.codeCell.w - 1;
-      const tableEndY = tableStartY + table.codeCell.h - 1;
+    const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursorX, cursorY);
+    if (codeCell) {
+      const tableStartX = codeCell.x;
+      const tableStartY = codeCell.y;
+      const tableEndX = tableStartX + codeCell.w - 1;
+      const tableEndY = tableStartY + codeCell.h - 1;
       if (cursorX + 1 <= tableEndX) {
         // move cursor to the right within the table
         cursor.moveTo(cursorX + 1, cursorY);
@@ -79,8 +79,8 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.EditCell, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const { x, y } = sheets.sheet.cursor.position;
-      const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
-      if (table) {
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+      if (codeCell) {
         doubleClickCell({
           column: x,
           row: y,
@@ -103,8 +103,8 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.ToggleArrowMode, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const { x, y } = sheets.sheet.cursor.position;
-      const table = pixiApp.cellsSheet().tables.getTableIntersects(x, y);
-      if (table) {
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+      if (codeCell) {
         doubleClickCell({
           column: x,
           row: y,

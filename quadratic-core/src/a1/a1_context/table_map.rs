@@ -5,17 +5,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, SheetPos,
-    grid::{DataTable, SheetId},
+    grid::{CodeCellLanguage, DataTable, SheetId},
     util::case_fold_ascii,
 };
 
-use super::TableMapEntry;
+use super::{JsTableInfo, TableMapEntry};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
     tables: IndexMap<String, TableMapEntry>,
 
-    #[serde(with = "crate::util::hashmap_serde")]
     sheet_pos_to_table: HashMap<SheetPos, String>,
 }
 
@@ -156,6 +155,24 @@ impl TableMap {
         } else {
             false
         }
+    }
+
+    /// Returns JsTableInfo for all non-formula tables.
+    pub fn table_info(&self) -> Vec<JsTableInfo> {
+        self.iter_table_values()
+            .filter_map(|table| {
+                if table.language != CodeCellLanguage::Formula && table.bounds.len() > 1 {
+                    Some(JsTableInfo {
+                        name: table.table_name.clone(),
+                        sheet_id: table.sheet_id.to_string(),
+                        chart: table.is_html_image,
+                        language: table.language.clone(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     /// Inserts a test table into the table map.
@@ -417,5 +434,52 @@ mod tests {
         assert!(map.table_has_column("test_table", "VISIBLE1", 1));
         // table_has_column is false when the index is the same as the existing column index
         assert!(!map.table_has_column("test_table", "VISIBLE1", 0));
+    }
+
+    #[test]
+    fn test_table_info() {
+        let mut map = TableMap::default();
+
+        // Insert tables with different languages
+        map.test_insert(
+            "table1",
+            &["A", "B"],
+            None,
+            Rect::new(1, 1, 2, 3),
+            CodeCellLanguage::Python,
+        );
+
+        map.test_insert(
+            "table2",
+            &["C", "D"],
+            None,
+            Rect::new(4, 1, 2, 3),
+            CodeCellLanguage::Formula, // This should be excluded
+        );
+
+        map.test_insert(
+            "table3",
+            &["E", "F"],
+            None,
+            Rect::new(7, 1, 2, 3),
+            CodeCellLanguage::Import,
+        );
+
+        let info = map.table_info();
+        assert_eq!(info.len(), 2); // Only non-formula tables should be included
+
+        // Verify table1 info
+        let table1_info = info.iter().find(|t| t.name == "table1").unwrap();
+        assert_eq!(table1_info.name, "table1");
+        assert_eq!(table1_info.sheet_id, SheetId::TEST.to_string());
+        assert!(!table1_info.chart);
+        assert_eq!(table1_info.language, CodeCellLanguage::Python);
+
+        // Verify table3 info
+        let table3_info = info.iter().find(|t| t.name == "table3").unwrap();
+        assert_eq!(table3_info.name, "table3");
+        assert_eq!(table3_info.sheet_id, SheetId::TEST.to_string());
+        assert!(!table3_info.chart);
+        assert_eq!(table3_info.language, CodeCellLanguage::Import);
     }
 }

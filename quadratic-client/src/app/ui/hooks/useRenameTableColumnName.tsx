@@ -29,7 +29,7 @@ export function useRenameTableColumnName() {
       columns: JsDataTableColumnHeader[];
     }) => {
       try {
-        validateColumnName(tableName, index, newColumnName, sheets.a1Context);
+        validateColumnName(tableName, index, newColumnName, sheets.jsA1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;
