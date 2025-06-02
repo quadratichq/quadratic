@@ -95,7 +95,7 @@ impl GridController {
         };
 
         let data_tables_to_delete: Vec<Pos> = sheet
-            .data_tables_pos_intersect_rect((*sheet_rect).into())
+            .data_tables_pos_intersect_rect_sorted((*sheet_rect).into())
             .filter(|pos| {
                 // only delete when there's not another code cell in the same position
                 // (this maintains the original output until a run completes)
@@ -105,7 +105,7 @@ impl GridController {
             })
             .collect();
 
-        data_tables_to_delete.into_iter().for_each(|pos| {
+        data_tables_to_delete.into_iter().rev().for_each(|pos| {
             self.finalize_data_table(
                 transaction,
                 pos.to_sheet_pos(sheet_rect.sheet_id),
