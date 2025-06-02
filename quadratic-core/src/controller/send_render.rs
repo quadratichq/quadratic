@@ -42,6 +42,7 @@ impl GridController {
         self.send_validations(transaction);
         self.send_borders(transaction);
         self.send_fills(transaction);
+        self.send_content_cache(transaction);
         self.send_undo_redo();
         self.send_set_cursor(transaction);
     }
@@ -555,6 +556,21 @@ impl GridController {
                 ));
             }
         }
+    }
+
+    /// Sends the content cache to the client.
+    pub fn send_content_cache(&self, transaction: &PendingTransaction) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        transaction.sheet_content_cache.iter().for_each(|sheet_id| {
+            if let Some(sheet) = self.try_sheet(*sheet_id) {
+                if let Ok(cache) = postcard::to_allocvec(sheet.columns.has_cell_value()) {
+                    crate::wasm_bindings::js::jsSendContentCache(sheet_id.to_string(), cache);
+                }
+            }
+        })
     }
 
     fn send_set_cursor(&self, transaction: &mut PendingTransaction) {

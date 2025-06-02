@@ -6,6 +6,7 @@ pub mod controller;
 pub mod error;
 pub mod js;
 pub mod js_a1_context;
+pub mod sheet_content_cache;
 pub mod sheet_data_tables_cache;
 
 use crate::controller::GridController;

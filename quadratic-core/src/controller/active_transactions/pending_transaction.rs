@@ -114,6 +114,9 @@ pub struct PendingTransaction {
 
     // update selection after transaction completes
     pub update_selection: Option<String>,
+
+    // updates to the content cache per sheet
+    pub sheet_content_cache: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -148,6 +151,7 @@ impl Default for PendingTransaction {
             offsets_modified: HashMap::new(),
             offsets_reloaded: HashSet::new(),
             update_selection: None,
+            sheet_content_cache: HashSet::new(),
         }
     }
 }
@@ -516,6 +520,14 @@ impl PendingTransaction {
         }
 
         self.sheet_borders.insert(sheet_id);
+    }
+
+    pub fn add_content_cache(&mut self, sheet_id: SheetId) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        self.sheet_content_cache.insert(sheet_id);
     }
 }
 

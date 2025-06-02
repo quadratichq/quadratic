@@ -65,6 +65,8 @@ impl GridController {
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
+                    transaction.add_content_cache(sheet_id);
+
                     if transaction.is_user() {
                         columns_to_adjust.sort_unstable();
                         columns_to_adjust.dedup();
@@ -129,6 +131,8 @@ impl GridController {
 
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+
+                    transaction.add_content_cache(sheet_id);
 
                     if transaction.is_user() {
                         rows_to_adjust.sort_unstable();
@@ -212,6 +216,8 @@ impl GridController {
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
+                    transaction.add_content_cache(sheet_id);
+
                     if transaction.is_user() {
                         self.adjust_code_cell_references(
                             transaction,
@@ -247,6 +253,8 @@ impl GridController {
 
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+
+                    transaction.add_content_cache(sheet_id);
 
                     if transaction.is_user() {
                         self.adjust_code_cell_references(
