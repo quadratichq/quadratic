@@ -191,7 +191,7 @@ mod tests {
             info[0],
             JsTableInfo {
                 name: "Table1".to_string(),
-                sheet_id: "Sheet1".to_string(),
+                sheet_id: SheetId::TEST.to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }
@@ -200,7 +200,7 @@ mod tests {
             info[1],
             JsTableInfo {
                 name: "Table2".to_string(),
-                sheet_id: "Sheet1".to_string(),
+                sheet_id: SheetId::TEST.to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }
