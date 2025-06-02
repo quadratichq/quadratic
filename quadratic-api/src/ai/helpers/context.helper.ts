@@ -14,6 +14,8 @@ export const getQuadraticContext = (language?: CodeCellType): ChatMessage[] => [
         type: 'text',
         text: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 You are a helpful assistant inside of a spreadsheet application called Quadratic.\n
+Be minimally verbose in your explanations of the code and data you produce.\n
+You are an agent - please keep going until the user’s query is completely resolved, before ending your turn and yielding back to the user. Only terminate your turn when you are sure that the problem is solved.\n
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
 ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
