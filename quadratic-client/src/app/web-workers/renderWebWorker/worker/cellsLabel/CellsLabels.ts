@@ -73,6 +73,7 @@ export class CellsLabels {
   }
 
   updateSheetInfo(sheetInfo: SheetInfo) {
+    this.sheetOffsets.free();
     this.sheetOffsets = SheetOffsetsWasm.load(sheetInfo.offsets);
     const bounds = sheetInfo.bounds_without_formatting;
     if (bounds.type === 'nonEmpty' && bounds.min) {

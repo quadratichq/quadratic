@@ -89,12 +89,13 @@ export class Sheet {
     }
   };
 
-  updateSheetInfo(info: SheetInfo) {
+  updateSheetInfo = (info: SheetInfo) => {
     this.name = info.name;
     this.order = info.order;
     this.color = info.color ?? undefined;
+    this.offsets.free();
     this.offsets = SheetOffsetsWasm.load(info.offsets);
-  }
+  };
 
   //#endregion
 
