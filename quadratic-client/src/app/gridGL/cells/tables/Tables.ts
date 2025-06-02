@@ -9,7 +9,6 @@ import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TablesCache } from '@/app/gridGL/cells/tables/TablesCache';
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -133,12 +132,6 @@ export class Tables extends Container<Table> {
     }
     return sheet;
   }
-
-  /// Returns an existing Table if it exists at the given position. Note: this
-  /// only returns if the table's anchor is at that position.
-  getTable = (x: number | bigint, y: number | bigint): Table | undefined => {
-    return this.tablesCache.getByXY(x, y);
-  };
 
   /// Returns true if the code cell has no UI and is 1x1.
   private isCodeCellSingle = (codeCell: JsRenderCodeCell): boolean => {
@@ -283,15 +276,6 @@ export class Tables extends Container<Table> {
     pixiApp.setViewportDirty();
   };
 
-  isTable = (x: number, y: number): boolean => {
-    return !!this.getTable(x, y) || !!this.singleCellTables[`${x},${y}`];
-  };
-
-  isWithinCodeCell = (x: number, y: number): boolean => {
-    const codeCell = this.getCodeCellIntersects(x, y);
-    return codeCell?.language !== 'Import';
-  };
-
   isActive = (table: Table): boolean => {
     return this.activeTables.includes(table) || pixiAppSettings.contextMenu?.table === table.codeCell;
   };
@@ -301,7 +285,7 @@ export class Tables extends Container<Table> {
   // table is not active to allow the user to select the row above the table.
   pointerDown = (world: Point): TablePointerDownResult | undefined => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
-    const table = this.getInTable(cell);
+    const table = this.getTableIntersects(cell);
     if (!table) return;
     const result = table.intersectsTableName(world);
     if (result) return result;
@@ -381,32 +365,6 @@ export class Tables extends Container<Table> {
     return table?.getColumnHeaderBounds(index);
   };
 
-  getCodeCellIntersects = (x: number, y: number): JsRenderCodeCell | undefined => {
-    const singleCell = this.singleCellTables[`${x},${y}`];
-    if (singleCell) {
-      return singleCell;
-    }
-
-    const table = this.getTableIntersects(x, y);
-    if (table) {
-      return table.codeCell;
-    }
-  };
-
-  /// Returns the table that the cell intersects (excludes single cell tables).
-  getTableIntersects = (x: number, y: number): Table | undefined => {
-    if (this.dataTablesCache) {
-      const tablePos = this.dataTablesCache.getTableInPos(x, y);
-      if (tablePos) {
-        return this.getTable(tablePos.x, tablePos.y);
-      }
-    }
-  };
-
-  getTableFromName = (name: string): Table | undefined => {
-    return this.tablesCache.getByName(name);
-  };
-
   getSortDialogPosition = (codeCell: JsRenderCodeCell): JsCoordinate | undefined => {
     const table = this.getTable(codeCell.x, codeCell.y);
     return table?.getSortDialogPosition();
@@ -454,19 +412,10 @@ export class Tables extends Container<Table> {
     );
   };
 
-  // Returns Table if the cell is inside a table.
-  getInTable = (cell: JsCoordinate): Table | undefined => {
-    if (!this.dataTablesCache) return;
-    const table = this.dataTablesCache.getTableInPos(cell.x, cell.y);
-    if (table) {
-      return this.getTable(table.x, table.y);
-    }
-  };
-
   getColumnHeaderCell = (
     cell: JsCoordinate
   ): { table: Table; x: number; y: number; width: number; height: number } | undefined => {
-    const table = this.getInTable(cell);
+    const table = this.getTableIntersects(cell);
     if (!table) return;
     if (table.codeCell.show_columns && table.inOverHeadings) {
       if (
@@ -493,7 +442,7 @@ export class Tables extends Container<Table> {
 
   // Returns true if the cell is a table name cell
   isInTableHeader = (cell: JsCoordinate): boolean => {
-    const table = this.getInTable(cell);
+    const table = this.getTableIntersects(cell);
     if (!table) return false;
     return (
       table.codeCell.show_name &&
@@ -503,13 +452,15 @@ export class Tables extends Container<Table> {
     );
   };
 
-  intersectsCodeInfo = (world: Point): JsRenderCodeCell | undefined => {
+  // Checks whether we're hovering a code cell with either an error or peek
+  // (excluding charts)
+  hoverCodeCell = (world: Point): JsRenderCodeCell | undefined => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
-    const table = this.getInTable(cell);
-    if (!table) return;
-    if (pixiAppSettings.showCodePeek || table.codeCell.state === 'SpillError' || table.codeCell.state === 'RunError') {
-      if (!table.codeCell.is_html_image && intersects.rectanglePoint(table.tableBounds, world)) {
-        return table.codeCell;
+    const codeCell = this.getCodeCellIntersects(cell);
+    if (!codeCell) return;
+    if (pixiAppSettings.showCodePeek || codeCell.state === 'SpillError' || codeCell.state === 'RunError') {
+      if (!codeCell.is_html_image) {
+        return codeCell;
       }
     }
   };
@@ -538,7 +489,48 @@ export class Tables extends Container<Table> {
     }
   };
 
-  // Returns the single cell tables that are in the given cell-based rectangle.
+  //#region get table
+
+  /// Returns a Table (single-cell code cells are excluded).
+  getTable = (x: number | bigint, y: number | bigint): Table | undefined => {
+    return this.tablesCache.getByXY(x, y);
+  };
+
+  /// Returns a single-cell code cell (Tables are excluded)
+  getSingleCodeCell = (x: number, y: number): JsRenderCodeCell | undefined => {
+    return this.singleCellTables[`${x},${y}`];
+  };
+
+  /// Returns a table by its name.
+  getTableFromName = (name: string): Table | undefined => {
+    return this.tablesCache.getByName(name);
+  };
+
+  /// Returns a code cell from either a Table or a single code cell.
+  getCodeCellIntersects = (cell: JsCoordinate): JsRenderCodeCell | undefined => {
+    const codeCell = this.getSingleCodeCell(cell.x, cell.y);
+    if (codeCell) return codeCell;
+    const table = this.getTableIntersects(cell);
+    if (table) return table.codeCell;
+  };
+
+  /// Returns the table that the cell intersects (excludes single cell tables).
+  getTableIntersects = (cell: JsCoordinate): Table | undefined => {
+    if (this.dataTablesCache) {
+      const tablePos = this.dataTablesCache.getTableInPos(cell.x, cell.y);
+      if (tablePos) {
+        return this.getTable(tablePos.x, tablePos.y);
+      }
+    }
+  };
+
+  /// Returns whether there are any
+  anyCodeCellInRect = (r: Rectangle): boolean => {
+    if (!this.dataTablesCache) return false;
+    return this.dataTablesCache.hasCodeCellInRect(r.x, r.y, r.right - 1, r.bottom - 1);
+  };
+
+  // Returns single cell code cells that are in the given cell-based rectangle.
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
     if (!this.dataTablesCache) return [];
     const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
@@ -559,6 +551,8 @@ export class Tables extends Container<Table> {
     });
   };
 
+  /// Returns all Tables (ie, not single-cell code cells) that are within the
+  /// cell-based rectangle
   getLargeTablesInRect = (rect: Rectangle): Table[] => {
     if (!this.dataTablesCache) return [];
     const tablePositions = this.dataTablesCache.getLargeTablesInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
@@ -571,4 +565,16 @@ export class Tables extends Container<Table> {
       }
     });
   };
+
+  /// Returns whether the cell is a table anchor
+  isTableAnchor = (x: number, y: number): boolean => {
+    return !!this.getTable(x, y) || !!this.getSingleCodeCell(x, y);
+  };
+
+  isWithinCodeCell = (x: number, y: number): boolean => {
+    const codeCell = this.getCodeCellIntersects({ x, y });
+    return codeCell?.language !== 'Import';
+  };
+
+  //#endregion
 }

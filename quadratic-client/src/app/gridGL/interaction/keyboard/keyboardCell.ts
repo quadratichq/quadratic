@@ -44,8 +44,9 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Move cursor right, don't clear selection
   if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
-    const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
-    const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursorX, cursorY);
+    const pos = sheets.sheet.cursor.position;
+    const { x: cursorX, y: cursorY } = pos;
+    const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(pos);
     if (codeCell) {
       const tableStartX = codeCell.x;
       const tableStartY = codeCell.y;
@@ -78,8 +79,9 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Edit cell
   if (matchShortcut(Action.EditCell, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
-      const { x, y } = sheets.sheet.cursor.position;
-      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+      const pos = sheets.sheet.cursor.position;
+      const { x, y } = pos;
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(pos);
       if (codeCell) {
         doubleClickCell({
           column: x,
@@ -102,8 +104,9 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Edit cell - navigate text
   if (matchShortcut(Action.ToggleArrowMode, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
-      const { x, y } = sheets.sheet.cursor.position;
-      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+      const pos = sheets.sheet.cursor.position;
+      const { x, y } = pos;
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(pos);
       if (codeCell) {
         doubleClickCell({
           column: x,

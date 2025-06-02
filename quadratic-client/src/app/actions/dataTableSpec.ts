@@ -61,7 +61,7 @@ type DataTableSpec = Pick<
 
 export const getTable = (): JsRenderCodeCell | undefined => {
   const cursor = sheets.sheet.cursor.position;
-  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().tables.getInTable(cursor)?.codeCell;
+  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
 };
 
 const getRow = (): number | undefined => {

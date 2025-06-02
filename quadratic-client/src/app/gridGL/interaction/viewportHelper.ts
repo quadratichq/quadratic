@@ -106,7 +106,7 @@ export function ensureRectVisible(sheetId: string, min: JsCoordinate, max: JsCoo
 }
 
 function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectangle): boolean {
-  const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
+  const table = pixiApp.cellsSheet().tables.getTableIntersects(coordinate);
   if (!table) return false;
   const code = table.codeCell;
   if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {

@@ -75,7 +75,7 @@ export class PointerDown {
       if (!cursor.contains(column, row)) {
         cursor.moveTo(column, row);
       }
-      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(column, row);
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
       if (codeCell) {
         events.emit('contextMenu', {
           type: ContextMenuType.Table,
@@ -91,7 +91,7 @@ export class PointerDown {
           column,
           row,
           // _could_ have an associated table if it's a cell inside a table on the grid
-          table: pixiApp.cellsSheet().tables.getInTable(cursor.position)?.codeCell,
+          table: pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor.position),
         });
       }
       return;
@@ -113,7 +113,7 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(column, row);
+        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
         if (codeCell) {
           doubleClickCell({ column: codeCell.x, row: codeCell.y });
         } else {

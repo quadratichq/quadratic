@@ -41,7 +41,7 @@ export const useSaveAndRunCell = () => {
         // yet exist in the grid
         const tables = pixiApp.cellsSheets.getById(sheetId)?.tables;
         if (tables) {
-          if (!tables.isTable(pos.x, pos.y)) {
+          if (!tables.isTableAnchor(pos.x, pos.y)) {
             events.emit('updateCodeCells', [
               {
                 sheet_id: { id: sheetId },

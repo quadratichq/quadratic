@@ -125,7 +125,7 @@ export class PointerImages {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
     const search = this.findImage(point);
     if (search && search.side) {
-      const table = pixiApp.cellsSheet().tables.getTableIntersects(search.image.column, search.image.row);
+      const table = pixiApp.cellsSheet().tables.getTableIntersects(search.image);
       if (!table) {
         console.error('Table not found in PointerImages.pointerDown');
         return false;

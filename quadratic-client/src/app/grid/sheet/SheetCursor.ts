@@ -360,7 +360,9 @@ export class SheetCursor {
 
   // Checks whether the selection can be converted to a data table
   canConvertToDataTable = (): boolean => {
-    return !!this.sheet.cursor.getSingleRectangle();
+    const rectangle = this.sheet.cursor.getSingleRectangle();
+    if (!rectangle) return false;
+    return pixiApp.cellsSheet().tables.anyCodeCellInRect(rectangle);
   };
 
   // getCopyRange(): RefRangeBounds | undefined {

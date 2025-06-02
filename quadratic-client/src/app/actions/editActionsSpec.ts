@@ -186,8 +186,8 @@ export const editActionsSpec: EditActionSpec = {
     label: () => 'Edit cell',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
-        const { x, y } = sheets.sheet.cursor.position;
-        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+        const cursor = sheets.sheet.cursor.position;
+        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
         if (codeCell) {
           doubleClickCell({
             column: codeCell.x,
@@ -196,10 +196,10 @@ export const editActionsSpec: EditActionSpec = {
             cursorMode: CursorMode.Edit,
           });
         } else {
-          quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
+          quadraticCore.getEditCell(sheets.current, cursor.x, cursor.y).then((cell) => {
             doubleClickCell({
-              column: x,
-              row: y,
+              column: cursor.x,
+              row: cursor.y,
               cell,
               cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
             });
@@ -214,8 +214,8 @@ export const editActionsSpec: EditActionSpec = {
     label: () => 'Toggle arrow mode',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
-        const { x, y } = sheets.sheet.cursor.position;
-        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(x, y);
+        const cursor = sheets.sheet.cursor.position;
+        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
         if (codeCell) {
           doubleClickCell({
             column: codeCell.x,
@@ -224,8 +224,8 @@ export const editActionsSpec: EditActionSpec = {
             cursorMode: CursorMode.Edit,
           });
         } else {
-          quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
-            doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
+          quadraticCore.getEditCell(sheets.current, cursor.x, cursor.y).then((cell) => {
+            doubleClickCell({ column: cursor.x, row: cursor.y, cell, cursorMode: CursorMode.Edit });
           });
         }
         return true;

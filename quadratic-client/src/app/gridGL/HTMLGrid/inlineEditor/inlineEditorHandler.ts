@@ -195,7 +195,7 @@ class InlineEditorHandler {
         x: cursor.x,
         y: cursor.y,
       };
-      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location.x, this.location.y);
+      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
       let value: string;
       let changeToFormula = false;
       if (initialValue) {
