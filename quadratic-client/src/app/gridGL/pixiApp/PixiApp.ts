@@ -38,9 +38,7 @@ import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
-import type { Renderer } from 'pixi.js';
-import { autoDetectRenderer, Container, Graphics, Rectangle } from 'pixi.js';
-import './pixiApp.css';
+import { autoDetectRenderer, Container, Graphics, Rectangle, type Renderer } from 'pixi.js';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -131,17 +129,16 @@ export class PixiApp {
         events.once('bitmapFontsLoaded', () => this.init().then(resolve));
         return;
       }
-
-      renderWebWorker.sendBitmapFonts();
-      this.initialized = true;
-      this.initCanvas();
-      this.rebuild();
-
-      urlParams.init();
-
-      this.waitingForFirstRender = resolve;
-      if (this.alreadyRendered) {
-        this.firstRenderComplete();
+      if (!this.initialized) {
+        renderWebWorker.sendBitmapFonts();
+        this.initCanvas();
+        this.rebuild();
+        urlParams.init();
+        this.waitingForFirstRender = resolve;
+        if (this.alreadyRendered) {
+          this.firstRenderComplete();
+        }
+        this.initialized = true;
       }
     });
   };

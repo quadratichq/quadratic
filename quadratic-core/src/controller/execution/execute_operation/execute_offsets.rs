@@ -66,6 +66,8 @@ impl GridController {
             }
 
             if !transaction.is_server() {
+                transaction.add_fill_cells(sheet_id);
+                transaction.add_borders(sheet_id);
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: column,
                     y: 0,
@@ -121,6 +123,8 @@ impl GridController {
             }
 
             if !transaction.is_server() {
+                transaction.add_fill_cells(sheet_id);
+                transaction.add_borders(sheet_id);
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: 0,
                     y: row,
@@ -180,6 +184,8 @@ impl GridController {
             }
 
             if !transaction.is_server() {
+                transaction.add_fill_cells(sheet_id);
+                transaction.add_borders(sheet_id);
                 row_heights.iter().any(|JsRowHeight { row, .. }| {
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: 0,
@@ -243,6 +249,8 @@ impl GridController {
             }
 
             if !transaction.is_server() {
+                transaction.add_fill_cells(sheet_id);
+                transaction.add_borders(sheet_id);
                 column_widths.iter().any(|JsColumnWidth { column, .. }| {
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: *column,
@@ -297,6 +305,8 @@ impl GridController {
                     &self.a1_context,
                     vec![A1Selection::all(sheet_id)],
                 );
+                transaction.add_fill_cells(sheet_id);
+                transaction.add_borders(sheet_id);
             }
         }
     }
@@ -341,6 +351,8 @@ impl GridController {
                     &self.a1_context,
                     vec![A1Selection::all(sheet_id)],
                 );
+                transaction.add_fill_cells(sheet_id);
+                transaction.add_borders(sheet_id);
             }
         }
     }

@@ -14,7 +14,7 @@ import type { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cell
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { JsValidationWarning } from '@/app/quadratic-core-types';
+import type { JsValidationWarning, Pos } from '@/app/quadratic-core-types';
 import type { Link } from '@/app/shared/types/links';
 import type {
   RenderClientCellsTextHashClear,
@@ -248,7 +248,7 @@ export class CellsLabels extends Container {
 
   renderValidationUpdates(validationWarnings: JsValidationWarning[]) {
     validationWarnings.forEach((v) => {
-      const { x, y } = v;
+      const { x, y } = v.pos;
       const cellsTextHash = this.getHash(Number(x), Number(y), true);
       if (cellsTextHash) {
         cellsTextHash.warnings.updateWarnings(v);
@@ -256,14 +256,16 @@ export class CellsLabels extends Container {
     });
   }
 
-  renderValidations(hashX: number, hashY: number, validationWarnings: JsValidationWarning[]) {
+  renderValidations = (hash: Pos, validationWarnings: JsValidationWarning[]) => {
+    const hashX = Number(hash.x);
+    const hashY = Number(hash.y);
     const key = `${hashX},${hashY}`;
     let cellsTextHash = this.cellsTextHash.get(key);
     if (!cellsTextHash) {
       cellsTextHash = this.createCellsTextHash(hashX, hashY);
     }
     cellsTextHash.warnings.populate(validationWarnings);
-  }
+  };
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {
     const hash = this.getHash(x, y);
