@@ -21,13 +21,11 @@ import type {
   Format,
   FormatUpdate,
   JsCellValue,
-  JsClipboard,
   JsCodeCell,
   JsCodeResult,
   JsColumnWidth,
   JsCoordinate,
   JsDataTableColumnHeader,
-  JsRenderCell,
   JsResponse,
   JsRowHeight,
   JsSelectionContext,
@@ -39,7 +37,7 @@ import type {
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -153,18 +151,18 @@ class Core {
     y: number;
     width: number;
     height: number;
-  }): Promise<JsRenderCell[]> {
+  }): Promise<Uint8Array | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
       try {
-        const renderCells: JsRenderCell[] = this.gridController.getRenderCells(
+        const renderCells = this.gridController.getRenderCells(
           data.sheetId,
           numbersToRectStringified(data.x, data.y, data.width, data.height)
         );
         resolve(renderCells);
       } catch (e) {
         this.handleCoreError('getRenderCells', e);
-        resolve([]);
+        resolve(undefined);
       }
     });
   }
@@ -455,19 +453,6 @@ class Core {
         this.handleCoreError('setCommas', e);
       }
       resolve(undefined);
-    });
-  }
-
-  getRenderCell(sheetId: string, x: number, y: number): Promise<JsRenderCell | undefined> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const renderCells: JsRenderCell[] | undefined = this.gridController.getRenderCells(sheetId, posToRect(x, y));
-        resolve(renderCells?.[0]);
-      } catch (e) {
-        this.handleCoreError('getRenderCell', e);
-        resolve(undefined);
-      }
     });
   }
 
@@ -787,7 +772,7 @@ class Core {
   }
 
   //#region Clipboard
-  copyToClipboard(selection: string): Promise<JsClipboard> {
+  copyToClipboard(selection: string): Promise<Uint8Array | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
@@ -795,12 +780,12 @@ class Core {
         resolve(jsClipboard);
       } catch (e) {
         this.handleCoreError('copyToClipboard', e);
-        resolve({} as JsClipboard);
+        resolve(undefined);
       }
     });
   }
 
-  cutToClipboard(selection: string, cursor: string): Promise<JsClipboard> {
+  cutToClipboard(selection: string, cursor: string): Promise<Uint8Array | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
@@ -808,7 +793,7 @@ class Core {
         resolve(jsClipboard);
       } catch (e) {
         this.handleCoreError('cutToClipboard', e);
-        resolve({} as JsClipboard);
+        resolve(undefined);
       }
     });
   }
@@ -1436,12 +1421,7 @@ class Core {
 
   getCellsA1(transactionId: string, a1: string): Uint8Array {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    try {
-      return this.gridController.calculationGetCellsA1(transactionId, a1);
-    } catch (e) {
-      this.handleCoreError('getCellsA1', e);
-      return new Uint8Array();
-    }
+    return this.gridController.calculationGetCellsA1(transactionId, a1);
   }
 
   moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {

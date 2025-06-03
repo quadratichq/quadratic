@@ -40,3 +40,21 @@ pub struct SheetFormatting {
     pub underline: SheetFormattingType<bool>,
     pub strike_through: SheetFormattingType<bool>,
 }
+
+impl SheetFormatting {
+    pub fn is_all_default(&self) -> bool {
+        self.align.is_all_default()
+            && self.vertical_align.is_all_default()
+            && self.wrap.is_all_default()
+            && self.numeric_format.is_all_default()
+            && self.numeric_decimals.is_all_default()
+            && self.numeric_commas.is_all_default()
+            && self.bold.is_all_default()
+            && self.italic.is_all_default()
+            && self.text_color.is_all_default()
+            && self.fill_color.is_all_default()
+            && self.date_time.is_all_default()
+            && self.underline.is_all_default()
+            && self.strike_through.is_all_default()
+    }
+}

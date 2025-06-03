@@ -53,7 +53,7 @@ export class SheetCursor {
     events.on('a1Context', this.updateA1Context);
   }
 
-  private updateA1Context = (context: string) => {
+  private updateA1Context = (context: Uint8Array) => {
     this.jsSelection.updateContext(context);
     if (this.sheet.sheets.current === this.sheet.id) {
       pixiApp.cursor.dirty = true;
