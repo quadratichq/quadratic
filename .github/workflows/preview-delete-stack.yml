@@ -1,4 +1,4 @@
-name: Preview
+name: Preview Delete
 
 on:
   pull_request:
@@ -32,7 +32,7 @@ jobs:
           if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} 2>/dev/null; then
             echo "Deleting stack ${{ env.STACK_NAME }}..."
             aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
-            
+
             echo "Waiting for stack deletion to complete..."
             if aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}; then
               echo "Stack deleted successfully"

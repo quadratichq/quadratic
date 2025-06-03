@@ -151,8 +151,7 @@ mod tests {
 
     fn read_test_csv_file(file_name: &str) -> Vec<u8> {
         let dir = "../quadratic-rust-shared/data/csv/";
-        let file = std::fs::read(Path::new(dir).join(file_name)).unwrap();
-        file
+        std::fs::read(Path::new(dir).join(file_name)).unwrap()
     }
 
     #[test]

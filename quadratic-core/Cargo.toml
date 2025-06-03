@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.9.0"
+version = "0.10.0"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -52,7 +52,6 @@ anyhow = "1.0"
 async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.14.0"
-rand = "0.9.0"
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
 regex = "1.7"
 rstar = "0.12.2"
@@ -107,7 +106,7 @@ half = "2.4.0"
 # temporary fix until https://github.com/tafia/calamine/pull/506 merges
 # calamine = { version = "0.27.0", features = ["dates"] }
 calamine = { git = "https://github.com/prophittcorey/calamine", branch = "fix/zip-3.0", features = [
-    "dates",
+  "dates",
 ] }
 
 bincode = { version = "2.0.0", features = ["serde"] }
@@ -117,20 +116,22 @@ dateparser = "0.2.1"
 fancy-regex = "0.14.0"
 function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", default-features = false, features = [
-    "protobuf",
+  "protobuf",
 ] }
 prost = { version = "0.13.5", default-features = false }
 encoding_rs_io = "0.1.7"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
-    "benchmark",
+  "benchmark",
 ] }
 
 [dev-dependencies]
-criterion = { version = "0.5", default-features = false }
+criterion = { version = "0.5", default-features = false, features = [
+  "html_reports",
+] }
 memory-stats = "1.2.0"
-tokio-test = "0.4.3"
+rand = "0.9.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"

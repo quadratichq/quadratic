@@ -24,23 +24,23 @@ criterion_main!(benches);
 const SINGLE_TEST: bool = true;
 
 /// Execute the import excel benchmark
-fn execute(file: &[u8]) {
+fn execute(file: &[u8], file_name: &str) {
     let mut gc = GridController::from_grid(Grid::new_blank(), 0);
-    gc.import_excel(file, "all_excel_functions.xlsx", None)
-        .unwrap();
+    gc.import_excel(file, file_name, None).unwrap();
 }
 
 /// Benchmark for importing excel files
 fn criterion_benchmark(c: &mut Criterion) {
-    let name = "import_excel: 10_000_formulas";
-    let excel_file = include_bytes!("test_files/10_000_formulas.xlsx").to_vec();
-    let function = || execute(&excel_file);
+    let file_name = "1_000_000_formulas.xlsx";
+    let bench_name = format!("import_excel: {file_name}");
+    let excel_file = include_bytes!("test_files/1_000_000_formulas.xlsx").to_vec();
+    let function = || execute(&excel_file, file_name);
 
     #[cfg(feature = "function-timer")]
     single_test_or_benchmark(
         c,
         SINGLE_TEST,
-        name,
+        &bench_name,
         &quadratic_core::FUNCTIONS,
         Some(10),
         Some(std::time::Duration::from_secs(1)),

@@ -124,16 +124,16 @@ export class PixiApp {
         events.once('bitmapFontsLoaded', () => this.init().then(resolve));
         return;
       }
-      renderWebWorker.sendBitmapFonts();
-      this.initialized = true;
-      this.initCanvas();
-      this.rebuild();
-
-      urlParams.init();
-
-      this.waitingForFirstRender = resolve;
-      if (this.alreadyRendered) {
-        this.firstRenderComplete();
+      if (!this.initialized) {
+        renderWebWorker.sendBitmapFonts();
+        this.initCanvas();
+        this.rebuild();
+        urlParams.init();
+        this.waitingForFirstRender = resolve;
+        if (this.alreadyRendered) {
+          this.firstRenderComplete();
+        }
+        this.initialized = true;
       }
     });
   };

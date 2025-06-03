@@ -9,15 +9,16 @@ datasource db {
 }
 
 model User {
-    id              Int               @id @default(autoincrement())
-    auth0Id         String            @unique @map("auth0_id")
-    eduStatus       EduStatus?        @map("edu_status")
-    ownedFiles      File[]            @relation(name: "OwnerRelation")
-    createdFiles    File[]            @relation(name: "CreatorRelation")
-    QFeedback       QFeedback[]
-    UserTeamRole    UserTeamRole[]
-    UserFileRole    UserFileRole[]
-    AnalyticsAIChat AnalyticsAIChat[]
+    id                  Int               @id @default(autoincrement())
+    auth0Id             String            @unique @map("auth0_id")
+    eduStatus           EduStatus?        @map("edu_status")
+    onboardingResponses Json?             @map("onboarding_responses")
+    ownedFiles          File[]            @relation(name: "OwnerRelation")
+    createdFiles        File[]            @relation(name: "CreatorRelation")
+    QFeedback           QFeedback[]
+    UserTeamRole        UserTeamRole[]
+    UserFileRole        UserFileRole[]
+    AnalyticsAIChat     AnalyticsAIChat[]
 
     @@index([auth0Id])
 }
@@ -270,6 +271,7 @@ enum AIChatSource {
     CodeEditorCompletions    @map("code_editor_completions")
     GetUserPromptSuggestions @map("get_user_prompt_suggestions")
     PDFImport                @map("pdf_import")
+    ModelRouter              @map("model_router")
 }
 
 enum AIChatMessageType {
