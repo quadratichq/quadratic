@@ -7,6 +7,7 @@ import {
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
+  aiAnalystWebSearchSourcesAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
@@ -30,6 +31,7 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
@@ -42,6 +44,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
+  const sources = useRecoilValue(aiAnalystWebSearchSourcesAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -232,6 +235,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
 
+      {sources.length > 0 && !loading && waitingOnMessageIndex === undefined && <WebSearchSources sources={sources} />}
+
       <PDFImportLoading />
 
       <AILoading loading={loading} />
@@ -347,6 +352,24 @@ const PromptSuggestions = memo(() => {
         >
           <span className="truncate">{suggestion.label}</span>
         </div>
+      ))}
+    </div>
+  );
+});
+
+const WebSearchSources = memo(({ sources }: { sources: any[] }) => {
+  return (
+    <div className="flex flex-col gap-2 px-2">
+      <div className="text-sm font-medium">Web search sources</div>
+      {sources.map((source, index) => (
+        <Link
+          key={`${index}-${source.title}`}
+          className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm font-medium hover:bg-accent/80"
+          to={source.uri}
+          target="_blank"
+        >
+          {source.title}
+        </Link>
       ))}
     </div>
   );

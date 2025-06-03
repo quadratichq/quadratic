@@ -225,6 +225,12 @@ const TextContentSchema = z.object({
 });
 export type TextContent = z.infer<typeof TextContentSchema>;
 
+const SourceContentSchema = z.object({
+  type: z.literal('sources'),
+  text: z.string(),
+});
+export type SourceContent = z.infer<typeof SourceContentSchema>;
+
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
   data: z.string(),

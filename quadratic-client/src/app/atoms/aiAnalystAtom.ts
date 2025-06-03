@@ -6,6 +6,7 @@ import {
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import type { WebSearchSource } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
 import type { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -30,6 +31,7 @@ export interface AIAnalystState {
   webSearch: {
     abortController: AbortController | undefined;
     loading: boolean;
+    sources: any[];
   };
   waitingOnMessageIndex?: number;
   delaySeconds: number;
@@ -58,6 +60,7 @@ export const defaultAIAnalystState: AIAnalystState = {
   webSearch: {
     abortController: undefined,
     loading: false,
+    sources: [],
   },
   waitingOnMessageIndex: undefined,
   delaySeconds: 0,
@@ -347,6 +350,10 @@ export const aiAnalystWebSearchAtom = createSelector('webSearch');
 export const aiAnalystWebSearchLoadingAtom = selector<boolean>({
   key: 'aiAnalystWebSearchLoadingAtom',
   get: ({ get }) => get(aiAnalystWebSearchAtom).loading,
+});
+export const aiAnalystWebSearchSourcesAtom = selector<WebSearchSource[]>({
+  key: 'aiAnalystWebSearchSourcesAtom',
+  get: ({ get }) => get(aiAnalystWebSearchAtom).sources,
 });
 
 export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({

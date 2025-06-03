@@ -20,6 +20,7 @@ export enum AITool {
   ConvertToTable = 'convert_to_table',
   WebSearch = 'web_search',
   WebSearchInternal = 'web_search_internal',
+  Sources = 'sources',
 }
 
 export const AIToolSchema = z.enum([
@@ -191,6 +192,10 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.WebSearchInternal]: z.object({
     query: z.string(),
+  }),
+  [AITool.Sources]: z.object({
+    title: z.string(),
+    uri: z.string(),
   }),
 } as const;
 
@@ -909,5 +914,31 @@ It requires the query to search for and the data table name to store results.\n
 This tool searches the web for information based on the query.\n
 It requires the query to search for and the data table name to store results.\n
 `,
+  },
+  [AITool.Sources]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool displays the sources of the information retrieved from the web search.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'The title of the source',
+        },
+        uri: {
+          type: 'string',
+          description: 'The URI of the source',
+        },
+      },
+      required: ['title', 'uri'],
+      additionalProperties: false,
+    },
+    responseSchema: z.object({
+      title: z.string(),
+      uri: z.string(),
+    }),
+    prompt: '',
   },
 } as const;

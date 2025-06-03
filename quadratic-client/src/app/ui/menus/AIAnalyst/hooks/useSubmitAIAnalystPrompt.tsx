@@ -182,7 +182,7 @@ export function useSubmitAIAnalystPrompt() {
           });
           set(aiAnalystWebSearchAtom, (prev) => {
             prev.abortController?.abort();
-            return { abortController: undefined, loading: false };
+            return { abortController: undefined, loading: false, sources: [] };
           });
 
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
@@ -402,10 +402,19 @@ export function useSubmitAIAnalystPrompt() {
             for (const toolCall of webSearchToolCalls) {
               const argsObject = JSON.parse(toolCall.arguments);
               const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
-              const toolResultContent = await search({ searchArgs });
+              const { toolResultContent, sources } = await search({ searchArgs });
+
               toolResultMessage.content.push({
                 id: toolCall.id,
                 content: toolResultContent,
+              });
+
+              set(aiAnalystWebSearchAtom, (prev) => {
+                return {
+                  abortController: prev.abortController,
+                  loading: prev.loading,
+                  sources: [...prev.sources, ...sources],
+                };
               });
             }
 

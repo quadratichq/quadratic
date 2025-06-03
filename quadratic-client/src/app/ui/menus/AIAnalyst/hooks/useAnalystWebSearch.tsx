@@ -10,12 +10,24 @@ import type { z } from 'zod';
 
 type SearchArgs = z.infer<(typeof aiToolsSpec)[AITool.WebSearch]['responseSchema']>;
 
+export type WebSearchSource = {
+  title: string;
+  uri: string;
+};
+
 export const useAnalystWebSearch = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
 
   const search = useRecoilCallback(
     ({ set }) =>
-      async ({ searchArgs }: { searchArgs: SearchArgs }): Promise<ToolResultContent> => {
+      async ({
+        searchArgs,
+      }: {
+        searchArgs: SearchArgs;
+      }): Promise<{
+        toolResultContent: ToolResultContent;
+        sources: WebSearchSource[];
+      }> => {
         const { query } = searchArgs;
 
         const messages: ChatMessage[] = [
@@ -32,7 +44,7 @@ export const useAnalystWebSearch = () => {
         ];
 
         const abortController = new AbortController();
-        set(aiAnalystWebSearchAtom, { abortController, loading: true });
+        set(aiAnalystWebSearchAtom, { abortController, loading: true, sources: [] });
 
         const chatId = v4();
         const response = await handleAIRequestToAPI({
@@ -48,24 +60,44 @@ export const useAnalystWebSearch = () => {
           signal: abortController.signal,
         });
 
-        console.log('WebSearch', response);
-
         if (abortController.signal.aborted) {
-          return [{ type: 'text', text: 'Request aborted by the user.' }];
+          return {
+            toolResultContent: [{ type: 'text', text: 'Request aborted by the user.' }],
+            sources: [],
+          };
         }
 
-        set(aiAnalystWebSearchAtom, { abortController: undefined, loading: false });
+        set(aiAnalystWebSearchAtom, { abortController: undefined, loading: false, sources: [] });
 
-        // we get back text and metadata in the response, just send the text
-        return [
+        const toolResultContent = [
           {
-            type: 'text',
+            type: 'text' as const,
             text: response.content
               .filter((c) => c.type === 'text')
               .map((c) => c.text)
               .join('\n'),
           },
         ];
+
+        const sources = response.content
+          .filter((c) => c.type === 'google_search_grounding_metadata')
+          .reduce<WebSearchSource[]>((acc, c) => {
+            try {
+              const json = JSON.parse(c.text);
+              return acc.concat(
+                json.groundingChunks.map((chunk: any) => ({
+                  title: chunk.web.title,
+                  uri: chunk.web.uri,
+                }))
+              );
+            } catch (e) {
+              console.error('Error parsing JSON', e);
+              return acc;
+            }
+          }, []);
+
+        // we get back text and metadata in the response, just send the text
+        return { toolResultContent, sources };
       },
     [handleAIRequestToAPI]
   );
