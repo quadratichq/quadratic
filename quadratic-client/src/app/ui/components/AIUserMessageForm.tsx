@@ -105,6 +105,12 @@ export const AIUserMessageForm = memo(
       [delaySeconds, props.messageIndex, waitingOnMessageIndex]
     );
 
+    const handleClickForm = useCallback(() => {
+      if (editing) {
+        textareaRef.current?.focus();
+      }
+    }, [editing]);
+
     const submit = useCallback(
       (prompt: string) => {
         if (prompt.trim().length === 0) return;
@@ -121,6 +127,44 @@ export const AIUserMessageForm = memo(
       abortController?.abort();
       setLoading(false);
     }, [abortController, setLoading]);
+
+    const handleChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setPrompt(event.target.value);
+    }, []);
+
+    const handleKeyDown = useCallback(
+      (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        event.stopPropagation();
+
+        if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+          event.preventDefault();
+          if (loading || waitingOnMessageIndex !== undefined) return;
+
+          submit(prompt);
+
+          if (initialContent === undefined) {
+            textareaRef.current?.focus();
+          } else {
+            setEditing(false);
+            bottomTextareaRef.current?.focus();
+          }
+        } else if (event.key === 'Escape') {
+          if (initialContent === undefined) {
+            focusGrid();
+          } else {
+            setEditing(false);
+            bottomTextareaRef.current?.focus();
+          }
+        }
+
+        if (loading || waitingOnMessageIndex !== undefined) return;
+
+        if (formOnKeyDown) {
+          formOnKeyDown(event);
+        }
+      },
+      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, submit, waitingOnMessageIndex]
+    );
 
     const handleFiles = useCallback(
       (files: FileList | File[]) => {
@@ -188,11 +232,7 @@ export const AIUserMessageForm = memo(
           editing ? '' : 'select-none'
         )}
         onSubmit={(e) => e.preventDefault()}
-        onClick={() => {
-          if (editing) {
-            textareaRef.current?.focus();
-          }
-        }}
+        onClick={handleClickForm}
         onPaste={handlePasteOrDrop}
         onDrop={handlePasteOrDrop}
         onDragEnter={handleDrag}
@@ -240,37 +280,8 @@ export const AIUserMessageForm = memo(
             editing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
             (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
           )}
-          onChange={(event) => setPrompt(event.target.value)}
-          onKeyDown={(event) => {
-            event.stopPropagation();
-
-            if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-              event.preventDefault();
-              if (loading || waitingOnMessageIndex !== undefined) return;
-
-              submit(prompt);
-
-              if (initialContent === undefined) {
-                textareaRef.current?.focus();
-              } else {
-                setEditing(false);
-                bottomTextareaRef.current?.focus();
-              }
-            } else if (event.key === 'Escape') {
-              if (initialContent === undefined) {
-                focusGrid();
-              } else {
-                setEditing(false);
-                bottomTextareaRef.current?.focus();
-              }
-            }
-
-            if (loading || waitingOnMessageIndex !== undefined) return;
-
-            if (formOnKeyDown) {
-              formOnKeyDown(event);
-            }
-          }}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
           autoComplete="off"
           placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
           autoHeight={true}
