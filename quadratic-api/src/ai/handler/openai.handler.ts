@@ -5,6 +5,7 @@ import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpe
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
+  BasetenModelKey,
   OpenAIModelKey,
   ParsedAIResponse,
   XAIModelKey,
@@ -12,7 +13,7 @@ import type {
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | XAIModelKey,
+  modelKey: OpenAIModelKey | XAIModelKey | BasetenModelKey,
   args: AIRequestHelperArgs,
   openai: OpenAI,
   response?: Response

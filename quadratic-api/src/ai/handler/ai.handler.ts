@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import {
   isAnthropicModel,
+  isBasetenModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
@@ -14,7 +15,16 @@ import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
 import { handleVertexAIRequest } from '../../ai/handler/vertexai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
-import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
+import {
+  anthropic,
+  baseten,
+  bedrock,
+  bedrock_anthropic,
+  openai,
+  vertex_anthropic,
+  vertexai,
+  xai,
+} from '../../ai/providers';
 import { debugAndNotInProduction, FINE_TUNE } from '../../env-vars';
 import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 import { calculateUsage } from '../helpers/usage.helper';
@@ -45,6 +55,8 @@ export const handleAIRequest = async (
     parsedResponse = await handleOpenAIRequest(modelKey, args, openai, res);
   } else if (isXAIModel(modelKey)) {
     parsedResponse = await handleOpenAIRequest(modelKey, args, xai, res);
+  } else if (isBasetenModel(modelKey)) {
+    parsedResponse = await handleOpenAIRequest(modelKey, args, baseten, res);
   } else if (isVertexAIModel(modelKey)) {
     parsedResponse = await handleVertexAIRequest(modelKey, args, vertexai, res);
   } else if (isBedrockModel(modelKey)) {

@@ -8,6 +8,7 @@ const AIProvidersSchema = z.enum([
   'anthropic',
   'openai',
   'xai',
+  'baseten',
   'vertexai',
   'bedrock',
 ]);
@@ -42,6 +43,7 @@ const OpenAIModelSchema = z.enum([
   'o3-2025-04-16',
 ]);
 const XAIModelSchema = z.enum(['grok-3-beta']);
+const BasetenModelSchema = z.enum(['deepseek-ai/DeepSeek-V3-0324']);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
   VertexAnthropicModelSchema,
@@ -51,6 +53,7 @@ const AIModelSchema = z.union([
   AnthropicModelSchema,
   OpenAIModelSchema,
   XAIModelSchema,
+  BasetenModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
@@ -119,7 +122,9 @@ const OpenAIModelKeySchema = z.enum([
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
+const BasetenModelKeySchema = z.enum(['baseten:deepseek-ai/DeepSeek-V3-0324']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
+export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
 const AIModelKeySchema = z.union([
   QuadraticModelKeySchema,
@@ -130,6 +135,7 @@ const AIModelKeySchema = z.union([
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
   XAIModelKeySchema,
+  BasetenModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;
 
