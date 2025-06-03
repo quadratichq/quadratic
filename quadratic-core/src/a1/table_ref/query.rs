@@ -494,15 +494,17 @@ mod tests {
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
-        let table = context.table_map.tables.values_mut().next().unwrap();
+        let mut table = context.table_map.remove("test_table").unwrap();
         table.show_name = false;
         table.show_columns = false;
+        context.table_map.insert(table);
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
 
-        let table = context.table_map.tables.values_mut().next().unwrap();
+        let mut table = context.table_map.remove("test_table").unwrap();
         table.show_name = true;
         table.show_columns = true;
         table_ref.headers = true;
+        context.table_map.insert(table);
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }
 
@@ -746,9 +748,10 @@ mod tests {
         assert!(table_ref.is_multi_cursor(&context));
 
         // Test headers only with show_ui false
-        let table = context.table_map.tables.values_mut().next().unwrap();
+        let mut table = context.table_map.remove("test_table").unwrap();
         table.show_name = false;
         table.show_columns = false;
+        context.table_map.insert(table);
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
@@ -810,7 +813,7 @@ mod tests {
 
         // Test when show_ui is false
         {
-            let table = context.table_map.get_mut("test_table").unwrap();
+            let table = context.table_map.try_table_mut("test_table").unwrap();
             table.show_name = false;
             table.show_columns = false;
             assert_eq!(
@@ -821,7 +824,7 @@ mod tests {
 
         // Test when show_columns is false
         {
-            let table = context.table_map.get_mut("test_table").unwrap();
+            let table = context.table_map.try_table_mut("test_table").unwrap();
             table.show_name = false;
             table.show_columns = false;
             assert_eq!(
@@ -838,7 +841,7 @@ mod tests {
             headers: true,
             totals: false,
         };
-        let table = context.table_map.get_mut("test_table").unwrap();
+        let table = context.table_map.try_table_mut("test_table").unwrap();
         table.show_columns = true;
         assert_eq!(
             table_ref.table_column_selection("test_table", &context),

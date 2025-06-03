@@ -31,7 +31,7 @@ export function CodeEditorHeaderLabel() {
       setCellRef(cellRef);
     };
 
-    const updateTableName = (a1Context: string) => {
+    const updateTableName = (a1Context: Uint8Array) => {
       if (!codeCellState.sheetId) return;
       const tableName = getTableNameFromPos(a1Context, codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
       setTableName(tableName);
@@ -178,12 +178,12 @@ export function CodeEditorHeaderLabel() {
       </div>
 
       {!isRenaming && (
-        <div className="flex min-w-0 flex-initial text-xs leading-4 text-muted-foreground">
+        <div className="flex min-w-0 max-w-full flex-initial text-xs leading-4 text-muted-foreground">
           {currentConnectionName && (
-            <span className="pl-1 after:ml-1 after:content-['·']">{currentConnectionName}</span>
+            <span className="truncate px-1 after:ml-1 after:content-['·']">{currentConnectionName}</span>
           )}
           <button
-            className="max-w-full truncate rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
+            className="max-w-full rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
             onClick={focusCellRef}
           >
             {cellRef}

@@ -91,6 +91,27 @@ impl A1Selection {
         rect
     }
 
+    /// Returns the largest rectangle that can be formed by the selection, including unbounded ranges.
+    pub fn largest_rect_unbounded(&self, a1_context: &A1Context) -> Rect {
+        let mut rect = Rect::single_pos(self.cursor);
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                rect = rect.union(&Rect::new(
+                    range.start.col(),
+                    range.start.row(),
+                    range.end.col(),
+                    range.end.row(),
+                ));
+            }
+            CellRefRange::Table { range } => {
+                if let Some(table_rect) = range.to_largest_rect(a1_context) {
+                    rect = rect.union(&table_rect);
+                }
+            }
+        });
+        rect
+    }
+
     /// Returns rectangle in case of single finite range selection having more than one cell.
     pub fn single_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         if self.ranges.len() != 1 || !self.is_multi_cursor(a1_context) {
@@ -121,7 +142,7 @@ impl A1Selection {
     // Converts to a set of quadrant positions.
     pub fn rects_to_hashes(&self, sheet: &Sheet, a1_context: &A1Context) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
-        let finite_selection = sheet.finitize_selection(self, false, false, a1_context);
+        let finite_selection = sheet.finitize_selection(self, false, false, false, a1_context);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
             if let Some(rect) = range.to_rect(a1_context) {
@@ -479,7 +500,7 @@ impl A1Selection {
     /// Returns true if the selection is on an image.
     pub fn cursor_is_on_html_image(&self, a1_context: &A1Context) -> bool {
         let table = a1_context
-            .tables()
+            .iter_tables()
             .find(|table| table.contains(self.cursor.to_sheet_pos(self.sheet_id)));
         table.is_some_and(|table| table.is_html_image)
     }
@@ -517,11 +538,13 @@ impl A1Selection {
                     names.push(range.table_name.clone());
                 }
             }
-            CellRefRange::Sheet { range } => context.tables().for_each(|table| {
-                if table.sheet_id == self.sheet_id {
-                    if let Some(rect) = range.to_rect() {
-                        // if the selection intersects the name ui row of the table
-                        if (table.show_name
+            CellRefRange::Sheet { range } => {
+                context
+                    .iter_tables_in_sheet(self.sheet_id)
+                    .for_each(|table| {
+                        if let Some(rect) = range.to_rect() {
+                            // if the selection intersects the name ui row of the table
+                            if (table.show_name
                             && rect.intersects(Rect::new(
                                 table.bounds.min.x,
                                 table.bounds.min.y,
@@ -533,12 +556,12 @@ impl A1Selection {
                             // or if the selection contains the code cell of a code table
                             (table.language != CodeCellLanguage::Import
                                 && rect.contains(table.bounds.min))
-                        {
-                            names.push(table.table_name.clone());
+                            {
+                                names.push(table.table_name.clone());
+                            }
                         }
-                    }
-                }
-            }),
+                    });
+            }
         });
         names.sort();
         names.dedup();
@@ -1077,13 +1100,9 @@ mod tests {
             &[("Sheet1", SheetId::TEST), ("Sheet 2", SheetId::new())],
             &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
         );
-        context
-            .table_map
-            .tables
-            .values_mut()
-            .next()
-            .unwrap()
-            .is_html_image = true;
+        let mut table = context.table_map.remove("Table1").unwrap();
+        table.is_html_image = true;
+        context.table_map.insert(table);
 
         // Test position inside the table
         assert!(A1Selection::test_a1("B2").cursor_is_on_html_image(&context));

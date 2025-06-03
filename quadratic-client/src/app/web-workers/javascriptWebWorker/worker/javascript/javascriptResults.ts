@@ -1,7 +1,7 @@
 // Converts
 
 import type { JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import {
   javascriptConvertOutputArray,
   javascriptConvertOutputType,

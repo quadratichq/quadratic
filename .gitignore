@@ -81,8 +81,20 @@ docker/postgres-connection/data
 docker/mysql-connection/data
 docker/snowflake-connection/data
 docker/mssql-connection/data
+docker/ssh-postgres-connection/data
+docker/ssh-mysql-connection/data
+docker/ssh-mssql-connection/data
+
+# Playwright
+test/e2e/test-results
+test/e2e/playwright-report
+test/e2e/blob-report
+test/e2e/playwright/.cache/
 
 # JMeter
 jmeter.log
 
 ~$*
+
+# ai
+/finetuning

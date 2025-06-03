@@ -1,4 +1,4 @@
-name: Preview
+name: Preview Delete
 
 on:
   pull_request:

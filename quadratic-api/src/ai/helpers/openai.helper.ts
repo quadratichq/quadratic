@@ -15,7 +15,6 @@ import {
   isContentText,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -157,18 +156,18 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  response: Response,
-  modelKey: OpenAIModelKey | XAIModelKey
+  modelKey: OpenAIModelKey | XAIModelKey,
+  response?: Response
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   const usage: AIUsage = {
     inputTokens: 0,
@@ -185,7 +184,7 @@ export async function parseOpenAIStream(
       usage.inputTokens -= usage.cacheReadTokens;
     }
 
-    if (!response.writableEnded) {
+    if (!response?.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
         if (chunk.choices[0].delta.content) {
@@ -242,12 +241,10 @@ export async function parseOpenAIStream(
           responseMessage.toolCalls.forEach((toolCall) => {
             toolCall.loading = false;
           });
-        } else if (chunk.choices[0].delta.refusal) {
-          console.warn('Invalid AI response: ', chunk.choices[0].delta.refusal);
         }
       }
 
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
     } else {
       break;
     }
@@ -269,10 +266,9 @@ export async function parseOpenAIStream(
     }));
   }
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-
-  if (!response.writableEnded) {
-    response.end();
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  if (!response?.writableEnded) {
+    response?.end();
   }
 
   return { responseMessage, usage };
@@ -280,22 +276,18 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  response: Response,
-  modelKey: OpenAIModelKey | XAIModelKey
+  modelKey: OpenAIModelKey | XAIModelKey,
+  response?: Response
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
   const message = result.choices[0].message;
-
-  if (message.refusal) {
-    throw new Error(`Invalid AI response: ${message.refusal}`);
-  }
 
   if (message.content) {
     responseMessage.content.push({
@@ -306,17 +298,13 @@ export function parseOpenAIResponse(
 
   if (message.tool_calls) {
     message.tool_calls.forEach((toolCall) => {
-      switch (toolCall.type) {
-        case 'function':
-          responseMessage.toolCalls.push({
-            id: toolCall.id,
-            name: toolCall.function.name,
-            arguments: toolCall.function.arguments,
-            loading: false,
-          });
-          break;
-        default:
-          throw new Error(`Invalid AI response: ${toolCall}`);
+      if (toolCall.type === 'function') {
+        responseMessage.toolCalls.push({
+          id: toolCall.id,
+          name: toolCall.function.name,
+          arguments: toolCall.function.arguments,
+          loading: false,
+        });
       }
     });
   }
@@ -328,7 +316,7 @@ export function parseOpenAIResponse(
     });
   }
 
-  response.json(responseMessage);
+  response?.json(responseMessage);
 
   const cacheReadTokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
   const usage: AIUsage = {
