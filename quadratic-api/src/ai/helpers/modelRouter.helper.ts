@@ -90,7 +90,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Pro" or "mini". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "Pro" or "Mini". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
