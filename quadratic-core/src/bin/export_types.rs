@@ -48,7 +48,6 @@ use quadratic_core::grid::sheet::borders::CellBorderLine;
 use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
-use quadratic_core::grid::sheet::keyboard::Direction;
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::rules::ValidationRule;
 use quadratic_core::grid::sheet::validations::rules::validation_date_time::{
@@ -125,7 +124,6 @@ fn main() {
         ConnectionKind,
         DataTableSort,
         DateTimeRange,
-        Direction,
         Format,
         FormatUpdate,
         GridBounds,
