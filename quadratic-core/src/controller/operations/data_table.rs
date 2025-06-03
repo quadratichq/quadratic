@@ -298,13 +298,15 @@ impl GridController {
             DataTableKind::Import(import.to_owned()),
             &name,
             cell_values.into(),
-            false,
             first_row_is_header,
             Some(true),
             Some(true),
             None,
         );
-        data_table.formats.apply_updates(&sheet_format_updates);
+        data_table
+            .formats
+            .get_or_insert_default()
+            .apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
 
         ops.push(Operation::AddDataTable {
@@ -385,14 +387,24 @@ mod test {
                 );
                 // formats are 1 based
                 assert_eq!(
-                    data_table.formats.numeric_format.get((1, 2).into()),
+                    data_table
+                        .formats
+                        .as_ref()
+                        .unwrap()
+                        .numeric_format
+                        .get((1, 2).into()),
                     Some(NumericFormat {
                         kind: NumericFormatKind::Currency,
                         symbol: Some("$".into()),
                     })
                 );
                 assert_eq!(
-                    data_table.formats.numeric_commas.get((2, 2).into()),
+                    data_table
+                        .formats
+                        .as_ref()
+                        .unwrap()
+                        .numeric_commas
+                        .get((2, 2).into()),
                     Some(true)
                 );
             }

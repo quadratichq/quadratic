@@ -1,6 +1,6 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
@@ -10,7 +10,6 @@ import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore'
 import type { PyodideInterface } from 'pyodide';
 import { loadPyodide } from 'pyodide';
 
-const TRY_AGAIN_TIMEOUT = 500;
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 // eslint-disable-next-line no-restricted-globals
@@ -23,7 +22,7 @@ function isEmpty(value: JsCellValueResult | string | null | undefined) {
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
-  state: LanguageState;
+  private state: LanguageState;
   private transactionId?: string;
 
   constructor() {
@@ -39,7 +38,7 @@ class Python {
     return pythonCore.sendGetCellsA1(this.transactionId, a1);
   };
 
-  private init = async () => {
+  private init = async (): Promise<void> => {
     const jwt = await pythonClient.getJwt();
 
     // patch XMLHttpRequest to send requests to the proxy
@@ -132,9 +131,10 @@ class Python {
     } catch (e: any) {
       pythonClient.sendPythonLoadError(e?.message);
       console.warn(`[Python WebWorker] failed to load`, e);
+      this.transactionId = undefined;
       this.state = 'error';
-      setTimeout(this.init, TRY_AGAIN_TIMEOUT);
-      return;
+      this.pyodide = undefined;
+      return this.init();
     }
 
     const pythonVersion = await this.pyodide.runPythonAsync('import platform; platform.python_version()');
@@ -146,7 +146,7 @@ class Python {
     pythonClient.sendPythonState('ready');
     this.transactionId = undefined;
     this.state = 'ready';
-    await this.next();
+    return this.next();
   };
 
   private corePythonRunToCodeRun = (corePythonRun: CorePythonRun): CodeRun => {
@@ -166,13 +166,15 @@ class Python {
     code: codeRun.code,
   });
 
-  private next = async () => {
-    if (this.state === 'ready' && this.awaitingExecution.length > 0) {
+  private next = () => {
+    if (!this.pyodide) {
+      return this.init();
+    }
+
+    if (this.state === 'ready' && !this.transactionId && this.awaitingExecution.length > 0) {
       const run = this.awaitingExecution.shift();
       if (run) {
-        await this.runPython(this.codeRunToCorePython(run));
-        this.transactionId = undefined;
-        this.state = 'ready';
+        return this.runPython(this.codeRunToCorePython(run));
       }
     }
   };
@@ -191,7 +193,7 @@ class Python {
     }
   };
 
-  runPython = async (message: CorePythonRun) => {
+  runPython = async (message: CorePythonRun): Promise<void> => {
     if (!this.pyodide || this.state !== 'ready' || this.transactionId) {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
@@ -306,10 +308,10 @@ class Python {
 
     codeResult = undefined;
 
+    pythonClient.sendPythonState('ready', { current: undefined });
     this.transactionId = undefined;
     this.state = 'ready';
-    pythonClient.sendPythonState('ready', { current: undefined });
-    setTimeout(this.next, 0);
+    return this.next();
   };
 }
 

@@ -10,6 +10,7 @@ import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point, Rectangle } from 'pixi.js';
 import { Container } from 'pixi.js';
+import { isBitmapFontLoaded } from '../../loadAssets';
 
 export class CellsImages extends Container<CellsImage> {
   private cellsSheet: CellsSheet;
@@ -41,6 +42,11 @@ export class CellsImages extends Container<CellsImage> {
   }
 
   private updateImage = (message: CoreClientImage) => {
+    if (!isBitmapFontLoaded()) {
+      events.once('bitmapFontsLoaded', () => this.updateImage(message));
+      return;
+    }
+
     if (message.sheetId === this.cellsSheet.sheetId) {
       let sprite = this.children.find(
         (sprite) => (sprite as CellsImage).pos.x === message.x && (sprite as CellsImage).pos.y === message.y
