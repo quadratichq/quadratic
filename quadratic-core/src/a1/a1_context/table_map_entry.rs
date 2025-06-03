@@ -21,7 +21,7 @@ pub struct TableMapEntry {
 
 impl TableMapEntry {
     pub fn from_table(sheet_id: SheetId, pos: Pos, table: &DataTable) -> Self {
-        if table.spill_error || table.has_error() {
+        if table.has_spill() || table.has_error() {
             Self {
                 sheet_id,
                 table_name: table.name().to_string(),
