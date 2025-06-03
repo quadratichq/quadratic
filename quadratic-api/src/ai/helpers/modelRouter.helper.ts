@@ -78,6 +78,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
     <capability>Requests that involve frustration</capability>
+    <capability>Onboarding</capability>
     <capability>Prompts that indicate something didn't work</capability>
    </capabilities>
   </model>
@@ -139,6 +140,10 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Fix the errors</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Hi, I'm a new user to Quadratic and I plan on using it for personal projects. One thing I'm going to use it for in particular is Trading / Investing; show me what you can do by creating a sample dataset for that. Once finished with the dataset, create a chart that helps explain the data. Then tell me what else is possible in Quadratic.</user>
    <answer>Claude</answer>
   </example>
   <example>
