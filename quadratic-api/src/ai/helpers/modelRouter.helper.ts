@@ -81,7 +81,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Creating new charts</capability>
    </capabilities>
   </model>
-  <model name="Flash">
+  <model name="mini">
    <capabilities>
     <capability>Explicitly defined formatting tasks</capability>
     <capability>Explicitly defined inserts/edits.</capability>
@@ -90,7 +90,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Pro" or "Flash". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "Pro" or "mini". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
@@ -127,6 +127,10 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
+   <user>Fix the errors</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
    <user>Add an extra axis to my chart</user>
    <answer>Pro</answer>
   </example>
@@ -155,32 +159,32 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Sum the values in column F</user>
-   <answer>Pro</answer>
-  </example>
- <example>
-   <user>Calculate the mean of costs</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Find the mean, filtered by product type</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
    <user>Highlight all male entries orange</user>
    <answer>Pro</answer>
   </example>
   <example>
    <user>Highlight column C blue</user>
-   <answer>Flash</answer>
+   <answer>mini</answer>
   </example>
   <example>
    <user>move that to A9</user>
-   <answer>Flash</answer>
+   <answer>mini</answer>
   </example>
   <example>
    <user>Insert 5 in cell A7</user>
-   <answer>Flash</answer>
+   <answer>mini</answer>
+  </example>
+   <example>
+   <user>Sum the values in column F</user>
+   <answer>mini</answer>
+  </example>
+  <example>
+   <user>Calculate the mean of costs</user>
+   <answer>mini</answer>
+  </example>
+  <example>
+   <user>Find the mean, filtered by product type</user>
+   <answer>mini</answer>
   </example>
  </examples>
 `,
