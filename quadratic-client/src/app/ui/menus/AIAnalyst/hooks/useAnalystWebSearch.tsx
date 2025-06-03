@@ -24,7 +24,7 @@ export const useAnalystWebSearch = () => {
             content: [
               {
                 type: 'text',
-                text: `Use the google_search tool and earch the web for: ${query}`,
+                text: `Use the google_search tool and search the web for: ${query}`,
               },
             ],
             contextType: 'userPrompt',
