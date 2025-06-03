@@ -232,59 +232,51 @@ export const AIUserMessageForm = memo(
           textareaRef={textareaRef}
         />
 
-        {editing ? (
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit',
-              waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
-            )}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              event.stopPropagation();
+        <Textarea
+          ref={textareaRef}
+          value={prompt}
+          className={cn(
+            'pointer-events-none min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+            (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+          )}
+          onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={(event) => {
+            event.stopPropagation();
 
-              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-                event.preventDefault();
-                if (loading || waitingOnMessageIndex !== undefined) return;
-
-                submit(prompt);
-
-                if (initialContent === undefined) {
-                  textareaRef.current?.focus();
-                } else {
-                  setEditing(false);
-                  bottomTextareaRef.current?.focus();
-                }
-              } else if (event.key === 'Escape') {
-                if (initialContent === undefined) {
-                  focusGrid();
-                } else {
-                  setEditing(false);
-                  bottomTextareaRef.current?.focus();
-                }
-              }
-
+            if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+              event.preventDefault();
               if (loading || waitingOnMessageIndex !== undefined) return;
 
-              if (formOnKeyDown) {
-                formOnKeyDown(event);
+              submit(prompt);
+
+              if (initialContent === undefined) {
+                textareaRef.current?.focus();
+              } else {
+                setEditing(false);
+                bottomTextareaRef.current?.focus();
               }
-            }}
-            autoComplete="off"
-            placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-            autoHeight={true}
-            maxHeight={maxHeight}
-            disabled={waitingOnMessageIndex !== undefined}
-          />
-        ) : (
-          <div
-            className={cn('pointer-events-none whitespace-pre-wrap p-2 text-sm', showAIUsageExceeded && 'opacity-50')}
-          >
-            {prompt}
-          </div>
-        )}
+            } else if (event.key === 'Escape') {
+              if (initialContent === undefined) {
+                focusGrid();
+              } else {
+                setEditing(false);
+                bottomTextareaRef.current?.focus();
+              }
+            }
+
+            if (loading || waitingOnMessageIndex !== undefined) return;
+
+            if (formOnKeyDown) {
+              formOnKeyDown(event);
+            }
+          }}
+          autoComplete="off"
+          placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
+          autoHeight={true}
+          maxHeight={maxHeight}
+          readOnly={!editing}
+          disabled={waitingOnMessageIndex !== undefined}
+        />
 
         <AIUsageExceeded show={showAIUsageExceeded} delaySeconds={delaySeconds} />
 
