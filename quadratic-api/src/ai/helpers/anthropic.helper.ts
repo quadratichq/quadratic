@@ -438,8 +438,6 @@ export function parseAnthropicResponse(
           text: message.data ?? '',
         });
         break;
-      default:
-        console.error(`Invalid AI response: ${JSON.stringify(message)}`);
     }
   });
 

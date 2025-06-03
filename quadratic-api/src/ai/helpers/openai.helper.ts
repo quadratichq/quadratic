@@ -241,8 +241,6 @@ export async function parseOpenAIStream(
           responseMessage.toolCalls.forEach((toolCall) => {
             toolCall.loading = false;
           });
-        } else if (chunk.choices[0].delta.refusal) {
-          console.warn('Invalid AI response: ', chunk.choices[0].delta.refusal);
         }
       }
 
@@ -291,10 +289,6 @@ export function parseOpenAIResponse(
 
   const message = result.choices[0].message;
 
-  if (message.refusal) {
-    throw new Error(`Invalid AI response: ${message.refusal}`);
-  }
-
   if (message.content) {
     responseMessage.content.push({
       type: 'text',
@@ -304,17 +298,13 @@ export function parseOpenAIResponse(
 
   if (message.tool_calls) {
     message.tool_calls.forEach((toolCall) => {
-      switch (toolCall.type) {
-        case 'function':
-          responseMessage.toolCalls.push({
-            id: toolCall.id,
-            name: toolCall.function.name,
-            arguments: toolCall.function.arguments,
-            loading: false,
-          });
-          break;
-        default:
-          throw new Error(`Invalid AI response: ${toolCall}`);
+      if (toolCall.type === 'function') {
+        responseMessage.toolCalls.push({
+          id: toolCall.id,
+          name: toolCall.function.name,
+          arguments: toolCall.function.arguments,
+          loading: false,
+        });
       }
     });
   }

@@ -206,8 +206,6 @@ export async function parseVertexAIStream(
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
           });
-        } else {
-          console.error(`Invalid AI response: ${JSON.stringify(part)}`);
         }
       }
 
@@ -265,8 +263,6 @@ export function parseVertexAIResponse(
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,
       });
-    } else {
-      console.error(`Invalid AI response: ${JSON.stringify(message)}`);
     }
   });
 
