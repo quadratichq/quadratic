@@ -60,7 +60,7 @@ export const handleAIRequest = async (
     console.log('[AI.Usage]', parsedResponse.usage);
   }
 
-  if (debugAndNotInProduction && !!FINE_TUNE && !!parsedResponse) {
+  if (debugAndNotInProduction && FINE_TUNE === 'true' && !!parsedResponse) {
     createFileForFineTuning(modelKey, args, parsedResponse);
   }
 
