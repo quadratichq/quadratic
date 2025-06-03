@@ -323,7 +323,7 @@ jobs:
             fi
 
             # Extract HTTP code and body
-            HTTP_BODY=$(echo "$RESPONSE" | head -n 1)
+            HTTP_BODY=$RESPONSE
             HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
 
             # Check for valid HTTP response
