@@ -39,7 +39,7 @@ export class ScrollBarsHandler {
   private dragging: 'horizontal' | 'vertical' | undefined;
 
   constructor() {
-    events.on('sheetInfo', this.setDirty);
+    events.on('sheetsInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('headingSize', this.setDirty);
     events.on('changeSheet', this.setDirty);
@@ -48,7 +48,7 @@ export class ScrollBarsHandler {
   }
 
   destroy() {
-    events.off('sheetInfo', this.setDirty);
+    events.off('sheetsInfo', this.setDirty);
     events.off('sheetInfoUpdate', this.setDirty);
     events.off('headingSize', this.setDirty);
     events.off('changeSheet', this.setDirty);

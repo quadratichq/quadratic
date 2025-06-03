@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -10,15 +10,14 @@
   "private": true,
   "workspaces": [
     "quadratic-api",
-    "quadratic-shared",
     "quadratic-client",
-    "quadratic-files",
-    "quadratic-multiplayer",
+    "quadratic-connection",
     "quadratic-core",
-    "quadratic-client",
+    "quadratic-files",
     "quadratic-kernels/python-wasm",
+    "quadratic-multiplayer",
     "quadratic-rust-shared",
-    "quadratic-connection"
+    "quadratic-shared"
   ],
   "type": "module",
   "scripts": {

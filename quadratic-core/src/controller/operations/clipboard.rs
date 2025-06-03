@@ -292,7 +292,7 @@ impl GridController {
                     ops.push(Operation::SetDataTable {
                         sheet_pos: target_pos,
                         data_table: Some(data_table),
-                        index: 0,
+                        index: usize::MAX,
                     });
                 }
 
@@ -1636,7 +1636,7 @@ mod test {
         gc.set_cell_value(pos![C3].to_sheet_pos(sheet_id), "4".to_string(), None);
 
         // hide the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
@@ -1714,7 +1714,7 @@ mod test {
         );
 
         // show the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
@@ -1775,7 +1775,7 @@ mod test {
         gc.set_cell_value(pos![C3].to_sheet_pos(sheet_id), "4".to_string(), None);
 
         // hide the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
@@ -1840,7 +1840,7 @@ mod test {
         assert!(sheet.cell_format(pos![F14]).is_default());
 
         // show the second column
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
@@ -1910,7 +1910,7 @@ mod test {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
@@ -1928,13 +1928,13 @@ mod test {
 
         // paste cell to the right of the data table
         paste(&mut gc, sheet_id, 4, 3, html.clone());
-        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // paste cell to the bottom of the data table
         paste(&mut gc, sheet_id, 1, 6, html.clone());
-        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }

@@ -5,36 +5,10 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{GridBounds, Sheet},
+    grid::Sheet,
 };
 
 impl Sheet {
-    /// Removes any value at row and shifts the remaining values up by 1.
-    fn insert_and_shift_values(&mut self, row: i64) {
-        // use the sheet bounds to determine the approximate bounds for the impacted range
-        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
-            for x in bounds.min.x..=bounds.max.x {
-                if let Some(column) = self.columns.get_mut(&x) {
-                    let mut keys_to_move: Vec<i64> = column
-                        .values
-                        .keys()
-                        .filter(|&key| *key >= row)
-                        .cloned()
-                        .collect();
-
-                    keys_to_move.sort_unstable_by(|a, b| b.cmp(a));
-
-                    // Move down values
-                    for key in keys_to_move {
-                        if let Some(value) = column.values.remove(&key) {
-                            column.values.insert(key + 1, value);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     pub(crate) fn insert_row(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -47,7 +21,7 @@ impl Sheet {
 
         self.check_insert_tables_rows(transaction, row, copy_formats);
 
-        self.insert_and_shift_values(row);
+        self.columns.insert_row(row);
 
         self.adjust_insert_tables_rows(transaction, row);
 
@@ -174,8 +148,8 @@ mod test {
         );
         assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![E1]), None);
 
-        assert!(sheet.data_tables.get(&pos![D1]).is_none());
-        assert!(sheet.data_tables.get(&pos![D2]).is_some());
+        assert!(sheet.data_tables.get_at(&pos![D1]).is_none());
+        assert!(sheet.data_tables.get_at(&pos![D2]).is_some());
 
         assert_eq!(
             sheet.display_value(pos![D2]),

@@ -190,26 +190,24 @@ impl GridController {
                 let mut delete_data_tables = vec![];
                 let mut data_tables_automatically_deleted = vec![];
 
-                if let Ok(data_tables) = sheet.data_tables_within_rect(rect, false) {
-                    for data_table_pos in data_tables {
-                        if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
-                            let data_table_full_rect =
-                                data_table.output_rect(data_table_pos.to_owned(), false);
-                            let mut data_table_rect = data_table_full_rect;
-                            data_table_rect.min.y += data_table.y_adjustment(true);
+                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect(rect) {
+                    let data_table_full_rect =
+                        data_table.output_rect(data_table_pos.to_owned(), false);
+                    let mut data_table_rect = data_table_full_rect;
+                    data_table_rect.min.y += data_table.y_adjustment(true);
 
-                            let is_full_table_selected = rect.contains_rect(&data_table_rect);
-                            let can_delete_table = is_full_table_selected || data_table.is_code();
-                            let table_column_selection = selection
-                                .table_column_selection(data_table.name(), self.a1_context());
-                            can_delete_column = !is_full_table_selected
-                                && table_column_selection.is_some()
-                                && !data_table.is_code();
+                    let is_full_table_selected = rect.contains_rect(&data_table_rect);
+                    let can_delete_table = is_full_table_selected || data_table.is_code();
+                    let table_column_selection =
+                        selection.table_column_selection(data_table.name(), self.a1_context());
+                    can_delete_column = !is_full_table_selected
+                        && table_column_selection.is_some()
+                        && !data_table.is_code();
 
-                            // we also delete a data table if it is not fully
-                            // selected but any cell in the name ui is selected
-                            if !is_full_table_selected
-                                && data_table.get_show_name()
+                    // we also delete a data table if it is not fully
+                    // selected but any cell in the name ui is selected
+                    if !is_full_table_selected
+                                 && data_table.get_show_name()
                                 // the selection intersects the name ui row
                                 && rect.intersects(Rect::new(
                                     data_table_full_rect.min.x,
@@ -221,60 +219,56 @@ impl GridController {
                                 // top-left cell (as it will automatically
                                 // delete it in that case)
                                 && !rect.contains(data_table_full_rect.min)
-                            {
-                                delete_data_tables.push(data_table_pos);
-                            }
+                    {
+                        delete_data_tables.push(data_table_pos);
+                    }
 
-                            // if a data table is not fully selected and there
-                            // is no name ui, then we delete its contents and
-                            // save its anchor
-                            if !is_full_table_selected
-                                && !data_table.get_show_name()
-                                && rect.contains(data_table_pos)
-                                && matches!(data_table.kind, DataTableKind::Import(_))
-                            {
-                                save_data_table_anchors.push(data_table_pos);
-                            }
-                            if can_delete_table {
-                                // we don't need to manually delete the table as
-                                // the SetCellValues operation below will do
-                                // this properly
-                                data_tables_automatically_deleted.push(data_table_pos);
-                            }
-                            if can_delete_column {
-                                // adjust for hidden columns, reverse the order to delete from right to left
-                                let columns = (rect.min.x..=rect.max.x)
-                                    .map(|x| {
-                                        // account for hidden columns
-                                        data_table.get_column_index_from_display_index(
-                                            (x - data_table_rect.min.x) as u32,
-                                            true,
-                                        )
-                                    })
-                                    .rev()
-                                    .collect();
-                                ops.push(Operation::DeleteDataTableColumns {
-                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                                    columns,
-                                    flatten: false,
-                                    select_table: false,
-                                });
-                            } else if !delete_data_tables.contains(&data_table_pos)
-                                && !data_tables_automatically_deleted.contains(&data_table_pos)
-                            {
-                                // find the intersection of the selection rect and the data table rect
-                                if let Some(intersection) = rect.intersection(&data_table_rect) {
-                                    ops.push(Operation::SetDataTableAt {
-                                        sheet_pos: intersection
-                                            .min
-                                            .to_sheet_pos(selection.sheet_id),
-                                        values: CellValues::new_blank(
-                                            intersection.width(),
-                                            intersection.height(),
-                                        ),
-                                    });
-                                }
-                            }
+                    // if a data table is not fully selected and there
+                    // is no name ui, then we delete its contents and
+                    // save its anchor
+                    if !is_full_table_selected
+                        && !data_table.get_show_name()
+                        && rect.contains(data_table_pos)
+                        && matches!(data_table.kind, DataTableKind::Import(_))
+                    {
+                        save_data_table_anchors.push(data_table_pos);
+                    }
+                    if can_delete_table {
+                        // we don't need to manually delete the table as
+                        // the SetCellValues operation below will do
+                        // this properly
+                        data_tables_automatically_deleted.push(data_table_pos);
+                    }
+                    if can_delete_column {
+                        // adjust for hidden columns, reverse the order to delete from right to left
+                        let columns = (rect.min.x..=rect.max.x)
+                            .map(|x| {
+                                // account for hidden columns
+                                data_table.get_column_index_from_display_index(
+                                    (x - data_table_rect.min.x) as u32,
+                                    true,
+                                )
+                            })
+                            .rev()
+                            .collect();
+                        ops.push(Operation::DeleteDataTableColumns {
+                            sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                            columns,
+                            flatten: false,
+                            select_table: false,
+                        });
+                    } else if !delete_data_tables.contains(&data_table_pos)
+                        && !data_tables_automatically_deleted.contains(&data_table_pos)
+                    {
+                        // find the intersection of the selection rect and the data table rect
+                        if let Some(intersection) = rect.intersection(&data_table_rect) {
+                            ops.push(Operation::SetDataTableAt {
+                                sheet_pos: intersection.min.to_sheet_pos(selection.sheet_id),
+                                values: CellValues::new_blank(
+                                    intersection.width(),
+                                    intersection.height(),
+                                ),
+                            });
                         }
                     }
                 }
@@ -883,7 +877,7 @@ mod test {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
@@ -891,14 +885,14 @@ mod test {
         // add a cell to the right of the data table
         let sheet_pos = SheetPos::new(sheet_id, 4, 3);
         gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
-        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // add a cell to the bottom of the data table
         let sheet_pos = SheetPos::new(sheet_id, 1, 6);
         gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
-        let data_table = gc.sheet(sheet_id).data_table(pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }
