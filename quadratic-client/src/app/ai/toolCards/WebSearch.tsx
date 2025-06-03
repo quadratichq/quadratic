@@ -24,7 +24,7 @@ export const WebSearch = memo(({ args, loading }: WebSearchProps) => {
         setToolArgs(aiToolsSpec[AITool.WebSearch].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[MoveCells] Failed to parse args: ', error);
+        console.error('[WebSearch] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
