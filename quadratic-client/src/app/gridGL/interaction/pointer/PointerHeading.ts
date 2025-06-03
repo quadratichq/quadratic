@@ -58,7 +58,6 @@ export class PointerHeading {
     start: number;
     place: number;
     offset: number;
-    lastMouse: Point;
   };
 
   // tracks changes to viewport caused by resizing negative column/row headings
@@ -150,7 +149,6 @@ export class PointerHeading {
         start,
         place: isColumn ? intersects.column! : intersects.row!,
         offset: (isColumn ? intersects.column! : intersects.row!) - start,
-        lastMouse: e.global.clone(),
       };
       pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
       pixiApp.cellMoving.dirty = true;
@@ -209,9 +207,6 @@ export class PointerHeading {
     // if the pointer is in a different column, we need to update the movingColRows
     this.movingColRows.place = isColumn ? current.column : current.row;
     pixiApp.cellMoving.dirty = true;
-    if (e) {
-      this.movingColRows.lastMouse = e.global.clone();
-    }
     return true;
   }
 
@@ -465,14 +460,5 @@ export class PointerHeading {
       const sheetId = sheets.current;
       quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
     }
-  }
-
-  // Handles mouse edges if we're moving columns or rows. Returns true if moving
-  // col/rows is active.
-  handleMouseEdges(): boolean {
-    if (!this.movingColRows) return false;
-    const world = pixiApp.viewport.toWorld(this.movingColRows.lastMouse.x, this.movingColRows.lastMouse.y);
-    this.pointerMoveColRows(world);
-    return true;
   }
 }
