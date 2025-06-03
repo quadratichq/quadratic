@@ -56,7 +56,16 @@ export const useAnalystWebSearch = () => {
 
         set(aiAnalystWebSearchAtom, { abortController: undefined, loading: false });
 
-        return [{ type: 'text', text: response.content.map((c) => c.text).join('\n') }];
+        // we get back text and metadata in the response, just send the text
+        return [
+          {
+            type: 'text',
+            text: response.content
+              .filter((c) => c.type === 'text')
+              .map((c) => c.text)
+              .join('\n'),
+          },
+        ];
       },
     [handleAIRequestToAPI]
   );
