@@ -68,7 +68,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Processing images and PDFs</capability>
     <capability>Writing JavaScript</capability>
     <capability>Formatting - simple, conditional, etc.</capability>
-    <capability>Editing existing charts</capability>
     <capability>API requests</capability>
     <capability>Broad questions about the data</capability>
     <capability>Any capabilitiesnot defined in these instructions</capability>
@@ -85,6 +84,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   <model name="Flash">
    <capabilities>
     <capability>Creating charts</capability>
+    <capability>Editing charts</capability>
    </capabilities>
   </model>
   <model name="Mini">
@@ -142,19 +142,11 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Add an extra axis to my chart</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
    <user>Can you explain the data?</user>
    <answer>Pro</answer>
   </example>
   <example>
    <user>What relationship did that show?</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Change the line to blue</user>
    <answer>Pro</answer>
   </example>
   <example>
@@ -183,30 +175,38 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Highlight column C blue</user>
-   <answer>mini</answer>
+   <answer>Mini</answer>
   </example>
   <example>
    <user>move that to A9</user>
-   <answer>mini</answer>
+   <answer>Mini</answer>
   </example>
   <example>
    <user>Insert 5 in cell A7</user>
-   <answer>mini</answer>
+   <answer>Mini</answer>
   </example>
    <example>
    <user>Sum the values in column F</user>
-   <answer>mini</answer>
+   <answer>Mini</answer>
   </example>
   <example>
    <user>Calculate the mean of costs</user>
-   <answer>mini</answer>
+   <answer>Mini</answer>
   </example>
   <example>
    <user>Find the mean, filtered by product type</user>
-   <answer>mini</answer>
+   <answer>Mini</answer>
   </example>
   <example>
    <user>Create a chart</user>
+   <answer>Flash</answer>
+  </example>
+  <example>
+   <user>Add an extra axis to my chart</user>
+   <answer>Flash</answer>
+  </example>
+  <example>
+   <user>Switch to a bar chart</user>
    <answer>Flash</answer>
   </example>
   <example>
