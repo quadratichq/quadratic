@@ -389,7 +389,7 @@ impl GridController {
     }
 
     /// Collect the operations to paste the clipboard cells
-    /// For cell values, formats and borders, we just add to the data structurs to avoid extra operations
+    /// For cell values, formats and borders, we just add to the data structure to avoid extra operations
     #[allow(clippy::too_many_arguments)]
     fn get_clipboard_ops(
         &self,
