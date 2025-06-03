@@ -1,7 +1,7 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage, JsCoordinate } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
@@ -14,22 +14,23 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
-type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
+type SetFormulaCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetFormulaCellValue]['responseSchema']>;
 
-type SetCodeCellValueProps = {
+type SetFormulaCellValueProps = {
   args: string;
   loading: boolean;
 };
 
-export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
+export const SetFormulaCellValue = memo(({ args, loading }: SetFormulaCellValueProps) => {
+  const [toolArgs, setToolArgs] =
+    useState<z.SafeParseReturnType<SetFormulaCellValueResponse, SetFormulaCellValueResponse>>();
   const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
   useEffect(() => {
     if (!loading) {
       const fullJson = parseFullJson(args);
       if (fullJson) {
-        const toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
+        const toolArgs = aiToolsSpec[AITool.SetFormulaCellValue].responseSchema.safeParse(fullJson);
         setToolArgs(toolArgs);
 
         if (toolArgs.success) {
@@ -38,7 +39,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
             const { x, y } = selection.getCursor();
             setCodeCellPos({ x, y });
           } catch (e) {
-            console.error('[SetCodeCellValue] Failed to parse args: ', e);
+            console.error('[SetFormulaCellValue] Failed to parse args: ', e);
             setCodeCellPos(undefined);
           }
         }
@@ -50,19 +51,19 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
 
   const openDiffInEditor = useRecoilCallback(
     ({ set }) =>
-      (toolArgs: SetCodeCellValueResponse) => {
+      (toolArgs: SetFormulaCellValueResponse) => {
         if (!codeCellPos) {
           return;
         }
 
         set(codeEditorAtom, (prev) => ({
           ...prev,
-          diffEditorContent: { editorContent: toolArgs.code_string, isApplied: false },
+          diffEditorContent: { editorContent: toolArgs.formula_string, isApplied: false },
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
               pos: codeCellPos,
-              language: toolArgs.code_cell_language,
+              language: 'Formula' as CodeCellLanguage,
               lastModified: 0,
             },
             showCellTypeMenu: false,
@@ -75,7 +76,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
   );
 
   const saveAndRun = useRecoilCallback(
-    () => (toolArgs: SetCodeCellValueResponse) => {
+    () => (toolArgs: SetFormulaCellValueResponse) => {
       if (!codeCellPos) {
         return;
       }
@@ -84,8 +85,8 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
         sheetId: sheets.current,
         x: codeCellPos.x,
         y: codeCellPos.y,
-        codeString: toolArgs.code_string,
-        language: toolArgs.code_cell_language,
+        codeString: toolArgs.formula_string,
+        language: 'Formula' as CodeCellLanguage,
         cursor: sheets.getCursorPosition(),
       });
     },
@@ -94,7 +95,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
 
   const estimatedNumberOfLines = useMemo(() => {
     if (toolArgs?.data) {
-      return toolArgs.data.code_string.split('\n').length;
+      return toolArgs.data.formula_string.split('\n').length;
     } else {
       return args.split('\\n').length;
     }
@@ -102,41 +103,34 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
 
   if (loading && estimatedNumberOfLines) {
     const partialJson = parsePartialJson(args);
-    if (partialJson && 'code_cell_language' in partialJson) {
-      const { code_cell_language: language, code_cell_position: position } = partialJson;
-      if (language === 'Python' || language === 'Javascript') {
-        return (
-          <ToolCard
-            icon={<LanguageIcon language={language} />}
-            label={language}
-            description={
-              `${estimatedNumberOfLines} line` +
-              (estimatedNumberOfLines === 1 ? '' : 's') +
-              (position ? ` at ${position}` : '')
-            }
-            isLoading={true}
-          />
-        );
-      }
+    if (partialJson && 'code_cell_position' in partialJson) {
+      const { code_cell_position: position } = partialJson;
+      return (
+        <ToolCard
+          icon={<LanguageIcon language="Formula" />}
+          label="Formula"
+          description={
+            `${estimatedNumberOfLines} line` +
+            (estimatedNumberOfLines === 1 ? '' : 's') +
+            (position ? ` at ${position}` : '')
+          }
+          isLoading={true}
+        />
+      );
     }
   }
 
   if (!!toolArgs && !toolArgs.success) {
-    return <ToolCard icon={<LanguageIcon language="" />} label="Code" hasError />;
+    return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" hasError />;
   } else if (!toolArgs || !toolArgs.data) {
     return <ToolCard isLoading />;
   }
 
-  const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
-
-  if (code_cell_language !== 'Python' && code_cell_language !== 'Javascript') {
-    return null;
-  }
-
+  const { code_cell_name, code_cell_position } = toolArgs.data;
   return (
     <ToolCard
-      icon={<LanguageIcon language={code_cell_language} />}
-      label={code_cell_name || code_cell_language}
+      icon={<LanguageIcon language="Formula" />}
+      label={code_cell_name || 'Formula'}
       description={
         `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
       }
@@ -166,7 +160,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
   );
 });
 
-const parsePartialJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
+const parsePartialJson = (args: string): Partial<SetFormulaCellValueResponse> | null => {
   try {
     const parsed = parse(args, STR | OBJ);
     return parsed;
@@ -175,12 +169,12 @@ const parsePartialJson = (args: string): Partial<SetCodeCellValueResponse> | nul
   }
 };
 
-const parseFullJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
+const parseFullJson = (args: string): Partial<SetFormulaCellValueResponse> | null => {
   try {
     const json = JSON.parse(args);
     return json;
   } catch (error) {
-    console.error('[SetCodeCellValue] Failed to parse args: ', error);
+    console.error('[SetFormulaCellValue] Failed to parse args: ', error);
     return null;
   }
 };
