@@ -18,4 +18,9 @@ pub struct SheetDataTablesCache {
     // each position value is the root cell position of the data table
     // this accounts for table spills hence values cannot overlap
     pub(crate) multi_cell_tables: Contiguous2D<Option<Pos>>,
+
+    // position map indicating presence of empty cells within a multi-cell data table
+    // this is used to assist with finding the next cell with content
+    // NOTE: the bool cannot be false
+    pub(crate) multi_cell_tables_empty: Contiguous2D<Option<bool>>,
 }

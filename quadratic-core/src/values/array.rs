@@ -613,6 +613,11 @@ impl Array {
 
         (Some(Array { size, values }), ops)
     }
+
+    /// Iterate over the values in the array
+    pub fn values_iter(&self) -> impl Iterator<Item = &CellValue> {
+        self.values.iter()
+    }
 }
 
 impl Spanned<Array> {
