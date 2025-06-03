@@ -300,10 +300,6 @@ export function parseBedrockResponse(
         loading: false,
       });
     }
-
-    if (!('text' in contentBlock) && !('toolUse' in contentBlock)) {
-      console.error(`Invalid AI response: ${JSON.stringify(contentBlock)}`);
-    }
   });
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
