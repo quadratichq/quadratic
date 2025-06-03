@@ -140,8 +140,8 @@ impl GridController {
     #[wasm_bindgen(js_name = "getAICellFormats")]
     pub fn js_get_ai_cell_formats(
         &self,
-        a1: String,
         sheet_id: String,
+        a1: String,
         page: i32,
     ) -> Result<String, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id)
