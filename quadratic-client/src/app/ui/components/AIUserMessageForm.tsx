@@ -236,7 +236,8 @@ export const AIUserMessageForm = memo(
           ref={textareaRef}
           value={prompt}
           className={cn(
-            'pointer-events-none min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+            'min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+            !editing && 'pointer-events-none overflow-hidden',
             (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
           )}
           onChange={(event) => setPrompt(event.target.value)}
@@ -274,7 +275,6 @@ export const AIUserMessageForm = memo(
           placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
           autoHeight={true}
           maxHeight={maxHeight}
-          readOnly={!editing}
           disabled={waitingOnMessageIndex !== undefined}
         />
 
