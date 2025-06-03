@@ -411,11 +411,11 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
-You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
+You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
-Note: we only rename the code cell if its new. Otherwise we keep the old name.\n
-Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Note: only name the code cell if it is new.\n
+Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 `,
@@ -458,7 +458,7 @@ set_code_cell_value function requires language, codeString, and the cell positio
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 
-Python and JavaScript Placement: the required location code_cell_position for this code cell in Python or JavaScript is one which satisfies the following conditions:\n
+Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
 - If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
@@ -517,10 +517,10 @@ Always refer to the cells on sheet by its position in a1 notation. Don't add val
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
 Don't prefix formulas with \`=\` in formula cells.\n
 
-Formulas Placement: the required location code_cell_position for this formula cell is one which satisfies the following conditions:\n
+Formulas placement instructions:\n
 - The formula cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the formula result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - The formula cell should be near the data it references, so that it is easy to understand the formula in the context of the data. Identify the data being referenced from the Formula and use the nearest unoccupied cell. If multiple data references are being made, choose the one which is most relevant to the Formula.\n
-- Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath or directly beside the data being referenced.\n
+- Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath or directly beside the data being referenced or next to the label for the calculation.\n
 - When doing a calculation on a table column, place the formula directly below the last row of the table.\n 
 `,
   },

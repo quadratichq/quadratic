@@ -1,6 +1,6 @@
 export const FormulaDocs = `# Formula Docs
 
-Formulas in Quadratic work the same as in any traditionalspreadsheet. 
+Formulas in Quadratic work the same as in any traditional spreadsheet. 
 
 ## Formula references 
 Formulas are relatively referenced by default, with $ notation to support absolute references. 
