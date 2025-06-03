@@ -53,7 +53,7 @@ impl SheetDataTablesCache {
     #[wasm_bindgen(js_name = "hasTableInRect")]
     pub fn has_table_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> bool {
         let rect = Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64);
-        self.multi_cell_tables.is_all_default_in_rect(rect)
-            || self.single_cell_tables.is_all_default_in_rect(rect)
+        !self.multi_cell_tables.is_all_default_in_rect(rect)
+            && !self.single_cell_tables.is_all_default_in_rect(rect)
     }
 }
