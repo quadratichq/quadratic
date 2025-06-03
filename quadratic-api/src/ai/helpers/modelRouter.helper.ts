@@ -85,6 +85,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <capabilities>
     <capability>Explicitly defined formatting tasks</capability>
     <capability>Explicitly defined inserts/edits.</capability>
+    <capability>Simple calculations - arithmetic, basic conditionals, etc.</capability>
    </capabilities>
   </model>
  </models>
