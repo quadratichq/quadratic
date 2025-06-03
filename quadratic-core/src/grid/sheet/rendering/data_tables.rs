@@ -1,4 +1,4 @@
-use crate::grid::Sheet;
+use crate::{compression::serialize_to_bytes, grid::Sheet};
 
 impl Sheet {
     /// Sends the data tables cache to the client.
@@ -7,7 +7,7 @@ impl Sheet {
             return;
         }
 
-        match postcard::to_allocvec(self.data_tables.cache_ref()) {
+        match serialize_to_bytes(self.data_tables.cache_ref()) {
             Ok(bytes) => {
                 crate::wasm_bindings::js::jsSendDataTablesCache(self.id_to_string(), bytes);
             }

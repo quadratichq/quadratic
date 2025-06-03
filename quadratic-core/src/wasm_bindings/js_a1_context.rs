@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::a1::A1Context;
+use crate::{a1::A1Context, compression::deserialize_from_bytes};
 
 #[derive(Debug, Default)]
 #[wasm_bindgen]
@@ -18,7 +18,7 @@ impl JsA1Context {
 impl JsA1Context {
     #[wasm_bindgen(constructor)]
     pub fn new(context: Vec<u8>) -> Self {
-        match A1Context::from_bytes(&context) {
+        match deserialize_from_bytes::<A1Context>(&context) {
             Ok(context) => Self { context },
             Err(e) => {
                 dbgjs!(&format!("Error creating JsA1Context: {}", e));

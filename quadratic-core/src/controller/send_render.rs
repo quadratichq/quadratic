@@ -2,6 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     Pos, Rect,
+    compression::serialize_to_bytes,
     grid::{
         SheetId,
         js_types::{
@@ -546,7 +547,7 @@ impl GridController {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
-        match self.a1_context().to_bytes() {
+        match serialize_to_bytes(self.a1_context()) {
             Ok(bytes) => crate::wasm_bindings::js::jsA1Context(bytes),
             Err(e) => {
                 dbgjs!(format!(

@@ -120,7 +120,6 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", default-features = 
 ] }
 prost = { version = "0.13.5", default-features = false }
 encoding_rs_io = "0.1.7"
-postcard = { version = "1.1.1", features = ["alloc"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
