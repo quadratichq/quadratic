@@ -325,18 +325,34 @@ impl Sheet {
         ))
     }
 
+    /// Returns true if the data table should expand to the right.
+    /// Will return false if the rectangle touches the table heading.
+    pub fn should_expand_data_table(data_tables: &[Rect], rect: Rect) -> bool {
+        let rect_moved_left = Rect::new(rect.min.x - 1, rect.min.y, rect.max.x - 1, rect.max.y);
+
+        let data_table_immediate_left = data_tables
+            .iter()
+            .find(|rect| rect.intersects(rect_moved_left));
+
+        let should_not_expand = data_table_immediate_left
+            .map(|rect| rect_moved_left.min.y <= rect.min.y)
+            .unwrap_or(false);
+
+        !should_not_expand
+    }
+
     /// Returns columns and rows to data tables when the cells to add are touching the data table
     #[allow(clippy::type_complexity)]
     pub fn expand_columns_and_rows(
         &self,
         data_tables: &[Rect],
         sheet_pos: SheetPos,
-        value: String,
+        value_is_empty: bool,
     ) -> (Option<(SheetPos, u32)>, Option<(SheetPos, u32)>) {
         let mut columns = None;
         let mut rows = None;
 
-        if !value.is_empty() {
+        if !value_is_empty {
             columns = self.expand_columns(data_tables, sheet_pos);
             rows = self.expand_rows(data_tables, sheet_pos);
         }
@@ -356,26 +372,21 @@ impl Sheet {
             let pos_to_check = Pos::new(pos.x - 1, pos.y);
             let data_table_left = data_tables.iter().find(|rect| rect.contains(pos_to_check));
 
+            // there is a data table to the immediate left
             if let Some(data_table_left) = data_table_left {
                 // don't expand if we're not at the end of the data table
                 if data_table_left.max.x != pos_to_check.x {
                     return None;
                 }
 
-                if self
-                    .data_table_at(&data_table_left.min)
-                    .filter(|data_table| {
-                        // don't expand if the data table is readonly
-                        if data_table.is_code() {
-                            return false;
-                        }
+                if let Ok(data_table) = self.data_table_result(&data_table_left.min) {
+                    // don't expand if the position is at the data table's name
+                    if data_table.get_show_name() && data_table_left.min.y == pos.y {
+                        return None;
+                    }
 
-                        // don't expand if the position is at the data table's name
-                        if data_table.get_show_name() && data_table_left.min.y == pos.y {
-                            return false;
-                        }
-
-                        // don't expand if next column is not blank
+                    let is_code = data_table.is_code();
+                    let next_is_not_blank = || {
                         for y in 0..data_table_left.height() {
                             let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
 
@@ -385,19 +396,20 @@ impl Sheet {
                         }
 
                         true
-                    })
-                    .is_some()
-                {
-                    let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
-                    let mut column_index = data_table_left.width();
+                    };
 
-                    // the column index is the display index, not the actual index, we need to convert it to the actual index
-                    if let Ok(data_table) = self.data_table_result(&data_table_left.min) {
-                        column_index =
-                            data_table.get_column_index_from_display_index(column_index, true);
+                    if !is_code && next_is_not_blank() {
+                        let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
+                        let mut column_index = data_table_left.width();
+
+                        // the column index is the display index, not the actual index, we need to convert it to the actual index
+                        if let Ok(data_table) = self.data_table_result(&data_table_left.min) {
+                            column_index =
+                                data_table.get_column_index_from_display_index(column_index, true);
+                        }
+
+                        return Some((sheet_pos, column_index));
                     }
-
-                    return Some((sheet_pos, column_index));
                 }
             }
         }
@@ -423,15 +435,9 @@ impl Sheet {
                     return None;
                 }
 
-                if self
-                    .data_table_at(&data_table_above.min)
-                    .filter(|data_table| {
-                        // don't expand if the data table is readonly
-                        if data_table.is_code() {
-                            return false;
-                        }
-
-                        // don't expand if next row is not blank
+                if let Ok(data_table) = self.data_table_result(&data_table_above.min) {
+                    let is_code = data_table.is_code();
+                    let next_is_not_blank = || {
                         for x in 0..data_table_above.width() {
                             let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
                             if self.has_content(pos) {
@@ -440,13 +446,14 @@ impl Sheet {
                         }
 
                         true
-                    })
-                    .is_some()
-                {
-                    let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
-                    let row_index = data_table_above.height();
+                    };
 
-                    return Some((sheet_pos, row_index));
+                    if !is_code && next_is_not_blank() {
+                        let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
+                        let row_index = data_table_above.height();
+
+                        return Some((sheet_pos, row_index));
+                    }
                 }
             }
         }
