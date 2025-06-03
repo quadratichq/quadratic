@@ -70,6 +70,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Formatting - simple, conditional, etc.</capability>
     <capability>Editing existing charts</capability>
     <capability>API requests</capability>
+    <capability>Broad questions about the data</capability>
     <capability>Any capabilitiesnot defined in these instructions</capability>
    </capabilities>
   </model>
@@ -78,11 +79,16 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
     <capability>Requests that involve frustration</capability>
-    <capability>Creating new charts</capability>
+    <capability>Prompts that indicate something didn't work</capability>
    </capabilities>
   </model>
-  <model name="mini">
+  <model name="Flash">
    <capabilities>
+    <capability>Creating charts</capability>
+   </capabilities>
+  </model>
+  <model name="Mini">
+    <capabilities>
     <capability>Explicitly defined formatting tasks</capability>
     <capability>Explicitly defined inserts/edits.</capability>
     <capability>Simple calculations - arithmetic, basic conditionals, etc.</capability>
@@ -91,7 +97,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Pro" or "Mini". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "Pro" "Flash" or "Mini". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
@@ -101,10 +107,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>create a dataset of sales data</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
-   <user>Create a chart</user>
    <answer>Claude</answer>
   </example>
   <example>
@@ -124,6 +126,14 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
+   <user>Chart is empty</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Data is missing</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
    <user>Hi</user>
    <answer>Claude</answer>
   </example>
@@ -133,6 +143,14 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Add an extra axis to my chart</user>
+   <answer>Pro</answer>
+  </example>
+  <example>
+   <user>Can you explain the data?</user>
+   <answer>Pro</answer>
+  </example>
+  <example>
+   <user>What relationship did that show?</user>
    <answer>Pro</answer>
   </example>
   <example>
@@ -186,6 +204,14 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   <example>
    <user>Find the mean, filtered by product type</user>
    <answer>mini</answer>
+  </example>
+  <example>
+   <user>Create a chart</user>
+   <answer>Flash</answer>
+  </example>
+  <example>
+   <user>Plot the water content vs growth rate</user>
+   <answer>Flash</answer>
   </example>
  </examples>
 `,
