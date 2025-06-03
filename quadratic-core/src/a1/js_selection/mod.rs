@@ -41,8 +41,8 @@ impl From<Pos> for JsCoordinate {
 #[wasm_bindgen]
 impl JsSelection {
     #[wasm_bindgen(js_name = "updateContext")]
-    pub fn update_context(&mut self, context: String) {
-        let Ok(context) = serde_json::from_str(&context) else {
+    pub fn update_context(&mut self, context: &[u8]) {
+        let Ok(context) = serde_json::from_slice(context) else {
             dbgjs!("Unable to unwrap context in update_context");
             return;
         };

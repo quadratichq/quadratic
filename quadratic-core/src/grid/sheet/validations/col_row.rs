@@ -257,9 +257,7 @@ mod tests {
     use crate::{
         CellValue, CopyFormats,
         controller::{GridController, active_transactions::transaction_name::TransactionName},
-        grid::sheet::validations::rules::{
-            ValidationRule, validation_logical::ValidationLogical,
-        },
+        grid::sheet::validations::rules::{ValidationRule, validation_logical::ValidationLogical},
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
 
@@ -326,9 +324,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_columns.clone(),
                     validation_removed.clone(),
                     validation_not_changed.clone()
@@ -337,7 +335,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove column 2
         gc.start_user_transaction(
@@ -366,9 +364,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     new_validation_rect_column.clone(),
                     validation_not_changed.clone(),
                 ])
@@ -376,7 +374,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -391,9 +389,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_columns,
                     validation_not_changed,
                     validation_removed,
@@ -402,7 +400,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -411,13 +409,13 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 
     #[test]
@@ -481,9 +479,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_rows.clone(),
                     validation_removed.clone(),
                     validation_not_changed.clone()
@@ -492,7 +490,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove row 2
         gc.start_user_transaction(
@@ -521,9 +519,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     new_validation_rect_row.clone(),
                     validation_not_changed.clone()
                 ])
@@ -531,7 +529,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -546,9 +544,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_rows,
                     validation_not_changed,
                     validation_removed,
@@ -557,7 +555,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
@@ -566,13 +564,13 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 
     #[test]
@@ -625,9 +623,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_cols.clone(),
                     validation_not_changed.clone()
                 ])
@@ -661,9 +659,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     new_validation_rect_col.clone(),
                     validation_not_changed.clone()
                 ])
@@ -684,9 +682,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_cols.clone(),
                     validation_not_changed.clone()
                 ])
@@ -702,13 +700,13 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 
     #[test]
@@ -761,9 +759,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_rows.clone(),
                     validation_not_changed.clone()
                 ])
@@ -771,7 +769,7 @@ mod tests {
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
 
         // insert row 2
         gc.start_user_transaction(
@@ -798,9 +796,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     new_validation_rect_row.clone(),
                     validation_not_changed.clone()
                 ])
@@ -821,9 +819,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![
+                serde_json::to_vec(&vec![
                     validation_rect_rows.clone(),
                     validation_not_changed.clone()
                 ])
@@ -839,12 +837,12 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             false,
         );
-        expect_js_call_count("jsValidationWarning", 1, true);
+        expect_js_call_count("jsValidationWarnings", 1, true);
     }
 }

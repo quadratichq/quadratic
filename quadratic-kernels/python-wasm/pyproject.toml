@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Jacob Rice <jacob.rice.systems@gmail.com>"]
 readme = "README.md"
-packages = [{include = "quadratic_py"}]
+packages = [{ include = "quadratic_py" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"

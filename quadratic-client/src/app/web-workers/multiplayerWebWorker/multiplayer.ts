@@ -78,7 +78,7 @@ export class Multiplayer {
     });
   }
 
-  private updateA1Context = (context: string) => {
+  private updateA1Context = (context: Uint8Array) => {
     this.users.forEach((user) => {
       user.parsedSelection?.updateContext(context);
     });

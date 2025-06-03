@@ -95,7 +95,7 @@ mod tests {
             drop_down: false,
         };
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         assert!(ValidationRule::List(list.clone()).validate(
             &sheet,
@@ -122,7 +122,7 @@ mod tests {
         };
         let rule = ValidationRule::List(list);
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         assert!(rule.validate(
             &sheet,
@@ -140,7 +140,7 @@ mod tests {
     fn validate_none() {
         let sheet = Sheet::test();
         let rule = ValidationRule::None;
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         assert!(rule.validate(
             &sheet,
