@@ -15,7 +15,7 @@ use super::Pos;
 impl GridController {
     /// Returns the clipboard [`JsClipboard`]
     #[wasm_bindgen(js_name = "copyToClipboard")]
-    pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsValue, JsValue> {
+    pub fn js_copy_to_clipboard(&self, selection: String) -> Result<Vec<u8>, JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
@@ -25,7 +25,7 @@ impl GridController {
             ClipboardOperation::Copy,
             true,
         )?;
-        Ok(serde_wasm_bindgen::to_value(&js_clipboard).map_err(|e| e.to_string())?)
+        Ok(serde_json::to_vec(&js_clipboard).map_err(|e| e.to_string())?)
     }
 
     /// Returns the clipboard [`JsClipboard`]
@@ -34,11 +34,11 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
+    ) -> Result<Vec<u8>, JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let js_clipboard = self.cut_to_clipboard(&selection, cursor)?;
-        Ok(serde_wasm_bindgen::to_value(&js_clipboard).map_err(|e| e.to_string())?)
+        Ok(serde_json::to_vec(&js_clipboard).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "pasteFromClipboard")]

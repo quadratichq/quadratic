@@ -21,7 +21,7 @@ impl GridController {
         direction: String,
     ) -> Result<Pos, JsValue> {
         let sheet = self
-            .try_sheet_from_string_id(sheet_id)
+            .try_sheet_from_string_id(&sheet_id)
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
         let pos: Pos = serde_json::from_str(&pos)
             .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
@@ -39,7 +39,7 @@ impl GridController {
         direction: String,
     ) -> Result<Pos, JsValue> {
         let sheet = self
-            .try_sheet_from_string_id(sheet_id)
+            .try_sheet_from_string_id(&sheet_id)
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
         let pos: Pos = serde_json::from_str(&pos)
             .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;

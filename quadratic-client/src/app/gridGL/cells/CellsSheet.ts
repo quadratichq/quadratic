@@ -7,7 +7,7 @@ import { CellsLabels } from '@/app/gridGL/cells/cellsLabel/CellsLabels';
 import { CellsMarkers } from '@/app/gridGL/cells/CellsMarkers';
 import { CellsSearch } from '@/app/gridGL/cells/CellsSearch';
 import { Tables } from '@/app/gridGL/cells/tables/Tables';
-import type { JsRenderCodeCell, JsValidationWarning } from '@/app/quadratic-core-types';
+import type { JsHashValidationWarnings, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { Rectangle, Sprite } from 'pixi.js';
 import { Container } from 'pixi.js';
@@ -52,11 +52,11 @@ export class CellsSheet extends Container {
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.visible = false;
 
-    events.on('renderValidationWarnings', this.renderValidations);
+    events.on('validationWarnings', this.renderValidations);
   }
 
   destroy() {
-    events.off('renderValidationWarnings', this.renderValidations);
+    events.off('validationWarnings', this.renderValidations);
     super.destroy({ children: true });
   }
 
@@ -104,19 +104,16 @@ export class CellsSheet extends Container {
     this.tables.update(dirtyViewport);
   }
 
-  private renderValidations = (
-    sheetId: string,
-    hashX: number | undefined,
-    hashY: number | undefined,
-    validationWarnings: JsValidationWarning[]
-  ) => {
-    if (sheetId === this.sheetId) {
-      if (hashX === undefined || hashY === undefined) {
-        this.cellsLabels.renderValidationUpdates(validationWarnings);
-      } else {
-        this.cellsLabels.renderValidations(hashX, hashY, validationWarnings);
-      }
-    }
+  private renderValidations = (warnings: JsHashValidationWarnings[]) => {
+    warnings
+      .filter((warning) => warning.sheet_id.id === this.sheetId)
+      .forEach(({ hash, warnings }) => {
+        if (!hash) {
+          this.cellsLabels.renderValidationUpdates(warnings);
+        } else {
+          this.cellsLabels.renderValidations(hash, warnings);
+        }
+      });
   };
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {

@@ -2,7 +2,7 @@ use crate::grid::{Sheet, sheet::borders::JsBordersSheet};
 
 impl Sheet {
     /// Gets packaged borders to send to the client.
-    pub fn borders_in_sheet(&self) -> Option<JsBordersSheet> {
+    pub fn borders_in_sheet(&self) -> JsBordersSheet {
         let mut horizontal = vec![];
         let mut vertical = vec![];
 
@@ -15,16 +15,18 @@ impl Sheet {
         }
 
         // get table borders and translate them to sheet coordinates
-        self.data_tables.iter().for_each(|(pos, table)| {
-            if let Some(h) = table.borders.horizontal_borders(Some((*pos, table))) {
-                horizontal.extend(h);
-            }
-            if let Some(v) = table.borders.vertical_borders(Some((*pos, table))) {
-                vertical.extend(v);
+        self.data_tables.expensive_iter().for_each(|(pos, table)| {
+            if let Some(borders) = table.borders.as_ref() {
+                if let Some(h) = borders.horizontal_borders(Some((*pos, table))) {
+                    horizontal.extend(h);
+                }
+                if let Some(v) = borders.vertical_borders(Some((*pos, table))) {
+                    vertical.extend(v);
+                }
             }
         });
 
-        Some(JsBordersSheet {
+        JsBordersSheet {
             horizontal: if horizontal.is_empty() {
                 None
             } else {
@@ -35,7 +37,7 @@ impl Sheet {
             } else {
                 Some(vertical)
             },
-        })
+        }
     }
 
     /// Sends the borders for the sheet to the client.
@@ -44,15 +46,16 @@ impl Sheet {
             return;
         }
 
-        match self.borders_in_sheet() {
-            Some(b) => {
-                if let Ok(borders) = serde_json::to_string(&b) {
-                    crate::wasm_bindings::js::jsBordersSheet(self.id_to_string(), borders);
-                } else {
-                    dbgjs!("Unable to serialize borders in send_sheet_borders");
-                }
+        match serde_json::to_vec(&self.borders_in_sheet()) {
+            Ok(borders) => {
+                crate::wasm_bindings::js::jsBordersSheet(self.id_to_string(), borders);
             }
-            None => crate::wasm_bindings::js::jsBordersSheet(self.id_to_string(), String::new()),
+            Err(e) => {
+                dbgjs!(format!(
+                    "[send_sheet_borders] Error serializing sheet borders {:?}",
+                    e
+                ));
+            }
         }
     }
 }
@@ -87,7 +90,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet();
 
         assert_eq!(borders.horizontal.unwrap().len(), 2);
         assert_eq!(borders.vertical.unwrap().len(), 2);
@@ -115,7 +118,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet();
 
         assert_eq!(borders.horizontal.unwrap().len(), 4);
         assert_eq!(borders.vertical.unwrap().len(), 4);
@@ -143,7 +146,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet();
 
         assert_eq!(borders.horizontal.unwrap().len(), 4);
         assert_eq!(borders.vertical.unwrap().len(), 3);
@@ -171,7 +174,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet();
         assert_eq!(borders.horizontal.unwrap().len(), 2);
         assert_eq!(borders.vertical.unwrap().len(), 2);
     }

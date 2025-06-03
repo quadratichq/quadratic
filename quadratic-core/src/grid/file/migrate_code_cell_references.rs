@@ -50,21 +50,24 @@ lazy_static! {
 }
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
-    let parse_ctx = grid.make_a1_context();
-    for sheet in grid.sheets.iter_mut() {
-        let sheet_id = sheet.id;
-        if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
+    let a1_context = grid.expensive_make_a1_context();
+    for (sheet_id, sheet) in grid.sheets.iter_mut() {
+        sheet.migration_recalculate_bounds(&a1_context);
+        sheet.columns.migration_regenerate_has_cell_value();
+
+        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             for x in bounds.x_range() {
-                if let Some(column) = sheet.get_column_mut(x) {
-                    for y in bounds.y_range() {
-                        if let Some(CellValue::Code(code_cell)) = column.values.get_mut(&y) {
-                            if code_cell.language == CodeCellLanguage::Formula {
-                                code_cell.code = convert_a1_to_rc(
-                                    &code_cell.code,
-                                    &parse_ctx,
-                                    crate::SheetPos::new(sheet_id, x + 1, y),
-                                );
-                            }
+                if sheet.get_column(x).is_none() {
+                    continue;
+                }
+                for y in bounds.y_range() {
+                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
+                        if code_cell.language == CodeCellLanguage::Formula {
+                            code_cell.code = convert_a1_to_rc(
+                                &code_cell.code,
+                                &a1_context,
+                                crate::SheetPos::new(*sheet_id, x + 1, y),
+                            );
                         }
                     }
                 }
@@ -77,46 +80,51 @@ pub fn migrate_code_cell_references(
     grid: &mut Grid,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    for sheet in grid.sheets.iter_mut() {
+    let a1_context = grid.expensive_make_a1_context();
+    for sheet in grid.sheets.values_mut() {
+        sheet.migration_recalculate_bounds(&a1_context);
+        sheet.columns.migration_regenerate_has_cell_value();
+
         let sheet_name = sheet.name.clone();
-        if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
+        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             for x in bounds.x_range() {
-                if let Some(column) = sheet.get_column_mut(x) {
-                    for y in bounds.y_range() {
-                        if let Some(CellValue::Code(code_cell)) = column.values.get_mut(&y) {
-                            match code_cell.language {
-                                CodeCellLanguage::Python => {
-                                    migrate_python_c_cell_getcell(
-                                        code_cell,
-                                        &sheet_name,
-                                        shifted_offsets,
-                                    );
-                                    migrate_python_cells_getcells(
-                                        code_cell,
-                                        &sheet_name,
-                                        shifted_offsets,
-                                    );
-                                    migrate_python_rc_relcell(code_cell, (x, y).into());
-                                    migrate_python_relcells(code_cell, (x, y).into());
-                                    migrate_python_javascript_pos(code_cell);
-                                }
-                                CodeCellLanguage::Javascript => {
-                                    migrate_javascript_c_cell_getcell(
-                                        code_cell,
-                                        &sheet_name,
-                                        shifted_offsets,
-                                    );
-                                    migrate_javascript_cells_getcells(
-                                        code_cell,
-                                        &sheet_name,
-                                        shifted_offsets,
-                                    );
-                                    migrate_javascript_rc_relcell(code_cell, (x, y).into());
-                                    migrate_javascript_relcells(code_cell, (x, y).into());
-                                    migrate_python_javascript_pos(code_cell);
-                                }
-                                _ => {}
+                if sheet.get_column(x).is_none() {
+                    continue;
+                }
+                for y in bounds.y_range() {
+                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
+                        match code_cell.language {
+                            CodeCellLanguage::Python => {
+                                migrate_python_c_cell_getcell(
+                                    code_cell,
+                                    &sheet_name,
+                                    shifted_offsets,
+                                );
+                                migrate_python_cells_getcells(
+                                    code_cell,
+                                    &sheet_name,
+                                    shifted_offsets,
+                                );
+                                migrate_python_rc_relcell(code_cell, (x, y).into());
+                                migrate_python_relcells(code_cell, (x, y).into());
+                                migrate_python_javascript_pos(code_cell);
                             }
+                            CodeCellLanguage::Javascript => {
+                                migrate_javascript_c_cell_getcell(
+                                    code_cell,
+                                    &sheet_name,
+                                    shifted_offsets,
+                                );
+                                migrate_javascript_cells_getcells(
+                                    code_cell,
+                                    &sheet_name,
+                                    shifted_offsets,
+                                );
+                                migrate_javascript_rc_relcell(code_cell, (x, y).into());
+                                migrate_javascript_relcells(code_cell, (x, y).into());
+                                migrate_python_javascript_pos(code_cell);
+                            }
+                            _ => {}
                         }
                     }
                 }

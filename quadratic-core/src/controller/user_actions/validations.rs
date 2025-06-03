@@ -181,9 +181,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![validation]).unwrap()
+                serde_json::to_vec(&vec![validation]).unwrap()
             ),
             true,
         );
@@ -223,9 +223,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&vec![validation1, validation2]).unwrap()
+                serde_json::to_vec(&vec![validation1, validation2]).unwrap()
             ),
             true,
         );
@@ -236,9 +236,9 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!(
-                "{},{}",
+                "{},{:?}",
                 sheet_id,
-                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+                serde_json::to_vec(&Vec::<Validation>::new()).unwrap()
             ),
             true,
         );

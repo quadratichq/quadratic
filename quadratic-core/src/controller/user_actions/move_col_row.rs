@@ -46,14 +46,12 @@ impl GridController {
         );
 
         // update information for all cells to the right of the deleted column
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                sheet_rect.min.x = min_column;
-                self.check_deleted_data_tables(transaction, &sheet_rect);
-                self.add_compute_operations(transaction, &sheet_rect, None);
-                self.check_all_spills(transaction, sheet_rect.sheet_id);
-            }
+        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+            sheet_rect.min.x = min_column;
+            self.check_deleted_data_tables(transaction, &sheet_rect);
+            self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+            self.add_compute_operations(transaction, &sheet_rect, None);
         }
 
         // calculate the adjusted to value based on whether we're moving columns
@@ -77,10 +75,14 @@ impl GridController {
         let selection = A1Selection::from_single_cell((to, 1, sheet_id).into());
         let insert_at = selection.cursor;
 
-        if let Ok(ops) =
+        if let Ok((ops, data_table_ops)) =
             self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
         {
             transaction.operations.extend(ops);
+
+            if !data_table_ops.is_empty() {
+                transaction.operations.extend(data_table_ops);
+            }
         }
     }
 
@@ -126,14 +128,12 @@ impl GridController {
         }
 
         // update information for all cells below the deleted rows
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                sheet_rect.min.y = min_row;
-                self.check_deleted_data_tables(transaction, &sheet_rect);
-                self.add_compute_operations(transaction, &sheet_rect, None);
-                self.check_all_spills(transaction, sheet_rect.sheet_id);
-            }
+        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+            sheet_rect.min.y = min_row;
+            self.check_deleted_data_tables(transaction, &sheet_rect);
+            self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+            self.add_compute_operations(transaction, &sheet_rect, None);
         }
 
         // calculate the adjusted to value based on whether we're moving rows
@@ -157,10 +157,14 @@ impl GridController {
         let selection = A1Selection::from_single_cell((1, to, sheet_id).into());
         let insert_at = selection.cursor;
 
-        if let Ok(ops) =
+        if let Ok((ops, data_table_ops)) =
             self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
         {
             transaction.operations.extend(ops);
+
+            if !data_table_ops.is_empty() {
+                transaction.operations.extend(data_table_ops);
+            }
         }
     }
 }
