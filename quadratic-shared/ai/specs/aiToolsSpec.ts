@@ -510,7 +510,7 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
     responseSchema: AIToolsArgsSchema[AITool.SetFormulaCellValue],
     prompt: `
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value instead of responding with formulas.\n
-Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals,counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
+Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals, counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
 set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
