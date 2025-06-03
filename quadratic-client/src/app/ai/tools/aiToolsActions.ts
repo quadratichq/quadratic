@@ -581,12 +581,4 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
-  [AITool.Sources]: async (args) => {
-    return [
-      {
-        type: 'text',
-        text: 'Sources tool executed successfully.',
-      },
-    ];
-  },
 } as const;

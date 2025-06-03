@@ -413,7 +413,7 @@ export function useSubmitAIAnalystPrompt() {
                 return {
                   abortController: prev.abortController,
                   loading: prev.loading,
-                  sources: [...prev.sources, ...sources],
+                  sources,
                 };
               });
             }
