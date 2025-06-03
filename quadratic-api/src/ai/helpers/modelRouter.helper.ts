@@ -70,7 +70,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Formatting - simple, conditional, etc.</capability>
     <capability>API requests</capability>
     <capability>Broad questions about the data</capability>
-    <capability>Any capabilitiesnot defined in these instructions</capability>
+    <capability>Any capabilities not defined in these instructions</capability>
    </capabilities>
   </model>
   <model name="Claude">
