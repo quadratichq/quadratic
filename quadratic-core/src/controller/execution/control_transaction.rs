@@ -62,8 +62,6 @@ impl GridController {
                     .map(|(&k, v)| (k, v.clone()))
                 {
                     transaction.resize_rows.remove(&sheet_id);
-
-                    self.send_offsets_modified(transaction);
                     let resizing = self.start_auto_resize_row_heights(
                         transaction,
                         sheet_id,

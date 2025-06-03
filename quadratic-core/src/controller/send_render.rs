@@ -547,6 +547,7 @@ impl GridController {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
+
         match serialize_to_bytes(self.a1_context()) {
             Ok(bytes) => crate::wasm_bindings::js::jsA1Context(bytes),
             Err(e) => {
@@ -567,7 +568,6 @@ impl GridController {
         if let Some(selection) = std::mem::take(&mut transaction.update_selection) {
             crate::wasm_bindings::js::jsSetCursor(selection);
         }
-        transaction.update_selection = None;
     }
 
     fn send_undo_redo(&self) {
