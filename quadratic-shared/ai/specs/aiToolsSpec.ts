@@ -510,7 +510,6 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
     responseSchema: AIToolsArgsSchema[AITool.SetFormulaCellValue],
     prompt: `
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value instead of responding with formulas.\n
-Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals, counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
 set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
@@ -520,8 +519,18 @@ Don't prefix formulas with \`=\` in formula cells.\n
 Formulas placement instructions:\n
 - The formula cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the formula result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - The formula cell should be near the data it references, so that it is easy to understand the formula in the context of the data. Identify the data being referenced from the Formula and use the nearest unoccupied cell. If multiple data references are being made, choose the one which is most relevant to the Formula.\n
+- Unlike code cell placement, Formula cell placement should not use an extra space; formulas should be placed next to the data they reference or next to a label for the calculation.\n
 - Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath or directly beside the data being referenced or next to the label for the calculation.\n
-- When doing a calculation on a table column, place the formula directly below the last row of the table.\n 
+- When doing a calculation on a table column, place the formula directly below the last row of the table.\n
+
+When to use set_formula_cell_value:\n
+Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals, counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
+Examples: 
+- Finding the mean of a column of numbers
+- Counting the number of instances of a value in a column
+- Finding the max/min value 
+- Basic arithmetic operations 
+- Joining strings 
 `,
   },
   [AITool.MoveCells]: {
