@@ -236,8 +236,8 @@ export const AIUserMessageForm = memo(
           ref={textareaRef}
           value={prompt}
           className={cn(
-            'min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-            !editing && 'pointer-events-none overflow-hidden',
+            'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+            editing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
             (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
           )}
           onChange={(event) => setPrompt(event.target.value)}
