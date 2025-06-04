@@ -140,7 +140,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' ? (
+                  item.type === 'anthropic_thinking' && !!item.text ? (
                     <ThinkingBlock
                       key={item.text}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
@@ -148,7 +148,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                       thinkingContent={item}
                       expandedDefault={false}
                     />
-                  ) : item.type === 'text' ? (
+                  ) : item.type === 'text' && !!item.text ? (
                     <AICodeBlockParser key={item.text} input={item.text} />
                   ) : null
                 )}
