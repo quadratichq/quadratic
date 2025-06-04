@@ -264,7 +264,6 @@ export class Tables extends Container<Table> {
     if (this.sheet.id !== sheets.current) {
       return;
     }
-    console.log('cursorPosition');
     const tables = sheets.sheet.cursor.getSelectedTableNames();
     this.activeTables.forEach((table) => table.hideActive());
     this.activeTables = tables.flatMap((tableName) => {
