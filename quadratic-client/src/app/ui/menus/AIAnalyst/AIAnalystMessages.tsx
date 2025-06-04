@@ -7,7 +7,6 @@ import {
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
-  aiAnalystWebSearchSourcesAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
@@ -18,8 +17,8 @@ import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUser
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { apiClient } from '@/shared/api/apiClient';
-import { Favicon } from '@/shared/components/Favicon';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -28,11 +27,12 @@ import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
+  isContentGoogleSearchInternal,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
@@ -45,7 +45,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
-  const sources = useRecoilValue(aiAnalystWebSearchSourcesAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -164,7 +163,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
           return null;
         }
 
@@ -178,14 +177,18 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               'flex flex-col gap-3',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              message.contextType === 'userPrompt' ? '' : 'rounded-lg bg-gray-500 p-2'
+              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
             {debug && !!modelKey && (
               <span className="text-xs text-muted-foreground">{getModelFromModelKey(modelKey)}</span>
             )}
 
-            {message.role === 'user' && message.contextType === 'userPrompt' ? (
+            {isInternalMessage(message) ? (
+              isContentGoogleSearchInternal(message.content) ? (
+                <GoogleSearchSources content={message.content} />
+              ) : null
+            ) : message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAnalystUserMessageForm
                 initialContent={message.content}
                 initialContext={message.context}
@@ -231,8 +234,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
           </div>
         );
       })}
-
-      {sources.length > 0 && !loading && waitingOnMessageIndex === undefined && <WebSearchSources sources={sources} />}
 
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
 
@@ -354,27 +355,6 @@ const PromptSuggestions = memo(() => {
           <span className="truncate">{suggestion.label}</span>
         </div>
       ))}
-    </div>
-  );
-});
-
-const WebSearchSources = memo(({ sources }: { sources: any[] }) => {
-  return (
-    <div className="flex flex-col gap-2 px-2">
-      <div className="text-sm font-medium">Sources</div>
-      <div className="flex flex-wrap gap-2">
-        {sources.map((source, index) => (
-          <Link
-            key={`${index}-${source.title}`}
-            className="flex h-8 w-fit cursor-pointer items-center rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
-            to={source.uri}
-            target="_blank"
-          >
-            <Favicon domain={source.uri} size={12} alt={source.title} className="mr-2 h-4 w-4" />
-            {source.title}
-          </Link>
-        ))}
-      </div>
     </div>
   );
 });

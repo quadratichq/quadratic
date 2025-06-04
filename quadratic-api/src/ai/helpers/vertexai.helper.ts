@@ -12,6 +12,7 @@ import type { Response } from 'express';
 import {
   getSystemPromptMessages,
   isContentText,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -69,7 +70,9 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
       : undefined;
 
   const messages: VertexContent[] = promptMessages.reduce<VertexContent[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const vertexaiMessage: VertexContent = {
         role: message.role,
         parts: [

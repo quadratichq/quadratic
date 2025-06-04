@@ -18,6 +18,7 @@ import {
   isContentImage,
   isContentPdfFile,
   isContentTextFile,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -83,7 +84,9 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const bedrockMessage: Message = {
         role: message.role,
         content: [

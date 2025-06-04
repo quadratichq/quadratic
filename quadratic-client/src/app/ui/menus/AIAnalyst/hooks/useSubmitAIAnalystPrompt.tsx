@@ -29,8 +29,8 @@ import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
-  getPromptMessagesWithoutPDF,
-  isContentText,
+  getPromptMessagesForAI,
+  isContentFile,
   removeOldFilesInToolResult,
   replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -100,7 +100,7 @@ export function useSubmitAIAnalystPrompt() {
           ...currentSheetContext,
           ...visibleContext,
           ...filesContext,
-          ...getPromptMessagesWithoutPDF(chatMessages),
+          ...getPromptMessagesForAI(chatMessages),
         ];
 
         return messagesWithContext;
@@ -402,25 +402,25 @@ export function useSubmitAIAnalystPrompt() {
             for (const toolCall of webSearchToolCalls) {
               const argsObject = JSON.parse(toolCall.arguments);
               const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
-              const { toolResultContent, sources } = await search({ searchArgs });
-
+              const { toolResultContent, internal } = await search({ searchArgs });
               toolResultMessage.content.push({
                 id: toolCall.id,
                 content: toolResultContent,
               });
 
-              set(aiAnalystWebSearchAtom, (prev) => {
-                return {
-                  abortController: prev.abortController,
-                  loading: prev.loading,
-                  sources,
-                };
-              });
+              if (internal) {
+                let nextChatMessages: ChatMessage[] = [];
+                set(aiAnalystCurrentChatMessagesAtom, (prev) => {
+                  nextChatMessages = [...prev, internal];
+                  return nextChatMessages;
+                });
+                chatMessages = nextChatMessages;
+              }
             }
 
             const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
               result.content.forEach((content) => {
-                if (!isContentText(content)) {
+                if (isContentFile(content)) {
                   acc.add(content.fileName);
                 }
               });

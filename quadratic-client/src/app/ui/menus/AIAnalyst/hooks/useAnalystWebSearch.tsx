@@ -1,19 +1,15 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { aiAnalystWebSearchAtom } from '@/app/atoms/aiAnalystAtom';
+import { isContentGoogleSearchGroundingMetadata, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_SEARCH_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage, InternalMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
 
 type SearchArgs = z.infer<(typeof aiToolsSpec)[AITool.WebSearch]['responseSchema']>;
-
-export type WebSearchSource = {
-  title: string;
-  uri: string;
-};
 
 export const useAnalystWebSearch = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -26,7 +22,7 @@ export const useAnalystWebSearch = () => {
         searchArgs: SearchArgs;
       }): Promise<{
         toolResultContent: ToolResultContent;
-        sources: WebSearchSource[];
+        internal?: InternalMessage;
       }> => {
         const { query } = searchArgs;
 
@@ -44,7 +40,7 @@ export const useAnalystWebSearch = () => {
         ];
 
         const abortController = new AbortController();
-        set(aiAnalystWebSearchAtom, { abortController, loading: true, sources: [] });
+        set(aiAnalystWebSearchAtom, { abortController, loading: true });
 
         const chatId = v4();
         const response = await handleAIRequestToAPI({
@@ -60,44 +56,29 @@ export const useAnalystWebSearch = () => {
           signal: abortController.signal,
         });
 
+        let toolResultContent: ToolResultContent = [];
+        let internal: InternalMessage | undefined = undefined;
+
         if (abortController.signal.aborted) {
-          return {
-            toolResultContent: [{ type: 'text', text: 'Request aborted by the user.' }],
-            sources: [],
+          toolResultContent = [{ type: 'text', text: 'Request aborted by the user.' }];
+        } else {
+          toolResultContent = response.content.filter((content) => isContentText(content));
+          internal = {
+            role: 'internal',
+            contextType: 'webSearchInternal',
+            content: {
+              source: 'google_search',
+              query,
+              results: response.content.filter(
+                (content) => isContentText(content) || isContentGoogleSearchGroundingMetadata(content)
+              ),
+            },
           };
         }
 
-        set(aiAnalystWebSearchAtom, { abortController: undefined, loading: false, sources: [] });
+        set(aiAnalystWebSearchAtom, { abortController: undefined, loading: false });
 
-        const toolResultContent = [
-          {
-            type: 'text' as const,
-            text: response.content
-              .filter((c) => c.type === 'text')
-              .map((c) => c.text)
-              .join('\n'),
-          },
-        ];
-
-        const sources = response.content
-          .filter((c) => c.type === 'google_search_grounding_metadata')
-          .reduce<WebSearchSource[]>((acc, c) => {
-            try {
-              const json = JSON.parse(c.text);
-              return acc.concat(
-                json.groundingChunks.map((chunk: any) => ({
-                  title: chunk.web.title,
-                  uri: chunk.web.uri,
-                }))
-              );
-            } catch (e) {
-              console.error('Error parsing JSON', e);
-              return acc;
-            }
-          }, []);
-
-        // we get back text and metadata in the response, just send the text
-        return { toolResultContent, sources };
+        return { toolResultContent, internal };
       },
     [handleAIRequestToAPI]
   );

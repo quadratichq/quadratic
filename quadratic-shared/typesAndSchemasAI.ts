@@ -225,12 +225,6 @@ const TextContentSchema = z.object({
 });
 export type TextContent = z.infer<typeof TextContentSchema>;
 
-const SourceContentSchema = z.object({
-  type: z.literal('sources'),
-  text: z.string(),
-});
-export type SourceContent = z.infer<typeof SourceContentSchema>;
-
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
   data: z.string(),
@@ -257,6 +251,12 @@ export type TextFileContent = z.infer<typeof TextFileContentSchema>;
 
 export const FileContentSchema = z.union([ImageContentSchema, PdfFileContentSchema, TextFileContentSchema]);
 export type FileContent = z.infer<typeof FileContentSchema>;
+
+const GoogleSearchGroundingMetadataSchema = z.object({
+  type: z.literal('google_search_grounding_metadata'),
+  text: z.string(),
+});
+export type GoogleSearchGroundingMetadata = z.infer<typeof GoogleSearchGroundingMetadataSchema>;
 
 const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
 export type Content = z.infer<typeof ContentSchema>;
@@ -332,12 +332,7 @@ const AIResponseContentSchema = z.array(
         text: z.string(),
       })
     )
-    .or(
-      z.object({
-        type: z.literal('google_search_grounding_metadata'),
-        text: z.string(),
-      })
-    )
+    .or(GoogleSearchGroundingMetadataSchema)
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
@@ -371,7 +366,24 @@ export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]);
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
-const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema]);
+const InternalWebSearchContextTypeSchema = z.literal('webSearchInternal');
+export type InternalWebSearchContextType = z.infer<typeof InternalWebSearchContextTypeSchema>;
+
+const GoogleSearchContentSchema = z.object({
+  source: z.literal('google_search'),
+  query: z.string(),
+  results: z.array(z.union([TextContentSchema, GoogleSearchGroundingMetadataSchema])),
+});
+export type GoogleSearchContent = z.infer<typeof GoogleSearchContentSchema>;
+
+const InternalMessageSchema = z.object({
+  role: z.literal('internal'),
+  contextType: InternalWebSearchContextTypeSchema,
+  content: GoogleSearchContentSchema,
+});
+export type InternalMessage = z.infer<typeof InternalMessageSchema>;
+
+const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema, InternalMessageSchema]);
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatSchema = z.object({
@@ -422,7 +434,6 @@ const AISourceSchema = z.enum([
   'CodeEditorCompletions',
   'GetUserPromptSuggestions',
   'PDFImport',
-
   'ModelRouter',
   'WebSearch',
 ]);

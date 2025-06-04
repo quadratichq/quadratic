@@ -15,8 +15,10 @@ interface FaviconProps extends ImgHTMLAttributes<HTMLImageElement> {
 
 const parseDomainFromUrl = (url: string): string | null => {
   try {
-    return new URL(url).hostname;
+    const urlWithProtocol = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+    return new URL(urlWithProtocol).toString();
   } catch (error) {
+    console.error('Error parsing domain', error);
     return null;
   }
 };
@@ -40,14 +42,13 @@ export const Favicon = forwardRef<HTMLImageElement, FaviconProps>(
 
     return (
       <>
-        {error ? (
+        {!!error ? (
           fallback
         ) : (
           <img
             alt={alt}
             ref={ref}
-            src={`https://www.google.com/s2/favicons?domain=${parsedDomain}&sz=${parsedSize}`}
-            crossOrigin="anonymous"
+            src={`https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${parsedDomain}&size=${parsedSize}`}
             onError={() => setError(true)}
             style={style}
             className={className}

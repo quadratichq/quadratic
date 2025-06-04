@@ -13,6 +13,7 @@ import {
   getSystemPromptMessages,
   isContentImage,
   isContentText,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -64,7 +65,9 @@ export function getOpenAIApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content

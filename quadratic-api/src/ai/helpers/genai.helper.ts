@@ -12,6 +12,7 @@ import type { Response } from 'express';
 import {
   getSystemPromptMessages,
   isContentText,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -68,7 +69,9 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
       : undefined;
 
   const messages: GenAIContent[] = promptMessages.reduce<GenAIContent[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const genaiMessage: GenAIContent = {
         role: 'model',
         parts: [
