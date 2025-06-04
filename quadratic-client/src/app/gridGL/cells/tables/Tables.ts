@@ -35,7 +35,7 @@ export class Tables extends Container<Table> {
   // cache to speed up lookups
   private tablesCache: TablesCache;
 
-  private dataTablesCache?: SheetDataTablesCache;
+  dataTablesCache?: SheetDataTablesCache;
 
   // tables that are selected (ie, the selection overlaps the table name)
   private activeTables: Table[] = [];
@@ -70,6 +70,7 @@ export class Tables extends Container<Table> {
     events.on('updateCodeCells', this.updateCodeCells);
 
     events.on('cursorPosition', this.cursorPosition);
+    events.on('a1ContextUpdated', this.cursorPosition);
     events.on('sheetOffsets', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
@@ -194,6 +195,9 @@ export class Tables extends Container<Table> {
         }
         pixiApp.setViewportDirty();
       });
+    if (this.sheet.id === sheets.current) {
+      events.emit('cursorPosition');
+    }
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
@@ -260,6 +264,7 @@ export class Tables extends Container<Table> {
     if (this.sheet.id !== sheets.current) {
       return;
     }
+    console.log('cursorPosition');
     const tables = sheets.sheet.cursor.getSelectedTableNames();
     this.activeTables.forEach((table) => table.hideActive());
     this.activeTables = tables.flatMap((tableName) => {
