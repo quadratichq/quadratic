@@ -182,7 +182,7 @@ export function useSubmitAIAnalystPrompt() {
           });
           set(aiAnalystWebSearchAtom, (prev) => {
             prev.abortController?.abort();
-            return { abortController: undefined, loading: false, sources: [] };
+            return { abortController: undefined, loading: false };
           });
 
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
