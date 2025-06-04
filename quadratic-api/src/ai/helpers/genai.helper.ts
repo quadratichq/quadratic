@@ -313,7 +313,7 @@ export function parseGenAIResponse(
   response?.json(responseMessage);
 
   const usage: AIUsage = {
-    inputTokens: result.usageMetadata?.promptTokenCount ?? 0 - (result.usageMetadata?.cachedContentTokenCount ?? 0),
+    inputTokens: (result.usageMetadata?.promptTokenCount ?? 0) - (result.usageMetadata?.cachedContentTokenCount ?? 0),
     outputTokens: result.usageMetadata?.candidatesTokenCount ?? 0,
     cacheReadTokens: result.usageMetadata?.cachedContentTokenCount ?? 0,
     cacheWriteTokens: 0,
