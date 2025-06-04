@@ -867,7 +867,9 @@ The data table will include a table name as the first row, which will push down 
     sources: ['AIAnalyst'],
     description: `
 This tool searches the web for information based on the query.\n
-It requires the query to search for and the data table name to store results.\n
+Use this tool when the user asks for information that is not already available in the context.\n
+When you would otherwise try to answer from memory or not have a way to answer the user's question, use this tool to retrieve the needed data from the web.\n
+It requires the query to search for.\n
 `,
     parameters: {
       type: 'object',
@@ -883,7 +885,9 @@ It requires the query to search for and the data table name to store results.\n
     responseSchema: AIToolsArgsSchema[AITool.WebSearch],
     prompt: `
 This tool searches the web for information based on the query.\n
-It requires the query to search for and the data table name to store results.\n
+Use this tool when the user asks for information that is not already available in the context.\n
+When you would otherwise try to answer from memory or not have a way to answer the user's question, use this tool to retrieve the needed data from the web.\n
+It requires the query to search for.\n
 `,
   },
   // This is tool internal to AI model and is called by `WebSearch` tool.
@@ -891,7 +895,7 @@ It requires the query to search for and the data table name to store results.\n
     sources: ['WebSearch'],
     description: `
 This tool searches the web for information based on the query.\n
-It requires the query to search for and the data table name to store results.\n
+It requires the query to search for.\n
 `,
     parameters: {
       type: 'object',
@@ -907,7 +911,7 @@ It requires the query to search for and the data table name to store results.\n
     responseSchema: AIToolsArgsSchema[AITool.WebSearchInternal],
     prompt: `
 This tool searches the web for information based on the query.\n
-It requires the query to search for and the data table name to store results.\n
+It requires the query to search for.\n
 `,
   },
 } as const;

@@ -360,23 +360,29 @@ const PromptSuggestions = memo(() => {
 const WebSearchSources = memo(({ sources }: { sources: any[] }) => {
   return (
     <div className="flex flex-col gap-2 px-2">
-      <div className="text-sm font-medium">Web search sources</div>
-      {sources.map((source, index) => (
-        <Link
-          key={`${index}-${source.title}`}
-          className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm font-medium hover:bg-accent/80"
-          to={source.uri}
-          target="_blank"
-        >
-          <img
-            src={`https://www.google.com/s2/favicons?domain=${source.title}&sz=12`}
-            className="mr-2 h-4 w-4"
-            alt={source.title}
-            crossOrigin="anonymous"
-          />
-          {source.title}
-        </Link>
-      ))}
+      <div className="text-sm font-medium">Sources</div>
+      <div className="flex flex-wrap gap-2">
+        {sources.map((source, index) => (
+          <Link
+            key={`${index}-${source.title}`}
+            className="flex h-8 w-fit cursor-pointer items-center rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+            to={source.uri}
+            target="_blank"
+          >
+            <img
+              src={`https://icons.duckduckgo.com/ip3/${new URL(source.uri).hostname}.ico`}
+              className="mr-2 h-4 w-4"
+              alt={source.title}
+              onError={(e) => {
+                // Fallback to a generic icon if the favicon fails to load
+                (e.target as HTMLImageElement).src =
+                  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTIgMjJjNS41MjMgMCAxMC00LjQ3NyAxMC0xMFMxNy41MjMgMiAxMiAyIDIgNi40NzcgMiAxMnM0LjQ3NyAxMCAxMCAxMHoiLz48cGF0aCBkPSJNMTIgOHY0bDQgMiIvPjwvc3ZnPg==';
+              }}
+            />
+            {source.title}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 });

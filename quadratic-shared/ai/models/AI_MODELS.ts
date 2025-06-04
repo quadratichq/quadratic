@@ -17,7 +17,7 @@ export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.cla
 export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
 
-export const DEFAULT_SEARCH_MODEL: AIModelKey = 'genai:gemini-2.5-pro-preview-05-06';
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'genai:gemini-2.5-flash-preview-05-20';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 15;
