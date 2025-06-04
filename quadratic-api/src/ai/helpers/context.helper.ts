@@ -1,6 +1,7 @@
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
+import { ExamplesDocs } from '../docs/ExamplesDocs';
 import { FormulaDocs } from '../docs/FormulaDocs';
 import { JavascriptDocs } from '../docs/JavascriptDocs';
 import { PythonDocs } from '../docs/PythonDocs';
@@ -20,6 +21,7 @@ If you are not sure about sheet data content pertaining to the user’s request,
 Be proactive. When the user makes a request, use your tools to solve it. Don't ask the user for clarifying information before trying to solve the user's query. If you don't see the data you need, use your tool for retrieving relevant data and then solve the problem.\n
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
+${ExamplesDocs}\n\n
 ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
 ${language === 'Javascript' ? JavascriptDocs : ''}\n
 ${language === 'Formula' || language === undefined ? FormulaDocs : ''}\n
