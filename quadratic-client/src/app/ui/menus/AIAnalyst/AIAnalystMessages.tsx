@@ -19,6 +19,7 @@ import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { apiClient } from '@/shared/api/apiClient';
+import { Favicon } from '@/shared/components/Favicon';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -369,16 +370,7 @@ const WebSearchSources = memo(({ sources }: { sources: any[] }) => {
             to={source.uri}
             target="_blank"
           >
-            <img
-              src={`https://icons.duckduckgo.com/ip3/${new URL(source.uri).hostname}.ico`}
-              className="mr-2 h-4 w-4"
-              alt={source.title}
-              onError={(e) => {
-                // Fallback to a generic icon if the favicon fails to load
-                (e.target as HTMLImageElement).src =
-                  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTIgMjJjNS41MjMgMCAxMC00LjQ3NyAxMC0xMFMxNy41MjMgMiAxMiAyIDIgNi40NzcgMiAxMnM0LjQ3NyAxMCAxMCAxMHoiLz48cGF0aCBkPSJNMTIgOHY0bDQgMiIvPjwvc3ZnPg==';
-              }}
-            />
+            <Favicon domain={source.uri} size={12} alt={source.title} className="mr-2 h-4 w-4" />
             {source.title}
           </Link>
         ))}
