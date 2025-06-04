@@ -231,11 +231,11 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         );
       })}
 
+      {sources.length > 0 && !loading && waitingOnMessageIndex === undefined && <WebSearchSources sources={sources} />}
+
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
 
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
-
-      {sources.length > 0 && !loading && waitingOnMessageIndex === undefined && <WebSearchSources sources={sources} />}
 
       <PDFImportLoading />
 
