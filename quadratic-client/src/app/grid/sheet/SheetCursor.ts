@@ -436,6 +436,10 @@ export class SheetCursor {
     return Array.from(names);
   };
 
+  getTablesWithColumnSelection = (): string[] => {
+    return this.jsSelection.getTablesWithColumnSelection();
+  };
+
   getTableColumnSelection = (tableName: string): number[] | undefined => {
     let cols: number[] | undefined;
     try {

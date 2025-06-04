@@ -291,6 +291,15 @@ impl JsSelection {
             })
     }
 
+    #[wasm_bindgen(js_name = "getTablesWithColumnSelection")]
+    pub fn get_tables_with_column_selection(&self) -> Vec<String> {
+        self.selection
+            .tables_with_column_selection()
+            .iter()
+            .map(|t| t.to_string())
+            .collect()
+    }
+
     #[wasm_bindgen(js_name = "getSingleFullTableSelectionName")]
     pub fn get_single_full_table_selection_name(&self) -> Option<String> {
         self.selection.get_single_full_table_selection_name()

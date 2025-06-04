@@ -545,6 +545,18 @@ impl A1Selection {
         names
     }
 
+    /// Returns tables that have a column selection.
+    pub fn tables_with_column_selection(&self) -> Vec<String> {
+        let mut names = HashSet::new();
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Table { range } => {
+                names.insert(range.table_name.clone());
+            }
+            CellRefRange::Sheet { .. } => (),
+        });
+        names.into_iter().collect::<Vec<_>>()
+    }
+
     /// Returns the columns that are selected in the table.
     pub fn table_column_selection(
         &self,
@@ -1142,6 +1154,36 @@ mod tests {
         // Test column selection
         let selection = A1Selection::test_a1_context("Table1[A]", &context);
         assert!(selection.selected_table_names().is_empty());
+    }
+
+    #[test]
+    fn test_tables_with_column_selection() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
+                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
+            ],
+        );
+
+        // Single table column selection
+        let selection = A1Selection::test_a1_context("Table1[A]", &context);
+        assert_eq!(selection.tables_with_column_selection(), vec!["Table1"]);
+
+        // Multiple table column selections
+        let selection = A1Selection::test_a1_context("Table1[A],Table2[C]", &context);
+        assert_vec_eq_unordered(
+            &selection.tables_with_column_selection(),
+            &["Table1".to_string(), "Table2".to_string()],
+        );
+
+        // Table full selection (should also be included)
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(selection.tables_with_column_selection(), vec!["Table1"]);
+
+        // Non-table selection (should be empty)
+        let selection = A1Selection::test_a1("A1:B2");
+        assert!(selection.tables_with_column_selection().is_empty());
     }
 
     #[test]

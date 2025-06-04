@@ -37,7 +37,11 @@ export class Tables extends Container<Table> {
 
   private dataTablesCache?: SheetDataTablesCache;
 
+  // tables that are selected (ie, the selection overlaps the table name)
   private activeTables: Table[] = [];
+
+  // tables that have a column selection (used to draw the column selection background)
+  private columnTables: Table[] = [];
 
   // either rename or sort
   private actionDataTable: Table | undefined;
@@ -266,6 +270,18 @@ export class Tables extends Container<Table> {
       }
       return [];
     });
+    const columnTables = sheets.sheet.cursor.getTablesWithColumnSelection();
+    const newColumnTables = columnTables.flatMap((t) => {
+      const table = this.getTableFromName(t);
+      if (table) {
+        return [table];
+      } else {
+        return [];
+      }
+    });
+    const tablesNeedingUpdate = new Set([...this.columnTables, ...newColumnTables]);
+    tablesNeedingUpdate.forEach((table) => table.header.updateSelection());
+    this.columnTables = newColumnTables;
   };
 
   // Redraw the headings if the offsets change.
