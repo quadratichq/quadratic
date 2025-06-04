@@ -1,8 +1,8 @@
 import { WebBrowserIcon } from '@/shared/components/Icons';
 import type { ImgHTMLAttributes } from 'react';
-import React, { forwardRef } from 'react';
+import React, { forwardRef, memo } from 'react';
 
-// Pull a favicon from https://www.google.com/s2/favicons?domain=${domain}&sz=${size}
+// Pull a favicon from https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${domain}&sz=${size}
 // If the favicon fails to load, fallback to a <WebBrowserIcon className={className} />
 
 interface FaviconProps extends ImgHTMLAttributes<HTMLImageElement> {
@@ -29,8 +29,8 @@ const parseSize = (size: number): string => {
   return intSize.toString();
 };
 
-export const Favicon = forwardRef<HTMLImageElement, FaviconProps>(
-  ({ domain, size, alt, className, style, ...rest }, ref) => {
+export const Favicon = memo(
+  forwardRef<HTMLImageElement, FaviconProps>(({ domain, size, alt, className, style, ...rest }, ref) => {
     const [error, setError] = React.useState(false);
     const fallback = <WebBrowserIcon className={className} />;
     const parsedDomain = parseDomainFromUrl(domain);
@@ -57,5 +57,5 @@ export const Favicon = forwardRef<HTMLImageElement, FaviconProps>(
         )}
       </>
     );
-  }
+  })
 );
