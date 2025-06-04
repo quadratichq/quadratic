@@ -1,11 +1,10 @@
 //! Used to add a query to the AI (similar to a tool call, but will not change
 //! the state of the grid).
 
-import { SearchIcon } from '@/shared/components/Icons';
+import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useEffect, useState } from 'react';
 import type z from 'zod';
-import { ToolCard } from './ToolCard';
 
 type WebSearchResponse = z.infer<(typeof aiToolsSpec)[AITool.WebSearch]['responseSchema']>;
 
@@ -31,18 +30,17 @@ export const WebSearch = memo(({ args, loading }: WebSearchProps) => {
     }
   }, [args, loading]);
 
-  const icon = <SearchIcon />;
-  const label = 'Action: Web search';
+  const label = 'Searching the web.';
 
   if (loading) {
-    return <ToolCard icon={icon} label={label} isLoading />;
+    return <ToolCardQuery label={label} isLoading />;
   }
 
   if (!!toolArgs && !toolArgs.success) {
-    return <ToolCard icon={icon} label={label} hasError />;
+    return <ToolCardQuery label={label} hasError />;
   } else if (!toolArgs || !toolArgs.data) {
-    return <ToolCard icon={icon} label={label} isLoading />;
+    return <ToolCardQuery label={label} isLoading />;
   }
 
-  return <ToolCard icon={icon} label={label} />;
+  return <ToolCardQuery label={label} />;
 });
