@@ -48,7 +48,7 @@ export const Favicon = memo(
           <img
             alt={alt}
             ref={ref}
-            src={`https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${parsedDomain}&size=${parsedSize}`}
+            src={`https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${parsedDomain}&sz=${parsedSize}`}
             onError={() => setError(true)}
             style={style}
             className={className}
