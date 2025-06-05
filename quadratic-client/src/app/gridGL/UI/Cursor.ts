@@ -81,9 +81,12 @@ export class Cursor extends Container {
       return;
     }
     const tables = pixiApp.cellsSheet().tables;
-    const table = tables.getTableIntersects(cell);
-    const tableName =
+    let table = tables.getTableIntersects(cell);
+    let tableName =
       table && table.codeCell.show_name && table.codeCell.y === cell.y ? table.getTableNameBounds() : undefined;
+    if (table && table.codeCell.is_html_image) {
+      tableName = table.getTableNameBounds();
+    }
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
@@ -140,12 +143,13 @@ export class Cursor extends Container {
       g.lineTo(x, y + height);
       g.lineTo(x, y);
     } else {
-      this.graphics.lineStyle({
-        width: 1,
-        color: getCSSVariableTint('background'),
-        alignment: 0,
-      });
-      this.graphics.drawRect(x, y, width, height);
+      // this draws a border around the table name
+      // this.graphics.lineStyle({
+      //   width: 1,
+      //   color: getCSSVariableTint('background'),
+      //   alignment: 0,
+      // });
+      // this.graphics.drawRect(x + 1, y + 1, width - 2, height - 2);
     }
 
     if (showInput && inlineShowing) {
