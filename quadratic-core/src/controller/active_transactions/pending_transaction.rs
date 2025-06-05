@@ -104,9 +104,6 @@ pub struct PendingTransaction {
     /// sheets w/updated info
     pub sheet_info: HashSet<SheetId>,
 
-    /// sheets that need updated SheetDataTablesCache
-    pub sheet_data_tables_cache: HashSet<SheetId>,
-
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
 
@@ -117,6 +114,9 @@ pub struct PendingTransaction {
 
     // updates to the content cache per sheet
     pub sheet_content_cache: HashSet<SheetId>,
+
+    /// sheets that need updated SheetDataTablesCache
+    pub sheet_data_tables_cache: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -145,13 +145,13 @@ impl Default for PendingTransaction {
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
-            sheet_data_tables_cache: HashSet::new(),
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
             offsets_reloaded: HashSet::new(),
             update_selection: None,
             sheet_content_cache: HashSet::new(),
+            sheet_data_tables_cache: HashSet::new(),
         }
     }
 }
@@ -273,6 +273,8 @@ impl PendingTransaction {
 
         let dirty_hashes = self.dirty_hashes.entry(sheet_id).or_default();
         dirty_hashes.extend(hashes);
+
+        self.add_content_cache(sheet_id);
     }
 
     pub fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
@@ -283,6 +285,8 @@ impl PendingTransaction {
         let hashes = sheet_rect.to_hashes();
         let dirty_hashes = self.dirty_hashes.entry(sheet_rect.sheet_id).or_default();
         dirty_hashes.extend(hashes);
+
+        self.add_content_cache(sheet_rect.sheet_id);
     }
 
     pub fn add_dirty_hashes_from_dirty_code_rects(
@@ -329,6 +333,8 @@ impl PendingTransaction {
                 }
             }
         }
+
+        self.add_content_cache(sheet.id);
     }
 
     // Adds dirty hashes for all hashes from row_start to row_end (goes to sheet bounds if not provided)
@@ -355,6 +361,8 @@ impl PendingTransaction {
                 }
             }
         }
+
+        self.add_content_cache(sheet.id);
     }
 
     /// Adds dirty hashes for all hashes from a list of selections.

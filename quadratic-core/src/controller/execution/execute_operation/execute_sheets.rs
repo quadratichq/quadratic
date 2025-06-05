@@ -24,7 +24,6 @@ impl GridController {
         let mut context = self.a1_context().to_owned();
 
         let sheet = self.try_sheet_result(sheet_id)?;
-        transaction.add_content_cache(sheet_id);
 
         let data_tables_pos = sheet
             .data_tables
@@ -342,8 +341,6 @@ impl GridController {
             self.grid.add_sheet(Some(new_sheet));
 
             self.send_add_sheet(transaction, new_sheet_id);
-
-            transaction.add_content_cache(sheet_id);
 
             if transaction.is_user_undo_redo() {
                 transaction

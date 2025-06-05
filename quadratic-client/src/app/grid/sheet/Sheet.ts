@@ -38,7 +38,7 @@ export class Sheet {
   // clamp is the area that the cursor can move around in
   clamp: Rectangle;
 
-  private contentCache: SheetContentCache;
+  private _contentCache: SheetContentCache;
 
   constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
     this.sheets = sheets;
@@ -56,7 +56,7 @@ export class Sheet {
     // this will be imported via SheetInfo in the future
     this.clamp = new Rectangle(1, 1, Infinity, Infinity);
 
-    this.contentCache = SheetContentCache.new_empty();
+    this._contentCache = SheetContentCache.new_empty();
 
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
@@ -70,10 +70,14 @@ export class Sheet {
     events.off('contentCache', this.updateContentCache);
   }
 
+  get contentCache(): SheetContentCache {
+    return this._contentCache;
+  }
+
   private updateContentCache = (sheetId: string, contentCache: SheetContentCache) => {
     if (sheetId === this.id) {
       this.contentCache.free();
-      this.contentCache = contentCache;
+      this._contentCache = contentCache;
     }
   };
 

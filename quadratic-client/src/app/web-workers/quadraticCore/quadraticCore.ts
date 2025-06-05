@@ -210,11 +210,11 @@ class QuadraticCore {
         console.error('[quadraticCore] core error', e.data.from, e.data.error);
       }
       return;
-    } else if (e.data.type === 'coreClientDataTablesCache') {
-      events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
-      return;
     } else if (e.data.type === 'coreClientContentCache') {
       events.emit('contentCache', e.data.sheetId, new SheetContentCache(e.data.contentCache));
+      return;
+    } else if (e.data.type === 'coreClientDataTablesCache') {
+      events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
       return;
     }
 

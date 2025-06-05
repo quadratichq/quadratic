@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use crate::{Pos, Rect, grid::Contiguous2D};
+use crate::{Pos, Rect, compression::deserialize_from_bytes, grid::Contiguous2D};
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[wasm_bindgen]
@@ -22,8 +22,8 @@ impl SheetContentCache {
     }
 
     #[wasm_bindgen(constructor)]
-    pub fn new(bytes: &[u8]) -> Self {
-        postcard::from_bytes::<SheetContentCache>(&bytes).unwrap_or_default()
+    pub fn new(bytes: Vec<u8>) -> Self {
+        deserialize_from_bytes::<SheetContentCache>(&bytes).unwrap_or_default()
     }
 
     #[wasm_bindgen]
