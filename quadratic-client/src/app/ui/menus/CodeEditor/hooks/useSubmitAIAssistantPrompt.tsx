@@ -25,8 +25,8 @@ import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
-  getPromptMessagesWithoutPDF,
-  isContentText,
+  getPromptMessagesForAI,
+  isContentFile,
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -65,7 +65,7 @@ export function useSubmitAIAssistantPrompt() {
           ...currentSheetContext,
           ...visibleContext,
           ...codeContext,
-          ...getPromptMessagesWithoutPDF(prevMessages),
+          ...getPromptMessagesForAI(prevMessages),
         ];
 
         return messagesWithContext;
@@ -278,7 +278,7 @@ export function useSubmitAIAssistantPrompt() {
 
             const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
               result.content.forEach((content) => {
-                if (!isContentText(content)) {
+                if (isContentFile(content)) {
                   acc.add(content.fileName);
                 }
               });
