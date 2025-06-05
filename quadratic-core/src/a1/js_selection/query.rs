@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::a1::CellRefRange;
+use crate::{a1::CellRefRange, grid::sheet::data_tables::cache::SheetDataTablesCache};
 
 use super::*;
 
@@ -277,9 +277,19 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
-    pub fn get_selected_table_names(&self) -> Result<JsValue, String> {
-        serde_wasm_bindgen::to_value(&self.selection.selected_table_names())
-            .map_err(|e| e.to_string())
+    pub fn get_selected_table_names(
+        &self,
+        sheet_id: String,
+        data_table_cache: &SheetDataTablesCache,
+        context: &JsA1Context,
+    ) -> Result<JsValue, String> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        serde_wasm_bindgen::to_value(&self.selection.selected_table_names(
+            sheet_id,
+            data_table_cache,
+            context.get_context(),
+        ))
+        .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "getTableColumnSelection")]
@@ -289,6 +299,15 @@ impl JsSelection {
             .map_or(JsValue::UNDEFINED, |cols| {
                 serde_wasm_bindgen::to_value(&cols).unwrap_or(JsValue::UNDEFINED)
             })
+    }
+
+    #[wasm_bindgen(js_name = "getTablesWithColumnSelection")]
+    pub fn get_tables_with_column_selection(&self) -> Vec<String> {
+        self.selection
+            .tables_with_column_selection()
+            .iter()
+            .map(|t| t.to_string())
+            .collect()
     }
 
     #[wasm_bindgen(js_name = "getSingleFullTableSelectionName")]

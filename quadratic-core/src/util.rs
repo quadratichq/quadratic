@@ -444,7 +444,7 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
 macro_rules! print_sheet {
     ($gc:expr, $sheet_id:expr) => {
         let sheet = $gc.try_sheet($sheet_id).unwrap();
-        $crate::test_util::print_sheet::print_sheet(&sheet);
+        $crate::test_util::print_sheet::print_sheet(sheet);
     };
 }
 
@@ -452,7 +452,7 @@ macro_rules! print_sheet {
 macro_rules! print_first_sheet {
     ($gc:expr) => {
         let sheet = $gc.try_sheet($gc.sheet_ids()[0]).unwrap();
-        $crate::test_util::print_sheet::print_sheet(&sheet);
+        $crate::test_util::print_sheet::print_sheet(sheet);
     };
 }
 

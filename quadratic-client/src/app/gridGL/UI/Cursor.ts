@@ -81,8 +81,9 @@ export class Cursor extends Container {
       return;
     }
     const tables = pixiApp.cellsSheet().tables;
-    const table = tables.getTable(cell.x, cell.y);
-    const tableName = table?.getTableNameBounds();
+    const table = tables.getTableIntersects(cell);
+    const tableName =
+      table && table.codeCell.show_name && table.codeCell.y === cell.y ? table.getTableNameBounds() : undefined;
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
@@ -122,7 +123,7 @@ export class Cursor extends Container {
       }
     }
 
-    if (!table || !tableName) {
+    if (!tableName) {
       let g = this.graphics;
       if (tableColumn) {
         g = pixiApp.hoverTableColumnsSelection;
@@ -138,6 +139,13 @@ export class Cursor extends Container {
       g.moveTo(x + width - indicatorOffset, y + height);
       g.lineTo(x, y + height);
       g.lineTo(x, y);
+    } else {
+      this.graphics.lineStyle({
+        width: 1,
+        color: getCSSVariableTint('background'),
+        alignment: 0,
+      });
+      this.graphics.drawRect(x, y, width, height);
     }
 
     if (showInput && inlineShowing) {

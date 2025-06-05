@@ -43,14 +43,6 @@ impl std::fmt::Display for A1Context {
 }
 
 impl A1Context {
-    pub fn to_bytes(&self) -> Result<Vec<u8>, postcard::Error> {
-        postcard::to_allocvec(self)
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, postcard::Error> {
-        postcard::from_bytes(bytes)
-    }
-
     /// Returns whether a table exists with the given name.
     pub fn has_table(&self, table_name: &str) -> bool {
         self.try_table(table_name).is_some()

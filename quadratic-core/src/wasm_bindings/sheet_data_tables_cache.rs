@@ -4,13 +4,16 @@
 
 use wasm_bindgen::prelude::*;
 
-use crate::{Pos, Rect, grid::sheet::data_tables::cache::SheetDataTablesCache};
+use crate::{
+    Pos, Rect, compression::deserialize_from_bytes,
+    grid::sheet::data_tables::cache::SheetDataTablesCache,
+};
 
 #[wasm_bindgen]
 impl SheetDataTablesCache {
     #[wasm_bindgen(constructor)]
     pub fn new(bytes: Vec<u8>) -> Self {
-        postcard::from_bytes::<SheetDataTablesCache>(&bytes).unwrap_or_default()
+        deserialize_from_bytes::<SheetDataTablesCache>(&bytes).unwrap_or_default()
     }
 
     /// Returns what table is the table Pos at the given position.
@@ -53,7 +56,7 @@ impl SheetDataTablesCache {
     #[wasm_bindgen(js_name = "hasTableInRect")]
     pub fn has_table_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> bool {
         let rect = Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64);
-        self.multi_cell_tables.is_all_default_in_rect(rect)
-            || self.single_cell_tables.is_all_default_in_rect(rect)
+        !self.multi_cell_tables.is_all_default_in_rect(rect)
+            && !self.single_cell_tables.is_all_default_in_rect(rect)
     }
 }

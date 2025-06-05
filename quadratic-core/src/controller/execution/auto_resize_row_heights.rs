@@ -21,14 +21,18 @@ impl GridController {
             return false;
         }
 
+        // send sheet info and offsets modified to get the correct row heights
+        self.send_sheet_info(transaction);
+        self.send_offsets_modified(transaction);
+
+        // process visible dirty hashes to so that we can get the correct row heights
+        self.process_visible_dirty_hashes(transaction);
+
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let mut auto_resize_rows = sheet.get_auto_resize_rows(rows);
             if auto_resize_rows.is_empty() {
                 return false;
             }
-
-            // process visible dirty hashes to so that we can get the correct row heights
-            self.process_visible_dirty_hashes(transaction);
 
             auto_resize_rows.sort();
             if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {

@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashSet};
 use crate::{
     Pos, Rect, SheetPos,
     a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
-    grid::Sheet,
+    grid::{Sheet, SheetId, sheet::data_tables::cache::SheetDataTablesCache},
 };
 
 use super::{A1Selection, CellRefRange};
@@ -530,7 +530,12 @@ impl A1Selection {
     /// Returns the names of selected tables. Does NOT check sheet references
     /// that overlap tables here. (This was moved to SheetCursor.ts to use the
     /// DataTablesCache).
-    pub fn selected_table_names(&self) -> Vec<String> {
+    pub fn selected_table_names(
+        &self,
+        sheet_id: SheetId,
+        data_cache: &SheetDataTablesCache,
+        context: &A1Context,
+    ) -> Vec<String> {
         let mut names = Vec::new();
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Table { range } => {
@@ -538,11 +543,45 @@ impl A1Selection {
                     names.push(range.table_name.clone());
                 }
             }
-            CellRefRange::Sheet { .. } => (),
+            CellRefRange::Sheet { range } => {
+                let tables = data_cache.multi_cell_tables.unique_values_in_range(*range);
+                tables.iter().for_each(|table_pos| {
+                    if let Some(table_pos) = table_pos {
+                        if let Some(table) = context
+                            .table_map
+                            .table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                        {
+                            // ensure the table name is intersected by the range
+                            if table.show_name
+                                && range.might_intersect_rect(Rect::new(
+                                    table.bounds.min.x,
+                                    table.bounds.min.y,
+                                    table.bounds.max.x,
+                                    1,
+                                ))
+                            {
+                                names.push(table.table_name.clone());
+                            }
+                        }
+                    }
+                });
+            }
         });
         names.sort();
         names.dedup();
         names
+    }
+
+    /// Returns tables that have a column selection.
+    pub fn tables_with_column_selection(&self) -> Vec<String> {
+        let mut names = HashSet::new();
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Table { range } => {
+                names.insert(range.table_name.clone());
+            }
+            CellRefRange::Sheet { .. } => (),
+        });
+        names.into_iter().collect::<Vec<_>>()
     }
 
     /// Returns the columns that are selected in the table.
@@ -732,8 +771,9 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
+    use crate::assert::assert_vec_eq_unordered;
     use crate::grid::SheetId;
-    use crate::test_util::assert::*;
+    use crate::test_util::*;
 
     use super::*;
 
@@ -1120,6 +1160,56 @@ mod tests {
 
     #[test]
     fn test_selected_table_names() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
+        test_create_data_table(&mut gc, sheet_id, pos![E5], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        let cache = sheet.data_tables.cache_ref().clone();
+
+        // Test single table selection
+        let selection = A1Selection::test_a1_context("test_table", gc.a1_context());
+        println!("selection: {:?}", selection);
+        assert_eq!(
+            selection.selected_table_names(sheet_id, &cache, gc.a1_context()),
+            vec!["test_table"]
+        );
+
+        // Test multiple table selections
+        let selection = A1Selection::test_a1_context("test_table,test_table1", gc.a1_context());
+        assert_vec_eq_unordered(
+            &selection.selected_table_names(sheet_id, &cache, gc.a1_context()),
+            &["test_table".to_string(), "test_table1".to_string()],
+        );
+
+        // Test column selection
+        let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
+        assert!(
+            selection
+                .selected_table_names(sheet_id, &cache, gc.a1_context())
+                .is_empty()
+        );
+
+        // Test sheet selection that overlaps table
+        let selection = A1Selection::test_a1_context("A1:B2", gc.a1_context());
+        assert_eq!(
+            selection.selected_table_names(sheet_id, &cache, gc.a1_context()),
+            vec!["test_table"]
+        );
+
+        // Test selection with no tables
+        let selection = A1Selection::test_a1_context("A1:B1", gc.a1_context());
+        assert!(
+            selection
+                .selected_table_names(sheet_id, &cache, gc.a1_context())
+                .is_empty(),
+        );
+    }
+
+    #[test]
+    fn test_tables_with_column_selection() {
         let context = A1Context::test(
             &[],
             &[
@@ -1128,20 +1218,24 @@ mod tests {
             ],
         );
 
-        // Test single table selection
-        let selection = A1Selection::test_a1_context("Table1", &context);
-        assert_eq!(selection.selected_table_names(), vec!["Table1"]);
+        // Single table column selection
+        let selection = A1Selection::test_a1_context("Table1[A]", &context);
+        assert_eq!(selection.tables_with_column_selection(), vec!["Table1"]);
 
-        // Test multiple table selections
-        let selection = A1Selection::test_a1_context("Table1,Table2", &context);
+        // Multiple table column selections
+        let selection = A1Selection::test_a1_context("Table1[A],Table2[C]", &context);
         assert_vec_eq_unordered(
-            &selection.selected_table_names(),
+            &selection.tables_with_column_selection(),
             &["Table1".to_string(), "Table2".to_string()],
         );
 
-        // Test column selection
-        let selection = A1Selection::test_a1_context("Table1[A]", &context);
-        assert!(selection.selected_table_names().is_empty());
+        // Table full selection (should also be included)
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(selection.tables_with_column_selection(), vec!["Table1"]);
+
+        // Non-table selection (should be empty)
+        let selection = A1Selection::test_a1("A1:B2");
+        assert!(selection.tables_with_column_selection().is_empty());
     }
 
     #[test]
