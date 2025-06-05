@@ -9,7 +9,7 @@ import { CONNECTION_DEMO } from '../env-vars';
  *   show the demo connection enabled, a demo connection will be available
  * - If that value isn't present (or malformed), no demo connection will be available
  * - When available, the demo connection is returned from the server for:
- *   - Display in the UI pruposes (list of avialable connections)
+ *   - Display in the UI purposes (list of available connections)
  *   - Connection service queries (a file has a cell with a connection, the
  *     connection service can query that hard-coded connection uuid)
  */
