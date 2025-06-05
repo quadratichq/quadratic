@@ -54,10 +54,6 @@ impl GridController {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        // Rerun all code cells after importing Excel file
-        // This is required to run compute cells in order
-        let code_rerun_ops = self.rerun_all_code_cells_operations();
-        self.server_apply_transaction(code_rerun_ops, None);
         Ok(())
     }
 
@@ -149,7 +145,9 @@ pub(crate) mod tests {
     ) -> (&'a GridController, SheetId, Pos, &'a str) {
         // data table should be at `pos`
         assert_eq!(
-            gc.sheet(sheet_id).first_data_table_within(pos).unwrap(),
+            gc.sheet(sheet_id)
+                .data_table_pos_that_contains(&pos)
+                .unwrap(),
             pos
         );
 
@@ -311,8 +309,8 @@ pub(crate) mod tests {
             CellValue::Text("Hello Red".into())
         );
 
-        expect_js_call_count("jsTransactionStart", 2, false);
-        expect_js_call_count("jsTransactionEnd", 2, false);
+        expect_js_call_count("jsTransactionStart", 4, false);
+        expect_js_call_count("jsTransactionEnd", 4, false);
 
         // doesn't appear to import the bold or red formatting yet
         // assert_eq!(
@@ -357,7 +355,7 @@ pub(crate) mod tests {
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet
-            let code_run = sheet.data_table(pos).unwrap().code_run().unwrap();
+            let code_run = sheet.data_table_at(&pos).unwrap().code_run().unwrap();
             if let Some(error) = &code_run.error {
                 if error.msg == RunErrorMsg::BadFunctionName {
                     panic!("expected valid function name")
@@ -461,7 +459,7 @@ pub(crate) mod tests {
     //          Rect::new_span(Pos { x: 8, y: 0 }, Pos { x: 15, y: 10 }),
     //      );
 
-    //     expect_js_call_count("jsRenderCellSheets", 33026, true);
+    //     expect_js_call_count("jsHashesRenderCells", 33026, true);
     // }
 
     #[test]

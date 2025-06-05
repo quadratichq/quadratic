@@ -70,7 +70,7 @@ pub fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataT
         sheet_pos,
         sheet.cell_value(sheet_pos.into())
     );
-    let data_table = sheet.data_table(Pos::from(sheet_pos)).unwrap();
+    let data_table = sheet.data_table_at(&sheet_pos.into()).unwrap();
     assert_eq!(
         data_table, dt,
         "Data table at {:?} is not equal to provided data table",
@@ -93,7 +93,7 @@ pub fn assert_data_table_size(
     use crate::CellValue;
 
     let sheet = gc.sheet(sheet_id);
-    let Some(data_table) = sheet.data_table(pos) else {
+    let Some(data_table) = sheet.data_table_at(&pos) else {
         panic!("Data table at {} not found", pos);
     };
     let Some(cell_value) = sheet.cell_value(pos) else {
@@ -167,7 +167,7 @@ pub fn assert_data_table_sort_dirty(
 ) {
     let sheet = gc.sheet(sheet_id);
     let data_table = sheet
-        .data_table(pos)
+        .data_table_at(&pos)
         .unwrap_or_else(|| panic!("Data table at {} not found", pos));
     assert_eq!(
         data_table.sort_dirty, sort_dirty,
