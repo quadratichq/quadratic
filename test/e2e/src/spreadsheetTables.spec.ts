@@ -1635,33 +1635,33 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   // Click the first filter dropdown in the table sort modal
   await page.locator('[role="combobox"]').nth(1).click();
 
-  // Select the 'DEscapeending' option
-  await page.getByText('DEscapeending', { exact: true }).click();
+  // Select the 'Descending' option
+  await page.getByText('Descending', { exact: true }).click();
 
   // Click the second filter dropdown in the table sort modal
   await page.locator('[role="combobox"]').nth(3).click();
 
-  // Select the 'DEscapeending' option
-  await page.getByText('DEscapeending', { exact: true }).last().click();
+  // Select the 'Descending' option
+  await page.getByText('Descending', { exact: true }).last().click();
 
   // Click "Apply" button
   await page.getByRole(`button`, { name: `Apply` }).click();
 
   // Store 'Population' column values
-  const populationValuesDEscapeending = [];
+  const populationValuesDescending = [];
 
   // Navigate to cell B3
   await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
-  // Loop through all 'Population' values and store in populationValuesDEscapeending array
-  while (populationValuesDEscapeending.length < 24) {
+  // Loop through all 'Population' values and store in populationValuesDescending array
+  while (populationValuesDescending.length < 24) {
     // Press enter twice on keyboard to navigate to next 'Population' value
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
     // Press enter unless on first row
-    if (populationValuesDEscapeending.length != 0) {
+    if (populationValuesDescending.length != 0) {
       await page.keyboard.press('Enter');
       await page.waitForTimeout(1000);
     }
@@ -1670,18 +1670,18 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     value = await page.locator(`[id="cell-edit"] span`).first().innerText();
 
     // Push 'Population' value
-    populationValuesDEscapeending.push(value);
+    populationValuesDescending.push(value);
   }
 
-  // Assert that the 'Population' column is sorted in dEscapeending order
-  const sortedPopulationValuesDEscapeending = [...populationValuesDEscapeending].sort((a, b) => Number(b) - Number(a));
-  expect(populationValuesDEscapeending).toEqual(sortedPopulationValuesDEscapeending);
+  // Assert that the 'Population' column is sorted in descending order
+  const sortedPopulationValuesDescending = [...populationValuesDescending].sort((a, b) => Number(b) - Number(a));
+  expect(populationValuesDescending).toEqual(sortedPopulationValuesDescending);
 
   // Store 'Population' values as keys in dictionary with empty array values
-  const populationGDPMappingDEscapeending: Record<string, string[]> = {};
-  populationValuesDEscapeending.forEach((key) => {
-    if (!populationGDPMappingDEscapeending[key]) {
-      populationGDPMappingDEscapeending[key] = [];
+  const populationGDPMappingDescending: Record<string, string[]> = {};
+  populationValuesDescending.forEach((key) => {
+    if (!populationGDPMappingDescending[key]) {
+      populationGDPMappingDescending[key] = [];
     }
   });
 
@@ -1690,7 +1690,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 3 });
 
-  // Loop through all 'GDP' values and store 'GDP' value to corresponding populationGDPMappingDEscapeending dictionary
+  // Loop through all 'GDP' values and store 'GDP' value to corresponding populationGDPMappingDescending dictionary
   for (let i = 0; i < 24; i++) {
     // Press enter twice on keyboard to navigate to next 'Population' value
     await page.keyboard.press('Enter');
@@ -1704,14 +1704,14 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     // Store 'GDP' value
     value = await page.locator(`[id="cell-edit"] span`).first().innerText();
 
-    // Add 'GDP' value to corresponding populationGDPMappingDEscapeending dictionary
-    populationGDPMappingDEscapeending[populationValuesDEscapeending[i]].push(value);
+    // Add 'GDP' value to corresponding populationGDPMappingDescending dictionary
+    populationGDPMappingDescending[populationValuesDescending[i]].push(value);
   }
 
-  // Assert that the 'GDP' column is sorted in dEscapeending order based on corresponding "Population" column
-  Object.values(populationGDPMappingDEscapeending).forEach((value) => {
-    const sortedGDPValuesDEscapeending = [...value].sort((a, b) => Number(b) - Number(a));
-    expect(value).toEqual(sortedGDPValuesDEscapeending);
+  // Assert that the 'GDP' column is sorted in descending order based on corresponding "Population" column
+  Object.values(populationGDPMappingDescending).forEach((value) => {
+    const sortedGDPValuesDescending = [...value].sort((a, b) => Number(b) - Number(a));
+    expect(value).toEqual(sortedGDPValuesDescending);
   });
 
   //--------------------------------
@@ -2346,7 +2346,7 @@ test('Table Sort', async ({ page }) => {
   expect(populationValuesAscending).toEqual(sortedPopulationValuesAscending);
 
   //--------------------------------
-  // Sort Single Table Column DEscapeending
+  // Sort Single Table Column Descending
   //--------------------------------
   // Navigate to top of spreadsheet
   await page.keyboard.press('Escape');
@@ -2356,22 +2356,22 @@ test('Table Sort', async ({ page }) => {
   // Right click on the 'Population' column header
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 179, y: 50 } });
 
-  // Click 'Sort dEscapeending' option
-  await page.getByText('Sort dEscapeending').click();
+  // Click 'Sort descending' option
+  await page.getByText('Sort descending').click();
 
   // Store 'Population' column values
-  const populationValuesDEscapeending = [];
+  const populationValuesDescending = [];
 
   // Navigate to cell B3
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
-  // Loop through all 'Population' values and store in populationValuesDEscapeending array
-  while (populationValuesDEscapeending.length < 24) {
+  // Loop through all 'Population' values and store in populationValuesDescending array
+  while (populationValuesDescending.length < 24) {
     // Press enter on keyboard to navigate to next 'Population' value
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
     // Press enter on keyboard to make cell editable (skip this if on first row)
-    if (populationValuesDEscapeending.length != 0) {
+    if (populationValuesDescending.length != 0) {
       await page.keyboard.press('Enter');
       await page.waitForTimeout(1000);
     }
@@ -2380,12 +2380,12 @@ test('Table Sort', async ({ page }) => {
     value = await page.locator(`[id="cell-edit"] span`).first().innerText();
 
     // Push 'Population' value
-    populationValuesDEscapeending.push(value);
+    populationValuesDescending.push(value);
   }
 
-  // Assert that the 'Population' column is sorted in dEscapeending order
-  const sortedPopulationValuesDEscapeending = [...populationValuesDEscapeending].sort((a, b) => Number(b) - Number(a));
-  expect(populationValuesDEscapeending).toEqual(sortedPopulationValuesDEscapeending);
+  // Assert that the 'Population' column is sorted in descending order
+  const sortedPopulationValuesDescending = [...populationValuesDescending].sort((a, b) => Number(b) - Number(a));
+  expect(populationValuesDescending).toEqual(sortedPopulationValuesDescending);
 
   //--------------------------------
   // Clean up:
