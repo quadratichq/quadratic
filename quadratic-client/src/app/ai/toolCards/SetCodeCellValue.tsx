@@ -104,20 +104,18 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
     const partialJson = parsePartialJson(args);
     if (partialJson && 'code_cell_language' in partialJson) {
       const { code_cell_language: language, code_cell_position: position } = partialJson;
-      if (language === 'Python' || language === 'Javascript') {
-        return (
-          <ToolCard
-            icon={<LanguageIcon language={language} />}
-            label={language}
-            description={
-              `${estimatedNumberOfLines} line` +
-              (estimatedNumberOfLines === 1 ? '' : 's') +
-              (position ? ` at ${position}` : '')
-            }
-            isLoading={true}
-          />
-        );
-      }
+      return (
+        <ToolCard
+          icon={<LanguageIcon language={language} />}
+          label={language}
+          description={
+            `${estimatedNumberOfLines} line` +
+            (estimatedNumberOfLines === 1 ? '' : 's') +
+            (position ? ` at ${position}` : '')
+          }
+          isLoading={true}
+        />
+      );
     }
   }
 
@@ -128,11 +126,6 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
   }
 
   const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
-
-  if (code_cell_language !== 'Python' && code_cell_language !== 'Javascript') {
-    return null;
-  }
-
   return (
     <ToolCard
       icon={<LanguageIcon language={code_cell_language} />}

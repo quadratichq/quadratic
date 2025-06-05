@@ -280,7 +280,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetFormulaCellValue]: async (args, messageMetaData) => {
-    let { sheet_name, formula_string, code_cell_position, code_cell_name } = args;
+    let { sheet_name, formula_string, code_cell_position } = args;
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
       const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
@@ -299,7 +299,6 @@ export const aiToolsActions: AIToolActionsRecord = {
         y,
         codeString: formula_string,
         language: 'Formula',
-        codeCellName: code_cell_name,
         cursor: sheets.getCursorPosition(),
       });
 

@@ -90,9 +90,9 @@ const array2DSchema = z
 const cellLanguageSchema = z
   .string()
   .transform((val) => val.toLowerCase())
-  .pipe(z.enum(['python', 'javascript', 'formula']))
+  .pipe(z.enum(['python', 'javascript']))
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-  .pipe(z.enum(['Python', 'Javascript', 'Formula']));
+  .pipe(z.enum(['Python', 'Javascript']));
 
 const modelRouterModels = z
   .string()
@@ -115,13 +115,12 @@ export const AIToolsArgsSchema = {
   [AITool.SetCodeCellValue]: z.object({
     sheet_name: z.string(),
     code_cell_name: z.string(),
-    code_cell_language: cellLanguageSchema.pipe(z.enum(['Python', 'Javascript'])),
+    code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
   }),
   [AITool.SetFormulaCellValue]: z.object({
     sheet_name: z.string(),
-    code_cell_name: z.string(),
     code_cell_position: z.string(),
     formula_string: z.string(),
   }),
@@ -489,11 +488,6 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
           type: 'string',
           description: 'The sheet name of the current sheet as defined in the context',
         },
-        code_cell_name: {
-          type: 'string',
-          description:
-            'What to name the output of the formula cell. The name cannot contain spaces or special characters (but _ is allowed). First letter capitalized is preferred.',
-        },
         code_cell_position: {
           type: 'string',
           description:
@@ -504,7 +498,7 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
           description: 'The formula which will run in the cell',
         },
       },
-      required: ['sheet_name', 'code_cell_name', 'code_cell_position', 'formula_string'],
+      required: ['sheet_name', 'code_cell_position', 'formula_string'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetFormulaCellValue],
