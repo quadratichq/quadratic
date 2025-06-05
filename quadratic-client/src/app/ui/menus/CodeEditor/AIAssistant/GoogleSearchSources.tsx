@@ -41,22 +41,18 @@ export const GoogleSearchSources = memo(({ content }: { content: GoogleSearchCon
   );
 
   return (
-    <div className="flex flex-col gap-2 px-2">
-      <div className="text-sm font-medium">Sources</div>
-
-      <div className="flex flex-wrap gap-2">
-        {sources.map((source, index) => (
-          <Link
-            key={`${index}-${source.title}`}
-            className="flex h-8 w-fit cursor-pointer items-center rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
-            to={source.uri}
-            target="_blank"
-          >
-            <Favicon domain={source.title} size={12} alt={source.title} className="mr-2 h-4 w-4" />
-            {source.title}
-          </Link>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-1 px-2">
+      {sources.map((source, index) => (
+        <Link
+          key={`${index}-${source.title}`}
+          className="flex w-fit cursor-pointer items-center rounded border border-border/50 px-1.5 py-1 text-xs text-muted-foreground hover:border-border hover:underline"
+          to={source.uri}
+          target="_blank"
+        >
+          <Favicon domain={source.title} size={12} alt={source.title} className="mr-1" />
+          {source.title}
+        </Link>
+      ))}
     </div>
   );
 });
