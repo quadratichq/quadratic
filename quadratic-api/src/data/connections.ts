@@ -2,6 +2,17 @@ import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import type { Connection } from 'quadratic-shared/typesAndSchemasConnections';
 import { CONNECTION_DEMO } from '../env-vars';
 
+/**
+ * At a high level, the way this works is:
+ * - We defined the details of a hard-coded connection in the env var
+ * - If that value is present in the env AND the user's team has the setting to
+ *   show the demo connection enabled, a demo connection will be available
+ * - If that value isn't present (or malformed), no demo connection will be available
+ * - When available, the demo connection is returned from the server for:
+ *   - Display in the UI pruposes (list of avialable connections)
+ *   - Connection service queries (a file has a cell with a connection, the
+ *     connection service can query that hard-coded connection uuid)
+ */
 export let connectionDemo: Connection | undefined;
 try {
   connectionDemo = ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response'].parse({
