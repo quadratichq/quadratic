@@ -30,7 +30,7 @@ async function handler(req: Request, res: Response) {
   }
 
   // If it's our hard-coded connection, return that
-  if (connectionUuid === connectionDemo.uuid) {
+  if (connectionUuid === connectionDemo?.uuid) {
     return res.status(200).json(connectionDemo);
   }
 

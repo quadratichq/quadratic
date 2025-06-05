@@ -64,7 +64,6 @@ describe('GET /v0/teams/:uuid/connections', () => {
         .expect((res) => {
           expect(res.body.length).toBe(1);
           expect(res.body[0].isDemo).toBe(true);
-          expect(res.body[0].isDemoVisible).toBe(true);
         });
 
       // Demo connection not visible
@@ -81,9 +80,7 @@ describe('GET /v0/teams/:uuid/connections', () => {
         .set('Authorization', `Bearer ValidToken teamUserOwner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.length).toBe(1);
-          expect(res.body[0].isDemo).toBe(true);
-          expect(res.body[0].isDemoVisible).toBe(false);
+          expect(res.body.length).toBe(0);
         });
     });
 

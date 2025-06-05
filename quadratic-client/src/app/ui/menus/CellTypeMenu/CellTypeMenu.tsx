@@ -19,7 +19,6 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import { getVisibleConnections } from '@/shared/utils/connections';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
@@ -62,7 +61,6 @@ export default function CellTypeMenu() {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const visibleConnections = getVisibleConnections(connections);
   const includeLanguages = showCellTypeMenu !== 'connections';
   const searchLabel = `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`;
 
@@ -127,7 +125,7 @@ export default function CellTypeMenu() {
 
         {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
-            {visibleConnections.map(({ name, type, uuid }, i) => (
+            {connections.map(({ name, type, uuid }, i) => (
               <CommandItemWrapper
                 key={uuid}
                 uuid={uuid}

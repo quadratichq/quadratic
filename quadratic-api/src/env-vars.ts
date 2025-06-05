@@ -1,5 +1,3 @@
-import type { Connection } from 'quadratic-shared/typesAndSchemasConnections';
-
 const SAMPLE_ENCRYPTION_KEY = 'eb4758047f74bdb2603cce75c4370327ca2c3662c4786867659126da8e64dfcc';
 
 // Optional
@@ -58,12 +56,10 @@ export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 export const XAI_API_KEY = process.env.XAI_API_KEY;
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-export const CONNECTION_DEMO = JSON.parse(process.env.CONNECTION_DEMO as string) as Connection;
+export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
 
 if (NODE_ENV === 'production') {
-  ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL', 'CONNECTION_DEMO'].forEach(
-    ensureEnvVarExists
-  );
+  ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
 }
 
 // Intentionally hard-coded to avoid this being environment-configurable

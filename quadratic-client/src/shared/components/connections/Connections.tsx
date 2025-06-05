@@ -10,7 +10,6 @@ import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/co
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
-import { getVisibleConnections } from '@/shared/utils/connections';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
@@ -112,16 +111,16 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   );
   if (demoConnectionToggling.length) {
     const activeFetcher = demoConnectionToggling.slice(-1)[0];
-    connections = connections.map((c) =>
-      c.isDemo
-        ? {
-            ...c,
-            isDemoVisible: (activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo,
-          }
-        : c
-    );
+    if ((activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo === false) {
+      connections = connections.filter((c) => c.isDemo !== true);
+    } else {
+      connections = [
+        ...connections,
+        // We don't know the name of the demo connection, so we just use the [Demo] prefix as a placeholder
+        { name: '[Demo]', type: 'POSTGRES', uuid: 'xxx', createdDate: new Date().toISOString(), isDemo: true },
+      ];
+    }
   }
-  connections = getVisibleConnections(connections);
 
   /**
    * Navigation
