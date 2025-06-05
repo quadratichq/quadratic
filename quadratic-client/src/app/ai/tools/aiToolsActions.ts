@@ -284,8 +284,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     let { sheet_name, formula_string, code_cell_position } = args;
     try {
       const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
-      const selection = stringToSelection(code_cell_position, sheetId, sheets.a1Context);
-      if (!selection.isSingleSelection()) {
+      const selection = sheets.stringToSelection(code_cell_position, sheetId);
+      if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid formula cell position, this should be a single cell, not a range' }];
       }
       const { x, y } = selection.getCursor();
@@ -307,10 +307,10 @@ export const aiToolsActions: AIToolActionsRecord = {
         await waitForSetCodeCellValue(transactionId);
 
         // After execution, adjust viewport to show full output if it exists
-        const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
-        if (table) {
-          const width = table.codeCell.w;
-          const height = table.codeCell.h;
+        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+        if (tableCodeCell) {
+          const width = tableCodeCell.w;
+          const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
         }
 

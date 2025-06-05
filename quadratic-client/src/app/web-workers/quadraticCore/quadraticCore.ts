@@ -206,10 +206,8 @@ class QuadraticCore {
       events.emit('a1Context', e.data.context);
       return;
     } else if (e.data.type === 'coreClientCoreError') {
+      if (debug) console.error('[quadraticCore] core error', e.data.from, e.data.error);
       events.emit('coreError', e.data.from, e.data.error);
-      if (debug) {
-        console.error('[quadraticCore] core error', e.data.from, e.data.error);
-      }
       return;
     } else if (e.data.type === 'coreClientDataTablesCache') {
       events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));

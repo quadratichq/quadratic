@@ -136,7 +136,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (isVersionHistoryPreview) {
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
-
   if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
 
   return data;
