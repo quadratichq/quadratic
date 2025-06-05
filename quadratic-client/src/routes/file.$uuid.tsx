@@ -31,6 +31,11 @@ export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidate
   currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
+  // Start loading PIXI assets early and asynchronously
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing PIXI assets');
+  loadAssets().catch((e) => console.error('Error loading assets', e));
+  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+
   const { uuid } = params as { uuid: string };
 
   // Figure out if we're loading a specific checkpoint (for version history)
@@ -51,22 +56,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
     throw new Response('Failed to load file from server.', { status: error.status });
   }
-  if (debugShowMultiplayer || debugShowFileIO)
+
+  if (debugShowMultiplayer || debugShowFileIO) {
     console.log(
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
+  }
 
   if (debugStartupTime) console.time('[file.$uuid.tsx] initializing workers');
   initWorkers();
   if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing workers');
-
-  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing PIXI assets');
-  loadAssets().catch((e) => console.error('Error loading assets', e));
-  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
-
-  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
-  // initialize: Rust metadata
-  await initCoreClient();
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
@@ -75,20 +74,27 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     sequenceNumber: data.file.lastCheckpointSequenceNumber,
   };
   if (isVersionHistoryPreview) {
-    const c = await apiClient.files.checkpoints.get(uuid, checkpointId);
-    checkpoint.url = c.dataUrl;
-    checkpoint.version = c.version;
-    checkpoint.sequenceNumber = c.sequenceNumber;
+    const { dataUrl, version, sequenceNumber } = await apiClient.files.checkpoints.get(uuid, checkpointId);
+    checkpoint.url = dataUrl;
+    checkpoint.version = version;
+    checkpoint.sequenceNumber = sequenceNumber;
   }
 
+  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+  // initialize: Rust metadata
+  const initCoreClientPromise = initCoreClient();
+
   // initialize Core web worker
-  const result = await quadraticCore.load({
+  const quadraticCoreLoadPromise = quadraticCore.load({
     fileId: uuid,
     teamUuid: data.team.uuid,
     url: checkpoint.url,
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
   });
+
+  const [, result] = await Promise.all([initCoreClientPromise, quadraticCoreLoadPromise]);
+
   if (result.error) {
     if (!isVersionHistoryPreview) {
       Sentry.captureEvent({
@@ -123,13 +129,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   } else {
     throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
+
   if (!isVersionHistoryPreview) updateRecentFiles(uuid, data.file.name, true);
 
   // Hot-modify permissions if its the version history, so it's read-only
   if (isVersionHistoryPreview) {
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
+
   if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+
   return data;
 };
 
