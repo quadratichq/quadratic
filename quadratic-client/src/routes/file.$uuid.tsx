@@ -82,16 +82,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
   // initialize: Rust metadata
-  await initCoreClient();
+  const initCoreClientPromise = initCoreClient();
 
   // initialize Core web worker
-  const result = await quadraticCore.load({
+  const quadraticCoreLoadPromise = quadraticCore.load({
     fileId: uuid,
     teamUuid: data.team.uuid,
     url: checkpoint.url,
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
   });
+
+  const [result] = await Promise.all([quadraticCoreLoadPromise, initCoreClientPromise]);
 
   if (result.error) {
     if (!isVersionHistoryPreview) {
