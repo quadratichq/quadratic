@@ -807,6 +807,8 @@ test('Go To Menu Navigation', async ({ page }) => {
   // Assert for value in cell
   expect(clipboardText).toBe(cellValue);
 
+  await page.keyboard.press(`Escape`);
+
   //--------------------------------
   // Go to Cell Range
   //--------------------------------
@@ -832,6 +834,8 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Cell_Range.png', {
     maxDiffPixelRatio: 0.01,
   });
+
+  await page.keyboard.press(`Escape`);
 
   //--------------------------------
   // Go to Table
@@ -1881,6 +1885,8 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
     a.localeCompare(b, undefined, { sensitivity: 'base' })
   );
   expect(stateValuesAscending).toEqual(sortedStateValuesAscending);
+
+  await page.keyboard.press(`Escape`);
 
   // Right click on the 'Table1' header
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
