@@ -22,7 +22,7 @@ export const SetFormulaCellValue = memo(({ args, loading }: SetFormulaCellValueP
         setToolArgs(aiToolsSpec[AITool.SetFormulaCellValue].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[SetCodeCellValue] Failed to parse args: ', error);
+        console.error('[SetFormulaCellValue] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
