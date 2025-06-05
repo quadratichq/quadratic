@@ -37,7 +37,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Expect the raw data to be converted to a table
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Convert_Data_To_Table.png');
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Convert_Data_To_Table.png');
 
   //--------------------------------
   // Convert Table into Flattened Data
@@ -52,7 +52,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   await page.waitForTimeout(3 * 1000);
 
   // Expect table to be flattened back into raw data
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Convert_Table_To_Data.png');
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Convert_Table_To_Data.png');
 
   //--------------------------------
   // Clean up:
@@ -129,7 +129,7 @@ df`);
   // - A5, B5, C5, D5 should have `Alex`, `35`, `Paris`, `72000`
   // - A6, B6, C6, D6 should have `Sarah`, `28`, `Tokyo`, `58000`
   // - A7, B7, C7, D7 should have `Mike`, `42`, `Berlin`, `80000`
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(`Create_Table_By_Code_Output.png`);
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`Create_Table_By_Code_Output.png`);
 
   //--------------------------------
   // Clean up:
@@ -200,7 +200,7 @@ df`);
   // - A4, B4, C4, D4 should have `Alex`, `35`, `Paris`, `72000`
   // - A5, B5, C5, D5 should have `Sarah`, `28`, `Tokyo`, `58000`
   // - A6, B6, C6, D6 should have `Mike`, `42`, `Berlin`, `80000`
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(`Create_Table_By_Code_Output_WO_Headers.png`);
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`Create_Table_By_Code_Output_WO_Headers.png`);
 
   //--------------------------------
   // Clean up:
@@ -248,7 +248,7 @@ test('Edit Table Data', async ({ page }) => {
   }
 
   // Assert first 3 cells in the Population column have been deleted
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Date_Delete3PopulationCells.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Date_Delete3PopulationCells.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -273,7 +273,7 @@ test('Edit Table Data', async ({ page }) => {
   }
 
   // Assert first 3 cells in the State column have been deleted
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Date_Edit3StateCells.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Date_Edit3StateCells.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -290,7 +290,7 @@ test('Edit Table Data', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert all cells except first rowin table have been cleared
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Date_ClearAllCellsButFirstRow.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Date_ClearAllCellsButFirstRow.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -330,7 +330,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.getByLabel(`Bold`).click();
 
   // Assert text formatting bold has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Text_Bold.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Bold.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -341,7 +341,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.getByLabel(`Italic`).click();
 
   // Assert text formatting italics has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Text_Italic.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Italic.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -352,7 +352,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.getByRole(`button`, { name: `Underline` }).click();
 
   // Assert text formatting underline has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Text_Underline.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Underline.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -363,7 +363,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.getByRole(`button`, { name: `Strike through` }).click();
 
   // Assert text formatting strike through has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Text_Strike.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Strike.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -381,7 +381,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert text color formatting has applied successfully (red text)
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Text_Color.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Color.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -399,7 +399,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert color formatting has applied successfully (fill color red)
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Fill_Color.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Fill_Color.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -418,7 +418,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert all border formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_All_Borders.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_All_Borders.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -430,7 +430,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert outer border formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Outer_Borders.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Outer_Borders.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -442,7 +442,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert inner border formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Inner_Borders.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Inner_Borders.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -454,7 +454,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert left border formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Left_Borders.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Left_Borders.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -466,7 +466,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert right border formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Right_Borders.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Right_Borders.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -495,7 +495,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert text wrap formatting has successfully applied
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Text_Overflow.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Text_Overflow.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -510,7 +510,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert text wrap formatting has successfully applied
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Text_Wrap.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Text_Wrap.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -523,7 +523,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Horizontal_Alignment_Left.png',
     {
       maxDiffPixelRatio: 0.01,
@@ -536,7 +536,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Horizontal_Alignment_Right.png',
     { maxDiffPixelRatio: 0.01 }
   );
@@ -547,7 +547,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Horizontal_Alignment_Center.png',
     { maxDiffPixelRatio: 0.01 }
   );
@@ -558,7 +558,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Vertical_Alignment_Bottom.png',
     {
       maxDiffPixelRatio: 0.01,
@@ -571,7 +571,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Vertical_Alignment_Top.png',
     {
       maxDiffPixelRatio: 0.01,
@@ -584,7 +584,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Vertical_Alignment_Middle.png',
     {
       maxDiffPixelRatio: 0.01,
@@ -598,7 +598,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.getByLabel(`Clear formatting`).click();
 
   // Assert clear formatting has successfully applied
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Clear.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Clear.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -647,7 +647,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert all cell formatting has applied successfully
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Edit_Table_Formatting_Cell_Formatting.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Cell_Formatting.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -666,7 +666,7 @@ test('Edit Table Formatting', async ({ page }) => {
     await page.waitForTimeout(5 * 1000);
 
     // Asser cell border formatting has applied successfully
-    await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+    await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
       `Edit_Table_Formatting_Cell_Border_${option}.png`,
       {
         maxDiffPixelRatio: 0.01,
@@ -691,7 +691,7 @@ test('Edit Table Formatting', async ({ page }) => {
     await page.waitForTimeout(5 * 1000);
 
     // Asser cell horizontal align formatting has applied successfully
-    await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot(
+    await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
       `Edit_Table_Formatting_Cell_Align_${option}.png`,
       {
         maxDiffPixelRatio: 0.01,
@@ -829,7 +829,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(cellRange);
 
   // Assert visually that correct cells are selected
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Go_To_Cell_Range.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Cell_Range.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -855,7 +855,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(tableName);
 
   // Assert visually that the Table is selected
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Go_To_Menu_Table.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Menu_Table.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -882,7 +882,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(pythonCode);
 
   // Assert visually that correct code cells are selected
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Go_To_Code_Python.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Code_Python.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -902,7 +902,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(javascriptCode);
 
   // Assert visually that correct code cells are selected
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Go_To_Code_Javascript.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Code_Javascript.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -929,7 +929,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByText(`${cellSheet}arrow_drop_down`)).toBeVisible();
 
   // Assert visually correct sheet is visible
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Go_To_Cell_Range.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Cell_Range.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -949,7 +949,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByText(`${tableSheet}arrow_drop_down`)).toBeVisible();
 
   // Assert visually correct sheet is visible
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Go_To_Menu_Table.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Menu_Table.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1125,7 +1125,7 @@ test('Jump to table cell location from code editor location button', async ({ pa
   await expect(page.getByRole(`textbox`)).toHaveValue(tableName);
 
   // Assert the code reference table is highlighted
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Code_ref_table_selected.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_ref_table_selected.png', {
     maxDiffPixels: 100,
   });
 
@@ -1148,7 +1148,7 @@ test('Jump to table cell location from code editor location button', async ({ pa
   await expect(page.getByRole(`textbox`)).toHaveValue(tableNameCell);
 
   // Assert the code reference table is not highlighted
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Code_ref_table_not_selected.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_ref_table_not_selected.png', {
     maxDiffPixels: 100,
   });
 
@@ -1271,7 +1271,7 @@ test('Rename Table', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Expect the table name to be renamed to table name 1
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Rename_Table_DblClick.png');
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Rename_Table_DblClick.png');
 
   // Change selection
   await page.mouse.click(500, 500, { delay: 1000 });
@@ -1303,7 +1303,7 @@ test('Rename Table', async ({ page }) => {
   await page.keyboard.press(`Enter`);
 
   // Expect the table name to be renamed to table name 2
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Rename_Table_Context_Menu.png');
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Rename_Table_Context_Menu.png');
 
   // Click body
   await page.locator(`body`).click();
@@ -1344,7 +1344,7 @@ test('Table is created from Importing Data', async ({ page }) => {
   // Table is created from Importing Data
   //--------------------------------
   // Assert that the imported data has converted to a table
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Import_Data_Converts_to_Table.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Import_Data_Converts_to_Table.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1357,7 +1357,7 @@ test('Table is created from Importing Data', async ({ page }) => {
 
   // Assert 'Flatten' option is visible
   await expect(page.getByRole(`menuitem`, { name: `Flatten` })).toBeVisible();
-  await page.keyboard.press('Escapeape');
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
@@ -1395,7 +1395,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Show name` }).click();
 
   // Assert table name is not visible
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Show_Table_Name_Off.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Name_Off.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1412,7 +1412,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Show name` }).click();
 
   // Assert table name is visible
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Show_Table_Name_On.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Name_On.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1426,7 +1426,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Show column names` }).click();
 
   // Assert column names/headers are not visible
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Show_Table_Column_Names_Off.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Column_Names_Off.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1440,7 +1440,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Show column names` }).click();
 
   // Assert column names/headers are visible
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Show_Table_Column_Names_On.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Column_Names_On.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1454,7 +1454,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Show alternating colors` }).click();
 
   // Assert row alternating colors are not visible
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Show_Table_Show_Alternating_Colors_Off.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Show_Alternating_Colors_Off.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1468,7 +1468,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Show alternating colors` }).click();
 
   // Assert row alternating colors are visible
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Show_Table_Show_Alternating_Colors_On.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Show_Alternating_Colors_On.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1482,7 +1482,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Use first row as column names` }).click();
 
   // Assert first row is used as column names
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Use_First_Row_As_Column_Names_On.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Use_First_Row_As_Column_Names_On.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1496,7 +1496,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `Use first row as column names` }).click();
 
   // Assert first row not ot used as column names
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Use_First_Row_As_Column_Names_Off.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Use_First_Row_As_Column_Names_Off.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1557,7 +1557,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   const populationValuesAscending = [];
 
   // Navigate to cell B3
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
@@ -1595,7 +1595,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   });
 
   // Navigate to cell C3
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 3 });
 
@@ -1624,7 +1624,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   });
 
   //--------------------------------
-  // Multi-Sort across multiple column DEscapeending
+  // Multi-Sort across multiple column Descending
   //--------------------------------
   // Right click on the 'Table1' header
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
@@ -1651,7 +1651,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   const populationValuesDEscapeending = [];
 
   // Navigate to cell B3
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
@@ -1686,7 +1686,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   });
 
   // Navigate to cell C3
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 3 });
 
@@ -1736,7 +1736,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   const populationValuesUnsorted = [];
 
   // Navigate to cell B2
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
@@ -1766,7 +1766,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   const gdpValuesUnsorted = [];
 
   // Navigate to cell C2
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 3 });
 
@@ -1844,7 +1844,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   await page.getByRole(`button`, { name: `Apply` }).click();
 
   // Navigate to cell A3
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 3 });
 
@@ -1891,7 +1891,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   await page.getByRole(`button`, { name: `Apply` }).click();
 
   // Navigate to cell B3
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
@@ -1929,7 +1929,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   });
 
   // Navigate to cell A3
-  await page.keyboard.press(`Escapeape`);
+  await page.keyboard.press(`Escape`);
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 3 });
 
@@ -1995,7 +1995,7 @@ test('Table reference from code input', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Table_reference_sheet_initial.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -2029,7 +2029,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Table_reference_table_from_existing_table.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_table_from_existing_table.png', {
     maxDiffPixels: 100,
   });
 
@@ -2067,7 +2067,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Table_reference_column_from_existing_table.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_column_from_existing_table.png', {
     maxDiffPixels: 100,
   });
 
@@ -2105,7 +2105,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Table_reference_table_from_code_table.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_table_from_code_table.png', {
     maxDiffPixels: 100,
   });
 
@@ -2143,12 +2143,9 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot(
-    'Table_reference_table_from_code_table_headers.png',
-    {
-      maxDiffPixels: 100,
-    }
-  );
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_table_from_code_table_headers.png', {
+    maxDiffPixels: 100,
+  });
 
   //--------------------------------
   // Table reference (Multi columns) from code using a code referenced table
@@ -2184,7 +2181,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot(
+  await expect(page.locator('canvas:visible')).toHaveScreenshot(
     'Table_reference_table_from_col_table_multi_columns.png',
     {
       maxDiffPixels: 100,
@@ -2222,7 +2219,7 @@ test('Table Resize', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Table_resize_sheet_initial.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_resize_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -2242,7 +2239,7 @@ test('Table Resize', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert table has been expanded and data has been added
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Table_Resize_Add_Data.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Table_Resize_Add_Data.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -2265,7 +2262,7 @@ test('Table Resize', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Assert table has been shrunk and data has been removed
-  await expect(page.locator(`#QuadraticCanvasID`)).toHavEscapereenshot('Table_Resize_Remove_Data.png', {
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Table_Resize_Remove_Data.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -2304,7 +2301,7 @@ test('Table Sort', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHavEscapereenshot('Table_sort_sheet_initial.png', {
+  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_sort_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -2352,7 +2349,7 @@ test('Table Sort', async ({ page }) => {
   // Sort Single Table Column DEscapeending
   //--------------------------------
   // Navigate to top of spreadsheet
-  await page.keyboard.press('Escapeape');
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Control+ArrowUp');
   await page.keyboard.press('ArrowDown');
 
