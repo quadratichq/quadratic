@@ -5,7 +5,8 @@ import { redirect } from 'react-router';
 
 export const loader = async () => {
   // Show onboarding for ~25% of new users
-  const SHOW_ONBOARDING = Math.random() < 0.25;
+  // const SHOW_ONBOARDING = Math.random() < 0.25;
+  const SHOW_ONBOARDING = true;
 
   // try/catch here handles case where this _could_ error out and we
   // have no errorElement so we just redirect back to home
