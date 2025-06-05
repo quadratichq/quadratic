@@ -36,7 +36,7 @@ export const SetFormulaCellValue = memo(({ args, loading }: SetFormulaCellValueP
   if (!!toolArgs && !toolArgs.success) {
     return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" hasError />;
   } else if (!toolArgs || !toolArgs.data) {
-    return <ToolCard isLoading />;
+    return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading />;
   }
 
   const { code_cell_position } = toolArgs.data;
