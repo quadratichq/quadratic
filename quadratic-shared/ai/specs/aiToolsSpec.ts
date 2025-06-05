@@ -869,6 +869,7 @@ The data table will include a table name as the first row, which will push down 
 This tool searches the web for information based on the query.\n
 Use this tool when the user asks for information that is not already available in the context.\n
 When you would otherwise try to answer from memory or not have a way to answer the user's question, use this tool to retrieve the needed data from the web.\n
+This tool should also be used when trying to retrieve information for how to construct API requests that are not well-known from memory and when requiring information on code libraries that are not well-known from memory.\n
 It requires the query to search for.\n
 `,
     parameters: {
@@ -887,6 +888,7 @@ It requires the query to search for.\n
 This tool searches the web for information based on the query.\n
 Use this tool when the user asks for information that is not already available in the context.\n
 When you would otherwise try to answer from memory or not have a way to answer the user's question, use this tool to retrieve the needed data from the web.\n
+This tool should also be used when trying to retrieve information for how to construct API requests that are not well-known from memory and when requiring information on code libraries that are not well-known from memory.\n
 It requires the query to search for.\n
 `,
   },
