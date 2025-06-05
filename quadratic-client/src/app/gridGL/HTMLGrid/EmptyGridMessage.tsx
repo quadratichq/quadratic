@@ -11,12 +11,13 @@ import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSetRecoilState } from 'recoil';
 
 // When a file loads, if it's totally empty, show this message. Then once the
-// user has edited the file, we'll hide it permanently.
+// user has edited the file, we'll hide it
 export function EmptyGridMessage() {
   const {
     userMakingRequest: { filePermissions },
@@ -42,10 +43,12 @@ export function EmptyGridMessage() {
   }, [open]);
 
   const handleImportFile = useCallback(() => {
+    mixpanel.track('[EmptyGridMessage].importFile');
     insertActionsSpec[Action.InsertFile].run();
   }, []);
 
   const handleShowConnection = useCallback(() => {
+    mixpanel.track('[EmptyGridMessage].showConnection');
     const { x, y } = sheets.sheet.cursor.position;
     setCodeEditorCodeCell((prev) => ({
       ...prev,
@@ -56,6 +59,7 @@ export function EmptyGridMessage() {
   }, [setCodeEditorCodeCell, setShowConnectionsMenu]);
 
   const handleUseConnection = useCallback(() => {
+    mixpanel.track('[EmptyGridMessage].useConnection');
     const { x, y } = sheets.sheet.cursor.position;
     setCodeEditorCodeCell((prev) => ({
       ...prev,
