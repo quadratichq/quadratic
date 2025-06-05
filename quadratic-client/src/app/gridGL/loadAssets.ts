@@ -6,7 +6,7 @@ import { createBorderTypes } from './generateTextures';
 
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
-const TIMEOUT = 10000;
+const TIMEOUT = 60000;
 
 async function loadFont(fontName: string): Promise<void> {
   const font = new FontFaceObserver(fontName);
