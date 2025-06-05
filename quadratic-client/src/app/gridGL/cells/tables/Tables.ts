@@ -159,6 +159,18 @@ export class Tables extends Container<Table> {
     }
   };
 
+  // Updates the cells markers for a single cell table
+  private singleCellUpdate = (codeCell: JsRenderCodeCell) => {
+    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+    if (!cellsMarkers) return;
+    if (codeCell.state === 'RunError' || codeCell.state === 'SpillError') {
+      const box = this.sheet.getCellOffsets(codeCell.x, codeCell.y);
+      cellsMarkers.add(box, codeCell);
+    } else {
+      cellsMarkers.remove(codeCell.x, codeCell.y);
+    }
+  };
+
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
     updateCodeCells
@@ -177,6 +189,7 @@ export class Tables extends Container<Table> {
         if (isSingleCell) {
           this.singleCellTables[key] = render_code_cell;
           this.deleteTable(x, y);
+          this.singleCellUpdate(render_code_cell);
         } else {
           delete this.singleCellTables[key];
           const table = this.getTable(x, y);
@@ -221,6 +234,7 @@ export class Tables extends Container<Table> {
     codeCells.forEach((codeCell) => {
       if (this.isCodeCellSingle(codeCell)) {
         this.singleCellTables[`${codeCell.x},${codeCell.y}`] = codeCell;
+        this.singleCellUpdate(codeCell);
         return;
       } else {
         const table = this.addChild(new Table(this.sheet, codeCell));
