@@ -218,18 +218,19 @@ export async function parseBedrockStream(
       } else if (chunk.contentBlockDelta) {
         if (chunk.contentBlockDelta.delta) {
           // text delta
-          if ('text' in chunk.contentBlockDelta.delta) {
+          if ('text' in chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.text) {
             const currentContent = {
               ...(responseMessage.content.pop() ?? {
                 type: 'text',
                 text: '',
               }),
             };
-            currentContent.text += chunk.contentBlockDelta.delta.text ?? '';
+            currentContent.text += chunk.contentBlockDelta.delta.text;
             responseMessage.content.push(currentContent);
           }
+
           // tool use delta
-          if ('toolUse' in chunk.contentBlockDelta.delta) {
+          if ('toolUse' in chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.toolUse) {
             const toolCall = {
               ...(responseMessage.toolCalls.pop() ?? {
                 id: '',
@@ -238,7 +239,7 @@ export async function parseBedrockStream(
                 loading: true,
               }),
             };
-            toolCall.arguments += chunk.contentBlockDelta.delta.toolUse?.input ?? '';
+            toolCall.arguments += chunk.contentBlockDelta.delta.toolUse.input ?? '';
             responseMessage.toolCalls.push(toolCall);
           }
         }
@@ -288,18 +289,18 @@ export function parseBedrockResponse(
   };
 
   result.output?.message?.content?.forEach((contentBlock) => {
-    if ('text' in contentBlock) {
+    if ('text' in contentBlock && contentBlock.text) {
       responseMessage.content.push({
         type: 'text',
-        text: contentBlock.text ?? '',
+        text: contentBlock.text,
       });
     }
 
-    if ('toolUse' in contentBlock) {
+    if ('toolUse' in contentBlock && contentBlock.toolUse) {
       responseMessage.toolCalls.push({
-        id: contentBlock.toolUse?.toolUseId ?? '',
-        name: contentBlock.toolUse?.name ?? '',
-        arguments: JSON.stringify(contentBlock.toolUse?.input ?? ''),
+        id: contentBlock.toolUse.toolUseId ?? '',
+        name: contentBlock.toolUse.name ?? '',
+        arguments: JSON.stringify(contentBlock.toolUse.input),
         loading: false,
       });
     }

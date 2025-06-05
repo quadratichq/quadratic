@@ -295,7 +295,7 @@ export function parseOpenAIResponse(
   if (message.content) {
     responseMessage.content.push({
       type: 'text',
-      text: message.content ?? '',
+      text: message.content,
     });
   }
 

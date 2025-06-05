@@ -207,7 +207,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' ? (
+                  item.type === 'anthropic_thinking' && !!item.text ? (
                     <ThinkingBlock
                       key={item.text}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
@@ -215,7 +215,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       thinkingContent={item}
                       expandedDefault={true}
                     />
-                  ) : item.type === 'text' ? (
+                  ) : item.type === 'text' && !!item.text ? (
                     <Markdown key={item.text}>{item.text}</Markdown>
                   ) : null
                 )}

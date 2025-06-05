@@ -193,7 +193,7 @@ export async function parseGenAIStream(
     if (chunk.usageMetadata) {
       usage.inputTokens = Math.max(
         usage.inputTokens,
-        chunk.usageMetadata?.promptTokenCount ?? 0 - (chunk.usageMetadata?.cachedContentTokenCount ?? 0)
+        (chunk.usageMetadata?.promptTokenCount ?? 0) - (chunk.usageMetadata?.cachedContentTokenCount ?? 0)
       );
       usage.outputTokens = Math.max(usage.outputTokens, chunk.usageMetadata.candidatesTokenCount ?? 0);
       usage.cacheReadTokens = Math.max(usage.cacheReadTokens, chunk.usageMetadata.cachedContentTokenCount ?? 0);
