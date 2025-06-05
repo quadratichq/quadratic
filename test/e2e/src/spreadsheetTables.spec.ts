@@ -1623,6 +1623,8 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     expect(value).toEqual(sortedGDPValuesAscending);
   });
 
+  await page.keyboard.press('Escape');
+
   //--------------------------------
   // Multi-Sort across multiple column Descending
   //--------------------------------
@@ -1713,6 +1715,8 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
     const sortedGDPValuesDescending = [...value].sort((a, b) => Number(b) - Number(a));
     expect(value).toEqual(sortedGDPValuesDescending);
   });
+
+  await page.keyboard.press(`Escape`);
 
   //--------------------------------
   // Delete Sort Header Sorts from Table Sort
