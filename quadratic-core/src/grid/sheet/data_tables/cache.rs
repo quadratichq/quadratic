@@ -24,6 +24,49 @@ pub struct SheetDataTablesCache {
     pub(crate) multi_cell_tables: MultiCellTablesCache,
 }
 
+impl SheetDataTablesCache {
+    /// Returns the bounds of the row or None if the row is empty of content.
+    pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
+        let single_cell_min = self.single_cell_tables.row_min(row);
+        let single_cell_max = self.single_cell_tables.row_max(row);
+        let multi_cell_min = self.multi_cell_tables.row_min(row);
+        let multi_cell_max = self.multi_cell_tables.row_max(row);
+
+        if single_cell_min == 0 && multi_cell_min == 0 {
+            return None;
+        }
+
+        if single_cell_min == 0 {
+            Some((multi_cell_min, multi_cell_max))
+        } else if multi_cell_min == 0 {
+            Some((single_cell_min, single_cell_max))
+        } else {
+            Some((single_cell_min, single_cell_max))
+        }
+    }
+
+    /// Returns the bounds of the column or None if the column is empty of
+    /// content.
+    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
+        let single_cell_min = self.single_cell_tables.col_min(column);
+        let single_cell_max = self.single_cell_tables.col_max(column);
+        let multi_cell_min = self.multi_cell_tables.col_min(column);
+        let multi_cell_max = self.multi_cell_tables.col_max(column);
+
+        if single_cell_min == 0 && multi_cell_min == 0 {
+            return None;
+        }
+
+        if single_cell_min == 0 {
+            Some((multi_cell_min, multi_cell_max))
+        } else if multi_cell_min == 0 {
+            Some((single_cell_min, single_cell_max))
+        } else {
+            Some((single_cell_min, single_cell_max))
+        }
+    }
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MultiCellTablesCache {
     // position map indicating presence of multi-cell data table at a position

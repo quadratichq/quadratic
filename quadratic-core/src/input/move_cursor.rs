@@ -1,25 +1,33 @@
 //! Moves the cursor one cell in the given direction, accounting for charts.
 //! (Eventually also accounting for sheet bounds to the right and bottom.)
 
-use crate::Pos;
+use crate::{
+    Pos, SheetPos,
+    a1::A1Context,
+    grid::sheet::data_tables::cache::SheetDataTablesCache,
+    input::has_content::{chart_at, table_header_at},
+};
 
 use super::Direction;
 
-// todo: this should use A1Context instead of quadraticCore
-
 /// Returns a new Pos after pressing an arrow key.
-pub(crate) fn move_cursor(pos: Pos, direction: Direction) -> Pos {
+pub(crate) fn move_cursor(
+    pos: SheetPos,
+    direction: Direction,
+    table_cache: &SheetDataTablesCache,
+    context: &A1Context,
+) -> Pos {
     match direction {
         Direction::Up => {
             if pos.y == 1 {
-                pos
-            } else if let Some((chart_pos, _)) = self.chart_at(pos) {
-                if chart_pos.y == 1 {
-                    pos
+                pos.into()
+            } else if let Some(chart_bounds) = chart_at(pos, table_cache, context) {
+                if chart_bounds.min.y == 1 {
+                    pos.into()
                 } else {
                     Pos {
                         x: pos.x,
-                        y: chart_pos.y - 1,
+                        y: chart_bounds.min.y - 1,
                     }
                 }
             } else {
@@ -30,11 +38,10 @@ pub(crate) fn move_cursor(pos: Pos, direction: Direction) -> Pos {
             }
         }
         Direction::Down => {
-            if let Some((chart_pos, dt)) = self.chart_at(pos) {
-                let output_size = dt.output_size();
+            if let Some(chart_bounds) = chart_at(pos, table_cache, context) {
                 Pos {
                     x: pos.x,
-                    y: chart_pos.y + output_size.h.get() as i64,
+                    y: chart_bounds.max.y + 1,
                 }
             } else {
                 Pos {
@@ -45,15 +52,19 @@ pub(crate) fn move_cursor(pos: Pos, direction: Direction) -> Pos {
         }
         Direction::Left => {
             if pos.x == 1 {
-                pos
-            } else if let Some((chart_pos, _)) = self.chart_at(pos) {
+                pos.into()
+            } else if let Some(chart_bounds) = chart_at(pos, table_cache, context) {
                 Pos {
-                    x: chart_pos.x - 1,
+                    x: chart_bounds.min.x - 1,
                     y: pos.y,
                 }
-            } else if let Some((dt_pos, _)) = self.table_header_at(pos) {
+            } else if let Some(table_bounds) = table_header_at(pos, table_cache, context) {
                 Pos {
-                    x: if dt_pos.x == 1 { 1 } else { dt_pos.x - 1 },
+                    x: if table_bounds.min.x == 1 {
+                        1
+                    } else {
+                        table_bounds.min.x - 1
+                    },
                     y: pos.y,
                 }
             } else {
@@ -64,15 +75,14 @@ pub(crate) fn move_cursor(pos: Pos, direction: Direction) -> Pos {
             }
         }
         Direction::Right => {
-            if let Some((chart_pos, dt)) = self.chart_at(pos) {
-                let output_size = dt.output_size();
+            if let Some(chart_bounds) = chart_at(pos, table_cache, context) {
                 Pos {
-                    x: chart_pos.x + output_size.w.get() as i64,
+                    x: chart_bounds.max.x + 1,
                     y: pos.y,
                 }
-            } else if let Some((_, dt_rect)) = self.table_header_at(pos) {
+            } else if let Some(table_bounds) = table_header_at(pos, table_cache, context) {
                 Pos {
-                    x: dt_rect.max.x + 1,
+                    x: table_bounds.max.x + 1,
                     y: pos.y,
                 }
             } else {

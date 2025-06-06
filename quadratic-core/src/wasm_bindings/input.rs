@@ -1,15 +1,33 @@
-// use wasm_bindgen::prelude::*;
+use wasm_bindgen::prelude::*;
 
-// use crate::{Pos, input::Direction};
+use crate::{
+    Pos, SheetPos,
+    grid::{SheetId, sheet::data_tables::cache::SheetDataTablesCache},
+    input::{Direction, jump::jump_cursor},
+    wasm_bindings::{js_a1_context::JsA1Context, sheet_content_cache::SheetContentCache},
+};
 
-// /// Returns the SheetPos after a jump (ctrl/cmd + arrow key)
-// #[wasm_bindgen]
-// pub fn jump_cursor(col: i32, row: i32, direction: Direction) -> Pos {
-//     // match direction {
-//     //     Direction::Up => self.jump_up(current),
-//     //     Direction::Down => self.jump_down(current),
-//     //     Direction::Left => self.jump_left(current),
-//     //     Direction::Right => self.jump_right(current),
-//     // }
-//     todo!()
-// }
+/// Returns the SheetPos after a jump (ctrl/cmd + arrow key)
+#[wasm_bindgen(js_name = "jumpCursor")]
+pub fn js_jump_cursor(
+    sheet_id: SheetId,
+    col: i32,
+    row: i32,
+    direction: Direction,
+    content_cache: &SheetContentCache,
+    table_cache: &SheetDataTablesCache,
+    context: &JsA1Context,
+) -> Pos {
+    let sheet_pos = SheetPos {
+        x: col as i64,
+        y: row as i64,
+        sheet_id,
+    };
+    jump_cursor(
+        sheet_pos,
+        direction,
+        content_cache,
+        table_cache,
+        context.get_context(),
+    )
+}

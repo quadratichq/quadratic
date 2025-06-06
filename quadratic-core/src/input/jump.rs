@@ -13,19 +13,40 @@
 //! (the highlighted cell)
 
 use crate::{
-    Pos, SheetPos, a1::A1Context, grid::sheet::data_tables::cache::SheetDataTablesCache,
-    input::cache::chart_at, wasm_bindings::sheet_content_cache::SheetContentCache,
+    Pos, SheetPos,
+    a1::A1Context,
+    grid::sheet::data_tables::cache::SheetDataTablesCache,
+    input::{
+        Direction,
+        has_content::{chart_at, has_content_ignore_blank_table, table_header_at},
+        traverse::{find_next_column, find_next_row},
+    },
+    wasm_bindings::sheet_content_cache::SheetContentCache,
 };
 
-// todo: this should not return a Pos but should directly change the
-// A1Selection--ie, it should handle the entire keyboard movement logic
+/// Returns the SheetPos after a jump (ctrl/cmd + arrow key)
+pub fn jump_cursor(
+    current: SheetPos,
+    direction: Direction,
+    content_cache: &SheetContentCache,
+    table_cache: &SheetDataTablesCache,
+    context: &A1Context,
+) -> Pos {
+    match direction {
+        Direction::Up => jump_up(current, content_cache, table_cache, context),
+        Direction::Down => jump_down(current, content_cache, table_cache, context),
+        Direction::Left => jump_left(current, content_cache, table_cache, context),
+        Direction::Right => jump_right(current, content_cache, table_cache, context),
+    }
+}
 
-pub fn jump_up(
+fn jump_up(
     current: SheetPos,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
 ) -> Pos {
+    let sheet_id = current.sheet_id;
     let mut y = current.y;
     let x = current.x;
 
@@ -43,22 +64,48 @@ pub fn jump_up(
     let prev_y: i64;
 
     // handle case of cell with content
-    if self.has_content_ignore_blank_table(Pos { x, y }) {
+    if has_content_ignore_blank_table(
+        Pos { x, y }.to_sheet_pos(sheet_id),
+        content_cache,
+        table_cache,
+    ) {
         // if previous cell is empty, find the next cell with content
         if y - 1 == 0 {
             return Pos { x, y: 1 };
         }
 
         // if prev cell is empty, find the next cell with content
-        if !self.has_content_ignore_blank_table(Pos { x, y: y - 1 }) {
-            if let Some(prev) = self.find_next_row(y - 2, x, true, true) {
+        if !has_content_ignore_blank_table(
+            Pos { x, y: y - 1 }.to_sheet_pos(sheet_id),
+            content_cache,
+            table_cache,
+        ) {
+            if let Some(prev) = find_next_row(
+                sheet_id,
+                y - 2,
+                x,
+                true,
+                true,
+                content_cache,
+                table_cache,
+                context,
+            ) {
                 prev_y = prev;
             } else {
                 prev_y = 1;
             }
         }
         // if prev cell is not empty, find the next empty cell
-        else if let Some(prev) = self.find_next_row(y - 2, x, true, false) {
+        else if let Some(prev) = find_next_row(
+            sheet_id,
+            y - 2,
+            x,
+            true,
+            false,
+            content_cache,
+            table_cache,
+            context,
+        ) {
             prev_y = prev + 1;
         } else {
             prev_y = y - 1;
@@ -67,7 +114,16 @@ pub fn jump_up(
     // otherwise find the next cell with content
     else {
         // this is wrong: the table is being excluded where it's starting from (y - 1 instead of y)
-        if let Some(prev) = self.find_next_row(y - 1, x, true, true) {
+        if let Some(prev) = find_next_row(
+            sheet_id,
+            y - 1,
+            x,
+            true,
+            true,
+            content_cache,
+            table_cache,
+            context,
+        ) {
             prev_y = prev;
         } else {
             prev_y = 1;
@@ -77,41 +133,76 @@ pub fn jump_up(
     Pos { x, y: prev_y }
 }
 
-pub fn jump_down(
-    current: Pos,
+fn jump_down(
+    current: SheetPos,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
+    context: &A1Context,
 ) -> Pos {
     let mut y = current.y;
     let x = current.x;
+    let sheet_id = current.sheet_id;
 
     // adjust the jump position if it is inside a chart to the bottom-most
     // edge of the chart
-    if let Some((chart_pos, dt)) = self.chart_at(Pos { x, y }) {
-        if let Some((_, h)) = dt.chart_output {
-            y = chart_pos.y + (h as i64);
-        }
+    if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
+        y = chart_rect.max.y;
     }
 
     let mut next_y: Option<i64> = None;
 
     // handle case of cell with content
-    if self.has_content_ignore_blank_table(Pos { x, y }) {
+    if has_content_ignore_blank_table(SheetPos { x, y, sheet_id }, content_cache, table_cache) {
         // if next cell is empty, find the next cell with content
-        if !self.has_content_ignore_blank_table(Pos { x, y: y + 1 }) {
-            if let Some(next) = self.find_next_row(y + 2, x, false, true) {
+        if !has_content_ignore_blank_table(
+            SheetPos {
+                x,
+                y: y + 1,
+                sheet_id,
+            },
+            content_cache,
+            table_cache,
+        ) {
+            if let Some(next) = find_next_row(
+                sheet_id,
+                y + 2,
+                x,
+                false,
+                true,
+                content_cache,
+                table_cache,
+                context,
+            ) {
                 next_y = Some(next);
             }
         }
         // if next cell is not empty, find the next empty cell
-        else if let Some(next) = self.find_next_row(y + 2, x, false, false) {
+        else if let Some(next) = find_next_row(
+            sheet_id,
+            y + 2,
+            x,
+            false,
+            false,
+            content_cache,
+            table_cache,
+            context,
+        ) {
             next_y = Some(next - 1);
         } else {
             next_y = Some(y + 1);
         }
     }
     // otherwise find the next cell with content
-    else if let Some(next) = self.find_next_row(y + 1, x, false, true) {
+    else if let Some(next) = find_next_row(
+        sheet_id,
+        y + 1,
+        x,
+        false,
+        true,
+        content_cache,
+        table_cache,
+        context,
+    ) {
         next_y = Some(next);
     }
 
@@ -125,12 +216,14 @@ pub fn jump_down(
 }
 
 fn jump_left(
-    current: Pos,
+    current: SheetPos,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
+    context: &A1Context,
 ) -> Pos {
     let mut x = current.x;
     let y = current.y;
+    let sheet_id = current.sheet_id;
 
     // if we're close to the edge, return the edge
     if x <= 2 {
@@ -139,42 +232,77 @@ fn jump_left(
 
     // adjust the jump position if it is inside a chart to the left-most
     // edge of the chart
-    if let Some((chart_pos, _)) = self.chart_at(Pos { x, y }) {
-        x = chart_pos.x;
+    if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
+        x = chart_rect.min.x;
     }
     // adjust the jump position if it is inside a table header to the left-most
     // edge of the table header
-    if let Some((_, dt_rect)) = self.table_header_at(Pos { x, y }) {
+    if let Some(dt_rect) = table_header_at(SheetPos { x, y, sheet_id }, table_cache, context) {
         x = dt_rect.min.x;
     }
 
     let prev_x;
 
     // handle case of cell with content
-    if self.has_content_ignore_blank_table(Pos { x, y }) {
+    if has_content_ignore_blank_table(SheetPos { x, y, sheet_id }, content_cache, table_cache) {
         // if previous cell is empty, find the next cell with content
         if x - 1 == 0 {
             return Pos { x: 1, y };
         }
-        if !self.has_content_ignore_blank_table(Pos { x: x - 1, y }) {
+        if !has_content_ignore_blank_table(
+            SheetPos {
+                x: x - 1,
+                y,
+                sheet_id,
+            },
+            content_cache,
+            table_cache,
+        ) {
             if x - 2 == 0 {
                 return Pos { x: 1, y };
             }
-            if let Some(prev) = self.find_next_column(x - 2, y, true, true) {
+            if let Some(prev) = find_next_column(
+                sheet_id,
+                x - 2,
+                y,
+                true,
+                true,
+                content_cache,
+                table_cache,
+                context,
+            ) {
                 prev_x = prev;
             } else {
                 prev_x = 1;
             }
         }
         // if next cell is not empty, find the next empty cell
-        else if let Some(prev) = self.find_next_column(x - 1, y, true, false) {
+        else if let Some(prev) = find_next_column(
+            sheet_id,
+            x - 1,
+            y,
+            true,
+            false,
+            content_cache,
+            table_cache,
+            context,
+        ) {
             prev_x = prev + 1;
         } else {
             prev_x = x - 1;
         }
     }
     // otherwise find the previous cell with content
-    else if let Some(prev) = self.find_next_column(x - 1, y, true, true) {
+    else if let Some(prev) = find_next_column(
+        sheet_id,
+        x - 1,
+        y,
+        true,
+        true,
+        content_cache,
+        table_cache,
+        context,
+    ) {
         prev_x = prev;
     } else {
         prev_x = 1;
@@ -184,41 +312,76 @@ fn jump_left(
 }
 
 pub fn jump_right(
-    current: Pos,
+    current: SheetPos,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
+    context: &A1Context,
 ) -> Pos {
     let mut x = current.x;
     let y = current.y;
+    let sheet_id = current.sheet_id;
 
     // adjust the jump position if it is inside a chart or a table header to
     // the right-most edge
-    if let Some((_, dt_rect)) = self.table_header_at(Pos { x, y }) {
+    if let Some(dt_rect) = table_header_at(SheetPos { x, y, sheet_id }, table_cache, context) {
         x = dt_rect.max.x;
-    } else if let Some((chart_pos, dt)) = self.chart_at(Pos { x, y }) {
-        if let Some((w, _)) = dt.chart_output {
-            x = chart_pos.x + (w as i64) - 1;
-        }
+    } else if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
+        x = chart_rect.max.x;
     }
 
     // handle case of cell with content
     let mut next_x: Option<i64> = None;
-    if self.has_content_ignore_blank_table(Pos { x, y }) {
+    if has_content_ignore_blank_table(SheetPos { x, y, sheet_id }, content_cache, table_cache) {
         // if next cell is empty, find the next cell with content
-        if !self.has_content_ignore_blank_table(Pos { x: x + 1, y }) {
-            if let Some(next) = self.find_next_column(x + 2, y, false, true) {
+        if !has_content_ignore_blank_table(
+            SheetPos {
+                x: x + 1,
+                y,
+                sheet_id,
+            },
+            content_cache,
+            table_cache,
+        ) {
+            if let Some(next) = find_next_column(
+                sheet_id,
+                x + 2,
+                y,
+                false,
+                true,
+                content_cache,
+                table_cache,
+                context,
+            ) {
                 next_x = Some(next);
             }
         }
         // if next cell is not empty, find the next empty cell
-        else if let Some(next) = self.find_next_column(x + 2, y, false, false) {
+        else if let Some(next) = find_next_column(
+            sheet_id,
+            x + 2,
+            y,
+            false,
+            false,
+            content_cache,
+            table_cache,
+            context,
+        ) {
             next_x = Some(next - 1);
         } else {
             next_x = Some(x + 1);
         }
     }
     // otherwise find the next cell with content
-    else if let Some(next) = self.find_next_column(x + 1, y, false, true) {
+    else if let Some(next) = find_next_column(
+        sheet_id,
+        x + 1,
+        y,
+        false,
+        true,
+        content_cache,
+        table_cache,
+        context,
+    ) {
         next_x = Some(next);
     }
 

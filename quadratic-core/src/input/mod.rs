@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-pub mod cache;
-mod jump;
+mod has_content;
+pub mod jump;
 mod move_cursor;
+mod traverse;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[wasm_bindgen]
