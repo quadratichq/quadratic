@@ -321,7 +321,12 @@ export function useSubmitAIAnalystPrompt() {
               signal: abortController.signal,
             });
 
-            set(aiAnalystCurrentChatMessagesAtom, (prev) => replaceOldGetToolCallResults(prev));
+            let nextChatMessages: ChatMessage[] = [];
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => {
+              nextChatMessages = replaceOldGetToolCallResults(prev);
+              return nextChatMessages;
+            });
+            chatMessages = nextChatMessages;
 
             if (response.toolCalls.length === 0) {
               break;
@@ -427,7 +432,6 @@ export function useSubmitAIAnalystPrompt() {
               return acc;
             }, new Set<string>());
 
-            let nextChatMessages: ChatMessage[] = [];
             set(aiAnalystCurrentChatMessagesAtom, (prev) => {
               nextChatMessages = [...removeOldFilesInToolResult(prev, filesInToolResult), toolResultMessage];
               return nextChatMessages;
