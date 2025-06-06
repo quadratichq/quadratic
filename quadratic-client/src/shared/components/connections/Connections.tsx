@@ -12,7 +12,7 @@ import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsS
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
@@ -33,8 +33,8 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
-  const initialConnectionType = searchParams.get('initial-connection-type');
-  const initialConnectionUuid = searchParams.get('initial-connection-uuid');
+  const initialConnectionType = useMemo(() => searchParams.get('initial-connection-type'), [searchParams]);
+  const initialConnectionUuid = useMemo(() => searchParams.get('initial-connection-uuid'), [searchParams]);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
 
@@ -125,26 +125,33 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   /**
    * Navigation
    */
-  const handleNavigateToListView = () => {
+  const handleNavigateToListView = useCallback(() => {
     setActiveConnectionState(undefined);
     setActiveConnectionType(undefined);
-  };
-  const handleNavigateToCreateView: NavigateToCreateView = (connectionType) => {
+  }, []);
+
+  const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType) => {
     setActiveConnectionType(connectionType);
     setActiveConnectionState(undefined);
-  };
-  const handleNavigateToEditView: NavigateToView = ({ connectionType, connectionUuid }) => {
+  }, []);
+
+  const handleNavigateToEditView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
     setActiveConnectionType(connectionType);
-  };
-  const handleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+  }, []);
+
+  const handleNavigateToDetailsView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
-  };
-  const handleShowConnectionDemo = (showConnectionDemo: boolean) => {
-    const { json, options } = getToggleShowConnectionDemoAction(teamUuid, showConnectionDemo);
-    submit(json, { ...options, navigate: false });
-  };
+  }, []);
+
+  const handleShowConnectionDemo = useCallback(
+    (showConnectionDemo: boolean) => {
+      const { json, options } = getToggleShowConnectionDemoAction(teamUuid, showConnectionDemo);
+      submit(json, { ...options, navigate: false });
+    },
+    [submit, teamUuid]
+  );
 
   return (
     <div className={'grid-cols-12 gap-12 md:grid'}>
