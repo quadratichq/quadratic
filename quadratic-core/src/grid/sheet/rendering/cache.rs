@@ -1,6 +1,13 @@
+#[cfg(test)]
+use crate::wasm_bindings::sheet_content_cache::SheetContentCache;
 use crate::{compression::serialize_to_bytes, grid::Sheet};
 
 impl Sheet {
+    #[cfg(test)]
+    pub fn content_cache(&self) -> SheetContentCache {
+        self.into()
+    }
+
     /// Sends the content cache to the client.
     pub fn send_content_cache(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {

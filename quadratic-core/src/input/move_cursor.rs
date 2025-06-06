@@ -11,7 +11,7 @@ use crate::{
 use super::Direction;
 
 /// Returns a new Pos after pressing an arrow key.
-pub(crate) fn move_cursor(
+pub fn move_cursor(
     pos: SheetPos,
     direction: Direction,
     table_cache: &SheetDataTablesCache,

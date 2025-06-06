@@ -160,5 +160,9 @@ pub(crate) fn has_content_ignore_blank_table(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
 ) -> bool {
-    todo!()
+    if content_cache.has_content(pos.into()) {
+        return true;
+    }
+
+    table_cache.has_content_ignore_blank_table(pos.into())
 }

@@ -65,6 +65,19 @@ impl SheetDataTablesCache {
             Some((single_cell_min, single_cell_max))
         }
     }
+
+    pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
+        self.single_cell_tables.get(pos.into()).is_some()
+            || self
+                .multi_cell_tables
+                .get(pos.into())
+                .is_some_and(|_| !self.has_empty_value(pos.into()))
+    }
+
+    /// Returns true if the cell has an empty value
+    pub fn has_empty_value(&self, pos: Pos) -> bool {
+        self.multi_cell_tables.has_empty_value(pos)
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -171,5 +184,32 @@ impl MultiCellTablesCache {
 
     pub fn finite_bounds(&self) -> Option<Rect> {
         self.multi_cell_tables.finite_bounds()
+    }
+
+    pub fn has_empty_value(&self, pos: Pos) -> bool {
+        self.multi_cell_tables_empty.get(pos).is_some()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_util::*;
+
+    #[test]
+    fn test_has_content_ignore_blank_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![2, 2], 3, 1, &["1", "", "3"]);
+
+        print_first_sheet(&gc);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        dbg!(sheet_data_tables_cache);
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 2]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 2]));
     }
 }

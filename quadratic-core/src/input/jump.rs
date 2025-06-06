@@ -394,354 +394,1159 @@ pub fn jump_right(
     Pos { x, y }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{
-//         CellValue,
-//         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-//     };
-
-//     use super::*;
-
-//     // creates a 3x3 chart at the given position
-//     fn create_3x3_chart(sheet: &mut Sheet, pos: Pos) {
-//         let mut dt = DataTable::new(
-//             DataTableKind::CodeRun(CodeRun {
-//                 language: CodeCellLanguage::Javascript,
-//                 ..Default::default()
-//             }),
-//             "Table 1",
-//             CellValue::Html("<html></html>".to_string()).into(),
-//             false,
-//             Some(false),
-//             Some(false),
-//             None,
-//         );
-//         dt.chart_output = Some((3, 3));
-
-//         sheet.set_cell_value(
-//             pos,
-//             CellValue::Code(CodeCellValue {
-//                 code: "".to_string(),
-//                 language: CodeCellLanguage::Javascript,
-//             }),
-//         );
-//         sheet.set_data_table(pos, Some(dt));
-//     }
-
-//     #[test]
-//     fn jump_right_empty() {
-//         let sheet = Sheet::test();
-
-//         let current = Pos { x: 1, y: 1 };
-//         let new_pos = sheet.jump_right(current);
-//         assert_eq!(new_pos, Pos { x: 2, y: 1 });
-
-//         let current = Pos { x: 2, y: 2 };
-//         let new_pos = sheet.jump_right(current);
-//         assert_eq!(new_pos, Pos { x: 3, y: 2 });
-//     }
-
-//     #[test]
-//     fn jump_right_filled() {
-//         let mut sheet = Sheet::test();
-
-//         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 5, y: 1 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 10, y: 1 }, CellValue::Number(1.into()));
-
-//         create_3x3_chart(&mut sheet, Pos { x: 20, y: 1 });
-//         create_3x3_chart(&mut sheet, Pos { x: 25, y: 1 });
-
-//         assert_eq!(sheet.jump_right(Pos { x: 0, y: 1 }), Pos { x: 1, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 1, y: 1 }), Pos { x: 5, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 5, y: 1 }), Pos { x: 10, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 10, y: 1 }), Pos { x: 20, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 20, y: 1 }), Pos { x: 25, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 21, y: 1 }), Pos { x: 25, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 21, y: 1 }), Pos { x: 25, y: 1 });
-//     }
-
-//     #[test]
-//     fn jump_left_empty() {
-//         let sheet = Sheet::test();
-
-//         let current = Pos { x: 2, y: 1 };
-//         let new_pos = sheet.jump_left(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 1 });
-
-//         let current = Pos { x: 5, y: 3 };
-//         let new_pos = sheet.jump_left(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 3 });
-//     }
-
-//     #[test]
-//     fn jump_left_filled() {
-//         let mut sheet = Sheet::test();
-
-//         sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 5, y: 1 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 10, y: 1 }, CellValue::Number(1.into()));
-
-//         create_3x3_chart(&mut sheet, Pos { x: 20, y: 1 });
-//         create_3x3_chart(&mut sheet, Pos { x: 25, y: 1 });
-
-//         assert_eq!(sheet.jump_left(Pos { x: 11, y: 1 }), Pos { x: 10, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 10, y: 1 }), Pos { x: 5, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 5, y: 1 }), Pos { x: 2, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 2, y: 1 }), Pos { x: 1, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 28, y: 1 }), Pos { x: 27, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 25, y: 1 }), Pos { x: 22, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 2, y: 1 }), Pos { x: 1, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 1, y: 1 }), Pos { x: 1, y: 1 });
-//     }
-
-//     #[test]
-//     fn jump_left_chart() {
-//         let mut sheet = Sheet::test();
-
-//         create_3x3_chart(&mut sheet, Pos { x: 5, y: 1 });
-
-//         assert_eq!(sheet.jump_left(Pos { x: 10, y: 2 }), Pos { x: 7, y: 2 });
-//     }
-
-//     #[test]
-//     fn jump_up_empty() {
-//         let sheet = Sheet::test();
-
-//         let current = Pos { x: 1, y: 2 };
-//         let new_pos = sheet.jump_up(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 1 });
-
-//         let current = Pos { x: 1, y: 5 };
-//         let new_pos = sheet.jump_up(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 1 });
-//     }
-
-//     #[test]
-//     fn jump_up_filled() {
-//         let mut sheet = Sheet::test();
-
-//         sheet.set_cell_value(Pos { x: 3, y: 5 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 3, y: 10 }, CellValue::Number(1.into()));
-
-//         create_3x3_chart(&mut sheet, Pos { x: 3, y: 20 });
-//         create_3x3_chart(&mut sheet, Pos { x: 3, y: 25 });
-
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 30 }), Pos { x: 3, y: 28 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 28 }), Pos { x: 3, y: 23 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 24 }), Pos { x: 3, y: 23 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 22 }), Pos { x: 3, y: 10 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 12 }), Pos { x: 3, y: 10 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 10 }), Pos { x: 3, y: 5 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 9 }), Pos { x: 3, y: 5 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 3 }), Pos { x: 3, y: 1 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 2 }), Pos { x: 3, y: 1 });
-//     }
-
-//     #[test]
-//     fn jump_up_chart() {
-//         let mut sheet = Sheet::test();
-
-//         create_3x3_chart(&mut sheet, Pos { x: 5, y: 1 });
-
-//         assert_eq!(sheet.jump_up(Pos { x: 6, y: 5 }), Pos { x: 6, y: 4 });
-//     }
-
-//     #[test]
-//     fn jump_down_empty() {
-//         let sheet = Sheet::test();
-
-//         let current = Pos { x: 1, y: 1 };
-//         let new_pos = sheet.jump_down(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 2 });
-
-//         let current = Pos { x: 1, y: 5 };
-//         let new_pos = sheet.jump_down(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 6 });
-//     }
-
-//     #[test]
-//     fn test_jump_down_filled() {
-//         let mut sheet = Sheet::test();
-
-//         sheet.set_cell_value(Pos { x: 3, y: 5 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 3, y: 10 }, CellValue::Number(1.into()));
-
-//         create_3x3_chart(&mut sheet, Pos { x: 3, y: 20 });
-//         create_3x3_chart(&mut sheet, Pos { x: 3, y: 25 });
-
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 1 }), Pos { x: 3, y: 5 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 5 }), Pos { x: 3, y: 10 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 6 }), Pos { x: 3, y: 10 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 10 }), Pos { x: 3, y: 20 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 15 }), Pos { x: 3, y: 20 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 13 }), Pos { x: 3, y: 20 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 20 }), Pos { x: 3, y: 25 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 23 }), Pos { x: 3, y: 25 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 29 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 29 });
-//     }
-
-//     #[test]
-//     fn jump_with_consecutive_filled_cells() {
-//         let mut sheet = Sheet::test();
-
-//         // Create vertical sequence of filled cells
-//         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
-//         sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(3.into()));
-
-//         // Test jumping down through consecutive filled cells
-//         let current = Pos { x: 1, y: 1 };
-//         let new_pos = sheet.jump_down(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 3 });
-
-//         // Test jumping up through consecutive filled cells
-//         let current = Pos { x: 1, y: 3 };
-//         let new_pos = sheet.jump_up(current);
-//         assert_eq!(new_pos, Pos { x: 1, y: 1 });
-
-//         // Create horizontal sequence of filled cells
-//         sheet.set_cell_value(Pos { x: 5, y: 5 }, CellValue::Number(1.into()));
-//         sheet.set_cell_value(Pos { x: 6, y: 5 }, CellValue::Number(2.into()));
-//         sheet.set_cell_value(Pos { x: 7, y: 5 }, CellValue::Number(3.into()));
-
-//         // Test jumping right through consecutive filled cells
-//         let current = Pos { x: 5, y: 5 };
-//         let new_pos = sheet.jump_right(current);
-//         assert_eq!(new_pos, Pos { x: 7, y: 5 });
-
-//         // Test jumping left through consecutive filled cells
-//         let current = Pos { x: 7, y: 5 };
-//         let new_pos = sheet.jump_left(current);
-//         assert_eq!(new_pos, Pos { x: 5, y: 5 });
-//     }
-
-//     #[test]
-//     fn test_jump_chart_on_edge() {
-//         let mut sheet = Sheet::test();
-
-//         create_3x3_chart(&mut sheet, Pos { x: 1, y: 1 });
-
-//         assert_eq!(sheet.jump_left(Pos { x: 5, y: 1 }), Pos { x: 3, y: 1 });
-//         assert_eq!(sheet.jump_left(Pos { x: 2, y: 1 }), Pos { x: 1, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 1, y: 1 }), Pos { x: 4, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 2, y: 1 }), Pos { x: 4, y: 1 });
-//         assert_eq!(sheet.jump_right(Pos { x: 3, y: 1 }), Pos { x: 4, y: 1 });
-//         assert_eq!(sheet.jump_up(Pos { x: 1, y: 5 }), Pos { x: 1, y: 4 });
-//         assert_eq!(sheet.jump_up(Pos { x: 2, y: 5 }), Pos { x: 2, y: 4 });
-//         assert_eq!(sheet.jump_up(Pos { x: 3, y: 4 }), Pos { x: 3, y: 1 });
-//         assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 5 });
-//         assert_eq!(sheet.jump_down(Pos { x: 2, y: 2 }), Pos { x: 2, y: 5 });
-//         assert_eq!(sheet.jump_down(Pos { x: 3, y: 4 }), Pos { x: 3, y: 5 });
-//     }
-
-//     #[test]
-//     fn test_jump_right_simple_table() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], false);
-
-//         assert_eq!(sheet.jump_right(pos![A2]), pos![B2]);
-//         assert_eq!(sheet.jump_right(pos![B2]), pos![F2]);
-//         assert_eq!(sheet.jump_right(pos![C2]), pos![F2]);
-//         assert_eq!(sheet.jump_right(pos![F2]), pos![G2]);
-//     }
-
-//     #[test]
-//     fn test_jump_right_simple_table_with_blanks() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], false);
-
-//         assert_eq!(sheet.jump_right(pos![A2]), pos![B2]);
-//         assert_eq!(sheet.jump_right(pos![B2]), pos![C2]);
-//         assert_eq!(sheet.jump_right(pos![C2]), pos![F2]);
-//         assert_eq!(sheet.jump_right(pos![G2]), pos![H2]);
-//         assert_eq!(sheet.jump_right(pos![F2]), pos![G2]);
-//     }
-
-//     #[test]
-//     fn test_jump_left_simple_table() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], false);
-
-//         assert_eq!(sheet.jump_left(pos![G2]), pos![F2]);
-//         assert_eq!(sheet.jump_left(pos![F2]), pos![B2]);
-//         assert_eq!(sheet.jump_left(pos![D2]), pos![B2]);
-//         assert_eq!(sheet.jump_left(pos![B2]), pos![A2]);
-//     }
-
-//     #[test]
-//     fn test_jump_left_simple_table_with_blanks() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], false);
-
-//         assert_eq!(sheet.jump_left(pos![H2]), pos![G2]);
-//         assert_eq!(sheet.jump_left(pos![G2]), pos![F2]);
-//         assert_eq!(sheet.jump_left(pos![F2]), pos![C2]);
-//         assert_eq!(sheet.jump_left(pos![C2]), pos![B2]);
-//         assert_eq!(sheet.jump_left(pos![B2]), pos![A2]);
-//     }
-
-//     #[test]
-//     fn test_jump_down_simple_table() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], true);
-
-//         assert_eq!(sheet.jump_down(pos![B1]), pos![B2]);
-//         assert_eq!(sheet.jump_down(pos![B2]), pos![B6]);
-//         assert_eq!(sheet.jump_down(pos![B4]), pos![B6]);
-//         assert_eq!(sheet.jump_down(pos![B6]), pos![B7]);
-//     }
-
-//     #[test]
-//     fn test_jump_down_simple_table_with_blanks() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], true);
-
-//         assert_eq!(sheet.jump_down(pos![B1]), pos![B2]);
-//         assert_eq!(sheet.jump_down(pos![B2]), pos![B3]);
-//         assert_eq!(sheet.jump_down(pos![B3]), pos![B6]);
-//         assert_eq!(sheet.jump_down(pos![B7]), pos![B8]);
-//         assert_eq!(sheet.jump_down(pos![B6]), pos![B7]);
-//     }
-
-//     #[test]
-//     fn test_jump_up_simple_table() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], true);
-
-//         assert_eq!(sheet.jump_up(pos![B7]), pos![B6]);
-//         assert_eq!(sheet.jump_up(pos![B6]), pos![B2]);
-//         assert_eq!(sheet.jump_up(pos![B4]), pos![B2]);
-//         assert_eq!(sheet.jump_up(pos![B2]), pos![B1]);
-//     }
-
-//     #[test]
-//     fn test_jump_up_simple_table_with_blanks() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], true);
-
-//         assert_eq!(sheet.jump_up(pos![B8]), pos![B7]);
-//         assert_eq!(sheet.jump_up(pos![B7]), pos![B6]);
-//         assert_eq!(sheet.jump_up(pos![B6]), pos![B3]);
-//         assert_eq!(sheet.jump_up(pos![B3]), pos![B2]);
-//         assert_eq!(sheet.jump_up(pos![B2]), pos![B1]);
-//     }
-
-//     #[test]
-//     fn test_jump_left_table_from_name() {
-//         let mut sheet = Sheet::test();
-//         sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3"], false);
-
-//         sheet
-//             .modify_data_table_at(&pos![B2], |dt| {
-//                 dt.show_name = Some(true);
-//                 dt.show_columns = Some(true);
-//                 Ok(())
-//             })
-//             .unwrap();
-
-//         assert_eq!(sheet.jump_left(pos![D2]), pos![A2]);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::test_util::*;
+
+    use super::*;
+
+    #[test]
+    fn jump_right_empty() {
+        let gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let context = gc.a1_context().clone();
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        let new_pos = jump_right(
+            pos![sheet_id!A1],
+            &content_cache,
+            &sheet_data_tables_cache,
+            &context,
+        );
+        assert_eq!(new_pos, pos![B1]);
+
+        let new_pos = jump_right(
+            pos![sheet_id!B2],
+            &content_cache,
+            &sheet_data_tables_cache,
+            &context,
+        );
+        assert_eq!(new_pos, pos![C2]);
+    }
+
+    #[test]
+    fn jump_right_filled() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!5, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!10, 1], "1".into(), None);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![10, 1], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![20, 1], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![25, 1], 3, 3);
+
+        let content_cache = gc.sheet(sheet_id).content_cache();
+        let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
+        let context = gc.a1_context();
+
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!0, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![1, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!1, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![5, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!5, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![10, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!10, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![20, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!20, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![25, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!21, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![25, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!21, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![25, 1]
+        );
+    }
+
+    #[test]
+    fn jump_left_empty() {
+        let gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let context = gc.a1_context().clone();
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        let current = pos![sheet_id!2, 1];
+        let new_pos = jump_left(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, Pos { x: 1, y: 1 });
+
+        let current = pos![sheet_id!5, 3];
+        let new_pos = jump_left(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, pos![1, 3]);
+    }
+
+    #[test]
+    fn jump_left_filled() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!2, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!5, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!10, 1], "1".into(), None);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![20, 1], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![25, 1], 3, 3);
+
+        let context = gc.a1_context().clone();
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!11, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![10, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!10, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![5, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!5, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![2, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!2, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![1, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!28, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![27, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!25, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![22, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!2, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![1, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!1, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![1, 1]
+        );
+    }
+
+    #[test]
+    fn jump_left_chart() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![5, 1], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!10, 2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![7, 2]
+        );
+    }
+
+    #[test]
+    fn jump_up_empty() {
+        let gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let context = gc.a1_context().clone();
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        let current = pos![sheet_id!1, 2];
+        let new_pos = jump_up(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, Pos { x: 1, y: 1 });
+
+        let current = pos![sheet_id!1, 5];
+        let new_pos = jump_up(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, Pos { x: 1, y: 1 });
+    }
+
+    #[test]
+    fn jump_up_filled() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!3, 5], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!3, 10], "1".into(), None);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![3, 20], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![3, 25], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 30],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 28]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 28],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 23]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 24],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 23]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 22],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 10]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 12],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 10]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 10],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 5]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 9],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 5]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 3],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 1]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 1]
+        );
+    }
+
+    #[test]
+    fn jump_up_chart() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![5, 1], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!6, 5],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![6, 4]
+        );
+    }
+
+    #[test]
+    fn jump_down_empty() {
+        let gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let context = gc.a1_context().clone();
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        let current = pos![sheet_id!1, 1];
+        let new_pos = jump_down(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, pos![1, 2]);
+
+        let current = pos![sheet_id!1, 5];
+        let new_pos = jump_down(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, pos![1, 6]);
+    }
+
+    #[test]
+    fn test_jump_down_filled() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!3, 5], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!3, 10], "1".into(), None);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![3, 20], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![3, 25], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 5]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 5],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 10]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 6],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 10]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 10],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 20]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 15],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 20]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 13],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 20]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 20],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 25]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 23],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 25]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 26],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 29]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 26],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 29]
+        );
+    }
+
+    #[test]
+    fn jump_with_consecutive_filled_cells() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create vertical sequence of filled cells
+        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!1, 2], "2".into(), None);
+        gc.set_cell_value(pos![sheet_id!1, 3], "3".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        // Test jumping down through consecutive filled cells
+        let current = pos![sheet_id!1, 1];
+        let new_pos = jump_down(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, pos![1, 3]);
+
+        // Test jumping up through consecutive filled cells
+        let current = pos![sheet_id!1, 3];
+        let new_pos = jump_up(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, pos![1, 1]);
+
+        // Create horizontal sequence of filled cells
+        gc.set_cell_value(pos![sheet_id!5, 5], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!6, 5], "2".into(), None);
+        gc.set_cell_value(pos![sheet_id!7, 5], "3".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        // Test jumping right through consecutive filled cells
+        let current = pos![sheet_id!5, 5];
+        let new_pos = jump_right(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, pos![7, 5]);
+
+        // Test jumping left through consecutive filled cells
+        let current = pos![sheet_id!7, 5];
+        let new_pos = jump_left(current, &content_cache, &sheet_data_tables_cache, &context);
+        assert_eq!(new_pos, pos![5, 5]);
+    }
+
+    #[test]
+    fn test_jump_chart_on_edge() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_html_chart(&mut gc, sheet_id, pos![1, 1], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!5, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 1]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!2, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![1, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!1, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![4, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!2, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![4, 1]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!3, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![4, 1]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!1, 5],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![1, 4]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!2, 5],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![2, 4]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!3, 4],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 1]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!1, 1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![1, 5]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!2, 2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![2, 5]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!3, 4],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![3, 5]
+        );
+    }
+
+    #[test]
+    fn test_jump_right_simple_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!A2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![F2]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!C2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![F2]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!F2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![G2]
+        );
+    }
+
+    #[test]
+    fn test_jump_right_simple_table_with_blanks() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![2, 2],
+            5,
+            1,
+            &["1", "2", "", "", "5", "6"],
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!A2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![C2]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!C2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![F2]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!G2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![H2]
+        );
+        assert_eq!(
+            jump_right(
+                pos![sheet_id!F2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![G2]
+        );
+    }
+
+    #[test]
+    fn test_jump_left_simple_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!G2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![F2]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!F2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!D2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![A2]
+        );
+    }
+
+    #[test]
+    fn test_jump_left_simple_table_with_blanks() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![2, 2],
+            5,
+            1,
+            &["1", "2", "", "", "5", "6"],
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!H2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![G2]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!G2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![F2]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!F2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![C2]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!C2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![A2]
+        );
+    }
+
+    #[test]
+    fn test_jump_down_simple_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B6]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B4],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B6]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B6],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B7]
+        );
+    }
+
+    #[test]
+    fn test_jump_down_simple_table_with_blanks() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_code_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![2, 2],
+            1,
+            6,
+            &["1", "2", "", "", "5", "6"],
+        );
+
+        print_first_sheet(&gc);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B1],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B3]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B3],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B6]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B7],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B8]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B6],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B7]
+        );
+    }
+
+    #[test]
+    fn test_jump_up_simple_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B7],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B6]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B6],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B4],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B1]
+        );
+    }
+
+    #[test]
+    fn test_jump_up_simple_table_with_blanks() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![2, 2],
+            5,
+            1,
+            &["1", "2", "", "", "5", "6"],
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B8],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B7]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B7],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B6]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B6],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B3]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B3],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B2]
+        );
+        assert_eq!(
+            jump_up(
+                pos![sheet_id!B2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B1]
+        );
+    }
+
+    #[test]
+    fn test_jump_left_table_from_name() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 3, 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context().clone();
+
+        assert_eq!(
+            jump_left(
+                pos![sheet_id!D2],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![A2]
+        );
+    }
+}
