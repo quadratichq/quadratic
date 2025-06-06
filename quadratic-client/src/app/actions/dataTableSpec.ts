@@ -410,7 +410,6 @@ export const removeTableRow = (selectTable = false) => {
 
   const table = getTable();
   const rows = getSelectedRows();
-
   if (table && rows && rows.length > 0) {
     quadraticCore.dataTableMutations({
       sheetId: sheets.current,
@@ -614,7 +613,7 @@ export const dataTableSpec: DataTableSpec = {
     label: () => {
       const length = sheets.sheet.cursor.getRowsWithSelectedCells().length;
       const plural = length > 1 ? 's' : '';
-      return `Delete ${length} row${plural}`;
+      return `Delete ${length} table row${plural}`;
     },
     Icon: DeleteIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
