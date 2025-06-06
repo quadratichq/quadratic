@@ -22,7 +22,7 @@ import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
 import { handleVertexAIRequest } from '../../ai/handler/vertexai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
-import { debugAndNotInProduction, FINE_TUNE } from '../../env-vars';
+import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
 import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 import { calculateUsage } from '../helpers/usage.helper';
 
@@ -83,7 +83,11 @@ export const handleAIRequest = async (
   } catch (error) {
     console.error('Error in handleAIRequest: ', modelKey, error);
 
-    if (modelKey !== DEFAULT_BACKUP_MODEL && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
+    if (
+      ENVIRONMENT === 'production' &&
+      modelKey !== DEFAULT_BACKUP_MODEL &&
+      ['AIAnalyst', 'AIAssistant'].includes(args.source)
+    ) {
       return handleAIRequest(DEFAULT_BACKUP_MODEL, args, response);
     }
 
