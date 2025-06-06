@@ -85,7 +85,7 @@ impl GridController {
                 };
 
                 let data_table_pos = table.bounds.min;
-                let Some(data_table) = sheet.data_table(data_table_pos) else {
+                let Some(data_table) = sheet.data_table_at(&data_table_pos) else {
                     dbgjs!(format!(
                         "[format_ops] invalid data table ID: {:?}",
                         data_table_pos
@@ -137,10 +137,7 @@ impl GridController {
         {
             for sheet_range in sheet_ranges {
                 let rect = sheet_range.to_rect_unbounded();
-                for table in context
-                    .tables()
-                    .filter(|t| t.sheet_id == selection.sheet_id)
-                {
+                for table in context.iter_tables_in_sheet(selection.sheet_id) {
                     if let Some(intersection) = table.bounds.intersection(&rect) {
                         // remove table intersection from the sheet selection
                         sheet_selection.exclude_cells(

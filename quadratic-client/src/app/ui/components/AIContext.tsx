@@ -257,7 +257,7 @@ type CodeCellContextPillProps = {
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {
-    const updateTableName = (a1Context: string) => {
+    const updateTableName = (a1Context: Uint8Array) => {
       if (!codeCell?.sheetId) return;
       const tableName = getTableNameFromPos(a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
       setTableName(tableName);

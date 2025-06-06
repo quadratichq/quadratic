@@ -16,8 +16,8 @@ replace_env_vars() {
     esac
   done
 
-  find "/usr/share/nginx/html/assets" -type f -name "*.js" | xargs grep -l "VITE_" | while read file; do   
-    
+  find "/usr/share/nginx/html/assets" -type f -name "*.js" | xargs grep -l "VITE_" | while read file; do
+
     for env_var in $vite_vars; do
       var="$(echo "$env_var" | cut -d'=' -f1)"
       val="$(echo "$env_var" | cut -d'=' -f2-)"
@@ -40,8 +40,8 @@ compress_js_files() {
     -name "*.tsx" \
   \) -print0 | xargs -0 -n1 -P$(nproc) -I {} sh -c '\
     echo "Compressing: {}" && \
-    brotli -q 9 -w 24 -f "{}" && \
-    pigz -6kf "{}" && \
+    brotli -q 11 -w 24 -f "{}" && \
+    pigz -9kf "{}" && \
     echo "Created: {}.br and {}.gz" \
   '
 }

@@ -8,6 +8,7 @@ export enum AITool {
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
   SetCodeCellValue = 'set_code_cell_value',
+  SetFormulaCellValue = 'set_formula_cell_value',
   MoveCells = 'move_cells',
   DeleteCells = 'delete_cells',
   UpdateCodeCell = 'update_code_cell',
@@ -26,6 +27,7 @@ export const AIToolSchema = z.enum([
   AITool.AddDataTable,
   AITool.SetCellValues,
   AITool.SetCodeCellValue,
+  AITool.SetFormulaCellValue,
   AITool.MoveCells,
   AITool.DeleteCells,
   AITool.UpdateCodeCell,
@@ -88,9 +90,9 @@ const array2DSchema = z
 const cellLanguageSchema = z
   .string()
   .transform((val) => val.toLowerCase())
-  .pipe(z.enum(['python', 'javascript', 'formula']))
+  .pipe(z.enum(['python', 'javascript']))
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-  .pipe(z.enum(['Python', 'Javascript', 'Formula']));
+  .pipe(z.enum(['Python', 'Javascript']));
 
 const modelRouterModels = z
   .string()
@@ -116,6 +118,11 @@ export const AIToolsArgsSchema = {
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
+  }),
+  [AITool.SetFormulaCellValue]: z.object({
+    sheet_name: z.string(),
+    code_cell_position: z.string(),
+    formula_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
     sheet_name: z.string(),
@@ -353,7 +360,7 @@ Values are string representation of text, number, logical, time instant, duratio
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
-Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
 `,
     parameters: {
       type: 'object',
@@ -395,20 +402,21 @@ When setting cell values, follow these rules for headers:\n
 This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
-Don't use this tool for adding formulas or code. Use set_code_cell_value function to add formulas or code.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the value of a code cell and runs it in the current open sheet, requires the language, cell position (in a1 notation), and code string.\n
+Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
-You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
+You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
-Note: we only rename the code cell if its new. Otherwise we keep the old name.\n
-Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
-Do not attempt to add formulas or code to data tables, it will result in an error.\n
+Note: only name the code cell if it is new.\n
+Always refer to the data from cell by its position in a1 notation from respective sheet.\n
+Do not attempt to add code to data tables, it will result in an error.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 `,
     parameters: {
       type: 'object',
@@ -425,7 +433,7 @@ Do not attempt to add formulas or code to data tables, it will result in an erro
         code_cell_language: {
           type: 'string',
           description:
-            'The language of the code cell, this can be one of Python, Javascript or Formula. This is case sensitive.',
+            'The language of the code cell, this can be one of Python or Javascript. This is case sensitive.',
         },
         code_cell_position: {
           type: 'string',
@@ -443,11 +451,13 @@ Do not attempt to add formulas or code to data tables, it will result in an erro
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value instead of responding with code.\n
+Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 
-Python and JavaScript Placement: the required location code_cell_position for this code cell in Python or JavaScript is one which satisfies the following conditions:\n
+Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
 - If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
@@ -457,12 +467,64 @@ Python and JavaScript Placement: the required location code_cell_position for th
 - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
 - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
+`,
+  },
+  [AITool.SetFormulaCellValue]: {
+    sources: ['AIAnalyst'],
+    description: `
+Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
+You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
+Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add static data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to formulas.\n
+Provide a name for the output of the formula cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Note: we only rename the formula cell if its new. Otherwise we keep the old name.\n
+Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in formula cells.\n
+Do not attempt to add formulas to data tables, it will result in an error.\n
+This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_position: {
+          type: 'string',
+          description:
+            'The position of the formula cell in the current open sheet, in a1 notation. This should be a single cell, not a range.',
+        },
+        formula_string: {
+          type: 'string',
+          description: 'The formula which will run in the cell',
+        },
+      },
+      required: ['sheet_name', 'code_cell_position', 'formula_string'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetFormulaCellValue],
+    prompt: `
+You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value instead of responding with formulas.\n
+Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
+set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
+Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
+This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+Don't prefix formulas with \`=\` in formula cells.\n
 
-Formulas Placement: the required location code_cell_position for this code cell in Formulas is one which satisfies the following conditions:\n
-- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referenced from the Formula and use the nearest unoccupied cell. If multiple data references are being made, choose the one which is most relevant to the Formula.\n
-- Unlike code, with Formulas you should not leave extra empty space to nearest content. Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath or directly beside the data being referenced. With Formulas, unlike code, you do not need to leave an extra space to the data being referenced. 
-- Don't prefix formulas with \`=\` in code cells.\n
+Formulas placement instructions:\n
+- The formula cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the formula result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- The formula cell should be near the data it references, so that it is easy to understand the formula in the context of the data. Identify the data being referenced from the Formula and use the nearest unoccupied cell. If multiple data references are being made, choose the one which is most relevant to the Formula.\n
+- Unlike code cell placement, Formula cell placement should not use an extra space; formulas should be placed next to the data they reference or next to a label for the calculation.\n
+- Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath or directly beside the data being referenced or next to the label for the calculation.\n
+- When doing a calculation on a table column, place the formula directly below the last row of the table.\n
+
+When to use set_formula_cell_value:\n
+Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals, counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
+Examples: 
+- Finding the mean of a column of numbers
+- Counting the number of instances of a value in a column
+- Finding the max/min value 
+- Basic arithmetic operations 
+- Joining strings 
 `,
   },
   [AITool.MoveCells]: {

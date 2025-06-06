@@ -17,7 +17,7 @@ impl Grid {
                 result.extend(sheet_result);
             }
         } else {
-            for sheet in self.sheets() {
+            for sheet in self.sheets().values() {
                 let sheet_result = sheet.search(query, &options);
                 result.extend(sheet_result);
             }

@@ -39,16 +39,19 @@ const isValidFormAtom = atom<boolean>({
 
 export const OnboardingResponseV1Schema = z.object({
   __version: z.literal(1),
+  __createdAt: z.string().datetime(),
   use: z.enum(['work', 'personal', 'education']),
   'work-role': z.string().optional(),
   'work-role-other': z.string().optional(),
   'personal-uses[]': z.array(z.string()).optional(),
-  'personal-uses-other': z.string().optional(),
+  'personal-uses[]-other': z.string().optional(),
   'education-identity': z.string().optional(),
   'education-identity-other': z.string().optional(),
   'education-subjects[]': z.array(z.string()).optional(),
+  'education-subjects[]-other': z.string().optional(),
   'languages[]': z.array(z.string()).optional(),
   'goals[]': z.array(z.string()),
+  'goals[]-other': z.string().optional(),
 });
 
 export type OnboardingResponseV1 = z.infer<typeof OnboardingResponseV1Schema>;

@@ -1,14 +1,13 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
-use quadratic_core::a1::A1Context;
+use quadratic_rust_shared::test::benchmark::benchmark;
 
 use std::time::Duration;
 
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
+use quadratic_core::grid::Grid;
 use quadratic_core::grid::js_types::JsClipboard;
-use quadratic_core::grid::{CellAlign, Grid};
 use quadratic_core::{Pos, Rect, SheetRect, a1::A1Selection};
-use quadratic_rust_shared::test::benchmark::benchmark;
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
@@ -27,7 +26,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     ];
 
     benchmark_grids(c, &inputs, "get_render_cells_all", |b, grid| {
-        let a1_context = grid.make_a1_context();
+        let a1_context = grid.expensive_make_a1_context();
         b.iter(|| {
             let output = grid.sheets()[0].get_render_cells(
                 Rect {
@@ -41,7 +40,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 
     benchmark_grids(c, &inputs, "get_render_cells_10x40", |b, grid| {
-        let a1_context = grid.make_a1_context();
+        let a1_context = grid.expensive_make_a1_context();
         b.iter(|| {
             let output = grid.sheets()[0].get_render_cells(
                 Rect {
@@ -57,7 +56,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     benchmark_grids(c, &inputs, "recalculate_bounds", |b, grid| {
         let mut grid = grid.clone();
         b.iter(|| {
-            let a1_context = grid.make_a1_context();
+            let a1_context = grid.expensive_make_a1_context();
             grid.first_sheet_mut().recalculate_bounds(&a1_context);
         });
     });
@@ -223,58 +222,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             |mut gc| {
                 // Test
                 gc.add_sheet(None);
-            },
-            criterion::BatchSize::SmallInput,
-        )
-    });
-
-    benchmark_grids(c, &inputs, "autocomplete_10_to_100", |b, _grid| {
-        let grid = Grid::new();
-        let mut gc = GridController::from_grid(grid, 0);
-        let sheet_id = gc.sheet_ids()[0];
-
-        let small_selection = Rect {
-            min: Pos { x: 1, y: 1 },
-            max: Pos { x: 11, y: 11 },
-        };
-        // add some data
-        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.random_numbers(&small_selection, &A1Context::default());
-        sheet
-            .formats
-            .bold
-            .set_rect(1, 1, Some(11), Some(11), Some(true));
-        sheet
-            .formats
-            .italic
-            .set_rect(1, 1, Some(11), Some(11), Some(true));
-        sheet
-            .formats
-            .text_color
-            .set_rect(1, 1, Some(11), Some(11), Some("blue".to_string()));
-        sheet
-            .formats
-            .align
-            .set_rect(1, 1, Some(11), Some(11), Some(CellAlign::Center));
-        sheet
-            .formats
-            .fill_color
-            .set_rect(1, 1, Some(11), Some(11), Some("red".to_string()));
-
-        let expand_to = Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 100, y: 100 },
-        };
-
-        b.iter_batched(
-            || {
-                // Setup
-                (gc.clone(), sheet_id, small_selection, expand_to)
-            },
-            |(mut gc, sheet_id, small_selection, expand_to)| {
-                // Test
-                gc.autocomplete(sheet_id, small_selection, expand_to, None)
-                    .unwrap();
             },
             criterion::BatchSize::SmallInput,
         )

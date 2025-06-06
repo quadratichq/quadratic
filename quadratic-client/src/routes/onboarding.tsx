@@ -94,7 +94,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // Parse and validate the payload against the v1 schema
-  const result = OnboardingResponseV1Schema.safeParse({ __version: 1, ...formJson });
+  const result = OnboardingResponseV1Schema.safeParse({
+    __version: 1,
+    __createdAt: new Date().toISOString(),
+    ...formJson,
+  });
 
   // Save the responses to the server and mixpanel and log any errors
   const sentryPromises: Promise<unknown>[] = [];

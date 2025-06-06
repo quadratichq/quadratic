@@ -7,6 +7,7 @@ describe('getPrompt', () => {
   it('should return a generic prompt when a work response is "other"', () => {
     const data: OnboardingResponseV1 = {
       __version: 1,
+      __createdAt: new Date().toISOString(),
       use: 'work',
       'work-role': 'other',
       'languages[]': ['javascript'],
@@ -20,6 +21,7 @@ describe('getPrompt', () => {
   it('should return a custom prompt when a work use response is pre-canned', () => {
     const data: OnboardingResponseV1 = {
       __version: 1,
+      __createdAt: new Date().toISOString(),
       use: 'work',
       'work-role': 'product',
       'languages[]': ['javascript'],
@@ -31,6 +33,7 @@ describe('getPrompt', () => {
   it('should return a custom prompt when a personal use response is pre-canned', () => {
     const data: OnboardingResponseV1 = {
       __version: 1,
+      __createdAt: new Date().toISOString(),
       use: 'personal',
       'personal-uses[]': ['ai', 'other'],
       'goals[]': ['ai'],
@@ -41,6 +44,7 @@ describe('getPrompt', () => {
   it('should return a custom prompt when a education use response is pre-canned', () => {
     const data: OnboardingResponseV1 = {
       __version: 1,
+      __createdAt: new Date().toISOString(),
       use: 'education',
       'education-identity': 'university-student',
       'education-subjects[]': ['math', 'other'],

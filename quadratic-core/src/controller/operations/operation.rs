@@ -222,7 +222,9 @@ pub enum Operation {
         borders: BordersUpdates,
     },
 
-    /// **Deprecated** Nov 2024 in favor of `AddSheetSchema`.
+    /// Used for adding a new sheet, with the app, should not used for
+    /// operations that sync to multiplayer or offline, i.e. forward / reverse operations
+    /// Use `AddSheetSchema` for forward / reverse operations
     AddSheet {
         sheet: Box<Sheet>,
     }, // very big!

@@ -324,7 +324,7 @@ mod tests {
         assert_eq!(gc1.transactions.unsaved_transactions.len(), 0);
 
         let mut gc2 = GridController::test();
-        gc2.grid_mut().sheets_mut()[0].id = sheet_id;
+        gc2.grid_mut().set_first_sheet_id(sheet_id);
         gc2.received_transaction(transaction_id, 1, operations);
         let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -437,7 +437,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        other.grid_mut().set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -478,7 +478,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        other.grid_mut().set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 1,
@@ -548,7 +548,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        other.grid_mut().set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -624,7 +624,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        other.grid_mut().set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -704,7 +704,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        other.grid_mut().set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -790,7 +790,7 @@ mod tests {
 
         // other is where the transactions are created
         let mut other = GridController::test();
-        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        other.grid_mut().set_first_sheet_id(sheet_id);
         other.set_cell_value(
             pos![A1].to_sheet_pos(sheet_id),
             "From other".to_string(),
@@ -1062,8 +1062,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -1073,8 +1073,8 @@ mod tests {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -1084,8 +1084,8 @@ mod tests {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 2,
-                y: 0,
+                x: 3,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -1093,47 +1093,42 @@ mod tests {
             None,
             None,
         );
-        let find_index = |sheet: &Sheet, x: i64, y: i64| {
-            sheet
-                .data_tables
-                .iter()
-                .position(|(code_pos, _)| *code_pos == Pos { x, y })
-                .unwrap()
-        };
+        let find_index =
+            |sheet: &Sheet, x: i64, y: i64| sheet.data_tables.get_index_of(&Pos { x, y }).unwrap();
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 1, 0), 1);
-        assert_eq!(find_index(sheet, 2, 0), 2);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 2, 1), 1);
+        assert_eq!(find_index(sheet, 3, 1), 2);
 
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "".to_string(),
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 2, 0), 1);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 3, 1), 1);
 
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 1, 0), 1);
-        assert_eq!(find_index(sheet, 2, 0), 2);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 2, 1), 1);
+        assert_eq!(find_index(sheet, 3, 1), 2);
 
         gc.redo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 2, 0), 1);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 3, 1), 1);
 
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(find_index(sheet, 0, 0), 0);
-        assert_eq!(find_index(sheet, 1, 0), 1);
-        assert_eq!(find_index(sheet, 2, 0), 2);
+        assert_eq!(find_index(sheet, 1, 1), 0);
+        assert_eq!(find_index(sheet, 2, 1), 1);
+        assert_eq!(find_index(sheet, 3, 1), 2);
     }
 
     #[test]

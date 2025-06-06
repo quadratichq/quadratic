@@ -1,9 +1,8 @@
-use itertools::Itertools;
 use lexicon_fractional_index::key_between;
 
 use crate::{
     controller::GridController,
-    grid::{Sheet, SheetId, file::sheet_schema::export_sheet},
+    grid::{Sheet, SheetId},
     util,
 };
 
@@ -24,17 +23,15 @@ impl GridController {
 
     /// Returns all sheet names
     pub fn sheet_names(&self) -> Vec<&str> {
-        self.grid.sheets().iter().map(|s| s.name.as_str()).collect()
+        self.grid
+            .sheets()
+            .values()
+            .map(|s| s.name.as_str())
+            .collect()
     }
 
     fn get_next_sheet_name(&self) -> String {
-        let sheet_names = &self
-            .grid
-            .sheets()
-            .iter()
-            .map(|s| s.name.as_str())
-            .collect_vec();
-        util::unused_name("Sheet", sheet_names)
+        util::unused_name("Sheet", &self.sheet_names())
     }
 
     pub fn add_sheet_operations(&mut self, name: Option<String>) -> Vec<Operation> {
@@ -43,8 +40,8 @@ impl GridController {
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
 
-        vec![Operation::AddSheetSchema {
-            schema: Box::new(export_sheet(sheet)),
+        vec![Operation::AddSheet {
+            sheet: Box::new(sheet),
         }]
     }
 
@@ -65,9 +62,13 @@ impl GridController {
 
         let order = if let Some(to_before) = to_before {
             let before = self.grid.previous_sheet_order(to_before.id);
-            key_between(before.as_deref(), Some(&to_before.order)).unwrap()
+            key_between(before, Some(&to_before.order)).unwrap()
         } else {
-            let last_order = self.grid.sheets().last().map(|last| last.order.clone());
+            let last_order = self
+                .grid
+                .sheets()
+                .last()
+                .map(|(_, last)| last.order.clone());
             key_between(last_order.as_deref(), None).unwrap()
         };
 
@@ -100,8 +101,8 @@ impl GridController {
             new_sheet.order = order;
         };
 
-        let mut ops = vec![Operation::AddSheetSchema {
-            schema: Box::new(export_sheet(new_sheet)),
+        let mut ops = vec![Operation::AddSheet {
+            sheet: Box::new(new_sheet),
         }];
 
         // get code run operations for the old sheet, as new sheet is not yet in the grid
@@ -199,11 +200,7 @@ mod test {
 
     #[test]
     fn test_duplicate_sheet_with_data_table() {
-        let (mut gc, sheet_id, pos, _) = simple_csv();
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap().clone();
-
-        gc.sheet_mut(sheet_id)
-            .set_data_table((1, 1).into(), Some(data_table));
+        let (mut gc, sheet_id, _, _) = simple_csv();
 
         let duplicate_sheet = gc.sheet_mut(sheet_id).clone();
         let duplicate_sheet_id = gc.grid.add_sheet(Some(duplicate_sheet));
@@ -212,7 +209,7 @@ mod test {
         let context = gc.a1_context().to_owned();
 
         for (pos, data_table) in data_tables.into_iter() {
-            let name = data_table.name.to_string();
+            let name = data_table.name().to_string();
             let sheet_pos = pos.to_sheet_pos(duplicate_sheet_id);
             gc.grid
                 .update_data_table_name(sheet_pos, &name, &name, &context, false)

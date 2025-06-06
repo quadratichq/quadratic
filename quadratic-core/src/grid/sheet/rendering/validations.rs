@@ -1,85 +1,100 @@
+use std::collections::HashMap;
+
 use crate::{
-    Rect,
-    grid::{Sheet, js_types::JsValidationWarning},
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    Pos, Rect,
+    grid::{
+        Sheet,
+        js_types::{JsHashValidationWarnings, JsValidationWarning},
+    },
 };
 
 impl Sheet {
     /// Sends all validations for this sheet to the client.
     pub fn send_all_validations(&self) {
-        if let Ok(validations) = self.validations.to_string() {
-            crate::wasm_bindings::js::jsSheetValidations(self.id.to_string(), validations);
-        }
-    }
-
-    /// Sends validation warnings to the client.
-    pub fn send_validation_warnings(&self, warnings: Vec<JsValidationWarning>) {
-        if warnings.is_empty() {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        if let Ok(warnings) = serde_json::to_string(&warnings) {
-            crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), warnings);
+        match serde_json::to_vec(&self.validations.validations) {
+            Ok(all_validations) => {
+                crate::wasm_bindings::js::jsSheetValidations(self.id.to_string(), all_validations);
+            }
+            Err(e) => {
+                dbgjs!(format!("Failed to serialize validations: {}", e));
+            }
         }
     }
 
     /// Sends all validation warnings for this sheet to the client.
     pub fn send_all_validation_warnings(&self) {
-        let warnings = self
-            .validations
-            .warnings
-            .iter()
-            .map(|(pos, validation_id)| JsValidationWarning {
-                x: pos.x,
-                y: pos.y,
-                validation: Some(*validation_id),
-                style: self
-                    .validations
-                    .validation(*validation_id)
-                    .map(|v| v.error.style.clone()),
-            })
-            .collect::<Vec<_>>();
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        };
 
+        let Some(rect) = self.bounds(true).into() else {
+            return;
+        };
+
+        let warnings = self.get_validation_warnings_in_rect(rect, true);
         self.send_validation_warnings(warnings);
-    }
-
-    /// Sends validation warnings for a hashed region to the client.
-    pub fn send_validation_warnings_from_hash(&self, hash_x: i64, hash_y: i64, rect: Rect) {
-        let warnings = self
-            .validations
-            .warnings
-            .iter()
-            .filter_map(|(pos, validation_id)| {
-                if rect.contains(*pos) {
-                    let validation = self.validations.validation(*validation_id)?;
-                    Some(JsValidationWarning {
-                        x: pos.x,
-                        y: pos.y,
-                        validation: Some(*validation_id),
-                        style: Some(validation.error.style.clone()),
-                    })
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        if let Ok(warnings) = serde_json::to_string(&warnings) {
-            crate::wasm_bindings::js::jsRenderValidationWarnings(
-                self.id.to_string(),
-                hash_x,
-                hash_y,
-                warnings,
-            );
-        }
     }
 
     /// Sends validation warnings as a response from the request from the
     /// client. Note, the client always requests hash-sized rects.
-    pub fn send_validation_warnings_rect(&self, rect: Rect) {
-        let hash_x = rect.min.x / CELL_SHEET_WIDTH as i64;
-        let hash_y = rect.min.y / CELL_SHEET_HEIGHT as i64;
-        self.send_validation_warnings_from_hash(hash_x, hash_y, rect);
+    pub fn send_validation_warnings_rect(&self, rect: Rect, rect_is_hash_rect: bool) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let warnings = self.get_validation_warnings_in_rect(rect, rect_is_hash_rect);
+        self.send_validation_warnings(warnings);
+    }
+
+    /// Sends validation warnings to the client.
+    pub fn send_validation_warnings(&self, warnings: Vec<JsHashValidationWarnings>) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        if !warnings.is_empty() {
+            if let Ok(warnings) = serde_json::to_vec(&warnings) {
+                crate::wasm_bindings::js::jsValidationWarnings(warnings);
+            }
+        }
+    }
+
+    /// Sends validation warnings for a hashed region to the client.
+    pub fn get_validation_warnings_in_rect(
+        &self,
+        rect: Rect,
+        rect_is_hash_rect: bool,
+    ) -> Vec<JsHashValidationWarnings> {
+        let mut hashes_warnings = HashMap::<Pos, Vec<JsValidationWarning>>::new();
+
+        for (&pos, validation_id) in self.validations.warnings.iter() {
+            if rect.contains(pos) {
+                if let Some(validation) = self.validations.validation(*validation_id) {
+                    let hash = pos.quadrant().into();
+                    hashes_warnings
+                        .entry(hash)
+                        .or_default()
+                        .push(JsValidationWarning {
+                            pos,
+                            validation: Some(*validation_id),
+                            style: Some(validation.error.style.clone()),
+                        });
+                }
+            }
+        }
+
+        hashes_warnings
+            .into_iter()
+            .map(|(hash, warnings)| JsHashValidationWarnings {
+                sheet_id: self.id,
+                hash: if rect_is_hash_rect { Some(hash) } else { None },
+                warnings,
+            })
+            .collect::<Vec<_>>()
     }
 }
 
@@ -96,8 +111,8 @@ mod tests {
         grid::{
             js_types::JsValidationWarning,
             sheet::validations::{
-                validation::{Validation, ValidationStyle},
                 rules::{ValidationRule, validation_logical::ValidationLogical},
+                validation::{Validation, ValidationStyle},
             },
         },
         wasm_bindings::js::expect_js_call,
@@ -116,7 +131,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         });
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         let render = sheet.get_render_cells(Rect::single_pos((1, 1).into()), &a1_context);
         assert_eq!(render.len(), 1);
     }
@@ -137,10 +152,13 @@ mod tests {
             error: Default::default(),
         });
         sheet.send_all_validations();
-        let validations = serde_json::to_string(&sheet.validations.validations).unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet.id, validations),
+            format!(
+                "{},{:?}",
+                sheet.id,
+                serde_json::to_vec(&sheet.validations.validations).unwrap()
+            ),
             true,
         );
     }
@@ -162,18 +180,22 @@ mod tests {
         sheet
             .validations
             .warnings
-            .insert((0, 0).into(), validation_id);
+            .insert((1, 1).into(), validation_id);
+        let a1_context = sheet.expensive_make_a1_context();
+        sheet.recalculate_bounds(&a1_context);
         sheet.send_all_validation_warnings();
-        let warnings = serde_json::to_string(&vec![JsValidationWarning {
-            x: 0,
-            y: 0,
-            validation: Some(validation_id),
-            style: Some(ValidationStyle::Stop),
-        }])
-        .unwrap();
+        let warnings = vec![JsHashValidationWarnings {
+            sheet_id: sheet.id,
+            hash: Some((0, 0).into()),
+            warnings: vec![JsValidationWarning {
+                pos: (1, 1).into(),
+                validation: Some(validation_id),
+                style: Some(ValidationStyle::Stop),
+            }],
+        }];
         expect_js_call(
-            "jsValidationWarning",
-            format!("{},{}", sheet.id, warnings),
+            "jsValidationWarnings",
+            format!("{:?}", serde_json::to_vec(&warnings).unwrap()),
             true,
         );
     }

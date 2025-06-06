@@ -45,6 +45,7 @@ const ConnectionSchema = z.object({
   updatedDate: z.string().datetime(),
   name: ConnectionNameSchema,
   uuid: z.string().uuid(),
+  isDemo: z.boolean().optional(),
 
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
@@ -97,7 +98,7 @@ export const ConnectionTypeDetailsSnowflakeSchema = z.object({
  */
 
 export const ConnectionListSchema = z.array(
-  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
+  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true, isDemo: true })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
 

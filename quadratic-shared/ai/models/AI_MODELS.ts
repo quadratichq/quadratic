@@ -1,6 +1,6 @@
 import type { AIModelConfig, AIModelKey, AIRates } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
+export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
 
 export const DEFAULT_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
@@ -216,6 +216,21 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     rate_per_million_input_tokens: 0.15,
     rate_per_million_output_tokens: 1,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'vertexai:gemini-2.0-flash-001': {
+    model: 'gemini-2.0-flash-001',
+    displayName: 'gemini 2.0 flash',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: false,
+    rate_per_million_input_tokens: 0.1,
+    rate_per_million_output_tokens: 0.4,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },

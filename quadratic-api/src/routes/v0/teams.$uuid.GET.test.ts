@@ -80,7 +80,7 @@ describe('GET /v0/teams/:uuid', () => {
 
           expect(res.body.team.settings.analyticsAi).toBe(true);
           expect(res.body.clientDataKv).toStrictEqual({});
-          expect(res.body.connections).toHaveLength(1);
+          expect(res.body.connections).toHaveLength(2); // 1 created + 1 demo
           expect(res.body.files).toHaveLength(1);
           expect(typeof res.body.files[0].file.creatorId).toBe('number');
 
@@ -116,7 +116,8 @@ describe('GET /v0/teams/:uuid', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.connections).toHaveLength(0);
+          expect(res.body.connections).toHaveLength(1);
+          expect(res.body.connections[0].isDemo).toBe(true);
         });
     });
   });

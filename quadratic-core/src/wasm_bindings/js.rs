@@ -41,40 +41,31 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
-    // cells: Vec<JsRenderCell>
-    pub fn jsRenderCellSheets(
-        sheet_id: String,
-        hash_x: i64,
-        hash_y: i64,
-        cells: String, /*Vec<JsRenderCell>*/
-    );
+    pub fn jsHashesRenderCells(render_cells: Vec<u8> /*Vec<JsHashRenderCells>*/);
+    pub fn jsHashesDirty(dirty_hashes: Vec<u8> /* Vec<JsHashesDirty> */);
 
-    pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */);
-    pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */);
+    pub fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool);
+    pub fn jsDeleteSheet(sheetId: String, user: bool);
+    pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */);
+    pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */);
 
     // todo: there should be a jsSheetFillUpdate instead of constantly passing back all sheet fills
-    pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */);
+    pub fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */);
+    pub fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */);
 
-    pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */);
-
-    pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
-    pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
-    pub fn jsUpdateCodeCell(
-        sheet_id: String,
-        x: i64,
-        y: i64,
-        code_cell: Option<String>,        /*JsCodeCell*/
-        render_code_cell: Option<String>, /*JsRenderCodeCell*/
-    );
-    pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
+    pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsRenderCodeCell> */);
+    pub fn jsOffsetsModified(sheet_id: String, offsets: Vec<u8> /* Vec<JsOffset> */);
     pub fn jsSetCursor(cursor: String);
-    pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
-    pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
+    pub fn jsHtmlOutput(html: Vec<u8> /* Vec<JsHtmlOutput> */);
+    pub fn jsUpdateHtml(html: Vec<u8> /* JsHtmlOutput */);
     pub fn jsGenerateThumbnail();
-    pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */);
-    pub fn jsSheetCodeCell(sheet_id: String, code_cells: String);
-    pub fn jsSheetBoundsUpdate(bounds: String);
+    pub fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */);
+    pub fn jsSheetCodeCells(
+        sheet_id: String,
+        render_code_cells: Vec<u8>, /* Vec<JsRenderCodeCell> */
+    );
+    pub fn jsSheetBoundsUpdate(bounds: Vec<u8> /* Vec<SheetBounds> */);
 
     pub fn jsImportProgress(
         file_name: &str,
@@ -109,28 +100,20 @@ extern "C" {
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
 
-    pub fn jsSheetValidations(sheet_id: String, validations: String /* Vec<Validation> */);
-    pub fn jsValidationWarning(
+    pub fn jsSheetValidations(
         sheet_id: String,
-        validations: String, /* Vec<(x, y, validation_id, failed) */
+        sheet_validations: Vec<u8>, /* Vec<Validation> */
     );
-    pub fn jsRenderValidationWarnings(
-        sheet_id: String,
-        hash_x: i64,
-        hash_y: i64,
-        validations: String, /* Vec<(x, y, id) */
-    );
+
+    pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
 
     pub fn jsMultiplayerSynced();
-
-    // hashes: Vec<Pos>
-    pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
     pub fn jsClientMessage(message: String, error: String);
 
-    pub fn jsA1Context(context: String);
+    pub fn jsA1Context(context: Vec<u8> /* A1Context */);
 }
 
 #[cfg(test)]
@@ -231,11 +214,10 @@ pub fn expect_js_offsets(
 
     offsets.sort_by(|a, b| a.row.cmp(&b.row).then(a.column.cmp(&b.column)));
 
-    let offsets = serde_json::to_string(&offsets).unwrap();
-
+    let offsets = serde_json::to_vec(&offsets).unwrap();
     expect_js_call(
         "jsOffsetsModified",
-        format!("{},{}", sheet_id, offsets),
+        format!("{},{:?}", sheet_id, offsets),
         clear,
     );
 }
@@ -307,56 +289,22 @@ pub fn jsRunJavascript(
 }
 
 #[cfg(test)]
-pub fn hash_test<T: std::hash::Hash>(value: &T) -> u64 {
-    use std::hash::{DefaultHasher, Hasher};
-    let mut hasher = DefaultHasher::new();
-    value.hash(&mut hasher);
-    hasher.finish()
-}
-
-#[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsRenderCellSheets(
-    sheet_id: String,
-    hash_x: i64,
-    hash_y: i64,
-    cells: String, /*Vec<JsRenderCell>*/
-) {
+pub fn jsHashesRenderCells(render_cells: Vec<u8> /* Vec<JsHashRenderCells> */) {
     // we use a hash of cells to avoid storing too large test data
-    js_call(
-        "jsRenderCellSheets",
-        format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells)),
-    );
+    js_call("jsHashesRenderCells", format!("{:?}", render_cells));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */) {
-    js_call("jsSheetInfo", sheets);
+pub fn jsHashesDirty(dirty_hashes: Vec<u8> /*Vec<JsHashesDirty>*/) {
+    js_call("jsHashesDirty", format!("{:?}", dirty_hashes));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */) {
-    js_call("jsSheetInfoUpdate", sheet);
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */) {
-    js_call("jsSheetFills", format!("{},{}", sheet_id, fills));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */) {
-    js_call("jsSheetMetaFills", format!("{},{}", sheet_id, fills));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool) {
-    js_call("jsAddSheet", format!("{},{}", sheetInfo, user));
+pub fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool) {
+    js_call("jsAddSheet", format!("{:?},{}", sheetInfo, user));
 }
 
 #[cfg(test)]
@@ -367,32 +315,44 @@ pub fn jsDeleteSheet(sheetId: String, user: bool) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
+pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */) {
+    js_call("jsSheetInfo", format!("{:?}", sheets_info));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */) {
+    js_call("jsSheetInfoUpdate", format!("{:?}", sheet_info));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */) {
+    js_call("jsSheetFills", format!("{},{:?}", sheet_id, fills));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */) {
+    js_call("jsSheetMetaFills", format!("{},{:?}", sheet_id, fills));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
 pub fn jsRequestTransactions(sequence_num: u64) {
     js_call("jsRequestTransactions", sequence_num.to_string());
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsUpdateCodeCell(
-    sheet_id: String,
-    x: i64,
-    y: i64,
-    code_cell: Option<String>,        /*JsCodeCell*/
-    render_code_cell: Option<String>, /*JsRenderCodeCell*/
-) {
-    js_call(
-        "jsUpdateCodeCell",
-        format!(
-            "{},{},{},{:?},{:?}",
-            sheet_id, x, y, code_cell, render_code_cell
-        ),
-    );
+pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsUpdateCodeCell> */) {
+    js_call("jsUpdateCodeCells", format!("{:?}", update_code_cells));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsOffsetsModified(sheet_id: String, offsets: String /*Vec<JsOffset>*/) {
-    js_call("jsOffsetsModified", format!("{},{}", sheet_id, offsets));
+pub fn jsOffsetsModified(sheet_id: String, offsets: Vec<u8> /*Vec<JsOffset>*/) {
+    js_call("jsOffsetsModified", format!("{},{:?}", sheet_id, offsets));
 }
 
 #[cfg(test)]
@@ -403,14 +363,14 @@ pub fn jsSetCursor(cursor: String) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/) {
-    js_call("jsUpdateHtml", html);
+pub fn jsHtmlOutput(html: Vec<u8> /*Vec<JsHtmlOutput>*/) {
+    js_call("jsHtmlOutput", format!("{:?}", html));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/) {
-    js_call("jsHtmlOutput", html);
+pub fn jsUpdateHtml(html: Vec<u8> /*JsHtmlOutput*/) {
+    js_call("jsUpdateHtml", format!("{:?}", html));
 }
 
 #[cfg(test)]
@@ -421,20 +381,23 @@ pub fn jsGenerateThumbnail() {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */) {
-    js_call("jsBordersSheet", format!("{},{}", sheet_id, borders));
+pub fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */) {
+    js_call("jsBordersSheet", format!("{},{:?}", sheet_id, borders));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetCodeCell(sheet_id: String, code_cells: String) {
-    js_call("jsSheetCodeCell", format!("{},{}", sheet_id, code_cells));
+pub fn jsSheetCodeCells(sheet_id: String, render_code_cells: Vec<u8>) {
+    js_call(
+        "jsSheetCodeCells",
+        format!("{},{:?}", sheet_id, render_code_cells),
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetBoundsUpdate(bounds: String) {
-    js_call("jsSheetBoundsUpdate", bounds);
+pub fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
+    js_call("jsSheetBoundsUpdate", format!("{:?}", bounds));
 }
 
 #[cfg(test)]
@@ -537,10 +500,10 @@ pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Opti
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidation */) {
+pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Validation> */) {
     js_call(
         "jsSheetValidations",
-        format!("{},{}", sheet_id, validations),
+        format!("{},{:?}", sheet_id, sheet_validations),
     );
 }
 
@@ -559,46 +522,14 @@ pub fn jsRequestRowHeights(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsValidationWarning(
-    sheet_id: String,
-    validations: String, /* Vec<(x, y, validation_id, failed) */
-) {
-    js_call(
-        "jsValidationWarning",
-        format!("{},{}", sheet_id, validations),
-    );
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsRenderValidationWarnings(
-    sheet_id: String,
-    hash_x: i64,
-    hash_y: i64,
-    validations: String, /* Vec(x, y, id) */
-) {
-    js_call(
-        "jsRenderValidationWarnings",
-        format!(
-            "{},{},{},{}",
-            sheet_id,
-            hash_x,
-            hash_y,
-            hash_test(&validations)
-        ),
-    );
+pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */) {
+    js_call("jsValidationWarnings", format!("{:?}", warnings));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsMultiplayerSynced() {
     js_call("jsMultiplayerSynced", "".into());
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<Pos>*/) {
-    js_call("jsHashesDirty", format!("{},{}", sheet_id, hashes));
 }
 
 #[cfg(test)]
@@ -615,6 +546,6 @@ pub fn jsClientMessage(message: String, severity: String) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsA1Context(context: String) {
-    js_call("jsA1Context", context);
+pub fn jsA1Context(context: Vec<u8> /* A1Context */) {
+    js_call("jsA1Context", format!("{:?}", context));
 }

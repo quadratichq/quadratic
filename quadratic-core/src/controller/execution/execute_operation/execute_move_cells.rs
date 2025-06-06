@@ -43,7 +43,10 @@ impl GridController {
                     js_clipboard.html,
                     PasteSpecial::None,
                 ) {
-                    Ok(paste_ops) => ops.extend(paste_ops),
+                    Ok((paste_ops, data_table_ops)) => {
+                        ops.extend(paste_ops);
+                        ops.extend(data_table_ops);
+                    }
                     Err(_) => return,
                 }
             }
@@ -71,7 +74,7 @@ mod tests {
     fn test_move_cells() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let sheet_pos = SheetPos::from((pos, sheet_id));
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 12));
 
@@ -91,7 +94,7 @@ mod tests {
     fn test_move_data_table_within_its_current_output_rect() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
         let sheet_pos = SheetPos::from((pos, sheet_id));
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
         assert_eq!(
             gc.sheet(sheet_id).cell_value(pos),
@@ -113,12 +116,12 @@ mod tests {
         print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
 
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
-        assert!(gc.sheet(sheet_id).data_table(pos).is_none());
+        assert!(gc.sheet(sheet_id).data_table_at(&pos).is_none());
 
         assert_eq!(
             gc.sheet(sheet_id).cell_value(dest_pos),
             Some(CellValue::Import(Import::new(file_name.to_string())))
         );
-        assert!(gc.sheet(sheet_id).data_table(dest_pos).is_some());
+        assert!(gc.sheet(sheet_id).data_table_at(&dest_pos).is_some());
     }
 }

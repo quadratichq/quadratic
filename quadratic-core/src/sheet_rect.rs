@@ -191,6 +191,14 @@ impl SheetRect {
         }
         hashes
     }
+
+    pub fn to_rect(&self) -> Rect {
+        Rect::new_span(self.min, self.max)
+    }
+
+    pub fn to_region(&self) -> (SheetId, Rect) {
+        (self.sheet_id.to_owned(), self.to_rect())
+    }
 }
 
 impl fmt::Display for SheetRect {
