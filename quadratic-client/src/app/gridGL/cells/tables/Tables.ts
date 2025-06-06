@@ -176,6 +176,7 @@ export class Tables extends Container<Table> {
     // if the cursor is same as the code cell anchor cell, we may need to update the cursor
     let updateCursor = false;
     const isCursorSingleSelection = sheets.sheet.cursor.isSingleSelection();
+    const tableSelectionName = sheets.sheet.cursor.getSingleFullTableSelectionName();
     const cursorSheetId = sheets.sheet.cursor.sheet.id;
     const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
 
@@ -189,17 +190,11 @@ export class Tables extends Container<Table> {
       const y = Number(pos.y);
       const key = `${x},${y}`;
 
-      const cursorIsSameAsCodeCell =
-        isCursorSingleSelection && cursorSheetId === sheets.current && cursorX === x && cursorY === y;
+      const cursorIsSameAsCodeCell = cursorSheetId === sheets.current && cursorX === x && cursorY === y;
 
       if (!render_code_cell) {
         delete this.singleCellTables[key];
         this.deleteTable(x, y);
-
-        // update cursor for deletion
-        if (cursorIsSameAsCodeCell) {
-          updateCursor = true;
-        }
       } else {
         const isSingleCell = this.isCodeCellSingle(render_code_cell);
         if (isSingleCell) {
@@ -223,7 +218,7 @@ export class Tables extends Container<Table> {
           }
 
           // update cursor for multi-cell tables
-          if (cursorIsSameAsCodeCell) {
+          if (cursorIsSameAsCodeCell && (isCursorSingleSelection || tableSelectionName === render_code_cell.name)) {
             updateCursor = true;
           }
         }
@@ -231,6 +226,7 @@ export class Tables extends Container<Table> {
     }
 
     pixiApp.setViewportDirty();
+    pixiApp.singleCellOutlines.dirty = true;
 
     if (updateCursor) {
       sheets.sheet.cursor.moveTo(sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, {
