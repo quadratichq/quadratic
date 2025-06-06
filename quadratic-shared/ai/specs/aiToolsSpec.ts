@@ -97,7 +97,7 @@ const cellLanguageSchema = z
 const modelRouterModels = z
   .string()
   .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
-  .pipe(z.enum(['claude', 'pro']));
+  .pipe(z.enum(['claude', 'pro', 'flash', 'mini']));
 
 export const AIToolsArgsSchema = {
   [AITool.SetAIModel]: z.object({
@@ -200,6 +200,8 @@ export const MODELS_ROUTER_CONFIGURATION: {
 } = {
   claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   pro: 'vertexai:gemini-2.5-pro-preview-05-06',
+  flash: 'vertexai:gemini-2.5-flash-preview-05-20',
+  mini: 'openai:gpt-4.1-mini-2025-04-14',
 };
 
 export const aiToolsSpec: AIToolSpecRecord = {

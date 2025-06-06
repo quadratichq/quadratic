@@ -68,9 +68,9 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Processing images and PDFs</capability>
     <capability>Writing JavaScript</capability>
     <capability>Formatting - simple, conditional, etc.</capability>
-    <capability>Editing existing charts</capability>
     <capability>API requests</capability>
-    <capability>Any capabilitiesnot defined in these instructions</capability>
+    <capability>Broad questions about the data</capability>
+    <capability>Any capabilities not defined in these instructions</capability>
    </capabilities>
   </model>
   <model name="Claude">
@@ -78,13 +78,27 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
     <capability>Requests that involve frustration</capability>
-    <capability>Creating new charts</capability>
+    <capability>Onboarding</capability>
+    <capability>Prompts that indicate something didn't work</capability>
+   </capabilities>
+  </model>
+  <model name="Flash">
+   <capabilities>
+    <capability>Creating charts</capability>
+    <capability>Editing charts</capability>
+   </capabilities>
+  </model>
+  <model name="Mini">
+    <capabilities>
+    <capability>Explicitly defined formatting tasks</capability>
+    <capability>Explicitly defined inserts/edits.</capability>
+    <capability>Simple calculations - arithmetic, basic conditionals, etc.</capability>
    </capabilities>
   </model>
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Pro". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "Pro" "Flash" or "Mini". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
@@ -97,10 +111,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Create a chart</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
    <user>Create a debt snowball calculator</user>
    <answer>Claude</answer>
   </example>
@@ -109,11 +119,39 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Add an extra axis to my chart</user>
+   <user>try again</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Why do you keep failing?</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Chart is empty</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Data is missing</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Hi</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Fix the errors</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Hi, I'm a new user to Quadratic and I plan on using it for personal projects. One thing I'm going to use it for in particular is Trading / Investing; show me what you can do by creating a sample dataset for that. Once finished with the dataset, create a chart that helps explain the data. Then tell me what else is possible in Quadratic.</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Can you explain the data?</user>
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Change the line to blue</user>
+   <user>What relationship did that show?</user>
    <answer>Pro</answer>
   </example>
   <example>
@@ -122,14 +160,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Highlight all the cells with value > 50</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>try again</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
-   <user>move that to A9</user>
    <answer>Pro</answer>
   </example>
   <example>
@@ -145,32 +175,48 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Sum the values in column F</user>
-   <answer>Pro</answer>
-  </example>
- <example>
-   <user>Calculate the mean of costs</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Find the mean, filtered by product type</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Highlight column C blue</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
    <user>Highlight all male entries orange</user>
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Why do you keep failing?</user>
-   <answer>Claude</answer>
+   <user>Highlight column C blue</user>
+   <answer>Mini</answer>
   </example>
   <example>
-   <user>Hi</user>
-   <answer>Claude</answer>
+   <user>move that to A9</user>
+   <answer>Mini</answer>
+  </example>
+  <example>
+   <user>Insert 5 in cell A7</user>
+   <answer>Mini</answer>
+  </example>
+   <example>
+   <user>Sum the values in column F</user>
+   <answer>Mini</answer>
+  </example>
+  <example>
+   <user>Calculate the mean of costs</user>
+   <answer>Mini</answer>
+  </example>
+  <example>
+   <user>Find the mean, filtered by product type</user>
+   <answer>Mini</answer>
+  </example>
+  <example>
+   <user>Create a chart</user>
+   <answer>Flash</answer>
+  </example>
+  <example>
+   <user>Add an extra axis to my chart</user>
+   <answer>Flash</answer>
+  </example>
+  <example>
+   <user>Switch to a bar chart</user>
+   <answer>Flash</answer>
+  </example>
+  <example>
+   <user>Plot the water content vs growth rate</user>
+   <answer>Flash</answer>
   </example>
  </examples>
 `,
