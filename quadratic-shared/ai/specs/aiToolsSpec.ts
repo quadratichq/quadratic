@@ -19,6 +19,7 @@ export enum AITool {
   SetTextFormats = 'set_text_formats',
   GetTextFormats = 'get_text_formats',
   ConvertToTable = 'convert_to_table',
+  GetDatabaseSchemas = 'get_database_schemas',
 }
 
 export const AIToolSchema = z.enum([
@@ -38,6 +39,7 @@ export const AIToolSchema = z.enum([
   AITool.SetTextFormats,
   AITool.GetTextFormats,
   AITool.ConvertToTable,
+  AITool.GetDatabaseSchemas,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -191,6 +193,9 @@ export const AIToolsArgsSchema = {
     selection: z.string(),
     table_name: z.string(),
     first_row_is_column_names: z.boolean(),
+  }),
+  [AITool.GetDatabaseSchemas]: z.object({
+    connection_ids: z.array(z.string()).optional(),
   }),
 } as const;
 
@@ -922,6 +927,44 @@ It requires the sheet name, a rectangular selection of cells to convert to a dat
 A data table cannot be created over any existing code cells or data tables.\n
 The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
 The data table will include a table name as the first row, which will push down all data by one row.\n
+`,
+  },
+  [AITool.GetDatabaseSchemas]: {
+    sources: ['AIAnalyst'],
+    description: `
+Retrieves detailed database table schemas including column names, data types, and constraints.\n
+Use this tool when you need detailed column information beyond the table names already available in context.\n
+Essential for writing accurate SQL queries that reference specific columns and their data types.\n
+If connection_ids is not provided, it will return detailed schemas for all available team connections.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        connection_ids: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description:
+            'Optional array of specific connection IDs to get schemas for. If not provided, returns schemas for all team connections.',
+        },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
+    prompt: `
+Use this tool to retrieve detailed database table schemas when you need column-level information for SQL queries.\n
+You already have table names in context - use this tool when you need:\n
+- Column names and their data types\n
+- Constraints and nullable information\n
+- Detailed schema structure for writing accurate SQL queries\n
+Call this tool when:\n
+- User asks for specific column information or data types\n
+- You need to write SQL queries that reference specific columns\n
+- User wants detailed database schema information\n
+- You need to understand column relationships and constraints\n
+The tool returns comprehensive schema information including column names, data types, constraints, and nullable flags.\n
 `,
   },
 } as const;

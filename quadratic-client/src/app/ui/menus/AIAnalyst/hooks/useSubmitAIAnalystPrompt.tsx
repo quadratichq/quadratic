@@ -78,6 +78,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
   const { getSQLContext } = useSQLContextMessages();
+
   const { importPDF } = useAnalystPDFImport();
   const [modelKey] = useAIModel();
 

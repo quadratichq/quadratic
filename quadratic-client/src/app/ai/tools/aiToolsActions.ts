@@ -604,4 +604,182 @@ export const aiToolsActions: AIToolActionsRecord = {
       ];
     }
   },
+  [AITool.GetDatabaseSchemas]: async (args, messageMetaData) => {
+    try {
+      const { connection_ids } = args;
+
+      // Get team UUID from the current context
+      const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
+      if (!teamUuid) {
+        return [
+          {
+            type: 'text',
+            text: 'Error: No team context available to retrieve database schemas. Make sure you are working within a team context.',
+          },
+        ];
+      }
+
+      // Import the connection client
+      const { connectionClient } = await import('@/shared/api/connectionClient');
+
+      // Get all team connections or specific ones
+      let connections;
+      try {
+        if (connection_ids && connection_ids.length > 0) {
+          // Validate connection IDs - they should be UUIDs
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          const invalidIds = connection_ids.filter((id) => !uuidRegex.test(id));
+
+          if (invalidIds.length > 0) {
+            return [
+              {
+                type: 'text',
+                text: `Error: Invalid connection IDs provided: ${invalidIds.join(', ')}. Connection IDs must be valid UUIDs. To get all available connections, call this tool without the connection_ids parameter.`,
+              },
+            ];
+          }
+
+          // Get specific connections
+          connections = await Promise.all(
+            connection_ids.map(async (id) => {
+              try {
+                return await apiClient.connections.get({ connectionUuid: id, teamUuid });
+              } catch (error) {
+                console.warn(`[GetDatabaseSchemas] Failed to get connection ${id}:`, error);
+                return null;
+              }
+            })
+          );
+          connections = connections.filter(Boolean);
+
+          if (connections.length === 0) {
+            return [
+              {
+                type: 'text',
+                text: `Error: None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct and that you have access to them. To see all available connections, call this tool without the connection_ids parameter.`,
+              },
+            ];
+          }
+        } else {
+          // Get all team connections
+          connections = await apiClient.connections.list(teamUuid);
+        }
+      } catch (connectionError) {
+        console.error('[GetDatabaseSchemas] Failed to fetch team connections:', connectionError);
+        return [
+          {
+            type: 'text',
+            text: 'Error: Unable to retrieve database connections. This could be because:\n\n1. The Quadratic API server is not running (check if localhost:8000 is accessible)\n2. The connection service is unavailable\n3. Network connectivity issues\n\nIn development, make sure to run `npm start` or `npm run docker:base` to start all required services.',
+          },
+        ];
+      }
+
+      if (!connections || connections.length === 0) {
+        return [
+          {
+            type: 'text',
+            text: 'No database connections found for this team. Please set up database connections in the team settings first.',
+          },
+        ];
+      }
+
+      // Get schemas for each connection
+      const schemas = await Promise.all(
+        connections.map(async (connection) => {
+          if (!connection) return null;
+          try {
+            const connectionType = connection.type.toLowerCase() as 'postgres' | 'mysql' | 'mssql' | 'snowflake';
+            const schema = await connectionClient.schemas.get(connectionType, connection.uuid, teamUuid);
+
+            if (!schema) {
+              return {
+                connectionId: connection.uuid,
+                connectionName: connection.name,
+                connectionType: connection.type,
+                error: 'No schema data returned from connection service',
+              };
+            }
+
+            return {
+              connectionId: connection.uuid,
+              connectionName: connection.name,
+              connectionType: connection.type,
+              schema: schema,
+            };
+          } catch (error) {
+            console.warn(`[GetDatabaseSchemas] Failed to get schema for connection ${connection.uuid}:`, error);
+            return {
+              connectionId: connection.uuid,
+              connectionName: connection.name,
+              connectionType: connection.type,
+              error: `Failed to retrieve schema: ${error instanceof Error ? error.message : String(error)}`,
+            };
+          }
+        })
+      );
+
+      // Filter out null results
+      const validSchemas = schemas.filter(Boolean);
+
+      if (validSchemas.length === 0) {
+        return [
+          {
+            type: 'text',
+            text: 'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.',
+          },
+        ];
+      }
+
+      // Format the response
+      const schemaText = validSchemas
+        .map((item) => {
+          if (!item) return '';
+          if ('error' in item) {
+            return `Connection: ${item.connectionName} (${item.connectionType})\nID: ${item.connectionId}\nError: ${item.error}\n`;
+          }
+
+          const tablesInfo =
+            item.schema?.tables
+              ?.map((table: any) => {
+                const columnsInfo =
+                  table.columns
+                    ?.map((col: any) => `  - ${col.name}: ${col.type}${col.is_nullable ? ' (nullable)' : ''}`)
+                    .join('\n') || '  No columns found';
+                return `Table: ${table.name} (Schema: ${table.schema || 'public'})\n${columnsInfo}`;
+              })
+              .join('\n\n') || 'No tables found';
+
+          return `Connection: ${item.connectionName} (${item.connectionType})\nID: ${item.connectionId}\nDatabase: ${item.schema?.database || 'Unknown'}\n\n${tablesInfo}\n`;
+        })
+        .filter(Boolean)
+        .join('\n---\n\n');
+
+      // Add connection summary for future reference
+      const connectionSummary = validSchemas
+        .filter((item) => item && !('error' in item))
+        .map((item) => `- ${item!.connectionName} (${item!.connectionType}): ${item!.connectionId}`)
+        .join('\n');
+
+      const summaryText = connectionSummary
+        ? `\n\nAvailable connection IDs for future reference:\n${connectionSummary}`
+        : '';
+
+      return [
+        {
+          type: 'text',
+          text: schemaText
+            ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
+            : `No database schema information available.${summaryText}`,
+        },
+      ];
+    } catch (error) {
+      console.error('[GetDatabaseSchemas] Unexpected error:', error);
+      return [
+        {
+          type: 'text',
+          text: `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ];
+    }
+  },
 } as const;

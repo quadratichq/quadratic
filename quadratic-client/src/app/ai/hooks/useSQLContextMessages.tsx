@@ -10,64 +10,74 @@ export function useSQLContextMessages() {
 
   const getSQLContext = useCallback(async (): Promise<ChatMessage[]> => {
     if (!teamUuid) {
-      console.log('[SQL Context] No team UUID found');
+      console.log('[SQL Context] No team UUID available');
       return [];
     }
 
     try {
       // Get all team connections
-      const teamConnections = await apiClient.connections.list(teamUuid);
-      console.log('[SQL Context] Team connections:', teamConnections);
-
-      if (teamConnections.length === 0) {
-        console.log('[SQL Context] No team connections found');
+      let connections;
+      try {
+        connections = await apiClient.connections.list(teamUuid);
+      } catch (connectionError) {
+        console.warn(
+          '[SQL Context] Failed to fetch team connections, connection service may be unavailable:',
+          connectionError
+        );
         return [];
       }
 
-      // Filter for SQL database connections
-      const sqlConnections = teamConnections.filter((conn) =>
-        ['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE'].includes(conn.type)
+      if (!connections || connections.length === 0) {
+        console.log('[SQL Context] No database connections found');
+        return [];
+      }
+
+      // Get only table names for each connection (lightweight)
+      const connectionTableInfo = await Promise.all(
+        connections.map(async (connection) => {
+          try {
+            const connectionType = connection.type.toLowerCase() as 'postgres' | 'mysql' | 'mssql' | 'snowflake';
+            const schema = await connectionClient.schemas.get(connectionType, connection.uuid, teamUuid);
+
+            const tableNames = schema?.tables?.map((table) => table.name) || [];
+
+            return {
+              connectionId: connection.uuid,
+              connectionName: connection.name,
+              connectionType: connection.type,
+              database: schema?.database || 'Unknown',
+              tableNames: tableNames,
+            };
+          } catch (error) {
+            console.warn(`[SQL Context] Failed to get table names for connection ${connection.uuid}:`, error);
+            return {
+              connectionId: connection.uuid,
+              connectionName: connection.name,
+              connectionType: connection.type,
+              database: 'Unknown',
+              tableNames: [],
+              error: `Failed to retrieve table names: ${error}`,
+            };
+          }
+        })
       );
 
-      if (sqlConnections.length === 0) {
-        console.log('[SQL Context] No SQL database connections found');
+      // Filter out failed connections
+      const validConnections = connectionTableInfo.filter((conn) => !conn.error);
+
+      if (validConnections.length === 0) {
+        console.log('[SQL Context] No valid database connections with table information');
         return [];
       }
 
-      // Collect schemas for all SQL connections
-      const connectionSchemas = new Map<string, any>();
+      // Format as lightweight context message
+      const contextText = validConnections
+        .map((conn) => {
+          const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 
-      for (const connection of sqlConnections) {
-        const connectionKey = `${connection.type}-${connection.uuid}`;
-
-        try {
-          const schemaData = await connectionClient.schemas.get(
-            connection.type.toLowerCase() as 'postgres' | 'mysql' | 'mssql' | 'snowflake',
-            connection.uuid,
-            teamUuid
-          );
-          if (schemaData) {
-            connectionSchemas.set(connectionKey, {
-              kind: connection.type,
-              id: connection.uuid,
-              name: connection.name,
-              schema: schemaData,
-            });
-          }
-        } catch (error) {
-          console.warn(`Failed to fetch schema for connection ${connectionKey}:`, error);
-        }
-      }
-
-      console.log('[SQL Context] Connection schemas collected:', connectionSchemas);
-
-      if (connectionSchemas.size === 0) {
-        console.log('[SQL Context] No connection schemas found');
-        return [];
-      }
-
-      // Build context message with all SQL schemas
-      const schemasArray = Array.from(connectionSchemas.values());
+          return `Connection: ${conn.connectionName} (${conn.connectionType})\nDatabase: ${conn.database}\nTables: ${tablesText}`;
+        })
+        .join('\n\n');
 
       return [
         {
@@ -75,36 +85,11 @@ export function useSQLContextMessages() {
           content: [
             {
               type: 'text',
-              text: `Note: This is an internal message for context. Do not quote it in your response.\n\n
-I have access to the following database connections. Here are the database schemas for reference:\n\n
-${schemasArray
-  .map(
-    (conn, index) => `
-**Database Connection ${index + 1}: ${conn.name} (${conn.kind})**
-Connection ID: ${conn.id}
-\`\`\`json
-${JSON.stringify(conn.schema)}
-\`\`\`
+              text: `Available Database Connections and Tables:
 
-${conn.kind === 'POSTGRES' ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".' : ''}${conn.kind === 'MYSQL' ? 'When generating mysql queries, put schema and table names in backticks, e.g. `schema`.`TableName`.' : ''}${conn.kind === 'MSSQL' ? 'When generating mssql queries, put schema and table names in square brackets, e.g. [schema].[TableName].' : ''}${conn.kind === 'SNOWFLAKE' ? 'When generating Snowflake queries, put schema and table names in double quotes, e.g. "SCHEMA"."TABLE_NAME".' : ''}
-`
-  )
-  .join('\n')}
+${contextText}
 
-You can create new SQL code cells using these database connections. When creating SQL code cells, use the connection ID in the language parameter like this:
-{"Connection": {"kind": "${schemasArray[0]?.kind || 'POSTGRES'}", "id": "connection-uuid"}}
-
-You can reference these database schemas when helping with SQL queries or data analysis tasks.\n`,
-            },
-          ],
-          contextType: 'sqlSchemas',
-        },
-        {
-          role: 'assistant',
-          content: [
-            {
-              type: 'text',
-              text: `I understand the database schemas from your available connections. I can help you write SQL queries, create new SQL code cells, and analyze data from these databases. How can I help you?`,
+Note: This shows only table names. Use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing.`,
             },
           ],
           contextType: 'sqlSchemas',
