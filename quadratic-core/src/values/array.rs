@@ -660,6 +660,13 @@ impl Array {
         self.values.iter()
     }
 
+    pub fn update_empty_values_cache(&mut self) {
+        self.empty_values_cache = Some(EmptyValuesCache::from((
+            &self.values,
+            self.size.w.get() as usize,
+        )));
+    }
+
     pub fn empty_values_cache_ref(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.empty_values_cache
             .as_ref()

@@ -118,22 +118,22 @@ impl MultiCellTablesCache {
                 .set_rect(x1, y1, Some(x2), Some(y2), Some(*pos));
             if let Value::Array(array) = &data_table.value {
                 if let Some(mut empty_values_cache) = array.empty_values_cache_ref() {
-                    // mark table name and column headers as non-empty
                     let y_adjustment = data_table.y_adjustment(true);
+
+                    // update empty values cache
+                    empty_values_cache.translate_in_place(pos.x - 1, pos.y - 1 + y_adjustment);
+                    self.multi_cell_tables_empty.set_from(&empty_values_cache);
+
+                    // mark table name and column headers as non-empty
                     if y_adjustment > 0 {
                         self.multi_cell_tables_empty.set_rect(
                             x1,
                             y1,
                             Some(x2),
-                            Some(y1 + y_adjustment - 1),
+                            Some(y1 - 1 + y_adjustment),
                             None,
                         );
                     }
-
-                    // update empty values cache
-                    empty_values_cache
-                        .translate_in_place(pos.x - 1, pos.y + data_table.y_adjustment(true) - 1);
-                    self.multi_cell_tables_empty.set_from(&empty_values_cache);
                 } else {
                     self.multi_cell_tables_empty
                         .set_rect(x1, y1, Some(x2), Some(y2), None);
@@ -208,8 +208,8 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
 
         dbg!(sheet_data_tables_cache);
-        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 2]));
-        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 2]));
-        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 4]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 4]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 4]));
     }
 }
