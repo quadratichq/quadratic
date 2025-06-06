@@ -25,6 +25,16 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
   const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
+  // Helper function to get display label for language
+  const getLanguageLabel = (language: any): string => {
+    if (typeof language === 'string') {
+      return language;
+    } else if (typeof language === 'object' && language?.Connection) {
+      return language.Connection.kind;
+    }
+    return 'Code';
+  };
+
   useEffect(() => {
     if (!loading) {
       const fullJson = parseFullJson(args);
@@ -107,7 +117,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
       return (
         <ToolCard
           icon={<LanguageIcon language={language} />}
-          label={language}
+          label={getLanguageLabel(language)}
           description={
             `${estimatedNumberOfLines} line` +
             (estimatedNumberOfLines === 1 ? '' : 's') +
@@ -129,7 +139,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
   return (
     <ToolCard
       icon={<LanguageIcon language={code_cell_language} />}
-      label={code_cell_name || code_cell_language}
+      label={code_cell_name || getLanguageLabel(code_cell_language)}
       description={
         `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
       }

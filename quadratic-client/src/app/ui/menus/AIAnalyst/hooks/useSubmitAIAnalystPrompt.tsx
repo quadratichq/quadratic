@@ -3,6 +3,7 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+import { useSQLContextMessages } from '@/app/ai/hooks/useSQLContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -76,19 +77,21 @@ export function useSubmitAIAnalystPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
+  const { getSQLContext } = useSQLContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, filesContext] =
+        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, filesContext, sqlContext] =
           await Promise.all([
             getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
             getFilesContext({ chatMessages }),
+            getSQLContext(),
           ]);
 
         const messagesWithContext: ChatMessage[] = [
@@ -97,12 +100,13 @@ export function useSubmitAIAnalystPrompt() {
           ...currentSheetContext,
           ...visibleContext,
           ...filesContext,
+          ...sqlContext,
           ...getPromptMessagesWithoutPDF(chatMessages),
         ];
 
         return messagesWithContext;
       },
-    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext]
+    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext, getSQLContext]
   );
 
   const delayTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);

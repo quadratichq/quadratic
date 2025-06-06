@@ -12,24 +12,37 @@ export function LanguageIcon({
   language,
   className,
 }: {
-  language: CodeCellIds | string | null | undefined;
+  language: CodeCellIds | string | null | undefined | { Connection: { kind: string; id: string } };
   className?: string;
 }) {
-  language = language ? language.toLowerCase() : language;
+  // Handle Connection objects by extracting the kind
+  let languageString: string | null | undefined;
+  try {
+    if (typeof language === 'object' && language !== null && 'Connection' in language && language.Connection?.kind) {
+      languageString = language.Connection.kind.toLowerCase();
+    } else if (typeof language === 'string') {
+      languageString = language.toLowerCase();
+    } else {
+      languageString = typeof language === 'string' ? language : null;
+    }
+  } catch (error) {
+    console.warn('LanguageIcon: Error processing language parameter:', language, error);
+    languageString = null;
+  }
 
-  return language && 'python'.startsWith(language) ? (
+  return languageString && 'python'.startsWith(languageString) ? (
     <Python className={className} />
-  ) : language && 'formula'.startsWith(language) ? (
+  ) : languageString && 'formula'.startsWith(languageString) ? (
     <Formula className={className} />
-  ) : language && 'javascript'.startsWith(language) ? (
+  ) : languageString && 'javascript'.startsWith(languageString) ? (
     <JavaScript className={className} />
-  ) : language && 'postgres'.startsWith(language) ? (
+  ) : languageString && 'postgres'.startsWith(languageString) ? (
     <Postgres />
-  ) : language && 'mysql'.startsWith(language) ? (
+  ) : languageString && 'mysql'.startsWith(languageString) ? (
     <MySql />
-  ) : language && 'mssql'.startsWith(language) ? (
+  ) : languageString && 'mssql'.startsWith(languageString) ? (
     <MsSql />
-  ) : language && 'snowflake'.startsWith(language) ? (
+  ) : languageString && 'snowflake'.startsWith(languageString) ? (
     <Snowflake />
   ) : (
     <GenericLanguageIcon />
