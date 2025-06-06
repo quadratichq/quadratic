@@ -70,7 +70,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Formatting - simple, conditional, etc.</capability>
     <capability>Editing existing charts</capability>
     <capability>API requests</capability>
-    <capability>Any capabilitiesnot defined in these instructions</capability>
+    <capability>Any capabilities not defined in these instructions</capability>
    </capabilities>
   </model>
   <model name="Claude">
@@ -210,7 +210,7 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    console.error('Error in getModelKey:', error);
+    console.error('Error in getModelKey: ', error);
   }
 
   return DEFAULT_BACKUP_MODEL;
