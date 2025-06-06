@@ -5,7 +5,7 @@
   "description": "E2E tests for Quadratic",
   "main": "index.js",
   "scripts": {
-    "lint:ts": "tsc --noemit",
+    "lint:ts": "npm install --no-audit --no-fund && tsc --noemit",
     "test": "npm run lint:ts && npx playwright test",
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed",
@@ -22,8 +22,8 @@
   "type": "module",
   "devDependencies": {
     "@playwright/test": "1.52.0",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.15.30",
     "typescript": "^5.8.2",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }
