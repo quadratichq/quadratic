@@ -54,16 +54,9 @@ impl From<IndexMap<Pos, DataTable>> for SheetDataTables {
 
         let mut sheet_data_tables = Self::new();
         sheet_data_tables.data_tables = data_tables;
-        let mut data_table_to_check_empty = HashSet::new();
         for (index, pos) in data_tables_pos.iter().enumerate() {
-            sheet_data_tables.update_spill_and_cache(
-                index,
-                pos,
-                None,
-                &mut data_table_to_check_empty,
-            );
+            sheet_data_tables.update_spill_and_cache(index, pos, None);
         }
-        sheet_data_tables.update_multi_cell_tables_empty(data_table_to_check_empty);
         sheet_data_tables
     }
 }
@@ -118,7 +111,6 @@ impl SheetDataTables {
         index: usize,
         pos: &Pos,
         old_output_rect: Option<Rect>,
-        data_table_to_check_empty: &mut HashSet<Pos>,
     ) -> HashSet<Rect> {
         let mut dirty_rects = HashSet::new();
         let mut old_rect = None;
@@ -137,20 +129,9 @@ impl SheetDataTables {
                     .map(|(rect, _)| rect)
                     .collect::<Vec<_>>();
                 for rect in rects {
-                    self.cache.multi_cell_tables.set_rect(
-                        rect.min.x,
-                        rect.min.y,
-                        Some(rect.max.x),
-                        Some(rect.max.y),
-                        None,
-                    );
-                    self.cache.multi_cell_tables_empty.set_rect(
-                        rect.min.x,
-                        rect.min.y,
-                        Some(rect.max.x),
-                        Some(rect.max.y),
-                        None,
-                    );
+                    self.cache
+                        .multi_cell_tables
+                        .set_rect(rect.min.x, rect.min.y, rect.max.x, rect.max.y, None);
                 }
             }
 
@@ -190,11 +171,10 @@ impl SheetDataTables {
                 self.cache.multi_cell_tables.set_rect(
                     new_spilled_output_rect.min.x,
                     new_spilled_output_rect.min.y,
-                    Some(new_spilled_output_rect.max.x),
-                    Some(new_spilled_output_rect.max.y),
-                    Some(*pos),
+                    new_spilled_output_rect.max.x,
+                    new_spilled_output_rect.max.y,
+                    Some((pos, data_table)),
                 );
-                data_table_to_check_empty.insert(*pos);
             }
 
             let new_un_spilled_output_rect = data_table.output_rect(*pos, true);
@@ -238,19 +218,14 @@ impl SheetDataTables {
                         other_pos,
                         other_old_output_rect,
                     ));
-                    data_table_to_check_empty.remove(&other_pos);
                 }
 
                 dirty_rects.insert(updated_rect);
             }
 
             for (other_index, other_pos, other_old_output_rects) in other_data_tables_to_update {
-                let other_dirty_rects = self.update_spill_and_cache(
-                    other_index,
-                    &other_pos,
-                    other_old_output_rects,
-                    data_table_to_check_empty,
-                );
+                let other_dirty_rects =
+                    self.update_spill_and_cache(other_index, &other_pos, other_old_output_rects);
                 dirty_rects.extend(other_dirty_rects);
             }
         }
@@ -270,14 +245,7 @@ impl SheetDataTables {
 
         f(data_table)?;
 
-        let mut data_table_to_check_empty = HashSet::new();
-        let dirty_rects = self.update_spill_and_cache(
-            index,
-            pos,
-            old_output_rect,
-            &mut data_table_to_check_empty,
-        );
-        self.update_multi_cell_tables_empty(data_table_to_check_empty);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rect);
 
         let data_table = self.data_tables.get(pos).ok_or_else(err)?;
         Ok((data_table, dirty_rects))
@@ -492,14 +460,7 @@ impl SheetDataTables {
             .as_ref()
             .map(|dt| dt.output_rect(*pos, false));
 
-        let mut data_table_to_check_empty = HashSet::new();
-        let dirty_rects = self.update_spill_and_cache(
-            index,
-            pos,
-            old_output_rect,
-            &mut data_table_to_check_empty,
-        );
-        self.update_multi_cell_tables_empty(data_table_to_check_empty);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rect);
 
         (index, old_data_table, dirty_rects)
     }
@@ -521,14 +482,7 @@ impl SheetDataTables {
             .as_ref()
             .map(|dt| dt.output_rect(*pos, false));
 
-        let mut data_table_to_check_empty = HashSet::new();
-        let dirty_rects = self.update_spill_and_cache(
-            index,
-            pos,
-            old_output_rect,
-            &mut data_table_to_check_empty,
-        );
-        self.update_multi_cell_tables_empty(data_table_to_check_empty);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rect);
 
         (index, old_data_table, dirty_rects)
     }
@@ -542,14 +496,7 @@ impl SheetDataTables {
 
         let old_output_rect = Some(old_data_table.output_rect(*pos, false));
 
-        let mut data_table_to_check_empty = HashSet::new();
-        let dirty_rects = self.update_spill_and_cache(
-            index,
-            pos,
-            old_output_rect,
-            &mut data_table_to_check_empty,
-        );
-        self.update_multi_cell_tables_empty(data_table_to_check_empty);
+        let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rect);
 
         Some((index, *pos, old_data_table, dirty_rects))
     }
@@ -644,15 +591,6 @@ impl SheetDataTables {
         self.data_tables.iter_mut().flat_map(|(pos, data_table)| {
             data_table.code_run_mut().map(|code_run| (*pos, code_run))
         })
-    }
-
-    /// Updates the multi_cell_tables_empty cache for the given data tables
-    pub fn update_multi_cell_tables_empty(&mut self, data_table_pos: HashSet<Pos>) {
-        for pos in data_table_pos {
-            if let Some(data_table) = self.data_tables.get(&pos) {
-                data_table.add_empty_cells_to_cache(pos, &mut self.cache.multi_cell_tables_empty);
-            }
-        }
     }
 
     /// Exports the cache of data tables.

@@ -8,7 +8,6 @@ use crate::util::is_false;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
-mod empty_check;
 pub mod formats;
 pub mod row;
 pub mod send_render;

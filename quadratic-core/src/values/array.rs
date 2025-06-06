@@ -13,6 +13,8 @@ use super::cell_values::CellValues;
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCellValueResult;
+use crate::empty_values_cache::EmptyValuesCache;
+use crate::grid::Contiguous2D;
 use crate::grid::Sheet;
 use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span};
 
@@ -37,6 +39,10 @@ pub struct Array {
     /// Flattened array of `width * height` many values, stored in row-major
     /// order.
     values: SmallVec<[CellValue; 1]>,
+    /// Cache of empty values in the array, never serialized to file, only used
+    /// for performance optimizations in app.
+    #[serde(skip_serializing)]
+    empty_values_cache: Option<EmptyValuesCache>,
 }
 impl fmt::Display for Array {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -68,6 +74,9 @@ impl From<CellValue> for Array {
         Array {
             size: ArraySize::_1X1,
             values: smallvec![value],
+
+            // no empty value cache for single values
+            empty_values_cache: Some(EmptyValuesCache::new()),
         }
     }
 }
@@ -90,9 +99,12 @@ impl From<Vec<Vec<String>>> for Array {
     fn from(v: Vec<Vec<String>>) -> Self {
         let w = v[0].len();
         let h = v.len();
+        let values = v.into_iter().flatten().map(CellValue::from).collect();
+        let empty_values_cache = Some(EmptyValuesCache::from((&values, w)));
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
-            values: v.into_iter().flatten().map(CellValue::from).collect(),
+            values,
+            empty_values_cache,
         }
     }
 }
@@ -101,9 +113,12 @@ impl From<Vec<Vec<&str>>> for Array {
     fn from(v: Vec<Vec<&str>>) -> Self {
         let w = v[0].len();
         let h = v.len();
+        let values = v.into_iter().flatten().map(CellValue::from).collect();
+        let empty_values_cache = Some(EmptyValuesCache::from((&values, w)));
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
-            values: v.into_iter().flatten().map(CellValue::from).collect(),
+            values,
+            empty_values_cache,
         }
     }
 }
@@ -113,26 +128,33 @@ impl From<Vec<Vec<CellValue>>> for Array {
         if v.is_empty() {
             return Array::new_empty(ArraySize::_1X1);
         }
-
         let w = v[0].len();
         let h = v.len();
+        let values = v.into_iter().flatten().collect();
+        let empty_values_cache = Some(EmptyValuesCache::from((&values, w)));
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap_or(ArraySize::_1X1),
-            values: v.into_iter().flatten().collect(),
+            values,
+            empty_values_cache,
         }
     }
 }
 
 impl From<CellValues> for Array {
     fn from(cell_values: CellValues) -> Self {
+        let width = cell_values.w;
+        let height = cell_values.h;
+        let values = cell_values
+            .into_owned_vec()
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .into();
+        let empty_values_cache = Some(EmptyValuesCache::from((&values, width as usize)));
         Array {
-            size: ArraySize::new(cell_values.w, cell_values.h).unwrap(),
-            values: cell_values
-                .into_owned_vec()
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>()
-                .into(),
+            size: ArraySize::new(width, height).unwrap(),
+            values,
+            empty_values_cache,
         }
     }
 }
@@ -162,7 +184,12 @@ impl Array {
     /// Constructs an array from a list of values in row-major order.
     pub fn new_row_major(size: ArraySize, values: SmallVec<[CellValue; 1]>) -> CodeResult<Self> {
         if values.len() == size.len() {
-            Ok(Self { size, values })
+            let empty_values_cache = Some(EmptyValuesCache::from((&values, size.w.get() as usize)));
+            Ok(Self {
+                size,
+                values,
+                empty_values_cache,
+            })
         } else {
             internal_error!(
                 "bad array dimensions: {size} needs {} values, but got {}",
@@ -574,8 +601,13 @@ impl Array {
                 false => CellValue::from(s),
             })
             .collect();
+        let empty_values_cache = Some(EmptyValuesCache::from((&values, size.w.get() as usize)));
 
-        Ok(Array { size, values })
+        Ok(Array {
+            size,
+            values,
+            empty_values_cache,
+        })
     }
 
     pub fn from_string_list(
@@ -611,12 +643,27 @@ impl Array {
             })
             .collect::<SmallVec<[CellValue; 1]>>();
 
-        (Some(Array { size, values }), ops)
+        let empty_values_cache = Some(EmptyValuesCache::from((&values, size.w.get() as usize)));
+
+        (
+            Some(Array {
+                size,
+                values,
+                empty_values_cache,
+            }),
+            ops,
+        )
     }
 
     /// Iterate over the values in the array
     pub fn values_iter(&self) -> impl Iterator<Item = &CellValue> {
         self.values.iter()
+    }
+
+    pub fn empty_values_cache_ref(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
+        self.empty_values_cache
+            .as_ref()
+            .and_then(|cache| cache.get_cache())
     }
 }
 
