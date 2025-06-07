@@ -158,6 +158,39 @@ impl State {
 
         Ok((message.0, transaction))
     }
+
+    #[cfg(test)]
+    #[allow(unused)]
+    pub(crate) async fn ack_message(&self, file_id: &Uuid, sequence_num: u64) -> Result<()> {
+        let channel = file_id.to_string();
+        let active_channels = "ACTIVE_CHANNELS";
+        let sequence_num = sequence_num.to_string();
+        let keys = vec![sequence_num.as_ref()];
+        let group_name = crate::test_util::GROUP_NAME_TEST;
+        self.pubsub
+            .lock()
+            .await
+            .connection
+            .ack(&channel, group_name, keys, Some(active_channels), false)
+            .await?;
+
+        Ok(())
+    }
+
+    #[cfg(test)]
+    #[allow(unused)]
+    pub(crate) async fn trim_message(&self, file_id: &Uuid, sequence_num: u64) -> Result<()> {
+        let channel = file_id.to_string();
+        let sequence_num = sequence_num.to_string();
+        self.pubsub
+            .lock()
+            .await
+            .connection
+            .trim(&channel, &sequence_num)
+            .await?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
