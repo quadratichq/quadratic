@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::operation::Operation;
-use crate::Value;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::DataTable;
@@ -662,15 +661,6 @@ impl GridController {
         let mut formats = clipboard.formats.to_owned().unwrap_or_default();
         let mut borders = clipboard.borders.to_owned().unwrap_or_default();
         let source_columns = clipboard.cells.columns;
-
-        // Regenerate empty values cache for arrays in clipboard
-        // Cache is not serialized, so we need to regenerated on deserialization
-        for (_, dt) in &mut clipboard.data_tables {
-            match &mut dt.value {
-                Value::Array(array) => array.update_empty_values_cache(),
-                _ => {}
-            }
-        }
 
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();

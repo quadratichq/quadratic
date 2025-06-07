@@ -6,7 +6,7 @@ use std::slice::Iter;
 
 use anyhow::{Result, bail};
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use smallvec::{SmallVec, smallvec};
 
 use super::cell_values::CellValues;
@@ -32,7 +32,7 @@ macro_rules! array {
 
 /// 2D array of values in the formula language. The array may be a single value
 /// (1x1) but must not be degenerate (zero width or zero height).
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct Array {
     /// Width and height.
     size: ArraySize,
@@ -41,9 +41,33 @@ pub struct Array {
     values: SmallVec<[CellValue; 1]>,
     /// Cache of empty values in the array, never serialized to file, only used
     /// for performance optimizations in app.
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     empty_values_cache: Option<EmptyValuesCache>,
 }
+
+// Custom Deserialize for getting the empty values cache on deserialization
+impl<'de> Deserialize<'de> for Array {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct ArrayData {
+            size: ArraySize,
+            values: SmallVec<[CellValue; 1]>,
+        }
+
+        let data = ArrayData::deserialize(deserializer)?;
+        let empty_values_cache = Some(EmptyValuesCache::from((&data.size, &data.values)));
+
+        Ok(Array {
+            size: data.size,
+            values: data.values,
+            empty_values_cache,
+        })
+    }
+}
+
 impl fmt::Display for Array {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{")?;
@@ -99,10 +123,11 @@ impl From<Vec<Vec<String>>> for Array {
     fn from(v: Vec<Vec<String>>) -> Self {
         let w = v[0].len();
         let h = v.len();
+        let size = ArraySize::new(w as u32, h as u32).unwrap();
         let values = v.into_iter().flatten().map(CellValue::from).collect();
-        let empty_values_cache = Some(EmptyValuesCache::from((&values, w)));
+        let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
         Array {
-            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            size,
             values,
             empty_values_cache,
         }
@@ -113,10 +138,11 @@ impl From<Vec<Vec<&str>>> for Array {
     fn from(v: Vec<Vec<&str>>) -> Self {
         let w = v[0].len();
         let h = v.len();
+        let size = ArraySize::new(w as u32, h as u32).unwrap();
         let values = v.into_iter().flatten().map(CellValue::from).collect();
-        let empty_values_cache = Some(EmptyValuesCache::from((&values, w)));
+        let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
         Array {
-            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            size,
             values,
             empty_values_cache,
         }
@@ -130,10 +156,11 @@ impl From<Vec<Vec<CellValue>>> for Array {
         }
         let w = v[0].len();
         let h = v.len();
+        let size = ArraySize::new(w as u32, h as u32).unwrap_or(ArraySize::_1X1);
         let values = v.into_iter().flatten().collect();
-        let empty_values_cache = Some(EmptyValuesCache::from((&values, w)));
+        let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
         Array {
-            size: ArraySize::new(w as u32, h as u32).unwrap_or(ArraySize::_1X1),
+            size,
             values,
             empty_values_cache,
         }
@@ -144,15 +171,16 @@ impl From<CellValues> for Array {
     fn from(cell_values: CellValues) -> Self {
         let width = cell_values.w;
         let height = cell_values.h;
+        let size = ArraySize::new(width, height).unwrap();
         let values = cell_values
             .into_owned_vec()
             .into_iter()
             .flatten()
             .collect::<Vec<_>>()
             .into();
-        let empty_values_cache = Some(EmptyValuesCache::from((&values, width as usize)));
+        let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
         Array {
-            size: ArraySize::new(width, height).unwrap(),
+            size,
             values,
             empty_values_cache,
         }
@@ -184,7 +212,7 @@ impl Array {
     /// Constructs an array from a list of values in row-major order.
     pub fn new_row_major(size: ArraySize, values: SmallVec<[CellValue; 1]>) -> CodeResult<Self> {
         if values.len() == size.len() {
-            let empty_values_cache = Some(EmptyValuesCache::from((&values, size.w.get() as usize)));
+            let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
             Ok(Self {
                 size,
                 values,
@@ -353,7 +381,7 @@ impl Array {
                 .map_or(CellValue::Blank, |r| r.pop().unwrap_or(CellValue::Blank))
         };
 
-        for (i, value) in self.values.iter().enumerate() {
+        for (i, value) in self.values.iter_mut().enumerate() {
             let col = i % width as usize;
             let row = ((i / width as usize) as f32).floor() as usize;
             let last = col as u32 == width - 1;
@@ -363,9 +391,12 @@ impl Array {
                 col_index += 1;
             }
 
-            // TODO(ddimaria): this clone is expensive, we should be able to modify
-            // the array in-place
-            array.set(col_index, row as u32, value.to_owned(), false)?;
+            array.set(
+                col_index,
+                row as u32,
+                std::mem::replace(value, CellValue::Blank),
+                false,
+            )?;
 
             if insert_at_end && last {
                 array.set(width, row as u32, next_insert_value(), false)?;
@@ -376,7 +407,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.update_empty_values_cache();
+        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
 
         Ok(())
     }
@@ -390,7 +421,7 @@ impl Array {
 
         // loop through the values and skip the remove_at_index column,
         // adding the rest to the new array
-        for (i, value) in self.values.iter().enumerate() {
+        for (i, value) in self.values.iter_mut().enumerate() {
             let col = i % width as usize;
             let row = ((i / width as usize) as f32).floor() as usize;
             let last = col as u32 == width - 1;
@@ -403,17 +434,18 @@ impl Array {
                 continue;
             }
 
-            // TODO(ddimaria): this clone is expensive, we should be able to modify
-            // the array in-place
-            array.set(col_index, row as u32, value.to_owned(), false)?;
+            array.set(
+                col_index,
+                row as u32,
+                std::mem::replace(value, CellValue::Blank),
+                false,
+            )?;
             col_index = if last { 0 } else { col_index + 1 };
         }
 
         self.size = new_size;
         self.values = array.values;
-        if let Some(cache) = self.empty_values_cache.as_mut() {
-            cache.remove_column(remove_at_index as i64);
-        }
+        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
 
         Ok(())
     }
@@ -453,7 +485,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.update_empty_values_cache();
+        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
 
         Ok(())
     }
@@ -525,11 +557,24 @@ impl Array {
         value: CellValue,
         update_cache: bool,
     ) -> Result<(), RunErrorMsg> {
+        if update_cache {
+            let empty_values_cache = match &mut self.empty_values_cache {
+                Some(empty_values_cache) => empty_values_cache,
+                None => {
+                    self.empty_values_cache = Some(EmptyValuesCache::new());
+                    self.empty_values_cache.as_mut().unwrap()
+                }
+            };
+            empty_values_cache.set_value(
+                &self.size,
+                (x, y).into(),
+                value.is_blank_or_empty_string(),
+            );
+        }
+
         let i = self.size().flatten_index(x, y)?;
         self.values[i] = value;
-        if update_cache {
-            self.update_empty_values_cache();
-        }
+
         Ok(())
     }
     fn set_row(&mut self, index: usize, values: &[CellValue]) -> Result<(), RunErrorMsg> {
@@ -621,8 +666,7 @@ impl Array {
                 false => CellValue::from(s),
             })
             .collect();
-        let empty_values_cache = Some(EmptyValuesCache::from((&values, size.w.get() as usize)));
-
+        let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
         Ok(Array {
             size,
             values,
@@ -663,7 +707,7 @@ impl Array {
             })
             .collect::<SmallVec<[CellValue; 1]>>();
 
-        let empty_values_cache = Some(EmptyValuesCache::from((&values, size.w.get() as usize)));
+        let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
 
         (
             Some(Array {
@@ -676,10 +720,7 @@ impl Array {
     }
 
     pub fn update_empty_values_cache(&mut self) {
-        self.empty_values_cache = Some(EmptyValuesCache::from((
-            &self.values,
-            self.size.w.get() as usize,
-        )));
+        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
     }
 
     pub fn empty_values_cache_ref(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {

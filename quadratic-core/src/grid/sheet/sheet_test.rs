@@ -133,7 +133,7 @@ impl Sheet {
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table1",
-                Value::Array(array),
+                array.into(),
                 false,
                 Some(false),
                 Some(false),
