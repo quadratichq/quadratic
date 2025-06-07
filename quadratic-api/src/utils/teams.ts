@@ -1,5 +1,7 @@
 import type { Prisma, Team } from '@prisma/client';
+import { TeamClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
+import { ApiError } from './ApiError';
 import { decryptFromEnv, encryptFromEnv, generateSshKeys } from './crypto';
 
 export type DecryptedTeam = Omit<Team, 'sshPublicKey' | 'sshPrivateKey'> & {
@@ -86,4 +88,16 @@ export function decryptSshKeys(team: Team): DecryptedTeam {
   const sshPrivateKey = decryptFromEnv(team.sshPrivateKey.toString('utf-8'));
 
   return { ...team, sshPublicKey, sshPrivateKey };
+}
+
+/**
+ * Ensures that the data going in & coming out of this column is always a
+ * JSON object
+ */
+export function parseAndValidateClientDataKv(clientDataKv: unknown) {
+  const parseResult = TeamClientDataKvSchema.safeParse(clientDataKv);
+  if (!parseResult.success) {
+    throw new ApiError(500, '`clientDataKv` must be a valid JSON object');
+  }
+  return parseResult.data;
 }

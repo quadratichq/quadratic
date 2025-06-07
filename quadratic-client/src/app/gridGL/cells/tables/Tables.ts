@@ -173,18 +173,29 @@ export class Tables extends Container<Table> {
 
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
-    updateCodeCells
-      .filter((updateCodeCell) => updateCodeCell.sheet_id.id === this.cellsSheet.sheetId)
-      .forEach((updateCodeCell) => {
-        const { pos, render_code_cell } = updateCodeCell;
-        const x = Number(pos.x);
-        const y = Number(pos.y);
-        const key = `${x},${y}`;
-        if (!render_code_cell) {
-          delete this.singleCellTables[key];
-          this.deleteTable(x, y);
-          return;
-        }
+    // if the cursor is same as the code cell anchor cell, we may need to update the cursor
+    let updateCursor = false;
+    const isCursorSingleSelection = sheets.sheet.cursor.isSingleSelection();
+    const tableSelectionName = sheets.sheet.cursor.getSingleFullTableSelectionName();
+    const cursorSheetId = sheets.sheet.cursor.sheet.id;
+    const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
+
+    for (const updateCodeCell of updateCodeCells) {
+      if (updateCodeCell.sheet_id.id !== this.cellsSheet.sheetId) {
+        continue;
+      }
+
+      const { pos, render_code_cell } = updateCodeCell;
+      const x = Number(pos.x);
+      const y = Number(pos.y);
+      const key = `${x},${y}`;
+
+      const cursorIsSameAsCodeCell = cursorSheetId === sheets.current && cursorX === x && cursorY === y;
+
+      if (!render_code_cell) {
+        delete this.singleCellTables[key];
+        this.deleteTable(x, y);
+      } else {
         const isSingleCell = this.isCodeCellSingle(render_code_cell);
         if (isSingleCell) {
           this.singleCellTables[key] = render_code_cell;
@@ -205,10 +216,23 @@ export class Tables extends Container<Table> {
             const table = this.addChild(new Table(this.sheet, render_code_cell));
             this.tablesCache.add(table);
           }
+
+          // update cursor for multi-cell tables
+          if (cursorIsSameAsCodeCell && (isCursorSingleSelection || tableSelectionName === render_code_cell.name)) {
+            updateCursor = true;
+          }
         }
-        pixiApp.setViewportDirty();
+      }
+    }
+
+    pixiApp.setViewportDirty();
+    pixiApp.singleCellOutlines.dirty = true;
+
+    if (updateCursor) {
+      sheets.sheet.cursor.moveTo(sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, {
+        checkForTableRef: true,
       });
-    if (this.sheet.id === sheets.current) {
+    } else if (this.sheet.id === sheets.current) {
       events.emit('cursorPosition');
     }
   };
@@ -503,7 +527,7 @@ export class Tables extends Container<Table> {
     if (sheetId === this.sheet.id) {
       this.dataTablesCache?.free();
       this.dataTablesCache = dataTablesCache;
-      if (sheets.sheet.id === this.sheet.id) {
+      if (sheetId === sheets.current) {
         pixiApp.singleCellOutlines.dirty = true;
       }
     }

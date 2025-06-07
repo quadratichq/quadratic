@@ -128,9 +128,9 @@ export class PixiApp {
         return;
       }
       if (!this.initialized) {
-        renderWebWorker.sendBitmapFonts();
         this.initCanvas();
         this.rebuild();
+        renderWebWorker.sendBitmapFonts();
         urlParams.init();
         this.waitingForFirstRender = resolve;
         if (this.alreadyRendered) {
