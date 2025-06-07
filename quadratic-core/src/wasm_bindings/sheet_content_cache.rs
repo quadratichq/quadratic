@@ -28,7 +28,7 @@ impl From<&Sheet> for SheetContentCache {
 impl SheetContentCache {
     pub fn has_content(&self, pos: Pos) -> bool {
         // we can use is is_some() since the bool is always true
-        self.has_cell_value.get(pos.into()).is_some()
+        self.has_cell_value.get(pos).is_some()
     }
 
     /// Returns the bounds of the column or None if the column is empty of

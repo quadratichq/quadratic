@@ -16,6 +16,7 @@ use crate::{
 /// For charts, is uses the chart's bounds for intersection test (since charts are considered a single cell)
 ///
 /// Returns the found column matching the criteria of with_content
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn find_next_column(
     sheet_id: SheetId,
     column_start: i64,
@@ -102,6 +103,7 @@ pub(crate) fn find_next_column(
 /// content
 ///
 /// Returns the found row matching the criteria of with_content
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn find_next_row(
     sheet_id: SheetId,
     row_start: i64,
@@ -151,13 +153,10 @@ pub(crate) fn find_next_row(
             );
         }
 
-        if has_content {
-            if with_content {
-                return Some(y);
-            }
-        } else if !with_content {
+        if (has_content && with_content) || (!has_content && !with_content) {
             return Some(y);
         }
+
         y += if reverse { -1 } else { 1 };
     }
 

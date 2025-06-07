@@ -318,8 +318,11 @@ impl Array {
 
         match height {
             Some(h) => {
-                let first_row = self.values.drain(0..width).collect();
                 self.size.h = h;
+                let first_row = self.values.drain(0..width).collect();
+                if let Some(cache) = self.empty_values_cache.as_mut() {
+                    cache.remove_row(0);
+                }
                 Ok(first_row)
             }
             None => bail!("Cannot shift a single row array"),
@@ -356,16 +359,16 @@ impl Array {
             let last = col as u32 == width - 1;
 
             if col == insert_at_index {
-                array.set(col_index, row as u32, next_insert_value())?;
+                array.set(col_index, row as u32, next_insert_value(), false)?;
                 col_index += 1;
             }
 
             // TODO(ddimaria): this clone is expensive, we should be able to modify
             // the array in-place
-            array.set(col_index, row as u32, value.to_owned())?;
+            array.set(col_index, row as u32, value.to_owned(), false)?;
 
             if insert_at_end && last {
-                array.set(width, row as u32, next_insert_value())?;
+                array.set(width, row as u32, next_insert_value(), false)?;
             }
 
             col_index = if last { 0 } else { col_index + 1 };
@@ -373,6 +376,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
+        self.update_empty_values_cache();
 
         Ok(())
     }
@@ -401,12 +405,15 @@ impl Array {
 
             // TODO(ddimaria): this clone is expensive, we should be able to modify
             // the array in-place
-            array.set(col_index, row as u32, value.to_owned())?;
+            array.set(col_index, row as u32, value.to_owned(), false)?;
             col_index = if last { 0 } else { col_index + 1 };
         }
 
         self.size = new_size;
         self.values = array.values;
+        if let Some(cache) = self.empty_values_cache.as_mut() {
+            cache.remove_column(remove_at_index as i64);
+        }
 
         Ok(())
     }
@@ -446,6 +453,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
+        self.update_empty_values_cache();
 
         Ok(())
     }
@@ -463,8 +471,11 @@ impl Array {
                 let end = std::cmp::min(start + width, values_len);
 
                 if start <= end {
-                    values = self.values.drain(start..end).collect();
                     self.size.h = h;
+                    values = self.values.drain(start..end).collect();
+                    if let Some(cache) = self.empty_values_cache.as_mut() {
+                        cache.remove_row(remove_at_index as i64);
+                    }
                 }
             }
             None => bail!("Cannot remove a row from a single row array"),
@@ -507,12 +518,21 @@ impl Array {
     }
     /// Sets the value at a given 0-indexed position in an array. Returns an
     /// error if `x` or `y` is out of range.
-    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), RunErrorMsg> {
+    pub fn set(
+        &mut self,
+        x: u32,
+        y: u32,
+        value: CellValue,
+        update_cache: bool,
+    ) -> Result<(), RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         self.values[i] = value;
+        if update_cache {
+            self.update_empty_values_cache();
+        }
         Ok(())
     }
-    pub fn set_row(&mut self, index: usize, values: &[CellValue]) -> Result<(), RunErrorMsg> {
+    fn set_row(&mut self, index: usize, values: &[CellValue]) -> Result<(), RunErrorMsg> {
         let width = self.width() as usize;
         let start = index * width;
 

@@ -54,4 +54,14 @@ impl EmptyValuesCache {
     pub fn get_cache(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.cache.clone()
     }
+
+    pub fn remove_column(&mut self, column: i64) {
+        self.cache
+            .as_mut()
+            .map(|cache| cache.remove_column(column + 1));
+    }
+
+    pub fn remove_row(&mut self, row: i64) {
+        self.cache.as_mut().map(|cache| cache.remove_row(row + 1));
+    }
 }

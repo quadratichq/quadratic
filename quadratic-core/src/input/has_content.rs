@@ -121,10 +121,8 @@ pub(crate) fn row_bounds(
         ))
     } else if let Some(content_row_bounds) = content_row_bounds {
         Some(content_row_bounds)
-    } else if let Some(table_row_bounds) = table_row_bounds {
-        Some(table_row_bounds)
     } else {
-        None
+        table_row_bounds
     }
 }
 
@@ -147,10 +145,8 @@ pub(crate) fn column_bounds(
         ))
     } else if let Some(content_column_bounds) = content_column_bounds {
         Some(content_column_bounds)
-    } else if let Some(table_column_bounds) = table_column_bounds {
-        Some(table_column_bounds)
     } else {
-        None
+        table_column_bounds
     }
 }
 
