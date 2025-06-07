@@ -1360,8 +1360,6 @@ mod tests {
             &["1", "2", "", "", "5", "6"],
         );
 
-        print_first_sheet(&gc);
-
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
@@ -1383,25 +1381,25 @@ mod tests {
                 &sheet_data_tables_cache,
                 &context
             ),
+            pos![B3]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B3],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B6]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B6],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
             pos![B7]
-        );
-        assert_eq!(
-            jump_down(
-                pos![sheet_id!B7],
-                &content_cache,
-                &sheet_data_tables_cache,
-                &context
-            ),
-            pos![B8]
-        );
-        assert_eq!(
-            jump_down(
-                pos![sheet_id!B8],
-                &content_cache,
-                &sheet_data_tables_cache,
-                &context
-            ),
-            pos![B9]
         );
     }
 
